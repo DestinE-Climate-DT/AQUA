@@ -1,6 +1,0 @@
-image: 'pmp:v1'
-environment: ["VER=v1"]
-command: ['variability_modes_driver.py', '-p', '/pmp_output/basic_mov_param.py']
-volumes:
-    data: /work/users/jost/docker/pmp/demo/demo_data
-    pmp_output: /work/users/jost/docker/pmp/pmp/pmp_output

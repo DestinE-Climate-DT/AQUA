@@ -1,6 +1,0 @@
-image: 'miles:v1'
-environment: ["VER=v1"]
-command: ['./wrapper_miles.sh', '/miles_output/namelist.sh']
-volumes:
-    data:     /work/users/jost/docker/testdata
-    miles_output: /home/jost/work/docker/miles/miles/miles_output

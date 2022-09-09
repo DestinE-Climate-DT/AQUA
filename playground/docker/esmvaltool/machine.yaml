@@ -1,8 +1,0 @@
-image: 'esmvalgroup/esmvaltool:stable'
-environment: ["HOME=/home"]
-command: ['run', '/home/recipes/recipe.yml']
-volumes:
-    home:     /work/users/jost/docker/esmvaltool/home
-    datasets: /work/datasets/synda/data
-    output:   /work/users/jost/docker/esmvaltool/esmvaltool
-    input:    /work/users/jost/esmvaltool/input
