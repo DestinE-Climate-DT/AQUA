@@ -327,7 +327,7 @@ def apply_weights(source_data, weights, weights_matrix=None):
     #    )
 
     # Find dimensions to keep
-    nd = sum([(d not in ['lon', 'lat', 'longitude', 'latitude', 'ncells']) for d in source_data.dims])
+    nd = sum([(d not in ['lon', 'lat', 'longitude', 'latitude', 'ncells', 'values']) for d in source_data.dims])
 
     kept_shape = list(source_data.shape[0:nd])
     kept_dims = list(source_data.dims[0:nd])
