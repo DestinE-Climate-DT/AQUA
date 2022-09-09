@@ -30,8 +30,7 @@ matrix multiply, maintaining chunking in dimensions other than lat and lon.
 multiple datasets.
 """
 
-from .dimension import remove_degenerate_axes, identify_lat_lon
-from .grid import *
+from .dimension import remove_degenerate_axes
 
 from datetime import datetime
 from shutil import which
@@ -43,6 +42,7 @@ import subprocess
 import sys
 import tempfile
 import xarray
+import numpy
 
 
 def cdo_generate_weights(
@@ -316,15 +316,15 @@ def apply_weights(source_data, weights, weights_matrix=None):
         axis_scale = 180.0 / math.pi  # Weight lat/lon in radians
 
     # Check lat/lon are the last axes
-    source_lat, source_lon = identify_lat_lon(source_data)
-    if not (
-        source_lat.name in source_data.dims[-2:]
-        and source_lon.name in source_data.dims[-2:]
-    ):
-        raise Exception(
-            "Last two dimensions should be spatial coordinates,"
-            f" got {source_data.dims[-2:]}"
-        )
+    #source_lat, source_lon = identify_lat_lon(source_data)
+    #if not (
+        #source_lat.name in source_data.dims[-2:]
+        #and source_lon.name in source_data.dims[-2:]
+    #):
+    #    raise Exception(
+    #        "Last two dimensions should be spatial coordinates,"
+    #        f" got {source_data.dims[-2:]}"
+    #    )
 
     kept_shape = list(source_data.shape[0:-2])
     kept_dims = list(source_data.dims[0:-2])
@@ -388,7 +388,7 @@ def apply_weights(source_data, weights, weights_matrix=None):
     target_da.coords["lon"].attrs["standard_name"] = "longitude"
 
     # Now rename to the original coordinate names
-    target_da = target_da.rename({"lat": source_lat.name, "lon": source_lon.name})
+    #target_da = target_da.rename({"lat": source_lat.name, "lon": source_lon.name})
 
     return target_da
 
