@@ -89,12 +89,21 @@ def cdo_generate_weights(
         raise Exception
 
     # Make some temporary files that we'll feed to CDO
-    source_grid_file = tempfile.NamedTemporaryFile()
-    target_grid_file = tempfile.NamedTemporaryFile()
     weight_file = tempfile.NamedTemporaryFile()
 
-    source_grid.to_netcdf(source_grid_file.name)
-    target_grid.to_netcdf(target_grid_file.name)
+    if type(source_grid) == str:
+        sgrid = source_grid
+    else:
+        source_grid_file = tempfile.NamedTemporaryFile()
+        source_grid.to_netcdf(source_grid_file.name)
+        sgrid = source_grid_file.name
+
+    if type(target_grid) == str:
+        tgrid = target_grid
+    else:
+        target_grid_file = tempfile.NamedTemporaryFile()
+        target_grid.to_netcdf(target_grid_file.name)
+        tgrid = target_grid_file.name
 
     # Setup environment
     env = os.environ
@@ -111,8 +120,8 @@ def cdo_generate_weights(
         subprocess.check_output(
             [
                 "cdo",
-                "gen%s,%s" % (method, target_grid_file.name),
-                source_grid_file.name,
+                "gen%s,%s" % (method, tgrid),
+                sgrid,
                 weight_file.name,
             ],
             stderr=subprocess.PIPE,
@@ -130,8 +139,10 @@ def cdo_generate_weights(
 
     finally:
         # Clean up the temporary files
-        source_grid_file.close()
-        target_grid_file.close()
+        if not type(source_grid) == str:
+            source_grid_file.close()
+        if not type(target_grid) == str:
+            target_grid_file.close()
         weight_file.close()
 
 
