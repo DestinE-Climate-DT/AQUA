@@ -1,13 +1,22 @@
 input:
-  dir: /home/jost/work/destine/nextgems/input
-  model: icon5km
+  dir: /work/users/jost/destine/ifs/4km
+  filename: 'ICMUAhqys+??????'
+  model: ifs4km_ed1
 
 output:
-  dir: /home/jost/work/destine/nextgems/regridded2
+  dir: /home/jost/work/destine/regrid/ifs4km
+  filename: '{var}_{frequency}_{model}_{expname}_{ensemble}_{grid}_{year1}01-{year2}12.nc'
 
 models:
   icon5km:
     weights: /work/users/jost/destine/nextgems/weights_icon_ycon.nc
-
-
-  
+    format: netcdf
+  cmip6:
+    weights: /work/users/jost/aqua/AQUA/playground/regrid/weights_ycon.nc
+    format: netcdf
+  fesom:
+    weights: /work/users/jost/aqua/AQUA/playground/regrid/weights_fesom.nc
+    format: netcdf
+  ifs4km_ed1:
+    weights: /work/users/jost/destine/ifs/4km/weights_ifs4km.nc
+    format: grib1
