@@ -154,6 +154,7 @@ def main(argv):
                 vars = [var]
             else:
                 vars = list(src_ds.data_vars)
+                vars = [x for x in vars if x not in ['time_bnds', 'lat_bnds', 'lon_bnds', 'vertices_latitude', 'vertices_longitude']]
             out_ds_list = []
             out_fn_list = []
             fnr = str(Path(os.path.relpath(fn, in_dir_exp)).with_suffix(''))
