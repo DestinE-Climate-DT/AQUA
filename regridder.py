@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
- AQUA regridding tool
+AQUA regridding tool
 
- This tool implements regridding of all files in a target directory
- using precomputed weights and sparse-array multiplication.
- Functionality can be controlled either through a yaml file or CLI options.
- Precomputed weights for the intended pairs (source model/grid : target grid)
- are used. Functionality to compute the weights will be added to the tool
- but also externally produced ESMF or CDO weights can be used.
- '''
+This tool implements regridding of all files in a target directory
+using precomputed weights and sparse-array multiplication.
+Functionality can be controlled either through a yaml file or CLI options.
+Precomputed weights for the intended pairs (source model/grid : target grid)
+are used. Functionality to compute the weights will be added to the tool
+but also externally produced ESMF or CDO weights can be used.
+'''
+
+__author__ = "Jost von Hardenberg"
+__email__ = "jost.hardenberg@polito.it"
+__version__ = "0.1.0"
+
 
 import argparse
 import os
@@ -59,17 +64,27 @@ def get_arg(args, arg, default):
 
 
 def mfopener(*args, format='netcdf', **kwargs):
-    if format=='netcdf':
+    if format == 'netcdf':
         ds = xr.open_mfdataset(*args, **kwargs)
-    elif format=='grib2':
-        ds = xr.open_mfdataset(*args, engine='cfgrib', 
-                           backend_kwargs={'filter_by_keys': {'edition': 2}},
-                           **kwargs)
-    elif format=='grib1':
-        ds = xr.open_mfdataset(*args, engine='cfgrib', 
-                           backend_kwargs={'filter_by_keys': {'edition': 1}},
-                           **kwargs)
+    elif format == 'grib2':
+        ds = xr.open_mfdataset(*args, engine='cfgrib',
+                               backend_kwargs={'filter_by_keys': {'edition': 2}},
+                               **kwargs)
+    elif format == 'grib1':
+        ds = xr.open_mfdataset(*args, engine='cfgrib',
+                               backend_kwargs={'filter_by_keys': {'edition': 1}},
+                               **kwargs)
     return ds
+
+
+def _expand_path(fn, **kwargs):
+    """Expands a path (filename or dir) for var, expname, frequency, ensemble etc.
+    and environment variables."""
+
+    out = str(os.path.expandvars(fn)).format(**kwargs)
+ #   print(f"template: {fn}")
+ #   print(f"expanded: {out}")
+    return out
 
 
 def main(argv):
@@ -98,8 +113,15 @@ def main(argv):
 
     regridder = regrid.Regridder(weights=weights)
 
-    path = Path(in_dir, cfg['input']['filename'])
-    for fn in glob(str(path)):
+    if var:
+        filename_exp = _expand_path(cfg['input']['filename'], var=var)
+        in_dir_exp = _expand_path(in_dir, var=var)
+    else:
+        filename_exp = _expand_path(cfg['input']['filename'], var='*')
+        in_dir_exp = _expand_path(in_dir, var='*')
+
+    path = os.path.join(in_dir_exp, filename_exp)
+    for fn in glob(path):
         src_ds = mfopener(fn, format=cfg['models'][model]['format'])
         if var:
             vars = [var]
@@ -107,11 +129,15 @@ def main(argv):
             vars = list(src_ds.data_vars)
         out_ds_list = []
         out_fn_list = []
+        fnr = str(Path(os.path.relpath(fn, in_dir_exp)).with_suffix(''))
+#       print(f"fnr: {fnr}")
         for vv in vars:
-            out_fn = os.path.join(out_dir, vv + '_' + os.path.relpath(fn, in_dir))
+            out_dir_exp = _expand_path(out_dir, model=model, var=vv)
+            os.makedirs(out_dir_exp, exist_ok=True)
+            out_fn = _expand_path(cfg['output']['filename'], fnr=fnr, var=vv, model=model)
+            out_fn = os.path.join(out_dir_exp, out_fn)
             if not os.path.isfile(out_fn):
                 out_ds_list.append(regridder.regrid(src_ds.get([vv])))
-                out_fn=os.path.join(out_dir, vv + '_' + os.path.relpath(fn, in_dir))
                 out_fn_list.append(out_fn)
                 print(f"Regridding variable {vv} from {fn} to {out_fn}")
         if out_fn_list:
