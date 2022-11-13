@@ -1,0 +1,19 @@
+name: aqua-regridder
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.8
+  - argparse
+  - glob
+  - pathlib
+  - dask
+  - xarray
+  - yaml
+  - datetime
+  - shutil
+  - math
+  - sparse
+  - subprocess
+  - tempfile
+  - numpy
+  - cfunits
