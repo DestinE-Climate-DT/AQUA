@@ -1,4 +1,4 @@
-# Comment or reorder (last one is used) the following sections to test with different models
+# Comment or reorder (the last one is used) the following sections to test with different models
 
 
 # Test IFS4km (use "./regridder.py -v z")
@@ -6,21 +6,23 @@ input:
   dir: /work/users/jost/destine/ifs/4km  # Exp. possible: var
   filename: 'ICMUAhqys+??????'  # Exp. possible: var
   model: ifs4km_ed1
-
 output:
-  dir: /home/jost/work/destine/regrid/{model}/{var}  # Exp. possible: var, model
+  dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
+  resolution: r1440x721
+  method: ycon
 
 
-  # Test NEMO (use "./regridder.py -v tos")
+# Test NEMO (use "./regridder.py -v tos")
 input:
   dir: /work/datasets/synda/data/CMIP6/CMIP/EC-Earth-Consortium/EC-Earth3/historical/r1i1p1f1/Omon/{var}/gn/v20200918/  # Exp. possible: var
   filename: '{var}_*.nc'   # Exp. possible: var
   model: nemo_orca1
-
 output:
-  dir: /home/jost/work/destine/regrid/{model}/{var}  # Exp. possible: var, model
+  dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{fnr}'  # Exp. possible: fnr (src filename root), var, model
+  resolution: r1440x721
+  method: bil
 
 
 # Test FESOM (use "./regridder.py -v tos")
@@ -28,10 +30,11 @@ input:
   dir: /work/users/jost/destine/fesom  # Exp. possible: var
   filename: '{var}_*.nc'  # Exp. possible: var
   model: fesom
-
 output:
-  dir: /home/jost/work/destine/regrid/{model}/{var}  # Exp. possible: var, model
+  dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
+  resolution: r1440x721
+  method: ycon
 
 
 # Test ICON5km (use "./regridder.py -v tas")
@@ -39,47 +42,40 @@ input:
   dir: /home/jost/work/destine/nextgems/input  # Exp. possible: var
   filename: 'ngc2009_*.nc'  # Exp. possible: var
   model: icon5km
-
 output:
-  dir: /home/jost/work/destine/regrid/{model}/{var}  # Exp. possible: var, model
+  dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
+  resolution: r1440x721
+  method: ycon
 
 
 # Test CMIP6 (use "./regridder.py -v tas")
 input:
   dir: /work/datasets/synda/data/CMIP6/CMIP/EC-Earth-Consortium/EC-Earth3/historical/r1i1p1f1/day/tas/gr/v20200310 # Exp. possible: var
   filename: '{var}_*.nc'  # Exp. possible: var
-  model: cmip6
-
+  model: ecearth3
 output:
-  dir: /home/jost/work/destine/regrid/{model}/{var}  # Exp. possible: var, model
+  dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
-
-
-# Test ICON5km (use "./regridder.py -v tas")
-input:
-  dir: /home/jost/work/destine/nextgems/input  # Exp. possible: var
-  filename: 'ngc2009_*.nc'  # Exp. possible: var
-  model: icon5km
-
-output:
-  dir: /home/jost/work/destine/regrid/{model}/{var}  # Exp. possible: var, model
-  filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
-
+  resolution: r1440x721
+  method: ycon
+  
 
 models:
+  # expansions possible for weights: resolution, method, model
   icon5km:
-    weights: /work/users/jost/destine/nextgems/weights_icon_ycon.nc
+    weights: /work/users/jost/destine/weights/weights.{model}.{method}.{resolution}.nc
     format: netcdf
-  cmip6:
-    weights: /work/users/jost/aqua/AQUA/playground/regrid/weights_ycon.nc
+  ecearth3:
+    weights: /work/users/jost/destine/weights/weights.{model}.{method}.{resolution}.nc
     format: netcdf
   fesom:
-    weights: /work/users/jost/aqua/AQUA/playground/regrid/weights_fesom.nc
+    weights: /work/users/jost/destine/weights/weights.{model}.{method}.{resolution}.nc
     format: netcdf
   ifs4km_ed1:
-    weights: /work/users/jost/destine/ifs/4km/weights_ifs4km.nc
+    weights: /work/users/jost/destine/weights/weights.{model}.{method}.{resolution}.nc
+    gridfile: /work/users/jost/destine/ifs/4km/tco2559_grid.nc
     format: grib1
   nemo_orca1:
-    weights: /work/users/jost/aqua/AQUA/playground/regrid/weights_nemo_orca1.nc
+    weights: /work/users/jost/destine/weights/weights.{model}.{method}.{resolution}.nc
     format: netcdf
