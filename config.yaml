@@ -9,7 +9,7 @@ input:
 output:
   dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
-  resolution: r1440x721
+  resolution: r1440x720
   method: ycon
 
 
@@ -21,7 +21,7 @@ input:
 output:
   dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{fnr}'  # Exp. possible: fnr (src filename root), var, model
-  resolution: r1440x721
+  resolution: r1440x720
   method: bil
 
 
@@ -33,7 +33,7 @@ input:
 output:
   dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
-  resolution: r1440x721
+  resolution: r1440x720
   method: ycon
 
 
@@ -45,7 +45,7 @@ input:
 output:
   dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{var}_{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
-  resolution: r1440x721
+  resolution: r1440x720
   method: ycon
 
 
@@ -57,9 +57,9 @@ input:
 output:
   dir: /home/jost/work/destine/regrid/{resolution}/{model}/{var}  # Exp. possible: var, model, resolution
   filename: '{fnr}.nc'  # Exp. possible: fnr (src filename root), var, model
-  resolution: r1440x721
+  resolution: r1440x720
   method: ycon
-  
+
 
 models:
   # expansions possible for weights: resolution, method, model
