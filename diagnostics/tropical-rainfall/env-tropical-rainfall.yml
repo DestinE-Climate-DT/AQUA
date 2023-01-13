@@ -1,0 +1,12 @@
+# Create the tropical-rainfall environment:
+#   conda env create -f env-tropical-rainfall.yml
+# Alternatively, use mamba
+#   mamba env create -n tropical-rainfall -f env-tropical-rainfall.yml
+
+name : tropical-rainfall
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.8,<3.11
+  - xarray
+  - dask
