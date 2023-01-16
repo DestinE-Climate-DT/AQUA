@@ -1,0 +1,10 @@
+#example configuration file of a single diagnostic
+
+expname: ERA5
+
+# NAO coordinates
+NAO:
+  lat1: 36
+  lon1: 174.5
+  lat2: 64
+  lon2: 158

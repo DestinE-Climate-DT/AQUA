@@ -1,0 +1,15 @@
+# Create the teleconnections environment:
+#   conda env create -f env-teleconnections.yml
+# Alternatively, use mamba
+#   mamba env create -n teleconnections -f env-teleconnections.yml
+
+name : teleconnections
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.8
+  - cartopy
+  - dask
+  - matplotlib
+  - yaml
+  - xarray
