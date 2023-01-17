@@ -1,6 +1,6 @@
 teleconnections:
   input: /work/datasets/obs/ERA5/mean_sea_level_pressure/mon/ERA5_mean_sea_level_pressure_mon_0.25x0.25_sfc_1979-2021.nc
-  output: /scratch/users/mnurisso
+  output: /scratch/users/mnurisso/aqua/teleconnections
 
 tropical-rainfall:
   input: /work/datasets/obs/ERA5/total_precipitation/day/ERA5_total_precipitation_day_0.25x0.25_sfc_1950-2020.nc
