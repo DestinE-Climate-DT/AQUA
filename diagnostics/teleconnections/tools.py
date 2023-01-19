@@ -30,7 +30,6 @@ def lon_check (lon):
     float
     """
     if (lon<0):
-        print('ok')
         lon = (lon+180) % 360 
         print(lon)
     return lon
