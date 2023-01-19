@@ -4,12 +4,12 @@ expname: ERA5
 
 # NAO coordinates
 NAO:
-  lat1: 36
-  lon1: 174.5
-  lat2: 64
-  lon2: 158
+  lat1: 37.7
+  lon1: -25.7
+  lat2: 64.1
+  lon2: -22
 
-# ENSO coordinates (to be inserted correctly)
+# ENSO coordinates (to be inserted correctly, still NAO)
 ENSO:
   lat1: 36
   lon1: 174.5
