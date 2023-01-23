@@ -9,9 +9,9 @@ NAO:
   lat2: 64.1
   lon2: -22
 
-# ENSO coordinates (to be inserted correctly, still NAO)
+# ENSO 3.4 region coordinates 
 ENSO:
-  lat1: 36
-  lon1: 174.5
-  lat2: 64
-  lon2: 158
+  latN: 5
+  lonW: -170
+  latS: -5
+  lonE: -120
