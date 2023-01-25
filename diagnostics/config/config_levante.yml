@@ -1,0 +1,5 @@
+input: 
+  'TCs_detection': /scratch/b/b382216/
+
+output: /work/bb1153/b382216/AQUA/tempest/plot
+
