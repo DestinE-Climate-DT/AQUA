@@ -11,7 +11,7 @@ NAO:
 
 # ENSO 3.4 region coordinates 
 ENSO:
-  latN: 5
+  latN:  5
   lonW: -170
   latS: -5
   lonE: -120
