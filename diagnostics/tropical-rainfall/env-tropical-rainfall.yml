@@ -1,12 +1,20 @@
 # Create the tropical-rainfall environment:
 #   conda env create -f env-tropical-rainfall.yml
 # Alternatively, use mamba
-#   mamba env create -n tropical-rainfall -f env-tropical-rainfall.yml
+#   mamba env create -f env-tropical-rainfall.yml
 
 name : tropical-rainfall
 channels:
   - conda-forge
 dependencies:
-  - python>=3.8,<3.11
+  - python==3.10
   - xarray
+  - netcdf4
   - dask
+  - ipykernel
+  - matplotlib
+  - docker-py # from now on these are needed by the AQUA env
+  - cfunits
+  - sparse
+  - cdo
+  - python-cdo
