@@ -4,6 +4,7 @@ expname: ERA5
 
 # NAO coordinates
 NAO:
+  field: msl
   lat1: 37.7
   lon1: -25.7
   lat2: 64.1
@@ -11,6 +12,7 @@ NAO:
 
 # ENSO 3.4 region coordinates 
 ENSO:
+  field: skt
   latN:  5
   lonW: -170
   latS: -5
