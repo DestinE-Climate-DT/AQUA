@@ -1,0 +1,3 @@
+#!/bin/bash
+
+StitchNodes --in "outfile.txt" --out {{stitch_file}} --in_fmt "lon,lat,slp,wind,zs" --range 8.0 --mintime "54h" --maxgap "24h" --threshold "wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10;zs,<=,150.0,10"

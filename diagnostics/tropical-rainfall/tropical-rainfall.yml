@@ -1,0 +1,5 @@
+#example configuration file of a single diagnostic
+
+year1: 1990
+year2: 1994
+expname: ERA5

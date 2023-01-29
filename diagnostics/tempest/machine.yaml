@@ -1,0 +1,8 @@
+image: 'tempest:v1'
+environment: ["VER=v1"]
+command: 
+    detect: ['bash', './detect_nodes.sh']
+    stitch: ['bash', './stitch_nodes.sh']
+volumes:
+    data:     /work/users/jost/te/data
+    output: /home/jost/work/docker/tempest

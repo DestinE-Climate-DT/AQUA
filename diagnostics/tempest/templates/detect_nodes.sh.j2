@@ -1,0 +1,4 @@
+#!/bin/bash
+
+DATA_DIR=/data
+DetectNodes --in_data "$DATA_DIR/{{uv_file}};$DATA_DIR/geop_pressure_ERA5_2010.nc;$DATA_DIR/mslp_ERA5_2010.nc;$DATA_DIR/zs_ERA5_2010.nc" --timefilter "6hr" --out $"outfile.txt" --searchbymin msl --closedcontourcmd "msl,200.0,5.5,0;_DIFF(z(300millibars),z(500millibars)),-58.8,6.5,1.0" --mergedist 6.0 --outputcmd "msl,min,0;_VECMAG(u10,v10),max,2;zs,min,0" --latname "latitude" --lonname "longitude"
