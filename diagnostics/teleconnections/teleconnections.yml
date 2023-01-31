@@ -9,6 +9,8 @@ NAO:
   lon1: -25.7
   lat2: 64.1
   lon2: -22
+  year1: 1979
+  year2: 2022
 
 # ENSO 3.4 region coordinates 
 ENSO:
