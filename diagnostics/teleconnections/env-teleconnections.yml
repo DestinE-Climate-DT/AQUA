@@ -13,3 +13,4 @@ dependencies:
   - matplotlib
   - yaml
   - xarray
+  - python-cdo # cdo bindings for testing 

@@ -19,7 +19,7 @@ def station_based_index(field, namelist, telecname, months_window = 3):
         indx (DataArray): standardized station based index
     """
     # 1. -- Monthly field average and anomalies--
-    field_av = field.groupby("time.month").mean(dim="time")
+    field_av  = field.groupby("time.month").mean(dim="time")
     field_an  = field.groupby("time.month") - field_av
 
     # 2. -- Acquiring latitude and longitude of stations --
