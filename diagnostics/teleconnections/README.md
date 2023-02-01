@@ -11,6 +11,7 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 
 ## Notebooks (WIP)
 
+- `test_libraries` notebook contains examples of usage of the functions implemented in the .py files
 - `test_NAO_index` notebook contains examples of NAO index evaluation (station based)
 - `test_NAO_regression` notebook contains example of correlation or covariance maps obtained from the previously evaluated NAO index
 - `test_ENSO_index` notebook contains examples of Nino 3.4 index evaluation
