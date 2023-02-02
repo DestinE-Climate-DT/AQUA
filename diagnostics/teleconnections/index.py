@@ -5,7 +5,7 @@ for different teleconnections.
 import xarray
 from tools import *
 
-def station_based_index(field, namelist, telecname, months_window = 3):
+def station_based_index(field,namelist,telecname,months_window=3):
     """
     Evaluate station based index for a teleconnection.
 
@@ -47,7 +47,7 @@ def station_based_index(field, namelist, telecname, months_window = 3):
     
     return indx
 
-def regional_mean_index(field, namelist, telecname, months_window = 3):
+def regional_mean_index(field,namelist,telecname,months_window=3):
     """
     Evaluate index based on a for a teleconnection.
 
