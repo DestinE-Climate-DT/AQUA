@@ -5,6 +5,7 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 
 ## Libraries file (WIP)
 
+- `cdotesting.py` contains function evaluating teleconnections with cdo bindings, in order to test the python libraries
 - `index.py` contains functions for the direct evaluation of teleconnection indices
 - `plots.py` contains functions for the visualization of time series and maps for teleconnection diagnostic
 - `tools.py` contains generic functions that may be useful to the whole diagnostic
@@ -16,3 +17,4 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 - `test_NAO_regression` notebook contains example of correlation or covariance maps obtained from the previously evaluated NAO index
 - `test_ENSO_index` notebook contains examples of Nino 3.4 index evaluation
 - `test_ENSO_regression` notebook contains example of correlation or covariance maps obtained from the previously evaluated ENSO index
+- `test_cdo_bindings` contains an example of NAO index evaluation with cdo bindings

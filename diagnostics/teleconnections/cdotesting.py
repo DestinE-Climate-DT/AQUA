@@ -2,7 +2,8 @@
 This module contains functions to compare and test the teleconnections
 libraries with similar procedures done with cdo bindings.
 '''
-import cdo
+import xarray as xr
+from cdo import *
 from tools import *
 
 def station_based_cdo(infile, namelist, telecname, months_window=3):
@@ -18,6 +19,8 @@ def station_based_cdo(infile, namelist, telecname, months_window=3):
     Returns:
         indx (DataArray): standardized station based index
     """
+    cdo = Cdo()
+
     # 1. -- Monthly field average and anomalies--
     field_ma = cdo.monmean(input=infile)
     field_ma_av = cdo.timmean(input=field_ma)
@@ -44,6 +47,11 @@ def station_based_cdo(infile, namelist, telecname, months_window=3):
 
     # 6. -- Evaluate the index and rename the variable in the DataArray --
     sub_indx = cdo.sub(input=[diff_ma,mean_ma])
-    indx = cdo.div(input=[sub_indx,std_ma])
-    
+
+    ofile = "temp.nc" #solve directory with output
+    cdo.div(input=[sub_indx,std_ma],output=ofile)
+    indx = xr.open_dataset(ofile)
+
+    cdo.cleanTempDir()
+
     return indx
