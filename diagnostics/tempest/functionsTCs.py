@@ -156,7 +156,7 @@ def write_fullres_field(gfield, filestore):
         gfield: field to write
         filestore: file to save
     """
-    compression = {'MSL': {'zlib': True}}
+    compression = {str(gfield.name): {'zlib': True}}
     gfield.where(gfield!=0).to_netcdf(filestore, encoding=compression)
     gfield.close()
 

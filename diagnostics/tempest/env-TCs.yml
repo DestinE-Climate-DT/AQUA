@@ -13,7 +13,7 @@ dependencies:
   - dask
   - ipykernel
   - matplotlib
-  - tempest
+  - tempest-extremes
   - docker-py # from now on these are needed by the AQUA env
   - cfunits
   - sparse
