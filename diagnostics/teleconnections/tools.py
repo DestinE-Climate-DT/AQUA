@@ -78,9 +78,12 @@ def wgt_area_mean(indat, latN, latS, lonW, lonE):
   """
   lat=indat.lat
   lon=indat.lon
-
+  '''
   iplat = lat.where( (lat >= latS ) & (lat <= latN), drop=True)
   iplon = lon.where( (lon >= lonW ) & (lon <= lonE), drop=True)
+  '''
+  iplat = lat.where( (lat > latS ) & (lat < latN), drop=True)
+  iplon = lon.where( (lon > lonW ) & (lon < lonE), drop=True)
 
   wgt = np.cos(np.deg2rad(lat))
   odat=indat.sel(lat=iplat,lon=iplon).weighted(wgt).mean(("lon", "lat"), skipna=True)
