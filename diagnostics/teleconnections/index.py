@@ -33,8 +33,8 @@ def station_based_index(field,namelist,telecname,months_window=3):
     field_an2 = field_an.sel(lon=lon2,lat=lat2,method='nearest')
 
     # 4. -- Rolling average over months = months_window --
-    field_an1_ma = field_an1.rolling(time=months_window).mean() # to be generalized to data not gridded monthly
-    field_an2_ma = field_an2.rolling(time=months_window).mean()
+    field_an1_ma = field_an1.rolling(time=months_window,center=True).mean() # to be generalized to data not gridded monthly
+    field_an2_ma = field_an2.rolling(time=months_window,center=True).mean()
 
     # 5. -- Evaluate average and std for the station based difference --
     diff_ma = field_an1_ma-field_an2_ma
@@ -68,7 +68,7 @@ def regional_mean_index(field,namelist,telecname,months_window=3):
 
     # 2. -- Evaluate mean value of the field and then the rolling mean --
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
-    field_mean = field_mean.rolling(time=months_window).mean()
+    field_mean = field_mean.rolling(time=months_window,center=True).mean(skipna=True)
 
     # 3. -- Additional operations (WIP) --
     indx = field_mean
