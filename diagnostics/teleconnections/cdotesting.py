@@ -8,10 +8,12 @@ from tools import *
 
 def station_based_cdo(infile, namelist, telecname, months_window=3):
     """
-    Evaluate station based index for a teleconnection.
+    Evaluate station based index for a teleconnection with cdo 
+    bindings.
 
     Args:
-        field (DataArray):        field over which evaluate the index
+        infile:                   path to nc file containing the field to 
+                                  evaluate the index
         namelist:                 teleconnection yaml infos
         telecname (str):          name of the teleconnection to be evaluated
         months_window (int, opt): months for rolling average, default is 3
@@ -23,7 +25,7 @@ def station_based_cdo(infile, namelist, telecname, months_window=3):
 
     # 1. -- Monthly field average and anomalies--
     field_ma = cdo.monmean(input=infile)
-    field_ma_av = cdo.timmean(input=field_ma)
+    field_ma_av = cdo.ymonmean(input=field_ma)
     field_an = cdo.sub(input=[field_ma, field_ma_av])
 
     # 2. -- Acquiring latitude and longitude of stations --
@@ -52,6 +54,43 @@ def station_based_cdo(infile, namelist, telecname, months_window=3):
     cdo.div(input=[sub_indx,std_ma],output=ofile)
     indx = xr.open_dataset(ofile)
 
+    cdo.cleanTempDir()
+
+    return indx
+
+
+def regional_mean_cdo(infile, namelist, telecname, months_window=3):
+    """
+    Evaluate station based index for a teleconnection.
+
+    Args:
+        infile:                   path to nc file containing the field to 
+                                  evaluate the index
+        namelist:                 teleconnection yaml infos
+        telecname (str):          name of the teleconnection to be evaluated
+        months_window (int, opt): months for rolling average, default is 3
+
+    Returns:
+        indx (DataArray): standardized station based index
+    """
+    cdo = Cdo()
+
+    # 1. -- Evaluate box coordinates --
+    lonW = lon_180_to_360(namelist[telecname]['lonW'])
+    latN = namelist[telecname]['latN']
+    lonE = lon_180_to_360(namelist[telecname]['lonE'])
+    latS = namelist[telecname]['latS']
+
+    # 2. -- Select field in the box and evaluate the average
+    field_sel = cdo.sellonlatbox('{},{},{},{}'.format(lonW,lonE,latS,latN),
+                                 input=infile)
+    field_mean = cdo.fldmean(input=field_sel)
+
+    # 3. -- Evaluate the value with the months window and save as xarray
+    ofile = "temp.nc"
+    cdo.runmean("{0}".format(months_window),input=field_mean,output=ofile)
+
+    indx = xr.open_dataset(ofile)
     cdo.cleanTempDir()
 
     return indx
