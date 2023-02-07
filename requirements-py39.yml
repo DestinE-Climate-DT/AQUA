@@ -1,0 +1,21 @@
+name: aqua
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pyYAML
+  - xarray
+  - intake
+  - dask
+  - sparse
+  - numpy==1.23.5
+  - jinja2
+  - tqdm
+  - udunits2
+  - zarr
+  - netcdf4
+  - intake-xarray
+  - ecCodes      
+  - matplotlib
+  - cartopy
+  - healpy
