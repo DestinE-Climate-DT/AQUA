@@ -1,8 +1,64 @@
+import sys
+sys.path.append('../../')
+from aqua import Reader
 import xarray as xr
+import pandas as pd
 import os
 import subprocess
-from time import time
-from glob import glob
+
+
+def readwrite_from_intake(model, exp, timestep): 
+
+  # where to store the interpolated data
+  indir='/home/b/b382216/scratch/regrid_intake'
+  
+  if model in 'IFS':
+    reader2d = Reader(model=model, exp=exp, source="ICMGG_atm2d", regrid="r100")
+    varlist2d = ['msl', '10u', '10v']
+    reader3d = Reader(model=model, exp=exp, source="ICMU_atm3d", regrid="r100")
+    varlist3d = ['z']
+
+  outfield = 0
+  data2d = reader2d.retrieve()
+  tstep = timestep.strftime('%Y%m%dT%H')
+  fileout=os.path.join(indir, f'regrid+{tstep}.nc')
+
+
+  for var in varlist2d:
+    print(var)  
+    lowres = reader2d.regrid(data2d[var].sel(time=timestep))
+    if isinstance(outfield, xr.Dataset):
+      if var in '10u':
+        varout = 'u10m'
+      elif var in '10v':
+        varout = 'v10m'
+      else: 
+        varout = var
+      outfield = xr.merge([outfield, lowres.to_dataset(name=varout)])
+    else:
+      outfield = lowres.to_dataset(name=var)
+ 
+  data3d = reader3d.retrieve()
+  for var in varlist3d:
+    print(var)
+    lowres = reader3d.regrid(data3d[var].sel(time=timestep, level=[300,500]))
+    outfield = xr.merge([outfield, lowres.to_dataset(name=var)])
+     
+  # check if output file exists
+  if os.path.exists(fileout):
+    os.remove(fileout)
+
+  outfield.coords['level'].attrs['units'] = 'hPa'
+  outfield.to_netcdf(fileout)
+  outfield.close()
+  
+  outdict = {'lon': 'lon', 'lat': 'lat', 
+            'psl': 'msl', 'zg': 'z',
+            'uas': 'u10m', 'vas': 'u10m',
+            'fileout': fileout}
+  
+  return outdict
+
 
 def readwrite_from_lowres(filein, fileout) : 
 
@@ -48,10 +104,12 @@ def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) :
     
     
     detect_string= f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
-    f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
+    f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(300),{tempest_dictionary["zg"]}(500)),-58.8,6.5,1.0 --mergedist 6.0 ' \
     f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
-    subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    #print(detect_string)
+    #print(detect_string.split())
+    subprocess.run(detect_string.split())#, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
 
     return detect_string
 

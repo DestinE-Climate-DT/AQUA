@@ -7,15 +7,31 @@ name : TCs
 channels:
   - conda-forge
 dependencies:
-  - python==3.10
+  - python=3.9
+  - pyYAML
   - xarray
-  - netcdf4
+  - intake
   - dask
-  - ipykernel
+  - numpy
+  - jinja2
+  - tqdm
+  - udunits2
+  - zarr
+  - netcdf4
+  - intake-xarray
+  - ecCodes      
   - matplotlib
-  - tempest-extremes
-  - docker-py # from now on these are needed by the AQUA env
+  - cartopy
+  - healpy
+  - netcdf4
+  - ipykernel
   - cfunits
-  - sparse
+  - tempest-extremes
   - cdo
   - python-cdo
+  - pip
+  - pip:
+    - sparse==0.13.0
+    - docker
+    - gribscan
+
