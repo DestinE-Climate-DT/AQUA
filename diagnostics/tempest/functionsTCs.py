@@ -55,7 +55,7 @@ def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) :
 
     return detect_string
 
-def run_stitch_nodes(infiles_list, trackfile):
+def run_stitch_nodes(infiles_list, trackfile, maxgap = '24h', mintime = '54h'):
 
     """"
     Basic function to call from command line tempest extremes StitchNodes
@@ -63,6 +63,7 @@ def run_stitch_nodes(infiles_list, trackfile):
     Args:
         infiles_list: .txt file (output from DetectNodes) with all TCs centres dates&coordinates
         tempest_fileout: output file (.txt) from StitchNodes command
+        dir: directory where to store the temporary file with all concatenated detect nodes
 
     Returns: 
        stitch_string: output file from StitchNodes in string format 
@@ -78,8 +79,8 @@ def run_stitch_nodes(infiles_list, trackfile):
                 outfile.write(infile.read())
 
     
-    stitch_string = f'StitchNodes --in {full_nodes} --out {trackfile} --in_fmt lon,lat,slp,wind --range 8.0 --mintime 54h ' \
-        f'--maxgap 24h --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10'
+    stitch_string = f'StitchNodes --in {full_nodes} --out {trackfile} --in_fmt lon,lat,slp,wind --range 8.0 --mintime {mintime} ' \
+        f'--maxgap {maxgap} --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10'
     subprocess.run(stitch_string.split())
     return stitch_string
 
@@ -146,6 +147,7 @@ def store_fullres_field(mfield, xfield, nodes, boxdim):
         outfield = xr.concat([mfield, outfield], dim = 'time')
     
     return outfield
+  
 
 def write_fullres_field(gfield, filestore): 
 
@@ -169,7 +171,7 @@ def reorder_tracks(track_file):
         track_file: input track file from tempest StitchNodes
     
     Returns:
-        reordered_tracks: python dictionary with date lon lat of TCs centres after StitchNodes has also run
+        reordered_tracks: python dictionary with date lon lat of TCs centres after StitchNodes has been run
     """
 
     with open(track_file) as file:
@@ -182,10 +184,11 @@ def reorder_tracks(track_file):
         }
 
     reordered_tracks = {}
-    for tstep in sorted(set(tracks['date'])) : 
+    for tstep in tracks['date'] : 
         #idx = tracks['date'].index(tstep)
         idx = [i for i, e in enumerate(tracks['date']) if e == tstep]
         reordered_tracks[tstep] = {}
+        reordered_tracks[tstep]['date'] = tstep
         reordered_tracks[tstep]['lon'] = [tracks['slon'][k] for k in idx]
         reordered_tracks[tstep]['lat'] = [tracks['slat'][k] for k in idx]
         
