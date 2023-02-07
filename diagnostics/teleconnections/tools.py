@@ -78,7 +78,7 @@ def wgt_area_mean(indat, latN, latS, lonW, lonE):
   """
   lat=indat.lat
   lon=indat.lon
-  '''
+  ''' # Alternative option, to check which one is used in cdo
   iplat = lat.where( (lat >= latS ) & (lat <= latN), drop=True)
   iplon = lon.where( (lon >= lonW ) & (lon <= lonE), drop=True)
   '''
