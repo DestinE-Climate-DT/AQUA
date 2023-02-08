@@ -11,6 +11,8 @@ dependencies:
   - cartopy
   - dask
   - matplotlib
+  - pandas
+  - python-cdo # cdo bindings for testing 
+  - scipy
   - yaml
   - xarray
-  - python-cdo # cdo bindings for testing 
