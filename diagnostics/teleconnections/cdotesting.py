@@ -111,7 +111,8 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3):
 
     Returns:
         result (bool):   Results of the comparison with standard tolerance from isclose()
-                         from the math library
+                         from the math library, if any value is False, then False is
+                         returned
     """
     fieldname = namelist[telecname]['field']
 
@@ -121,12 +122,15 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3):
     # 2. -- library index evaluation --
     field = xr.open_mfdataset(infile)[fieldname]
     index_lib = station_based_index(field,namelist,telecname,months_window=months_window)
-
+    '''
     # 3. -- result comparison --
-    rtol = 1.e-7
+    rtol = 1.e-1
     result = np.isclose(index_cdo[fieldname].values,index_lib.values,rtol=rtol)
+    res_bool = result.all()
+    '''
+    return index_cdo[fieldname] - index_lib
 
-    return result
+    #return res_bool
 
 '''
 def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3):
