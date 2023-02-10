@@ -98,7 +98,8 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3):
 
     return indx
 
-def cdo_station_based_comparison(infile, namelist, telecname, months_window=3):
+def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
+                                 rtol=1.e-5,atol=1.e-8,ret_diff=False):
     """
     Compare station based index evaluated with cdo and libraries from index.py
 
@@ -108,11 +109,14 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3):
         namelist:                 teleconnection yaml infos
         telecname (str):          name of the teleconnection to be evaluated
         months_window (int, opt): months for rolling average, default is 3
+        rtol (float, opt):        relative tolerance
+        atol (float, opt):        absolute tolerance
+        ret_diff (bool,opt):      return difference instead of assert
 
     Returns:
-        result (bool):   Results of the comparison with standard tolerance from isclose()
-                         from the math library, if any value is False, then False is
-                         returned
+        None or xarray.DataArray: if ret_diff is True, returns an xarray.DataArray
+                                  with the difference between the two methods.
+                                  If False, returns None and perform assert_allclose().
     """
     fieldname = namelist[telecname]['field']
 
@@ -122,18 +126,23 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3):
     # 2. -- library index evaluation --
     field = xr.open_mfdataset(infile)[fieldname]
     index_lib = station_based_index(field,namelist,telecname,months_window=months_window)
-    '''
-    # 3. -- result comparison --
-    rtol = 1.e-1
-    result = np.isclose(index_cdo[fieldname].values,index_lib.values,rtol=rtol)
-    res_bool = result.all()
-    '''
-    return index_cdo[fieldname] - index_lib
+    
+    # 3. -- adapt index for comparison --
+    index_lib = index_lib.dropna(dim='time').drop_vars('month')
+    index_cdo = index_cdo.drop_vars('lon').drop_vars('lat')
+    index_cdo = index_cdo.squeeze(['lat','lon'],drop=True)
 
-    #return res_bool
+    # 4. -- reurm difference or perform the asser_allclose() test
+    if ret_diff:
+        return index_lib-index_cdo[namelist[telecname]['field']]
+    else:
+        xr.testing.assert_allclose(index_lib,index_cdo[namelist[telecname]['field']],
+                                   rtol=rtol,atol=atol)
+        return
 
-'''
-def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3):
+
+def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
+                                 rtol=1.e-5,atol=1.e-8,ret_diff=False):
     """
     Compare regional mean evaluated with cdo and libraries from index.py
 
@@ -143,22 +152,34 @@ def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3):
         namelist:                 teleconnection yaml infos
         telecname (str):          name of the teleconnection to be evaluated
         months_window (int, opt): months for rolling average, default is 3
+        rtol (float, opt):        relative tolerance
+        atol (float, opt):        absolute tolerance
+        ret_diff (bool,opt):      return difference instead of assert
 
     Returns:
-        bool:   Result of the comparison with standard tolerance from isclose()
-                from the math library
+        None or xarray.DataArray: if ret_diff is True, returns an xarray.DataArray
+                                  with the difference between the two methods.
+                                  If False, returns None and perform assert_allclose().
     """
     fieldname = namelist[telecname]['field']
 
-    # 1. -- cdo index evaluation --
-    index_cdo = station_based_cdo(infile,namelist,telecname,months_window=months_window)
+    # 1. -- cdo average evaluation --
+    avg_cdo = regional_mean_cdo(infile,namelist,telecname,months_window=months_window)
 
-    # 2. -- library index evaluation --
+    # 2. -- library average evaluation --
     field = xr.open_mfdataset(infile)[fieldname]
-    index_lib = station_based_index(field,namelist,telecname,months_window=months_window)
+    avg_lib = regional_mean_index(field,namelist,telecname,months_window=months_window)
 
-    # 3. -- result comparison --
-    result = (index_lib - index_cdo[fieldname]).apply(lambda x: math.isclose(x,0))
-    print(result) # has to become a bool check
-    result
-'''
+    # 3. -- adapt index for comparison --
+    avg_lib = avg_lib.dropna(dim='time')
+    avg_cdo = avg_cdo.drop_vars('lon').drop_vars('lat')
+    avg_cdo = avg_cdo.squeeze(['lat','lon'],drop=True)
+    avg_cdo = avg_cdo.drop_vars('time_bnds')
+
+    # 4. -- reurm difference or perform the asser_allclose() test
+    if ret_diff:
+        return avg_lib-avg_cdo[namelist[telecname]['field']]
+    else:
+        xr.testing.assert_allclose(avg_lib,avg_cdo[namelist[telecname]['field']],
+                                   rtol=rtol,atol=atol)
+        return
