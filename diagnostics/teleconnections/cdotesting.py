@@ -91,7 +91,7 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3):
 
     # 3. -- Evaluate the value with the months window and save as xarray
     ofile = "temp.nc"
-    cdo.runmean("{0}".format(months_window),input=field_mean,output=ofile)
+    indx = cdo.runmean("{0}".format(months_window),input=field_mean,output=ofile) #return xdataset
 
     indx = xr.open_dataset(ofile)
     cdo.cleanTempDir()

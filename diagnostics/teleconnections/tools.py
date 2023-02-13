@@ -62,29 +62,36 @@ def lon_360_to_180(lon):
         lon = - 360 + lon
     return lon
 
-def wgt_area_mean(indat, latN, latS, lonW, lonE):
+def wgt_area_mean(indat,latN:float,latS:float,lonW:float,lonE:float,box_brd=True):
   """ 
     Evaluate the weighted mean of a quantity on a custom surface.
 
     Args:
-        indat (DataArray): input data to be averaged
-        latN (float):      North latitude
-        latS (float):      South latitude
-        lonW (float):      West longitude
-        lonE (float):      Est longitude
+        indat (DataArray):  input data to be averaged
+        latN (float):       North latitude
+        latS (float):       South latitude
+        lonW (float):       West longitude
+        lonE (float):       Est longitude
+        box_brd (bool,opt): choose if coordinates are comprised or not.
+                            Default is True
 
     Returns:
         odat (DataArray): average of input data on a custom surface
   """
+  # 1. -- Extract coordinates from indat --
   lat=indat.lat
   lon=indat.lon
-  ''' # Alternative option, to check which one is used in cdo
-  iplat = lat.where( (lat >= latS ) & (lat <= latN), drop=True)
-  iplon = lon.where( (lon >= lonW ) & (lon <= lonE), drop=True)
-  '''
-  iplat = lat.where( (lat > latS ) & (lat < latN), drop=True)
-  iplon = lon.where( (lon > lonW ) & (lon < lonE), drop=True)
+  
+  # 2. -- Select area --
+  if box_brd:
+    iplat = lat.where( (lat >= latS ) & (lat <= latN), drop=True)
+    iplon = lon.where( (lon >= lonW ) & (lon <= lonE), drop=True)
+  else:
+    iplat = lat.where( (lat > latS ) & (lat < latN), drop=True)
+    iplon = lon.where( (lon > lonW ) & (lon < lonE), drop=True)
 
+  # 3. -- Weighted area mean --
   wgt = np.cos(np.deg2rad(lat))
   odat=indat.sel(lat=iplat,lon=iplon).weighted(wgt).mean(("lon", "lat"), skipna=True)
-  return(odat)
+
+  return odat
