@@ -92,26 +92,20 @@ def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) :
 
     """"
     Basic function to call from command line tempest extremes DetectNodes
-
     Args:
         tempest_dictionary: python dictionary with variable names for tempest commands
         tempest_filein: file (netcdf) with low res data
         tempest_fileout: output file (.txt) from DetectNodes command
-
     Returns: 
        detect_string: output file from DetectNodes in string format 
     """
     
     
     detect_string= f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
-    f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(300),{tempest_dictionary["zg"]}(500)),-58.8,6.5,1.0 --mergedist 6.0 ' \
+    f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
     f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
-    #print(detect_string)
-    #print(detect_string.split())
-    subprocess.run(detect_string.split())#, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
-
-    return detect_string
+    subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 def run_stitch_nodes(infiles_list, trackfile, maxgap = '24h', mintime = '54h'):
 
@@ -211,11 +205,11 @@ def write_fullres_field(gfield, filestore):
 
     """
     Writes the high resolution file (netcdf) format with values only within the box
-
     Args:
         gfield: field to write
         filestore: file to save
     """
+    
     compression = {str(gfield.name): {'zlib': True}}
     gfield.where(gfield!=0).to_netcdf(filestore, encoding=compression)
     gfield.close()
