@@ -1,20 +1,26 @@
 # Teleconnections diagnostic
 
 The folder contains jupyter-notebooks and python scripts in order to evaluate teleconnections in the DE_340 AQUA model evaluation framework.
-The script are based on the `xarray+dask` framework, a specific list of the packages used can be found inside the notebooks or in the `env-teleconnections.yml` file.
+The script are based on the `xarray+dask` framework, a specific list of the packages used can be found inside the notebooks or in the `env-teleconnections.yml` file, that can be used as well to create the `conda` environment needed to run the diagnostic (WIP).
 
-## Libraries file (WIP)
+## Library files (WIP)
 
-- `cdotesting.py` contains function evaluating teleconnections with cdo bindings, in order to test the python libraries
-- `index.py` contains functions for the direct evaluation of teleconnection indices
-- `plots.py` contains functions for the visualization of time series and maps for teleconnection diagnostic
-- `tools.py` contains generic functions that may be useful to the whole diagnostic
+- `cdotesting.py` contains function evaluating teleconnections with cdo bindings, in order to test the python libraries (see test section).
+- `index.py` contains functions for the direct evaluation of teleconnection indices.
+- `plots.py` contains functions for the visualization of time series and maps for teleconnection diagnostic.
+- `tools.py` contains generic functions that may be useful to the whole diagnostic.
+
+## Test (WIP)
+
+- `unit_test.py` contains a comparison between the diagnostic developed in `index.py` and the same method applied with `cdo` bindings in order to keep track of possible problems in the development phase.
 
 ## Notebooks (WIP)
 
-- `NAO_monthly/seasonal_comparison` are two notebooks containing the comparison between cdo and teleconnections diagnostic, together with a comparison with ncar NAO data
-- `cdo_testing` contains an example of usage of the cdo bindings introduced in the `cdotesting.py` file
-- `test_libraries` contains examples of usage of the functions implemented in the .py files
+- `cdo_testing` contains an example of usage of the cdo bindings introduced in the `cdotesting.py` file.
+- `NAO/ENSO_era5` contains the respective teleconnections evaluatev with the library methods
+- `NAO_monthly/seasonal_comparison` are two notebooks containing the comparison between cdo and teleconnections diagnostic, together with a comparison with ncar NAO data.
+- `test_cdovslib` contains examples of the usage of functions contained in `cdotesting.py`, in order to build the `unit_test.py`
+- `test_libraries` contains examples of usage of the functions implemented in the .py files. (obsolete)
 
 ### Old notebooks
 
