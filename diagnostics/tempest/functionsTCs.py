@@ -2,30 +2,30 @@ import sys
 sys.path.append('../../')
 from aqua import Reader
 import xarray as xr
-import pandas as pd
 import os
 import subprocess
 
 
-def readwrite_from_intake(model, exp, timestep): 
+def readwrite_from_intake(model, exp, timestep, grid, tgtdir): 
 
-  # where to store the interpolated data
-  indir='/home/b/b382216/scratch/regrid_intake'
+  """
+  Given a model and an experiments, read data from intake catalog and store them in a
+  netcdf file so that we can work analyse it with TempestExtreme
+  """
+
   
   if model in 'IFS':
-    reader2d = Reader(model=model, exp=exp, source="ICMGG_atm2d", regrid="r100")
+    reader2d = Reader(model=model, exp=exp, source="ICMGG_atm2d", regrid=grid)
     varlist2d = ['msl', '10u', '10v']
-    reader3d = Reader(model=model, exp=exp, source="ICMU_atm3d", regrid="r100")
+    reader3d = Reader(model=model, exp=exp, source="ICMU_atm3d", regrid=grid)
     varlist3d = ['z']
 
   outfield = 0
   data2d = reader2d.retrieve()
   tstep = timestep.strftime('%Y%m%dT%H')
-  fileout=os.path.join(indir, f'regrid+{tstep}.nc')
-
+  fileout=os.path.join(tgtdir, f'regrid_{tstep}.nc')
 
   for var in varlist2d:
-    print(var)  
     lowres = reader2d.regrid(data2d[var].sel(time=timestep))
     if isinstance(outfield, xr.Dataset):
       if var in '10u':
@@ -40,7 +40,6 @@ def readwrite_from_intake(model, exp, timestep):
  
   data3d = reader3d.retrieve()
   for var in varlist3d:
-    print(var)
     lowres = reader3d.regrid(data3d[var].sel(time=timestep, level=[300,500]))
     outfield = xr.merge([outfield, lowres.to_dataset(name=var)])
      
@@ -48,45 +47,47 @@ def readwrite_from_intake(model, exp, timestep):
   if os.path.exists(fileout):
     os.remove(fileout)
 
-  outfield.coords['level'].attrs['units'] = 'hPa'
+  #level_var = outfield['level']
+  outfield['level'] = outfield['level'].astype(float)
+  outfield['level'].attrs['units'] = 'hPa'
   outfield.to_netcdf(fileout)
   outfield.close()
   
   outdict = {'lon': 'lon', 'lat': 'lat', 
             'psl': 'msl', 'zg': 'z',
-            'uas': 'u10m', 'vas': 'u10m',
-            'fileout': fileout}
+            'uas': 'u10m', 'vas': 'v10m',
+            'regrid_file': fileout}
   
   return outdict
 
 
-def readwrite_from_lowres(filein, fileout) : 
+# def readwrite_from_lowres(filein, fileout) : 
 
-    """
-    Read and write low resolution data to mimic access from FDB
+#     """
+#     Read and write low resolution data to mimic access from FDB
 
-    Args: 
-        filein: input file at low resolution
-        fileout: input file at low resolution (netcdf)
+#     Args: 
+#         filein: input file at low resolution
+#         fileout: input file at low resolution (netcdf)
 
-    Returns: 
-        outdict: dictionary with variable and dimensiona names for fileout
-    """
+#     Returns: 
+#         outdict: dictionary with variable and dimensiona names for fileout
+#     """
 
-    xfield = xr.open_mfdataset(filein)
+#     xfield = xr.open_mfdataset(filein)
 
-    # check if output file exists
-    if os.path.exists(fileout):
-        os.remove(fileout)
+#     # check if output file exists
+#     if os.path.exists(fileout):
+#         os.remove(fileout)
 
-    xfield.to_netcdf(fileout)
-    xfield.close()
+#     xfield.to_netcdf(fileout)
+#     xfield.close()
     
-    outdict = {'lon': 'lon', 'lat': 'lat', 
-            'psl': 'MSL', 'zg': 'Z',
-            'uas': 'U10M', 'vas': 'V10M'}
+#     outdict = {'lon': 'lon', 'lat': 'lat', 
+#             'psl': 'MSL', 'zg': 'Z',
+#             'uas': 'U10M', 'vas': 'V10M'}
 
-    return outdict
+#     return outdict
 
 def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) : 
 
@@ -100,12 +101,13 @@ def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) :
        detect_string: output file from DetectNodes in string format 
     """
     
-    
     detect_string= f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
     f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
     f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
     subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    return detect_string
 
 def run_stitch_nodes(infiles_list, trackfile, maxgap = '24h', mintime = '54h'):
 
@@ -130,10 +132,11 @@ def run_stitch_nodes(infiles_list, trackfile, maxgap = '24h', mintime = '54h'):
             with open(fname) as infile:
                 outfile.write(infile.read())
 
-    
     stitch_string = f'StitchNodes --in {full_nodes} --out {trackfile} --in_fmt lon,lat,slp,wind --range 8.0 --mintime {mintime} ' \
         f'--maxgap {maxgap} --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10'
+    
     subprocess.run(stitch_string.split())
+
     return stitch_string
 
 def read_lonlat_nodes(tempest_fileout):
@@ -148,12 +151,14 @@ def read_lonlat_nodes(tempest_fileout):
     Returns: 
        out: dictionary with 'date', 'lon' and 'lat' of the TCs centers
     """
+
     with open(tempest_fileout) as f:
         lines = f.readlines()
     first = lines[0].split('\t')
     date = first[0] + first[1].zfill(2) + first[2].zfill(2) + first[4].rstrip().zfill(2)
     lon_lat = [line.split('\t')[3:] for line in lines[1:]]
     out = {'date': date, 'lon': [val[0] for val in lon_lat], 'lat': [val[1] for val in lon_lat]}
+
     return out
 
 
@@ -253,6 +258,8 @@ def clean_files(filelist):
         if os.path.exists(fileout):
             os.remove(fileout)
 
+
+### FROM HERE FUNCTION FOR ANALYSIS
 # from https://github.com/zarzycki/cymep
 
 import numpy as np
