@@ -2,17 +2,51 @@
 #   conda env create -f env-teleconnections.yml
 # Alternatively, use mamba
 #   mamba env create -n teleconnections -f env-teleconnections.yml
+#
+# The first part of the list has been manually edited from the env
+# file that is in common to the whole framework, while additional
+# dependencies due to the teleconnections requirements are added
+# at the end of the list (before pip packages).
 
-name : teleconnections
+name: teleconnections
 channels:
   - conda-forge
 dependencies:
-  - python>=3.8
+  - python>=3.9,<3.11
   - cartopy
+  - cdo
+  - cfunits
   - dask
+  - ecCodes
+  - healpy
+  - intake
+  - intake-xarray
+  - ipykernel
+  - jinja2
   - matplotlib
-  - pandas
-  - python-cdo # cdo bindings for testing 
-  - scipy
-  - yaml
+  - metpy
+  - netcdf4
+  - numpy
+  - pip
+  - pyYAML
+  - tqdm
+  - udunits2
   - xarray
+  - zarr
+  - python-cdo
+  - pip:
+    - docker
+    - gribscan
+    - sparse
+    - git+https://github.com/jhardenberg/smmregrid.git
+  
+  
+        
+  
+  
+  
+  
+  
+  
+  
+  
