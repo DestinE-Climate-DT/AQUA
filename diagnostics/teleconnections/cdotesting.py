@@ -2,8 +2,6 @@
 This module contains functions to compare and test the teleconnections
 libraries with similar procedures done with cdo bindings.
 '''
-import math
-import numpy as np
 import xarray as xr
 from cdo import *
 from index import *
