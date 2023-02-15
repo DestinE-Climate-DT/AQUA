@@ -48,15 +48,12 @@ def station_based_cdo(infile, namelist, telecname, months_window=3):
     # 5. -- Evaluate average and std for the station based difference --
     diff_ma = cdo.sub(input=[field_an1_ma, field_an2_ma])
     mean_ma = cdo.timmean(input=diff_ma)
-    std_ma = cdo.timstd(input=diff_ma)
+    std_ma  = cdo.timstd(input=diff_ma)
 
-    # 6. -- Evaluate the index and rename the variable in the DataArray --
+    # 6. -- Evaluate the index --
     sub_indx = cdo.sub(input=[diff_ma,mean_ma])
+    indx = cdo.div(input=[sub_indx,std_ma],returnXDataset=True)
 
-    ofile = "temp.nc" #solve directory with output
-    cdo.div(input=[sub_indx,std_ma],output=ofile)
-
-    indx = xr.open_dataset(ofile)
     cdo.cleanTempDir()
 
     return indx
@@ -89,11 +86,9 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3):
                                  input=infile)
     field_mean = cdo.fldmean(input=field_sel)
 
-    # 3. -- Evaluate the value with the months window and save as xarray
-    ofile = "temp.nc"
-    indx = cdo.runmean("{0}".format(months_window),input=field_mean,output=ofile) #return xdataset
+    # 3. -- Evaluate the value with the months window --
+    indx = cdo.runmean("{0}".format(months_window),input=field_mean,returnXDataset=True)
 
-    indx = xr.open_dataset(ofile)
     cdo.cleanTempDir()
 
     return indx
