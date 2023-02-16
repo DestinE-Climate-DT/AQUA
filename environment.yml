@@ -1,0 +1,31 @@
+name: aqua
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9,<3.11
+  - pyYAML
+  - xarray
+  - intake
+  - dask
+  - numpy
+  - jinja2
+  - tqdm
+  - udunits2
+  - zarr
+  - netcdf4
+  - intake-xarray
+  - ecCodes      
+  - matplotlib
+  - cartopy
+  - healpy
+  - ipykernel
+  - cfunits
+  - metpy
+  - cdo
+  - pip
+  - pip:
+    - sparse
+    - docker
+    - gribscan
+    - git+https://github.com/jhardenberg/smmregrid.git
+

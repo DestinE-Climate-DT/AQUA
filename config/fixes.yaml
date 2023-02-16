@@ -1,0 +1,51 @@
+defaults:
+    units:
+        mass_flux:  kg m-2 s-1
+        radiation_flux: W m-2
+        temperature: K
+
+    coords:
+        latitude: lat
+        longitude: lon
+
+models:
+    IFS:
+        deltat: 10800
+        vars:
+            2t: 
+                short_name: tas
+                units: "{temperature}"
+            tp:
+                short_name: pr
+                units: "{mass_flux}"
+
+        coords:
+            latitude:
+                name: "{latitude}"
+            longitude:
+                name: "{longitude}"
+
+    FESOM:
+        vars:
+            temp: 
+                short_name: to
+                src_units: degC
+                units: "{temperature}"
+
+        # coords:
+        #     latitude:
+        #         name: "{latitude}"
+        #     longitude:
+        #         name: "{longitude}"
+
+    MSWEP:
+        vars:
+            precipitation:
+                short_name: pr
+                units: "{mass_flux}"
+
+        coords:
+            latitude: 
+                name: "{latitude}"
+            longitude:
+                name: "{longitude}"

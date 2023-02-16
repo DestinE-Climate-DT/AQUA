@@ -1,0 +1,66 @@
+plugins:
+  source:
+    - module: intake_xarray
+    - module: gribscan
+
+sources:
+  ICMGG_atm2d:
+    driver: zarr
+    args:
+      consolidated: False
+      urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco3999-ng5/ICMGGc2/json.dir/atm2d.json
+  ICMU_atm2d:
+    driver: zarr
+    args:
+      consolidated: False
+      urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco3999-ng5/ICMUAc2/json.dir/atm2d.json
+  ICMU_atm3d:
+    driver: zarr
+    args:
+      consolidated: False
+      urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco3999-ng5/ICMUAc2/json.dir/atm3d.json
+  interpolated_global:
+    driver: zarr
+    args:
+      consolidated: False
+      compat: override
+      combine: nested
+      urlpath: 
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/2t/netcdf/tco3999-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/2d/netcdf/tco3999-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/lcc/netcdf/tco3999-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10u/netcdf/tco3999-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10v/netcdf/tco3999-ng5_pc.json
+  interpolated_np:
+    driver: zarr
+    args:
+      consolidated: False
+      compat: override
+      combine: nested
+      urlpath: 
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/2t/netcdf/tco3999-ng5_np.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/2d/netcdf/tco3999-ng5_np.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/ci/netcdf/tco3999-ng5_np.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/lcc/netcdf/tco3999-ng5_np.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10u/netcdf/tco3999-ng5_np.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10v/netcdf/tco3999-ng5_np.json
+  interpolated_sp:
+    driver: zarr
+    args:
+      consolidated: False
+      compat: override
+      combine: nested
+      urlpath: 
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/2t/netcdf/tco3999-ng5_sp.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/2d/netcdf/tco3999-ng5_sp.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/lcc/netcdf/tco3999-ng5_sp.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10u/netcdf/tco3999-ng5_sp.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10v/netcdf/tco3999-ng5_sp.json
+  interpolated_sp_ci:
+    driver: zarr
+    args:
+      consolidated: False
+      compat: override
+      combine: nested
+      urlpath: 
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/ci/netcdf/tco3999-ng5_sp.json
