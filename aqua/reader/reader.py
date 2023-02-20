@@ -10,7 +10,7 @@ class Reader():
     """General reader for NextGEMS data (on Levante for now)"""
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
-                 regrid=None, method="ycon", zoom=None, configdir = 'config'):
+                 regrid=None, method="ycon", zoom=None, configdir = 'config', level=None):
         """
         The Reader constructor.
         It uses the cataolog `config/config.yaml` to identify the required data.
@@ -23,6 +23,7 @@ class Reader():
             method (str):   regridding method (ycon)
             zoom (int):     healpix zoom level
             configdir (str) Folder where the config/catalog files are (config)
+            level (int):    level to extract if input data are 3D (starting from 0)
         
         Returns:
             A `Reader` class object.
@@ -33,11 +34,12 @@ class Reader():
         self.targetgrid = regrid
         self.zoom = zoom
         self.freq = freq
+        self.level = level
+        self.vertcoord = None
+        extra = []
 
         catalog_file = os.path.join(configdir, "catalog.yaml")
         self.cat = intake.open_catalog(catalog_file)
-
-        cfg_regrid = load_yaml(os.path.join(configdir,"regrid.yaml"))
 
         if source:
             self.source = source
@@ -45,26 +47,54 @@ class Reader():
             self.source = list(self.cat[model][exp].keys())[0]  # take first source if none provided
         
         if regrid:
+            cfg_regrid = load_yaml(os.path.join(configdir,"regrid.yaml"))
+
+            source_grid = cfg_regrid["source_grids"][self.model][self.exp].get(self.source, None)
+            if not source_grid:
+                source_grid = cfg_regrid["source_grids"][self.model][self.exp]["default"]
+
+            self.vertcoord = source_grid.get("vertcoord", None) # Some more checks needed
+            if level is not None:
+                if not self.vertcoord:
+                    raise KeyError("You should specify a vertcoord key in regrid.yaml for this source to use levels.")
+                extra = f"-sellevidx,{level+1} "
+
+            if (level is None) and self.vertcoord:
+                raise RuntimeError("This is a masked 3d source: you should specify a specific level.")
+
             self.weightsfile =os.path.join(
                 cfg_regrid["weights"]["path"],
                 cfg_regrid["weights"]["template"].format(model=model,
                                                     exp=exp, 
                                                     method=method, 
-                                                    target=regrid))
+                                                    target=regrid,
+                                                    source=self.source,
+                                                    level=("2d" if level is None else level)))
             if os.path.exists(self.weightsfile):
                 self.weights = xr.open_mfdataset(self.weightsfile)
             else:
                 print("Weights file not found:", self.weightsfile)
                 print("Attempting to generate it ...")
+                print("Source grid: ", source_grid["path"])
 
-                weights = rg.cdo_generate_weights(source_grid=cfg_regrid["source_grids"][exp]["path"],
+                # hack to  pass a correct list of all options
+                src_extra = source_grid.get("extra", [])
+                if src_extra:
+                    if not isinstance(src_extra, list):
+                        src_extra = [src_extra]
+                if extra:
+                    extra = [extra] 
+                extra = extra + src_extra
+
+                weights = rg.cdo_generate_weights(source_grid=source_grid["path"],
                                                       target_grid=cfg_regrid["target_grids"][regrid], 
                                                       method='ycon', 
                                                       gridpath=cfg_regrid["paths"]["grids"],
                                                       icongridpath=cfg_regrid["paths"]["icon"],
-                                                      extra=cfg_regrid["source_grids"][exp].get("extra", None))
+                                                      extra=extra)
                 weights.to_netcdf(self.weightsfile)
-                self.weights = weights
+                # For some weird reason it is better to reopen this from file ... to be investigated. It was failing for FESOM on orig. grid
+                self.weights = xr.open_mfdataset(self.weightsfile)
                 print("Success!")
 
             self.regridder = rg.Regridder(weights=self.weights)
@@ -87,6 +117,10 @@ class Reader():
             data = self.cat[self.model][self.exp][self.source](zoom=self.zoom).to_dask()
         else:
             data = self.cat[self.model][self.exp][self.source].to_dask()
+
+        # select only a specific level when reading. Level coord names defined in regrid.yaml
+        if self.level is not None:
+            data = data.isel({self.vertcoord: self.level})
 
         # sequence which should be more efficient: averaging - regridding - fixing
         if self.freq and average:
@@ -217,10 +251,10 @@ class Reader():
             offset = 0 * units(dst)
 
         if offset.magnitude != 0:
-            factor = None
+            factor = 1
             offset = offset.magnitude
         else:
-            offset = None
+            offset = 0
             factor = factor.magnitude
         return factor, offset
     
@@ -233,14 +267,14 @@ class Reader():
         """
         target_units = data.attrs.get("target_units", None)
         if target_units:
-            d = {"src_units": data.attrs["units"], "units_fixed": True}
+            d = {"src_units": data.attrs["units"], "units_fixed": 1}
             data.attrs.update(d)
             data.attrs["units"] = target_units
-            factor = data.attrs.get("factor", None)
-            offset = data.attrs.get("offset", None)
-            if factor:
+            factor = data.attrs.get("factor", 1)
+            offset = data.attrs.get("offset", 0)
+            if factor != 1:
                 data *= factor
-            if offset:
+            if offset != 0:
                 data += offset
 
 

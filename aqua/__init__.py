@@ -1,3 +1,3 @@
 """AQUA module"""
 from .docker import rundiag
-from .reader import Reader
+from .reader import Reader, catalogue
