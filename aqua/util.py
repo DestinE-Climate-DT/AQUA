@@ -1,3 +1,4 @@
+import sys
 import yaml
 
 def load_yaml(infile):

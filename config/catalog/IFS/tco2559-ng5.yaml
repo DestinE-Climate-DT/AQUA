@@ -56,6 +56,13 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_sp.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10u/netcdf/tco2559-ng5_sp.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10v/netcdf/tco2559-ng5_sp.json
+  lra_r100:
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382289/IFSlowres/tco2559-ng5-r100-mon/*.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: False
   # interpolated_sp_ci:
   #   driver: zarr
   #   args:
