@@ -59,10 +59,10 @@ sources:
   lra_r100:
     driver: netcdf
     args:
-      urlpath: '/work/bb1153/b382289/IFSlowres/tco2559-ng5-r100-mon/*.nc'
+      urlpath: '/work/bb1153/b382076/IFS-lowres/tco2559-ng5-r100-mon/*.nc'
       chunks: {}
       xarray_kwargs:
-        decode_times: False
+        decode_times: True
   # interpolated_sp_ci:
   #   driver: zarr
   #   args:
