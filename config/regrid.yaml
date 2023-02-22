@@ -2,6 +2,11 @@ weights:
    path: /work/bb1153/b382075/nextgems/weights
    template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
 
+areas:
+   path: /work/bb1153/b382075/nextgems/weights
+   src_template: areas_{model}_{exp}_{source}.nc
+   dst_template: areas_{grid}.nc
+
 paths:
   grids: /work/bb1153/b382075/nextgems/weights
   icon: /pool/data/ICON
@@ -20,19 +25,24 @@ source_grids:
     tco3999-ng5:
       default:
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/2.8km/tcogrids/tco3999_grid.nc
+        space_coord: ["value"]
     tco2559-ng5:
       default:
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/4km/tcogrids/tco2559_grid.nc
+        space_coord: ["value"]
       ICMGG_atm2d:
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/4km/tcogrids/tco2559_grid.nc
+        space_coord: ["value"]
     tco1279-orca025:
       default: 
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/9km/tcogrids/tco1279_grid.nc
+        space_coord: ["value"]
   ICON:
     ngc2009:
       default: 
         path: /pool/data/ICON/grids/public/mpim/0015/icon_grid_0015_R02B09_G.nc
         extra: "-selname,cell_index" 
+        space_coord: ["cell"]
     hpx:
       default:
         path:
@@ -40,26 +50,36 @@ source_grids:
     tco3999-ng5:  
       default:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_2d.nc
+        space_coord: ["lon", "lat"]
       interpolated_global2d:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_2d.nc
+        space_coord: ["lon", "lat"]
       interpolated_global_TS:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_3d.nc
+        space_coord: ["lon", "lat"]
         vertcoord: depth
     tco2559-ng5:
       default:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_2d.nc
+        space_coord: ["lon", "lat"]
       interpolated_global_TS:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_3d.nc
         vertcoord: depth
+        space_coord: ["lon", "lat"]
       original_2d:
         path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+        space_coord: ["nod2"]
         extra: 
           - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
           - -selname,cell_area 
 
-      
   MSWEP:
     past:
-      monthly:
-      daily:
-      3hourly:
+      default:
+        path: /home/b/b382075/work/datasets/MSWEP_V280/Past/Monthly/200001.nc
+        space_coord: ["lon", "lat"]
+
+
+
+
+
