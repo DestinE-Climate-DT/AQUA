@@ -44,6 +44,12 @@ def main(modelname, expname, sourcename, resolution, frequency, varlist, outdir)
     reader = Reader(model=modelname, exp=expname, source=sourcename,
                     regrid=resolution, freq=frequency, configdir="../config") # this is hardcoded
     data = reader.retrieve(fix=False)
+
+    # option for time encoding, defined once for all
+    time_encoding = {'units': 'days since 1970-01-01',
+                 'calendar': 'standard',
+                 'dtype': 'float64'}
+
     for var in varlist:
         tic = time()
 
@@ -58,7 +64,7 @@ def main(modelname, expname, sourcename, resolution, frequency, varlist, outdir)
         outname = os.path.join(lowdir, f'{var}_{expname}.nc')
         
         # we can of course extend this and also save to grib
-        interp.to_netcdf(outname)
+        interp.to_netcdf(outname, encoding={'time': time_encoding})
 
         toc = time()
         logging.info('Done in {:.4f} seconds'.format(toc - tic))
@@ -115,5 +121,9 @@ if __name__ == "__main__":
     # call the function
     main(modelname=model, expname=exp, sourcename=source, resolution=resolution,
         frequency=frequency, varlist=varlist, outdir=outdir)
+    
+    # shutdown the cluster
+    if workers > 1:
+        client.close()
     
     logging.info('Everything completed... goodbye!')

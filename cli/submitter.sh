@@ -25,4 +25,4 @@ freq='mon'
 workers=8
 
 # run the Python script
-./regridder.py -m ${model} -e ${exp} -s ${source} -r ${res} -f ${freq} -w ${workers} -o /work/bb1153/b382289/IFSlowres
+./regridder.py -m ${model} -e ${exp} -s ${source} -r ${res} -f ${freq} -w ${workers} -o /work/bb1153/b382076/IFS-lowres
