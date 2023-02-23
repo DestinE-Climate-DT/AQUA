@@ -41,6 +41,20 @@ def cor_plot(indx,field,projection_type='PlateCarree',plot=True):
 
     return cor
 
+def hovmoller_plot(infile,dimmean='lat',outputdir=None):
+    '''
+    infile is a DataArray
+    '''
+    infile_mean = infile.mean(dim=dimmean)
+
+    fig, ax = plt.subplots()
+    im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+    plt.colorbar(im, ax=ax)
+    ax.set_xlabel('Time')
+    ax.set_ylabel(infile_mean.dims[-1])
+    ax.set_title(f'Hovmoller Plot ({dimmean} mean)')
+    return fig, ax
+
 def index_plot(indx):
     """
     Index plot together with red line at indx=0
