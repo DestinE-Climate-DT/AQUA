@@ -48,9 +48,10 @@ def hovmoller_plot(infile,dimmean='lat',outputdir=None):
     infile_mean = infile.mean(dim=dimmean)
 
     fig, ax = plt.subplots()
-    im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+    #im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+    im = ax.contourf(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
     plt.colorbar(im, ax=ax)
-    ax.set_xlabel('Time')
+    ax.set_xlabel('time')
     ax.set_ylabel(infile_mean.dims[-1])
     ax.set_title(f'Hovmoller Plot ({dimmean} mean)')
     return fig, ax
