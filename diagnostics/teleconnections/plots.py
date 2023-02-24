@@ -5,6 +5,35 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import xarray as xr
 
+def set_layout(fig, ax,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False):
+    """
+    Set the layout of the plot
+
+    Args:
+        fig (Figure):           Figure object
+        ax (Axes):              Axes object
+        title (str,opt):        title of the plot
+        xlabel (str,opt):       label of the x axis
+        ylabel (str,opt):       label of the y axis
+        xlog (bool,opt):        enable or disable x axis log scale, default is False
+        ylog (bool,opt):        enable or disable y axis log scale, default is False
+
+    Returns:
+        fig (Figure):           Figure object
+        ax (Axes):              Axes object
+    """
+    if title:
+        ax.set_title(title)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if xlog:
+        ax.set_xscale('symlog')
+    if ylog:
+        ax.set_yscale('symlog')
+    return fig, ax
+
 def cor_plot(indx,field,projection_type='PlateCarree',plot=True):
     """
     Evaluate and plot correlation map of a teleconnection index 
@@ -41,19 +70,47 @@ def cor_plot(indx,field,projection_type='PlateCarree',plot=True):
 
     return cor
 
-def hovmoller_plot(infile,dimmean='lat',outputdir=None):
+def hovmoller_plot(infile,dim='lon',outputdir=None,title=None,
+                   xlabel=None,ylabel=None,contour=True,xlog=False,ylog=False):
     '''
-    infile is a DataArray
+    Args:
+        infile (DataArray):     DataArray to be plot
+        dim (str,opt):          dimension to be averaged over, default is 'lon'
+        outputdir (str,opt):    directory to save the plot
+        title (str,opt):        title of the plot
+        xlabel (str,opt):       label of the x axis
+        ylabel (str,opt):       label of the y axis
+        contour (bool,opt):     enable or disable contour plot, default is True
+        xlog (bool,opt):        enable or disable x axis log scale, default is False
+        ylog (bool,opt):        enable or disable y axis log scale, default is False
+    
+    Returns:
+        fig (Figure):           Figure object
+        ax (Axes):              Axes object
     '''
-    infile_mean = infile.mean(dim=dimmean)
+    infile_mean = infile.mean(dim=dim)
 
     fig, ax = plt.subplots()
-    #im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
-    im = ax.contourf(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+
+    # Contour or pcolormesh plot
+    if contour:
+        im = ax.contourf(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+    else:
+        im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+    
+    # Colorbar
     plt.colorbar(im, ax=ax)
-    ax.set_xlabel('time')
-    ax.set_ylabel(infile_mean.dims[-1])
-    ax.set_title(f'Hovmoller Plot ({dimmean} mean)')
+
+    set_layout(fig,ax,title=title,xlabel=xlabel,ylabel=ylabel,xlog=xlog,ylog=ylog)
+
+    # Custom labels if provided
+    if xlabel == None:
+        ax.set_xlabel('time')
+    if ylabel == None:
+        ax.set_ylabel(infile_mean.dims[-1])
+    if title == None:
+        ax.set_title(f'Hovmoller Plot ({dim} mean)')
+    
     return fig, ax
 
 def index_plot(indx):
