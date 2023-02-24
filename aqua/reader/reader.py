@@ -35,6 +35,8 @@ class Reader():
         self.exp = exp
         self.model = model
         self.targetgrid = regrid
+        if (exp == "hpx") and not zoom:
+            zoom = 9
         self.zoom = zoom
         self.freq = freq
         self.level = level
@@ -85,9 +87,12 @@ class Reader():
             if os.path.exists(self.weightsfile):
                 self.weights = xr.open_mfdataset(self.weightsfile)
             else:
+                sgridpath = source_grid["path"]
+                if zoom:
+                    sgridpath = sgridpath.format(zoom=(9-zoom))            
                 print("Weights file not found:", self.weightsfile)
                 print("Attempting to generate it ...")
-                print("Source grid: ", source_grid["path"])
+                print("Source grid: ", sgridpath)
 
                 # hack to  pass a correct list of all options
                 src_extra = source_grid.get("extra", [])
@@ -97,8 +102,7 @@ class Reader():
                 if extra:
                     extra = [extra] 
                 extra = extra + src_extra
-
-                weights = rg.cdo_generate_weights(source_grid=source_grid["path"],
+                weights = rg.cdo_generate_weights(source_grid=sgridpath,
                                                       target_grid=cfg_regrid["target_grids"][regrid], 
                                                       method='ycon', 
                                                       gridpath=cfg_regrid["paths"]["grids"],
@@ -132,11 +136,14 @@ class Reader():
             if os.path.exists(self.src_areafile):
                 self.src_grid_area = xr.open_mfdataset(self.src_areafile).cell_area
             else:
+                sgridpath = source_grid["path"]
+                if zoom:
+                    sgridpath = sgridpath.format(zoom=(9-zoom)) 
                 print("Source areas file not found:", self.src_areafile)
                 print("Attempting to generate it ...")
-                print("Source grid: ", source_grid["path"])
+                print("Source grid: ", sgridpath)
                 src_extra = source_grid.get("extra", [])
-                grid_area = self.cdo_generate_areas(source=source_grid["path"],
+                grid_area = self.cdo_generate_areas(source=sgridpath,
                                                     gridpath=cfg_regrid["paths"]["grids"],
                                                     icongridpath=cfg_regrid["paths"]["icon"],
                                                     extra=src_extra)

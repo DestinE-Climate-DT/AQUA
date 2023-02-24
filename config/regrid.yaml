@@ -15,6 +15,7 @@ target_grids:
   r005: r7200x3600
   r010: r3600x1800
   r020: r1800x900
+  r050: r720x360
   r100: r360x180
   r200: r180x90
   r250: r144x72
@@ -33,6 +34,9 @@ source_grids:
       ICMGG_atm2d:
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/4km/tcogrids/tco2559_grid.nc
         space_coord: ["value"]
+      ICMU_atm3d:
+        path: /work/bm1235/a270046/cycle2-sync/tcogrids/4km/tcogrids/tco2559_grid.nc
+        space_coord: ["value"]
     tco1279-orca025:
       default: 
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/9km/tcogrids/tco1279_grid.nc
@@ -45,7 +49,8 @@ source_grids:
         space_coord: ["cell"]
     hpx:
       default:
-        path:
+        path: /work/bb1153/b382075/nextgems/grids/icon_hpx{zoom}.nc
+        space_coord: ["pix"]
   FESOM:
     tco3999-ng5:  
       default:
