@@ -70,7 +70,7 @@ def cor_plot(indx,field,projection_type='PlateCarree',plot=True):
 
     return cor
 
-def hovmoller_plot(infile,dim='lon',outputdir=None,title=None,
+def hovmoller_plot_test(infile,dim='lon',outputdir=None,title=None,
                    xlabel=None,ylabel=None,contour=True,xlog=False,ylog=False):
     '''
     Args:
@@ -88,7 +88,7 @@ def hovmoller_plot(infile,dim='lon',outputdir=None,title=None,
         fig (Figure):           Figure object
         ax (Axes):              Axes object
     '''
-    infile_mean = infile.mean(dim=dim)
+    infile_mean = infile.mean(dim=dim,keep_attrs=True)
 
     fig, ax = plt.subplots()
 
@@ -97,12 +97,18 @@ def hovmoller_plot(infile,dim='lon',outputdir=None,title=None,
         im = ax.contourf(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
     else:
         im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
-    
+        
     # Colorbar
-    plt.colorbar(im, ax=ax)
-
+    try:
+        cbar_label = infile_mean.name
+        cbar_label += ' [' + infile_mean.units + ']'
+        print(cbar_label)
+        plt.colorbar(im, ax=ax, label=cbar_label)
+    except AttributeError:
+        plt.colorbar(im, ax=ax, label=infile_mean.name)
+    
     set_layout(fig,ax,title=title,xlabel=xlabel,ylabel=ylabel,xlog=xlog,ylog=ylog)
-
+    
     # Custom labels if provided
     if xlabel == None:
         ax.set_xlabel('time')
