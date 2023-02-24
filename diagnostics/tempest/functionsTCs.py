@@ -105,7 +105,7 @@ def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) :
     f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
     f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
-    subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    subprocess.run(detect_string.split())#, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
     return detect_string
 
