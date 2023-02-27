@@ -19,3 +19,9 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/MSWEP/main.yaml"
+  ERA5:
+    description: ERA5 reanalysis data
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/ERA5/main.yaml"
+

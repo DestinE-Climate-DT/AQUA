@@ -1,4 +1,5 @@
 import intake
+import intake_esm
 import xarray as xr
 import os
 from metpy.units import units
@@ -270,10 +271,28 @@ class Reader():
             A xarray.Dataset containing the required data.
         """
 
+        # Extract subcatalogue
         if self.zoom:
-            data = self.cat[self.model][self.exp][self.source](zoom=self.zoom).to_dask()
+            esmcat = self.cat[self.model][self.exp][self.source](zoom=self.zoom)
         else:
-            data = self.cat[self.model][self.exp][self.source].to_dask()
+            esmcat = self.cat[self.model][self.exp][self.source]
+
+        # Extract data from cat.
+        # If this is an ESM-intake catalogue use first dictionary value,
+        # else extract directly a dask dataset
+        if isinstance(esmcat, intake_esm.core.esm_datastore):
+            cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time":1}})
+            query = esmcat.metadata['query']
+            subcat = esmcat.search(**query)
+            data = subcat.to_dataset_dict(cdf_kwargs=cdf_kwargs,
+                                         zarr_kwargs=dict(consolidated=True),
+                                              #decode_times=True,
+                                              #use_cftime=True)
+                                         progressbar=False
+                                         )
+            data = list(data.values())[0]
+        else:
+            data = esmcat.to_dask()
 
         # select only a specific level when reading. Level coord names defined in regrid.yaml
         if self.level is not None:

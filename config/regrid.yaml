@@ -47,6 +47,10 @@ source_grids:
         path: /pool/data/ICON/grids/public/mpim/0015/icon_grid_0015_R02B09_G.nc
         extra: "-selname,cell_index" 
         space_coord: ["cell"]
+      intake-esm-test: 
+        path: /pool/data/ICON/grids/public/mpim/0015/icon_grid_0015_R02B09_G.nc
+        extra: "-selname,cell_index" 
+        space_coord: ["ncells"]
     hpx:
       default:
         path: /work/bb1153/b382075/nextgems/grids/icon_hpx{zoom}.nc
@@ -84,7 +88,10 @@ source_grids:
         path: /home/b/b382075/work/datasets/MSWEP_V280/Past/Monthly/200001.nc
         space_coord: ["lon", "lat"]
 
-
-
+  ERA5:
+    era5:
+      default:
+        path: /work/bb1153/b382075/nextgems/grids/n320_unstructured.nc
+        space_coord: ["values"]
 
 

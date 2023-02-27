@@ -1,0 +1,147 @@
+plugins:
+  source:
+    - module: intake_xarray
+    - module: gribscan
+
+sources:
+  monthly_inst:
+      driver: intake_esm.esm_datastore
+      args:
+        csv_kwargs:
+          usecols:
+          - project
+          - era_id
+          - dataType
+          - level_type
+          - frequency
+          - stepType
+          - table_id
+          - code
+          - validation_date
+          - initialization_date
+          - uri
+          - format
+          - path
+          - units
+          - long_name
+          - step
+          - short_name
+        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+      description: ERA5 instantaneous 2D data monthly averaged
+      metadata:
+        query:
+          frequency: monthly
+          short_name: ['siconc', 'z', 'sp', 'tcw', 'sd', 'msl', 
+         'u10', 'v10', 't2m', 'd2m', 
+         'lsm', 'lcc', 'mcc', 'hcc', 'skt']
+        cdf_kwargs:
+          chunks:
+            time: 1
+          engine: cfgrib
+          backend_kwargs: 
+            indexpath: ''
+  monthly_acc:
+      driver: intake_esm.esm_datastore
+      args:
+        csv_kwargs:
+          usecols:
+          - project
+          - era_id
+          - dataType
+          - level_type
+          - frequency
+          - stepType
+          - table_id
+          - code
+          - validation_date
+          - initialization_date
+          - uri
+          - format
+          - path
+          - units
+          - long_name
+          - step
+          - short_name
+        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+      description: ERA5 accumulated 2D data monthly averaged
+      metadata:
+        query:
+          frequency: monthly
+          short_name: [ 
+         'lsp', 'cp', 'sf', 'sshf', 'slhf', 'ssrd',
+         'strd', 'ssr', 'str', 'tsr', 'ttr', 'ewss', 'nsss', 'e',
+         'tsrc', 'ttrc', 'ssrc', 'strc', 'tisr', 'tp']
+        cdf_kwargs:
+          chunks:
+            time: 1
+          engine: cfgrib
+          backend_kwargs: 
+            indexpath: ''
+  daily_inst:
+      driver: intake_esm.esm_datastore
+      args:
+        csv_kwargs:
+          usecols:
+          - project
+          - era_id
+          - dataType
+          - level_type
+          - frequency
+          - stepType
+          - table_id
+          - code
+          - validation_date
+          - initialization_date
+          - uri
+          - format
+          - path
+          - units
+          - long_name
+          - step
+          - short_name
+        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+      description: ERA5 instantaneous 2D data daily
+      metadata:
+        query:
+          frequency: daily
+          short_name: ['msl', 'u10', 'v10', 't2m']
+        cdf_kwargs:
+          chunks:
+            time: 1
+          engine: cfgrib
+          backend_kwargs: 
+            indexpath: ''
+  daily_acc:
+      driver: intake_esm.esm_datastore
+      args:
+        csv_kwargs:
+          usecols:
+          - project
+          - era_id
+          - dataType
+          - level_type
+          - frequency
+          - stepType
+          - table_id
+          - code
+          - validation_date
+          - initialization_date
+          - uri
+          - format
+          - path
+          - units
+          - long_name
+          - step
+          - short_name
+        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+      description: ERA5 accumulated 2D data daily
+      metadata:
+        query:
+          frequency: daily
+          short_name: ['tsr', 'ttr', 'e', 'tisr', 'tp']
+        cdf_kwargs:
+          chunks:
+            time: 1
+          engine: cfgrib
+          backend_kwargs: 
+            indexpath: ''

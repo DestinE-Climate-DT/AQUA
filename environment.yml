@@ -5,7 +5,6 @@ dependencies:
   - python>=3.9,<3.11
   - pyYAML
   - xarray
-  - intake
   - dask
   - numpy
   - jinja2
@@ -13,7 +12,6 @@ dependencies:
   - udunits2
   - zarr
   - netcdf4
-  - intake-xarray
   - ecCodes      
   - matplotlib
   - cartopy
@@ -22,10 +20,16 @@ dependencies:
   - cfunits
   - metpy
   - cdo
+  - intake-esm=2021.8.17
+  - intake
+  - intake-xarray
   - pip
   - pip:
     - sparse
     - docker
     - gribscan
     - git+https://github.com/jhardenberg/smmregrid.git
+#    - git+https://github.com/intake/intake.git
+#    - git+https://github.com/intake/intake-xarray.git 
+#    - git+https://github.com/intake/intake-esm.git
 

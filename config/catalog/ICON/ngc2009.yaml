@@ -34,3 +34,13 @@ sources:
     args:
       consolidated: True
       urlpath: /work/bb1153/m300827/ngc2009/R02B09/oce_0-200m_3h_inst_1.zarr
+  intake-esm-test:
+      driver: intake_esm.esm_datastore
+      args:
+        esmcol_obj: /work/ka1081/Catalogs/dyamond-nextgems.json
+      description: Test Intake-ESM Catalog
+      metadata:
+        query:
+          simulation_id: ngc2009
+          frequency: 30minute
+          time_reduction: inst
