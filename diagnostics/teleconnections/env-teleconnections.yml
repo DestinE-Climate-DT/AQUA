@@ -20,6 +20,7 @@ dependencies:
   - ecCodes
   - healpy
   - intake
+  - intake-esm=2021.8.17
   - intake-xarray
   - ipykernel
   - jinja2

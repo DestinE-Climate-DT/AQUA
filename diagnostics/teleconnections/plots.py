@@ -119,21 +119,48 @@ def hovmoller_plot_test(infile,dim='lon',outputdir=None,title=None,
     
     return fig, ax
 
-def index_plot(indx):
+def index_plot(indx,title=None,xlabel=None,ylabel=None,xlog=False,
+               ylog=False,save=False,outputdir='./',filename='index.png'):
     """
-    Index plot together with red line at indx=0
+    Index plot together with a black line at indx=0
 
     Args:
         indx (DataArray): Index DataArray
+        title (str,opt):        title of the plot
+        xlabel (str,opt):       label of the x axis
+        ylabel (str,opt):       label of the y axis
+        xlog (bool,opt):        enable or disable x axis log scale, 
+                                default is False
+        ylog (bool,opt):        enable or disable y axis log scale, 
+                                default is False
+        save (bool,opt):        enable or disable saving the plot,
+                                default is False
+        outputdir (str,opt):    directory to save the plot
     
     Returns:
+        fig (Figure):           Figure object
+        ax (Axes):              Axes object
     """
+    # 1. -- Generate the figure --
     fig, ax = plt.subplots(figsize=(12, 8))
-    
-    indx.plot(ax=ax,ds='steps')
-    ax.hlines(y=0,xmin=min(indx['time']),xmax=max(indx['time']),
-              color='red')
-    return
+
+    # 2. -- Plot the index --
+    plt.fill_between(indx.time,indx.values,where=indx.values>=0, step="pre", 
+                     alpha=0.6,color='red')
+    plt.fill_between(indx.time,indx.values,where=indx.values<0, step="pre",
+                     alpha=0.6,color='blue')
+    indx.plot.step(ax=ax,color='black',alpha=0.8)
+
+    ax.hlines(y=0,xmin=min(indx['time']),xmax=max(indx['time']),color='black')
+
+    # 3. -- Set the layout --
+    set_layout(fig,ax,title=title,xlabel=xlabel,ylabel=ylabel,xlog=xlog,ylog=ylog)
+
+    # 4. -- Save the figure --
+    if save:
+        fig.savefig(outputdir + filename)
+
+    return fig, ax
 
 def reg_plot(indx,field,projection_type='PlateCarree',plot=True):
     """

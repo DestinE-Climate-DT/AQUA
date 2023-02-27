@@ -4,34 +4,41 @@ This module contains simple tools for the teleconnections diagnostic.
 - conversion functions, to deal with conversion between different physical units.
 '''
 import yaml
+import sys
 import numpy as np
+sys.path.insert(1, '../../')
+from aqua import util
 
-def load_config(machine):
+def load_config(machine='wilma',configdir='../../config/'):
     """
     Load machine config yaml file.
 
     Args:
-        machine (str): machine name
+        machine (str):   machine name
+        configdir (str): path to config directory
     
     Returns:
-        config (dict):
+        config (dict):  machine config
     """
-    with open(f'../../config/config_{machine}.yml', 'r', encoding='utf-8') as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+    infile = f'{configdir}/config_{machine}.yml'
+    config = util.load_yaml(infile)
+
     return config
 
-def load_namelist(diagname):
+def load_namelist(diagname='teleconnections',configdir='./'):
     """
     Load diagnostic yaml file.
 
     Args:
-        diagname (str): diagnostic name
+        diagname (str):  diagnostic name
+        configdir (str): path to config directory
     
     Returns:
-        namelist (dict):
+        namelist (dict): diagnostic config
     """
-    with open(f'{diagname}.yml', 'r', encoding='utf-8') as file:
-        namelist = yaml.load(file, Loader=yaml.FullLoader)
+    infile = f'{configdir}/{diagname}.yml'
+    namelist = util.load_yaml(infile)
+    
     return namelist
 
 def lon_180_to_360(lon):
