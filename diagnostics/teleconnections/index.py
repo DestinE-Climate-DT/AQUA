@@ -70,29 +70,3 @@ def regional_mean_index(field,namelist,telecname,months_window=3):
     field_mean = field_mean.rolling(time=months_window,center=True).mean(skipna=True)
 
     return field_mean
-
-def regional_mean_index2(field,namelist,telecname,months_window=3):
-    """
-    Evaluate field mean for a teleconnection.
-    Uses boxing without considering border points.
-
-    Args:
-        field (DataArray):        field over which evaluate the index
-        namelist:                 teleconnection yaml infos
-        telecname (str):          name of the teleconnection to be evaluated
-        months_window (int, opt): months for rolling average, default is 3
-
-    Returns:
-        indx (DataArray): standardized index
-    """
-    # 1. -- Acquire coordinates --
-    lonW = lon_180_to_360(namelist[telecname]['lonW']) # conversion can be inserted as a check in other funcs using coordinates
-    lonE = lon_180_to_360(namelist[telecname]['lonE'])
-    latN = namelist[telecname]['latN']
-    latS = namelist[telecname]['latS']
-
-    # 2. -- Evaluate mean value of the field and then the rolling mean --
-    field_mean = wgt_area_mean(field, latN, latS, lonW, lonE,box_brd=False)
-    field_mean = field_mean.rolling(time=months_window,center=True).mean(skipna=True)
-
-    return field_mean
