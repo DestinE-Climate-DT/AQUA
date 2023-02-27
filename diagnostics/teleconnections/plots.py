@@ -34,7 +34,9 @@ def set_layout(fig, ax,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False)
         ax.set_yscale('symlog')
     return fig, ax
 
-def cor_plot(indx,field,projection_type='PlateCarree',plot=True):
+def cor_plot(indx,field,plot=True,projection_type='PlateCarree',
+             title=None,xlabel=None,ylabel=None,xlog=False,ylog=False,
+             contour=False,levels=8,save=False,outputdir='./',filename='cor.png'):
     """
     Evaluate and plot correlation map of a teleconnection index 
     and a DataArray field
@@ -46,29 +48,50 @@ def cor_plot(indx,field,projection_type='PlateCarree',plot=True):
                                 If a wrong one is provided, it will fall back
                                 to PlateCarree
         plot (bool):            enable or disable the plot output, true by default
+        title (str,opt):        title of the plot
+        xlabel (str,opt):       label of the x axis
+        ylabel (str,opt):       label of the y axis
+        xlog (bool,opt):        enable or disable x axis log scale, default is False
+        ylog (bool,opt):        enable or disable y axis log scale, default is False
+        contour (bool,opt):     enable or disable contour plot, default is False
+        levels (int,opt):       number of contour levels, default is 8
     
     Returns:
-        reg (DataArray): DataArray for correlation map
+        reg (DataArray):        DataArray for regression map
+        fig (Figure,opt):       Figure object
+        ax (Axes,opt):          Axes object
     """
+    # 1. -- List of accepted projection maps --
     projection_types = {
         'PlateCarree': ccrs.PlateCarree(),
         'LambertConformal': ccrs.LambertConformal(),
         'Mercator': ccrs.Mercator()
     }
 
-    # 1. -- Evaluate the map --
+    # 2. -- Evaluate the map --
     cor = xr.corr(indx,field, dim="time")
-
+    
+    # 3. -- Plot the regression map --
     proj = projection_types.get(projection_type, ccrs.PlateCarree())
 
     if plot:
         fig, ax = plt.subplots(subplot_kw={'projection': proj},figsize=(8,4))
-        ax.set_xlabel('longitude')
-        ax.set_ylabel('latitude')
+        
         ax.coastlines()
-        cor.plot(ax=ax)
+        if contour:
+            cor.plot.contourf(ax=ax, transform=ccrs.PlateCarree(),levels=levels)
+        else:
+            cor.plot(ax=ax, transform=ccrs.PlateCarree())
+        
+        set_layout(fig, ax, title=title, xlabel=xlabel, ylabel=ylabel, xlog=xlog, ylog=ylog)
+        
+        # 4. -- Save the figure --
+        if save:
+            fig.savefig(outputdir + filename)
 
-    return cor
+        return cor, fig, ax
+    else:
+        return cor
 
 def hovmoller_plot_test(infile,dim='lon',outputdir=None,title=None,
                    xlabel=None,ylabel=None,contour=True,xlog=False,ylog=False):
