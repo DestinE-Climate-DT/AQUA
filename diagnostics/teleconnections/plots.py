@@ -5,7 +5,8 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import xarray as xr
 
-def set_layout(fig, ax,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False):
+def set_layout(fig, ax,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False,
+               xlim=None,ylim=None):
     """
     Set the layout of the plot
 
@@ -17,6 +18,8 @@ def set_layout(fig, ax,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False)
         ylabel (str,opt):       label of the y axis
         xlog (bool,opt):        enable or disable x axis log scale, default is False
         ylog (bool,opt):        enable or disable y axis log scale, default is False
+        xlim (tuple,opt):       x axis limits
+        ylim (tuple,opt):       y axis limits
 
     Returns:
         fig (Figure):           Figure object
@@ -32,6 +35,11 @@ def set_layout(fig, ax,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False)
         ax.set_xscale('symlog')
     if ylog:
         ax.set_yscale('symlog')
+    if xlim:
+        ax.set_xlim(xlim)
+    if ylim:
+        ax.set_ylim(ylim)
+    
     return fig, ax
 
 def cor_plot(indx,field,plot=True,projection_type='PlateCarree',
@@ -93,19 +101,27 @@ def cor_plot(indx,field,plot=True,projection_type='PlateCarree',
     else:
         return cor
 
-def hovmoller_plot_test(infile,dim='lon',outputdir=None,title=None,
-                   xlabel=None,ylabel=None,contour=True,xlog=False,ylog=False):
+def hovmoller_plot(infile,dim='lon',title=None, xlabel=None,ylabel=None,
+                   contour=True,levels=8,xlog=False,ylog=False,xlim=None,
+                   ylim=None,invert_axis=False,save=False, outputdir='./',
+                   filename='hovmoller.png'):
     '''
     Args:
         infile (DataArray):     DataArray to be plot
         dim (str,opt):          dimension to be averaged over, default is 'lon'
-        outputdir (str,opt):    directory to save the plot
         title (str,opt):        title of the plot
         xlabel (str,opt):       label of the x axis
         ylabel (str,opt):       label of the y axis
         contour (bool,opt):     enable or disable contour plot, default is True
+        levels (int,opt):       number of contour levels, default is 8
         xlog (bool,opt):        enable or disable x axis log scale, default is False
         ylog (bool,opt):        enable or disable y axis log scale, default is False
+        xlim (tuple,opt):       x axis limits
+        ylim (tuple,opt):       y axis limits
+        invert_axis (bool,opt): enable or disable axis inversion, default is False
+        save (bool,opt):        enable or disable saving the figure, default is False
+        outputdir (str,opt):    output directory for the figure, default is './'
+        filename (str,opt):     filename for the figure, default is 'hovmoller.png'
     
     Returns:
         fig (Figure):           Figure object
@@ -113,13 +129,22 @@ def hovmoller_plot_test(infile,dim='lon',outputdir=None,title=None,
     '''
     infile_mean = infile.mean(dim=dim,keep_attrs=True)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(12, 8))
 
     # Contour or pcolormesh plot
     if contour:
-        im = ax.contourf(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+        if invert_axis:
+            im = ax.contourf(infile_mean.coords[infile_mean.dims[-1]], infile_mean.coords['time'], 
+                             infile_mean,levels=levels)
+        else:
+            im = ax.contourf(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], 
+                         infile_mean.T,levels=levels)
     else:
-        im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
+        if invert_axis:
+            im = ax.pcolormesh(infile_mean.coords[infile_mean.dims[-1]], infile_mean.coords['time'], 
+                               infile_mean)
+        else:
+            im = ax.pcolormesh(infile_mean.coords['time'], infile_mean.coords[infile_mean.dims[-1]], infile_mean.T)
         
     # Colorbar
     try:
@@ -130,15 +155,24 @@ def hovmoller_plot_test(infile,dim='lon',outputdir=None,title=None,
     except AttributeError:
         plt.colorbar(im, ax=ax, label=infile_mean.name)
     
-    set_layout(fig,ax,title=title,xlabel=xlabel,ylabel=ylabel,xlog=xlog,ylog=ylog)
+    set_layout(fig,ax,title=title,xlabel=xlabel,ylabel=ylabel,
+               xlog=xlog,ylog=ylog,xlim=xlim,ylim=ylim)
     
     # Custom labels if provided
     if xlabel == None:
-        ax.set_xlabel('time')
+        if invert_axis:
+            ax.set_xlabel(infile_mean.dims[-1])
+        else:
+            ax.set_xlabel('time')
     if ylabel == None:
-        ax.set_ylabel(infile_mean.dims[-1])
+        if invert_axis:
+            ax.set_ylabel('time')
+        else:
+            ax.set_ylabel(infile_mean.dims[-1])
     if title == None:
         ax.set_title(f'Hovmoller Plot ({dim} mean)')
+    if save:
+        fig.savefig(outputdir + filename)
     
     return fig, ax
 

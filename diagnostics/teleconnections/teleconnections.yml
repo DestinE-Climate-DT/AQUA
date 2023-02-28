@@ -26,3 +26,9 @@ ENSO:
   lonW: -170
   latS: -5
   lonE: -120
+
+# MJO
+MJO:
+  field: ttr
+  latN:  10
+  latS: -10
