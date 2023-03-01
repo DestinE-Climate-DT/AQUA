@@ -280,3 +280,38 @@ def reg_plot(indx,field,plot=True,projection_type='PlateCarree',
         return reg, fig, ax
     else:
         return reg
+
+def simple_plot(field,title=None,xlabel=None,ylabel=None,xlog=False,ylog=False,
+                save=False,outputdir='./',filename='plot.png'):
+    """
+    Simple plot of a DataArray field
+
+    Args:
+        field (DataArray):      field DataArray
+        title (str,opt):        title of the plot
+        xlabel (str,opt):       label of the x axis
+        ylabel (str,opt):       label of the y axis
+        xlog (bool,opt):        enable or disable x axis log scale, default is False
+        ylog (bool,opt):        enable or disable y axis log scale, default is False
+        save (bool,opt):        enable or disable saving the plot, default is False
+        outputdir (str,opt):    directory to save the plot
+        filename (str,opt):     filename of the plot
+
+    Returns:
+        fig (Figure):           Figure object
+        ax (Axes):              Axes object
+    """
+    # 1. -- Generate the figure --
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # 2. -- Plot the field --
+    field.plot(ax=ax)
+
+    # 3. -- Set the layout --
+    set_layout(fig,ax,title=title,xlabel=xlabel,ylabel=ylabel,xlog=xlog,ylog=ylog)
+
+    # 4. -- Save the figure --
+    if save:
+        fig.savefig(outputdir + filename)
+    
+    return fig, ax

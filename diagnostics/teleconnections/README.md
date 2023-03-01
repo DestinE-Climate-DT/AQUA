@@ -31,3 +31,14 @@ The folder `old_notebooks` contains previous version of notebooks whose code is 
 - `test_ENSO_index` contains examples of Nino 3.4 index evaluation
 - `test_ENSO_regression` contains example of correlation or covariance maps obtained from the previously evaluated ENSO index
 - `test_cdo_bindings` contains an example of NAO index evaluation with cdo bindings
+
+## Create the teleconnections env and add kernel for DKRZ jupyterhub
+
+Documentation on adding kernels: https://docs.dkrz.de/doc/software%26services/jupyterhub/kernels.html#use-your-own-kernel
+
+It should come down to:
+
+'''bash
+mamba env create -f env-teleconnections.yml # or conda 
+python -m ipykernel install --user --name teleconnections --display-name="teleconnections"
+'''
