@@ -1,0 +1,11 @@
+teleconnections:
+  NAO:
+    IFS:
+      var: msl
+    ERA5:
+      var: msl
+  ENSO:
+    IFS:
+      var: 2t
+    ERA5:
+      var: tas

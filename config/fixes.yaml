@@ -53,3 +53,14 @@ models:
                 name: "{latitude}"
             longitude:
                 name: "{longitude}"
+    
+    ERA5:
+        vars:
+            t2m: 
+                short_name: tas
+                units: "{temperature}"
+        coords:
+            latitude:
+                name: "{latitude}"
+            longitude:
+                name: "{longitude}"
