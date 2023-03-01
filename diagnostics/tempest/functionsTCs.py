@@ -5,12 +5,22 @@ import xarray as xr
 import os
 import subprocess
 
-
 def readwrite_from_intake(model, exp, timestep, grid, tgtdir): 
 
   """
-  Given a model and an experiments, read data from intake catalog and store them in a
-  netcdf file so that we can work analyse it with TempestExtreme
+  Given a climate model, an experiment, a timestamp, a grid, and a target directory,
+  this function reads data from the intake catalog, stores them in a netCDF file, 
+  and returns a dictionary of processed data that can be analyzed with TempestExtreme.
+
+  Args:
+    	model: A string representing the climate model, e.g. "IFS".
+      exp: A string representing the experiment to retrieve data from.
+      timestep: A pandas Timestamp object representing the time of interest.
+      grid: A string representing the grid to use for regridding.
+      tgtdir: A string representing the target directory where the output file will be saved.
+
+  return: 
+      Outdict: A dictionary containing the processed data with keys "lon", "lat", "psl", "zg", "uas", "vas", and "regrid_file".
   """
 
   
@@ -105,7 +115,7 @@ def run_detect_nodes(tempest_dictionary, tempest_filein, tempest_fileout) :
     f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
     f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
-    subprocess.run(detect_string.split())#, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
     return detect_string
 
@@ -214,9 +224,13 @@ def write_fullres_field(gfield, filestore):
         gfield: field to write
         filestore: file to save
     """
-    
-    compression = {str(gfield.name): {'zlib': True}}
-    gfield.where(gfield!=0).to_netcdf(filestore, encoding=compression)
+
+    time_encoding = {'units': 'days since 1970-01-01',
+                 'calendar': 'standard',
+                 'dtype': 'float64',
+                 'zlib': True}
+
+    gfield.where(gfield!=0).to_netcdf(filestore,  encoding={'time': time_encoding})
     gfield.close()
 
 def reorder_tracks(track_file):
