@@ -22,16 +22,6 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 - `test_cdovslib` contains examples of the usage of functions contained in `cdotesting.py`, in order to build the `unit_test.py`
 - `test_libraries` contains examples of usage of the functions implemented in the .py files. (obsolete)
 
-### Old notebooks
-
-The folder `old_notebooks` contains previous version of notebooks whose code is now in library functions
-
-- `test_NAO_index` contains examples of NAO index evaluation (station based)
-- `test_NAO_regression` contains example of correlation or covariance maps obtained from the previously evaluated NAO index
-- `test_ENSO_index` contains examples of Nino 3.4 index evaluation
-- `test_ENSO_regression` contains example of correlation or covariance maps obtained from the previously evaluated ENSO index
-- `test_cdo_bindings` contains an example of NAO index evaluation with cdo bindings
-
 ## Create the teleconnections env and add kernel for DKRZ jupyterhub
 
 Documentation on adding kernels: https://docs.dkrz.de/doc/software%26services/jupyterhub/kernels.html#use-your-own-kernel
