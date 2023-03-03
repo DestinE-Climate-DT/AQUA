@@ -390,6 +390,7 @@ class Reader():
         check = self._check_if_accumulated(data)
 
         if not check: 
+            print('Data is not cumulated')
             return data
         
         else: 
