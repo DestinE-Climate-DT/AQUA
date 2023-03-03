@@ -17,10 +17,8 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 ## Notebooks (WIP)
 
 - `cdo_testing` contains an example of usage of the cdo bindings introduced in the `cdotesting.py` file.
-- `NAO/ENSO_era5` contains the respective teleconnections evaluatev with the library methods
-- `NAO_monthly/seasonal_comparison` are two notebooks containing the comparison between cdo and teleconnections diagnostic, together with a comparison with ncar NAO data.
+- `NAO/ENSO` contains the respective teleconnections evaluatev with the library methods
 - `test_cdovslib` contains examples of the usage of functions contained in `cdotesting.py`, in order to build the `unit_test.py`
-- `test_libraries` contains examples of usage of the functions implemented in the .py files. (obsolete)
 
 ## Create the teleconnections env and add kernel for DKRZ jupyterhub
 
