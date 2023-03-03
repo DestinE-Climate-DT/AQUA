@@ -32,3 +32,5 @@ MJO:
   field: ttr
   latN:  10
   latS: -10
+  lonW:  30
+  lonE:  200

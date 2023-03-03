@@ -9,3 +9,8 @@ teleconnections:
       var: 2t
     ERA5:
       var: tas
+  MJO:
+    IFS:
+      var: ttr
+    ERA5:
+      var: ttr
