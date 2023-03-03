@@ -1,0 +1,19 @@
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: mon
+  outdir: /work/bb1153/b382076/IFS-lowres
+
+# all the variable listed here will be processed by the LRA creator
+catalog:
+  FESOM:
+    tco2559-ng5:
+      original_2d:
+        vars: ['sst', 'sss']
+  IFS:
+    tco2559-ng5:
+      ICMU_atm3d:
+        vars: ['v']
+      ICMGG_atm2d:
+        vars: ['hcc', 'lcc', 'mcc', 'nsss', 'ewss', 'e']
+      
