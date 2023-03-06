@@ -9,11 +9,9 @@ sources:
       args:
         csv_kwargs:
           usecols:
-          - project
-          - era_id
-          - dataType
           - level_type
           - frequency
+          - stepType
           - stepType
           - table_id
           - code
@@ -21,14 +19,14 @@ sources:
           - initialization_date
           - uri
           - format
-          - path
-          - units
-          - long_name
-          - step
           - short_name
-        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+          dtype:
+            initialization_date: str
+            validation_date: str
+        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 instantaneous 2D data monthly averaged
       metadata:
+        query_var: short_name
         query:
           frequency: monthly
           short_name: ['siconc', 'z', 'sp', 'tcw', 'sd', 'msl', 
@@ -45,11 +43,9 @@ sources:
       args:
         csv_kwargs:
           usecols:
-          - project
-          - era_id
-          - dataType
           - level_type
           - frequency
+          - stepType
           - stepType
           - table_id
           - code
@@ -57,14 +53,14 @@ sources:
           - initialization_date
           - uri
           - format
-          - path
-          - units
-          - long_name
-          - step
           - short_name
-        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+          dtype:
+            initialization_date: str
+            validation_date: str
+        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 accumulated 2D data monthly averaged
       metadata:
+        query_var: short_name
         query:
           frequency: monthly
           short_name: [ 
@@ -82,11 +78,9 @@ sources:
       args:
         csv_kwargs:
           usecols:
-          - project
-          - era_id
-          - dataType
           - level_type
           - frequency
+          - stepType
           - stepType
           - table_id
           - code
@@ -94,14 +88,14 @@ sources:
           - initialization_date
           - uri
           - format
-          - path
-          - units
-          - long_name
-          - step
           - short_name
-        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+          dtype:
+            initialization_date: str
+            validation_date: str
+        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 instantaneous 2D data daily
       metadata:
+        query_var: short_name
         query:
           frequency: daily
           short_name: ['msl', 'u10', 'v10', 't2m']
@@ -116,11 +110,9 @@ sources:
       args:
         csv_kwargs:
           usecols:
-          - project
-          - era_id
-          - dataType
           - level_type
           - frequency
+          - stepType
           - stepType
           - table_id
           - code
@@ -128,14 +120,31 @@ sources:
           - initialization_date
           - uri
           - format
-          - path
-          - units
-          - long_name
-          - step
           - short_name
-        esmcol_obj: https://gitlab.dkrz.de/data-infrastructure-services/intake-esm/-/raw/master/esm-collections/cloud-access/dkrz_era5_disk.json
+          # - project
+          # - era_id
+          # - dataType
+          # - level_type
+          # - frequency
+          # - stepType
+          # - table_id
+          # - code
+          # - validation_date
+          # - initialization_date
+          # - uri
+          # - format
+          # - path
+          # - units
+          # - long_name
+          # - step
+#          - short_name
+          dtype:
+            initialization_date: str
+            validation_date: str
+        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 accumulated 2D data daily
       metadata:
+        query_var: short_name
         query:
           frequency: daily
           short_name: ['tsr', 'ttr', 'e', 'tisr', 'tp']

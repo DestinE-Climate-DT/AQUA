@@ -24,4 +24,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/ERA5/main.yaml"
-
+  CERES:
+    description: CERES-EBAF radiation data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/CERES/main.yaml"

@@ -88,6 +88,24 @@ source_grids:
         path: /home/b/b382075/work/datasets/MSWEP_V280/Past/Monthly/200001.nc
         space_coord: ["lon", "lat"]
 
+  CERES:
+    ebaf-toa42:
+      default:
+        path: /pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Ed4.2_Subset_200003-202208.nc
+        space_coord: ["lon", "lat"]
+    ebaf-toa41:
+      default:
+        path: /pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Ed4.1_Subset_200003-202203.nc
+        space_coord: ["lon", "lat"]
+    ebaf-sfc41:
+      default:
+        path: /pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-Surface_Ed4.1_Subset_200003-202203.nc
+        space_coord: ["lon", "lat"]
+    syn-toa41:
+      default:
+        path: /work/bb1153/m300265/NextGEMS/observations/ceres-ebaf/daily/CERES_SYN1deg-Day_Terra-Aqua-MODIS_Ed4.1_Subset_20210125-20211231.nc
+        space_coord: ["lon", "lat"]
+
   ERA5:
     era5:
       default:
