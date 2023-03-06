@@ -263,7 +263,7 @@ class Reader():
                 source_grid_file.close()
             area_file.close()
 
-    def retrieve(self, regrid=False, timmean=False, fix=True, apply_unit_fix=True, var=None, vars=None):
+    def retrieve(self, regrid=False, timmean=False, decumulate=True, fix=True, apply_unit_fix=True, var=None, vars=None):
         """
         Perform a data retrieve.
         
@@ -418,7 +418,6 @@ class Reader():
         check = self._check_if_accumulated(data)
 
         if not check: 
-            print('Data is not cumulated')
             return data
         
         else: 
