@@ -1,15 +1,20 @@
 teleconnections:
   NAO:
+    var: msl
     IFS:
       var: msl
     ERA5:
       var: msl
+    testfile: /work/bb1153/b382289/AQUA/diagnostics/teleconnections/data/nao_test.nc
   ENSO:
+    var: skt
     IFS:
       var: 2t
     ERA5:
-      var: tas
+      var: skt
+    testfile: /work/bb1153/b382289/AQUA/diagnostics/teleconnections/data/enso_test.nc
   MJO:
+    var: ttr
     IFS:
       var: ttr
     ERA5:
