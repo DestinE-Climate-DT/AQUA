@@ -13,10 +13,10 @@ class Reader():
         self.targetgrid = regrid
         self.zoom = zoom
 
-        catalog_file = "config/catalog.yaml"
+        catalog_file = "../../config/catalog.yaml"
         self.cat = intake.open_catalog(catalog_file)
 
-        cfg_regrid = load_yaml("config/regrid.yaml")
+        cfg_regrid = load_yaml("../../config/regrid.yaml")
 
         if source:
             self.source = source

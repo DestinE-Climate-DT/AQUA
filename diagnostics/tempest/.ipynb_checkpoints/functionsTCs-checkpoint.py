@@ -3,131 +3,14 @@ sys.path.append('../../')
 from aqua import Reader
 import xarray as xr
 import os
-from glob import glob
 import subprocess
-import pandas as pd
-from datetime import datetime
 
-def detect_nodes_zoomin(retrieve_dictionary, dirs, varlist, original_dictionary, lowgrid, highgrid, write_fullres=False):
-
-    # loop on timerecords
-    for tstep in pd.date_range(start=f'{retrieve_dictionary["init_year"]}-{retrieve_dictionary["init_month"]}-{retrieve_dictionary["init_day"]}',  
-                        end=f'{retrieve_dictionary["end_year"]}-{retrieve_dictionary["end_month"]}-{retrieve_dictionary["end_day"]}', freq=retrieve_dictionary["frequency"]).strftime('%Y%m%dT%H'):
-
-        print(tstep)
-        # read from catalog, interpolate, write to disk and create a dictionary with useful information to run tempest commands
-        tempest_dictionary = readwrite_from_intake(model='IFS', exp = 'tco2559-ng5', timestep=tstep, grid=lowgrid, tgtdir=dirs['regdir'])
-
-        # define the tempest detect nodes output
-        txt_file = os.path.join(dirs['tmpdir'], 'tempest_output_' + tstep + '.txt')
-
-        # run the node detection on the low res files
-        tempest_command = run_detect_nodes(tempest_dictionary, tempest_dictionary['regrid_file'], txt_file)
-
-        # remove the low res files
-        clean_files([tempest_dictionary['regrid_file']])
-        
-        # identify the nodes
-        tempest_nodes = read_lonlat_nodes(txt_file)
-
-        # load the highres files
-        #reader2d = Reader(model='IFS', exp = 'tco2559-ng5', source="ICMGG_atm2d")
-        reader2d = Reader(model='IFS', exp = 'tco2559-ng5', source="ICMGG_atm2d", regrid=highgrid)
-        fulldata = reader2d.retrieve().sel(time=tstep)
-        
-        # in case you want to write netcdf file with ullres field after Detect Nodes
-        if write_fullres:
-          # loop on variables to write to disk only the subset of high res files
-          for var in varlist : 
-
-              varfile = original_dictionary[var]
-
-              data = reader2d.regrid(fulldata[varfile])
-              data.name = var
-              xfield = store_fullres_field(0, data, tempest_nodes, boxdim)
-
-              store_file = os.path.join(dirs['tmpdir'], f'TC_{var}_{tstep}.nc')
-              write_fullres_field(xfield, store_file)
-
-def stitch_nodes_zoomin(retrieve_dictionary, dirs, varlist, n_days_ext, write_fullres, n_days_freq, boxdim):
-
-    # loop on each time stamp in dates
-    for block in pd.date_range(start=f'{retrieve_dictionary["init_year"]}-{retrieve_dictionary["init_month"]}-{retrieve_dictionary["init_day"]}', 
-                               end=f'{retrieve_dictionary["end_year"]}-{retrieve_dictionary["end_month"]}', freq=str(n_days_freq)+'D'):
-
-        # create DatetimeIndex with daily frequency
-        dates = pd.date_range(start=block, periods=n_days_freq, freq='D')
-
-        before = dates.shift(-n_days_ext, freq='D')[0:n_days_ext]
-        after = dates.shift(+n_days_ext, freq='D')[-n_days_ext:]
-
-        # concatenate the indexes to create a single index
-        date_index = before.append(dates).append(after)
-
-        # create list of file paths to include in glob pattern
-        file_paths = [os.path.join(dirs['tmpdir'], f"tempest_output_{date}T??.txt") for date in date_index.strftime('%Y%m%d')]
-        # use glob to get list of filenames that match the pattern
-        filenames = []
-        for file_path in file_paths:
-            filenames.extend(sorted(glob(file_path)))
-        #print(filenames)
-
-        track_file = os.path.join(dirs['tmpdir'], f'tempest_track_{block.strftime("%Y%m%d")}-{dates[-1].strftime("%Y%m%d")}.txt')
-
-        # run stitch nodes, MAXGAP set to 6h to match the input files res
-        stitch_string = run_stitch_nodes(filenames, track_file, maxgap = '6h')
-
-        # create DatetimeIndex with daily frequency
-        dates = pd.date_range(start=block, periods=n_days_freq, freq='D')
-        
-        # create output file with output from stitch nodes 
-        track_file = os.path.join(dirs['tmpdir'], f'tempest_track_{block.strftime("%Y%m%d")}-{dates[-1].strftime("%Y%m%d")}.txt')
-
-        # reordered_tracks is a dict containing the concatenated (in time) tracks
-        # at eatch time step are associated all lons/lats
-
-        reordered_tracks = reorder_tracks(track_file)
-
-        if write_fullres:
-          for var in varlist : 
-              print(var)
-              # initialise full_res fields at 0 before the loop
-              xfield = 0
-              for idx in reordered_tracks.keys():
-                  #print(datetime.strptime(idx, '%Y%m%d%H').strftime('%Y%m%d'))
-                  #print (dates.strftime('%Y%m%d'))
-                  if datetime.strptime(idx, '%Y%m%d%H').strftime('%Y%m%d') in dates.strftime('%Y%m%d'):
-
-                      timestep = datetime.strptime(idx, '%Y%m%d%H').strftime('%Y%m%dT%H')
-                      print (timestep)
-                      fullres_file = os.path.join(dirs['tmpdir'], f'TC_{var}_{timestep}.nc')
-                      fullres_field = xr.open_mfdataset(fullres_file)[var]
-
-                      # get the full res field and store the required values around the Nodes
-                      xfield = store_fullres_field(xfield, fullres_field, reordered_tracks[idx], boxdim)
-
-              print('Storing output')
-
-              # store the file
-              store_file = os.path.join(dirs['tmpdir'], f'tempest_tracks_{var}_{block.strftime("%Y%m%d")}-{dates[-1].strftime("%Y%m%d")}.nc')
-              write_fullres_field(xfield, store_file)
 
 def readwrite_from_intake(model, exp, timestep, grid, tgtdir): 
 
   """
-  Given a climate model, an experiment, a timestamp, a grid, and a target directory,
-  this function reads data from the intake catalog, stores them in a netCDF file, 
-  and returns a dictionary of processed data that can be analyzed with TempestExtreme.
-
-  Args:
-    	model: A string representing the climate model, e.g. "IFS".
-      exp: A string representing the experiment to retrieve data from.
-      timestep: A pandas Timestamp object representing the time of interest.
-      grid: A string representing the grid to use for regridding.
-      tgtdir: A string representing the target directory where the output file will be saved.
-
-  return: 
-      Outdict: A dictionary containing the processed data with keys "lon", "lat", "psl", "zg", "uas", "vas", and "regrid_file".
+  Given a model and an experiments, read data from intake catalog and store them in a
+  netcdf file so that we can work analyse it with TempestExtreme
   """
 
   
@@ -139,7 +22,8 @@ def readwrite_from_intake(model, exp, timestep, grid, tgtdir):
 
   outfield = 0
   data2d = reader2d.retrieve()
-  fileout=os.path.join(tgtdir, f'regrid_{timestep}.nc')
+  tstep = timestep.strftime('%Y%m%dT%H')
+  fileout=os.path.join(tgtdir, f'regrid_{tstep}.nc')
 
   for var in varlist2d:
     lowres = reader2d.regrid(data2d[var].sel(time=timestep))
@@ -330,13 +214,9 @@ def write_fullres_field(gfield, filestore):
         gfield: field to write
         filestore: file to save
     """
-
-    time_encoding = {'units': 'days since 1970-01-01',
-                 'calendar': 'standard',
-                 'dtype': 'float64',
-                 'zlib': True}
-
-    gfield.where(gfield!=0).to_netcdf(filestore,  encoding={'time': time_encoding})
+    
+    compression = {str(gfield.name): {'zlib': True}}
+    gfield.where(gfield!=0).to_netcdf(filestore, encoding=compression)
     gfield.close()
 
 def reorder_tracks(track_file):
