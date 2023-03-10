@@ -1,0 +1,10 @@
+# machine dependent configuration file for AQUA
+# so far nothing is really strict
+machine: levante
+
+reader: 
+  catalog: 'config/{machine}/catalog.yaml'
+  regrid: 'config/{machine}/regrid.yaml'
+  fixer: 'config/fixes.yaml'
+
+

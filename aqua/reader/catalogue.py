@@ -1,11 +1,18 @@
 import intake
-from aqua.util import get_catalog_file
+from aqua.util import get_config_dir, get_machine, get_reader_filenames
 
 def catalogue(verbose=True, configdir=None):
 
     """Catalogue of available NextGEMS data (on Levante for now)"""
 
-    _, catalog_file = get_catalog_file(configdir=configdir)
+    # get the config dir and the machine
+    if not configdir: 
+        configdir = get_config_dir()
+    machine = get_machine(configdir)
+
+    # get configuration from the machine
+    catalog_file, _, _ = get_reader_filenames(configdir, machine)
+
 
     cat = intake.open_catalog(catalog_file)
     if verbose:
