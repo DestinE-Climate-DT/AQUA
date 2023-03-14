@@ -80,13 +80,13 @@ def get_reader_filenames(configdir, machine):
     basefile = os.path.join(configdir, "config.yaml")
     if os.path.exists(basefile):
         base = load_yaml(os.path.join(configdir, "config.yaml"))
-        catalog_file = base['reader']['catalog'].format(machine=machine)
+        catalog_file = base['reader']['catalog'].format(machine=machine, configdir=configdir)
         if not os.path.exists(catalog_file):
             sys.exit(f'Cannot find catalog file in {catalog_file}')
-        regrid_file = base['reader']['regrid'].format(machine=machine)
+        regrid_file = base['reader']['regrid'].format(machine=machine, configdir=configdir)
         if not os.path.exists(regrid_file):
             sys.exit(f'Cannot find catalog file in {regrid_file}')
-        fixer_file = base['reader']['fixer'].format(machine=machine)
+        fixer_file = base['reader']['fixer'].format(machine=machine, configdir=configdir)
         if not os.path.exists(fixer_file):
             sys.exit(f'Cannot find catalog file in {fixer_file}')
 
