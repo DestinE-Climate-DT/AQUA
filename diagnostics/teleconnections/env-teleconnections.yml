@@ -29,6 +29,7 @@ dependencies:
   - netcdf4
   - numpy
   - pip
+  - pytest
   - pyYAML
   - tqdm
   - udunits2
