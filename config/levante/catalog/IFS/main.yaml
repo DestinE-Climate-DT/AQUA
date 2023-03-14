@@ -14,3 +14,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/tco1279-orca025.yaml"
+  test-tco2559:
+    description: 4km experiment, coupled with FESOM
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/test-tco2559.yaml"
