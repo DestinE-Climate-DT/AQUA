@@ -1,0 +1,6 @@
+sources:
+  FESOM:
+    description: FESOM ocean model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/FESOM/main.yaml"

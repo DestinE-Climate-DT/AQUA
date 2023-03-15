@@ -1,0 +1,30 @@
+weights:
+   path: ./AQUA_tests_short/weights
+   template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
+
+areas:
+   path: ./AQUA_tests_short/weights
+   src_template: cell_area_{model}_{exp}_{source}.nc
+   dst_template: cell_area_{grid}.nc
+
+paths:
+  grids: ./AQUA_tests_short/weights
+  icon: /pool/data/ICON
+
+target_grids:
+  r200: r180x90
+
+
+# extra is an extra special cdo command to be applied before generating the weights
+source_grids:
+  FESOM:
+    test-pi:
+      original_2d:
+        path: ./AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc
+        space_coord: ["nod2"]
+        extra: 
+          - -setgrid,./AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc 
+          - -selname,cell_area 
+
+
+

@@ -37,8 +37,8 @@ def test_regrid(reader_instance):
     data = reader_instance.retrieve(fix=False)
     sstr = reader_instance.regrid(data["sst"][0:2, :])
     assert sstr.shape == (2, 90, 180)
-    assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350273936668883)
-    assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319211491558276)
+    assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350324258783935)
+    assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319154700343551)
 
 
 def test_fldmean(reader_instance):

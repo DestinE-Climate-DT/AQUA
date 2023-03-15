@@ -1,0 +1,23 @@
+name: aqua shell test
+
+on: [push]
+
+jobs:
+  aqua_test:
+    defaults:
+      run:
+        shell: bash -l {0}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Provision with Micromamba
+        uses: mamba-org/provision-with-micromamba@v11
+
+      # - name: Install Project
+      #   run: |
+      #     pip install .
+      - name: Run tests
+        run: |
+          ./tests.sh
