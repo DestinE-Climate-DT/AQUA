@@ -102,12 +102,15 @@ class TR_PR_Diagnostic:
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
     def coordinate_names(self, data):
 
+        coord_lat, coord_lon = None, None
+
         if 'Dataset' in str(type(data)): 
             for i in data._coord_names:
                 if 'lat' in i:
                     coord_lat = i
                 if 'lon' in i:
                     coord_lon = i 
+            
 
         elif 'DataArray' in str(type(data)):
             for i in data.coords:
@@ -115,28 +118,43 @@ class TR_PR_Diagnostic:
                     coord_lat = i
                 if 'lon' in i:
                     coord_lon = i 
-
         return coord_lat, coord_lon
 
+        
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
     def time_interpreter_b(self, dataset):
-        if  np.count_nonzero(dataset['time.hour'] == dataset['time.hour'][0]) == dataset.time.size:
-            print('old timestep is day')
-            return 'D'
-        elif np.count_nonzero(dataset['time.day'] == dataset['time.day'][0]) == dataset.time.size:
-            print( 'old timestep is month')
-            return 'M'    
-        elif np.count_nonzero(dataset['time.month'] == dataset['time.month'][0]) == dataset.time.size:
-            print('old timestep is year')
-            return 'Y'
-        elif np.count_nonzero(dataset['time.minute'] == dataset['time.minute'][0]) == dataset.time.size:
+        try:
+            if np.count_nonzero(dataset['time.second'] == dataset['time.second'][0]) == dataset.time.size:
+                if np.count_nonzero(dataset['time.minute'] == dataset['time.minute'][0]) == dataset.time.size:
+                    if  np.count_nonzero(dataset['time.hour'] == dataset['time.hour'][0]) == dataset.time.size:
+                        if np.count_nonzero(dataset['time.day'] == dataset['time.day'][0]) == dataset.time.size:
+                            if np.count_nonzero(dataset['time.month'] == dataset['time.month'][0]) == dataset.time.size:
+                                print('timestep is year')
+                                return 'Y'
+                            else:
+                                print( 'timestep is month')
+                                return 'M'  
+                        else:
+                            print('timestep is day')
+                            return 'D'
+                    else:
+                        timestep = dataset.time[1] - dataset.time[0]
+                        n_hours = int(timestep/(60 * 60 * 10**9) )
+                        print('timestep is ' + str(n_hours) + ' hours')
+                        return 'H'
+                else:
+                    timestep = dataset.time[1] - dataset.time[0]
+                    n_minutes = int(timestep/(60  * 10**9) )
+                    print('timestep is ' + str(n_minutes) + ' minutes')
+                    return 'MINUTE'
+            else:
+                print('timestep is NOT uniform or unknown')
+        except KeyError and AttributeError:
             timestep = dataset.time[1] - dataset.time[0]
-            n_hours = timestep/(60 * 60 * 10**9) 
-            print('old timestep is ' + str(n_hours) + 'hours')
-            return 'H'
-        else:
-            print('timestep is NOT uniform or unknown')
+            if timestep >=28 and timestep <=31:
+                print( 'timestep is month')
+                return 'M' 
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
@@ -216,9 +234,9 @@ class TR_PR_Diagnostic:
         coord_lat, coord_lon = self.coordinate_names(data)
 
         if 'Dataset' in str(type(data)):
-            data_1d  = data[variable_1]
+            data  = data[variable_1]
 
-        data_1d  = data_1d.stack(total=['time', coord_lat, coord_lon])
+        data_1d  = data.stack(total=['time', coord_lat, coord_lon])
         if sort == True:
             data_1d  = data_1d.sortby(data_1d)
         return data_1d
@@ -251,17 +269,24 @@ class TR_PR_Diagnostic:
                 object      (float)     :   The average value of the argument ***variable_1*** for each time step. 
             
         """
-        #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
+        if 'lat' in data.dims:
+            #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
+            self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
         
-        coord_lat, coord_lon = self.coordinate_names(data)
+        
+            coord_lat, coord_lon = self.coordinate_names(data)
 
-        ds = self.ds_per_lat_range(data, self.trop_lat)
-        ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
-        if 'Dataset' in str(type(data)):
-            ds = ds[variable_1]
+            ds = self.ds_per_lat_range(data, self.trop_lat)
+            ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
+            if 'Dataset' in str(type(data)):
+                ds = ds[variable_1]
 
-        return ds.mean(coord_lat).mean(coord_lon)
+            return ds.mean(coord_lat).mean(coord_lon)
+        else:
+            for i in data.dims:
+                coord = i
+            return data.median(coord)
+
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
@@ -290,20 +315,27 @@ class TR_PR_Diagnostic:
                 object      (float)     :   The median value of the argument ***variable_1*** for each time step. 
             
         """
-        #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
+
+        if 'lat' in data.dims:
+            #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
+            self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
         
-        coord_lat, coord_lon = self.coordinate_names(data)
+            coord_lat, coord_lon = self.coordinate_names(data)
 
-        ds = self.ds_per_lat_range(data, self.trop_lat)
-        ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
-        if 'Dataset' in str(type(data)):
-            ds = ds[variable_1]
+            ds = self.ds_per_lat_range(data, self.trop_lat)
+            ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
+            if 'Dataset' in str(type(data)):
+                ds = ds[variable_1]
 
-        return ds.median(coord_lat).median(coord_lon)
+            return ds.median(coord_lat).median(coord_lon)
+        
+        else:
+            for i in data.dims:
+                coord = i
+            return data.median(coord)
     
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def animated(self, data, variable_1 = 'pr', trop_lat = None,  threshold = 0.5,  nSeconds = 10, label = 'test', resol = '110m',
+    def animated(self, data, variable_1 = 'pr', trop_lat = None,  threshold = 0.5, time_ind_max = None,  nSeconds = 10, label = 'test', resol = '110m',
         s_year = None, f_year = None, s_month = None, f_month = None, first_edge = None,  num_of_bins = None,  width_of_bin = None):
         """ 
             The function ***median_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
@@ -349,7 +381,10 @@ class TR_PR_Diagnostic:
 
         ds = ds.where( ds > _vmin, drop=True) 
 
-        fps = int(ds.time.size/nSeconds)
+        if time_ind_max != None:
+            fps = int(time_ind_max/nSeconds)
+        else:
+            fps = int(ds.time.size/nSeconds)
         #fps = 20
 
         snapshots = [ds[number,:,:] for number in range(0, fps*nSeconds )]
@@ -622,24 +657,15 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
-            #data = data.where(abs(data[coord_lat]) <= self.trop_lat, drop=True)    
-            #data = data[variable_1]#.stack(total=['time', coord_lat, coord_lon])
-            
-            #data = self.preprocessing(data, _preprocess, variable_1) # ADD PARAMETERS
 
 
         size = data.size
 
-        hist_pyplt = plt.hist(x = data, bins = range(self.first_edge, self.first_edge  + (self.num_of_bins+1)*self.width_of_bin, self.width_of_bin))
+        bins = [self.first_edge  + i*self.width_of_bin for i in range(0, self.num_of_bins+1)]
+        hist_pyplt = plt.hist(x = data, bins = bins)
 
         plt.close()
 
-        #_hist_pyplt = [] 
-        #print(_hist_pyplt_temp)
-        #[_hist_pyplt.append(_hist_pyplt_temp[0][i]) for i in range(0, len(_hist_pyplt_temp[0]))]
-        
-        #_hist_pyplt.append(0)
-        #bin_table = [self.first_edge + self.width_of_bin*j for j in range(0, self.num_of_bins)]
         frequency_bin =  xr.DataArray(hist_pyplt[0], coords=[hist_pyplt[1][0:-1]], dims=["bin"])
         
         _time_2 = time.time()
@@ -801,8 +827,9 @@ class TR_PR_Diagnostic:
 
         h = dhb.Histogram(dh.axis.Regular(self.num_of_bins, self.first_edge, last_edge),  storage=dh.storage.Double(), )
         h.fill(data)
-        counts, edges = h.to_dask_array()
         
+        counts, edges = h.to_dask_array()
+        print(counts, edges)
         counts =  dask.compute(counts)
         edges = dask.compute(edges[0]) 
         frequency_bin =  xr.DataArray(counts[0], coords=[edges[0][0:-1]], dims=["bin"])
@@ -842,7 +869,8 @@ class TR_PR_Diagnostic:
         pdf =  True if None else pdf 
            
         if pdf == True:
-            _data_density = data[0:]/sum(data[:]*(data.bin[1]-data.bin[0]))
+            #print('pdf')
+            _data_density = data[0:]/sum(data[:]) #*(data.bin[1]-data.bin[0]))
             plt.step(data.bin[0:], _data_density, #data.bin[1]-data.bin[0],
                 linewidth=3.0, ls = ls, color = color, label = label )
             plt.ylabel('Probability', fontsize=14)
@@ -881,7 +909,8 @@ class TR_PR_Diagnostic:
         pdf =  True if None else pdf 
            
         if pdf == True:
-            _data_density = data[0:]/sum(data[:]*(data.bin[1]-data.bin[0]))
+            print('pdf')
+            _data_density = data[0:]/sum(data[:]) #*(data.bin[1]-data.bin[0]))
             _plt.step(data.bin[0:], _data_density, #data.bin[1]-data.bin[0],
                 linewidth=3.0, ls = ls, color = color, label = label )
             _plt.set_ylabel('Probability', fontsize=14)
