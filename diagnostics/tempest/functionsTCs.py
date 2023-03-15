@@ -434,7 +434,9 @@ def getTrajectories(filename,nVars,headerDelimStr,isUnstruc):
       for jj in range(nVars):
         if isUnstruc:
           prodata[jj+1,stormID,lineOfTraj]=ptArr[jj]
-        lineOfTraj += 1   # increment line
+        else:
+          prodata[jj,stormID,lineOfTraj]=ptArr[jj]
+      lineOfTraj += 1   # increment line
 
   print("... done reading data")
   return numtraj, maxNumPts, prodata
@@ -510,63 +512,3 @@ def getNodes(filename,nVars,isUnstruc):
 
   print("... done reading data")
   return numnodetimes, maxNumPts, prodata
-
-def plotting():
-    # tempest settings
-    nVars=-1
-    headerStr='start'
-    isUnstruc = 0
-
-    # Extract trajectories from tempest file and assign to arrays
-    # USER_MODIFY
-    nstorms, ntimes, traj_data = getTrajectories(trajfile,nVars,headerStr,isUnstruc)
-    xlon   = traj_data[2,:,:]
-    xlat   = traj_data[3,:,:]
-    xpres  = traj_data[4,:,:]/100.
-    xwind  = traj_data[5,:,:]
-    xyear  = traj_data[7,:,:]
-    xmonth = traj_data[8,:,:]
-
-    # Initialize axes
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    # ax.set_extent([-180, 180, -75, 75], crs=None)
-
-    # Set title and subtitle
-    plt.title('Example of a Trajectory Plot')
-
-
-    # Set land feature and change color to 'lightgrey'
-    # See link for extensive list of colors:
-    # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
-    ax.add_feature(cfeature.LAND, color='lightgrey')
-    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-                  linewidth=0.5, color='k', alpha=0.5, linestyle='--')
-    gl.xlabels_top = False
-    gl.ylabels_left = False
-    #gl.xlines = False
-    gl.xlocator = mticker.FixedLocator([-180, -90, 0, 90, 180])
-    gl.xformatter = LONGITUDE_FORMATTER
-    gl.yformatter = LATITUDE_FORMATTER
-    gl.ylabel_style = {'size': 12, 'color': 'black'}
-    gl.xlabel_style = {'size': 12, 'color': 'black'}
-
-
-
-    # Plot each trajectory
-    for i in range(nstorms):
-
-            # doesn't work with cartopy!
-            #plt.plot(xlon[i], xlat[i], linewidth=0.4)
-
-
-
-        plt.scatter(x=xlon[i], y=xlat[i],
-                                                    color="black",
-                                                    s=30,
-                                                    linewidths=0.5,
-                                                    marker=".",
-                                                    alpha=0.8,
-                                                    transform=ccrs.PlateCarree()) ## Important
-
-
-    plt.savefig(plotdir + "prova_TC_2010.png", bbox_inches='tight', dpi=350)
