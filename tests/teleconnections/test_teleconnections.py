@@ -16,22 +16,6 @@ def test_import(module_name):
     except ImportError:
         assert False, "Module {} could not be imported".format(module_name)
 
-
-# @pytest.fixture
-# def reader_instance():
-#     """
-#     Create a reader instance
-#     """
-#     return Reader(model="IFS", exp="test-tco2559", source="ICMGG_atm2d", regrid="r200")
-
-# def test_retrieve(reader_instance):
-#     """
-#     Test that the retrieve method works
-#     """
-#     data = reader_instance.retrieve(fix=False)
-#     print(data)
-#     assert len(data) > 0
-
 @pytest.mark.parametrize("months_window", [1,3])
 def test_regional_mean(months_window):
     """
@@ -44,5 +28,5 @@ def test_regional_mean(months_window):
 
     # Opening yml files
     namelist = load_namelist(diagname,configdir=configdir)
-    test = station_based_cdo(filepath,namelist,telecname,months_window=months_window)
+    test = regional_mean_cdo(filepath,namelist,telecname,months_window=months_window)
     assert len(test) > 0
