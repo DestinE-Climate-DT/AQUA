@@ -21,3 +21,23 @@ jobs:
       - name: Run tests
         run: |
           ./tests.sh
+  
+  teleconnections_test:
+    defaults:
+      run:
+        shell: bash -l {0}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Provision with a different conda environment
+        uses: mamba-org/provision-with-micromamba@v11
+        with:
+          channels: conda-forge
+          python-version: 3.8
+          environment-file: diagnostics/teleconnections/env-teleconnections.yml
+
+      - name: Run teleconnections test
+        run: |
+          ./tests/teleconnections/tests.sh

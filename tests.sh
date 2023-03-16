@@ -16,6 +16,3 @@ cp ./config/config.yaml ./config/config.yaml.bak
 sed -i "/^machine:/c\\machine: ci" "./config/config.yaml"
 python -m pytest ./tests/test_basic.py
 mv ./config/config.yaml.bak ./config/config.yaml
-
-# teleconnections tests
-python -m pytest ./tests/teleconnections/test_teleconnections.py
