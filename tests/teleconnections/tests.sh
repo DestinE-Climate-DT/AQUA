@@ -13,7 +13,7 @@
 #     echo "File already exists."
 # fi
 
-cp ./../../config/config.yaml ./../../config/config.yaml.bak
-sed -i "/^machine:/c\\machine: ci" "./../../config/config.yaml"
-python -m pytest ./test_teleconnections.py
-mv ./../../config/config.yaml.bak ./../../config/config.yaml
+cp ./config/config.yaml ./config/config.yaml.bak
+sed -i "/^machine:/c\\machine: ci" "./config/config.yaml"
+python -m pytest ./tests/teleconnections/test_teleconnections.py
+mv ./config/config.yaml.bak ./config/config.yaml

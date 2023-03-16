@@ -1,7 +1,7 @@
 # Teleconnections diagnostic
 
 The folder contains jupyter-notebooks and python scripts in order to evaluate teleconnections in the DE_340 AQUA model evaluation framework.
-The script are based on the `xarray+dask` framework, a specific list of the packages used can be found inside the notebooks or in the `env-teleconnections.yml` file, that can be used as well to create the `conda` environment needed to run the diagnostic (WIP).
+The script are based on the `xarray+dask` framework, a specific list of the packages used can be found inside the notebooks or in the `env-teleconnections.yml` file, that can be used as well to create the `conda` environment needed to run the diagnostic.
 
 ## Library files (WIP)
 
@@ -12,13 +12,19 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 
 ## Test (WIP)
 
+CI tests are run with github actions, see `.github/workflows/aqua.yml` for details.
+
+### Old test
 - `unit_test.py` contains a comparison between the diagnostic developed in `index.py` and the same method applied with `cdo` bindings in order to keep track of possible problems in the development phase.
 
 ## Notebooks (WIP)
 
+All notebooks are in the `notebooks` folder.
+
 - `cdo_testing` contains an example of usage of the cdo bindings introduced in the `cdotesting.py` file.
-- `NAO/ENSO` contains the respective teleconnections evaluatev with the library methods
-- `test_cdovslib` contains examples of the usage of functions contained in `cdotesting.py`, in order to build the `unit_test.py`
+- `NAO/ENSO` contain the respective teleconnections evaluated with the library methods from `index.py` and `plots.py`.
+- `test_cdovslib` contains examples of the usage of functions contained in `cdotesting.py`.
+- `test_hovmoller` contains examples of the usage of functions contained in `plots.py`.
 
 ## Create the teleconnections env and add kernel for DKRZ jupyterhub
 
