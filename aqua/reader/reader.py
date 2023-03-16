@@ -61,7 +61,6 @@ class Reader():
             self.configdir = configdir
         self.machine = get_machine(self.configdir)
 
-
         # get configuration from the machine
         self.catalog_file, self.regrid_file, self.fixer_file = get_reader_filenames(self.configdir, self.machine)
         self.cat = intake.open_catalog(self.catalog_file)
@@ -308,14 +307,14 @@ class Reader():
                 source_grid_file.close()
             area_file.close()
 
-    def retrieve(self, regrid=False, timmean=False, decumulate=True, fix=True, apply_unit_fix=True, var=None, vars=None):
+
+    def retrieve(self, regrid=False, timmean=False, decumulate=False, fix=True, apply_unit_fix=True, var=None, vars=None):
         """
         Perform a data retrieve.
         
         Arguments:
             regrid (bool):          if to regrid the retrieved data (False)
-            timmean (bool)          if to perform timmean of the retrieved data (False)
-            average (bool):         if to average the retrieved data (False)
+            timmean (bool):         if to average the retrieved data (False)
             decumulate (bool):      if to remove the cumulation from data (False)
             fix (bool):             if to perform a fix (var name, units, coord name adjustments) (True)
             apply_unit_fix (bool):  if to already adjust units by multiplying by a factor or adding
@@ -433,7 +432,7 @@ class Reader():
    
         return out
     
-    def _check_if_accumulated(self, data):
+    def _check_if_accumulated_auto(self, data):
 
         """To check if a DataArray is accumulated. 
         Arbitrary check on the first 20 timesteps"""
@@ -449,6 +448,29 @@ class Reader():
         condition = (check >= 0).all() or (check <=0).all()
         
         return condition
+
+    def _check_if_accumulated(self, data):
+
+        """To check if a DataArray is accumulated. 
+        On a list of variables defined by the GRIB names
+        
+        Args: 
+            data (xr.DataArray): field to be processed
+        
+        Returns:
+            bool: True if decumulation is necessary, False if not 
+        """
+
+        decumvars = ['tp', 'e', 'slhf', 'sshf',
+                     'tsr', 'ttr', 'ssr', 'str', 
+                     'tsrc', 'ttrc', 'ssrc', 'strc', 
+                     'tisr']
+        
+
+        if data.name in decumvars:
+            return True
+        else:
+            return False
 
 
     
@@ -477,10 +499,6 @@ class Reader():
             if not cumulation_time:
                 cumulation_time = (data.time[1]-data.time[0]).values/np.timedelta64(1, 's')
 
-            # roll back the time for cumulated variables and remove the first timestep
-            # data = data.isel(time=slice(1, None))
-            # data['time'] = data.time - np.timedelta64(1,'m')
-
             # get the derivatives
             deltas = data.diff(dim='time') / cumulation_time
 
@@ -498,6 +516,17 @@ class Reader():
             # kaboom: exploit where
             clean=deltas.where(mask, data/cumulation_time)
 
+            # remove the first timestep (no sense in cumulated)
+            clean = clean.isel(time=slice(1, None))
+
+            # rollback the time axis by half the cumulation time
+            clean['time'] = clean.time - np.timedelta64(int(cumulation_time/2), 's')
+
+            # WARNING: HACK FOR EVAPORATION 
+            #print(clean.units)
+            if clean.units == 'm of water equivalent':
+                clean.attrs['units'] = 'm'
+            
             # use metpy units to divide by seconds
             new_units = (units(clean.units)/units('s'))
 

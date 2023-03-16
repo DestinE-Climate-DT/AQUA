@@ -8,3 +8,5 @@ AQUA_tests_short.tar.gz
 AQUA_tests_short/*
 # CI local test
 tests_local.sh
+cli/*.err
+cli/*.out

@@ -2,6 +2,8 @@ import sys
 import yaml
 import os
 import sys
+import string
+import random
 
 def load_yaml(infile):
     """
@@ -92,4 +94,14 @@ def get_reader_filenames(configdir, machine):
 
 
     return catalog_file, regrid_file, fixer_file
+
+
+def generate_random_string(length):
+    """G
+    Generate a random string of lowercase and uppercase letters and digits
+    """
+   
+    letters_and_digits = string.ascii_letters + string.digits
+    random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
+    return random_string
 

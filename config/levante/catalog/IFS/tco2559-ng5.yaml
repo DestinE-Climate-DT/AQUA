@@ -56,10 +56,17 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_sp.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10u/netcdf/tco2559-ng5_sp.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10v/netcdf/tco2559-ng5_sp.json
-  lra_r100:
+  lra-r100-day:
     driver: netcdf
     args:
-      urlpath: '/work/bb1153/b382076/IFS-lowres/tco2559-ng5-r100-mon/*.nc'
+      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/day/*.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True
+  lra-r100-mon:
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/mon/*.nc'
       chunks: {}
       xarray_kwargs:
         decode_times: True

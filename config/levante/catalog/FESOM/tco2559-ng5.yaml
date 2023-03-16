@@ -381,10 +381,17 @@ sources:
       - /work/bm1235/a270046/cycle2-sync/tco2559-ng5/12_01Dec-31Dec2020_fesom/w.fesom.2020.nc
     description: original 3d output
     driver: netcdf
-  lra_r100:
-      driver: netcdf
-      args:
-        urlpath: '/work/bb1153/b382076/IFS-lowres/tco2559-ng5-r100-mon/*.nc'
-        chunks: {}
-        xarray_kwargs:
-          decode_times: True
+  lra-r100-mon:
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/mon/*.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True
+  lra-r100-day:
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/day/*.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True

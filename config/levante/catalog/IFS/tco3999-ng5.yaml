@@ -64,3 +64,13 @@ sources:
       combine: nested
       urlpath: 
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/ci/netcdf/tco3999-ng5_sp.json
+  lra-r100-day:
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382076/LRA/tco3999-ng5/r100/day/*.nc'
+      chunks: {}
+  lra-r100-mon:
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382076/LRA/tco3999-ng5/r100/mon/*.nc'
+      chunks: {}
