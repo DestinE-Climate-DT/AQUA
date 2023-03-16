@@ -34,8 +34,6 @@ jobs:
       - name: Provision with a different conda environment
         uses: mamba-org/provision-with-micromamba@v11
         with:
-          channels: conda-forge
-          python-version: 3.8
           environment-file: diagnostics/teleconnections/env-teleconnections.yml
 
       - name: Run teleconnections test
