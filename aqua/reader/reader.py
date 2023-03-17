@@ -1,6 +1,7 @@
 import intake
 import intake_esm
 import xarray as xr
+import pandas as pd
 import os
 from metpy.units import units
 import numpy as np
@@ -15,7 +16,8 @@ class Reader():
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
                  regrid=None, method="ycon", zoom=None, configdir=None,
-                 level=None, areas=True, var=None, vars=None, rebuild=False):
+                 level=None, areas=True, var=None, vars=None, streaming = False,
+                 stream_step = 1, stream_unit=None, stream_startdate = None, rebuild=False):
         """
         The Reader constructor.
         It uses the catalog `config/config.yaml` to identify the required data.
@@ -31,8 +33,12 @@ class Reader():
             level (int):      level to extract if input data are 3D (starting from 0)
             areas (bool):     compute pixel areas if needed (True)
             var (str, list):  variable(s) which we will extract. "vars" is a synonym (None)
+            streaming (bool):       if to retreive data in a streaming mode (False)
+            stream_step (int):      the number of time steps to stream the data by (Default = 1)
+            stream_unit (str):      the unit of time to stream the data by (e.g. 'hours', 'days', 'months', 'years') (None)
+            stream_startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
             rebuild (bool):   force rebuilding of area and weight files
-        
+
         Returns:
             A `Reader` class object.
         """
@@ -55,6 +61,16 @@ class Reader():
         self.grid_area = None
         self.src_grid_area = None
         self.dst_grid_area = None
+
+        self.stream_index = 0 
+        self.stream_date = None
+        self.streaming = streaming
+        self.stream_step = stream_step
+        self.stream_unit = stream_unit
+        self.stream_startdate = stream_startdate
+
+        self.configdir, catalog_file = get_catalog_file(configdir=configdir)
+        self.cat = intake.open_catalog(catalog_file)
 
         if not configdir: 
             self.configdir = get_config_dir()
@@ -308,7 +324,8 @@ class Reader():
             area_file.close()
 
 
-    def retrieve(self, regrid=False, timmean=False, decumulate=False, fix=True, apply_unit_fix=True, var=None, vars=None):
+    def retrieve(self, regrid=False, timmean=False, decumulate=False, fix=True, apply_unit_fix=True,
+                 var=None, vars=None, streaming = False, stream_step = 1, stream_unit=None, stream_startdate = None, streaming_generator = False):
         """
         Perform a data retrieve.
         
@@ -320,6 +337,11 @@ class Reader():
             apply_unit_fix (bool):  if to already adjust units by multiplying by a factor or adding
                                     an offset (this can also be done later with the `fix_units` method) (True)
             var (str, list):  variable(s) which we will extract. "vars" is a synonym (None)
+            streaming (bool):       if to retreive data in a streaming mode (False)
+            streaming_generator (bool):  if to return a generator object for data streaming (False). 
+            stream_step (int):      the number of time steps to stream the data by (Default = 1)
+            stream_unit (str):      the unit of time to stream the data by (e.g. 'hours', 'days', 'months', 'years') (None)
+            stream_startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
         Returns:
             A xarray.Dataset containing the required data.
         """
@@ -377,7 +399,100 @@ class Reader():
             self.grid_area = self.dst_grid_area 
         if fix:
             data = self.fixer(data, apply_unit_fix=apply_unit_fix)
+        if streaming or self.streaming or streaming_generator:
+            if stream_step == 1: stream_step = self.stream_step
+            if not stream_unit: stream_unit = self.stream_unit
+            if not stream_startdate: stream_startdate = self.stream_startdate
+            if streaming_generator:
+                data = self.stream_generator(data, stream_step, stream_unit, stream_startdate)
+            else:
+                data = self.stream(data, stream_step, stream_unit, stream_startdate)
         return data
+
+    
+    def stream(self, data, stream_step = 1, stream_unit = None, stream_startdate = None):
+        """
+        The stream method is used to stream data by either a specific time interval or by a specific number of samples.
+        If the unit parameter is specified, the data is streamed by the specified unit and stream_step (e.g. 1 month).
+        If the unit parameter is not specified, the data is streamed by stream_step steps of the original time resolution of input data.
+
+        If the stream function is called a second time, it will return the subsequent chunk of data in the sequence.
+        The function keeps track of the state of the streaming process through the use of internal attributes.
+        This allows the user to stream through the entire dataset in multiple calls to the function,
+        retrieving consecutive chunks of data each time.
+
+        If stream_startdate is not specified, the method will use the first date in the dataset.
+        
+        Arguments:
+            data (xr.Dataset):  the input xarray.Dataset
+            stream_step  (int): the number of time steps to stream the data by (Default = 1) 
+            stream_unit (str):  the unit of time to stream the data by (e.g. 'hours', 'days', 'months', 'years') (None)
+            stream_startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
+        Returns:
+            A xarray.Dataset containing the subset of the input data that has been streamed.
+        """
+        if not self.stream_date:
+            if  stream_startdate: 
+                self.stream_date = pd.to_datetime(stream_startdate)
+            else:
+                self.stream_date = pd.to_datetime(data.time[0].values) 
+                
+        if  self.stream_index == 0 and stream_startdate:
+            self.stream_index  = data.time.to_index().get_loc(pd.to_datetime(stream_startdate))  
+
+        if stream_unit:
+            start_date = self.stream_date
+            stop_date = start_date + pd.DateOffset(**{stream_unit: stream_step})
+            self.stream_date = stop_date
+            return data.sel(time=slice(start_date, stop_date)).where(data.time != stop_date, drop=True)
+        else:   
+            start_index = self.stream_index 
+            stop_index = start_index + stream_step
+            self.stream_index = stop_index       
+            return data.isel(time=slice(start_index, stop_index))
+             
+
+    def reset_stream(self):
+        """
+        Reset the state of the streaming process. 
+        This means that if the stream function is called again after calling reset_stream, 
+        it will start streaming the input data from the beginning.
+        """
+        self.stream_index = 0
+        self.stream_date = None
+
+
+    def stream_generator(self, data, stream_step = 1, stream_unit=None, stream_startdate = None):
+        """
+        The stream_generator method is designed to split data into smaller chunks of data for processing or analysis.
+        It returns a generator object that yields the smaller chunks of data.
+        The method can split the data based on either a specific time interval or by a specific number of samples.
+        If the unit parameter is specified, the data is streamed by the specified unit and stream_step (e.g. 1 month).
+        If the unit parameter is not specified, the data is streamed by stream_step steps of the original time resolution of input data.
+
+        Arguments:
+            data (xr.Dataset):  the input xarray.Dataset
+            stream_step  (int): the number of samples or time interval to stream the data by (Default = 1) 
+            stream_unit (str):  the unit of the time interval to stream the data by (e.g. 'hours', 'days', 'months', 'years') (None)
+            stream_startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
+        Returns:
+            A generator object that yields the smaller chunks of data.              
+        """
+        if stream_startdate: 
+            start_date= pd.to_datetime(stream_startdate)
+        else:
+            start_date = data.time[0].values
+        if stream_unit:
+            while start_date < data.time[-1].values:
+                stop_date = pd.to_datetime(start_date) + pd.DateOffset(**{stream_unit: stream_step})
+                yield data.sel(time=slice(start_date, stop_date)).where(data.time != stop_date, drop=True)
+                start_date = stop_date
+        if not stream_unit:
+            start_index = data.time.to_index().get_loc(start_date)
+            while start_index < len(data.time):
+                stop_index = start_index + stream_step     
+                yield data.isel(time=slice(start_index, stop_index))
+                start_index = stop_index
 
 
     def regrid(self, data):
