@@ -1,0 +1,34 @@
+name: teleconnections test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1" # Run every Monday night at 2AM UTC
+
+jobs:
+  teleconnections_test:
+    defaults:
+      run:
+        shell: bash -l {0}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Provision with a different conda environment
+        uses: mamba-org/provision-with-micromamba@v11
+        with:
+          environment-file: diagnostics/teleconnections/env-teleconnections.yml
+          cache-downloads: true
+
+      - name: Download and setup tests
+        run: |
+          ./tests/teleconnections/tests.sh
+
+      - name: Run teleconnections test
+        run: |
+          python -m pytest ./tests/teleconnections/test_teleconnections.py        
