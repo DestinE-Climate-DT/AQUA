@@ -69,14 +69,13 @@ class Reader():
         self.stream_unit = stream_unit
         self.stream_startdate = stream_startdate
 
-        self.configdir, catalog_file = get_catalog_file(configdir=configdir)
-        self.cat = intake.open_catalog(catalog_file)
-
         if not configdir: 
             self.configdir = get_config_dir()
         else:
             self.configdir = configdir
         self.machine = get_machine(self.configdir)
+        #print(self.configdir)
+        #print(self.machine)
 
         # get configuration from the machine
         self.catalog_file, self.regrid_file, self.fixer_file = get_reader_filenames(self.configdir, self.machine)
