@@ -1,6 +1,13 @@
 name: aqua shell test
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1" # Run every Monday night at 2AM UTC
 
 jobs:
   aqua_test:
@@ -14,7 +21,21 @@ jobs:
 
       - name: Provision with Micromamba
         uses: mamba-org/provision-with-micromamba@v15
+        with:
+          environment-file: environment.yml
+          cache-downloads: true
 
+      - name: Install Flake8
+        run: |
+          # install package
+          python -m pip install flake8
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
+      
       # - name: Install Project
       #   run: |
       #     pip install .
