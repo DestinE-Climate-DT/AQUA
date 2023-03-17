@@ -3,12 +3,9 @@
 .ipynb_checkpoints/
 # cli branch temp files
 cli/*.txt
-# CI folders
-AQUA_tests_short.tar.gz
-AQUA_tests_short/*
-# CI local test
-tests_local.sh
 cli/*.err
 cli/*.out
+# CI
+AQUA_tests_short/*
 tests/teleconnections/*.nc
-tests/teleconnections/*.tar.gz
+*.tar.gz

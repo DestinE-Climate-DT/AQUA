@@ -1,8 +1,8 @@
 import pytest
 import sys
-sys.path.insert(1, '../../')
+#sys.path.insert(1, '../../')
 from aqua import Reader
-sys.path.insert(1, '../../diagnostics/teleconnections/')
+sys.path.insert(1, './diagnostics/teleconnections/')
 from cdotesting import *
 from tools import *
 
@@ -21,8 +21,8 @@ def test_regional_mean(months_window):
     """
     Test that the regional_mean method works
     """
-    filepath = "../../diagnostics/teleconnections/data/enso_test.nc"
-    configdir = "../../diagnostics/teleconnections/"
+    filepath = "./tests/teleconnections/enso_test.nc"
+    configdir = "./diagnostics/teleconnections/"
     diagname  = 'teleconnections'
     telecname = 'ENSO'
 
