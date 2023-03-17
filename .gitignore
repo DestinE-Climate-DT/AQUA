@@ -10,3 +10,5 @@ AQUA_tests_short/*
 tests_local.sh
 cli/*.err
 cli/*.out
+tests/teleconnections/*.nc
+tests/teleconnections/*.tar.gz
