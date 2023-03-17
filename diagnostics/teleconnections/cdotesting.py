@@ -52,6 +52,7 @@ def station_based_cdo(infile, namelist, telecname, months_window=3):
     sub_indx = cdo.sub(input=[diff_ma,mean_ma])
     indx = cdo.div(input=[sub_indx,std_ma],returnXDataset=True)
 
+    # 7. -- Cleaning the temporary directory --
     cdo.cleanTempDir()
 
     return indx
@@ -121,16 +122,19 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
     index_lib = station_based_index(field,namelist,telecname,months_window=months_window)
     
     # 3. -- adapt index for comparison --
-    index_lib = index_lib.dropna(dim='time').drop_vars('month')
-    index_cdo = index_cdo.drop_vars('lon').drop_vars('lat')
+    #index_lib = index_lib.dropna(dim='time').drop_vars('month')
+    #index_cdo = index_cdo.drop_vars('lon').drop_vars('lat')
     index_cdo = index_cdo.squeeze(['lat','lon'],drop=True)
 
     # 4. -- reurm difference or perform the asser_allclose() test
     if ret_diff:
         return index_lib-index_cdo[namelist[telecname]['field']]
     else:
-        xr.testing.assert_allclose(index_lib,index_cdo[namelist[telecname]['field']],
+        np.testing.assert_allclose(index_lib.values,
+                                   index_cdo[namelist[telecname]['field']].values,
                                    rtol=rtol,atol=atol)
+        #xr.testing.assert_allclose(index_lib,index_cdo[namelist[telecname]['field']],
+        #                           rtol=rtol,atol=atol)
         return
 
 

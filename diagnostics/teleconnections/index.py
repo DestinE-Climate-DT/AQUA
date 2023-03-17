@@ -43,6 +43,9 @@ def station_based_index(field,namelist,telecname,months_window=3):
     # 6. -- Evaluate the index and rename the variable in the DataArray --
     indx = (diff_ma-mean_ma)/std_ma
     indx = indx.rename('index')
+
+    # 7. -- Drop NaNs --
+    indx = indx.dropna(dim='time')
     
     return indx
 
