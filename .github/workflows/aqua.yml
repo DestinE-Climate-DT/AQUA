@@ -10,17 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Provision with Micromamba
-        uses: mamba-org/provision-with-micromamba@v11
+        uses: mamba-org/provision-with-micromamba@v15
 
       # - name: Install Project
       #   run: |
       #     pip install .
-      - name: Run tests
+      - name: Download and setup tests
         run: |
           ./tests.sh
+      - name: Run tests
+        run: |
+          python -m pytest ./tests/test_basic.py 
   
   teleconnections_test:
     defaults:
@@ -36,6 +39,9 @@ jobs:
         with:
           environment-file: diagnostics/teleconnections/env-teleconnections.yml
 
-      - name: Run teleconnections test
+      - name: Download and setup tests
         run: |
           ./tests/teleconnections/tests.sh
+      - name: Run teleconnections test
+        run: |
+          python -m pytest ./tests/teleconnections/test_teleconnections.py        
