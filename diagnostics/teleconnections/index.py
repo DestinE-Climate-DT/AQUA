@@ -72,6 +72,9 @@ def regional_mean_index(field,namelist,telecname,months_window=3):
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
     field_mean = field_mean.rolling(time=months_window,center=True).mean(skipna=True)
 
+    # 7. -- Drop NaNs --
+    field_mean = field_mean.dropna(dim='time')
+
     return field_mean
 
 def regional_mean_anomalies(field,namelist,telecname,months_window=3):

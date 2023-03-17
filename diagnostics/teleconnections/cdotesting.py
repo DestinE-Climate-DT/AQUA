@@ -93,7 +93,7 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3):
     return indx
 
 def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
-                                 rtol=1.e-5,atol=1.e-8,ret_diff=False):
+                                 rtol=1.e-5,atol=1.e-8):
     """
     Compare station based index evaluated with cdo and libraries from index.py
 
@@ -105,12 +105,9 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
         months_window (int, opt): months for rolling average, default is 3
         rtol (float, opt):        relative tolerance
         atol (float, opt):        absolute tolerance
-        ret_diff (bool,opt):      return difference instead of assert
 
     Returns:
-        None or xarray.DataArray: if ret_diff is True, returns an xarray.DataArray
-                                  with the difference between the two methods.
-                                  If False, returns None and perform assert_allclose().
+        None                      returns None and perform assert_allclose().
     """
     fieldname = namelist[telecname]['field']
 
@@ -122,24 +119,17 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
     index_lib = station_based_index(field,namelist,telecname,months_window=months_window)
     
     # 3. -- adapt index for comparison --
-    #index_lib = index_lib.dropna(dim='time').drop_vars('month')
-    #index_cdo = index_cdo.drop_vars('lon').drop_vars('lat')
     index_cdo = index_cdo.squeeze(['lat','lon'],drop=True)
 
-    # 4. -- reurm difference or perform the asser_allclose() test
-    if ret_diff:
-        return index_lib-index_cdo[namelist[telecname]['field']]
-    else:
-        np.testing.assert_allclose(index_lib.values,
-                                   index_cdo[namelist[telecname]['field']].values,
-                                   rtol=rtol,atol=atol)
-        #xr.testing.assert_allclose(index_lib,index_cdo[namelist[telecname]['field']],
-        #                           rtol=rtol,atol=atol)
-        return
+    # 4. -- perform the asser_allclose() test
+    np.testing.assert_allclose(index_lib.values,
+                               index_cdo[namelist[telecname]['field']].values,
+                               rtol=rtol,atol=atol)
+    return
 
 
 def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
-                                 rtol=1.e-5,atol=1.e-8,ret_diff=False):
+                                 rtol=1.e-5,atol=1.e-8):
     """
     Compare regional mean evaluated with cdo and libraries from index.py
 
@@ -151,12 +141,9 @@ def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
         months_window (int, opt): months for rolling average, default is 3
         rtol (float, opt):        relative tolerance
         atol (float, opt):        absolute tolerance
-        ret_diff (bool,opt):      return difference instead of assert
 
     Returns:
-        None or xarray.DataArray: if ret_diff is True, returns an xarray.DataArray
-                                  with the difference between the two methods.
-                                  If False, returns None and perform assert_allclose().
+        None                      returns None and perform assert_allclose().
     """
     fieldname = namelist[telecname]['field']
 
@@ -168,15 +155,11 @@ def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
     avg_lib = regional_mean_index(field,namelist,telecname,months_window=months_window)
 
     # 3. -- adapt index for comparison --
-    avg_lib = avg_lib.dropna(dim='time')
-    avg_cdo = avg_cdo.drop_vars('lon').drop_vars('lat')
     avg_cdo = avg_cdo.squeeze(['lat','lon'],drop=True)
-    avg_cdo = avg_cdo.drop_vars('time_bnds')
 
-    # 4. -- reurm difference or perform the asser_allclose() test
-    if ret_diff:
-        return avg_lib-avg_cdo[namelist[telecname]['field']]
-    else:
-        xr.testing.assert_allclose(avg_lib,avg_cdo[namelist[telecname]['field']],
-                                   rtol=rtol,atol=atol)
-        return
+    # 4. -- perform the asser_allclose() test
+    np.testing.assert_allclose(avg_lib.values,
+                               avg_cdo[namelist[telecname]['field']].values,
+                               rtol=rtol,atol=atol)
+    
+    return

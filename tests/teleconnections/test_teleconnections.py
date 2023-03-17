@@ -16,24 +16,8 @@ def test_import(module_name):
     except ImportError:
         assert False, "Module {} could not be imported".format(module_name)
 
-'''
 @pytest.mark.parametrize("months_window", [1,3])
-def test_regional_mean(months_window):
-    """
-    Test that the regional_mean method works
-    """
-    filepath = "./tests/teleconnections/enso_test.nc"
-    configdir = "./diagnostics/teleconnections/"
-    diagname  = 'teleconnections'
-    telecname = 'ENSO'
-
-    # Opening yml files
-    namelist = load_namelist(diagname,configdir=configdir)
-    test = regional_mean_cdo(filepath,namelist,telecname,
-                             months_window=months_window)
-    assert len(test) > 0
-'''
-def test_station_based():
+def test_station_based(months_window):
     """
     Test that the station_based method works
     """
@@ -44,7 +28,30 @@ def test_station_based():
     rtol = 1e-4
     atol = 1e-4
 
-    # Opening yml files
+    # 1. -- Opening yml files
     namelist = load_namelist(diagname,configdir=configdir)
+
+    # 2. -- Comparison cdo vs lib method
     cdo_station_based_comparison(infile=filepath,namelist=namelist,
-                                 telecname=telecname,rtol=rtol,atol=atol)
+                                 telecname=telecname,rtol=rtol,atol=atol,
+                                 months_window=months_window)
+
+@pytest.mark.parametrize("months_window", [1,3])
+def test_regional_mean(months_window):
+    """
+    Test that the regional_mean method works
+    """
+    filepath = "./tests/teleconnections/enso_test.nc"
+    configdir = "./diagnostics/teleconnections/"
+    diagname  = 'teleconnections'
+    telecname = 'ENSO'
+    rtol = 1e-4
+    atol = 1e-4
+
+    # 1. -- Opening yml files
+    namelist = load_namelist(diagname,configdir=configdir)
+
+    # 2. -- Comparison cdo vs lib method
+    cdo_regional_mean_comparison(infile=filepath,namelist=namelist,
+                                 telecname=telecname,rtol=rtol,atol=atol,
+                                 months_window=months_window)
