@@ -1,6 +1,13 @@
 name: aqua shell test
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1" #run every Monday night at 2AM UTC
 
 jobs:
   aqua_test:
