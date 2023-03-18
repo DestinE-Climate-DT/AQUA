@@ -21,7 +21,7 @@ def test_station_based(months_window):
     """
     Test that the station_based method works
     """
-    filepath = "./tests/teleconnections/nao_test.nc"
+    filepath = "./nao_test.nc"
     configdir = "./diagnostics/teleconnections/"
     diagname  = 'teleconnections'
     telecname = 'NAO'
@@ -41,7 +41,7 @@ def test_regional_mean(months_window):
     """
     Test that the regional_mean method works
     """
-    filepath = "./tests/teleconnections/enso_test.nc"
+    filepath = "./enso_test.nc"
     configdir = "./diagnostics/teleconnections/"
     diagname  = 'teleconnections'
     telecname = 'ENSO'

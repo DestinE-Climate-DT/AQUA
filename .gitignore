@@ -7,5 +7,5 @@ cli/*.err
 cli/*.out
 # CI
 AQUA_tests_short/*
-tests/teleconnections/*.nc
+*.nc
 *.tar.gz
