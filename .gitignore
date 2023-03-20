@@ -1,6 +1,8 @@
 # notebook temp files
 *.pyc
 .ipynb_checkpoints/
+#packages temp files
+*egg-info
 # cli branch temp files
 cli/*.txt
 cli/*.err
