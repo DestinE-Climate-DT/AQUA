@@ -41,7 +41,7 @@ jobs:
       #     pip install .
       - name: Download and setup tests
         run: |
-          ./tests.sh
+          ./download_data_for_tests.sh
       - name: Run tests
         run: |
           python -m pytest ./tests/test_basic.py 

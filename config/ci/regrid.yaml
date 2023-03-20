@@ -25,6 +25,12 @@ source_grids:
         extra: 
           - -setgrid,./AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc 
           - -selname,cell_area 
+  IFS:
+    test-tco79:
+      original_2d:
+        path: ./AQUA_tests_short/grids/tco79_grid.nc
+        space_coord: ["rgrid"]
+
 
 
 
