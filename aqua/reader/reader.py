@@ -134,7 +134,7 @@ class Reader():
                 self._make_src_area_file(self.src_areafile, source_grid,
                                          gridpath=cfg_regrid["paths"]["grids"],
                                          icongridpath=cfg_regrid["paths"]["icon"],
-                                         zoom=None)
+                                         zoom=zoom)
 
             self.src_grid_area = xr.open_mfdataset(self.src_areafile).cell_area
 
