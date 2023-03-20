@@ -26,6 +26,6 @@ setup(name='aqua',
         'pyYAML',
         'sparse', 
         'xarray',
-        'smmregrid @ git+ssh://git@github.com/jhardenberg/smmregrid'
+        'smmregrid @ git+https://github.com/jhardenberg/smmregrid'
       ]
     )
