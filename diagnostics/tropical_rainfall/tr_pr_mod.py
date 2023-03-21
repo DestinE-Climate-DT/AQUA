@@ -70,6 +70,8 @@ class TR_PR_Diagnostic:
         self.first_edge     = first_edge    if first_edge   != None else self.first_edge
         self.width_of_bin   = width_of_bin  if width_of_bin != None else self.width_of_bin
 
+        # check if its possible to generilize 
+
 
     def __init__(self,
             trop_lat = 10, 
@@ -148,8 +150,15 @@ class TR_PR_Diagnostic:
                     n_minutes = int(timestep/(60  * 10**9) )
                     print('timestep is ' + str(n_minutes) + ' minutes')
                     return 'MINUTE'
+                
+                    # delite print 
+                    # verbose thrue/false of printing 
+                    # return amount of minutes and hours 
+                    # Minutes - > m (small m, check )
+                    # separate branch, PR, not part of this diagnostic
             else:
                 print('timestep is NOT uniform or unknown')
+        
         except KeyError and AttributeError:
             timestep = dataset.time[1] - dataset.time[0]
             if timestep >=28 and timestep <=31:
@@ -404,6 +413,9 @@ class TR_PR_Diagnostic:
 
         ax.add_feature(land, alpha =0.2, facecolor='beige')
         ax.add_feature(ocean,  alpha =0.2,   linewidth=0.2 )
+
+        # branch, animation for different variables 
+        
 
 
         a = snapshots[0]
