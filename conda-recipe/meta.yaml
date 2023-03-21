@@ -1,9 +1,5 @@
 {% set data = load_setup_py_data() %}
 {% set version = data.get('version') %}
-{% set home = data.get('url') %}
-{% set description = data.get('description') %}
-{% set author = data.get('author') %}
-{% set email = data.get('author_email') %}
 
 
 package:
@@ -39,9 +35,4 @@ test:
     - 
 
 about:
-  home: {{ home }}
-  summary:
-  description:  {{ description  }}
-  author: {{ author  }}
-    email: {{ email }}
-  doc_url: 
+  home: 
