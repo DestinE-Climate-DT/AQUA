@@ -27,7 +27,7 @@ jobs:
 
       - name: Download and setup tests
         run: |
-          ./tests/teleconnections/tests.sh
+          ./tests/teleconnections/download_data_for_tests.sh
 
       - name: Run teleconnections test
         run: |
