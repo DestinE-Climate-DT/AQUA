@@ -17,8 +17,10 @@ Then we need to create the 'conda-recipe' directory. The following files in the 
  - meta.yaml
 
 We are building the aqua package with the following command:
-``` conda build conda-recipe
+``` 
+conda build conda-recipe
 ```
+
 ```
 conda build purge 
 ``` 
@@ -26,11 +28,20 @@ conda build purge
 ## How to install the aqua package with conda?
 
 After bulding the aqua package we get the PATH to builded aqua package.
-In my case, the PATH is '/home/b/b382267/mambaforge/conda-bld/linux-64'.
+In my case, the PATH is ``` /home/b/b382267/mambaforge/conda-bld/linux-64 ```.
 I am installing the aqua package with command:
 ```
 conda install /home/b/b382267/mambaforge/conda-bld/linux-64/aqua-0.0.2-py310_0.tar.bz2
 ```
 
 Of course, there should be better way to install the aqua paskage and I will find it.
+
+## Hot to update the aqua package?
+
+Give it a new version number in ``` meta.yaml ``` and ``` setup.py ``` and build the package with ``` conda build conda.recipe ```.
+Updating is simply
+```
+conda update aqua
+```
   
+
