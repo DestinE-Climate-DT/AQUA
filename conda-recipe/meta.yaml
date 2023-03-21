@@ -1,6 +1,14 @@
+{% set data = load_setup_py_data() %}
+{% set version = data.get('version') %}
+{% set home = data.get('url') %}
+{% set description = data.get('description') %}
+{% set author = data.get('author') %}
+{% set email = data.get('author_email') %}
+
+
 package:
-  name: aqua 
-  version: '0.0.2'
+  name: foo 
+  version: {{ version }}
 
 source:
   # Relative path to the parent directory.
@@ -22,7 +30,18 @@ requirements:
     - python
     - numpy>=1.17
 
+outputs:
+  - name: aqua
+    version: 
 
-#test:
-#  imports:
-#    - aqua
+test:
+  imports:
+    - 
+
+about:
+  home: {{ home }}
+  summary:
+  description:  {{ description  }}
+  author: {{ author  }}
+    email: {{ email }}
+  doc_url: 
