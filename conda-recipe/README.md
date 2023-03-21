@@ -1,10 +1,20 @@
 # Building and installating the aqua package with conda 
-## Short discription of how to build and install the aqua package with conda from any enviroment 
 
 ## How to build the aqua package with conda?
 
-### Which addition paackages do we need?
+As the first step, we need to install the following package:
 - conda-build (conda install conda-build)
+
+
+In order to avoid problems with dpendences, we need to modify/add the following lines in setup.py file:
+ - 'numpy<1.24',
+ - 'urllib3<1.27',
+
+
+Then we need to create the 'conda-recipe' directory. The following files in the 'conda-recipe' required:
+ - bld.bat  
+ - build.sh  
+ - meta.yaml
 
 conda build purge 
  
