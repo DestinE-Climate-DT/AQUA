@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='aqua',
-      version='0.0.1',
+      version='0.0.2',
       description='AQUA; a model evaluation framework for high-resolution climate model simulations',
       author='The AQUA team',
       author_email='p.davini@isac.cnr.it',
@@ -21,11 +21,12 @@ setup(name='aqua',
         'intake-xarray',
         'jinja2',
         'metpy',
-        'numpy',
+        'numpy<1.24',
         'pandas',
         'pyYAML',
         'sparse', 
         'xarray',
-        'smmregrid @ git+https://github.com/jhardenberg/smmregrid'
+	'urllib3<1.27',
+        #'smmregrid @ git+https://github.com/jhardenberg/smmregrid'
       ]
     )

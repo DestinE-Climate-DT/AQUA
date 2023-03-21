@@ -1,0 +1,28 @@
+package:
+  name: aqua 
+  version: '0.0.2'
+
+source:
+  # Relative path to the parent directory.
+  path: ..
+
+build:
+  number: 0
+  preserve_egg_dir: True
+
+requirements:
+  build:
+    - python
+    - numpy>=1.17
+
+  host:
+    - numpy>=1.17
+    - python
+  run:
+    - python
+    - numpy>=1.17
+
+
+#test:
+#  imports:
+#    - aqua
