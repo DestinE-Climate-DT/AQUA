@@ -9,6 +9,7 @@ channels:
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   - python>=3.9,<3.11
+  - libnetcdf<=4.8.1 
   - xarray
   - dask
   - numpy
