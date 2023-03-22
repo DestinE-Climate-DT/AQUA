@@ -10,12 +10,9 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 - `plots.py` contains functions for the visualization of time series and maps for teleconnection diagnostic.
 - `tools.py` contains generic functions that may be useful to the whole diagnostic.
 
-## Test (WIP)
+## Test
 
-CI tests are run with github actions, see `.github/workflows/aqua.yml` for details.
-
-### Old test
-- `unit_test.py` contains a comparison between the diagnostic developed in `index.py` and the same method applied with `cdo` bindings in order to keep track of possible problems in the development phase.
+Tests are run with github actions, see `.github/workflows/teleconnections.yml` for details.
 
 ## Notebooks (WIP)
 

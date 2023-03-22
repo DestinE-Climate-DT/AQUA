@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: "0 2 * * 1" # Run every Monday night at 2AM UTC
+    - cron: "0 3 * * 1" # Run every Monday night at 3AM UTC
 
 jobs:
   teleconnections_test:
@@ -25,7 +25,15 @@ jobs:
           environment-file: diagnostics/teleconnections/env-teleconnections.yml
           cache-downloads: true
 
-      - name: Download and setup tests
+      - name: Download and setup framework tests
+        run: |
+          ./download_data_for_tests.sh
+          
+      - name: Run framework tests
+        run: |
+          python -m pytest ./tests/test_basic.py 
+
+      - name: Download and setup teleconnections tests
         run: |
           ./tests/teleconnections/download_data_for_tests.sh
 
