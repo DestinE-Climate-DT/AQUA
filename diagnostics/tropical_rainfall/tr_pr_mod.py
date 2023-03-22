@@ -33,7 +33,9 @@ class TR_PR_Diagnostic:
             s_month         (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
 
             f_month         (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
-            num_of_bins     (int)       :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            num_of_bins     (int)       : 
+            
+                The number of bins in the histogram. By definition, ***num_of_bins = None***.
             first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
             width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***.
 
@@ -56,10 +58,13 @@ class TR_PR_Diagnostic:
             
 
     """
+    #attributes = inspect.getmembers(diag, lambda a:not(inspect.isroutine(a)))
 
     def attributes_update(self,   trop_lat = 10, s_year = None, f_year = None, s_month = None, f_month = None, num_of_bins = None, first_edge = None, width_of_bin = None):
         
         self.trop_lat   = trop_lat          if trop_lat     != None else self.trop_lat 
+
+        if trop_lat:  self.trop_lat = trop.lat
 
         self.s_year     = s_year            if s_year       != None else self.s_year  
         self.f_year     = f_year            if f_year       != None else self.f_year 
@@ -132,37 +137,26 @@ class TR_PR_Diagnostic:
                     if  np.count_nonzero(dataset['time.hour'] == dataset['time.hour'][0]) == dataset.time.size:
                         if np.count_nonzero(dataset['time.day'] == dataset['time.day'][0]) == dataset.time.size:
                             if np.count_nonzero(dataset['time.month'] == dataset['time.month'][0]) == dataset.time.size:
-                                print('timestep is year')
                                 return 'Y'
                             else:
-                                print( 'timestep is month')
                                 return 'M'  
                         else:
-                            print('timestep is day')
                             return 'D'
                     else:
                         timestep = dataset.time[1] - dataset.time[0]
                         n_hours = int(timestep/(60 * 60 * 10**9) )
-                        print('timestep is ' + str(n_hours) + ' hours')
-                        return 'H'
+                        return str(n_hours)+'H'
                 else:
                     timestep = dataset.time[1] - dataset.time[0]
                     n_minutes = int(timestep/(60  * 10**9) )
-                    print('timestep is ' + str(n_minutes) + ' minutes')
-                    return 'MINUTE'
-                
-                    # delite print 
-                    # verbose thrue/false of printing 
-                    # return amount of minutes and hours 
-                    # Minutes - > m (small m, check )
+                    return str(n_minutes)+'m'
                     # separate branch, PR, not part of this diagnostic
             else:
-                print('timestep is NOT uniform or unknown')
+                return 1
         
         except KeyError and AttributeError:
             timestep = dataset.time[1] - dataset.time[0]
             if timestep >=28 and timestep <=31:
-                print( 'timestep is month')
                 return 'M' 
 
 
@@ -183,7 +177,7 @@ class TR_PR_Diagnostic:
         
         #If the user has specified a function argument ***trop_lat***, then the argument becomes a new class attribute. 
         coord_lat, coord_lon = self.coordinate_names(data)
-        self.attributes_update(trop_lat)
+        self.attributes_update(trop_lat = trop_lat)
 
         data_trop = data.where(abs(data[coord_lat]) <= self.trop_lat, drop=True)  
         return data_trop
@@ -214,7 +208,7 @@ class TR_PR_Diagnostic:
         """
         
         #If the user has specified a function argument ***s_year,  f_year, s_month, f_month***, then the argument becomes a new class attributes.
-        self.attributes_update(s_year, f_year, s_month, f_month)
+        self.attributes_update(s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
 
         if self.s_year != None and self.f_year == None:
             data= data.where(data['time.year'] == self.s_year, drop=True)
@@ -249,9 +243,6 @@ class TR_PR_Diagnostic:
         if sort == True:
             data_1d  = data_1d.sortby(data_1d)
         return data_1d
-        #else: 
-        #    print("ds_into_array function implemented for Dataset")
-
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
     def mean_per_timestep(self, data, variable_1 = 'pr', trop_lat = None, 
@@ -280,7 +271,7 @@ class TR_PR_Diagnostic:
         """
         if 'lat' in data.dims:
             #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-            self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
+            self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
         
             coord_lat, coord_lon = self.coordinate_names(data)
@@ -327,7 +318,7 @@ class TR_PR_Diagnostic:
 
         if 'lat' in data.dims:
             #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-            self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
+            self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
             coord_lat, coord_lon = self.coordinate_names(data)
 
@@ -380,7 +371,7 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bin = num_of_bins, width_of_bin = width_of_bin)
         
         ds = self.ds_per_lat_range(data)[variable_1]
 
@@ -483,7 +474,7 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month)
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
         if preprocess == True: 
             ds = self.ds_per_lat_range(data, self.trop_lat)
@@ -504,7 +495,7 @@ class TR_PR_Diagnostic:
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins,  width_of_bin = width_of_bin)
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
@@ -547,24 +538,18 @@ class TR_PR_Diagnostic:
                 width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
             
             Return:
-                Dataset                 :   frequency per bins.
-                int                     :   Size input Dataset ot Dataarray
-                float                   :   Time consumed by ***hist1d_fast*** function. 
+                Dataset                 :   frequency per bins. 
             
         """
 
-        _time_1 = time.time()
-
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
 
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
 
-        _time_3 = time.time()
-        size = data.size
 
         bin_table = [self.first_edge + self.width_of_bin*j for j in range(0, self.num_of_bins)]        
         
@@ -574,10 +559,7 @@ class TR_PR_Diagnostic:
         frequency_bin =  xr.DataArray(hist_fast, coords=[bin_table], dims=["bin"])
         
 
-        _time_2 = time.time()
-        del_time = (_time_2 - _time_1) 
-
-        return  frequency_bin, size,  del_time 
+        return  frequency_bin 
     
     """ """ """ """ """ """ """ """ """ """
     def hist1d_np(self, data, preprocess = True, trop_lat = 10, variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
@@ -603,34 +585,24 @@ class TR_PR_Diagnostic:
             
             Return:
                 Dataset                 :   frequency per bins.
-                int                     :   Size input Dataset ot Dataarray
-                float                   :   Time consumed by ***hist1d_np*** function. 
+
             
         """
-
-        _time_1 = time.time()
-
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
         
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
-        _time_3     = time.time()
 
-
-        size = data.size
 
         hist_np = np.histogram(data, range=[self.first_edge, self.first_edge + (self.num_of_bins )*self.width_of_bin], bins = (self.num_of_bins))
 
         frequency_bin =  xr.DataArray(hist_np[0], coords=[hist_np[1][0:-1]], dims=["bin"])
 
-        _time_2     = time.time()
-        _del_time   = (_time_2 - _time_1)
-
-        return  frequency_bin, size,  _del_time 
+        return  frequency_bin
         
     """ """ """ """ """ """ """ """ """ """
     def hist1d_pyplot(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
@@ -655,23 +627,16 @@ class TR_PR_Diagnostic:
             
             Return:
                 Dataset                 :   frequency per bins.
-                int                     :   Size input Dataset ot Dataarray
-                float                   :   Time consumed by ***hist1d_pyplot*** function. 
             
         """
-        _time_1 = time.time()
-
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)  
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)  
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
-
-
-        size = data.size
 
         bins = [self.first_edge  + i*self.width_of_bin for i in range(0, self.num_of_bins+1)]
         hist_pyplt = plt.hist(x = data, bins = bins)
@@ -680,10 +645,8 @@ class TR_PR_Diagnostic:
 
         frequency_bin =  xr.DataArray(hist_pyplt[0], coords=[hist_pyplt[1][0:-1]], dims=["bin"])
         
-        _time_2 = time.time()
-        _del_time = (_time_2 - _time_1) 
 
-        return  frequency_bin, size, _del_time 
+        return  frequency_bin
 
         
          
@@ -714,11 +677,10 @@ class TR_PR_Diagnostic:
                 float                   :   Time consumed by ***hist1d_pyplot*** function. 
             
         """
-        _time_1 = time.time()
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
         
@@ -726,7 +688,6 @@ class TR_PR_Diagnostic:
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = True)
 
-        size = data.shape[0]
 
         h = dh.factory(data, 
                 axes=(bh.axis.Regular(self.num_of_bins, self.first_edge, last_edge),))     
@@ -736,10 +697,7 @@ class TR_PR_Diagnostic:
             edges = edges.compute()
         frequency_bin =  xr.DataArray(counts, coords=[edges[0:-1]], dims=["bin"])
         
-        _time_2 = time.time()
-        del_time = (_time_2 - _time_1) 
-
-        return  frequency_bin, size, del_time
+        return  frequency_bin
 
 
     """ """ """ """ """ """ """ """ """ """
@@ -765,22 +723,17 @@ class TR_PR_Diagnostic:
             
             Return:
                 Dataset                 :   frequency per bins.
-                int                     :   Size input Dataset ot Dataarray
-                float                   :   Time consumed by ***hist1d_pyplot*** function. 
             
         """
-        _time_1 = time.time()
-
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin)    
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)    
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = True)
 
-        size = data.shape[0]
 
         ref = bh.Histogram(bh.axis.Regular(self.num_of_bins, self.first_edge, last_edge), storage=bh.storage.Weight())
         h = dh.factory(data, weights=data, histref=ref)
@@ -791,10 +744,8 @@ class TR_PR_Diagnostic:
         
         frequency_bin =  xr.DataArray(counts, coords=[edges[0:-1]], dims=["bin"])
         
-        _time_2 = time.time()
-        del_time = (_time_2 - _time_1) 
 
-        return  frequency_bin, size, del_time 
+        return  frequency_bin
 
 
     """ """ """ """ """ """ """ """ """ """
@@ -820,22 +771,17 @@ class TR_PR_Diagnostic:
             
             Return:
                 Dataset                 :   frequency per bins.
-                int                     :   Size input Dataset ot Dataarray
-                float                   :   Time consumed by ***hist1d_pyplot*** function. 
             
         """
-        _time_1 = time.time()
-
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat, s_year, f_year, s_month, f_month, first_edge, num_of_bins, width_of_bin) 
+        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin) 
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = True)
 
-        size = data.shape[0]
 
         h = dhb.Histogram(dh.axis.Regular(self.num_of_bins, self.first_edge, last_edge),  storage=dh.storage.Double(), )
         h.fill(data)
@@ -849,10 +795,8 @@ class TR_PR_Diagnostic:
         #    counts =  dask.compute(counts.to_delayed())
         #    edges = dask.compute(edges[0].to_delayed())
            
-        _time_2 = time.time()
-        del_time = (_time_2 - _time_1) 
 
-        return  frequency_bin, size, del_time  
+        return  frequency_bin
 
 
 
