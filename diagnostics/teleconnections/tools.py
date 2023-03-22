@@ -3,10 +3,7 @@ This module contains simple tools for the teleconnections diagnostic.
 - loading functions, to deal with yaml files
 - conversion functions, to deal with conversion between different physical units.
 '''
-import yaml
-import sys
 import numpy as np
-sys.path.insert(1, '../../')
 from aqua import util
 
 def area_selection(indat,lat=None,lon=None,box_brd=True):

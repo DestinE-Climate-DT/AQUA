@@ -2,10 +2,11 @@
 This module contains functions to compare and test the teleconnections
 libraries with similar procedures done with cdo bindings.
 '''
+import numpy as np
 import xarray as xr
 from cdo import *
-from index import *
-from tools import *
+from index import station_based_index, regional_mean_index
+from tools import lon_180_to_360
 
 def station_based_cdo(infile, namelist, telecname, months_window=3):
     """

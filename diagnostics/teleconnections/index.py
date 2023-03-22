@@ -2,7 +2,7 @@
 This module contains functions to evaluate teleconnection indices 
 for different teleconnections.
 '''
-from tools import *
+from tools import lon_180_to_360, wgt_area_mean
 
 def station_based_index(field,namelist,telecname,months_window=3):
     """
