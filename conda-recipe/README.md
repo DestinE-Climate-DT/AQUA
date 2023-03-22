@@ -6,8 +6,10 @@ As the first step, we need to install ``` conda-build ```  package:
 ``` 
 conda install conda-build 
 ```
-
-
+Also, it usefull to install ``` conda-verify ```:
+```
+conda install conda-verify
+```
 In order to avoid problems with dpendences, we need to modify/add the following lines in setup.py file:
  - 'numpy<1.24',
  - 'urllib3<1.27',
