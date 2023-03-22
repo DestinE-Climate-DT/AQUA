@@ -4,7 +4,10 @@ import sys
 from aqua import Reader
 sys.path.insert(1, './diagnostics/teleconnections/')
 from cdotesting import cdo_station_based_comparison, cdo_regional_mean_comparison
-from tools import load_namelist
+from tools import load_namelist, lon_180_t0_360
+
+# pytest approximation, to bear with different machines
+approx_rel=1e4
 
 @pytest.mark.parametrize("module_name", ['cdotesting', 'index', 'plots', 'tools'])
 def test_import(module_name):
@@ -15,6 +18,24 @@ def test_import(module_name):
         __import__(module_name)
     except ImportError:
         assert False, "Module {} could not be imported".format(module_name)
+
+def test_lon_conversion():
+    """
+    Test that the lon conversion works
+    """
+    assert lon_180_t0_360(-25) == pytest.approx(335, rel=approx_rel)
+    assert lon_180_t0_360(-75) == pytest.approx(285, rel=approx_rel)
+    assert lon_180_t0_360(25)  == pytest.approx(25, rel=approx_rel)
+    assert lon_180_t0_360(75)  == pytest.approx(75, rel=approx_rel)
+
+def test_namelist():
+    """
+    Test that the namelist can be loaded
+    """
+    configdir = "./diagnostics/teleconnections/"
+    diagname  = 'teleconnections'
+    namelist = load_namelist(diagname,configdir=configdir)
+    assert len(namelist) > 0
 
 @pytest.mark.parametrize("months_window", [1,3])
 def test_station_based(months_window):

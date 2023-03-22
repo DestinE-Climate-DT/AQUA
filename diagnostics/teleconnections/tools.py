@@ -47,22 +47,6 @@ def area_selection(indat,lat=None,lon=None,box_brd=True):
     
     return odat
 
-def load_config(machine='wilma',configdir='../../config/'):
-    """
-    Load machine config yaml file.
-
-    Args:
-        machine (str):   machine name
-        configdir (str): path to config directory
-    
-    Returns:
-        config (dict):  machine config
-    """
-    infile = f'{configdir}/config_{machine}.yml'
-    config = util.load_yaml(infile)
-
-    return config
-
 def load_namelist(diagname='teleconnections',configdir='./'):
     """
     Load diagnostic yaml file.
