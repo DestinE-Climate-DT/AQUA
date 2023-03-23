@@ -93,6 +93,40 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3):
 
     return indx
 
+def regional_anomalies_cdo(infile, namelist, telecname, months_window=3):
+    """
+    Evaluate regional mean for a teleconnection with cdo bindings.
+
+    Args:
+        infile:                   path to nc file containing the field to 
+                                  evaluate the index
+        namelist:                 teleconnection yaml infos
+        telecname (str):          name of the teleconnection to be evaluated
+        months_window (int, opt): months for rolling average, default is 3
+
+    Returns:
+        indx (DataArray): standardized station based index
+    """
+    cdo = Cdo()
+
+    # 1. -- Evaluate box coordinates --
+    lonW = lon_180_to_360(namelist[telecname]['lonW'])
+    latN = namelist[telecname]['latN']
+    lonE = lon_180_to_360(namelist[telecname]['lonE'])
+    latS = namelist[telecname]['latS']
+
+    # 2. -- Select field in the box and evaluate the average
+    field_sel = cdo.sellonlatbox('{},{},{},{}'.format(lonW,lonE,latS,latN),
+                                 input=infile)
+    field_mean = cdo.fldmean(input=field_sel)
+
+    # 3. -- Evaluate the value with the months window --
+    indx = cdo.runmean("{0}".format(months_window),input=field_mean,returnXDataset=True)
+
+    cdo.cleanTempDir()
+
+    return indx
+
 def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
                                  rtol=1.e-5,atol=1.e-8):
     """
