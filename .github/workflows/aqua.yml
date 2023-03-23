@@ -1,4 +1,4 @@
-name: aqua shell test
+name: AQUA tests
 
 on:
   push:
@@ -11,34 +11,24 @@ on:
 
 jobs:
   aqua_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10"]
     defaults:
       run:
         shell: bash -l {0}
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Provision with Micromamba
         uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: environment.yml
           cache-downloads: true
-      
-      - name: Install Flake8
-        run: |
-          # install package
-          python -m pip install flake8
-      - name: Lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
-
-      # - name: Install Project
-      #   run: |
-      #     pip install .
+          extra-specs: |
+              python=${{ matrix.python-version }}
       - name: Download and setup tests
         run: |
           ./download_data_for_tests.sh

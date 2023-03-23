@@ -11,10 +11,14 @@ on:
 
 jobs:
   teleconnections_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10"]
     defaults:
       run:
         shell: bash -l {0}
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,6 +28,8 @@ jobs:
         with:
           environment-file: diagnostics/teleconnections/env-teleconnections.yml
           cache-downloads: true
+          extra-specs: |
+              python=${{ matrix.python-version }}
 
       - name: Download and setup framework tests
         run: |
