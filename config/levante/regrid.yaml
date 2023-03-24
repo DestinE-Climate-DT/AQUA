@@ -7,8 +7,8 @@ areas:
    src_template: cell_area_{model}_{exp}_{source}.nc
    dst_template: cell_area_{grid}.nc
 
-paths:
-  grids: /work/bb1153/b382075/nextgems/weights
+cdo-paths:
+  download: /work/bb1153/b382075/nextgems/weights
   icon: /pool/data/ICON
 
 target_grids:
