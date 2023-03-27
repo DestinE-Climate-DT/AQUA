@@ -1,0 +1,63 @@
+channels:
+- conda-forge
+dependencies:
+- cartopy
+- cdo
+- cfunits
+- dask
+- ecCodes
+- healpy
+- intake
+- intake-esm<=2021.8.17
+- intake-xarray
+- ipykernel
+- libnetcdf<=4.8.1
+- matplotlib
+- metpy
+- netcdf4
+- numpy
+- pip
+- python==3.10
+- python>=3.9,<3.11
+- xarray
+- pip:
+  - -e .
+  - boost_histogram
+  - dask_histogram
+  - dask_jobqueue
+  - docker
+  - fast_histogram
+  - gribscan
+  - sparse
+name: tropical-rainfall
+channels:
+- conda-forge
+dependencies:
+- cartopy
+- cdo
+- cfunits
+- dask
+- ecCodes
+- healpy
+- intake
+- intake-esm<=2021.8.17
+- intake-xarray
+- ipykernel
+- libnetcdf<=4.8.1
+- matplotlib
+- metpy
+- netcdf4
+- numpy
+- pip
+- python>=3.9,<3.11
+- xarray
+- pip:
+  - -e .
+  - boost_histogram
+  - dask_histogram
+  - dask_jobqueue
+  - docker
+  - fast_histogram
+  - gribscan
+  - sparse
+name: tropical-rainfall
