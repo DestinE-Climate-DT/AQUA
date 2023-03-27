@@ -1,0 +1,9 @@
+conda
+dask 
+ecCodes
+numpy<1.24
+intake
+intake-esm<=2000021.8.17
+intake-xarray
+metpy
+xarray
