@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 
 import re
+import os 
 
+with os.popen("pwd ") as f:
+    _pwd = f.readline()
+pwd = re.split(r'[\n]', _pwd)[0]
+
+print(pwd)
 writing_started = False
 
 keyword = 'dependencies'
 
 # Read the text file
-with open('/work/users/nnazarova/AQUA/requirements/conda_requirements.txt', 'r') as f:
+with open(str(pwd)+'/requirements/conda_requirements.txt', 'r') as f:
     content = f.read()
 
 # Extract the dependencies using regular expressions
@@ -47,10 +53,8 @@ def find_the_dep(_lines, dep_name):
     return key_line
 
 
-# dependency_splitter,  find_the_dep, find_the_key, 
-#############################################################
-filename = '/work/users/nnazarova/AQUA//environment.yml'
-#print(find_the_key('environment.yml', keyword))
+
+filename = str(pwd)+'/environment.yml'
 
 with open(filename, 'r') as f:
     contents = f.readlines()
