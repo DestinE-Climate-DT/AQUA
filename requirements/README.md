@@ -7,7 +7,7 @@ File contains the shared conda requirements between ``` enviroment.yml ``` file 
 File contains the shared  pip  requirements between ``` enviroment.yml ``` file and ``` setup.py ``` file
 
 ##  Setup.py  file
-``` Setup.py ``` file updated. Now shared  pip  and  conda  dependencies import to ``` setup.py ``` by function ```  load_requirements ```  
+*** Setup.py *** file updated. Now shared  pip  and  conda  dependencies import to ``` setup.py ``` by function ```  load_requirements ```  
 
 
 ##  Enviroment.yml  file
