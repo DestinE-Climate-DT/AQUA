@@ -1,25 +1,21 @@
 #!/bin/bash
 
-#exec bash
 
 manager=conda 
 
-
-$manager init
+current_dir=$(pwd)
 
 # Activate base environment
-$manager activate base
+# $manager activate base
 
-# Run your Python script
-python3 /work/users/nnazarova/AQUA/requirements/conda_req_for_yml.py
+# Python script deactivate and delete previous aqua environment if necessary 
+python3 ${current_dir}/requirements/conda_req_for_yml.py
 
-
-#export PATH="/anaconda/bin:$PATH"
+python3 ${current_dir}/requirements/check_aqua_env.py
 
 # Install packages required for the environment
-$manager env create -v  --file /work/users/nnazarova/AQUA/environment.yml
-$manager env create -f environment.yml 
+$manager env create -v  -f environment.yml 
 
 # Activate the new environment
-$manager activate aqua
-
+source activate aqua
+$manager  activate aqua

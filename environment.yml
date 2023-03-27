@@ -7,6 +7,15 @@ channels:
 #script: python requirements/conda_req_for_yml.py
 dependencies: 
   - python>=3.9,<3.11
+  - conda
+  - dask
+  - ecCodes
+  - numpy<1.24
+  - intake
+  - intake-esm<=2021.8.17
+  - intake-xarray
+  - metpy
+  - xarray
   - pip
   - libnetcdf<=4.8.1
   - netcdf4
@@ -18,6 +27,6 @@ dependencies:
   - healpy
   # these below are only required for running notebooks
   - pip:
-    - -r file:/work/users/nnazarova/AQUA/requirements/pip_requirements.txt
+    - -r file:/work/bb1153/b382267/AQUA/requirements/pip_requirements.txt
     # pip install -e of AQUA itself (this will bring in also smmregrid)
     - -e .
