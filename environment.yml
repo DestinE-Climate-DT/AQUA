@@ -1,7 +1,5 @@
 # Create the ECmean4 environment:
 # mamba env create -f environment.yml 
-# or if you really want to use conda
-# conda env create -f environment.yml
 
 name: aqua
 channels:
@@ -9,6 +7,7 @@ channels:
 #script: python requirements/conda_req_for_yml.py
 dependencies: 
   - python>=3.9,<3.11
+  - pip
   - libnetcdf<=4.8.1
   - netcdf4
   - matplotlib
@@ -18,7 +17,6 @@ dependencies:
   - ipykernel
   - healpy
   # these below are only required for running notebooks
-  - pip
   - pip:
     - -r file:/work/users/nnazarova/AQUA/requirements/pip_requirements.txt
     # pip install -e of AQUA itself (this will bring in also smmregrid)

@@ -1,15 +1,25 @@
 #!/bin/bash
 
+#exec bash
+
+manager=conda 
+
+
+$manager init
+
 # Activate base environment
-conda activate base
+$manager activate base
 
 # Run your Python script
-python requirements/conda_req_for_yml.py
+python3 /work/users/nnazarova/AQUA/requirements/conda_req_for_yml.py
+
+
+#export PATH="/anaconda/bin:$PATH"
 
 # Install packages required for the environment
-conda env create -v  --file environment.yml
-# mamba env create -f environment.yml 
+$manager env create -v  --file /work/users/nnazarova/AQUA/environment.yml
+$manager env create -f environment.yml 
 
 # Activate the new environment
-conda activate aqua
+$manager activate aqua
 

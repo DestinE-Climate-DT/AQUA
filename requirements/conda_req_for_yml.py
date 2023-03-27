@@ -7,7 +7,7 @@ writing_started = False
 keyword = 'dependencies'
 
 # Read the text file
-with open('requirements/conda_requirements.txt', 'r') as f:
+with open('/work/users/nnazarova/AQUA/requirements/conda_requirements.txt', 'r') as f:
     content = f.read()
 
 # Extract the dependencies using regular expressions
@@ -44,11 +44,12 @@ def find_the_dep(_lines, dep_name):
             key_line=i
             break
         i+=1
+    return key_line
 
 
 # dependency_splitter,  find_the_dep, find_the_key, 
 #############################################################
-filename = 'environment.yml'
+filename = '/work/users/nnazarova/AQUA//environment.yml'
 #print(find_the_key('environment.yml', keyword))
 
 with open(filename, 'r') as f:
@@ -57,7 +58,7 @@ with open(filename, 'r') as f:
     for dependency in dependencies:
         dep_name = dependency_splitter(dependency)[0]
         num_of_line =  find_the_dep(contents, dep_name)
-        if  num_of_line!=-1:
+        if  num_of_line>0:
             del contents[num_of_line]
     i_key = find_the_key(contents, keyword)
     for dependency in dependencies:
