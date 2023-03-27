@@ -31,6 +31,10 @@ models:
                 short_name: to
                 src_units: degC
                 units: "{temperature}"
+            sst:
+                short_name: sst
+                src_units: degC
+                units: "{temperature}"
 
         # coords:
         #     latitude:

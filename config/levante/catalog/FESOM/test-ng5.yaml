@@ -1,0 +1,30 @@
+plugins:
+  source:
+  - module: intake_xarray
+sources:
+  elem_grid:
+    args:
+      urlpath: /work/ab0995/a270088/DestinE/AQUA_tests/IFS/grids/NG5_griddes_elems_IFS.nc
+    driver: netcdf
+  node_grid:
+    args:
+      urlpath: /work/ab0995/a270088/DestinE/AQUA_tests/IFS/grids/NG5_griddes_nodes_IFS.nc
+    driver: netcdf
+  original_2d:
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - /work/ab0995/a270088/DestinE/AQUA_tests/IFS/FESOM/FESOM_tco2559-ng5_original_2d.nc
+    description: original 2d output
+    driver: netcdf
+  original_3d:
+    args:
+      chunks:
+        nz: 1
+        nz1: 1
+        time: 1
+      urlpath:
+      - /work/ab0995/a270088/DestinE/AQUA_tests/IFS/FESOM/FESOM_tco2559-ng5_original_3d.nc
+    description: original 3d output
+    driver: netcdf

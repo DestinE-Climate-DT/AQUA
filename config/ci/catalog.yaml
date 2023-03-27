@@ -1,0 +1,11 @@
+sources:
+  FESOM:
+    description: FESOM ocean model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/FESOM/main.yaml"
+  IFS:
+    description: IFS atmospheric model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/IFS/main.yaml"

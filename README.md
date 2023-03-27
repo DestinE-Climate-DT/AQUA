@@ -1,29 +1,34 @@
 # AQUA
 AQUA model evaluation framework
 
-This repo is thought to host the code development as well as the the discussion for the DE_340 AQUA model evaluation framework. In the first phase, please use it as a playground, including code examples or notebook if you want to show some specific configuration. Please use specific branches to host your development.  
+This repository is thought to host the code development as well as the the discussion for the DE_340 AQUA model evaluation framework. In the first phase, please use it as a playground, including code examples or notebook if you want to show some specific configuration. Please use specific branches to host your development.  
 
-AQUA framework will be based on a series of python3 libraries. Those pre- and post-processing libraries will be based on the `xarray+dask` framework so that they will be able to exploit out-of-core computation, fundamental to operate on the large volume of expected DE_340 data. 
+AQUA framework will be based on a series of python3 libraries. Those libraries are based on the `xarray+dask` framework so that they will be able to exploit out-of-core computation, fundamental to operate on the large volume of expected DE_340 data. 
+Most important module is the `Reader` class which allows for data access through intake catalog - and later on through FDB - as well as regridding (via the smmregrid module), time and spatial averaging as well as changes in data format convention.
 
-Diagnostics can be introduced within the AQUA framework making use of a specific python3 subpackage  or being accessed via containerized diagnostic (if pre-existing and written in non-python3 language).
+Diagnostics can be introduced within the AQUA framework making use of a specific python3 subpackage, listed in the `diagnostics` folder.
 
 ## Installation
 
-All the modules, including the smmregrid regridder, are now within the environment file. The code works on both py3.10 and py3.9 (not CI yet)
+The code works on both py3.10 and py3.9.  Recommended installation through mamba (a package manager for conda-forge)
 
-### create conda environment and install packages
+### create conda/mamba environment and install packages
 ```
-conda env create -f environment.yml
+git clone git@github.com:oloapinivad/AQUA.git
+cd AQUA
+mamba env create -f environment.yml
 conda activate aqua
-
 ```
 
+## Examples
+
+Please look at the `notebook` folder to explore AQUA functionalities
 
 ### add kernel for DKRZ jupyterhub
 
 Documentation on adding kernels: https://docs.dkrz.de/doc/software%26services/jupyterhub/kernels.html#use-your-own-kernel
 
-It shoudl come down to:
+It should come down to:
 
 ```
 pip install ipykernel
