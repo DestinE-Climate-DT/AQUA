@@ -14,6 +14,12 @@ The function ```  load_requirements ```   imports to to ``` setup.py ``` shared 
 
 ##  Enviroment.yml  file
 
+IMPORTANT! All the information, described below is unnececary, because all shared depepndences install in new enviroment by last line in eviroment.yml:
+```
+    - -e .
+```
+
+But I still describe the way to install shared dependencies to new enviroment:
 
  - Following command imports shared pip dependencies to yml file
 ```
