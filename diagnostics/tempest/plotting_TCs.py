@@ -5,7 +5,7 @@ import matplotlib.ticker as mticker
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import cartopy.feature as cfeature
 
-from functionsTCs import *
+from functions_TCs import getTrajectories
 
 def multi_plot(tracks_nc_file):
 

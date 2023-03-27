@@ -8,7 +8,7 @@ import subprocess
 import pandas as pd
 from datetime import datetime
 
-def detect_nodes_zoomin(retrieve_dictionary, dirs, varlist, original_dictionary, lowgrid, highgrid, write_fullres=False):
+def detect_nodes_zoomin(retrieve_dictionary, dirs, varlist, original_dictionary, lowgrid, highgrid, boxdim, write_fullres=False):
 
     # loop on timerecords
     for tstep in pd.date_range(start=f'{retrieve_dictionary["init_year"]}-{retrieve_dictionary["init_month"]}-{retrieve_dictionary["init_day"]}',  
@@ -44,12 +44,12 @@ def detect_nodes_zoomin(retrieve_dictionary, dirs, varlist, original_dictionary,
 
               data = reader2d.regrid(fulldata[varfile])
               data.name = var
-              xfield = store_fullres_field(0, data, tempest_nodes, boxdim)
+              xfield = store_fullres_field(0, data, tempest_nodes, boxdim=boxdim)
 
               store_file = os.path.join(dirs['tmpdir'], f'TC_{var}_{tstep}.nc')
               write_fullres_field(xfield, store_file)
 
-def stitch_nodes_zoomin(retrieve_dictionary, dirs, varlist, n_days_ext, write_fullres, n_days_freq, boxdim):
+def stitch_nodes_zoomin(retrieve_dictionary, dirs, varlist, boxdim, n_days_ext, n_days_freq, write_fullres):
 
     # loop on each time stamp in dates
     for block in pd.date_range(start=f'{retrieve_dictionary["init_year"]}-{retrieve_dictionary["init_month"]}-{retrieve_dictionary["init_day"]}', 
