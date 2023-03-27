@@ -1,0 +1,11 @@
+sources:
+  tco79-orca1:
+    description: 160km IFS and ORCA
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/tco79-orca1.yaml"
+  tco79-orca1-python:
+    description: 160km IFS and ORCA
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/tco79-orca1-python.yaml"

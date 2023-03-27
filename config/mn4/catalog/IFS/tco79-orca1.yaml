@@ -1,0 +1,25 @@
+plugins:
+  source:
+    - module: intake_xarray
+    - module: gribscan
+
+sources:
+  ICMGG_atm2d:
+    driver: zarr
+    args:
+      consolidated: False
+      urlpath: reference::/gpfs/scratch/bsc32/bsc32655/scratch/gribscan-json/tco79-orca1/atm2d.json
+  lra-r100-day:
+    driver: netcdf
+    args:
+      urlpath: '/gpfs/scratch/bsc32/bsc32655/scratch/LRA/tco79-orca1/r100/day/*.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True
+  lra-r100-mon:
+    driver: netcdf
+    args:
+      urlpath: '/gpfs/scratch/bsc32/bsc32655/scratch/LRA/tco79-orca1/r100/mon/*.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True

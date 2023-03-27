@@ -2,27 +2,26 @@
 # IFS files from catalog using a zarr interface
 
 #!/bin/bash
-set -e
+#set -e
 
 # find mamba/conda (to be refined)
-whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
-source $whereconda/etc/profile.d/conda.sh
-
+#whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+#source $whereconda/etc/profile.d/conda.sh
+#module load Miniconda3
 # activate AQUA environment
-conda activate aqua
+#conda activate /gpfs/projects/bsc32/bsc32655/aquaenv
 
 # expid
 expid=tco399-orca025-kai
 
 # define folder and grib files
-tmpdir=/pfs/lustrep1/scratch/project_462000048/davini/gribscan/$expid
-jsondir=/pfs/lustrep1/projappl/project_462000048/davini/gribscan-json/$expid
-datadir=/pfs/lustrep1/scratch/project_462000048/kaikeller/rundir/tco399l137/hvvy/hres/cce.lumi.craympich/lum.cce.sp/h8304.N24.T1536xt2xh1.nextgems_6h.i16r0w24.ORCA025_Z75.htco399-2870646
-#datadir=/users/padavini/scratch/testrun
+tmpdir=/gpfs/scratch/bsc32/bsc32655/scratch/gribscan/$expid
+jsondir=/gpfs/scratch/bsc32/bsc32655/scratch/gribscan-json/$expid
+datadir=/gpfs/scratch/bsc32/bsc32655/scratch/IFS-NEMO40-INSTALL/ifs-source/flexbuild/bin/SLURM/marenostrum4/rundir/tco79l137/hvi1/hres/intel.mn4.undef/mn4.intel.sp/h104712.N3.T24xt6xh1.nextgems_pl6h_sfc6h.i16r0w24.eORCA1_Z75.htco79-27833884/
 gribfiles='ICMGG????+*'
 
 # number of parallel procs
-nprocs=4
+nprocs=16
 
 # create folders
 mkdir -p $jsondir $tmpdir
