@@ -1,22 +1,25 @@
 # Automatic load of the shared dependencies between  setup.py  and  enviroment.yml  files. 
 
 ##   requirements/conda\_requirements.txt  file
+
 File contains the shared conda requirements between ``` enviroment.yml ``` file and ``` setup.py ``` file.
 
 ##  requirements/pip\_requirements.txt  file 
+
 File contains the shared  pip  requirements between ``` enviroment.yml ``` file and ``` setup.py ``` file
 
 ##  Setup.py  file
-*** Setup.py *** file updated. Now shared  pip  and  conda  dependencies import to ``` setup.py ``` by function ```  load_requirements ```  
 
+The function ```  load_requirements ```   imports to to ``` setup.py ``` shared  pip  and  conda  dependencies
 
 ##  Enviroment.yml  file
-``` Enviroment.yml ``` file updated. Now shared  
- - pip  import to file by command 
+
+
+ - Following command imports shared pip dependencies to yml file
 ```
 - -r file:/work/users/nnazarova/AQUA/requirements/pip_requirements.txt
 ```
- -  conda dependencies import to ``` enviroment.yml ``` by python script ``` requirements/conda_req_for_yml.py ```
+ -  Python script ``` requirements/conda_req_for_yml.py ``` imports shared conda dependencies to file 
 
 
 ##   aqua\_setup\_and\_run.sh  file
