@@ -4,7 +4,7 @@ import sys
 from aqua import Reader
 sys.path.insert(1, './diagnostics/teleconnections/')
 from cdotesting import cdo_station_based_comparison, cdo_regional_mean_comparison
-from tools import load_namelist, lon_180_t0_360
+from tools import load_namelist, lon_180_to_360
 
 # pytest approximation, to bear with different machines
 approx_rel=1e4
@@ -23,10 +23,10 @@ def test_lon_conversion():
     """
     Test that the lon conversion works
     """
-    assert lon_180_t0_360(-25) == pytest.approx(335, rel=approx_rel)
-    assert lon_180_t0_360(-75) == pytest.approx(285, rel=approx_rel)
-    assert lon_180_t0_360(25)  == pytest.approx(25, rel=approx_rel)
-    assert lon_180_t0_360(75)  == pytest.approx(75, rel=approx_rel)
+    assert lon_180_to_360(-25) == pytest.approx(335, rel=approx_rel)
+    assert lon_180_to_360(-75) == pytest.approx(285, rel=approx_rel)
+    assert lon_180_to_360(25)  == pytest.approx(25, rel=approx_rel)
+    assert lon_180_to_360(75)  == pytest.approx(75, rel=approx_rel)
 
 def test_namelist():
     """
