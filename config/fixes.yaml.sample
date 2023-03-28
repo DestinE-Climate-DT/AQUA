@@ -1,0 +1,159 @@
+defaults:
+
+    # The default datamodel for sources if not specified below
+    src_datamodel: cf
+    # The datamodel convention (axes names, directions) for output coordinates
+    dst_datamodel: cds
+
+    units:
+        mass_flux:  kg m-2 s-1
+        radiation_flux: W m-2
+        temperature: K
+
+models:
+    IFS:
+        default:
+            ICMGG_atm2d:
+                deltat: 3600
+                month_jump: true
+                vars:
+                    # Convert (the original is removed) with auto unit conversion from eccodes properties
+                    tprate:
+                        source: tp
+                        grib: true
+                        decumulate: true    
+                    # Convert overriding source units and specifying target by hand
+                    mer:
+                        source: e
+                        src_units: m
+                        decumulate: true
+                        attributes:
+                            units: "{mass_flux}"
+                            long_name: Mean evaporation rate
+                            paramId: 235043
+                    # decumulated OLR, converted to W/m2
+                    mtntrf:
+                        derived: ttr
+                        decumulate: true
+                        grib: true
+                    # decumulated OLR
+                    ttr:
+                        source: ttr
+                        decumulate: true
+
+
+    ICON:
+        default:
+            default:
+                data_model: false  # Do not attempto to correct coordinates
+                vars:
+                    # Convert to grib units (kg m-2 s-1 --> m3 s-1)
+                    tprate:
+                        source: pr
+                        grib: true
+                    # Define your own
+                    mypr:
+                        derived: pr*86400
+                        attributes:
+                            units: "mm day-1"
+                            long_name: My own test precipitation in mm / day
+                    # Copy also grib attributes
+                    mslhfl:
+                        source: hfls
+                        grib: true
+                        attributes:
+                            myextra: just a test to add extra attribute
+                    # Just renaming and adding one attribute
+                    msshfl:
+                        source: hfss
+                        attributes:
+                            long_name: Mean surface sensible heat flux
+
+    FESOM:
+        default:
+            interpolated_global_TS:
+                data_model: False  # Do not attempto to correct coordinates
+                vars:
+                    ocpt: 
+                        source: temp
+                        src_units: degC
+                        grib: true
+                        attributes:
+                            units: degC # Override units from grib tables
+
+    MSWEP:
+        default:
+            default:
+                data_model: mswep  # Special data model so that lats are not flipped
+                vars:
+                    # Automatic conversion to destination grib units
+                    tprate:
+                        source: precipitation
+                        grib: true
+
+    ERA5:
+        default:
+            default:
+                deltat: 86400
+                data_model: cf
+            monthly_acc:
+                deltat: 86400
+                data_model: cf
+                vars:
+                    # Derive a variable and determine destination units etc. automatically from eccodes
+                    tprate:
+                        derived: cp+lsp
+                        #src_units: m
+                        grib: true
+
+    CERES:
+        default:
+            default:
+                data_model: False
+        syn-toa41:
+            default:
+                vars:
+                    toa_lw_all_daily_eb:
+                        derived: toa_lw_all_daily*1.0060667743 
+                        attributes:
+                            long_name: Observed Top of the Atmosphere Longwave Flux, All-sky conditions, Daily Means, Energy balanced
+                            standard_name: toa_outgoing_longwave_flux
+                            units: W m-2
+                            valid_min: 0
+                            valid_max: 500
+                            positive: up
+                    toa_sw_all_daily_eb:
+                        derived: toa_sw_all_daily*1.0198334952
+                        attributes:
+                            long_name: Observed Top of the Atmosphere Shortwave Flux, All-sky conditions, Daily Means, Energy balanced
+                            standard_name: toa_outgoing_shortwave_flux
+                            units: W m-2
+                            valid_min: 0
+                            valid_max: 1400
+                            positive: up
+                    toa_solar_all_daily_eb:
+                        derived: toa_sw_all_daily+toa_lw_all_daily+toa_net_all_daily-0.01632
+                        attributes:
+                            long_name: Observed Top of the Atmosphere incoming Solar Flux, Daily Means, Energy balanced
+                            units: W m-2
+                            valid_min: 0
+                            valid_max: 1400
+                            positive: down
+                    mtntrf:
+                        # The fixer does not allow multiplying by negative numbers yet
+                        derived: 0.-toa_lw_all_daily_eb
+                        # Let's use eccodes tables to find the attributes
+                        grib: true
+                        attributes:
+                            valid_min: -500
+                            valid_max: 0
+                            positive: down    
+                    mtnsrf:
+                        # The fixer does not allow multiplying by negative numbers yet
+                        derived: toa_solar_all_daily_eb-toa_sw_all_daily_eb
+                        # Let's use eccodes tables to find the attributes
+                        grib: true
+                        attributes:
+                            valid_min: 0
+                            valid_max: 1400
+                            positive: down

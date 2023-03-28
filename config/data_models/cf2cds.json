@@ -1,0 +1,12 @@
+{
+    "latitude": {"out_name": "lat", "stored_direction": "increasing"},
+    "longitude": {"out_name": "lon", "stored_direction": "increasing"},
+    "depthBelowLand": {"out_name": "depth", "units": "m", "stored_direction": "increasing"},
+    "isobaricInhPa": {"out_name": "plev", "units": "Pa", "stored_direction": "decreasing"},
+    "number": {"out_name": "realization", "stored_direction": "increasing"},
+    "time": {"out_name": "forecast_reference_time", "stored_direction": "increasing"},
+    "valid_time": {"out_name": "time", "stored_direction": "increasing"},
+    "step": {"out_name": "leadtime", "stored_direction": "increasing"},
+    "forecastMonth": {"out_name": "leadtime_month", "stored_direction": "increasing"}
+}
+

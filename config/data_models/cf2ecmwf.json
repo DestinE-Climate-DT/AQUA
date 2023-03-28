@@ -1,0 +1,6 @@
+{
+    "depthBelowLand": {"out_name": "level", "units": "m", "stored_direction": "increasing"},
+    "isobaricInhPa": {"out_name": "level", "units": "hPa", "stored_direction": "decreasing"},
+    "isobaricInPa": {"out_name": "level", "units": "hPa", "stored_direction": "decreasing"},
+    "hybrid": {"out_name": "level", "stored_direction": "increasing"}
+}
