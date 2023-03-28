@@ -2,19 +2,23 @@
 
 ##   requirements/conda\_requirements.txt  file
 
-File contains the shared conda requirements between ``` enviroment.yml ``` file and ``` setup.py ``` file.
+
+The file contains the shared conda requirements between the ``` enviroment.yml ``` file and ``` setup.py ``` file.
 
 ##  requirements/pip\_requirements.txt  file 
 
-File contains the shared  pip  requirements between ``` enviroment.yml ``` file and ``` setup.py ``` file
+
+The file contains the shared pip requirements between the ``` enviroment.yml ``` file and the ``` setup.py ``` file.
+
 
 ##  Setup.py  file
 
-The function ```  load_requirements ```   imports to to ``` setup.py ``` shared  pip  and  conda  dependencies
+The function ```  load_requirements ```   imports to to ``` setup.py ``` shared  pip  and  conda  dependencies.
 
 ##  Enviroment.yml  file
 
-IMPORTANT! All the information, described below is unnececary, because all shared depepndences install in new enviroment by last line in eviroment.yml:
+
+IMPORTANT! All the information described below is unnecessary because all shared dependencies installed in the new environment by the last line in eviroment.yml:
 ```
     - -e .
 ```
@@ -30,20 +34,23 @@ But I still describe the way to install shared dependencies to new enviroment:
 
 ##   aqua\_setup\_and\_run.sh  file
 
-Bash script  
- - updates the  ``` enviroment.yml ``` file, 
- - deactivates and delete previus aqua enviroment if aqua existed and activated
- -  creates and activates (not yet by some reasom) new aqua enviroment. 
+
+Bash script 
+ - updates the ``` enviroment.yml ``` file, 
+ - deactivates and deletes the previous aqua environment (if aqua is existed and is activated), and 
+ - creates and activates(not yet by some reason) a new aqua environment.
 
 
 ## check\_aqua\_env.py  file 
-Pythin script check if aqua enviroment already exist. If aqua enviroment already exist
- - and activated, script deactivate previus enviroment
- - script delete the aqua enviroment from 
+
+Python script checks if the aqua environment already exists. If an aqua environment already exists
+ - and activated, the script deactivates the previous environment
+ - script delete the aqua environment from
 
 
 
 ##  conda\_req\_for\_yml.py  file
-Python Script update the dependencies in ``` enviroment.yml ``` file in agreement with ``` conda_requirements.txt ``` file. 
-If dependency was already in the ``` enviroment.yml ``` file, the dependency will be removed and new version will be installed  
+
+Python Script updates the dependencies in the ``` enviroment.yml ``` file in agreement with the ``` conda_requirements.txt ``` file.
+If the dependency were already in the ``` enviroment.yml ``` file, the old dependency would be removed, and the new version will be installed
 
