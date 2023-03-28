@@ -1,6 +1,0 @@
-sources:
-  past:
-    description: past MSWEP v280 data
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/past.yaml"
