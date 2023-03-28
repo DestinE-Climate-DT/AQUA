@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../')
+sys.path.append('/home/b/b382216/work/AQUA')
 from aqua import Reader
 import xarray as xr
 import os
