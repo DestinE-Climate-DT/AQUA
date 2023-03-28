@@ -30,11 +30,20 @@ But I still describe the way to install shared dependencies to new enviroment:
 
 ##   aqua\_setup\_and\_run.sh  file
 
-File ``` aqua_setup_and_run.sh ``` updates the ``` enviroment.yml ``` file, creates and activates new aqua enviroment. 
-Bash file also can delete previus enviroment with the same name (not implemented yet)
+Bash script  
+ - updates the  ``` enviroment.yml ``` file, 
+ - deactivates and delete previus aqua enviroment if aqua existed and activated
+ -  creates and activates (not yet by some reasom) new aqua enviroment. 
+
+
+## check\_aqua\_env.py  file 
+Pythin script check if aqua enviroment already exist. If aqua enviroment already exist
+ - and activated, script deactivate previus enviroment
+ - script delete the aqua enviroment from 
+
+
 
 ##  conda\_req\_for\_yml.py  file
 Python Script update the dependencies in ``` enviroment.yml ``` file in agreement with ``` conda_requirements.txt ``` file. 
 If dependency was already in the ``` enviroment.yml ``` file, the dependency will be removed and new version will be installed  
-
 
