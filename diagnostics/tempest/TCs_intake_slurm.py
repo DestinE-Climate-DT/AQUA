@@ -1,6 +1,5 @@
 import sys
 sys.path.append('../../')
-from aqua import Reader
 
 from functions_TCs import detect_nodes_zoomin, stitch_nodes_zoomin
 
