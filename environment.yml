@@ -33,4 +33,4 @@ dependencies:
     - docker
     - gribscan
     # pip install -e of AQUA itself (this will bring in also smmregrid)
-    - -e .
+    - -e /work/bb1153/b382267/AQUA/

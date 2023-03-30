@@ -7,8 +7,6 @@ name : tropical-rainfall
 channels:
   - conda-forge
 dependencies:
-  - python>=3.9,<3.11
-  - pip
   - pip:
     - dask_jobqueue
     - fast_histogram
