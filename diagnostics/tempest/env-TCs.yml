@@ -1,37 +1,39 @@
-# Create the tropical-rainfall environment:
-#   conda env create -f env-tropical-rainfall.yml
-# Alternatively, use mamba
-#mamba env create -f env-TCs.yml
+# Create the ECmean4 environment:
+# mamba env create -f environment.yml 
+# or if you really want to use conda
+# conda env create -f environment.yml
 
-name : TCs
+name: TCs
 channels:
   - conda-forge
+# please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
-  - python=3.9
-  - pyYAML
+  - python>=3.9,<3.11
+  - libnetcdf<=4.8.1 
   - xarray
-  - intake
   - dask
   - numpy
-  - jinja2
-  - tqdm
-  - udunits2
-  - zarr
   - netcdf4
-  - intake-xarray
   - ecCodes      
   - matplotlib
   - cartopy
-  - healpy
-  - netcdf4
-  - ipykernel
   - cfunits
-  - tempest-extremes
+  - metpy
   - cdo
-  - python-cdo
+  - intake-esm<=2021.8.17
+  - intake
+  - intake-xarray
+# these below are only required for running notebooks
+  - ipykernel
+  - healpy
+# these below is required by TCs
+  - tempest-extremes
+# these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
   - pip:
-    - sparse==0.13.0
+    - sparse
     - docker
     - gribscan
+    # pip install -e of AQUA itself (this will bring in also smmregrid)
+    - -e ../../
 

@@ -32,7 +32,7 @@ def detect_nodes_zoomin(retrieve_dictionary, dirs, varlist, original_dictionary,
 
         # load the highres files
         #reader2d = Reader(model='IFS', exp = 'tco2559-ng5', source="ICMGG_atm2d")
-        reader2d = Reader(model='IFS', exp = 'tco2559-ng5', source="ICMGG_atm2d", regrid=highgrid)
+        reader2d = Reader(model='IFS', exp = 'tco2559-ng5', source="ICMGG_atm2d", regrid=highgrid, var = varlist)
         fulldata = reader2d.retrieve().sel(time=tstep)
         
         # in case you want to write netcdf file with ullres field after Detect Nodes
@@ -132,10 +132,11 @@ def readwrite_from_intake(model, exp, timestep, grid, tgtdir):
 
   
   if model in 'IFS':
-    reader2d = Reader(model=model, exp=exp, source="ICMGG_atm2d", regrid=grid)
     varlist2d = ['msl', '10u', '10v']
-    reader3d = Reader(model=model, exp=exp, source="ICMU_atm3d", regrid=grid)
+    reader2d = Reader(model=model, exp=exp, source="ICMGG_atm2d", regrid=grid, vars = varlist2d)
     varlist3d = ['z']
+    reader3d = Reader(model=model, exp=exp, source="ICMU_atm3d", regrid=grid, vars = varlist3d)
+    
 
   outfield = 0
   data2d = reader2d.retrieve()
