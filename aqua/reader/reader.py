@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import json
 import warnings
+import logging
 
 import intake
 import intake_esm
@@ -15,7 +16,7 @@ import smmregrid as rg
 import cf2cdm
 from aqua.util import load_yaml, _eval_formula, get_eccodes_attr
 from aqua.util import get_reader_filenames, get_config_dir, get_machine
-from aqua.util import log_history
+from aqua.util import log_history, log_configure
 
 
 class Reader():
@@ -23,9 +24,9 @@ class Reader():
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
                  regrid=None, method="ycon", zoom=None, configdir=None,
-                 level=None, areas=True, var=None, vars=None, verbose=False,
+                 level=None, areas=True, var=None, vars=None,
                  datamodel=None, streaming=False, stream_step=1, stream_unit=None,
-                 stream_startdate=None, rebuild=False):
+                 stream_startdate=None, rebuild=False, loglevel=None):
         """
         The Reader constructor.
         It uses the catalog `config/config.yaml` to identify the required data.
@@ -41,23 +42,24 @@ class Reader():
             level (int):         level to extract if input data are 3D (starting from 0)
             areas (bool):        compute pixel areas if needed (True)
             var (str, list):     variable(s) which we will extract. "vars" is a synonym (None)
-            verbose (bool):      print extra debugging info
             datamodel (str):     destination data model for coordinates, overrides the one in fixes.yaml (None)
             streaming (bool):       if to retreive data in a streaming mode (False)
             stream_step (int):      the number of time steps to stream the data by (Default = 1)
             stream_unit (str):      the unit of time to stream the data by (e.g. 'hours', 'days', 'months', 'years') (None)
             stream_startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
-            rebuild (bool):   force rebuilding of area and weight files
+            rebuild (bool):         force rebuilding of area and weight files
+            loglevel (string):      Level of logging according to logging module (default: log_level_default of loglevel())
 
         Returns:
             A `Reader` class object.
         """
 
+        loglevel = log_configure(loglevel)
+
         if vars:
             self.var = vars
         else:
             self.var = var
-        self.verbose = verbose
         self.exp = exp
         self.model = model
         self.targetgrid = regrid
@@ -171,8 +173,8 @@ class Reader():
     def _make_dst_area_file(self, areafile, grid):
         """Helper function to create destination (regridded) area files."""
 
-        print("Destination areas file not found:", areafile)
-        print("Attempting to generate it ...")
+        logging.warning("Destination areas file not found: %s", areafile)
+        logging.warning("Attempting to generate it ...")
 
         dst_extra = f"-const,1,{grid}"
         grid_area = self.cdo_generate_areas(source=dst_extra)
@@ -183,7 +185,7 @@ class Reader():
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
 
         grid_area.to_netcdf(self.dst_areafile)
-        print("Success!")
+        logging.warning("Success!")
 
     def _make_src_area_file(self, areafile, source_grid,
                             gridpath="", icongridpath="", zoom=None):
@@ -202,9 +204,9 @@ class Reader():
             if zoom:
                 sgridpath = sgridpath.format(zoom=(9-zoom))
 
-        print("Source areas file not found:", areafile)
-        print("Attempting to generate it ...")
-        print("Source grid: ", sgridpath)
+        logging.warning("Source areas file not found: %s", areafile)
+        logging.warning("Attempting to generate it ...")
+        logging.warning("Source grid: %s", sgridpath)
         src_extra = source_grid.get("extra", [])
         grid_area = self.cdo_generate_areas(source=sgridpath,
                                             gridpath=gridpath,
@@ -215,9 +217,9 @@ class Reader():
         data = self.retrieve(fix=False)
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.src_space_coord})
         grid_area.to_netcdf(areafile)
-        print("Success!")
+        logging.warning("Success!")
 
-    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid="", extra=[], zoom=None):
+    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid=None, extra=[], zoom=None):
         """Helper function to produce weights file"""
 
         sgridpath = source_grid.get("path", None)
@@ -233,9 +235,9 @@ class Reader():
             if zoom:
                 sgridpath = sgridpath.format(zoom=(9-zoom))
 
-        print("Weights file not found:", weightsfile)
-        print("Attempting to generate it ...")
-        print("Source grid: ", sgridpath)
+        logging.warning("Weights file not found: %s", weightsfile)
+        logging.warning("Attempting to generate it ...")
+        logging.warning("Source grid: %s", sgridpath)
 
         # hack to  pass a correct list of all options
         src_extra = source_grid.get("extra", [])
@@ -252,7 +254,7 @@ class Reader():
                                           icongridpath=cfg_regrid["cdo-paths"]["icon"],
                                           extra=extra)
         weights.to_netcdf(weightsfile)
-        print("Success!")
+        logging.warning("Success!")
 
     def cdo_generate_areas(self, source, icongridpath=None, gridpath=None, extra=None):
         """
@@ -326,7 +328,7 @@ class Reader():
 
         except subprocess.CalledProcessError as e:
             # Print the CDO error message
-            print(e.output.decode(), file=sys.stderr)
+            logging.critical(e.output.decode(), file=sys.stderr)
             raise
 
         finally:
@@ -415,9 +417,12 @@ class Reader():
         if fix:   # Do not change easily this order. The fixer assumes to be after regridding
             data = self.fixer(data, apply_unit_fix=apply_unit_fix)
         if streaming or self.streaming or streaming_generator:
-            if stream_step == 1: stream_step = self.stream_step
-            if not stream_unit: stream_unit = self.stream_unit
-            if not stream_startdate: stream_startdate = self.stream_startdate
+            if stream_step == 1:
+                stream_step = self.stream_step
+            if not stream_unit:
+                stream_unit = self.stream_unit
+            if not stream_startdate:
+                stream_startdate = self.stream_startdate
             if streaming_generator:
                 data = self.stream_generator(data, stream_step, stream_unit, stream_startdate)
             else:
@@ -556,18 +561,17 @@ class Reader():
             out = data.resample(time=resample_freq).mean()
             proper_time = data.time.resample(time=resample_freq).mean()
             out['time'] = proper_time.values
-        except:
+        except ValueError:
             sys.exit('Cant find a frequency to resample, aborting!')
 
         # check for NaT
         if np.any(np.isnat(out.time)):
-            print('WARNING: Resampling cannot produce output for all frequency step, is your input data correct?')
+            logging.warning('Resampling cannot produce output for all frequency step, is your input data correct?')
 
         log_history(out, f"resampled to frequency {resample_freq} by AQUA fixer")
         return out
 
     def _check_if_accumulated_auto(self, data):
-
         """To check if a DataArray is accumulated.
         Arbitrary check on the first 20 timesteps"""
 
@@ -584,7 +588,6 @@ class Reader():
         return condition
 
     def _check_if_accumulated(self, data):
-
         """To check if a DataArray is accumulated.
         On a list of variables defined by the GRIB names
 
@@ -831,21 +834,21 @@ class Reader():
 
         fixm = fixes["models"].get(model, None)
         if not fixm:
-            print(f"No fixes defined for model {model}")
+            logging.warning("No fixes defined for model %s", model)
             return data
 
         fixexp = fixm.get(exp, None)
         if not fixexp:
             fixexp = fixm.get('default', None)
             if not fixexp:
-                print(f"No fixes defined for model {model}, experiment {exp}")
+                logging.warning("No fixes defined for model %s, experiment %s", model, exp)
                 return data
 
         fix = fixexp.get(src, None)
         if not fix:
             fix = fixexp.get('default', None)
             if not fix:
-                print(f"No fixes defined for model {model}, experiment {exp}, source {src}")
+                logging.warning("No fixes defined for model %s, experiment %s, source %s", model, exp, src)
                 return data
 
         self.deltat = fix.get("deltat", 1.0)
@@ -856,7 +859,7 @@ class Reader():
         vars = fix.get("vars", None)
         if vars:
             for var in vars:
-                units = None
+                unit = None
                 attributes = {}
                 varname = var
 
@@ -868,8 +871,7 @@ class Reader():
                     sn = attributes.get("shortName", None)
                     if (sn != '~') and (var != sn):
                         varname = sn
-                    if self.verbose:
-                        print(f"Grib attributes for {varname}: {attributes}")
+                        logging.info("Grib attributes for %s: %s", varname, attributes)
 
                 varlist[var] = varname
 
@@ -888,8 +890,7 @@ class Reader():
                         data[varname] = _eval_formula(formula, data)
                         source = varname
                         attributes.update({"derived": formula})
-                        if self.verbose:
-                            print(f"Derived {var} from {formula}")
+                        logging.info("Derived %s from %s", var, formula)
                         log_history(data[source], "variable derived by AQUA fixer")
                     except KeyError:
                         # The variable could not be computed, let's skip it
@@ -903,7 +904,7 @@ class Reader():
                     for att, value in attributes.items():
                         # Already adjust all attributes but not yet units
                         if att == "units":
-                            units = value
+                            unit = value
                         else:
                             data[source].attrs[att] = value
 
@@ -911,7 +912,7 @@ class Reader():
                 newunits = vars[var].get("units", None)
                 if newunits:
                     data[source].attrs.update({"units": newunits})
-                    units = newunits
+                    unit = newunits
 
                 # Override source units
                 src_units = vars[var].get("src_units", None)
@@ -919,17 +920,16 @@ class Reader():
                     data[source].attrs.update({"units": src_units})
 
                 # adjust units
-                if units:
-                    if units.count('{'):
-                        units = fixes["defaults"]["units"][units.replace('{', '').replace('}', '')]
-                    if self.verbose: print(var, ':', data[source].units, '-->', units)
-                    factor, offset = self.convert_units(data[source].units, units, var)
+                if unit:
+                    if unit.count('{'):
+                        unit = fixes["defaults"]["units"][unit.replace('{', '').replace('}', '')]
+                    logging.info("%s: %s --> %s", var, data[source].units, unit)
+                    factor, offset = self.convert_units(data[source].units, unit, var)
                     if (factor != 1.0) or (offset != 0):
-                        data[source].attrs.update({"target_units": units})
+                        data[source].attrs.update({"target_units": unit})
                         data[source].attrs.update({"factor": factor})
                         data[source].attrs.update({"offset": offset})
-                        if self.verbose:
-                            print(f"Fixing {source} to {var}. Unit fix: factor={factor}, offset={offset}")
+                        logging.info("Fixing %s to %s. Unit fix: factor=%f, offset=%f", source, var, factor, offset)
 
         # Only now rename everything
         data = data.rename(fixd)
@@ -973,8 +973,8 @@ class Reader():
             The processed input dataset
         """
         fn = os.path.join(self.configdir, 'data_models', f'{src_datamodel}2{dst_datamodel}.json')
-        if self.verbose: print("Data model:", fn)
-        with open(fn, 'r') as f:
+        logging.info("Data model: %s", fn)
+        with open(fn, 'r', encoding="utf8") as f:
             dm = json.load(f)
         # this is needed since cf2cdm issues a (useless) UserWarning
         with warnings.catch_warnings():
@@ -1008,22 +1008,22 @@ class Reader():
             if factor.units == "meter ** 3 / kilogram":
                 # Density of water was missing
                 factor = factor * 1000 * units("kg m-3")
-                if self.verbose: print(f"{var}: corrected multiplying by density of water 1000 kg m-3")
+                logging.info("%s: corrected multiplying by density of water 1000 kg m-3", var)
             elif factor.units == "meter ** 3 * second / kilogram":
                 # Density of water and accumulation time were missing
                 factor = factor * 1000 * units("kg m-3") / (self.deltat * units("s"))
-                if self.verbose: print(f"{var}: corrected multiplying by density of water 1000 kg m-3")
-                if self.verbose: print(f"{var}: corrected dividing by accumulation time {self.deltat} s")
+                logging.info("%s: corrected multiplying by density of water 1000 kg m-3", var)
+                logging.info("%s: corrected dividing by accumulation time %s s", var, self.deltat)
             elif factor.units == "second":
                 # Accumulation time was missing
                 factor = factor / (self.deltat * units("s"))
-                if self.verbose: print(f"{var}: corrected dividing by accumulation time {self.deltat} s")
+                logging.info("%s: corrected dividing by accumulation time %s s", var, self.deltat)
             elif factor.units == "kilogram / meter ** 3":
                 # Density of water was missing
                 factor = factor / (1000 * units("kg m-3"))
-                if self.verbose: print(f"{var}: corrected dividing by density of water 1000 kg m-3")
+                logging.info("%s: corrected dividing by density of water 1000 kg m-3", var)
             else:
-                if self.verbose: print(f"{var}: incommensurate units converting {src} to {dst} --> {factor.units}")
+                logging.info("%s: incommensurate units converting %s to %s --> %s", var, src, dst, factor.units)
             offset = 0 * units(dst)
 
         if offset.magnitude != 0:
