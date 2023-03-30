@@ -62,18 +62,17 @@ class TR_PR_Diagnostic:
 
     def attributes_update(self,   trop_lat = 10, s_year = None, f_year = None, s_month = None, f_month = None, num_of_bins = None, first_edge = None, width_of_bin = None):
         
-        self.trop_lat   = trop_lat          if trop_lat     != None else self.trop_lat 
+        if trop_lat:    self.trop_lat = trop_lat
 
-        if trop_lat:  self.trop_lat = trop.lat
+        if s_year:      self.s_year = s_year
+        if f_year:      self.f_year = f_year
+        if s_month:     self.s_month = s_month
+        if f_month:     self.f_month = f_month 
 
-        self.s_year     = s_year            if s_year       != None else self.s_year  
-        self.f_year     = f_year            if f_year       != None else self.f_year 
-        self.s_month    = s_month           if s_month      != None else self.s_month 
-        self.f_month    = f_month           if f_month      != None else self.f_month
-        
-        self.num_of_bins    = num_of_bins   if num_of_bins  != None else self.num_of_bins 
-        self.first_edge     = first_edge    if first_edge   != None else self.first_edge
-        self.width_of_bin   = width_of_bin  if width_of_bin != None else self.width_of_bin
+
+        if num_of_bins:     self.num_of_bins = num_of_bins
+        if first_edge:      self.first_edge = first_edge
+        if width_of_bin:    self.width_of_bin = width_of_bin 
 
         # check if its possible to generilize 
 
@@ -128,38 +127,6 @@ class TR_PR_Diagnostic:
         return coord_lat, coord_lon
 
         
-
-    """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def time_interpreter_b(self, dataset):
-        try:
-            if np.count_nonzero(dataset['time.second'] == dataset['time.second'][0]) == dataset.time.size:
-                if np.count_nonzero(dataset['time.minute'] == dataset['time.minute'][0]) == dataset.time.size:
-                    if  np.count_nonzero(dataset['time.hour'] == dataset['time.hour'][0]) == dataset.time.size:
-                        if np.count_nonzero(dataset['time.day'] == dataset['time.day'][0]) == dataset.time.size:
-                            if np.count_nonzero(dataset['time.month'] == dataset['time.month'][0]) == dataset.time.size:
-                                return 'Y'
-                            else:
-                                return 'M'  
-                        else:
-                            return 'D'
-                    else:
-                        timestep = dataset.time[1] - dataset.time[0]
-                        n_hours = int(timestep/(60 * 60 * 10**9) )
-                        return str(n_hours)+'H'
-                else:
-                    timestep = dataset.time[1] - dataset.time[0]
-                    n_minutes = int(timestep/(60  * 10**9) )
-                    return str(n_minutes)+'m'
-                    # separate branch, PR, not part of this diagnostic
-            else:
-                return 1
-        
-        except KeyError and AttributeError:
-            timestep = dataset.time[1] - dataset.time[0]
-            if timestep >=28 and timestep <=31:
-                return 'M' 
-
-
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
     def ds_per_lat_range(self, data, trop_lat = None):
         """ 
