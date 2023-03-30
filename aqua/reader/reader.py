@@ -938,11 +938,12 @@ class Reader():
             # Decumulate if required
             if vars[var].get("decumulate", None):
                 varname = varlist[var]
-                keep_first = vars[var].get("keep_first", True)
-                data[varname] = self.simple_decumulate(data[varname],
-                                                       jump=jump,
-                                                       keep_first=keep_first)
-                log_history(data[varname], "variable decumulated by AQUA fixer")
+                if varname in data.variables:
+                    keep_first = vars[var].get("keep_first", True)
+                    data[varname] = self.simple_decumulate(data[varname],
+                                                        jump=jump,
+                                                        keep_first=keep_first)
+                    log_history(data[varname], "variable decumulated by AQUA fixer")
 
         if apply_unit_fix:
             for var in data.variables:
