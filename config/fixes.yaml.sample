@@ -15,161 +15,59 @@ models:
         default:
             ICMGG_atm2d:
                 deltat: 3600
-                jump: month
+                month_jump: true
                 vars:
+                    # Convert (the original is removed) with auto unit conversion from eccodes properties
                     tprate:
                         source: tp
                         grib: true
                         decumulate: true    
-                    var172143:  # cprate
-                        source: cp
-                        grib: true
-                        decumulate: true
-                    mlsprt:
-                        source: lsp
-                        grib: true
-                        decumulate: true  
-                    erate:
+                    # Convert overriding source units and specifying target by hand
+                    mer:
                         source: e
-                        grib: true
                         src_units: m
-                        decumulate: true 
-                    esrate:
-                        source: es
-                        grib: true
-                        decumulate: true 
-                    mrort:
-                        source: ro
-                        grib: true
                         decumulate: true
-                    mtsfr:
-                        source: sf
-                        grib: true
-                        decumulate: true
-                    mslhfl:
-                        source: slhf
-                        grib: true
-                        decumulate: true
-                    msshfl:
-                        source: sshf
-                        grib: true
-                        decumulate: true
-                    msnsrf:
-                        source: ssr
-                        grib: true
-                        decumulate: true
-                    msdsrf:
-                        source: ssrd
-                        grib: true
-                        decumulate: true  
-                    msdtrf:
-                        source: strd
-                        grib: true
-                        decumulate: true   
-                    msntrf:
-                        source: str
-                        grib: true
-                        decumulate: true
-                    msdtrf:
-                        source: strd
-                        grib: true
-                        decumulate: true
+                        attributes:
+                            units: "{mass_flux}"
+                            long_name: Mean evaporation rate
+                            paramId: 235043
+                    # decumulated OLR, converted to W/m2
                     mtntrf:
-                        source: ttr
-                        grib: true
-                        decumulate: true         
-                    var172045:  # if the variable has no short name we can use its paramId
-                        source: smlt
-                        grib: true
+                        derived: ttr
                         decumulate: true
+                        grib: true
+                    # decumulated OLR
+                    ttr:
+                        source: ttr
+                        decumulate: true
+
 
     ICON:
         default:
             default:
-                data_model: false  # Do not attempt to correct coordinates
-                delete:  # variables to drop at the end
-                    - hfls
-                    - hfss
-                    - rlus
-                    - rlut
-                    - rsus
-                    - rsdt
-                    - rsut
+                data_model: false  # Do not attempto to correct coordinates
                 vars:
-                    iews:
-                        source: tauu
-                        grib: true
-                    inss:
-                        source: tauv
-                        grib: true
-                    skt:
-                        source: ts
-                        grib: true
-                    sp:
-                        source: ps
-                        grib: true
-                    msl:
-                        source: psl
-                        grib: true
-                    10si:
-                        source: sfcwind
-                        grib: true
-                    ci:
-                        source: sic
-                        src_units: "1"
-                        grib: true
-                        units: "1"
-                    sithick:
-                        source: sit
-                        grib: true
-                    2t:
-                        source: tas
-                        grib: true
-                    10u:
-                        source: uas
-                        grib: true
-                    10v:
-                        source: vas
-                        grib: true
-                    tciw:
-                        source: clivi
-                        grib: true
-                    tclw:
-                        source: cllvi
-                        grib: true
-                    mslhfl:
-                        source: hfls
-                        grib: true
-                    msshfl:
-                        source: hfss
-                        grib: true
+                    # Convert to grib units (kg m-2 s-1 --> m3 s-1)
                     tprate:
                         source: pr
                         grib: true
-                    mlsprt:
-                        source: prlr
+                    # Define your own
+                    mypr:
+                        derived: pr*86400
+                        attributes:
+                            units: "mm day-1"
+                            long_name: My own test precipitation in mm / day
+                    # Copy also grib attributes
+                    mslhfl:
+                        source: hfls
                         grib: true
-                    tcwv:
-                        source: prw
-                        grib: true
-                    msdtrf:
-                        source: rlds
-                        grib: true
-                    msntrf:
-                        derived: rlds-rlus
-                        grib: true
-                    mtntrf:
-                        derived: -rlut
-                        grib: true
-                    msdsrf:
-                        source: rsds
-                        grib: true
-                    msnsrf:
-                        derived: rsds-rsus
-                        grib: true
-                    mtnsrf:
-                        derived: rsdt-rsut
-                        grib: true
+                        attributes:
+                            myextra: just a test to add extra attribute
+                    # Just renaming and adding one attribute
+                    msshfl:
+                        source: hfss
+                        attributes:
+                            long_name: Mean surface sensible heat flux
 
     FESOM:
         default:
@@ -177,10 +75,11 @@ models:
                 data_model: False  # Do not attempto to correct coordinates
                 vars:
                     ocpt: 
-                        derived: temp
+                        source: temp
                         src_units: degC
                         grib: true
-                        units: degC # Override units from grib tables
+                        attributes:
+                            units: degC # Override units from grib tables
 
     MSWEP:
         default:
