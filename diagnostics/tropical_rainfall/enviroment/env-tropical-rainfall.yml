@@ -6,6 +6,8 @@
 name : tropical-rainfall
 channels:
   - conda-forge
+  - aiohttp
+  - requests
 dependencies:
   - pip:
     - dask_jobqueue
