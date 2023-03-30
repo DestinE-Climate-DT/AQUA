@@ -13,7 +13,6 @@ source:
 build:
   number: 0
   preserve_egg_dir: True
-
 requirements:
   build:
     - python
@@ -22,17 +21,60 @@ requirements:
   host:
     - numpy>=1.17
     - python
+    - conda
+    - dask
+    - ecCodes
+    - numpy<1.24
+    - intake
+    - intake-esm<=2021.8.17
+    - intake-xarray
+    - metpy
+    - xarray
+    - pip
+    - libnetcdf<=4.8.1
+    - netcdf4
+    - matplotlib
+    - cartopy
+    - cfunits
+    - cdo
+    - ipykernel
+    - healpy
+    - pydantic
+    - requests=2.28.2
+    - urllib3=1.26.0
   run:
     - python
     - numpy>=1.17
-
+    - conda
+    - dask
+    - ecCodes
+    - numpy<1.24
+    - intake
+    - intake-esm<=2021.8.17
+    - intake-xarray
+    - metpy
+    - xarray
+    - pip
+    - libnetcdf<=4.8.1
+    - netcdf4
+    - matplotlib
+    - cartopy
+    - cfunits
+    - cdo
+    - ipykernel
+    - healpy
+    - pydantic
+    - requests=2.28.2
+    - urllib3=1.26.0
 outputs:
   - name: aqua
     version: 
 
 test:
   imports:
-    - 
+    - aqua
+  commands:
+    - aqua --version
 
 about:
-  home: 
+  home:  

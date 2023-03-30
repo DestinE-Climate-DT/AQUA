@@ -22,11 +22,13 @@ setup(name='aqua',
         'jinja2',
         'metpy',
         'numpy<1.24',
-        'pandas',
+        'requests>=2.26.0',
+        'pydantic',
+        'pandas<2',
         'pyYAML',
         'sparse', 
         'xarray',
-	'urllib3<1.27',
+	'urllib3>=1.26.0,<1.27',
         #'smmregrid @ git+https://github.com/jhardenberg/smmregrid'
       ]
     )

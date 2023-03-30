@@ -3,7 +3,7 @@
 # or if you really want to use conda
 # conda env create -f environment.yml
 
-name: aqua
+name: aqua_env
 channels:
   - conda-forge
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
