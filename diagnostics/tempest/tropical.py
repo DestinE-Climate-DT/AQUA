@@ -326,7 +326,7 @@ class TCs():
                     if datetime.strptime(idx, '%Y%m%d%H').strftime('%Y%m%d') in dates_freq.strftime('%Y%m%d'):
 
                         timestep = datetime.strptime(idx, '%Y%m%d%H').strftime('%Y%m%dT%H')
-                        fullres_file = os.path.join(self.paths['tmpdir'], f'TC_{var}_{timestep}.nc')
+                        fullres_file = os.path.join(self.paths['fulldir'], f'TC_{var}_{timestep}.nc')
                         fullres_field = xr.open_mfdataset(fullres_file)[var]
 
                         # get the full res field and store the required values around the Nodes
