@@ -1,0 +1,34 @@
+# experiment
+dataset:
+  model: "IFS"
+  exp: "tco2559-ng5"
+
+# folders for regridded data, temprorary and stored high res data
+paths:
+  regdir: '/scratch/b/b382216/regrid_new'
+  tmpdir: '/scratch/b/b382216/tmpdir_new'
+  fulldir: '/scratch/b/b382216/fullres_new'
+
+# grid on which operate
+grids:
+  lowgrid: 'r100'
+  highgrid: 'r010'
+
+# variables to stored 
+varlist: ['msl', '10u', '10v', 'tp']
+
+# temporal definition (YYYY-MM-DD)
+time: 
+  start_date: '2020-08-01'
+  end_date: '2020-09-30'
+  frequency: '6h'
+
+# detect options
+detect:
+  boxdim: 10
+
+# stich options
+stitch:
+  n_days_freq: 25
+  n_days_ext: 15
+

@@ -11,33 +11,75 @@ from datetime import datetime
 
 class TCs():
 
-    def __init__(self, paths = None, model="IFS", exp="tco2559-ng5", boxdim = 10, lowgrid='r100',
-                 highgrid='r100', var2store=None, loglevel = 'WARNING'):
+    def __init__(self, tdict = None, 
+                 paths = None, model="IFS", exp="tco2559-ng5", 
+                 boxdim = 10, lowgrid='r100', highgrid='r100', var2store=None, 
+                 loglevel = 'WARNING'):
         
         loglevel = log_configure(loglevel)
 
-        if paths is None:
-            raise Exception('Without paths defined you cannot go anywhere!')
-        else:
-            self.paths = paths
-        self.model = model 
-        self.exp = exp
-        self.boxdim = boxdim
-        self.lowgrid = lowgrid
-        self.highgrid = highgrid
+        if tdict is not None:
+            self.paths = tdict['paths']
+            self.model = tdict['dataset']['model']
+            self.exp = tdict['dataset']['exp']
+            self.boxdim = tdict['detect']['boxdim']
+            self.lowgrid =  tdict['grids']['lowgrid']
+            self.highgrid = tdict['grids']['highgrid']
+            self.var2store = tdict['varlist']
 
-        if model in 'IFS':
+        else:
+
+            if paths is None:
+                raise Exception('Without paths defined you cannot go anywhere!')
+            else:
+                self.paths = paths
+            self.model = model 
+            self.exp = exp
+            self.boxdim = boxdim
+            self.lowgrid = lowgrid
+            self.highgrid = highgrid
+            self.var2store = var2store
+
+        for path in self.paths:
+            os.makedirs(self.paths[path], exist_ok=True)
+
+    def detect_nodes_zoomin(self, start_date, end_date, frequency):
+
+        self.catalog_init()
+        for tstep in pd.date_range(start=start_date, end=end_date, freq=frequency).strftime('%Y%m%dT%H'):
+            logging.warning(tstep)
+            self.readwrite_from_intake(tstep)
+            self.run_detect_nodes(tstep)
+            clean_files([self.tempest_filein])
+            self.read_lonlat_nodes()
+            self.store_detect_nodes(tstep)
+
+    def stitch_nodes_zoomin(self, start_date, end_date, n_days_freq, n_days_ext):
+
+        self.set_time_window(n_days_freq=n_days_freq, n_days_ext=n_days_ext)
+
+        for block in pd.date_range(start=start_date, end=end_date, freq=str(n_days_freq)+'D'):
+            logging.warning(block)
+            dates_freq, dates_ext = self.time_window(block)
+            self.prepare_stitch_nodes(block, dates_freq, dates_ext)
+            self.run_stitch_nodes(maxgap='6h')
+            self.reorder_tracks()
+            self.store_stitch_nodes(block, dates_freq)
+
+
+    def catalog_init(self, streaming=False):
+
+        if self.model in 'IFS':
             self.varlist2d = ['msl', '10u', '10v']
             self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
                                    regrid=self.lowgrid, vars = self.varlist2d)
             self.varlist3d = ['z']
             self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
                                    regrid=self.lowgrid, vars = self.varlist3d)
-            self.var2store = var2store
             self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                         regrid=self.highgrid, var = var2store)
+                                         regrid=self.highgrid, var = self.var2store)
         else:
-            raise Exception(f'Model {model} not supported')
+            raise Exception(f'Model {self.model} not supported')
         
 
     def set_time_window(self, n_days_freq = 30, n_days_ext = 10):
@@ -47,7 +89,7 @@ class TCs():
         
     def readwrite_from_intake(self, timestep):
 
-        logging.warning(f'Running readwrite_from_intake() for {timestep}')
+        logging.info(f'Running readwrite_from_intake() for {timestep}')
 
         outfield = 0
         data2d = self.reader2d.retrieve()
@@ -91,7 +133,7 @@ class TCs():
 
     def run_detect_nodes(self, timestep) : 
 
-        logging.warning(f'Running run_detect_nodes() for {timestep}')
+        logging.info(f'Running run_detect_nodes() for {timestep}')
 
         """"
         Basic function to call from command line tempest extremes DetectNodes
@@ -135,24 +177,26 @@ class TCs():
         lon_lat = [line.split('\t')[3:] for line in lines[1:]]
         self.tempest_nodes = {'date': date, 'lon': [val[0] for val in lon_lat], 'lat': [val[1] for val in lon_lat]}
 
-    def store_detect_nodes(self, timestep, write_fullres=False):
+    def store_detect_nodes(self, timestep, write_fullres=True):
 
-        logging.warning(f'Running store_detect_nodes() for {timestep}')
+        logging.info(f'Running store_detect_nodes() for {timestep}')
         fulldata = self.reader_fullres.retrieve().sel(time=timestep)
         
         # in case you want to write netcdf file with ullres field after Detect Nodes
         if write_fullres:
           # loop on variables to write to disk only the subset of high res files
-          for var in self.vars2store : 
+          for var in self.var2store : 
 
-                if var in ['tp'] :     
+                if var in ['tp']:     
                     varfile = 'tprate'
+                else:
+                    varfile = var
 
                 data = self.reader_fullres.regrid(fulldata[varfile])
                 data.name = var
                 xfield = self.store_fullres_field(0, data, self.tempest_nodes)
 
-                store_file = os.path.join(self.paths['tmpdir'], f'TC_{var}_{timestep}.nc')
+                store_file = os.path.join(self.paths['fulldir'], f'TC_{var}_{timestep}.nc')
                 write_fullres_field(xfield, store_file)
 
     def store_fullres_field(self, mfield, xfield, nodes): 
@@ -235,7 +279,7 @@ class TCs():
         stitch_string = f'StitchNodes --in {full_nodes} --out {self.track_file} --in_fmt lon,lat,slp,wind --range 8.0 --mintime {mintime} ' \
             f'--maxgap {maxgap} --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10'
         
-        subprocess.run(stitch_string.split())
+        subprocess.run(stitch_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     
     def reorder_tracks(self):
 
@@ -269,7 +313,7 @@ class TCs():
             
         self.reordered_tracks=reordered_tracks
 
-    def store_stitch_nodes(self, block, dates_freq, write_fullres=False):
+    def store_stitch_nodes(self, block, dates_freq, write_fullres=True):
 
         if write_fullres:
             for var in self.var2store : 
@@ -291,7 +335,7 @@ class TCs():
                 print('Storing output')
 
                 # store the file
-                store_file = os.path.join(self.paths['tmpdir'], f'tempest_tracks_{var}_{block.strftime("%Y%m%d")}-{dates_freq[-1].strftime("%Y%m%d")}.nc')
+                store_file = os.path.join(self.paths['fulldir'], f'tempest_tracks_{var}_{block.strftime("%Y%m%d")}-{dates_freq[-1].strftime("%Y%m%d")}.nc')
                 write_fullres_field(xfield, store_file)
 
 
@@ -299,7 +343,7 @@ class TCs():
 def clean_files(filelist):
 
     if isinstance(filelist, str):
-        filelist = list(filelist)
+        filelist = [filelist]
 
     for fileout in filelist :
         if os.path.exists(fileout):

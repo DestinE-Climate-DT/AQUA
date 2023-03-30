@@ -1,5 +1,0 @@
-input: 
-  'TCs_detection': /home/ghinassi/Tempest/Data/
-
-output: /home/ghinassi/AQUA/diagnostics/tempest/plot/
-
