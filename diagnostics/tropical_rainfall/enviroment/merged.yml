@@ -1,6 +1,7 @@
 channels:
 - conda-forge
 dependencies:
+- aiohttp
 - cartopy
 - cdo
 - cfunits
@@ -18,6 +19,7 @@ dependencies:
 - numpy
 - pip
 - python>=3.9,<3.11
+- requests
 - xarray
 - pip:
   - -e /work/bb1153/b382267/AQUA/
