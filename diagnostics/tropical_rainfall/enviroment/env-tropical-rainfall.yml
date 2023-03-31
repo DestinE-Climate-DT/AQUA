@@ -6,9 +6,10 @@
 name : tropical-rainfall
 channels:
   - conda-forge
+dependencies:
   - aiohttp
   - requests
-dependencies:
+  - dask<2023.3.2
   - pip:
     - dask_jobqueue
     - fast_histogram
