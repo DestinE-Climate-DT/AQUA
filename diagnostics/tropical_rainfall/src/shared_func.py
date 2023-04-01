@@ -9,6 +9,23 @@ import cartopy
 import cartopy.feature as cfeature
 import cartopy.crs as ccrs
 
+def xarray_attribute_update(xr1, xr2):
+    combined_attrs = {**xr1.attrs, **xr2.attrs}
+    history_attr  = xr1.attrs['history'] +  xr2.attrs['history']
+    xr2.attrs = combined_attrs
+    xr2.attrs['history'] = history_attr
+    return xr2
+
+def data_size(data):
+    if 'DataArray' in str(type(data)):
+            _size = data.size
+    elif 'Dataset' in str(type(data)): 
+        _names = list(data._coord_names)
+        _size = 1
+        for i in _names:
+            _size *= data[i].size
+    return _size
+
 
 """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
 def time_interpreter(dataset):
@@ -39,7 +56,9 @@ def time_interpreter(dataset):
         timestep = dataset.time[1] - dataset.time[0]
         if timestep >=28 and timestep <=31:
             return 'M' 
-            
+
+
+
 """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
 def animation_creator(ds, vmin = None, vmax = None, trop_lat = 10,  time_ind_max = None,  nSeconds = 10,  contour  = True, label = 'test', title = 'Tropical precipitation', resol = '110m'):
     """ 

@@ -351,7 +351,6 @@ class TR_PR_Diagnostic:
     def hist_np_digitize(self, data, preprocess = True, trop_lat = 10, variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,   _add = None, *, start = []):
 
-        _time_1 = time.time()
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
@@ -359,18 +358,12 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
-
-        size = data.size
         
         bins = [self.first_edge  + self.width_of_bin*i for i in range(0, self.num_of_bins+1)]
 
         frequency_bin =  xr.DataArray([np.count_nonzero(np.digitize(data, bins) == i) for i in range(1, self.num_of_bins+1)], coords=[bins[0:-1]], dims=["bin"])
-        
-        _time_2 = time.time() 
-       
-        del_time = (_time_2 - _time_1)
-
-        return  frequency_bin, size, del_time 
+        frequency_bin.attrs = data.attrs
+        return  frequency_bin
 
 
 
@@ -417,9 +410,10 @@ class TR_PR_Diagnostic:
             range=[self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin], bins = (self.num_of_bins))
         
         frequency_bin =  xr.DataArray(hist_fast, coords=[bin_table], dims=["bin"])
-        
-
+        frequency_bin.attrs = data.attrs
         return  frequency_bin 
+    
+    
     
     """ """ """ """ """ """ """ """ """ """
     def hist1d_np(self, data, preprocess = True, trop_lat = 10, variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
@@ -461,7 +455,7 @@ class TR_PR_Diagnostic:
         hist_np = np.histogram(data, range=[self.first_edge, self.first_edge + (self.num_of_bins )*self.width_of_bin], bins = (self.num_of_bins))
 
         frequency_bin =  xr.DataArray(hist_np[0], coords=[hist_np[1][0:-1]], dims=["bin"])
-
+        frequency_bin.attrs = data.attrs
         return  frequency_bin
         
     """ """ """ """ """ """ """ """ """ """
@@ -504,8 +498,7 @@ class TR_PR_Diagnostic:
         plt.close()
 
         frequency_bin =  xr.DataArray(hist_pyplt[0], coords=[hist_pyplt[1][0:-1]], dims=["bin"])
-        
-
+        frequency_bin.attrs = data.attrs
         return  frequency_bin
 
         
@@ -556,7 +549,7 @@ class TR_PR_Diagnostic:
             counts = counts.compute()
             edges = edges.compute()
         frequency_bin =  xr.DataArray(counts, coords=[edges[0:-1]], dims=["bin"])
-        
+        frequency_bin.attrs = data.attrs  
         return  frequency_bin
 
 
@@ -603,8 +596,7 @@ class TR_PR_Diagnostic:
             edges = edges.compute()
         
         frequency_bin =  xr.DataArray(counts, coords=[edges[0:-1]], dims=["bin"])
-        
-
+        frequency_bin.attrs = data.attrs        
         return  frequency_bin
 
 
@@ -651,6 +643,7 @@ class TR_PR_Diagnostic:
         counts =  dask.compute(counts)
         edges = dask.compute(edges[0]) 
         frequency_bin =  xr.DataArray(counts[0], coords=[edges[0][0:-1]], dims=["bin"])
+        frequency_bin.attrs = data.attrs
         #else: 
         #    counts =  dask.compute(counts.to_delayed())
         #    edges = dask.compute(edges[0].to_delayed())
@@ -661,7 +654,7 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def hist_plot(self, data, pdf = None, ls = '-', color = 'tab:blue', label = None):
+    def hist_plot(self, data, pdf = True, smooth = True,  ls = '-', color = 'tab:blue', varname = 'Precipitation',  label = None):
         """ 
             The function ***hist_plot*** takes few arguments, ***data***, ***pdf***, 
             ***_ls***, ***_color*** and ***_label***, 
@@ -680,24 +673,32 @@ class TR_PR_Diagnostic:
                 plot                        :   Frequency or pdf histogram. 
             
         """
-        print("hist_plot function in the process \n") 
-
-        pdf =  True if None else pdf 
-           
-        if pdf == True:
-            #print('pdf')
-            _data_density = data[0:]/sum(data[:]) #*(data.bin[1]-data.bin[0]))
-            plt.step(data.bin[0:], _data_density, #data.bin[1]-data.bin[0],
-                linewidth=3.0, ls = ls, color = color, label = label )
-            plt.ylabel('Probability', fontsize=14)
-            plt.xlabel('Total Precipitation', fontsize=14)
+        fig = plt.figure( figsize=(12,8) )
+        if pdf:
+            data_density = data[0:]/sum(data[:])
+            if smooth:
+                plt.plot(data.bin[0:], data_density, 
+                    linewidth=3.0, ls = ls, color = color, label = label )
+            else:
+                plt.step(data.bin[0:], data_density, 
+                    linewidth=3.0, ls = ls, color = color, label = label )
+            
+            plt.ylabel('PDF', fontsize=14)
+            plt.xlabel(varname, fontsize=14)
             plt.yscale('log') 
         else:
-            plt.step(data.bin[0:], data[0:],  #data.bin[1]-data.bin[0], 
-                linewidth=3.0,  ls = ls, color = color, label = label )
+            if smooth:
+                plt.plot(data.bin[0:],  data[0:], 
+                    linewidth=3.0, ls = ls, color = color, label = label )
+            else:
+                plt.step(data.bin[0:],  data[0:], 
+                    linewidth=3.0, ls = ls, color = color, label = label )
+            
             plt.ylabel('Frequency', fontsize=14)
-            plt.xlabel('Total Precipitation', fontsize=14)
-            plt.yscale('log') 
+            plt.xlabel(varname, fontsize=14)
+            plt.yscale('log')
+
+        plt.savefig('../notebooks/figures/'+str(label)+'.png') 
 
 
 
@@ -1029,12 +1030,12 @@ class TR_PR_Diagnostic:
 
     
 
-    def hist_tr_pr_viridis(self,  _empty = False,  _label = None, _density = True):
+    def hist_viridis(self,  _empty = False,  _label = None, _density = True):
         """
             ADD AND MODIFY
             ...
         """
-        PR_trop_1d = self.ds_into_mm() 
+        #PR_trop_1d = self.ds_into_mm() 
         #_line_title = self.label #i.ds.name.split("/")
         if _empty == True:
             n, bins, patches = PR_trop_1d.plot(linewidth=2.9,
