@@ -20,7 +20,7 @@ def data_size(data):
     if 'DataArray' in str(type(data)):
             _size = data.size
     elif 'Dataset' in str(type(data)): 
-        _names = list(data._coord_names)
+        _names = list(data.dims) #_coord_names)
         _size = 1
         for i in _names:
             _size *= data[i].size
