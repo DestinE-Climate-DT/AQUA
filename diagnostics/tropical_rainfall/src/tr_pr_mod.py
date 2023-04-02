@@ -643,7 +643,7 @@ class TR_PR_Diagnostic:
         counts =  dask.compute(counts)
         edges = dask.compute(edges[0]) 
         frequency_bin =  xr.DataArray(counts[0], coords=[edges[0][0:-1]], dims=["bin"])
-        frequency_bin.attrs = data.attrs
+        #frequency_bin.attrs = data.attrs
         #else: 
         #    counts =  dask.compute(counts.to_delayed())
         #    edges = dask.compute(edges[0].to_delayed())
