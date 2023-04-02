@@ -73,10 +73,10 @@ def read_VmRSS():
     for ind in range(0, len(lines)):
         parts = re.findall(r'[a-zA-Z]+|\W+', lines[ind])  
         if 'Pid' in parts:
-            print(lines[ind])
+            #print(lines[ind])
             break
-    Pid =  float(re.split(r'[\t :]', lines[ind])[-1]) 
-    print('Pid: ', float(re.split(r'[\t :]', lines[ind])[-1]) )
+    #Pid =  float(re.split(r'[\t :]', lines[ind])[-1]) 
+    #print('Pid: ', float(re.split(r'[\t :]', lines[ind])[-1]) )
     file_proc.close()
     return Vm, unit
 
@@ -100,10 +100,10 @@ def read_VmRSS_av(iter_max = 5):
         for ind in range(0, len(lines)):
             parts = re.findall(r'[a-zA-Z]+|\W+', lines[ind])  
             if 'Pid' in parts:
-                print(lines[ind])
+                #print(lines[ind])
                 break
         #Pid.append(float(re.split(r'[\t :]', lines[ind])[-1]) )
-        print('Pid: ', float(re.split(r'[\t :]', lines[ind])[-1]) )
+        #print('Pid: ', float(re.split(r'[\t :]', lines[ind])[-1]) )
         file_proc.close()
     return mean(Vm_tab), unit 
 
@@ -135,7 +135,9 @@ def mem_estimator(ds_part,  ds_full, VmRSS_1):
     VmRSS_2, mem_units = read_VmRSS_av()
  
     Mem_Consumed = VmRSS_2 - VmRSS_1
+    
     Mem_Consumed_by_Single_Object = Mem_Consumed/ds_part_size
+    #Mem_Consumed_by_Single_Object = max(Mem_Consumed, 8/1024)
 
     print(Mem_Consumed_by_Single_Object)
 
