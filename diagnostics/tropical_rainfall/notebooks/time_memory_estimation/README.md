@@ -1,6 +1,4 @@
-# Expected memory usage and adaptive data loading
-
-## Expected memory usage ``` expected_total_memory_usage() ```
+# Expected memory usage ``` expected_total_memory_usage() ```
 
 We can estimate the amount of memory usage by diagnostic by measuring the memory consumption of a small part of the dataset.
 Let's call the tested part of the entire dataset a chunk.
@@ -21,8 +19,9 @@ The algorithm is following:
  
  $$ {\text{Total memory consumption}} =   \frac{\text{Memory Consumption by chunk }}{\text{ Size of chunk }}   \text{ x Total Size of Dataset}$$
 
+$$  \text{...} $$
 
-## Adaptive data loading ``` adaptive_data_load() ```
+# Adaptive data loading ``` adaptive_data_load() ```
 
 By adaptive data loading, we assume that we load only such part of the dataset, which
  -  fit the amount of available memory
