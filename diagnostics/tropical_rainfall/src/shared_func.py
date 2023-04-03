@@ -12,9 +12,9 @@ import cartopy.crs as ccrs
 def xarray_attribute_update(xr1, xr2):
     combined_attrs = {**xr1.attrs, **xr2.attrs}
     history_attr  = xr1.attrs['history'] +  xr2.attrs['history']
-    xr2.attrs = combined_attrs
-    xr2.attrs['history'] = history_attr
-    return xr2
+    xr1.attrs = combined_attrs
+    xr1.attrs['history'] = history_attr
+    return xr1
 
 def data_size(data):
     if 'DataArray' in str(type(data)):
@@ -29,6 +29,8 @@ def data_size(data):
 
 """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
 def time_interpreter(dataset):
+    if dataset['time'].size==1:
+        return 'False. Load more timesteps then one'
     try:
         if np.count_nonzero(dataset['time.second'] == dataset['time.second'][0]) == dataset.time.size:
             if np.count_nonzero(dataset['time.minute'] == dataset['time.minute'][0]) == dataset.time.size:
@@ -136,7 +138,10 @@ def animation_creator(ds, vmin = None, vmax = None, trop_lat = 10,  time_ind_max
         im.set_array(snapshots[i])
         return [im]
 
-
+    dpi = 100
+    fig.set_size_inches(10, 10, True)
+    writer = animation.writers['ffmpeg'](fps=30, extra_args=['-vcodec', 'libx264'])
+    
     anim = animation.FuncAnimation(fig, 
                             animate_func, 
                             frames = nSeconds * fps,
@@ -148,7 +153,9 @@ def animation_creator(ds, vmin = None, vmax = None, trop_lat = 10,  time_ind_max
     plt.ylabel('latitude',                  fontsize =18)
     plt.xticks([-180, -120, -60, 0, 60, 120, 180],  fontsize=14)   #, 240, 300, 360
     plt.yticks([-90, -60, -30, 0, 30, 60, 90],      fontsize=14) 
-    anim.save('../notebooks/figures/animation/'+str(label)+'_anim.mp4', fps=fps) #, extra_args=['-vcodec', 'libx264'])
+   
+    
+    anim.save('../notebooks/figures/animation/'+str(label)+'_anim.mp4', writer=writer,  dpi=dpi) #
 
     print('Done!')
     return  True
@@ -185,8 +192,10 @@ def image_creator(ds, vmin = None, vmax = None, trop_lat = 10, contour  = True, 
     """
     ds = ds.where( ds > vmin, drop=True) 
 
-
-    snapshot = ds[0,:,:] 
+    try:
+        snapshot = ds[0,:,:] 
+    except IndexError:
+        snapshot = ds[0,:]
     # First set up the figure, the axis, and the plot element we want to animate
     fig = plt.figure( figsize=(20,8) )
     
