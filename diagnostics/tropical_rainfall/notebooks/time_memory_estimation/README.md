@@ -19,7 +19,11 @@ The algorithm is following:
  
  $$ {\text{Total memory consumption}} =   \frac{\text{Memory Consumption by chunk }}{\text{ Size of chunk }}   \text{ x Total Size of Dataset}$$
 
+$$  \text{ }$$
+
 $$  \text{...} $$
+
+$$  \text{ }$$
 
 # Adaptive data loading ``` adaptive_data_load() ```
 
@@ -36,7 +40,7 @@ We can find the amount of available memory (``` MemAvailable ```) on a SPECIFIC 
 
 Then we can find the dataset size, which we can fit into memory by formula
 
-$$   \text{Fittable Size} = min( \frac{\text{ Availibale Memory }}{\text{ Mem Consumed by Single Object } }, \text{ . Total Size of Dataset}) $$
+$$   \text{Fittable Size} = min( \frac{\text{ Availibale Memory }}{\text{ Mem Consumed by Single Object } }, \text{  Total Size of Dataset}) $$
 
 
 If we divide \text{Fittable Size/Total Size of Dataset}, we can find the number of timesteps we can load into the memory. 
