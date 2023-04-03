@@ -1,6 +1,8 @@
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+from matplotlib import colors
+from matplotlib.ticker import PercentFormatter
 import time
 import fast_histogram 
 
@@ -11,7 +13,8 @@ import dask_histogram as dh # pip
 import dask_histogram.boost as dhb
 import dask
 
-
+import math 
+import re
 import cartopy
 import cartopy.feature as cfeature
 import cartopy.crs as ccrs
@@ -301,6 +304,38 @@ class TR_PR_Diagnostic:
                 coord = i
             return data.median(coord)
     
+    def mean_and_median_plot(self, data, savelabel = ''):
+        fig = plt.figure()
+        data_mean = self.mean_per_timestep(data)
+        data_median = self.median_per_timestep(data)
+        
+        if data_mean.size == 1 and data_median.size == 1:
+            plt.axhline(data_mean, label= 'mean', color = 'tab:blue')
+            plt.axhline(data_median, label= 'median',color = 'tab:orange')
+        else:
+            plt.plot(data_mean, label= 'mean', color = 'tab:blue')
+            plt.plot(data_median, label='median', color = 'tab:orange')
+
+        plt.yscale('log')
+        plt.xlabel('Time', fontsize=12)
+        plt.ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)
+        plt.title('Mean/median values of precipitation', fontsize =16)
+        plt.legend(fontsize=12)
+
+        #plt.yscale('log')
+        #print('gmean ....')
+        if savelabel == None:
+            savelabel = str(data.attrs['title'])
+            savelabel = re.split(r'[ ]', savelabel)[0]
+
+        plt.savefig("./figures/mean_and_median_"+str(savelabel)+".png",
+                    bbox_inches ="tight",
+                    pad_inches = 1,
+                    transparent = True,
+                    facecolor ="w",
+                    edgecolor ='w',
+                    orientation ='landscape')
+            
   
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
     def preprocessing(self, data, preprocess = True, variable_1 = 'pr', trop_lat = None, 
@@ -654,7 +689,7 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def hist_plot(self, data, pdf = True, smooth = True,  ls = '-', color = 'tab:blue', varname = 'Precipitation',  label = None):
+    def hist_plot(self, data, pdf = True, smooth = True,  ls = '-', color = 'tab:blue', varname = 'Precipitation', plot_title = None,  label = None):
         """ 
             The function ***hist_plot*** takes few arguments, ***data***, ***pdf***, 
             ***_ls***, ***_color*** and ***_label***, 
@@ -680,25 +715,56 @@ class TR_PR_Diagnostic:
                 plt.plot(data.bin[0:], data_density, 
                     linewidth=3.0, ls = ls, color = color, label = label )
             else:
-                plt.step(data.bin[0:], data_density, 
-                    linewidth=3.0, ls = ls, color = color, label = label )
+                N, bins, patches = plt.hist(x= data.bin[0:], bins = data.bin[0:], weights= data_density,  label = label)
+
+                fracs = ((N**(1 / 5)) / N.max())
+                norm = colors.Normalize(fracs.min(), fracs.max())
+
+                for thisfrac, thispatch in zip(fracs, patches):
+                    color = plt.cm.viridis(norm(thisfrac))
+                    thispatch.set_facecolor(color)
             
             plt.ylabel('PDF', fontsize=14)
-            plt.xlabel(varname, fontsize=14)
+            plt.xlabel(varname+", "+str(data.attrs['units']), fontsize=14)
             plt.yscale('log') 
         else:
             if smooth:
                 plt.plot(data.bin[0:],  data[0:], 
                     linewidth=3.0, ls = ls, color = color, label = label )
             else:
-                plt.step(data.bin[0:],  data[0:], 
-                    linewidth=3.0, ls = ls, color = color, label = label )
+                N, bins, patches = plt.hist(x= data.bin[0:], bins = data.bin[0:], weights=data[0:],  label = label)
+                fracs = ((N**(1 / 5)) / N.max())
+                norm = colors.Normalize(fracs.min(), fracs.max())
+
+                for thisfrac, thispatch in zip(fracs, patches):
+                    color = plt.cm.viridis(norm(thisfrac))
+                    thispatch.set_facecolor(color)
+                
             
             plt.ylabel('Frequency', fontsize=14)
-            plt.xlabel(varname, fontsize=14)
+            plt.xlabel(varname+", "+str(data.attrs['units']), fontsize=14)
             plt.yscale('log')
+        
+        
 
-        plt.savefig('../notebooks/figures/'+str(label)+'.png') 
+        if plot_title == None:
+            plot_title = str(data.attrs['title'])
+            plot_title = re.split(r'[ ]', plot_title)[0]
+        plt.title(plot_title, fontsize=16)
+
+        if label == None:
+            label = str(data.attrs['title'])
+            label = re.split(r'[ ]', label)[0]
+
+        if smooth:
+            plt.savefig('../notebooks/figures/histogram_smooth_'+str(label)+'.png')
+        else:
+            plt.savefig('../notebooks/figures/histogram_viridis_'+str(label)+'.png')
+
+    # You also can check this normalization
+    #cmap = plt.get_cmap('viridis')
+    #norm = plt.Normalize(min(_x), max(_x))
+    #colors = cmap(norm(_x))
 
 
 
@@ -1028,27 +1094,6 @@ class TR_PR_Diagnostic:
         _del_time   = (_time_2 - _time_1)
         return  frequency_bin, _size, _del_time
 
-    
-
-    def hist_viridis(self,  _empty = False,  _label = None, _density = True):
-        """
-            ADD AND MODIFY
-            ...
-        """
-        #PR_trop_1d = self.ds_into_mm() 
-        #_line_title = self.label #i.ds.name.split("/")
-        if _empty == True:
-            n, bins, patches = PR_trop_1d.plot(linewidth=2.9,
-                facecolor = "None",   histtype=u'step',
-                density=True, label=_label)
-        else:
-            n, bins, patches = self.ds.plot(edgecolor='black', linewidth=1.9, density=_density)
-        n=[abs(math.log10(n[i])) for i in range(0, len(n))]
-        for i in range(len(patches)):
-            patches[i].set_facecolor(plt.cm.viridis(n[i]/max(n)))
-        plt.yscale('log')
-        #plt.close()
-        #return 
 
         # For i amount of step
         # Function which compute the histogramn before ploting! 
