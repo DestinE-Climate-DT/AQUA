@@ -317,10 +317,12 @@ class TR_PR_Diagnostic:
             plt.plot(data_median, label='median', color = 'tab:orange')
 
         plt.yscale('log')
-        plt.xlabel('Time', fontsize=12)
+        plt.grid(True)
+        plt.xlabel('Timestep index', fontsize=12)
         plt.ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)
         plt.title('Mean/median values of precipitation', fontsize =16)
         plt.legend(fontsize=12)
+        
 
         #plt.yscale('log')
         #print('gmean ....')
@@ -714,6 +716,7 @@ class TR_PR_Diagnostic:
             if smooth:
                 plt.plot(data.bin[0:], data_density, 
                     linewidth=3.0, ls = ls, color = color, label = label )
+                plt.grid(True)
             else:
                 N, bins, patches = plt.hist(x= data.bin[0:], bins = data.bin[0:], weights= data_density,  label = label)
 
@@ -731,6 +734,7 @@ class TR_PR_Diagnostic:
             if smooth:
                 plt.plot(data.bin[0:],  data[0:], 
                     linewidth=3.0, ls = ls, color = color, label = label )
+                plt.grid(True)
             else:
                 N, bins, patches = plt.hist(x= data.bin[0:], bins = data.bin[0:], weights=data[0:],  label = label)
                 fracs = ((N**(1 / 5)) / N.max())
