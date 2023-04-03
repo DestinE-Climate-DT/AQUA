@@ -15,9 +15,9 @@ The algorithmm is following:
 
  - Total memory consumption by dianostic is a difference between amout of used virtual memory (``` VmRSS_2 - VmRSS_1 ```)
 
- - Memory consumption by entire dataset can be find by formula
-
-$$ {\text{Total memory consumption}} =  \text{Memory Consumption by single Object} x  \text{Total Size of Dataset}  =  \frac{\text{Memory Consumption by chunk}}{\text{Size of chunk}} x  \text{Total Size of Dataset}$$
+ - Memory consumption by entire dataset can be find by formula:
+ $$ {\text{Total memory consumption}} =  \text{Memory Consumption by single Object  x }  \text{Total Size of Dataset} $$ 
+ $$ {\text{Total memory consumption}} =   \frac{\text{Memory Consumption by chunk}}{\text{Size of chunk}}   \text{x Total Size of Dataset}$$
 
 
 ## Adaptive data loading ``` adaptive_data_load() ```
@@ -33,7 +33,7 @@ We can find amount of availibale memory (``` MemAvailable ```) on a SPECIFIC dev
 
 Then we can find the size of dataset which we can fit into memory by formula 
 
-$$   \text{Fittable Size} = min( \frac{Availibale Memory}{Mem Consumed by Single Object}, \text{Total Size of Dataset}) $$
+$$   \text{Fittable Size} = min( \frac{\text{Availibale Memory}}{\text{Mem Consumed by Single Object}}, \text{Total Size of Dataset}) $$
 
 
 If we devide \text{Fittable Size/Total Size of Dataset} we can find the amout of timesteps which we can load into the memory. 
