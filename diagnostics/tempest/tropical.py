@@ -3,10 +3,22 @@ import xarray as xr
 import subprocess
 import logging
 from aqua import Reader
-from aqua.util import log_configure
+from aqua.logger import log_configure
 from glob import glob
 import pandas as pd
 from datetime import datetime
+
+class Testwarn():
+
+    def __init__(self, loglevel = ''):
+
+        self.logger = log_configure(loglevel, 'test')
+
+    def pippo(self, ciao = None):
+
+        self.logger.info('info')
+        self.logger.warning('warning')
+        self.logger.error('error')
 
 
 class TCs():
@@ -14,9 +26,10 @@ class TCs():
     def __init__(self, tdict = None, 
                  paths = None, model="IFS", exp="tco2559-ng5", 
                  boxdim = 10, lowgrid='r100', highgrid='r100', var2store=None, 
-                 loglevel = 'WARNING'):
+                 loglevel = 'INFO'):
         
-        loglevel = log_configure(loglevel)
+        self.logger = log_configure(loglevel, 'TCs')
+        
 
         if tdict is not None:
             self.paths = tdict['paths']
@@ -47,7 +60,7 @@ class TCs():
 
         self.catalog_init()
         for tstep in pd.date_range(start=start_date, end=end_date, freq=frequency).strftime('%Y%m%dT%H'):
-            logging.warning(tstep)
+            self.logger.warning(tstep)
             self.readwrite_from_intake(tstep)
             self.run_detect_nodes(tstep)
             clean_files([self.tempest_filein])
@@ -59,7 +72,7 @@ class TCs():
         self.set_time_window(n_days_freq=n_days_freq, n_days_ext=n_days_ext)
 
         for block in pd.date_range(start=start_date, end=end_date, freq=str(n_days_freq)+'D'):
-            logging.warning(block)
+            self.logger.warning(block)
             dates_freq, dates_ext = self.time_window(block)
             self.prepare_stitch_nodes(block, dates_freq, dates_ext)
             self.run_stitch_nodes(maxgap='6h')
@@ -89,14 +102,14 @@ class TCs():
         
     def readwrite_from_intake(self, timestep):
 
-        logging.info(f'Running readwrite_from_intake() for {timestep}')
+        self.logger.info(f'Running readwrite_from_intake() for {timestep}')
 
         outfield = 0
         data2d = self.reader2d.retrieve()
         fileout = os.path.join(self.paths['regdir'], f'regrid_{timestep}.nc')
 
         for var in self.varlist2d:
-            logging.info('Accessing 2D data..')
+            self.logger.info('Accessing 2D data..')
             lowres = self.reader2d.regrid(data2d[var].sel(time=timestep))
             if isinstance(outfield, xr.Dataset):
                 if var in '10u':
@@ -111,8 +124,8 @@ class TCs():
         
         data3d = self.reader3d.retrieve()
         for var in self.varlist3d:
-            logging.info('Accessing 3D data..')
-            lowres = self.reader3d.regrid(data3d[var].sel(time=timestep, level=[300,500]))
+            self.logger.info('Accessing 3D data..')
+            lowres = self.reader3d.regrid(data3d[var].sel(time=timestep, plev=[30000,50000]))
             outfield = xr.merge([outfield, lowres.to_dataset(name=var)])
             
         # check if output file exists
@@ -120,9 +133,9 @@ class TCs():
             os.remove(fileout)
 
         #level_var = outfield['level']
-        outfield['level'] = outfield['level'].astype(float)
-        outfield['level'].attrs['units'] = 'hPa'
-        logging.info('Writing low res to disk..')
+        outfield['plev'] = outfield['plev'].astype(float)
+        outfield['plev'].attrs['units'] = 'Pa'
+        self.logger.info('Writing low res to disk..')
         outfield.to_netcdf(fileout)
         outfield.close()
         
@@ -133,7 +146,7 @@ class TCs():
 
     def run_detect_nodes(self, timestep) : 
 
-        logging.info(f'Running run_detect_nodes() for {timestep}')
+        self.logger.info(f'Running run_detect_nodes() for {timestep}')
 
         """"
         Basic function to call from command line tempest extremes DetectNodes
@@ -179,7 +192,7 @@ class TCs():
 
     def store_detect_nodes(self, timestep, write_fullres=True):
 
-        logging.info(f'Running store_detect_nodes() for {timestep}')
+        self.logger.info(f'Running store_detect_nodes() for {timestep}')
         fulldata = self.reader_fullres.retrieve().sel(time=timestep)
         
         # in case you want to write netcdf file with ullres field after Detect Nodes
