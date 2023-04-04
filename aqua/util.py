@@ -7,62 +7,7 @@ import eccodes
 import xarray as xr
 import string
 import random
-import logging
 import datetime
-
-
-def log_configure(log_level=None):
-    """Set up the logging level cleaning previous existing handlers
-
-    Args:
-        log_level: a string or an integer according to the logging module
-
-    Returns:
-        str: the logger level as a string after checks and assignement has been done
-    """
-
-    # this is the default loglevel for the AQUA framework
-    log_level_default = 'WARNING'
-
-    # ensure that loglevel is uppercase if it is a string
-    if isinstance(log_level, str):
-        log_level = log_level.upper()
-    # convert to a string if is an integer
-    elif isinstance(log_level, int):
-        log_level = logging.getLevelName(log_level)
-    # if nobody assigned, set it to none
-    elif log_level is None:
-        log_level = log_level_default
-    # error!
-    else:
-        raise Exception('Invalid log level type, must be a string or an integer!')
-
-
-    # use conversion to integer to check if value exist, set None if unable to do it
-    log_level_int = getattr(logging, log_level, None)
-
-    # set up a default
-    if log_level_int is None:
-        logging.warning("Invalid logging level '%s' specified. Setting it back to default %s", log_level, log_level_default)
-        log_level = log_level_default
-
-
-    # clear the handlers of the possibly previously configured logger
-    logger = logging.getLogger()
-    for handler in logger.handlers[:]:
-        logger.removeHandler(handler)
-
-    # Set up logging
-    logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-
-    # Get the current effective logging level
-    current_level = logger.getEffectiveLevel()
-
-    return logging.getLevelName(current_level)
 
 
 def load_yaml(infile):
