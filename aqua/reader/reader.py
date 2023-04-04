@@ -977,6 +977,13 @@ class Reader():
         logging.info("Data model: %s", fn)
         with open(fn, 'r', encoding="utf8") as f:
             dm = json.load(f)
+
+        if "IFSMagician" in data.attrs.get("history", ""):  # Special fix for gribscan levels
+            if "level" in data.coords:
+                data.level.attrs["units"]="hPa"
+                data.level.attrs["standard_name"]="air_pressure"
+                data.level.attrs["long_name"]="pressure"
+
         # this is needed since cf2cdm issues a (useless) UserWarning
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
