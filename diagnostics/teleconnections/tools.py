@@ -1,67 +1,77 @@
 '''
 This module contains simple tools for the teleconnections diagnostic.
+- area selection functions, to deal with custom areas
 - loading functions, to deal with yaml files
-- conversion functions, to deal with conversion between different physical units.
+- conversion functions, to deal with conversion between different
+  physical units.
+- weighted area mean function, to deal with weighted area mean
 '''
 import numpy as np
-from aqua import util
+from aqua.util import load_yaml
 
-def area_selection(indat,lat=None,lon=None,box_brd=True):
-    """ 
+
+def area_selection(indat, lat=None, lon=None, box_brd=True):
+    """
         Extract a custom area from a DataArray.
-    
+
         Args:
             indat (DataArray):  input data to be selected
             lat (list,opt):     latitude coordinates
             lon (list,opt):     longitude coordinates
             box_brd (bool,opt): choose if coordinates are comprised or not.
                                 Default is True
-    
+
         Returns:
             odat (DataArray): data on a custom surface
     """
     # 1. -- Extract coordinates from indat --
     if lat:
-        lat_coord=indat.lat
+        lat_coord = indat.lat
     if lon:
-        lon_coord=indat.lon
-    
+        lon_coord = indat.lon
+
     # 2. -- Select area --
     if box_brd:
         if lat:
-            iplat = lat_coord.where( (lat_coord >= lat[0] ) & (lat_coord <= lat[1]), drop=True)
+            iplat = lat_coord.where((lat_coord >= lat[0]) &
+                                    (lat_coord <= lat[1]), drop=True)
         if lon:
-            iplon = lon_coord.where( (lon_coord >= lon[0] ) & (lon_coord <= lon[1]), drop=True)
+            iplon = lon_coord.where((lon_coord >= lon[0]) &
+                                    (lon_coord <= lon[1]), drop=True)
     else:
         if lat:
-            iplat = lat_coord.where( (lat_coord > lat[0] ) & (lat_coord < lat[1]), drop=True)
+            iplat = lat_coord.where((lat_coord > lat[0]) &
+                                    (lat_coord < lat[1]), drop=True)
         if lon:
-            iplon = lon_coord.where( (lon_coord > lon[0] ) & (lon_coord < lon[1]), drop=True)
-    
+            iplon = lon_coord.where((lon_coord > lon[0]) &
+                                    (lon_coord < lon[1]), drop=True)
+
     # 3. -- Are selection --
-    odat=indat
+    odat = indat
     if lat:
-        odat=odat.sel(lat=iplat)
+        odat = odat.sel(lat=iplat)
     if lon:
-        odat=odat.sel(lon=iplon)
-    
+        odat = odat.sel(lon=iplon)
+
     return odat
 
-def load_namelist(diagname='teleconnections',configdir='./'):
+
+def load_namelist(diagname='teleconnections', configdir='./'):
     """
     Load diagnostic yaml file.
 
     Args:
         diagname (str):  diagnostic name
         configdir (str): path to config directory
-    
+
     Returns:
         namelist (dict): diagnostic config
     """
-    infile = f'{configdir}/{diagname}.yml'
-    namelist = util.load_yaml(infile)
-    
+    infile = f'{configdir}/{diagname}.yaml'
+    namelist = load_yaml(infile)
+
     return namelist
+
 
 def lon_180_to_360(lon):
     """
@@ -69,13 +79,14 @@ def lon_180_to_360(lon):
 
     Args:
         lon (float): longitude coordinate
-    
+
     Returns:
         lon (float): converted longitude
     """
-    if lon<0:
+    if lon < 0:
         lon = 360 + lon
     return lon
+
 
 def lon_360_to_180(lon):
     """
@@ -83,16 +94,18 @@ def lon_360_to_180(lon):
 
     Args:
         lon (float): longitude coordinate
-    
+
     Returns:
         lon (float): converted longitude
     """
-    if lon>180:
+    if lon > 180:
         lon = - 360 + lon
     return lon
 
-def wgt_area_mean(indat,latN:float,latS:float,lonW:float,lonE:float,box_brd=True):
-    """ 
+
+def wgt_area_mean(indat, latN: float, latS: float,
+                  lonW: float, lonE: float, box_brd=True):
+    """
     Evaluate the weighted mean of a quantity on a custom surface.
 
     Args:
@@ -108,14 +121,14 @@ def wgt_area_mean(indat,latN:float,latS:float,lonW:float,lonE:float,box_brd=True
         odat (DataArray): average of input data on a custom surface
     """
     # 1. -- Extract coordinates from indat --
-    lat=indat.lat
-    lon=indat.lon
+    lat = indat.lat
 
     # 2. -- Select area --
-    indat = area_selection(indat,lat=[latS,latN],lon=[lonW,lonE],box_brd=box_brd)
+    indat = area_selection(indat, lat=[latS, latN],
+                           lon=[lonW, lonE], box_brd=box_brd)
 
     # 3. -- Weighted area mean --
     wgt = np.cos(np.deg2rad(lat))
-    odat=indat.weighted(wgt).mean(("lon", "lat"), skipna=True)
+    odat = indat.weighted(wgt).mean(("lon", "lat"), skipna=True)
 
     return odat
