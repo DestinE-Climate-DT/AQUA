@@ -1,3 +1,5 @@
+"""Module to implement logging configurations"""
+
 import logging
 
 
@@ -31,7 +33,7 @@ def log_configure(log_level=None, log_name=None):
         log_level = log_level_default
     # error!
     else:
-        raise Exception('Invalid log level type, must be a string or an integer!')
+        raise ValueError('Invalid log level type, must be a string or an integer!')
 
     # use conversion to integer to check if value exist, set None if unable to do it
     log_level_int = getattr(logging, log_level, None)
