@@ -124,6 +124,11 @@ source_grids:
       default:
         space_coord: ["lon", "lat"]
 
+  AVISO:
+    ssh-L4:
+      default:
+        space_coord: ["longitude", "latitude"]
+
   CERES:
     ebaf-toa42:
       default:
