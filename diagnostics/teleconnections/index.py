@@ -1,10 +1,11 @@
 '''
-This module contains functions to evaluate teleconnection indices 
+This module contains functions to evaluate teleconnection indices
 for different teleconnections.
 '''
 from tools import lon_180_to_360, wgt_area_mean
 
-def station_based_index(field,namelist,telecname,months_window=3):
+
+def station_based_index(field, namelist, telecname, months_window=3):
     """
     Evaluate station based index for a teleconnection.
 
@@ -18,8 +19,8 @@ def station_based_index(field,namelist,telecname,months_window=3):
         indx (DataArray): standardized station based index
     """
     # 1. -- Monthly field average and anomalies--
-    field_av  = field.groupby("time.month").mean(dim="time")
-    field_an  = field.groupby("time.month") - field_av
+    field_av = field.groupby("time.month").mean(dim="time")
+    field_an = field.groupby("time.month") - field_av
 
     # 2. -- Acquiring latitude and longitude of stations --
     lon1 = lon_180_to_360(namelist[telecname]['lon1'])
@@ -28,17 +29,18 @@ def station_based_index(field,namelist,telecname,months_window=3):
     lat2 = namelist[telecname]['lat2']
 
     # 3. -- Extracting field data at the acquired coordinates --
-    field_an1 = field_an.sel(lon=lon1,lat=lat1,method='nearest')
-    field_an2 = field_an.sel(lon=lon2,lat=lat2,method='nearest')
+    field_an1 = field_an.sel(lon=lon1, lat=lat1, method='nearest')
+    field_an2 = field_an.sel(lon=lon2, lat=lat2, method='nearest')
 
     # 4. -- Rolling average over months = months_window --
-    field_an1_ma = field_an1.rolling(time=months_window,center=True).mean() # to be generalized to data not gridded monthly
-    field_an2_ma = field_an2.rolling(time=months_window,center=True).mean()
+    #  to be generalized to data not gridded monthly
+    field_an1_ma = field_an1.rolling(time=months_window, center=True).mean()
+    field_an2_ma = field_an2.rolling(time=months_window, center=True).mean()
 
     # 5. -- Evaluate average and std for the station based difference --
     diff_ma = field_an1_ma-field_an2_ma
     mean_ma = diff_ma.mean()
-    std_ma  = diff_ma.std()
+    std_ma = diff_ma.std()
 
     # 6. -- Evaluate the index and rename the variable in the DataArray --
     indx = (diff_ma-mean_ma)/std_ma
@@ -46,10 +48,11 @@ def station_based_index(field,namelist,telecname,months_window=3):
 
     # 7. -- Drop NaNs --
     indx = indx.dropna(dim='time')
-    
+
     return indx
 
-def regional_mean_index(field,namelist,telecname,months_window=3):
+
+def regional_mean_index(field, namelist, telecname, months_window=3):
     """
     Evaluate regional field mean for a teleconnection.
 
@@ -63,21 +66,23 @@ def regional_mean_index(field,namelist,telecname,months_window=3):
         field mean (DataArray): field mean
     """
     # 1. -- Acquire coordinates --
-    lonW = lon_180_to_360(namelist[telecname]['lonW']) # conversion can be inserted as a check in other funcs using coordinates
+    lonW = lon_180_to_360(namelist[telecname]['lonW'])
     lonE = lon_180_to_360(namelist[telecname]['lonE'])
     latN = namelist[telecname]['latN']
     latS = namelist[telecname]['latS']
 
     # 2. -- Evaluate mean value of the field and then the rolling mean --
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
-    field_mean = field_mean.rolling(time=months_window,center=True).mean(skipna=True)
+    field_mean = field_mean.rolling(time=months_window,
+                                    center=True).mean(skipna=True)
 
     # 7. -- Drop NaNs --
     field_mean = field_mean.dropna(dim='time')
 
     return field_mean
 
-def regional_mean_anomalies(field,namelist,telecname,months_window=3):
+
+def regional_mean_anomalies(field, namelist, telecname, months_window=3):
     """
     Evaluate regional field mean anomalies for a teleconnection.
 
@@ -91,14 +96,16 @@ def regional_mean_anomalies(field,namelist,telecname,months_window=3):
         field mean (DataArray): field mean
     """
     # 1. -- Acquire coordinates --
-    lonW = lon_180_to_360(namelist[telecname]['lonW']) # conversion can be inserted as a check in other funcs using coordinates
+    lonW = lon_180_to_360(namelist[telecname]['lonW'])
     lonE = lon_180_to_360(namelist[telecname]['lonE'])
     latN = namelist[telecname]['latN']
     latS = namelist[telecname]['latS']
 
     # 2. -- Evaluate mean value of the field and then the rolling mean --
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
-    field_mean_an = field_mean.groupby("time.month") - field_mean.groupby("time.month").mean(dim="time")
-    field_mean_an = field_mean_an.rolling(time=months_window,center=True).mean(skipna=True)
+    field_mean_an = field_mean.groupby("time.month") -\
+        field_mean.groupby("time.month").mean(dim="time")
+    field_mean_an = field_mean_an.rolling(time=months_window,
+                                          center=True).mean(skipna=True)
 
     return field_mean_an
