@@ -6,6 +6,7 @@ dependencies:
 - cdo
 - cfunits
 - dask
+- dask<2023.3.2
 - ecCodes
 - healpy
 - intake
@@ -30,4 +31,4 @@ dependencies:
   - fast_histogram
   - gribscan
   - sparse
-name: tropical-rainfall
+name: tropical-rainfall_2

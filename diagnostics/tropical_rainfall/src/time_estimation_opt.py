@@ -14,13 +14,16 @@ def data_size(data):
             _size *= data[i].size
     return _size
 
-with os.popen("pwd ") as f:
-    _pwd = f.readline()
-pwd = re.split(r'[\n]', _pwd)[0]
+def pwd_call():
+    with os.popen("pwd ") as f:
+        _pwd = f.readline()
+    return re.split(r'[\n]', _pwd)[0]
 
-def estimated_total_calc_time_opt(ds_full, number=2):
+def estimated_total_calc_time_opt(ds_full, number=2,  units = 'H'): 
 
-    res = timeit.timeit("run_path(path_name=str(pwd)+'/../notebooks/time_memory_estimation/time_test.py')", setup="from runpy import run_path",  number=number)
+    pwd = pwd_call()
+    #"run_path(path_name='/work/bb1153/b382267/AQUA/diagnostics/tropical_rainfall/notebooks/time_memory_estimation/time_test.py')"
+    res = timeit.timeit("run_path(path_name='"+str(pwd)+"/time_test.py')", setup="from runpy import run_path",  number=number)
     res = res/number
     # if script is in the same folder
     #runpy.run_module(mod_name='time_test')
@@ -32,11 +35,17 @@ def estimated_total_calc_time_opt(ds_full, number=2):
     calc_time_per_element = res/TEST_SIZE
 
     expected_calc_time = calc_time_per_element * ds_full_size 
-    
-    return float(expected_calc_time)
 
-def optimal_amout_of_timesteps_opt(wanted_time, ds_full):
-    res = timeit.timeit("run_path(path_name=str(pwd)+'/../notebooks/time_memory_estimation/time_test.py')", setup="from runpy import run_path",  number=number)
+   
+    return float(expected_calc_time),  (time_units_converter(expected_calc_time,   units))
+    
+
+def optimal_amout_of_timesteps_opt(wanted_time, ds_full, number=2):
+
+    pwd = pwd_call()
+    #print(pwd)
+
+    res = timeit.timeit("run_path(path_name='"+str(pwd)+"/time_test.py')", setup="from runpy import run_path",  number=number)
     res = res/number
     
     from time_test import TEST_SIZE

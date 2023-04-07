@@ -3,7 +3,7 @@
 # Alternatively, use mamba
 #   mamba env create -f env-tropical-rainfall.yml
 
-name : tropical-rainfall
+name : tropical-rainfall_2
 channels:
   - conda-forge
 dependencies:

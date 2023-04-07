@@ -8,4 +8,4 @@ conda-merge ../../environment.yml  enviroment/env-tropical-rainfall.yml > enviro
 
 conda env create -f enviroment/merged.yml
 
-conda activate tropical-rainfall
+conda activate tropical-rainfall_2
