@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# For setuptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+[project]
+name = "aqua"
+dynamic = ["version"]
+authors = [
+    {name = "The AQUA team", email = "p.davini@isac.cnr.it"}
+]
+description = "AQUA; a model evaluation framework for high-resolution climate model simulations"
+readme = "README.md"
+keywords = [
+    "diagnostics"
+]
+license = {text = "Private"}
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython"
+]
+dependencies = [
+    "cfgrib",
+    "dask",
+    "docker",
+    "gribscan",
+    "ecCodes",
+    "intake",
+    "intake-esm<=2021.8.17",
+    "intake-xarray",
+    "jinja2",
+    "metpy",
+    "numpy",
+    "pandas",
+    "pyYAML",
+    "sparse",
+    "xarray",
+    "smmregrid@git+https://github.com/jhardenberg/smmregrid"
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx==6.1.*",
+    "sphinx-rtd-theme==1.2.*"
+]
+tests = [
+    "pytest==7.3.*"
+]
+all = [
+    "aqua[tests]",
+    "aqua[docs]"
+]
+
+[project.urls]
+homepage = "https://github.com/oloapinivad/AQUA/"
+documentation = "https://github.com/oloapinivad/AQUA/"
+repository = "https://github.com/oloapinivad/AQUA/"
+issues = "https://github.com/oloapinivad/AQUA/issues/"
+
+[tool.setuptools.package-data]
+platforms = [
+    "any"
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools.dynamic]
+version = {attr = "aqua.__version__"}
