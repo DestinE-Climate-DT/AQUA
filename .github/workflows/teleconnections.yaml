@@ -1,10 +1,10 @@
 name: teleconnections test
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+    paths:
+      - 'diagnostics/teleconnections/**'
+      - 'tests/teleconnections/**'
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # Run every Monday night at 3AM UTC
