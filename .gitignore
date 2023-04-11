@@ -7,3 +7,6 @@ diagnostics/tropical_rainfall/notebooks/time_memory_estimation/time_test.py
 *.egg-info
 cli/*.err
 cli/*.out
+AQUA_tests*
+**/*.bak
+
