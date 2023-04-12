@@ -26,10 +26,17 @@ class TCs():
     def __init__(self, tdict = None, 
                  paths = None, model="IFS", exp="tco2559-ng5", 
                  boxdim = 10, lowgrid='r100', highgrid='r100', var2store=None, 
+                 streaming=False, stream_step=1, stream_unit='days', stream_startdate=None,
                  loglevel = 'INFO'):
         
         self.logger = log_configure(loglevel, 'TCs')
         
+        #streaming
+        
+        self.streaming=streaming
+        self.stream_step=stream_step
+        self.stream_units=stream_unit
+        self.stream_startdate=stream_startdate
 
         if tdict is not None:
             self.paths = tdict['paths']
@@ -57,8 +64,10 @@ class TCs():
             os.makedirs(self.paths[path], exist_ok=True)
 
     def detect_nodes_zoomin(self, start_date, end_date, frequency):
-
-        self.catalog_init()
+        
+        self.catalog_init(streaming=self.streaming)
+        #may get conflict with time stamp format!
+        #if start_date and end_date are present:
         for tstep in pd.date_range(start=start_date, end=end_date, freq=frequency).strftime('%Y%m%dT%H'):
             self.logger.warning(tstep)
             self.readwrite_from_intake(tstep)
@@ -66,6 +75,8 @@ class TCs():
             clean_files([self.tempest_filein])
             self.read_lonlat_nodes()
             self.store_detect_nodes(tstep)
+
+        #else start date and end date are retreieved from streaming
 
     def stitch_nodes_zoomin(self, start_date, end_date, n_days_freq, n_days_ext):
 
@@ -80,19 +91,40 @@ class TCs():
             self.store_stitch_nodes(block, dates_freq)
 
 
-    def catalog_init(self, streaming=False):
+    def catalog_init(self, streaming):
 
-        if self.model in 'IFS':
-            self.varlist2d = ['msl', '10u', '10v']
-            self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                   regrid=self.lowgrid, vars = self.varlist2d)
-            self.varlist3d = ['z']
-            self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
-                                   regrid=self.lowgrid, vars = self.varlist3d)
-            self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                         regrid=self.highgrid, var = self.var2store)
+        # unica chiamata senza if
+        # spostare retrieve a data2d e data3d nel catalog_init
+        # funzione che legga una variabile e capisca start date ed end date in base allo streaming
+        if streaming:
+            self.logger.warning(f'Initialised streaming for {self.stream_step} {self.stream_units} starting on {self.stream_startdate}')
+            if self.model in 'IFS':
+                self.varlist2d = ['msl', '10u', '10v']
+                self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                    regrid=self.lowgrid, vars = self.varlist2d, streaming=self.streaming, stream_step=self.stream_step, 
+                                    stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+                self.varlist3d = ['z']
+                self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
+                                    regrid=self.lowgrid, vars = self.varlist3d, streaming=self.streaming, 
+                                    stream_step=self.stream_step, stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+                self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                            regrid=self.highgrid, var = self.var2store,
+                                            streaming=self.streaming, stream_step=self.stream_step, 
+                                            stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+            else:
+                raise Exception(f'Model {self.model} not supported')
         else:
-            raise Exception(f'Model {self.model} not supported')
+            if self.model in 'IFS':
+                self.varlist2d = ['msl', '10u', '10v']
+                self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                    regrid=self.lowgrid, vars = self.varlist2d)
+                self.varlist3d = ['z']
+                self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
+                                    regrid=self.lowgrid, vars = self.varlist3d)
+                self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                            regrid=self.highgrid, var = self.var2store)
+            else:
+                raise Exception(f'Model {self.model} not supported')
         
 
     def set_time_window(self, n_days_freq = 30, n_days_ext = 10):
@@ -106,6 +138,7 @@ class TCs():
 
         outfield = 0
         data2d = self.reader2d.retrieve()
+        print(data2d.time)
         fileout = os.path.join(self.paths['regdir'], f'regrid_{timestep}.nc')
 
         for var in self.varlist2d:
@@ -143,6 +176,7 @@ class TCs():
                     'psl': 'msl', 'zg': 'z',
                     'uas': 'u10m', 'vas': 'v10m'}
         self.tempest_filein=fileout
+        
 
     def run_detect_nodes(self, timestep) : 
 
