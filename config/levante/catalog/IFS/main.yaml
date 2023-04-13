@@ -19,3 +19,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/test-tco2559.yaml"
+  test-tco79:
+    description: TCO79 test data
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/test-tco79.yaml"

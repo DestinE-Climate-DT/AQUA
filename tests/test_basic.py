@@ -3,7 +3,7 @@ import numpy as np
 from aqua import Reader, catalogue
 
 # pytest approximation, to bear with different machines
-approx_rel=1e4
+approx_rel=1e-4
 
 
 @pytest.fixture
@@ -64,7 +64,7 @@ class TestAqua:
 
     @pytest.fixture(
         params=[
-            ("IFS", "test-tco79", "original_2d", "r200", "tas"),
+            ("IFS", "test-tco79", "short", "r200", "tas"),
             ("FESOM", "test-pi", "original_2d", "r200", "sst"),
         ]
     )
