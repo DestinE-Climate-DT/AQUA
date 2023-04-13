@@ -21,6 +21,10 @@ import cartopy.crs as ccrs
 
 import matplotlib.animation as animation
 
+import sys
+sys.path.append('/../')
+from src.shared_func import time_interpreter
+
 
 class TR_PR_Diagnostic:
     """ 
@@ -305,23 +309,37 @@ class TR_PR_Diagnostic:
             return data.median(coord)
     
     def mean_and_median_plot(self, data, savelabel = ''):
-        fig = plt.figure()
+        fig, ax =  plt.subplots()
         data_mean = self.mean_per_timestep(data)
         data_median = self.median_per_timestep(data)
-        
-        if data_mean.size == 1 and data_median.size == 1:
-            plt.axhline(data_mean, label= 'mean', color = 'tab:blue')
-            plt.axhline(data_median, label= 'median',color = 'tab:orange')
-        else:
-            plt.plot(data_mean, label= 'mean', color = 'tab:blue')
-            plt.plot(data_median, label='median', color = 'tab:orange')
+        ax2=ax.twiny()
+        # make a plot with different y-axis using second axis object
 
-        plt.yscale('log')
-        plt.grid(True)
-        plt.xlabel('Timestep index', fontsize=12)
-        plt.ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)
-        plt.title('Mean/median values of precipitation', fontsize =16)
-        plt.legend(fontsize=12)
+        if time_interpreter(data) == 'D':
+            time_labels = [str(data['time.day'][i].values) for i in range(0, len(data)) ]
+        elif time_interpreter(data) == 'M':    
+            time_labels = [str(data['time.month'][i].values) for i in range(0, len(data)) ]
+            #time_labels = [str(data['time.year'][i].values)+':'+str(data['time.month'][i].values)+':'+str(data['time.day'][i].values) for i in range(0, len(data)) ]
+        else:
+            time_labels = [None for i in range(0, len(data))]
+
+        if data_mean.size == 1 and data_median.size == 1:
+            ax.axhline(data_mean, label= 'mean', color = 'tab:blue')
+            ax.axhline(data_median, label= 'median',color = 'tab:orange')
+
+            ax2.plot(time_labels, data_median.values, ls = ' ')
+        else:
+            ax.plot(data_mean, label= 'mean', color = 'tab:blue')
+            ax.plot(data_median, label='median', color = 'tab:orange')
+            ax2.plot(time_labels, data_median.values, ls = ' ')
+
+        ax.set_yscale('log')
+        plt.locator_params(axis='x', nbins=3)
+        ax.grid(True)
+        ax.set_xlabel('Timestep index', fontsize=12)
+        ax.set_ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)
+        ax.set_title('Mean/median values of precipitation', fontsize =16)
+        ax.legend(fontsize=12)
         
 
         #plt.yscale('log')
@@ -330,7 +348,7 @@ class TR_PR_Diagnostic:
             savelabel = str(data.attrs['title'])
             savelabel = re.split(r'[ ]', savelabel)[0]
 
-        plt.savefig("./figures/mean_and_median_"+str(savelabel)+".png",
+        fig.savefig("./figures/mean_and_median_"+str(savelabel)+".png",
                     bbox_inches ="tight",
                     pad_inches = 1,
                     transparent = True,

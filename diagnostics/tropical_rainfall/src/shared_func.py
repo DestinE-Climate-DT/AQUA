@@ -35,7 +35,9 @@ def time_interpreter(dataset):
         if np.count_nonzero(dataset['time.second'] == dataset['time.second'][0]) == dataset.time.size:
             if np.count_nonzero(dataset['time.minute'] == dataset['time.minute'][0]) == dataset.time.size:
                 if  np.count_nonzero(dataset['time.hour'] == dataset['time.hour'][0]) == dataset.time.size:
-                    if np.count_nonzero(dataset['time.day'] == dataset['time.day'][0]) == dataset.time.size:
+                    if np.count_nonzero(dataset['time.day'] == dataset['time.day'][0] ) == dataset.time.size or \
+                        np.count_nonzero([dataset['time.day'][i] in [1, 28, 29, 30, 31] for i in range(0, len(dataset['time.day']))]) == dataset.time.size:
+                                            
                         if np.count_nonzero(dataset['time.month'] == dataset['time.month'][0]) == dataset.time.size:
                             return 'Y'
                         else:
