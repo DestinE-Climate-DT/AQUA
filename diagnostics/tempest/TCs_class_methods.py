@@ -65,67 +65,69 @@ class TCs():
 
     def detect_nodes_zoomin(self, start_date, end_date, frequency):
         
-        self.catalog_init(streaming=self.streaming)
-        #may get conflict with time stamp format!
+        self.catalog_init()
         #if start_date and end_date are present:
-        for tstep in pd.date_range(start=start_date, end=end_date, freq=frequency).strftime('%Y%m%dT%H'):
-            self.logger.warning(tstep)
-            self.readwrite_from_intake(tstep)
-            self.run_detect_nodes(tstep)
-            clean_files([self.tempest_filein])
-            self.read_lonlat_nodes()
-            self.store_detect_nodes(tstep)
+        if self.streaming:
+            for tstep in pd.date_range(start=self.stream_startdate, end=self.stream_end_date, freq=frequency).strftime('%Y%m%dT%H'):
+                self.logger.warning(f"processing time step {tstep}")
+                self.readwrite_from_intake(tstep)
+                self.run_detect_nodes(tstep)
+                clean_files([self.tempest_filein])
+                self.read_lonlat_nodes()
+                self.store_detect_nodes(tstep)
+        
+        else:        
+            for tstep in pd.date_range(start=start_date, end=end_date, freq=frequency).strftime('%Y%m%dT%H'):
+                self.logger.warning(f"processing time step {tstep}")
+                self.readwrite_from_intake(tstep)
+                self.run_detect_nodes(tstep)
+                clean_files([self.tempest_filein])
+                self.read_lonlat_nodes()
+                self.store_detect_nodes(tstep)
 
-        #else start date and end date are retreieved from streaming
 
     def stitch_nodes_zoomin(self, start_date, end_date, n_days_freq, n_days_ext):
 
         self.set_time_window(n_days_freq=n_days_freq, n_days_ext=n_days_ext)
 
         for block in pd.date_range(start=start_date, end=end_date, freq=str(n_days_freq)+'D'):
-            self.logger.warning(block)
             dates_freq, dates_ext = self.time_window(block)
+            self.logger.warning(f'running stitch nodes from {block.strftime("%Y%m%d")}-{dates_freq[-1].strftime("%Y%m%d")}')
             self.prepare_stitch_nodes(block, dates_freq, dates_ext)
             self.run_stitch_nodes(maxgap='6h')
             self.reorder_tracks()
             self.store_stitch_nodes(block, dates_freq)
 
 
-    def catalog_init(self, streaming):
+    def catalog_init(self):
 
         # unica chiamata senza if
         # spostare retrieve a data2d e data3d nel catalog_init
         # funzione che legga una variabile e capisca start date ed end date in base allo streaming
-        if streaming:
-            self.logger.warning(f'Initialised streaming for {self.stream_step} {self.stream_units} starting on {self.stream_startdate}')
-            if self.model in 'IFS':
-                self.varlist2d = ['msl', '10u', '10v']
-                self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                    regrid=self.lowgrid, vars = self.varlist2d, streaming=self.streaming, stream_step=self.stream_step, 
-                                    stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
-                self.varlist3d = ['z']
-                self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
-                                    regrid=self.lowgrid, vars = self.varlist3d, streaming=self.streaming, 
-                                    stream_step=self.stream_step, stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
-                self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                            regrid=self.highgrid, var = self.var2store,
-                                            streaming=self.streaming, stream_step=self.stream_step, 
-                                            stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
-            else:
-                raise Exception(f'Model {self.model} not supported')
+
+        self.logger.warning(f'Initialised streaming for {self.stream_step} {self.stream_units} starting on {self.stream_startdate}')
+        if self.model in 'IFS':
+            self.varlist2d = ['msl', '10u', '10v']
+            self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                regrid=self.lowgrid, vars = self.varlist2d, streaming=self.streaming, stream_step=self.stream_step, 
+                                stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+            self.varlist3d = ['z']
+            self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
+                                regrid=self.lowgrid, vars = self.varlist3d, streaming=self.streaming, 
+                                stream_step=self.stream_step, stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+            self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                        regrid=self.highgrid, var = self.var2store,
+                                        streaming=self.streaming, stream_step=self.stream_step, 
+                                        stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
         else:
-            if self.model in 'IFS':
-                self.varlist2d = ['msl', '10u', '10v']
-                self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                    regrid=self.lowgrid, vars = self.varlist2d)
-                self.varlist3d = ['z']
-                self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
-                                    regrid=self.lowgrid, vars = self.varlist3d)
-                self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                            regrid=self.highgrid, var = self.var2store)
-            else:
-                raise Exception(f'Model {self.model} not supported')
-        
+            raise Exception(f'Model {self.model} not supported')
+      
+        # now retrieve 2d and 3d data needed  
+        self.data2d = self.reader2d.retrieve()
+        self.data3d = self.reader3d.retrieve()
+        self.fullres = self.reader_fullres.retrieve()
+        if self.streaming:     
+            self.stream_end_date = self.data2d["10u"].time[-1].values
 
     def set_time_window(self, n_days_freq = 30, n_days_ext = 10):
 
@@ -137,13 +139,11 @@ class TCs():
         self.logger.info(f'Running readwrite_from_intake() for {timestep}')
 
         outfield = 0
-        data2d = self.reader2d.retrieve()
-        print(data2d.time)
         fileout = os.path.join(self.paths['regdir'], f'regrid_{timestep}.nc')
 
         for var in self.varlist2d:
-            self.logger.info('Accessing 2D data..')
-            lowres = self.reader2d.regrid(data2d[var].sel(time=timestep))
+            self.logger.info(f'Regridding 2D data for {var}')
+            lowres = self.reader2d.regrid(self.data2d[var].sel(time=timestep))
             if isinstance(outfield, xr.Dataset):
                 if var in '10u':
                     varout = 'u10m'
@@ -155,10 +155,9 @@ class TCs():
             else:
                 outfield = lowres.to_dataset(name=var)
         
-        data3d = self.reader3d.retrieve()
         for var in self.varlist3d:
-            self.logger.info('Accessing 3D data..')
-            lowres = self.reader3d.regrid(data3d[var].sel(time=timestep, plev=[30000,50000]))
+            self.logger.info(f'Regridding 3D data for {var}')
+            lowres = self.reader3d.regrid(self.data3d[var].sel(time=timestep, plev=[30000,50000]))
             outfield = xr.merge([outfield, lowres.to_dataset(name=var)])
             
         # check if output file exists
@@ -180,7 +179,7 @@ class TCs():
 
     def run_detect_nodes(self, timestep) : 
 
-        self.logger.info(f'Running run_detect_nodes() for {timestep}')
+        self.logger.info(f'Running run_detect_nodes() for timestep {timestep}')
 
         """"
         Basic function to call from command line tempest extremes DetectNodes
@@ -226,8 +225,7 @@ class TCs():
 
     def store_detect_nodes(self, timestep, write_fullres=True):
 
-        self.logger.info(f'Running store_detect_nodes() for {timestep}')
-        fulldata = self.reader_fullres.retrieve().sel(time=timestep)
+        self.logger.info(f'Running store_detect_nodes() for timestep {timestep}')
         
         # in case you want to write netcdf file with ullres field after Detect Nodes
         if write_fullres:
@@ -239,10 +237,10 @@ class TCs():
                 else:
                     varfile = var
 
-                data = self.reader_fullres.regrid(fulldata[varfile])
+                data = self.fullres[varfile].sel(time=timestep)
                 data.name = var
                 xfield = self.store_fullres_field(0, data, self.tempest_nodes)
-
+                self.logger.info(f'store_fullres_field for timestep {timestep}')
                 store_file = os.path.join(self.paths['fulldir'], f'TC_{var}_{timestep}.nc')
                 write_fullres_field(xfield, store_file)
 
@@ -364,7 +362,7 @@ class TCs():
 
         if write_fullres:
             for var in self.var2store : 
-                print(var)
+                self.logger.warning(f"storing stitched tracks for {var}")
                 # initialise full_res fields at 0 before the loop
                 xfield = 0
                 for idx in self.reordered_tracks.keys():
@@ -379,7 +377,7 @@ class TCs():
                         # get the full res field and store the required values around the Nodes
                         xfield = self.store_fullres_field(xfield, fullres_field, self.reordered_tracks[idx])
 
-                print('Storing output')
+                self.logger.info(f"writing netcdf file")
 
                 # store the file
                 store_file = os.path.join(self.paths['fulldir'], f'tempest_tracks_{var}_{block.strftime("%Y%m%d")}-{dates_freq[-1].strftime("%Y%m%d")}.nc')
