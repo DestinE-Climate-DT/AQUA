@@ -23,7 +23,7 @@ import matplotlib.animation as animation
 
 import sys
 sys.path.append('/../')
-from src.shared_func import time_interpreter
+from src.shared_func import time_interpreter, month_convert_num_to_str, hour_convert_num_to_str
 
 
 class TR_PR_Diagnostic:
@@ -308,17 +308,22 @@ class TR_PR_Diagnostic:
                 coord = i
             return data.median(coord)
     
-    def mean_and_median_plot(self, data, savelabel = ''):
+    def mean_and_median_plot(self, data, savelabel = '', maxticknum = 8):
         fig, ax =  plt.subplots()
         data_mean = self.mean_per_timestep(data)
         data_median = self.median_per_timestep(data)
         ax2=ax.twiny()
         # make a plot with different y-axis using second axis object
 
-        if time_interpreter(data) == 'D':
-            time_labels = [str(data['time.day'][i].values) for i in range(0, len(data)) ]
-        elif time_interpreter(data) == 'M':    
-            time_labels = [str(data['time.month'][i].values) for i in range(0, len(data)) ]
+        if 'm' in time_interpreter(data):
+            time_labels = [str(data['time.hour'][i].values)+':'+str(data['time.minute'][i].values) for i in range(0, len(data)) ] 
+        elif 'H' in time_interpreter(data):
+            time_labels = [hour_convert_num_to_str(data, i)  for i in range(0, len(data)) ]
+            #time_labels = [str(data['time.hour'][i].values)+':00' for i in range(0, len(data)) ]
+        elif time_interpreter(data) == 'D':
+            time_labels = [str(data['time.day'][i].values+month_convert_num_to_str(data, i)) for i in range(0, len(data)) ]
+        elif time_interpreter(data) == 'M':   
+            time_labels = [month_convert_num_to_str(data, i) for i in range(0, len(data)) ] 
             #time_labels = [str(data['time.year'][i].values)+':'+str(data['time.month'][i].values)+':'+str(data['time.day'][i].values) for i in range(0, len(data)) ]
         else:
             time_labels = [None for i in range(0, len(data))]
@@ -334,7 +339,8 @@ class TR_PR_Diagnostic:
             ax2.plot(time_labels, data_median.values, ls = ' ')
 
         ax.set_yscale('log')
-        plt.locator_params(axis='x', nbins=3)
+        ax2.xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
+        #ax2.locator_params(axis='x', nbins=5)
         ax.grid(True)
         ax.set_xlabel('Timestep index', fontsize=12)
         ax.set_ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)

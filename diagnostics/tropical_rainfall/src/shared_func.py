@@ -26,6 +26,23 @@ def data_size(data):
             _size *= data[i].size
     return _size
 
+def month_convert_num_to_str(data, ind):
+    if data['time.month'][ind] == 1: return 'J'
+    elif data['time.month'][ind] == 2: return 'F'
+    elif data['time.month'][ind] == 3: return 'M'   
+    elif data['time.month'][ind] == 4: return 'A'
+    elif data['time.month'][ind] == 5: return 'M'
+    elif data['time.month'][ind] == 6: return 'J'
+    elif data['time.month'][ind] == 7: return 'J'
+    elif data['time.month'][ind] == 8: return 'A'
+    elif data['time.month'][ind] == 9: return 'S'
+    elif data['time.month'][ind] == 10: return 'O'
+    elif data['time.month'][ind] == 11: return 'N'
+    elif data['time.month'][ind] == 12: return 'D'
+
+def hour_convert_num_to_str(data, ind):
+    if data['time.hour'][ind] > 12: return  str(data['time.hour'][ind].values - 12)+'PM' 
+    else: return str(data['time.hour'][ind].values)+'AM'
 
 """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
 def time_interpreter(dataset):
