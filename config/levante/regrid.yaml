@@ -51,6 +51,12 @@ source_grids:
       ICMU_atm3d:
         path: /work/bm1235/a270046/cycle2-sync/tcogrids/4km/tcogrids/tco2559_grid.nc
         space_coord: ["value"]
+    test-tco79:
+      long:
+        space_coord: ["lon", "lat"]
+      short:
+        path:  /work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/tco79_grid.nc
+        space_coord: ["cell"]
   ICON:
     ngc2009:
       default: 
@@ -107,11 +113,11 @@ source_grids:
           - -selname,cell_area 
     test-pi:
       original_2d:
-        path: /pool/data/AWICM/FESOM2/MESHES_FESOM2.1/pi/pi_griddes_nodes_IFS.nc
+        path:  /work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/pi_griddes_nodes_IFS.nc
         space_coord: ["nod2"]
-        extra: 
-          - -setgrid,/pool/data/AWICM/FESOM2/MESHES_FESOM2.1/pi/pi_griddes_nodes_IFS.nc 
-          - -selname,cell_area 
+        extra:
+          - -setgrid,/work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/pi_griddes_nodes_IFS.nc
+          - -selname,cell_area
 
   MSWEP:
     past:
