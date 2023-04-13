@@ -3,13 +3,13 @@ from statistics import mean
 
 def data_size(data):
     if 'DataArray' in str(type(data)):
-            _size = data.size
+            size = data.size
     elif 'Dataset' in str(type(data)): 
-        _names = list(data.dims) #_coord_names)
-        _size = 1
-        for i in _names:
-            _size *= data[i].size
-    return _size
+        names = list(data.dims) #_coord_names)
+        size = 1
+        for i in names:
+            size *= data[i].size
+    return size
 
 
 def estimated_total_calc_time(ds_part, calc_time, ds_full):
@@ -23,7 +23,7 @@ def estimated_total_calc_time(ds_part, calc_time, ds_full):
     
     return float(expected_calc_time)
 
-def time_units_converter( old_value, desirable_time_unit):
+def time_units_converter( old_value, time_unit): #check the names and correct 
     if desirable_time_unit == 's' or desirable_time_unit == "":
         return old_value 
     elif desirable_time_unit == 'm':
@@ -35,9 +35,10 @@ def time_units_converter( old_value, desirable_time_unit):
     elif desirable_time_unit == 'M':
         return old_value / (60 * 60 * 24 * 30)
     else:
-        return 'unknown type'
+        raise ValueError("time unit not found")  
 
 def optimal_amout_of_timesteps(ds_part, calc_time, wanted_time, ds_full):
+    # key arguments instead of positional one
 
     ds_part_size = data_size(ds_part)
     ds_full_size = data_size(ds_full)
