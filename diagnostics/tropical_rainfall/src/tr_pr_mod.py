@@ -28,49 +28,53 @@ from src.shared_func import time_interpreter, month_convert_num_to_str, hour_con
 
 class TR_PR_Diagnostic:
     """ 
-        Initialization of class object.
-        The class has the following attributes:
+    Initialization of class object.
+    The class has the following attributes:
 
-            trop_lat        (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+        trop_lat        (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-            s_year          (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
+        timesteps       (int)       :   ...
 
-            f_year          (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
+        s_year          (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
 
-            s_month         (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
+        f_year          (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
 
-            f_month         (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
-            num_of_bins     (int)       : 
+        s_month         (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
+
+        f_month         (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
+        num_of_bins     (int)       : 
+        
+            The number of bins in the histogram. By definition, ***num_of_bins = None***.
+        first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+        width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***. 
+
             
-                The number of bins in the histogram. By definition, ***num_of_bins = None***.
-            first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-            width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***.
-
-            
-        The class contains the following methods:
-            ds_per_lat_range
-            ds_per_time_range
-            ds_into_array
-            mean_per_timestep
-            median_per_timestep
-            preprocessing
-            hist1d_fast
-            hist1d_np
-            hist1d_pyplot
-            hist_plot
-            hist_figure
-            hist_calculation_array_right
-            hist_calculation_array_left
+    The class contains the following methods:
+        ds_per_lat_range
+        ds_per_time_range
+        ds_into_array
+        mean_per_timestep
+        median_per_timestep
+        preprocessing
+        hist1d_fast
+        hist1d_np
+        hist1d_pyplot
+        hist_plot
+        hist_figure
+        hist_calculation_array_right
+        hist_calculation_array_left
 
             
 
     """
     #attributes = inspect.getmembers(diag, lambda a:not(inspect.isroutine(a)))
 
-    def attributes_update(self,   trop_lat = 10, s_year = None, f_year = None, s_month = None, f_month = None, num_of_bins = None, first_edge = None, width_of_bin = None):
+    def attributes_update(self,   trop_lat = 10, i_timestep = None,  f_timestep = None,  s_year = None, f_year = None, s_month = None, f_month = None, num_of_bins = None, first_edge = None, width_of_bin = None):
         
         if trop_lat:    self.trop_lat = trop_lat
 
+        if i_timestep:      self.i_timestep = i_timestep
+        if f_timestep:      self.f_timestep = f_timestep
         if s_year:      self.s_year = s_year
         if f_year:      self.f_year = f_year
         if s_month:     self.s_month = s_month
@@ -87,6 +91,8 @@ class TR_PR_Diagnostic:
     def __init__(self,
             trop_lat = 10, 
 
+            i_timestep = None,
+            f_timestep = None,
             s_year = None,
             f_year = None, 
             s_month = None,
@@ -100,6 +106,8 @@ class TR_PR_Diagnostic:
         # Attributes are assigned to all objects of the class
         self.trop_lat   = trop_lat 
            
+        self.i_timestep  = i_timestep
+        self.f_timestep  = f_timestep
         self.s_year     = s_year
         self.f_year     = f_year   
         self.s_month    = s_month
@@ -137,15 +145,15 @@ class TR_PR_Diagnostic:
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
     def ds_per_lat_range(self, data, trop_lat = None):
         """ 
-            The function ***ds_per_lat_range*** takes two arguments, ***data*** and ***trop_lat***, 
-            and returns the given Dataset only for selected tropical latitudes.
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***. 
-            
-            Return:
-                Dataset                 :   Given Dataset only for selected tropical latitudes. 
+        The function ***ds_per_lat_range*** takes two arguments, ***data*** and ***trop_lat***, 
+        and returns the given Dataset only for selected tropical latitudes.
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***. 
+        
+        Return:
+            Dataset                 :   Given Dataset only for selected tropical latitudes. 
             
         """
         
@@ -159,32 +167,37 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def ds_per_time_range(self, data, s_year = None, f_year = None,
+    def ds_per_time_range(self, data, variable = 'tprate', i_timestep = None,  f_timestep = None, s_year = None, f_year = None,
         s_month = None, f_month = None):
         """ 
-            The function ***ds_per_time_range*** takes few arguments, ***data*** and ***s_year, f_year, s_month, f_month***, 
-            and returns the given Dataset only for selected time range.
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
+        The function ***ds_per_time_range*** takes few arguments, ***data*** and ***s_year, f_year, s_month, f_month***, 
+        and returns the given Dataset only for selected time range.
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
 
-                s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
+            s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
 
-                f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
+            f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
 
-                s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
+            s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
 
-                f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
-            
-            Return:
-                Dataset                 :   Given Dataset only for selected time range. 
+            f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
+        
+        Return:
+            Dataset                 :   Given Dataset only for selected time range. 
             
         """
         
         #If the user has specified a function argument ***s_year,  f_year, s_month, f_month***, then the argument becomes a new class attributes.
-        self.attributes_update(s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
+        self.attributes_update( i_timestep=i_timestep,  f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
 
-        if self.s_year != None and self.f_year == None:
+        if self.i_timestep != None and self.f_timestep != None:
+            try: 
+                data = data[variable][i_timestep:f_timestep, :,:]
+            except IndexError:
+                data = data[variable][i_timestep:f_timestep, :]
+        elif self.s_year != None and self.f_year == None:
             data= data.where(data['time.year'] == self.s_year, drop=True)
         elif self.s_year != None and self.f_year != None:
             data = data.where(data['time.year'] >= self.s_year, drop=True)
@@ -195,17 +208,17 @@ class TR_PR_Diagnostic:
         return data
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def ds_into_array(self, data, variable_1 = 'pr', sort = False):
+    def ds_into_array(self, data, variable_1 = 'tprate', sort = False):
         """ 
-            The function ***ds_into_array*** takes two arguments, ***data*** and ***variable_1***, 
-            and returns the sorted Dataarray only for selected ***variable_1***.
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
-                                                   
-            Return:
-                Dataarray               :   Sorted Dataarray only for selected ***variable_1***. 
+        The function ***ds_into_array*** takes two arguments, ***data*** and ***variable_1***, 
+        and returns the sorted Dataarray only for selected ***variable_1***.
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
+                                                
+        Return:
+            Dataarray               :   Sorted Dataarray only for selected ***variable_1***. 
             
         """
         coord_lat, coord_lon = self.coordinate_names(data)
@@ -219,39 +232,39 @@ class TR_PR_Diagnostic:
         return data_1d
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def mean_per_timestep(self, data, variable_1 = 'pr', trop_lat = None, 
+    def mean_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None, i_timestep = None,  f_timestep = None, 
         s_year = None, f_year = None, s_month = None, f_month = None):
         """ 
-            The function ***mean_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
-            and returns the average value of the argument ***variable_1*** for each time step.
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
-                                            
-                trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+        The function ***mean_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
+        and returns the average value of the argument ***variable_1*** for each time step.
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
+                                        
+            trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-                s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
+            s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
 
-                f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
+            f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
 
-                s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
+            s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
 
-                f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
-            
-            Return:
-                object      (float)     :   The average value of the argument ***variable_1*** for each time step. 
+            f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
+        
+        Return:
+            object      (float)     :   The average value of the argument ***variable_1*** for each time step. 
             
         """
         if 'lat' in data.dims:
             #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-            self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
+            self.attributes_update( i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
         
             coord_lat, coord_lon = self.coordinate_names(data)
 
-            ds = self.ds_per_lat_range(data, self.trop_lat)
-            ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
+            ds = self.ds_per_lat_range(data, trop_lat=self.trop_lat)
+            ds = self.ds_per_time_range(ds, i_timestep=self.i_timestep, f_timestep=self.f_timestep, s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month)
             if 'Dataset' in str(type(data)):
                 ds = ds[variable_1]
 
@@ -264,40 +277,40 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def median_per_timestep(self, data, variable_1 = 'pr', trop_lat = None, 
+    def median_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None, i_timestep = None,  f_timestep = None,  
         s_year = None, f_year = None, s_month = None, f_month = None):
         """ 
-            The function ***median_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
-            and returns the median value of the argument ***variable_1*** for each time step.
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
+        The function ***median_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
+        and returns the median value of the argument ***variable_1*** for each time step.
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
 
-                variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
+            variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
 
-                trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+            trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-                s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
+            s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
 
-                f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
+            f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
 
-                s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
+            s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
 
-                f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
-            
-            Return:
-                object      (float)     :   The median value of the argument ***variable_1*** for each time step. 
+            f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
+        
+        Return:
+            object      (float)     :   The median value of the argument ***variable_1*** for each time step. 
             
         """
 
         if 'lat' in data.dims:
             #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-            self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
+            self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
             coord_lat, coord_lon = self.coordinate_names(data)
 
-            ds = self.ds_per_lat_range(data, self.trop_lat)
-            ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
+            ds = self.ds_per_lat_range(data, trop_lat=self.trop_lat)
+            ds = self.ds_per_time_range(ds, i_timestep=self.i_timestep, f_timestep=self.f_timestep, s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month)
             if 'Dataset' in str(type(data)):
                 ds = ds[variable_1]
 
@@ -309,7 +322,7 @@ class TR_PR_Diagnostic:
             return data.median(coord)
     
     def mean_and_median_plot(self, data, savelabel = '', maxticknum = 8):
-        fig, ax =  plt.subplots()
+        fig, ax =  plt.subplots( ) #figsize=(12,9) )
         data_mean = self.mean_per_timestep(data)
         data_median = self.median_per_timestep(data)
         ax2=ax.twiny()
@@ -338,14 +351,19 @@ class TR_PR_Diagnostic:
             ax.plot(data_median, label='median', color = 'tab:orange')
             ax2.plot(time_labels, data_median.values, ls = ' ')
 
-        ax.set_yscale('log')
+        #ax.set_yscale('log')
         ax2.xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
+        ax.tick_params(axis='both', which='major', pad=10)
+        ax2.tick_params(axis='both', which='major', pad=10)
+        #ax.xaxis.set_label_position('top') 
         #ax2.locator_params(axis='x', nbins=5)
         ax.grid(True)
         ax.set_xlabel('Timestep index', fontsize=12)
+        ax2.set_xlabel('Time', fontsize=12)
         ax.set_ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)
-        ax.set_title('Mean/median values of precipitation', fontsize =16)
+        ax.set_title('Mean/median values of precipitation', fontsize =17, pad=15)
         ax.legend(fontsize=12)
+        
         
 
         #plt.yscale('log')
@@ -354,7 +372,9 @@ class TR_PR_Diagnostic:
             savelabel = str(data.attrs['title'])
             savelabel = re.split(r'[ ]', savelabel)[0]
 
-        fig.savefig("./figures/mean_and_median_"+str(savelabel)+".png",
+        # set the spacing between subplots
+        fig.tight_layout()
+        fig.savefig("./figures/"+str(savelabel)+"_mean_and_median.png",
                     bbox_inches ="tight",
                     pad_inches = 1,
                     transparent = True,
@@ -364,43 +384,43 @@ class TR_PR_Diagnostic:
             
   
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def preprocessing(self, data, preprocess = True, variable_1 = 'pr', trop_lat = None, 
+    def preprocessing(self, data, preprocess = True, variable_1 = 'tprate', trop_lat = None, i_timestep = None,  f_timestep = None,   
         s_year = None, f_year = None, s_month = None, f_month = None, sort = False, dask_array = False):
         """ 
-            The function ***preprocessing*** takes few arguments, ***data***, ***_preprocess***,  ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
-            and returns sorted Dataarray only for selected ***variable_1*** for selected tropical latitudes and for selected time range.
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***.  
+        The function ***preprocessing*** takes few arguments, ***data***, ***_preprocess***,  ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
+        and returns sorted Dataarray only for selected ***variable_1*** for selected tropical latitudes and for selected time range.
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***.  
 
-                variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
-                                
+            variable_1  (str)       :   The variable of the Dataset. By definition, ***variable_1 = 'pr'***.
+                            
 
-                trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
-                                            
-                s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
+            trop_lat    (int/float) :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+                                        
+            s_year      (int)       :   The starting/first year of the desired Dataset. By definition,  *** s_year = self.s_year = None ***.
 
-                f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
+            f_year      (int)       :   The final/last year of the desired Dataset. By definition,  *** f_year = self.f_year = None ***.
 
-                s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
+            s_month     (int)       :   The starting/first month of the desired Dataset. By definition,  *** s_month = self.s_month = None ***.
 
-                f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
+            f_month     (int)       :   The final/last month of the desired Dataset. By definition,  *** f_month = self.f_month = None ***.
 
-            
-            Return:
-                object      (Dataarray) :   Sorted Dataarray only for selected ***variable_1*** for selected tropical latitudes and for selected time range. 
-            
+        
+        Return:
+            object      (Dataarray) :   Sorted Dataarray only for selected ***variable_1*** for selected tropical latitudes and for selected time range. 
+        
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
-        if preprocess == True: 
-            ds = self.ds_per_lat_range(data, self.trop_lat)
-            ds = self.ds_per_time_range(ds, self.s_year, self.f_year, self.s_month, self.f_month)
-            ds = self.ds_into_array(ds, variable_1, sort)
+        if preprocess == True:
+            ds = self.ds_per_time_range(ds, i_timestep=self.i_timestep, f_timestep=self.f_timestep, s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month) 
+            ds = self.ds_per_lat_range(data, trop_lat=self.trop_lat)
+            ds = self.ds_into_array(ds, variable_1=variable_1, sort=sort)
             if dask_array == True:
                 ds = da.from_array(ds)
             return ds 
@@ -409,16 +429,17 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """
-    def hist_np_digitize(self, data, preprocess = True, trop_lat = 10, variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
+    def hist_np_digitize(self, data, preprocess = True, trop_lat = 10, variable_1 = 'tprate',  i_timestep = None,  f_timestep = None,  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,   _add = None, *, start = []):
 
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins,  width_of_bin = width_of_bin)
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins,  width_of_bin = width_of_bin)
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
+            #data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
         
         bins = [self.first_edge  + self.width_of_bin*i for i in range(0, self.num_of_bins+1)]
 
@@ -430,39 +451,39 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """
-    def hist1d_fast(self, data, preprocess = True, trop_lat = 10, variable_1 = 'pr',  num_of_bins = None, s_year = None, f_year = None, s_month = None, f_month = None, 
+    def hist1d_fast(self, data, preprocess = True, trop_lat = 10, variable_1 = 'tprate',  num_of_bins = None, i_timestep = None,  f_timestep = None, s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,   _add = None, *, start = []):
         """ 
-            The function ***hist1d_fas*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram 
-                    with the use of fast_histogram.histogram1d (***fast_histogram*** package)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***. 
+        The function ***hist1d_fas*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram 
+                with the use of fast_histogram.histogram1d (***fast_histogram*** package)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***. 
 
-                variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+            variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-                num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                 :   frequency per bins. 
+            num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                 :   frequency per bins. 
             
         """
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
 
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 
         bin_table = [self.first_edge + self.width_of_bin*j for j in range(0, self.num_of_bins)]        
@@ -477,40 +498,40 @@ class TR_PR_Diagnostic:
     
     
     """ """ """ """ """ """ """ """ """ """
-    def hist1d_np(self, data, preprocess = True, trop_lat = 10, variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
+    def hist1d_np(self, data, preprocess = True, trop_lat = 10, variable_1 = 'tprate',  num_of_bins = None,  i_timestep = None,  f_timestep = None, s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,   _add = None, *, start = []):
         """ 
-            The function ***hist1d_np*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram 
-                    with the use of numpy.histogram (***numpy*** package)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***. 
-                                            
-                variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
-   
-                num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                 :   frequency per bins.
+        The function ***hist1d_np*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram 
+                with the use of numpy.histogram (***numpy*** package)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***. 
+                                        
+            variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+
+            num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                 :   frequency per bins.
 
             
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
         
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 
         hist_np = np.histogram(data, range=[self.first_edge, self.first_edge + (self.num_of_bins )*self.width_of_bin], bins = (self.num_of_bins))
@@ -520,38 +541,38 @@ class TR_PR_Diagnostic:
         return  frequency_bin
         
     """ """ """ """ """ """ """ """ """ """
-    def hist1d_pyplot(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
+    def hist1d_pyplot(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'tprate',  num_of_bins = None, i_timestep = None,  f_timestep = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,   _add = None, *, start = []):
         """ 
-            The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram 
-                    with the use of plt.hist (***matplotlib.pyplot*** package)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***. 
-                variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+        The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram 
+                with the use of plt.hist (***matplotlib.pyplot*** package)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***. 
+            variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-                num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                 :   frequency per bins.
+            num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                 :   frequency per bins.
             
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)  
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)  
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
         bins = [self.first_edge  + i*self.width_of_bin for i in range(0, self.num_of_bins+1)]
         hist_pyplt = plt.hist(x = data, bins = bins)
@@ -565,42 +586,42 @@ class TR_PR_Diagnostic:
         
          
     """ """ """ """ """ """ """ """ """ """
-    def dask_factory(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'pr',  num_of_bins = None, s_year = None, f_year = None, s_month = None, f_month = None, 
+    def dask_factory(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'tprate',  num_of_bins = None, i_timestep = None,  f_timestep = None, s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,  delay = False, _add = None, *, start = []):
         """ 
-            The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram 
-                    with the use of plt.hist (***matplotlib.pyplot*** package)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***.  
-                variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
-                                          
-                num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                 :   frequency per bins.
-                int                     :   Size input Dataset ot Dataarray
-                float                   :   Time consumed by ***hist1d_pyplot*** function. 
+        The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram 
+                with the use of plt.hist (***matplotlib.pyplot*** package)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***.  
+            variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+                                        
+            num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                 :   frequency per bins.
+            int                     :   Size input Dataset ot Dataarray
+            float                   :   Time consumed by ***hist1d_pyplot*** function. 
             
         """
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
         
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = True)
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 
         h = dh.factory(data, 
@@ -615,39 +636,38 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """
-    def dask_factory_weights(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'pr',  num_of_bins = None,  s_year = None, f_year = None, s_month = None, f_month = None, 
+    def dask_factory_weights(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'tprate',  num_of_bins = None, i_timestep = None,  f_timestep = None, s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,   delay = False,   _add = None, *, start = []):
         """ 
-            The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram 
-                    with the use of plt.hist (***matplotlib.pyplot*** package)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***. 
-                variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+        The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram 
+                with the use of plt.hist (***matplotlib.pyplot*** package)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***. 
+            variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-                num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                 :   frequency per bins.
+            num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                 :   frequency per bins.
             
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)    
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin)    
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = True)
-
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
         ref = bh.Histogram(bh.axis.Regular(self.num_of_bins, self.first_edge, last_edge), storage=bh.storage.Weight())
         h = dh.factory(data, weights=data, histref=ref)
@@ -662,38 +682,38 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """
-    def dask_boost(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'pr',  num_of_bins = None, s_year = None, f_year = None, s_month = None, f_month = None, 
+    def dask_boost(self, data, preprocess = True, trop_lat = 10,  variable_1 = 'tprate',  num_of_bins = None, i_timestep = None,  f_timestep = None, s_year = None, f_year = None, s_month = None, f_month = None, 
         first_edge = None,  width_of_bin  = None,  _add = None, *, start = []):
         """ 
-            The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram 
-                    with the use of plt.hist (***matplotlib.pyplot*** package)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data        (Dataset)   :   The Dataset.
-                preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                            By definition, ***_preprocess=True***. 
-                variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+        The function ***hist1d_pyplot*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram 
+                with the use of plt.hist (***matplotlib.pyplot*** package)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data        (Dataset)   :   The Dataset.
+            preprocess     (bool)   :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                        By definition, ***_preprocess=True***. 
+            variable_1      (str)   :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
 
-                num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                 :   frequency per bins.
+            num_of_bins     (int)   :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            first_edge      (int)   :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)   :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                 :   frequency per bins.
             
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.attributes_update(trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin) 
+        self.attributes_update(i_timestep=i_timestep,  f_timestep=f_timestep, trop_lat = trop_lat, s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, num_of_bins = num_of_bins, width_of_bin = width_of_bin) 
 
         last_edge = self.first_edge  + self.num_of_bins*self.width_of_bin
 
         if preprocess == True:
-            data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = True)
+            data = self.preprocessing(data, preprocess=preprocess, variable_1=variable_1, trop_lat=trop_lat, i_timestep=i_timestep, f_timestep=f_timestep, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 
         h = dhb.Histogram(dh.axis.Regular(self.num_of_bins, self.first_edge, last_edge),  storage=dh.storage.Double(), )
@@ -717,24 +737,24 @@ class TR_PR_Diagnostic:
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
     def hist_plot(self, data, pdf = True, smooth = True,  ls = '-', color = 'tab:blue', varname = 'Precipitation', plot_title = None,  label = None):
         """ 
-            The function ***hist_plot*** takes few arguments, ***data***, ***pdf***, 
-            ***_ls***, ***_color*** and ***_label***, 
-            and returns the frequency or pdf histogram. 
-            
-            Args:
-                data            (Dataset)   :   The Dataset.
-                pdf             (bool)      :   If ***_pdf=True***, then function returns the pdf histogram.
-                                                If ***_pdf=False***, then function returns the frequency histogram.
-                                                By defenition, ***_pdf=False***.
-                _ls             (str)       :   The linestyle. By definition, _ls = '-' (solid line).
-                _color          (str)       :   The color of the line. By definition, _color = 'tab:blue' (blue line). 
-                _label          (str)       :   The label of the line for legend. By definition, label = None.  
-            
-            Return:
-                plot                        :   Frequency or pdf histogram. 
+        The function ***hist_plot*** takes few arguments, ***data***, ***pdf***, 
+        ***_ls***, ***_color*** and ***_label***, 
+        and returns the frequency or pdf histogram. 
+        
+        Args:
+            data            (Dataset)   :   The Dataset.
+            pdf             (bool)      :   If ***_pdf=True***, then function returns the pdf histogram.
+                                            If ***_pdf=False***, then function returns the frequency histogram.
+                                            By defenition, ***_pdf=False***.
+            _ls             (str)       :   The linestyle. By definition, _ls = '-' (solid line).
+            _color          (str)       :   The color of the line. By definition, _color = 'tab:blue' (blue line). 
+            _label          (str)       :   The label of the line for legend. By definition, label = None.  
+        
+        Return:
+            plot                        :   Frequency or pdf histogram. 
             
         """
-        fig = plt.figure( figsize=(12,8) )
+        fig = plt.figure( figsize=(12,9) )
         if pdf:
             data_density = data[0:]/sum(data[:])
             if smooth:
@@ -784,11 +804,18 @@ class TR_PR_Diagnostic:
             label = str(data.attrs['title'])
             label = re.split(r'[ ]', label)[0]
 
+        # set the spacing between subplots
+        fig.tight_layout()
         if smooth:
-            plt.savefig('../notebooks/figures/histogram_smooth_'+str(label)+'.png')
+            if pdf: 
+                plt.savefig('../notebooks/figures/'+str(label)+'_pdf_histogram_smooth.png')
+            else:
+                plt.savefig('../notebooks/figures/'+str(label)+'_histogram_smooth.png')
         else:
-            plt.savefig('../notebooks/figures/histogram_viridis_'+str(label)+'.png')
-
+            if pdf:
+                plt.savefig('../notebooks/figures/'+str(label)+'_pdf_histogram_viridis.png')
+            else: 
+                plt.savefig('../notebooks/figures/'+str(label)+'_histogram_viridis.png') 
     # You also can check this normalization
     #cmap = plt.get_cmap('viridis')
     #norm = plt.Normalize(min(_x), max(_x))
@@ -798,22 +825,22 @@ class TR_PR_Diagnostic:
 
     def hist_figure(self, data, _plt = plt, pdf = None, ls = '-', color = 'tab:blue', label = None):
         """ 
-            The function ***hist_figure*** takes few arguments, ***data***, ***_plt***, ***pdf***, 
-            ***_ls***, ***_color*** and ***_label***, 
-            and returns the frequency or pdf histogram. 
-            
-            Args:
-                data            (Dataset)   :   The Dataset.
-                _plt            (bool)      :   The name of the axe of the figure. By definition, _plt = plt.  
-                pdf             (bool)      :   If ***_pdf=True***, then function returns the pdf histogram.
-                                                If ***_pdf=False***, then function returns the frequency histogram.
-                                                By defenition, ***_pdf=False***. 
-                _ls             (str)       :   The linestyle. By definition, _ls = '-' (solid line).
-                _color          (str)       :   The color of the line. By definition, _color = 'tab:blue' (blue line). 
-                _label          (str)       :   The label of the line for legend. By definition, label = None. 
-            
-            Return:
-                figure                      :   Frequency or pdf histogram. 
+        The function ***hist_figure*** takes few arguments, ***data***, ***_plt***, ***pdf***, 
+        ***_ls***, ***_color*** and ***_label***, 
+        and returns the frequency or pdf histogram. 
+        
+        Args:
+            data            (Dataset)   :   The Dataset.
+            _plt            (bool)      :   The name of the axe of the figure. By definition, _plt = plt.  
+            pdf             (bool)      :   If ***_pdf=True***, then function returns the pdf histogram.
+                                            If ***_pdf=False***, then function returns the frequency histogram.
+                                            By defenition, ***_pdf=False***. 
+            _ls             (str)       :   The linestyle. By definition, _ls = '-' (solid line).
+            _color          (str)       :   The color of the line. By definition, _color = 'tab:blue' (blue line). 
+            _label          (str)       :   The label of the line for legend. By definition, label = None. 
+        
+        Return:
+            figure                      :   Frequency or pdf histogram. 
             
         """
 
@@ -839,30 +866,30 @@ class TR_PR_Diagnostic:
         
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def hist_calculation_array_right(self, data, _preprocess = True, trop_lat=10, variable_1 = 'pr',  num_of_bins = None, 
+    def hist_calculation_array_right(self, data, _preprocess = True, trop_lat=10, variable_1 = 'tprate',  num_of_bins = None, 
         step = None, first_edge = None,  width_of_bin  = None,   _add = None, *, start = []):
         """ 
-            The function ***hist_calculation_array_right*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram starting from the RIGHT (reverse order)
-                with the use of loop (package independent)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data            (Dataset)   :   The Dataset.
-                preprocess     (bool)       :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                                By definition, ***_preprocess=True***. 
-                variable_1      (str)       :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
-                num_of_bins     (int)       :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                step            (int)       :   The step in the loop. Helps to speed-up the calculation. 
-                first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                     :   frequency per bins.
-                int                         :   Size input Dataset ot Dataarray
-                float                       :   Time consumed by ***hist_calculation_array_right*** function. 
+        The function ***hist_calculation_array_right*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram starting from the RIGHT (reverse order)
+            with the use of loop (package independent)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data            (Dataset)   :   The Dataset.
+            preprocess     (bool)       :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                            By definition, ***_preprocess=True***. 
+            variable_1      (str)       :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+            num_of_bins     (int)       :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            step            (int)       :   The step in the loop. Helps to speed-up the calculation. 
+            first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                     :   frequency per bins.
+            int                         :   Size input Dataset ot Dataarray
+            float                       :   Time consumed by ***hist_calculation_array_right*** function. 
             
         """
         #print("hist_calculation function in the progress \n")
@@ -985,28 +1012,28 @@ class TR_PR_Diagnostic:
     def hist_calculation_array_left(self, data, _preprocess = True, trop_lat=10, variable_1 = 'pr',  num_of_bins = None, step = None, first_edge = None,  
         width_of_bin  = None,   _add = None, *, start = []):
         """ 
-            The function ***hist_calculation_array_left*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
-            ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
-            calculates the frequency histogram starting from the LEFT bing (normal order, slower)
-                with the use of loop (package independent)
-            and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
-            time consumed by function.  
-            
-            Args:
-                data            (Dataset)   :   The Dataset.
-                preprocess     (bool)       :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
-                                                By definition, ***_preprocess=True***. 
-                variable_1      (str)       :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
-                num_of_bins     (int)       :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
-                step            (int)       :   The step in the loop. Helps to speed-up the calculation. 
-                first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
-                width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***.
-            
-            Return:
-                Dataset                     :   frequency per bins.
-                int                         :   Size input Dataset ot Dataarray
-                float                       :   Time consumed by ***hist_calculation_array_left*** function. 
-            
+        The function ***hist_calculation_array_left*** takes few arguments, ***data***, *** _preprocess***, ***variable_1***, 
+        ***num_of_bins***, ***first_edge*** and ***width_of_bin***, 
+        calculates the frequency histogram starting from the LEFT bing (normal order, slower)
+            with the use of loop (package independent)
+        and returns the dataset of frequency per bins, size of input Dataset or Dataarray, and 
+        time consumed by function.  
+        
+        Args:
+            data            (Dataset)   :   The Dataset.
+            preprocess     (bool)       :   If ***_preprocess=True***, then function *** preprocessing *** converse the Dataset into DataArray.
+                                            By definition, ***_preprocess=True***. 
+            variable_1      (str)       :   Tropical latitudes borders. By definition,  *** trop_lat = self.trop_lat = 10***.
+            num_of_bins     (int)       :   The number of bins in the histogram. By definition, ***num_of_bins = None***.
+            step            (int)       :   The step in the loop. Helps to speed-up the calculation. 
+            first_edge      (int)       :   The first edge of the first bin of the histogram. By definition, ***first_edge = None***. 
+            width_of_bin    (int)       :   Histogram bin width. By definition, ***width_of_bin = None***.
+        
+        Return:
+            Dataset                     :   frequency per bins.
+            int                         :   Size input Dataset ot Dataarray
+            float                       :   Time consumed by ***hist_calculation_array_left*** function. 
+        
         """
         #print("hist_calculation function in the progress \n")
 
