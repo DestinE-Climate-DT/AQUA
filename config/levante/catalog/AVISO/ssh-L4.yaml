@@ -3,11 +3,18 @@ plugins:
     - module: intake_xarray
 
 sources:
-  monthly:
-    description: AVISO ssh vDT2021
-    driver: netcdf
+  daily:
+    # driver: netcdf
+    # args:
+    #   urlpath: '/work/uc0928/DATA/ocean/aviso_ssh/DATA/*/*/*.nc'
+    #   chunks: {}
+    #   xarray_kwargs:
+    #     decode_times: True
+    description: AVISO ssh vDT2021    
+    driver: zarr
     args:
-      urlpath: '/work/uc0928/DATA/ocean/aviso_ssh/DATA/*/*/*.nc'
-      chunks: {}
-      xarray_kwargs:
-        decode_times: True
+      consolidated: False
+      compat: override
+      combine: nested
+      urlpath: 
+      - reference::/work/bb1153/b382075/datasets/AVISO/AVISO.json
