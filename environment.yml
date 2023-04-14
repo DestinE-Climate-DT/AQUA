@@ -26,6 +26,11 @@ dependencies:
 # these below are only required for running notebooks
   - ipykernel
   - healpy
+# these below are only required for tests
+  - pytest
+  - pytest-cov
+  - coverage[toml]
+  - pycobertura
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
   - pip:

@@ -5,4 +5,7 @@ cli/*.err
 cli/*.out
 AQUA_tests*
 **/*.bak
+.coverage
+coverage.xml
+coverage/
 

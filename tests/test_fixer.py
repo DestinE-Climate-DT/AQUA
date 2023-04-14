@@ -4,6 +4,7 @@ import pytest
 from aqua import Reader
 
 
+@pytest.mark.skip(reason="excluded from GH actions")
 def test_fixer():
     """Test basic fixing"""
 
