@@ -8,8 +8,8 @@ with os.popen("pwd ") as f:
 pwd = re.split(r'[\n]', _pwd)[0]
 
 sys.path.append(str(pwd)+'/../../')
-import src.shared_func
-from  src.shared_func import data_size
+import diagnostics.tropical_rainfall.src.graphic_creator
+from  diagnostics.tropical_rainfall.src.graphic_creator import data_size
 import src.tr_pr_mod
 from  src.tr_pr_mod import TR_PR_Diagnostic
 
