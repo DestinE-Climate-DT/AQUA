@@ -1,31 +1,30 @@
 plugins:
   source:
-    - module: intake_xarray
-    - module: gribscan
-
+  - module: intake_xarray
+  - module: gribscan
 sources:
   ICMGG_atm2d:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMGGall_update/json.dir/atm2d.json
   ICMU_atm2d:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMUAall/json.dir/atm2d.json
   ICMU_atm3d:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMUAall/json.dir/atm3d.json
   interpolated_global:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       compat: override
       combine: nested
-      urlpath: 
+      urlpath:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2t/netcdf/tco2559-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2d/netcdf/tco2559-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_pc.json
@@ -34,10 +33,10 @@ sources:
   interpolated_np:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       compat: override
       combine: nested
-      urlpath: 
+      urlpath:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2t/netcdf/tco2559-ng5_np.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2d/netcdf/tco2559-ng5_np.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/ci/netcdf/tco2559-ng5_np.json
@@ -47,10 +46,10 @@ sources:
   interpolated_sp:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       compat: override
       combine: nested
-      urlpath: 
+      urlpath:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2t/netcdf/tco2559-ng5_sp.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2d/netcdf/tco2559-ng5_sp.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_sp.json
@@ -59,22 +58,103 @@ sources:
   lra-r100-day:
     driver: netcdf
     args:
-      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/day/*.nc'
+      urlpath: /work/bb1153/b382076/LRA/tco2559-ng5/r100/day/*.nc
       chunks: {}
       xarray_kwargs:
-        decode_times: True
+        decode_times: true
   lra-r100-mon:
     driver: netcdf
     args:
-      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/mon/*.nc'
+      urlpath: /work/bb1153/b382076/LRA/tco2559-ng5/r100/mon/*.nc
       chunks: {}
       xarray_kwargs:
-        decode_times: True
-  # interpolated_sp_ci:
-  #   driver: zarr
-  #   args:
-  #     consolidated: False
-  #     compat: override
-  #     combine: nested
-  #     urlpath:
-  #     - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/ci/netcdf/tco2559-ng5_sp.json
+        decode_times: true
+  old-low-res:
+    driver: netcdf
+    args:
+      chunks: {}
+      urlpath:
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/100si_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/100u_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/100v_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/10u_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/10v_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/2d_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/2t_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/asn_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/blh_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/cape_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/cdir_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/chnk_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ci_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/cin_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/cp_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/d_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/dsrp_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/e_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/es_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ewss_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/fal_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/fdir_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/fsr_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/hcc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/lcc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/litota1_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/lsm_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/lsp_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/mcc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/msl_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/nsss_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/par_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/pev_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/q_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/r_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ro_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/rsn_bulk_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/sd_bulk_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/sf_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/skt_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/slhf_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/smlt_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/sp_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/sro_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/sshf_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ssr_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ssrc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ssrd_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ssro_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/sst_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/stl1_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/stl2_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/stl3_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/stl4_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/str_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/strc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/strd_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/swvl1_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/swvl2_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/swvl3_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/swvl4_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/t_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tcc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tciw_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tclw_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tcrw_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tcslw_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tcsw_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tcw_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tcwv_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tisr_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tp_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tsn_bulk_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tsr_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/tsrc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ttr_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/ttrc_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/u_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/uvb_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/v_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/var120_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/vo_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/w_4km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/4km/z_4km.nc
