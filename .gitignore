@@ -1,3 +1,5 @@
+environment.yml 
+
 *.pyc
 .ipynb_checkpoints
 *.egg-info
