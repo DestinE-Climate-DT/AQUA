@@ -8,6 +8,7 @@ paths:
   regdir: '/scratch/b/b382216/regrid_new'
   tmpdir: '/scratch/b/b382216/tmpdir_new'
   fulldir: '/scratch/b/b382216/fullres_new'
+  plotdir: "/home/b/b382216/AQUA_test_logger/AQUA/diagnostics/tempest/plot"
 
 # grid on which operate
 grids:
@@ -15,12 +16,12 @@ grids:
   highgrid: 'r010'
 
 # variables to stored 
-varlist: ['msl', '10u', '10v', 'tp']
+varlist: ['msl'] #, '10u', '10v', 'tp']
 
 # temporal definition (YYYY-MM-DD)
 time: 
-  start_date: '2020-08-01'
-  end_date: '2020-09-30'
+  startdate: '2020-08-01'
+  enddate: '2020-09-30'
   frequency: '6h'
 
 # detect options
@@ -29,6 +30,6 @@ detect:
 
 # stich options
 stitch:
-  n_days_freq: 25
-  n_days_ext: 15
+  n_days_freq: 15
+  n_days_ext: 5
 

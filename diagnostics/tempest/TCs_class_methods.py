@@ -1,24 +1,11 @@
 import os
 import xarray as xr
 import subprocess
-import logging
 from aqua import Reader
 from aqua.logger import log_configure
 from glob import glob
 import pandas as pd
 from datetime import datetime
-
-class Testwarn():
-
-    def __init__(self, loglevel = ''):
-
-        self.logger = log_configure(loglevel, 'test')
-
-    def pippo(self, ciao = None):
-
-        self.logger.info('info')
-        self.logger.warning('warning')
-        self.logger.error('error')
 
 
 class TCs():
@@ -26,17 +13,14 @@ class TCs():
     def __init__(self, tdict = None, 
                  paths = None, model="IFS", exp="tco2559-ng5", 
                  boxdim = 10, lowgrid='r100', highgrid='r100', var2store=None, 
-                 streaming=False, stream_step=1, stream_unit='days', stream_startdate=None,
+                 streaming=False, frequency= '6h', 
+                 startdate=None, enddate=None,
+                 stream_step=1, stream_unit='days', stream_startdate=None,
                  loglevel = 'INFO'):
         
         self.logger = log_configure(loglevel, 'TCs')
-        
-        #streaming
-        
-        self.streaming=streaming
-        self.stream_step=stream_step
-        self.stream_units=stream_unit
-        self.stream_startdate=stream_startdate
+        self.loglevel = loglevel
+    
 
         if tdict is not None:
             self.paths = tdict['paths']
@@ -46,6 +30,10 @@ class TCs():
             self.lowgrid =  tdict['grids']['lowgrid']
             self.highgrid = tdict['grids']['highgrid']
             self.var2store = tdict['varlist']
+            self.frequency = tdict['time']['frequency']
+            self.startdate = tdict['time']['startdate']
+            self.enddate = tdict['time']['enddate']
+
 
         else:
 
@@ -53,44 +41,51 @@ class TCs():
                 raise Exception('Without paths defined you cannot go anywhere!')
             else:
                 self.paths = paths
+            if startdate is None or enddate is None: 
+                raise Exception('Define startdate and/or enddate')
             self.model = model 
             self.exp = exp
             self.boxdim = boxdim
             self.lowgrid = lowgrid
             self.highgrid = highgrid
             self.var2store = var2store
+            self.frequency = frequency
+            self.startdate = startdate
+            self.enddate = enddate
+
+        self.streaming=streaming
+        if self.streaming:
+            self.stream_step=stream_step
+            self.stream_units=stream_unit
+            self.stream_startdate=stream_startdate
 
         for path in self.paths:
             os.makedirs(self.paths[path], exist_ok=True)
 
-    def detect_nodes_zoomin(self, start_date, end_date, frequency):
-        
         self.catalog_init()
-        #if start_date and end_date are present:
+
+    def detect_nodes_zoomin(self):
+
         if self.streaming:
-            for tstep in pd.date_range(start=self.stream_startdate, end=self.stream_end_date, freq=frequency).strftime('%Y%m%dT%H'):
-                self.logger.warning(f"processing time step {tstep}")
-                self.readwrite_from_intake(tstep)
-                self.run_detect_nodes(tstep)
-                clean_files([self.tempest_filein])
-                self.read_lonlat_nodes()
-                self.store_detect_nodes(tstep)
+            timerange = pd.date_range(start=self.stream_startdate, end=self.stream_enddate, freq=self.frequency)
+        else:
+            timerange = pd.date_range(start=self.startdate, end=self.enddate, freq=self.frequency)
         
-        else:        
-            for tstep in pd.date_range(start=start_date, end=end_date, freq=frequency).strftime('%Y%m%dT%H'):
-                self.logger.warning(f"processing time step {tstep}")
-                self.readwrite_from_intake(tstep)
-                self.run_detect_nodes(tstep)
-                clean_files([self.tempest_filein])
-                self.read_lonlat_nodes()
-                self.store_detect_nodes(tstep)
+        for tstep in timerange.strftime('%Y%m%dT%H'):
+            self.logger.warning(f"processing time step {tstep}")
+            self.readwrite_from_intake(tstep)
+            self.run_detect_nodes(tstep)
+            clean_files([self.tempest_filein])
+            self.read_lonlat_nodes()
+            self.store_detect_nodes(tstep)
+        
 
-
-    def stitch_nodes_zoomin(self, start_date, end_date, n_days_freq, n_days_ext):
+    def stitch_nodes_zoomin(self, startdate, enddate, n_days_freq, n_days_ext):
 
         self.set_time_window(n_days_freq=n_days_freq, n_days_ext=n_days_ext)
 
-        for block in pd.date_range(start=start_date, end=end_date, freq=str(n_days_freq)+'D'):
+
+        for block in pd.date_range(start=startdate, end=enddate, freq=str(n_days_freq)+'D'):
             dates_freq, dates_ext = self.time_window(block)
             self.logger.warning(f'running stitch nodes from {block.strftime("%Y%m%d")}-{dates_freq[-1].strftime("%Y%m%d")}')
             self.prepare_stitch_nodes(block, dates_freq, dates_ext)
@@ -101,33 +96,40 @@ class TCs():
 
     def catalog_init(self):
 
-        # unica chiamata senza if
-        # spostare retrieve a data2d e data3d nel catalog_init
-        # funzione che legga una variabile e capisca start date ed end date in base allo streaming
-
-        self.logger.warning(f'Initialised streaming for {self.stream_step} {self.stream_units} starting on {self.stream_startdate}')
+        if self.streaming == True:
+            self.logger.warning(f'Initialised streaming for {self.stream_step} {self.stream_units} starting on {self.stream_startdate}')
         if self.model in 'IFS':
             self.varlist2d = ['msl', '10u', '10v']
             self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
                                 regrid=self.lowgrid, vars = self.varlist2d, streaming=self.streaming, stream_step=self.stream_step, 
-                                stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+                                stream_unit=self.stream_units, stream_startdate=self.stream_startdate, loglevel=self.loglevel)
             self.varlist3d = ['z']
             self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
-                                regrid=self.lowgrid, vars = self.varlist3d, streaming=self.streaming, 
+                                regrid=self.lowgrid, vars = self.varlist3d, streaming=self.streaming, loglevel=self.loglevel,
                                 stream_step=self.stream_step, stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
             self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
                                         regrid=self.highgrid, var = self.var2store,
-                                        streaming=self.streaming, stream_step=self.stream_step, 
+                                        streaming=self.streaming, stream_step=self.stream_step, loglevel=self.loglevel,
                                         stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
         else:
             raise Exception(f'Model {self.model} not supported')
-      
+        
+
+    def data_retrieve(self, reset_stream=False):
+
+        if reset_stream:
+            self.reader2d.reset_stream()
+            self.reader3d.reset_stream()
+            self.reader_fullres.reset_stream()
+        
         # now retrieve 2d and 3d data needed  
         self.data2d = self.reader2d.retrieve()
         self.data3d = self.reader3d.retrieve()
         self.fullres = self.reader_fullres.retrieve()
+
         if self.streaming:     
-            self.stream_end_date = self.data2d["10u"].time[-1].values
+            self.stream_enddate = self.data2d.time[-1].values
+            self.stream_startdate = self.data2d.time[0].values
 
     def set_time_window(self, n_days_freq = 30, n_days_ext = 10):
 
@@ -237,7 +239,8 @@ class TCs():
                 else:
                     varfile = var
 
-                data = self.fullres[varfile].sel(time=timestep)
+                subselect = self.fullres[varfile].sel(time=timestep)
+                data = self.reader_fullres.regrid(subselect)
                 data.name = var
                 xfield = self.store_fullres_field(0, data, self.tempest_nodes)
                 self.logger.info(f'store_fullres_field for timestep {timestep}')
@@ -419,10 +422,10 @@ def write_fullres_field(gfield, filestore):
 
     time_encoding = {'units': 'days since 1970-01-01',
                  'calendar': 'standard',
-                 'dtype': 'float64',
-                 'zlib': True}
+                 'dtype': 'float64'}
+    var_encoding = {"zlib": True, "complevel": 1}
 
-    gfield.where(gfield!=0).to_netcdf(filestore,  encoding={'time': time_encoding})
+    gfield.where(gfield!=0).to_netcdf(filestore,  encoding={'time': time_encoding, gfield.name: var_encoding})
     gfield.close()
 
 
