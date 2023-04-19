@@ -29,3 +29,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/catalog/CERES/main.yaml"
+  AVISO:
+    description: AVISO SSH data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/AVISO/main.yaml"

@@ -1,0 +1,49 @@
+name: AQUA tests with pip
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
+
+jobs:
+  aqua_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Provision with pip
+        run: |
+          # We need to install ecCodes and cdo (as we do not have conda here)
+          # NOTE: tested two cache actions, but in the end looks like eccodes
+          #       does not work very well when the apt package is cached.
+          sudo apt install \
+            libeccodes-dev \
+            libeccodes-tools \
+            libeccodes-data \
+            cdo
+
+          # Update pip because we are using pyproject.toml (needs newer pip)
+          pip install -U pip
+
+          # Install with test dependencies
+          pip install -e .[tests]
+      - name: Download and setup tests
+        run: |
+          ./download_data_for_tests.sh
+      - name: Run tests
+        run: |
+
+          python -m pytest ./tests/test_basic.py
+          python -m pytest ./tests/test_catalog.py 
+          python -m pytest ./tests/test_fldmean.py
+          python -m pytest ./tests/test_timmean.py                
+          python -m pytest ./tests/test_streaming.py
+          python -m pytest ./tests/test_regrid.py
+

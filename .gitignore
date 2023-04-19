@@ -1,9 +1,12 @@
 
 /work/bb1153/b382267/AQUA_copy/AQUA/diagnostics/tropical_rainfall/notebooks/figures
 environment.yml 
-
+diagnostics/tropical_rainfall/notebooks/time_memory_estimation/time_test.py
 *.pyc
 .ipynb_checkpoints
 *.egg-info
 cli/*.err
 cli/*.out
+AQUA_tests*
+**/*.bak
+
