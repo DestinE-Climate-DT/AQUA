@@ -34,11 +34,6 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/lcc/netcdf/tco3999-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10u/netcdf/tco3999-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10v/netcdf/tco3999-ng5_pc.json
-  lra-r100-mon:
-    driver: netcdf
-    args:
-      urlpath: /work/bb1153/b382076/LRA/tco3999-ng5/r100/mon/*.nc
-      chunks: {}
   low-res-bulk:
     driver: netcdf
     args:

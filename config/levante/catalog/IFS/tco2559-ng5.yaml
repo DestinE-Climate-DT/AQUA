@@ -21,6 +21,18 @@ sources:
     args:
       consolidated: false
       urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMUAall/json.dir/atm3d.json
+  interpolated_global:
+    driver: zarr
+    args:
+      consolidated: false
+      compat: override
+      combine: nested
+      urlpath:
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2t/netcdf/tco2559-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/2d/netcdf/tco2559-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10u/netcdf/tco2559-ng5_pc.json
+      - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10v/netcdf/tco2559-ng5_pc.json
   low-res-bulk:
     driver: netcdf
     args:
