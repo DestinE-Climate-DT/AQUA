@@ -57,7 +57,8 @@ def animation_creator(ds, vmin = None, vmax = None, trop_lat = 10,  time_ind_max
         
     """
     import numpy as np
-    ds = ds.where( ds > vmin, drop=True) 
+    if vmin != None:
+        ds = ds.where( ds > vmin, drop=True) 
 
     if time_ind_max != None:
         fps = int(time_ind_max/nSeconds)

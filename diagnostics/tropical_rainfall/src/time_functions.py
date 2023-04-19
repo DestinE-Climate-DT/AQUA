@@ -130,7 +130,11 @@ def time_interpreter(dataset):
 
 def time_into_plot_title(data, ind):
     if 'm' in time_interpreter(data):
-        time_labels = str(data['time.year'][ind].values)+':'+str(data['time.month'][ind].values)+':'+str(data['time.day'][ind].values)+':'+str(data['time.hour'][ind].values)+':'+str(data['time.minute'][ind].values)   
+        if str(data['time.hour'][ind].values)<10:
+            hour = '0'+str(data['time.hour'][ind].values)
+        else:
+            hour = str(data['time.hour'][ind].values)
+        time_labels = str(data['time.year'][ind].values)+':'+str(data['time.month'][ind].values)+':'+str(data['time.day'][ind].values)+':'+hour #+':'+str(data['time.minute'][ind].values)   
     elif 'H' in time_interpreter(data):
         time_labels = str(data['time.year'][ind].values)+':'+str(data['time.month'][ind].values)+':'+str(data['time.day'][ind].values)+':'+str(data['time.hour'][ind].values)  
     elif time_interpreter(data) == 'D':
