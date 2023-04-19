@@ -91,7 +91,7 @@ class TR_PR_Diagnostic:
     """
     #attributes = inspect.getmembers(diag, lambda a:not(inspect.isroutine(a)))
 
-    def class_attributes_update(self,   trop_lat = 10,  s_time = None, f_time = None, s_timeindex = None,  f_timeindex = None,  
+    def class_attributes_update(self,   trop_lat = 10,  s_time = None, f_time = None,  
                           s_year = None, f_year = None, s_month = None, f_month = None, 
                           num_of_bins = None, first_edge = None, width_of_bin = None, bins = 0):
         
@@ -99,8 +99,6 @@ class TR_PR_Diagnostic:
 
         self.s_time = s_time
         self.f_time = f_time 
-        self.s_timeindex = s_timeindex   
-        self.f_timeindex = f_timeindex    
         self.s_year = s_year    
         self.f_year = f_year  
         self.s_month = s_month
@@ -119,8 +117,6 @@ class TR_PR_Diagnostic:
 
             s_time      = None, 
             f_time      = None, 
-            s_timeindex = None,
-            f_timeindex = None,
             s_year      = None,
             f_year      = None, 
             s_month     = None,
@@ -136,8 +132,6 @@ class TR_PR_Diagnostic:
            
         self.s_time     = s_time
         self.f_time     = f_time  
-        self.s_timeindex = s_timeindex
-        self.f_timeindex = f_timeindex
         self.s_year     = s_year
         self.f_year     = f_year   
         self.s_month    = s_month
@@ -198,7 +192,7 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def ds_per_time_range(self, data, s_timeindex = None,  f_timeindex = None, s_time = None, f_time = None, s_year = None, f_year = None,
+    def ds_per_time_range(self, data,  s_time = None, f_time = None, s_year = None, f_year = None,
         s_month = None, f_month = None):
         """ 
         The function ***ds_per_time_range*** takes few arguments, ***data*** and ***s_year, f_year, s_month, f_month***, 
@@ -221,10 +215,11 @@ class TR_PR_Diagnostic:
         """
         
         #If the user has specified a function argument ***s_year,  f_year, s_month, f_month***, then the argument becomes a new class attributes.
-        self.class_attributes_update( s_timeindex=s_timeindex,  f_timeindex=f_timeindex, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
-        
-        if self.s_timeindex != None and self.f_timeindex != None:
-            data = data.isel(time=slice(self.s_timeindex, self.f_timeindex))
+        self.class_attributes_update( s_time=s_time,  f_time=f_time, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
+
+        if isinstance(s_time, int) and isinstance(f_time, int): 
+            if self.s_time != None and self.f_time != None:
+                data = data.isel(time=slice(self.s_time, self.f_time))
         elif self.s_year != None and self.f_year == None:
             if isinstance(s_year, int):
                 data= data.where(data['time.year'] == self.s_year, drop=True)
@@ -242,9 +237,9 @@ class TR_PR_Diagnostic:
                 data = data.where(data['time.month'] <= self.f_month, drop=True)  
             else:
                 raise Exception("Sorry, s_month and f_month need to be integer") 
-            
-        if  s_time != None and f_time != None:
-            if isinstance(s_time, str) and isinstance(f_time, str):
+        
+        if isinstance(s_time, str) and isinstance(f_time, str):
+            if  s_time != None and f_time != None:
                 _s = re.split(r"[^a-zA-Z0-9\s]", s_time)
                 _f = re.split(r"[^a-zA-Z0-9\s]", f_time)  
                 if len(_s)==1:
@@ -321,7 +316,7 @@ class TR_PR_Diagnostic:
         return data_1d
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def mean_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None, s_time = None, f_time = None, s_timeindex = None,  f_timeindex = None, 
+    def mean_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None, s_time = None, f_time = None, 
         s_year = None, f_year = None, s_month = None, f_month = None):
         """ 
         The function ***mean_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
@@ -347,14 +342,14 @@ class TR_PR_Diagnostic:
         """
         if 'lat' in data.dims:
             #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-            self.class_attributes_update( s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+            self.class_attributes_update( s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                    s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
         
             coord_lat, coord_lon = self.coordinate_names(data)
 
             ds = self.ds_per_lat_range(data, trop_lat=self.trop_lat)
-            ds = self.ds_per_time_range(ds, s_time = self.s_time, f_time = self.f_time, s_timeindex=self.s_timeindex, f_timeindex=self.f_timeindex, 
+            ds = self.ds_per_time_range(ds, s_time = self.s_time, f_time = self.f_time,
                                         s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month)
             if 'Dataset' in str(type(data)):
                 ds = ds[variable_1]
@@ -368,7 +363,7 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def median_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None,  s_time = None, f_time = None,  s_timeindex = None,  f_timeindex = None,  
+    def median_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None,  s_time = None, f_time = None, 
                             s_year = None, f_year = None, s_month = None, f_month = None):
         """ 
         The function ***median_per_timestep*** takes few arguments, ***data***, ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
@@ -396,13 +391,13 @@ class TR_PR_Diagnostic:
 
         if 'lat' in data.dims:
             #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, then the argument becomes a new class attributes.
-            self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+            self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                    s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
             coord_lat, coord_lon = self.coordinate_names(data)
 
             ds = self.ds_per_lat_range(data, trop_lat=self.trop_lat)
-            ds = self.ds_per_time_range(ds, s_time = self.s_time, f_time = self.f_time, s_timeindex=self.s_timeindex, f_timeindex=self.f_timeindex, 
+            ds = self.ds_per_time_range(ds, s_time = self.s_time, f_time = self.f_time, 
                                         s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month)
             if 'Dataset' in str(type(data)):
                 ds = ds[variable_1]
@@ -478,7 +473,7 @@ class TR_PR_Diagnostic:
   
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
     def preprocessing(self, data, preprocess = True, reader = None, variable_1="tprate", trop_lat = None, 
-                       s_time = None, f_time = None,  s_timeindex = None,  f_timeindex = None,   
+                       s_time = None, f_time = None,  
                        s_year = None, f_year = None, s_month = None, f_month = None, sort = False, dask_array = False):
         """ 
         The function ***preprocessing*** takes few arguments, ***data***, ***_preprocess***,  ***variable_1*** and ***trop_lat, s_year, f_year, s_month, f_month***, 
@@ -509,12 +504,12 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time,  trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
         
         if preprocess == True:
-            ds = self.ds_per_time_range(data, s_time = self.s_time, f_time = self.f_time, s_timeindex=self.s_timeindex, f_timeindex=self.f_timeindex, 
+            ds = self.ds_per_time_range(data, s_time = self.s_time, f_time = self.f_time, 
                                         s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month) 
             ds = ds[variable_1]
             ds = reader.regrid(ds) #data["tprate"][10:15,:])
@@ -529,20 +524,20 @@ class TR_PR_Diagnostic:
 
     """ """ """ """ """ """ """ """ """ """
     def hist_np_digitize(self, data, preprocess = True, reader = None,  trop_lat = 10, variable_1 = 'tprate',   
-                         s_time = None, f_time = None,  s_timeindex = None,  f_timeindex = None,  
+                         s_time = None, f_time = None,  
                          s_year = None, f_year = None, s_month = None, f_month = None, 
                          num_of_bins = None, first_edge = None,  width_of_bin  = None,   bins = 0, _add = None, *, start = []):
 
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins,  width_of_bin = width_of_bin)
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, s_year=s_year, f_year=f_year, 
+                                      s_time = self.s_time, f_time = self.f_time, s_year=s_year, f_year=f_year, 
                                       s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
             #data = self.preprocessing(data, preprocess, variable_1, trop_lat, s_year, f_year, s_month, f_month,  sort = False, dask_array = False)
         if isinstance(bins, int):
@@ -560,7 +555,7 @@ class TR_PR_Diagnostic:
 
     """ """ """ """ """ """ """ """ """ """
     def hist1d_fast(self, data, preprocess = True, reader = None,  trop_lat = 10, variable_1 = 'tprate',  
-                    s_time = None, f_time = None, s_timeindex = None,  f_timeindex = None, 
+                    s_time = None, f_time = None,
                     s_year = None, f_year = None, s_month = None, f_month = None, 
                     num_of_bins = None, first_edge = None,  width_of_bin  = None,   bins = 0, _add = None, *, start = []):
         """ 
@@ -589,14 +584,14 @@ class TR_PR_Diagnostic:
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)
 
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, 
+                                      s_time = self.s_time, f_time = self.f_time,
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
         if isinstance(bins, int):
@@ -618,7 +613,7 @@ class TR_PR_Diagnostic:
     
     """ """ """ """ """ """ """ """ """ """
     def hist1d_np(self, data, preprocess = True, reader = None,  trop_lat = 10, variable_1 = 'tprate',  
-                  s_time = None, f_time = None,   s_timeindex = None,  f_timeindex = None, 
+                  s_time = None, f_time = None,   
                   s_year = None, f_year = None, s_month = None, f_month = None, 
                   num_of_bins = None, first_edge = None,  width_of_bin  = None,  bins = 0,   _add = None, *, start = []):
         """ 
@@ -647,7 +642,7 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time,  trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)
         
@@ -656,7 +651,7 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, 
+                                      s_time = self.s_time, f_time = self.f_time, 
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 
@@ -671,7 +666,7 @@ class TR_PR_Diagnostic:
         
     """ """ """ """ """ """ """ """ """ """
     def hist1d_pyplot(self, data, preprocess = True, reader = None,  trop_lat = 10,  variable_1 = 'tprate',  
-                      s_time = None, f_time = None,  s_timeindex = None,  f_timeindex = None,  
+                      s_time = None, f_time = None,  
                       s_year = None, f_year = None, s_month = None, f_month = None, 
                       num_of_bins = None, first_edge = None,  width_of_bin  = None,  bins = 0,  _add = None, *, start = []):
         """ 
@@ -698,7 +693,7 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time,  trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)  
 
@@ -706,7 +701,7 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, 
+                                      s_time = self.s_time, f_time = self.f_time, 
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
         bins = [self.first_edge  + i*self.width_of_bin for i in range(0, self.num_of_bins+1)]
@@ -722,7 +717,7 @@ class TR_PR_Diagnostic:
          
     """ """ """ """ """ """ """ """ """ """
     def dask_factory(self, data, preprocess = True, reader = None,  trop_lat = 10,  variable_1 = 'tprate',  
-                     s_time = None, f_time = None, s_timeindex = None,  f_timeindex = None, 
+                     s_time = None, f_time = None, 
                      s_year = None, f_year = None, s_month = None, f_month = None, 
                      num_of_bins = None, first_edge = None,  width_of_bin  = None,   bins = 0, delay = False, _add = None, *, start = []):
         """ 
@@ -752,7 +747,7 @@ class TR_PR_Diagnostic:
 
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)
 
@@ -761,7 +756,7 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, 
+                                      s_time = self.s_time, f_time = self.f_time, 
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 
@@ -778,7 +773,7 @@ class TR_PR_Diagnostic:
 
     """ """ """ """ """ """ """ """ """ """
     def dask_factory_weights(self, data, preprocess = True, reader = None,  trop_lat = 10,  variable_1 = 'tprate',  
-                             s_time = None, f_time = None, s_timeindex = None,  f_timeindex = None, 
+                             s_time = None, f_time = None,
                              s_year = None, f_year = None, s_month = None, f_month = None, 
                              num_of_bins = None, first_edge = None,  width_of_bin  = None,  bins = 0,   delay = False,   _add = None, *, start = []):
         """ 
@@ -805,7 +800,7 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)    
 
@@ -813,7 +808,7 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, 
+                                      s_time = self.s_time, f_time = self.f_time,
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
         ref = bh.Histogram(bh.axis.Regular(self.num_of_bins, self.first_edge, last_edge), storage=bh.storage.Weight())
@@ -830,7 +825,7 @@ class TR_PR_Diagnostic:
 
     """ """ """ """ """ """ """ """ """ """
     def dask_boost(self, data, preprocess = True, reader = None,  trop_lat = 10,  variable_1 = 'tprate',  
-                   s_time = None, f_time = None, s_timeindex = None,  f_timeindex = None, 
+                   s_time = None, f_time = None, 
                    s_year = None, f_year = None, s_month = None, f_month = None, 
                    num_of_bins = None, first_edge = None,  width_of_bin  = None,  bins = 0,  _add = None, *, start = []):
         """ 
@@ -857,7 +852,7 @@ class TR_PR_Diagnostic:
         """
         #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
         # then the argument becomes a new class attributes.
-        self.class_attributes_update(s_time = s_time, f_time = f_time, s_timeindex=s_timeindex,  f_timeindex=f_timeindex, trop_lat = trop_lat, 
+        self.class_attributes_update(s_time = s_time, f_time = f_time,  trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin) 
 
@@ -865,7 +860,7 @@ class TR_PR_Diagnostic:
 
         if preprocess == True:
             data = self.preprocessing(data, preprocess=preprocess, reader = reader, variable_1=variable_1, trop_lat=trop_lat, 
-                                      s_time = self.s_time, f_time = self.f_time, s_timeindex=s_timeindex, f_timeindex=f_timeindex, 
+                                      s_time = self.s_time, f_time = self.f_time, 
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
 
 

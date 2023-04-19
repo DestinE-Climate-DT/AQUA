@@ -2,6 +2,7 @@ import re
 from statistics import mean
 import numpy as np
 import xarray 
+import pandas as pd
 
 #list of functions 
     # data_size
@@ -89,9 +90,6 @@ def hour_convert_num_to_str(data, ind):
     if data['time.hour'][ind] > 12: return  str(data['time.hour'][ind].values - 12)+'PM' 
     else: return str(data['time.hour'][ind].values)+'AM'
 
-def time_regrider(dataset, timestep=None):
-    if timestep>1:
-        dataset[i:i+timestep].mean()
 """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
 def time_interpreter(dataset):
     import numpy as np
