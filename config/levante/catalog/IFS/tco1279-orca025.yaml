@@ -23,7 +23,15 @@ sources:
     args:
       urlpath: /work/bb1153/b382076/LRA/tco1279-orca025/r100/mon/*.nc
       chunks: {}
-  old-low-res:
+  low-res-bulk:
+    driver: netcdf
+    args:
+      chunks: {}
+      urlpath:
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/rsn_bulk_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/sd_bulk_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tsn_bulk_9km.nc
+  low-res-std:
     driver: netcdf
     args:
       chunks: {}
@@ -67,8 +75,6 @@ sources:
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/q_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/r_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/ro_9km.nc
-      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/rsn_bulk_9km.nc
-      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/sd_bulk_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/sf_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/sithick_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/skt_9km.nc
@@ -105,7 +111,6 @@ sources:
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tcwv_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tisr_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tp_9km.nc
-      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tsn_bulk_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tsr_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tsrc_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/ttr_9km.nc
@@ -118,3 +123,23 @@ sources:
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/w_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/z_9km.nc
       - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/zos_9km.nc
+  low-res-extra:
+    driver: netcdf
+    args:
+      chunks: {}
+      urlpath:
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/cc_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/ciwc_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/clwc_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/crwc_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/cswc_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/litoti_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/lnsp_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/lwcs_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/rsn_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/sd_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/tsn_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/vike_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/vipie_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/vipile_9km.nc
+      - /work/bm1235/a270046/cycle2-sync/monthly_means/9km/vithe_9km.nc
