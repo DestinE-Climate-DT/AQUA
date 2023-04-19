@@ -1,0 +1,13 @@
+plugins:
+  source:
+  - module: intake_xarray
+sources:
+  original_2d:
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ../AQUA_tests_short/IFS/IFS/IFS2d.tco79.nc
+    description: original 2d output
+    driver: netcdf
+  

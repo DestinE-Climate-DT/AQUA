@@ -4,7 +4,7 @@ import intake
 from aqua.util import get_config_dir, get_machine, get_reader_filenames
 
 
-def catalogue(verbose=False, configdir=None):
+def catalogue(verbose=True, configdir=None):
     """Catalogue of available NextGEMS data (on Levante for now)"""
 
     # get the config dir and the machine
@@ -26,6 +26,7 @@ def catalogue(verbose=False, configdir=None):
             print()
     return cat
 
+
 def inspect_catalogue(cat, model=None, exp=None):
 
     """Basic function to simplify catalog inspection"""
@@ -41,4 +42,3 @@ def inspect_catalogue(cat, model=None, exp=None):
         return list(cat.keys())
     else:
         raise KeyError("Wrong specifications, cannot inspect the catalog...")
-

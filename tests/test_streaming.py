@@ -26,7 +26,8 @@ class TestAquaStreaming:
         return request.param
 
     @pytest.fixture(scope="function",
-                    params=[{"stream_step": 3, "stream_unit": "days"},
+                    params=[{"stream_step": 3},
+                            {"stream_step": 3, "stream_unit": "days"},
                             {"stream_step": 3, "stream_unit": "days", "stream_startdate": "2020-01-20"},
                             {"stream_step": 3}])
     def stream_args(self, request, stream_date, stream_units):

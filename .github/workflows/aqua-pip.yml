@@ -12,28 +12,32 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10"]
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: 'pip' # caching pip dependencies
+          cache-dependency-path: |
+            **/pyproject.toml
       - name: Provision with pip
         run: |
-          # We need to install ecCodes and cdo (as we do not have conda here)
+          # We need to install cdo as we do not have conda here. Note that
+          # cdo has a dependency on libeccodes-data and libeccodes0. Apparently,
+          # installing it is enough to get tests that rely on cdo and ecCodes
+          # to work on Ubuntu.
           # NOTE: tested two cache actions, but in the end looks like eccodes
           #       does not work very well when the apt package is cached.
-          sudo apt install \
-            libeccodes-dev \
-            libeccodes-tools \
-            libeccodes-data \
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
             cdo
 
           # Update pip because we are using pyproject.toml (needs newer pip)
-          pip install -U pip
+          python -m pip install -U pip
 
           # Install with test dependencies
-          pip install -e .[tests]
+          python -m pip install -e .[tests]
       - name: Download and setup tests
         run: |
           ./download_data_for_tests.sh
@@ -41,9 +45,9 @@ jobs:
         run: |
 
           python -m pytest ./tests/test_basic.py
-          python -m pytest ./tests/test_catalog.py 
+          python -m pytest ./tests/test_catalog.py
           python -m pytest ./tests/test_fldmean.py
-          python -m pytest ./tests/test_timmean.py                
+          python -m pytest ./tests/test_timmean.py
           python -m pytest ./tests/test_streaming.py
           python -m pytest ./tests/test_regrid.py
 

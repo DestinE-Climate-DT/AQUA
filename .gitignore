@@ -3,6 +3,8 @@
 *.egg-info
 cli/*.err
 cli/*.out
-AQUA_tests*
+*.nc
+AQUA_tests/
+AQUA_tests.tar.gz
 **/*.bak
 

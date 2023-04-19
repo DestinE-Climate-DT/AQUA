@@ -10,6 +10,7 @@ import datetime
 import yaml
 import eccodes
 import xarray as xr
+from aqua.logger import log_configure
 
 
 def load_yaml(infile):
@@ -262,6 +263,81 @@ def generate_random_string(length):
     letters_and_digits = string.ascii_letters + string.digits
     random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
     return random_string
+
+def get_arg(args, arg, default):
+    """
+    Support function to get arguments
+
+    Args:
+        args: the arguments 
+        arg: the argument to get
+        default: the default value
+
+    Returns:
+        The argument value or the default value
+    """
+
+    res = getattr(args, arg)
+    if not res:
+        res = default
+    return res
+
+# def create_folder(folder, verbose=False):
+#     """
+#     Create a folder if it does not exist
+
+#     Args:
+#         folder (str): the folder to create
+#         verbose (bool): if True, print the folder name,
+#                         default is False
+
+#     Returns:
+#         None
+#     """
+#     if not os.path.exists(folder):
+#         if verbose:
+#             print(f'Creating folder {folder}')
+#         os.makedirs(folder)
+#     else:
+#         if verbose:
+#             print(f'Folder {folder} already exists')
+
+# def get_arg(args, arg, default):
+#     """
+#     Support function to get arguments
+
+#     Args:
+#         args: the arguments
+#         arg: the argument to get
+#         default: the default value
+
+#     Returns:
+#         The argument value or the default value
+#     """
+
+#     res = getattr(args, arg)
+#     if not res:
+#         res = default
+#     return res
+
+def create_folder(folder, loglevel=None):
+    """
+    Create a folder if it does not exist
+
+    Args:
+        folder (str): the folder to create
+        loglevel (str): the log level
+
+    Returns:
+        None
+    """
+    logger = log_configure(loglevel, 'create_folder')
+
+    if not os.path.exists(folder):
+        logger.warning('Creating folder %s', folder)
+        os.makedirs(folder)
+    else:
+        logger.warning('Folder %s already exists', folder)
 
 
 def log_history(data, msg):

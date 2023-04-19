@@ -28,6 +28,9 @@ class FixerMixin():
             A xarray.Dataset containing the fixed data and target units, factors and offsets in variable attributes.
         """
 
+        # add extra units (might be moved somewhere else)
+        units_extra_definition()
+
         fixes = load_yaml(self.fixer_file)
         model = self.model
         exp = self.exp
@@ -146,8 +149,8 @@ class FixerMixin():
                     if varname in data.variables:
                         keep_first = variables[var].get("keep_first", True)
                         data[varname] = self.simple_decumulate(data[varname],
-                                                            jump=jump,
-                                                            keep_first=keep_first)
+                                                               jump=jump,
+                                                               keep_first=keep_first)
                         log_history(data[varname], "variable decumulated by AQUA fixer")
 
         if apply_unit_fix:
@@ -227,9 +230,10 @@ class FixerMixin():
 
         if "IFSMagician" in data.attrs.get("history", ""):  # Special fix for gribscan levels
             if "level" in data.coords:
-                data.level.attrs["units"] = "hPa"
-                data.level.attrs["standard_name"] = "air_pressure"
-                data.level.attrs["long_name"] = "pressure"
+                if data.level.max() >= 1000:
+                    data.level.attrs["units"] = "hPa"
+                    data.level.attrs["standard_name"] = "air_pressure"
+                    data.level.attrs["long_name"] = "pressure"
 
         # this is needed since cf2cdm issues a (useless) UserWarning
         with warnings.catch_warnings():
@@ -316,3 +320,15 @@ def normalize_units(src):
         return 'dimensionless'
     else:
         return str(src).replace("of", "").replace("water", "").replace("equivalent", "")
+    
+def units_extra_definition():
+    """Add units to the pint registry"""
+
+    # special units definition
+    # needed to work with metpy 1.4.0 see
+    # https://github.com/Unidata/MetPy/issues/2884
+    units._on_redefinition = 'ignore'
+    units.define('fraction = [] = frac')
+    units.define('psu = 1e-3 frac')
+    units.define('PSU = 1e-3 frac')
+    units.define('Sv = 1e+6 m^3/s')

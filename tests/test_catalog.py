@@ -2,7 +2,7 @@
 
 import pytest
 import xarray
-from aqua import Reader, catalogue
+from aqua import Reader, catalogue, inspect_catalogue
 
 
 @pytest.fixture(params=[(model, exp, source)
@@ -24,9 +24,18 @@ def reader(request):
     data = myread.retrieve(fix=False)
     return myread, data
 
-
-def test_catalog(reader):
+def test_catalogue(reader):
     """Checking that both reader and Dataset are retrived in reasonable shape"""
-    a, b = reader
-    assert isinstance(a, Reader)
-    assert isinstance(b, xarray.Dataset)
+    aaa, bbb = reader
+    assert isinstance(aaa, Reader)
+    assert isinstance(bbb, xarray.Dataset)
+
+def test_inspect_catalogue():
+    """Checking that inspect catalogue works"""
+    cat = catalogue(verbose=True)
+    models = inspect_catalogue(cat)
+    assert isinstance(models, list)
+    exps = inspect_catalogue(cat, model='IFS')
+    assert isinstance(exps, list)
+    sources = inspect_catalogue(cat, model='IFS', exp='test-tco79')
+    assert isinstance(sources, list)
