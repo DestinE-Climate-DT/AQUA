@@ -10,9 +10,17 @@ from datetime import datetime
 
 class TCs():
 
+    """"
+        Class with all methods related to the TCs diagnostic based on tempest-estremes tracking
+        Main functions:
+            detect_nodes_zoomin: wrapper to call the detect nodes command and store variables in a box centred over the TCs centres
+                                 at each time step
+            stitch_nodes_zoomin: wrapper to call the stitch nodes command and produce TCs tracks of selected variables 
+                                 stored in netcdf files
+    """
     def __init__(self, tdict = None, 
                  paths = None, model="IFS", exp="tco2559-ng5", 
-                 boxdim = 10, lowgrid='r100', highgrid='r100', var2store=None, 
+                 boxdim = 10, lowgrid='r100', highgrid='r010', var2store=None, 
                  streaming=False, frequency= '6h', 
                  startdate=None, enddate=None,
                  stream_step=1, stream_unit='days', stream_startdate=None,
@@ -84,8 +92,8 @@ class TCs():
 
         self.set_time_window(n_days_freq=n_days_freq, n_days_ext=n_days_ext)
 
-
-        for block in pd.date_range(start=startdate, end=enddate, freq=str(n_days_freq)+'D'):
+        # periods specifies you want 1 block from startdate to enddate
+        for block in pd.date_range(start=startdate, end=enddate, periods=1):
             dates_freq, dates_ext = self.time_window(block)
             self.logger.warning(f'running stitch nodes from {block.strftime("%Y%m%d")}-{dates_freq[-1].strftime("%Y%m%d")}')
             self.prepare_stitch_nodes(block, dates_freq, dates_ext)
@@ -424,8 +432,10 @@ def write_fullres_field(gfield, filestore):
                  'calendar': 'standard',
                  'dtype': 'float64'}
     var_encoding = {"zlib": True, "complevel": 1}
-
-    gfield.where(gfield!=0).to_netcdf(filestore,  encoding={'time': time_encoding, gfield.name: var_encoding})
-    gfield.close()
+    if isinstance(gfield, int):
+        print(f"No tracks to write")
+    else:
+        gfield.where(gfield!=0).to_netcdf(filestore,  encoding={'time': time_encoding, gfield.name: var_encoding})
+        gfield.close()
 
 
