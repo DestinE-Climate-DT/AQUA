@@ -22,4 +22,5 @@ def test_fldmean_fesom():
     data = reader.retrieve()
     avg = reader.fldmean(data['sst']).values
     assert avg.shape == (2,)
-    assert avg[1] == pytest.approx(17.9806)
+    #assert avg[1] == pytest.approx(17.9806)
+    assert avg[1] == pytest.approx(291.1306)

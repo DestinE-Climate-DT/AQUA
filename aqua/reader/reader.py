@@ -105,6 +105,7 @@ class Reader(FixerMixin, RegridMixin):
         cfg_regrid = load_yaml(self.regrid_file)
         source_grid_id = check_catalog_source(cfg_regrid["source_grids"], self.model, self.exp, source, name='regrid')
         source_grid = cfg_regrid["source_grids"][self.model][self.exp][source_grid_id]
+        self.vertcoord = source_grid.get("vertcoord", None)  # Some more checks needed
 
         self.dst_datamodel = datamodel
         # Default destination datamodel (unless specified in instantiating the Reader)
@@ -119,7 +120,6 @@ class Reader(FixerMixin, RegridMixin):
         self.dst_space_coord = ["lon", "lat"]
 
         if regrid:
-            self.vertcoord = source_grid.get("vertcoord", None)  # Some more checks needed
             if level is not None:
                 if not self.vertcoord:
                     raise KeyError("You should specify a vertcoord key in regrid.yaml for this source to use levels.")
@@ -248,7 +248,7 @@ class Reader(FixerMixin, RegridMixin):
         if self.level is not None:
             data = data.isel({self.vertcoord: self.level})
 
-        log_history(data, "retrieved by AQUA fixer")
+        log_history(data, "retrieved by AQUA retriever")
 
         # sequence which should be more efficient: decumulate - averaging - regridding - fixing
         if decumulate:
@@ -290,7 +290,7 @@ class Reader(FixerMixin, RegridMixin):
         self.grid_area = self.dst_grid_area
         self.space_coord = ["lon", "lat"]
 
-        log_history(out, "regridded by AQUA fixer")
+        log_history(out, "regridded by AQUA regridder")
         return out
 
     def timmean(self, data, freq=None):
@@ -317,10 +317,13 @@ class Reader(FixerMixin, RegridMixin):
             resample_freq = freq
 
         try:
-            # resample, and assign the correct time
+            # resample
+            self.logger.info('Resamplig to %s frequency...', str(resample_freq))
             out = data.resample(time=resample_freq).mean()
-            proper_time = data.time.resample(time=resample_freq).mean()
-            out['time'] = proper_time.values
+            # for now, we set initial time of the averaging period following ECMWF standard
+            # HACK: we ignore hours/sec to uniform the output structure 
+            proper_time = data.time.resample(time=resample_freq).min()
+            out['time'] = np.array(proper_time.values, dtype='datetime64[h]')
         except ValueError:
             sys.exit('Cant find a frequency to resample, aborting!')
 
@@ -328,7 +331,7 @@ class Reader(FixerMixin, RegridMixin):
         if np.any(np.isnat(out.time)):
             self.logger.warning('Resampling cannot produce output for all frequency step, is your input data correct?')
 
-        log_history(out, f"resampled to frequency {resample_freq} by AQUA fixer")
+        log_history(out, f"resampled to frequency {resample_freq} by AQUA timmean")
         return out
 
     def _check_if_accumulated_auto(self, data):
@@ -449,23 +452,6 @@ class Reader(FixerMixin, RegridMixin):
 
         return att.get("regridded", False)
 
-    def _get_spatial_sample(self, da, space_coord):
-        """
-        Selects a single spatial sample along the dimensions specified in `space_coord`.
-
-        Arguments:
-            da (xarray.DataArray):     Input data array to select the spatial sample from.
-            space_coord (list of str): List of dimension names corresponding to the spatial coordinates to select.
-
-        Returns:
-            Data array containing a single spatial sample along the specified dimensions.
-        """
-
-        dims = list(da.dims)
-        extra_dims = list(set(dims) - set(space_coord))
-        da_out = da.isel({dim: 0 for dim in extra_dims})
-        return da_out
-
     def fldmean(self, data):
         """
         Perform a weighted global average.
@@ -490,4 +476,3 @@ class Reader(FixerMixin, RegridMixin):
         out = data.weighted(weights=grid_area.fillna(0)).mean(dim=space_coord)
 
         return out
-

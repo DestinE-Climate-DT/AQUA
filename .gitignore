@@ -1,5 +1,6 @@
 # notebook temp files
 *.pyc
+diagnostics/ecmean/ECmean4
 .ipynb_checkpoints/
 #packages temp files
 *egg-info
@@ -7,7 +8,8 @@
 cli/*.txt
 cli/*.err
 cli/*.out
-# CI
-AQUA_tests_short/*
 *.nc
-*.tar.gz
+AQUA_tests/
+AQUA_tests.tar.gz
+**/*.bak
+

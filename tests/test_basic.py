@@ -29,10 +29,11 @@ class TestAqua:
         """
         Test the initialization of the Reader class
         """
-        reader = Reader(model="FESOM", exp="test-pi", source="original_2d")
+        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", configdir = "config")
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
+        assert reader.configdir == "config"
 
     def test_retrieve_data(self, reader_instance):
         """

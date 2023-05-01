@@ -41,7 +41,7 @@ class RegridMixin():
             data = self.retrieve(fix=False)
             temp_file = tempfile.NamedTemporaryFile(mode='w')
             sgridpath = temp_file.name
-            data.isel(time=0).to_netcdf(sgridpath)
+            _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
         else:
             temp_file = None
             if zoom:
@@ -72,7 +72,7 @@ class RegridMixin():
             data = self.retrieve(fix=False)
             temp_file = tempfile.NamedTemporaryFile(mode='w')
             sgridpath = temp_file.name
-            data.isel(time=0).to_netcdf(sgridpath)
+            _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
         else:
             temp_file = None
             if zoom:
@@ -217,4 +217,22 @@ def _rename_dims(da, dim_list):
         if dim not in shared_dims:
             da_out = da.rename({dim: new_dims[i]})
             i += 1
+    return da_out
+
+
+def _get_spatial_sample(da, space_coord):
+    """
+    Selects a single spatial sample along the dimensions specified in `space_coord`.
+
+    Arguments:
+        da (xarray.DataArray):     Input data array to select the spatial sample from.
+        space_coord (list of str): List of dimension names corresponding to the spatial coordinates to select.
+
+    Returns:
+        Data array containing a single spatial sample along the specified dimensions.
+    """
+
+    dims = list(da.dims)
+    extra_dims = list(set(dims) - set(space_coord))
+    da_out = da.isel({dim: 0 for dim in extra_dims})
     return da_out

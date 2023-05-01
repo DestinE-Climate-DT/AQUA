@@ -71,6 +71,10 @@ models:
                         source: strd
                         grib: true
                         decumulate: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                        decumulate: true
                     mtntrf:
                         source: ttr
                         grib: true
@@ -192,6 +196,26 @@ models:
                     mtnsrf:
                         derived: rsdt-rsut
                         grib: true
+        hpx: 
+            default:
+                data_model: false
+                vars:
+                    msl:
+                        source: sea_level_pressure
+                        src_units: Pa
+                        grib: true
+                    2t:
+                        source: tas
+                        src_units: K
+                        grib: true 
+                    10si:
+                        source: 10m_wind_speed
+                        src_units: m/s
+                        grib: true 
+                    
+
+
+
 
     FESOM:
         default:
@@ -203,6 +227,34 @@ models:
                         src_units: degC
                         grib: true
                         units: degC # Override units from grib tables
+            original_2d:
+                data_model: false
+                delete:  # variables to drop at the end
+                    - a_ice
+                    - m_ice
+                    - sss
+                    - ssh
+                vars:
+                    ci:
+                        derived: a_ice
+                        src_units: frac
+                        grib: true
+                        units: '%'
+                    sst: 
+                        derived: sst
+                        src_units: degC
+                        grib: true
+                        units: K
+                    sos:
+                        derived: sss
+                        grib: true
+                        units: psu
+                    sithick:
+                        derived: m_ice
+                        grib: true
+                    zos:
+                        derived: ssh
+                        grib: true
 
     MSWEP:
         default:
