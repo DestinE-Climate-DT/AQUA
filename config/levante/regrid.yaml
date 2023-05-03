@@ -15,6 +15,7 @@ target_grids:
   r005: r7200x3600
   r010: r3600x1800
   r020: r1800x900
+  r025: r1440x720
   r050: r720x360
   r100: r360x180
   r200: r180x90
@@ -213,6 +214,18 @@ source_grids:
     ssh-L4:
       default:
         space_coord: ["longitude", "latitude"]
+  
+  PHC3:
+    phc3:
+      default:
+        space_coord: ["lon", "lat"]
+  
+  WOA18:
+    woa18_2005_2017:
+      default:
+        path: /pool/data/AWICM/FESOM2/INITIAL/WOA18/WOA18_2005_2017/woa18_A5B7_t00_04.nc
+        vertcoord: depth
+        space_coord: ["lon", "lat"]
 
   CERES:
     ebaf-toa42:

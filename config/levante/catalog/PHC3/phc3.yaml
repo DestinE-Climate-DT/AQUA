@@ -1,0 +1,21 @@
+plugins:
+  source:
+    - module: intake_xarray
+
+sources:
+  annual:
+    description: PHC3    
+    driver: netcdf
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - /pool/data/AWICM/FESOM2/INITIAL/phc3.0/phc3.0_annual.nc
+  seasonal:
+    description: PHC3    
+    driver: netcdf
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - /pool/data/AWICM/FESOM2/INITIAL/phc3.0/phc3.0_seasonal.nc

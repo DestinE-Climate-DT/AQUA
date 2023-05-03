@@ -173,7 +173,7 @@ class LRAgenerator():
         self.reader = Reader(model=self.model, exp=self.exp,
                              source=self.source,
                              regrid=self.resolution, freq=self.frequency,
-                             configdir="../../config", loglevel=self.loglevel)
+                             configdir=self.configdir, loglevel=self.loglevel)
 
         self.logger.warning('Retrieving data...')
         self.data = self.reader.retrieve(fix=self.fix)

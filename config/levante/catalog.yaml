@@ -34,3 +34,13 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/catalog/AVISO/main.yaml"
+  PHC3:
+    description: PHC3 climatology
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/PHC3/main.yaml"
+  WOA18:
+    description: World Ocean Atlas climatology
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/WOA18/main.yaml"
