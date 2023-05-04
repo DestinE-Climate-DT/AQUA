@@ -11,9 +11,9 @@ from datetime import datetime
 class TCs():
 
     """
-    This class contains all methods related to the TCs (Tropical Cyclones) diagnostic based on tempest-estremes tracking. It provides two main functions - "detect_nodes_zoomin" and "stitch_nodes_zoomin" - for detecting the nodes of TCs and producing tracks of selected variables stored in netcdf files, respectively.
+This class contains all methods related to the TCs (Tropical Cyclones) diagnostic based on tempest-estremes tracking. It provides two main functions - "detect_nodes_zoomin" and "stitch_nodes_zoomin" - for detecting the nodes of TCs and producing tracks of selected variables stored in netcdf files, respectively.
 
-    Attributes:
+Attributes:
 
     tdict (dict): A dictionary containing various configurations for the TCs diagnostic. If tdict is provided, the configurations will be loaded from it, otherwise the configurations will be set based on the input arguments.
     paths (dict): A dictionary containing file paths for input and output files.
@@ -32,7 +32,7 @@ class TCs():
     stream_startdate (str): The start date for processing the TCs diagnostic in streaming mode.
     loglevel (str): The logging level for the TCs diagnostic. Default is 'INFO'.
 
-    Methods:
+Methods:
 
     init(self, tdict=None, paths=None, model="IFS", exp="tco2559-ng5", boxdim=10, lowgrid='r100', highgrid='r010', var2store=None, streaming=False, frequency='6h', startdate=None, enddate=None, stream_step=1, stream_unit='days', stream_startdate=None, loglevel='INFO'): Constructor method that initializes the class attributes based on the input arguments or tdict dictionary.
     detect_nodes_zoomin(self): Method for detecting the nodes of TCs and storing variables in a box centred over the TCs centres at each time step.
@@ -43,7 +43,7 @@ class TCs():
     readwrite_from_intake: regrids the atmospheric data, saves it to disk as a netCDF file, and updates the tempest_dictionary and tempest_filein attributes of the Detector object.
     run_detect_nodes: runs the tempest extremes DetectNodes command on the regridded atmospheric data specified by the tempest_dictionary and tempest_filein attributes, saves the output to disk, and updates the tempest_fileout attribute of the Detector object.
 
-    """
+"""
     def __init__(self, tdict = None, 
                  paths = None, model="IFS", exp="tco2559-ng5", 
                  boxdim = 10, lowgrid='r100', highgrid='r010', var2store=None, 
@@ -145,6 +145,11 @@ class TCs():
                                         regrid=self.highgrid, var = self.var2store,
                                         streaming=self.streaming, stream_step=self.stream_step, loglevel=self.loglevel,
                                         stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+            if "tp" in self.var2store:
+                self.reader_tp_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+                                            regrid=self.highgrid, var = "tp",
+                                            streaming=self.streaming, stream_step=self.stream_step, loglevel=self.loglevel,
+                                            stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
         else:
             raise Exception(f'Model {self.model} not supported')
         
@@ -157,6 +162,9 @@ class TCs():
             self.reader_fullres.reset_stream()
         
         # now retrieve 2d and 3d data needed  
+        # TEST: add decumulation + mean for fullres precipitation, ideally reader for prec should be replaced by OPA
+        if "tp" in self.var2store:
+            self.reader_tp_fullres.retrieve(timmean=True, decumulate=True)
         else:
             self.data2d = self.reader2d.retrieve()
             self.data3d = self.reader3d.retrieve()
