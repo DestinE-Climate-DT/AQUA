@@ -2,14 +2,14 @@ plugins:
   source:
   - module: intake_xarray
 sources:
-  elem_grid:
-    args:
-      urlpath: /work/ab0995/a270088/DestinE/AQUA_tests/IFS/grids/NG5_griddes_elems_IFS.nc
-    driver: netcdf
-  node_grid:
-    args:
-      urlpath: /work/ab0995/a270088/DestinE/AQUA_tests/IFS/grids/NG5_griddes_nodes_IFS.nc
-    driver: netcdf
+  # elem_grid:
+  #   args:
+  #     urlpath: /work/ab0995/a270088/DestinE/AQUA_tests/IFS/grids/NG5_griddes_elems_IFS.nc
+  #   driver: netcdf
+  # node_grid:
+  #   args:
+  #     urlpath: /work/ab0995/a270088/DestinE/AQUA_tests/IFS/grids/NG5_griddes_nodes_IFS.nc
+  #   driver: netcdf
   original_2d:
     args:
       chunks:

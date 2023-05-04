@@ -3,56 +3,57 @@ plugins:
   - module: intake_xarray
   - module: gribscan
 sources:
-  elem_grid:
-    args:
-      urlpath: /work/bm1235/a270046/meshes/NG5_griddes_elems_IFS.nc
-    driver: netcdf
-  node_grid:
-    args:
-      urlpath: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
-    driver: netcdf
+  # elem_grid:
+  #   args:
+  #     urlpath: /work/bm1235/a270046/meshes/NG5_griddes_elems_IFS.nc
+  #   driver: netcdf
+  # node_grid:
+  #   args:
+  #     urlpath: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+  #   driver: netcdf
   interpolated_global2d:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       compat: override
       combine: nested
-      urlpath: 
+      urlpath:
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/MLD2/MLD2.fesom.json
   interpolated_global_TS:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       compat: override
       combine: nested
-      urlpath: 
+      urlpath:
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/salt/salt.fesom.json
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/temp/temp.fesom.json
   interpolated_global_UV:
     driver: zarr
     args:
-      consolidated: False
+      consolidated: false
       compat: override
       combine: nested
-      urlpath: 
+      urlpath:
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/u/u.fesom.json
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/u/v.fesom.json
-  interpolated_np:
-    driver: zarr
-    args:
-      consolidated: False
-      compat: override
-      combine: nested
-      urlpath: 
-      - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/m_ice_np/m_ice.fesom.json
-  interpolated_sp:
-    driver: zarr
-    args:
-      consolidated: False
-      compat: override
-      combine: nested
-      urlpath: 
-      - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/m_ice_sp/m_ice.fesom.json
+  # interpolated_np:
+  #   driver: zarr
+  #   args:
+  #     consolidated: False
+  #     compat: override
+  #     combine: nested
+  #     urlpath: 
+  #     - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/m_ice_np/m_ice.fesom.json
+  # interpolated_sp:
+  #   driver: zarr
+  #   args:
+  #     consolidated: False
+  #     compat: override
+  #     combine: nested
+  #     urlpath: 
+  #     - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/m_ice_sp/m_ice.fesom.json
+
   original_2d:
     args:
       chunks:
@@ -384,14 +385,7 @@ sources:
   lra-r100-mon:
     driver: netcdf
     args:
-      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/mon/*.nc'
+      urlpath: /work/bb1153/b382076/LRAv2/FESOM/tco2559-ng5/r100/mon/*tco2559-ng5_r100_mon_????.nc
       chunks: {}
       xarray_kwargs:
-        decode_times: True
-  lra-r100-day:
-    driver: netcdf
-    args:
-      urlpath: '/work/bb1153/b382076/LRA/tco2559-ng5/r100/day/*.nc'
-      chunks: {}
-      xarray_kwargs:
-        decode_times: True
+        decode_times: true

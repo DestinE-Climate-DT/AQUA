@@ -11,8 +11,8 @@ sources:
     args:
         path: /home/m/m300827/healpix/ngc3002.yaml
 
-  grids:
-    description: ICON grids
-    driver: yaml_file_cat
-    args:
-        path: "/home/m/m300827/catalogs/grids/icon_grids_by_uuid.yaml"
+  # grids:
+  #   description: ICON grids
+  #   driver: yaml_file_cat
+  #   args:
+  #       path: "/home/m/m300827/catalogs/grids/icon_grids_by_uuid.yaml"
