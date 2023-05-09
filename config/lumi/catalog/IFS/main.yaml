@@ -3,4 +3,9 @@ sources:
     description: 5km experiment, coupuled with IFS
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/test-tco79.yaml"
+      path: '{{CATALOG_DIR}}/test-tco79.yaml'
+  tco79-orca1:
+    description: tco79-orca1 data
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/tco79-orca1.yaml'

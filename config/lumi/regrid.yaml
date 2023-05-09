@@ -1,14 +1,18 @@
 weights:
-   path: /pfs/lustrep1/projappl/project_462000048/davini/aqua/weights
+   path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/weights
    template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
 
 areas:
-   path: /pfs/lustrep1/projappl/project_462000048/davini/aqua/areas
+   path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/areas
    src_template: cell_area_{model}_{exp}_{source}.nc
    dst_template: cell_area_{grid}.nc
 
 paths:
-  grids: /pfs/lustrep1/projappl/project_462000048/davini/aqua/weights
+  grids: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/weights
+  icon: /pool/data/ICON
+
+cdo-paths:
+  download: /work/bb1153/b382075/nextgems/weights
   icon: /pool/data/ICON
 
 target_grids:
@@ -22,23 +26,11 @@ target_grids:
 
 # extra is an extra special cdo command to be applied before generating the weights
 source_grids:
-  FESOM:
-    test-pi:
-      original_2d:
-        path: ../AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc
-        space_coord: ["nod2"]
-        extra: 
-          - -setgrid,../AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc 
-          - -selname,cell_area 
   IFS:
-    tco399-orca025:
-      default:
-        path: /users/padavini/work/tcogrids/tco399_grid.nc
+    tco79-orca1:
+      ICMGG_atm2d:
+        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
         space_coord: ["value"]
-    test-tco79:
-      original_2d:
-        path: ../AQUA_tests_short/grids/tco79_grid.nc
-        space_coord: ["rgrid"]
 
 
 

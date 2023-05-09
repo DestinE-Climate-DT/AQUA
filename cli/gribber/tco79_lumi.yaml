@@ -1,0 +1,16 @@
+# Which experment to be analysed
+id:
+  # only IFS is supported since is the only one using GRB
+  model: 'IFS'
+  exp: 'tco79-orca1'
+  source: 'ICMGG_atm2d'
+# Directories for gribber
+dir:
+  # directory where grib files from the experiments are
+  datadir: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/experiments/h8304.N1.T32xt4xh1.nextgems_6h.i16r0w24.eORCA1_Z75.htco79-2817684'
+  # directory where the index will be generated
+  tmpdir: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/gribscan-files/temp'
+  # directory where the resulting json will be produced
+  jsondir: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/gribscan-files/json'
+  # directory where the catalog is found
+  configdir: '../../config/'
