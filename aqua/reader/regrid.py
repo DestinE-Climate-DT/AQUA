@@ -2,11 +2,10 @@
 
 import os
 import sys
-
 import subprocess
 import tempfile
+import numpy as np
 import xarray as xr
-
 import smmregrid as rg
 
 
@@ -27,8 +26,12 @@ class RegridMixin():
         data = self.regridder.regrid(data.isel(time=0))
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
 
+        # Rounding to avoid numerical errors
+        for coord in grid_area.coords:
+            grid_area.coords[coord] = np.round(grid_area[coord], 10)
+
         grid_area.to_netcdf(self.dst_areafile)
-        self.logger.warning("Success!")
+        self.logger.warning("Success in creating %s", areafile)
 
     def _make_src_area_file(self, areafile, source_grid,
                             gridpath="", icongridpath="", zoom=None):
@@ -59,8 +62,13 @@ class RegridMixin():
         grid_area = _rename_dims(grid_area, self.src_space_coord)
         data = self.retrieve(fix=False)
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.src_space_coord})
+
+        # Rounding to avoid numerical errors
+        for coord in grid_area.coords:
+            grid_area.coords[coord] = np.round(grid_area[coord], 10)
+
         grid_area.to_netcdf(areafile)
-        self.logger.warning("Success!")
+        self.logger.warning("Success in creating %s", areafile)
 
     def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid=None, extra=None, zoom=None):
         """Helper function to produce weights file"""
