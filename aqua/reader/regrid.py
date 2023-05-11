@@ -28,7 +28,8 @@ class RegridMixin():
 
         # Rounding to avoid numerical errors
         for coord in grid_area.coords:
-            grid_area.coords[coord] = np.round(grid_area[coord], 10)
+            if coord != 'time':
+                grid_area.coords[coord] = np.round(grid_area[coord], 10)
 
         grid_area.to_netcdf(self.dst_areafile)
         self.logger.warning("Success in creating %s", areafile)
@@ -65,7 +66,8 @@ class RegridMixin():
 
         # Rounding to avoid numerical errors
         for coord in grid_area.coords:
-            grid_area.coords[coord] = np.round(grid_area[coord], 10)
+            if coord != 'time':
+                grid_area.coords[coord] = np.round(grid_area[coord], 10)
 
         grid_area.to_netcdf(areafile)
         self.logger.warning("Success in creating %s", areafile)
