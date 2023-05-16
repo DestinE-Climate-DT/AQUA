@@ -23,7 +23,7 @@ from .reader_utils import check_catalog_source
 
 
 class Reader(FixerMixin, RegridMixin):
-    """General reader for NextGEMS data (on Levante for now)"""
+    """General reader for NextGEMS and other data"""
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
                  regrid=None, method="ycon", zoom=None, configdir=None,
@@ -261,6 +261,10 @@ class Reader(FixerMixin, RegridMixin):
 
         log_history(data, "retrieved by AQUA retriever")
 
+        # Add grid areas to the data
+        xr.align(self.src_grid_area, data, join='exact')   # make sure of perfect alignment
+        data = data.assign({"grid_areas": self.src_grid_area})
+
         # sequence which should be more efficient: decumulate - averaging - regridding - fixing
         if decumulate:
             # data = data.map(self.decumulate, keep_attrs=True)
@@ -268,8 +272,8 @@ class Reader(FixerMixin, RegridMixin):
         if self.freq and timmean:
             data = self.timmean(data)
         if self.targetgrid and regrid:
-            data = self.regridder.regrid(data)
-            self.grid_area = self.dst_grid_area
+            data = self.regrid(data)
+
         if fix:   # Do not change easily this order. The fixer assumes to be after regridding
             data = self.fixer(data, apply_unit_fix=apply_unit_fix)
         if streaming or self.streaming or streaming_generator:
@@ -300,6 +304,9 @@ class Reader(FixerMixin, RegridMixin):
         # set these two to the target grid (but they are actually not used so far)
         self.grid_area = self.dst_grid_area
         self.space_coord = ["lon", "lat"]
+
+        xr.align(self.dst_grid_area, out, join='exact')  # make sure of perfect alignment
+        data = data.assign({"grid_areas": self.dst_grid_area})
 
         log_history(out, "regridded by AQUA regridder")
         return out
@@ -446,44 +453,27 @@ class Reader(FixerMixin, RegridMixin):
 
         return clean
 
-    def _check_if_regridded(self, data):
-        """
-        Checks if a dataset or Datarray has been regridded.
-
-        Arguments:
-            data (xr.DataArray or xarray.DataDataset):  the input data
-        Returns:
-            A boolean value
-        """
-
-        if isinstance(data, xr.Dataset):
-            att = list(data.data_vars.values())[0].attrs
-        else:
-            att = data.attrs
-
-        return att.get("regridded", False)
-
-    def fldmean(self, data):
+    def fldmean(self, data, grid_area=None):
         """
         Perform a weighted global average.
 
         Arguments:
             data (xr.DataArray or xarray.DataDataset):  the input data
+            grid_area (xr.DataArray):  optional grid area
         Returns:
             the value of the averaged field
         """
 
-        # If these data have been regridded we should use the destination grid info
-        if self._check_if_regridded(data):
-            space_coord = self.dst_space_coord
-            grid_area = self.dst_grid_area
-        else:
-            space_coord = self.src_space_coord
-            grid_area = self.src_grid_area
+        # If the data have no grid_areas, and none have been specified
+        # we use the one from the reader
+        if "grid_areas" in data.variables:
+            grid_area = data.grid_areas
+        elif not grid_area:
+            grid_area = self.grid_area
 
         # check if coordinates are aligned
         xr.align(grid_area, data, join='exact')
 
-        out = data.weighted(weights=grid_area.fillna(0)).mean(dim=space_coord)
+        out = data.weighted(weights=grid_area.fillna(0)).mean()
 
         return out
