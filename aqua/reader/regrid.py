@@ -31,7 +31,7 @@ class RegridMixin():
         self.logger.warning("Success!")
 
     def _make_src_area_file(self, areafile, source_grid,
-                            gridpath="", icongridpath="", zoom=None):
+                            gridpath="", icongridpath="", zoom=0):
         """Helper function to create source area files."""
 
         sgridpath = source_grid.get("path", None)
@@ -44,8 +44,7 @@ class RegridMixin():
             _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
         else:
             temp_file = None
-            if zoom:
-                sgridpath = sgridpath.format(zoom=9-zoom)
+            sgridpath = sgridpath.format(zoom=zoom)
 
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
@@ -62,7 +61,7 @@ class RegridMixin():
         grid_area.to_netcdf(areafile)
         self.logger.warning("Success!")
 
-    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid=None, extra=None, zoom=None):
+    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid=None, extra=None, zoom=0):
         """Helper function to produce weights file"""
 
         sgridpath = source_grid.get("path", None)
@@ -75,8 +74,7 @@ class RegridMixin():
             _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
         else:
             temp_file = None
-            if zoom:
-                sgridpath = sgridpath.format(zoom=9-zoom)
+            sgridpath = sgridpath.format(zoom=zoom)
 
         self.logger.warning("Weights file not found: %s", weightsfile)
         self.logger.warning("Attempting to generate it ...")

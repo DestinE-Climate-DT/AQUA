@@ -26,7 +26,7 @@ class Reader(FixerMixin, RegridMixin):
     """General reader for NextGEMS data (on Levante for now)"""
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
-                 regrid=None, method="ycon", zoom=None, configdir=None,
+                 regrid=None, method="ycon", zoom=0, configdir=None,
                  level=None, areas=True, var=None, vars=None,  # pylint: disable=W0622
                  datamodel=None, streaming=False, stream_step=1, stream_unit='steps',
                  stream_startdate=None, rebuild=False, loglevel=None):
@@ -40,7 +40,7 @@ class Reader(FixerMixin, RegridMixin):
             source (str):           source ID
             regrid (str):           perform regridding to grid `regrid`, as defined in `config/regrid.yaml` (None)
             method (str):           regridding method (ycon)
-            zoom (int):             healpix zoom level
+            zoom (int):             healpix zoom level. (Default 0, i.e. the coarser option)
             configdir (str)         folder where the config/catalog files are located (config)
             level (int):            level to extract if input data are 3D (starting from 0)
             areas (bool):           compute pixel areas if needed (True)
@@ -68,8 +68,6 @@ class Reader(FixerMixin, RegridMixin):
         self.exp = exp
         self.model = model
         self.targetgrid = regrid
-        if (exp == "hpx") and not zoom:
-            zoom = 9
         self.zoom = zoom
         self.freq = freq
         self.level = level
@@ -112,7 +110,7 @@ class Reader(FixerMixin, RegridMixin):
         self.vertcoord = source_grid.get("vertcoord", None)  # Some more checks needed
 
         # Expose grid information for the source
-        sgridpath = source_grid.get("path", None)
+        sgridpath = source_grid.get("path", None).format(zoom=zoom)
         if sgridpath:
             self.src_grid = xr.open_dataset(sgridpath)
         else:

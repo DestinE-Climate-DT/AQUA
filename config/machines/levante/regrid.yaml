@@ -125,7 +125,7 @@ source_grids:
       #   space_coord: ["lon", "lat"]
     hpx:
       default:
-        path: /work/bb1153/b382075/nextgems/grids/icon_hpx{zoom}.nc
+        path: '/work/bb1153/b382076/grids/healpix_grids/icon_hpx{zoom}.nc'
         space_coord: ["pix"]
   
   FESOM:
