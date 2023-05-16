@@ -1,0 +1,15 @@
+models:  
+    ERA5:
+        default:
+            default:
+                deltat: 86400
+                data_model: cf
+            monthly_acc:
+                deltat: 86400
+                data_model: cf
+                vars:
+                    # Derive a variable and determine destination units etc. automatically from eccodes
+                    tprate:
+                        derived: cp+lsp
+                        #src_units: m
+                        grib: true

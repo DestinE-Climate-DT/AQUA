@@ -1,0 +1,10 @@
+models:  
+    MSWEP:
+        default:
+            default:
+                data_model: mswep  # Special data model so that lats are not flipped
+                vars:
+                    # Automatic conversion to destination grib units
+                    tprate:
+                        source: precipitation
+                        grib: true

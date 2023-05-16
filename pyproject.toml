@@ -42,7 +42,8 @@ dependencies = [
     "pyYAML",
     "sparse",
     "xarray",
-    "smmregrid@git+https://github.com/jhardenberg/smmregrid"
+    "smmregrid",
+    "one_pass@git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git"
 ]
 
 [project.optional-dependencies]
