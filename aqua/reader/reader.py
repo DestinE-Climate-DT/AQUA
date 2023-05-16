@@ -110,9 +110,9 @@ class Reader(FixerMixin, RegridMixin):
         self.vertcoord = source_grid.get("vertcoord", None)  # Some more checks needed
 
         # Expose grid information for the source
-        sgridpath = source_grid.get("path", None).format(zoom=zoom)
+        sgridpath = source_grid.get("path", None)
         if sgridpath:
-            self.src_grid = xr.open_dataset(sgridpath)
+            self.src_grid = xr.open_dataset(sgridpath.format(zoom=zoom))
         else:
             self.src_grid = None
 
