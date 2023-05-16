@@ -9,3 +9,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/tco79-orca1.yaml'
+  tco399-eORCA025:
+    description: tco399-eORCA025 data
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/tco399-eORCA025.yaml'

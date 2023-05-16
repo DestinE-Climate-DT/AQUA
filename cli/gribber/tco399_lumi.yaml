@@ -7,7 +7,7 @@ id:
 # Directories for gribber
 dir:
   # directory where grib files from the experiments are
-  datadir: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/experiments/h8304.N1.T32xt4xh1.nextgems_6h.i16r0w24.eORCA1_Z75.htco79-2817684'
+  datadir: '/pfs/lustrep3/scratch/project_465000454/kkeller/experiments/tco399eO025/h17064.N24.T1536xt2xh1.nextgems_6h.i16r0w24.ORCA025_Z75.htco399-3108333'
   # directory where the index will be generated
   tmpdir: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/gribscan-files/tmp'
   # directory where the resulting json will be produced
