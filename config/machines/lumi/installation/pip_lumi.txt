@@ -1,0 +1,8 @@
+# pip dependencies
+pip install sparse
+pip install docker
+pip install gribscan
+# pip install -e of AQUA itself (this will bring in also smmregrid)
+pip install -e $AQUA
+# pip install of one pass algorithm
+pip install git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git

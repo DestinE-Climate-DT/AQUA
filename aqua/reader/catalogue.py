@@ -13,7 +13,7 @@ def catalogue(verbose=True, configdir=None):
     machine = get_machine(configdir)
 
     # get configuration from the machine
-    catalog_file, _, _ = get_reader_filenames(configdir, machine)
+    catalog_file, _, _, _ = get_reader_filenames(configdir, machine)
 
     cat = intake.open_catalog(catalog_file)
     if verbose:
