@@ -1,7 +1,6 @@
 """Regridder mixin for the Reader class"""
 
 import os
-import sys
 
 import subprocess
 import tempfile

@@ -117,7 +117,7 @@ class Reader(FixerMixin, RegridMixin):
         # Expose grid information for the source
         sgridpath = source_grid.get("path", None)
         if sgridpath:
-            self.src_grid = xr.open_dataset(sgridpath)
+            self.src_grid = xr.open_dataset(sgridpath, decode_times=False)
         else:
             self.src_grid = None
 
@@ -167,12 +167,19 @@ class Reader(FixerMixin, RegridMixin):
 
             # If source areas do not exist, create them
             if rebuild or not os.path.exists(self.src_areafile):
-                if os.path.exists(self.src_areafile):
-                    os.unlink(self.src_areafile)
-                self._make_src_area_file(self.src_areafile, source_grid,
-                                         gridpath=cfg_regrid["cdo-paths"]["download"],
-                                         icongridpath=cfg_regrid["cdo-paths"]["icon"],
-                                         zoom=zoom)
+                # Another possibility: was a "cellarea" file provided in regrid.yaml?
+                cellareas = source_grid.get("cellareas", None)
+                cellarea_var = source_grid.get("cellarea_var", None)
+                if cellareas and cellarea_var:
+                    xr.open_mfdataset(cellareas)[cellarea_var].rename("cell_area").squeeze().to_netcdf(self.src_areafile)
+                else:
+                    # We have to reconstruct it
+                    if os.path.exists(self.src_areafile):
+                        os.unlink(self.src_areafile)
+                    self._make_src_area_file(self.src_areafile, source_grid,
+                                             gridpath=cfg_regrid["cdo-paths"]["download"],
+                                             icongridpath=cfg_regrid["cdo-paths"]["icon"],
+                                             zoom=zoom)
 
             self.src_grid_area = xr.open_mfdataset(self.src_areafile).cell_area
 

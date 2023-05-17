@@ -238,6 +238,9 @@ source_grids:
     ebaf-sfc41:
       default:
         space_coord: ["lon", "lat"]
+    ebaf-sfc42:
+      default:
+        space_coord: ["lon", "lat"]
     syn-toa41:
       default:
         space_coord: ["lon", "lat"]
@@ -248,4 +251,18 @@ source_grids:
         path: /work/bb1153/b382075/nextgems/grids/n320_unstructured.nc
         space_coord: ["values"]
 
+  OSI-SAF:
+    osi-450:
+      nh:
+        space_coord: ["xc", "yc"]
+        cellareas: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
+        cellarea_var: areacello
+        mask: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
+        mask_var: sftof
+      sh:
+        space_coord: ["xc", "yc"]
+        cellareas: /work/bb1153/b382075/nextgems/grids/grid_sh.nc
+        cellarea_var: areacello
+        mask: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
+        mask_var: sftof
 
