@@ -10,10 +10,11 @@ channels:
 dependencies:
   - python>=3.9,<3.11
   - libnetcdf<=4.8.1 
+  - netcdf4
   - xarray
   - dask
   - numpy
-  - netcdf4
+  - numba
   - ecCodes      
   - matplotlib
   - cartopy
@@ -23,17 +24,28 @@ dependencies:
   - intake-esm<=2021.8.17
   - intake
   - intake-xarray
+  - tempest-extremes
 # these below are only required for running notebooks
   - ipykernel
   - healpy
-# these below is required by TCs
-  - tempest-extremes
+# these below are only required for tests
+  - pytest
+  - pytest-cov
+  - coverage[toml]
+  - pycobertura
+# these below are only required for documentation
+  - sphinx
+  - sphinx-rtd-theme
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
   - pip:
     - sparse
     - docker
     - gribscan
-    # pip install -e of AQUA itself (this will bring in also smmregrid)
+    - smmregrid
+    - dask_jobqueue
+    # get OPA
+    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git
+    # pip install -e of AQUA itself
     - -e ../../
 
