@@ -135,14 +135,14 @@ class TCs():
         if self.model in 'IFS':
             self.varlist2d = ['msl', '10u', '10v']
             self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                regrid=self.lowgrid, vars = self.varlist2d, streaming=self.streaming, stream_step=self.stream_step, 
+                                regrid=self.lowgrid, streaming=self.streaming, stream_step=self.stream_step, 
                                 stream_unit=self.stream_units, stream_startdate=self.stream_startdate, loglevel=self.loglevel)
             self.varlist3d = ['z']
             self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
-                                regrid=self.lowgrid, vars = self.varlist3d, streaming=self.streaming, loglevel=self.loglevel,
+                                regrid=self.lowgrid, streaming=self.streaming, loglevel=self.loglevel,
                                 stream_step=self.stream_step, stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
             self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
-                                        regrid=self.highgrid, var = self.var2store,
+                                        regrid=self.highgrid,
                                         streaming=self.streaming, stream_step=self.stream_step, loglevel=self.loglevel,
                                         stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
         else:
@@ -158,9 +158,9 @@ class TCs():
         
         # now retrieve 2d and 3d data needed  
         else:
-            self.data2d = self.reader2d.retrieve()
-            self.data3d = self.reader3d.retrieve()
-            self.fullres = self.reader_fullres.retrieve()
+            self.data2d = self.reader2d.retrieve(vars = self.varlist2d)
+            self.data3d = self.reader3d.retrieve(vars = self.varlist3d)
+            self.fullres = self.reader_fullres.retrieve(var = self.var2store)
 
         if self.streaming:     
             self.stream_enddate = self.data2d.time[-1].values
