@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     # Create Gribber object
     gribber = Gribber(model=model, exp=exp, source=source, nprocs=nprocs,
-                      dir=config['dir'],
+                      dirdict=config['dir'],
                       loglevel=loglevel, overwrite=overwrite)
 
     # Create .catalog entry

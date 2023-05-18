@@ -1,0 +1,10 @@
+plugins:
+  source:
+  - module: intake_xarray
+  - module: gribscan
+sources:
+  ICMGG_atm2d:
+    driver: zarr
+    args:
+      consolidated: false
+      urlpath: reference::/projappl/project_465000454/nurissom/gribber-json/tco79-eORCA1/atm2d.json

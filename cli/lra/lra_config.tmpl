@@ -1,13 +1,18 @@
 #This include the option for the regridding
 target:
   resolution: r100
-  frequency: mon
+  frequency: monthly
   outdir: /work/bb1153/b382076/LRA
   tmpdir: /scratch/b/b382076
 
 # Logging level
 configdir: '../../config/'
 loglevel: INFO
+
+# do you want to use intermediate opa layer to genrate LRA?
+opa:
+  use_opa: True
+  opadir: /scratch/b/b382076/one_pass
 
 # all the variable listed here will be processed by the LRA creator
 catalog:

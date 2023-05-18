@@ -27,6 +27,8 @@ jobs:
         with:
           environment-file: environment.yml
           cache-downloads: true
+          channels: conda-forge,numba
+          channel-priority: flexible
           extra-specs: |
               python=${{ matrix.python-version }}
       - name: Download and setup tests
@@ -37,8 +39,9 @@ jobs:
 
           python -m pytest ./tests/test_basic.py
           python -m pytest ./tests/test_catalog.py 
-          python -m pytest ./tests/test_fldmean.py
-          python -m pytest ./tests/test_timmean.py                
+          python -m pytest ./tests/test_fixer.py
+          python -m pytest ./tests/test_fldmean.py   
+          python -m pytest ./tests/test_regrid.py             
           python -m pytest ./tests/test_streaming.py
-          python -m pytest ./tests/test_regrid.py
+          python -m pytest ./tests/test_timmean.py
 

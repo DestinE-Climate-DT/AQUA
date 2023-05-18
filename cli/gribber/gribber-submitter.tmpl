@@ -14,12 +14,15 @@ set -e
 whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
 source $whereconda/etc/profile.d/conda.sh
 
+# specify the number of workers
+workers = 8
+
 # activate conda environment
 conda activate aqua
 
 # run the Python script
 # -c to specify the configuration file
 # -n to specify the number of processors
-# -o to overwrite existing lra
+# -o to overwrite existing json file
 # -l to set the log level (default is WARNING)
-./cli_lra_generator.py --config gribber_setup.yaml -w ${workers} -d -v
+./cli_gribber.py --config gribber_setup.yaml -n ${workers}

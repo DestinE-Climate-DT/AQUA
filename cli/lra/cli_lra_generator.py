@@ -9,6 +9,7 @@ a configuration yaml file.
 import sys
 import argparse
 from aqua import LRAgenerator
+from aqua import OPAgenerator
 from aqua.util import load_yaml, get_arg
 
 
@@ -48,25 +49,53 @@ if __name__ == '__main__':
     tmpdir = config['target']['tmpdir']
     configdir = config['configdir']
     loglevel= config['loglevel']
+    use_opa = config['opa']['use_opa']
+    opadir =  config['opa']['opadir']
 
     definitive = get_arg(args, 'definitive', False)
     overwrite = get_arg(args, 'overwrite', False)
     fix = get_arg(args, 'fix', True)
+    if use_opa:
+        fix = False #when using OPA, this avoid double decumulation
     workers = get_arg(args, 'workers', 1)
     loglevel = get_arg(args, 'loglevel', loglevel)
 
     for model in config['catalog'].keys():
         for exp in config['catalog'][model].keys():
             for source in config['catalog'][model][exp].keys():
-                varlist = config['catalog'][model][exp][source]['vars']
-                lra = LRAgenerator(model=model, exp=exp, source=source,
-                                    var=varlist, resolution=resolution,
-                                    frequency=frequency, fix=fix,
-                                    outdir=outdir, tmpdir=tmpdir, configdir=configdir,
-                                    nproc=workers, loglevel=loglevel,
-                                    definitive=definitive, overwrite=overwrite)
-                lra.retrieve()
-                lra.generate_lra()
-                lra.create_catalog_entry()
+                for varname in config['catalog'][model][exp][source]['vars']:
+
+                    # init the OPA
+                    if use_opa:
+                        opa = OPAgenerator(model=model, exp=exp, source=source,
+                                            var=varname, frequency=frequency,
+                                            outdir=opadir, tmpdir=tmpdir, configdir=configdir,
+                                            loglevel=loglevel, definitive=definitive, nproc=1)
+                        entry = opa.entry_name
+                    else:
+                        entry = source
+                    
+                    # init the LRA
+                    lra = LRAgenerator(model=model, exp=exp, source=entry,
+                                        var=varname, resolution=resolution,
+                                        frequency=frequency, fix=fix,
+                                        outdir=outdir, tmpdir=tmpdir, configdir=configdir,
+                                        nproc=workers, loglevel=loglevel,
+                                        definitive=definitive, overwrite=overwrite)
+                    
+                    # check that your LRA is not already there (it will not work in streaming mode)
+                    check = lra.check_integrity(varname)
+
+                    if check:
+                        # run OPA and LRA
+                        if use_opa:
+                            opa.retrieve()
+                            opa.generate_opa()
+                            opa.create_catalog_entry()
+                        lra.retrieve()
+                        lra.generate_lra()
+                        lra.create_catalog_entry()
+                        if use_opa:
+                            opa.clean()
 
     print('LRA run completed. Have yourself a beer!')
