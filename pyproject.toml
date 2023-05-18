@@ -52,7 +52,10 @@ docs = [
     "sphinx-rtd-theme==1.2.*"
 ]
 tests = [
-    "pytest==7.3.*"
+    "pytest==7.3.*",
+    "pytest-cov==4.0.*",
+    "coverage[toml]==7.2.*",
+    "pycobertura==3.0.*"
 ]
 all = [
     "aqua[tests]",
@@ -75,3 +78,42 @@ find = {}
 
 [tool.setuptools.dynamic]
 version = {attr = "aqua.__version__"}
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=aqua --cov-config=.coveragerc"
+testpaths = [
+    "tests"
+]
+markers = [
+    "aqua: mark test as AQUA framework",
+    "slow: tests which are slow",
+    "dummy: mark test for dummy diagnostic"
+]
+
+# This appears to be the correct configuration, but for some reason
+# pytest-cov doesn't appear to be reading this? We are passing some
+# options via the command-line for now, but this needs to be fixed.
+# Ref: https://github.com/pytest-dev/pytest-cov/issues/390
+[tool.coverage.run]
+branch = true
+command_line = '-m pytest tests'
+source = ["aqua"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+ignore_errors = true
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "def __str__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "if typing.TYPE_CHECKING:"
+]
+
+[tool.coverage.html]
+show_contexts = true
+directory = "coverage/html"

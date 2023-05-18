@@ -28,65 +28,34 @@ class Gribber():
                  overwrite=False
                  ) -> None:
         """
-        Initialize class.
+        Initialize the Gribber class.
 
-        Parameters
-        ----------
-        model : str
-            Model name
-        exp : str
-            Experiment name
-        source : str
-            Source name
-        nprocs : int, optional
-            Number of processors, by default 1
-        dirdict : dict, optional
-            Dictionary with directories
-            data: data directory
-            tmp: temporary directory
-            json: JSON directory (output)
-            configdir: catalog directory to update
-        description : str, optional
-            Description of the experiment, by default None
-        loglevel : str, optional
-            Log level, by default None
-        overwrite : bool, optional
-            Overwrite JSON file and indices if they exist, by default False
+        Args:
+            model (str, optional): Model name. Defaults to None.
+            exp (str, optional): Experiment name. Defaults to None.
+            source (str, optional): Source name. Defaults to None.
+            nprocs (int, optional): Number of processors. Defaults to 1.
+            dirdict (dict, optional): Dictionary with directories:
+                data: data directory
+                tmp: temporary directory
+                json: JSON directory (output)
+                configdir: catalog directory to update
+                Defaults to {'datadir': None, 'tmpdir': None, 'jsondir': None, 'configdir': None}.
+            description (str, optional): Description of the experiment. Defaults to None.
+            loglevel (str, optional): Log level. Defaults to None.
+            overwrite (bool, optional): Overwrite JSON file and indices if they exist. Defaults to False.
 
-        Methods
-        -------
-        create_entry()
-            Create catalog entry.
-
-        _check_steps()
-            Check which steps have to be performed.
-
-        _check_dir()
-            Check if directories exist.
-
-        _check_indices()
-            Check if indices exist.
-
-        _check_json()
-            Check if JSON file exists.
-
-        _check_catalog()
-            Check if catalog file exists.
-
-        _create_symlinks()
-            Create symlinks to GRIB files.
-
-        _create_indices()
-            Create indices for GRIB files.
-
-        _create_json()
-            Create JSON file.
-
-        _create_catalog_entry()
-            Create catalog entry.
-
-        help()
-            Print help.
+        Methods:
+            Only private methods are listed here.
+            _check_steps(): Check which steps have to be performed.
+            _check_dir(): Check if directories exist.
+            _check_indices(): Check if indices exist.
+            _check_json(): Check if JSON file exists.
+            _check_catalog(): Check if catalog file exists.
+            _create_symlinks(): Create symlinks to GRIB files.
+            _create_indices(): Create indices for GRIB files.
+            _create_json(): Create JSON file.
+            _create_catalog_entry(): Create catalog entry.
         """
         self.logger = log_configure(loglevel, 'gribber')
         self.overwrite = overwrite

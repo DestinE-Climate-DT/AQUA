@@ -4,10 +4,18 @@ plugins:
 
 sources:
   monthly:
-    description: CERES EBAF TOA Ed4.2 from 2002 to 2022
+    description: CERES EBAF TOA Ed4.2 from 2000 to 2023
     driver: netcdf
     args:
-      urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Ed4.2_Subset_200003-202208.nc'
+      urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Edition4.2_MONTHLY_200003-202301.nc'
       chunks: {}
       xarray_kwargs:
         decode_times: True
+  # zonal_monthly:
+  #   description: CERES EBAF TOA Ed4.2 from 2000 to 2023
+  #   driver: netcdf
+  #   args:
+  #     urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Edition4.2_ZONALMEAN_MONTHLY_200003-202301.nc'
+  #     chunks: {}
+  #     xarray_kwargs:
+  #       decode_times: True

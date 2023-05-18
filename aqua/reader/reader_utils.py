@@ -4,12 +4,17 @@
 def check_catalog_source(cat, model, exp, source, name="dictionary"):
     """
     Check the entries of a nested dictionary based on the model/exp/source structure
-    and return an updated source.
-    The name argument can be used for a proper printing.
+    and return an updated source. The name argument can be used for proper printing.
+
+    Args:
+        cat (dict): The nested dictionary containing the catalog information.
+        model (str): The model ID to check in the catalog.
+        exp (str): The experiment ID to check in the catalog.
+        source (str): The source ID to check in the catalog.
+        name (str, optional): The name used for printing. Defaults to "dictionary".
 
     Returns:
-    an updated source id (str).
-    If source is not specified "default" is chosen or, if missing, the first source
+        str: An updated source ID. If the source is not specified, "default" is chosen, or, if missing, the first source.
     """
 
     if model not in cat:

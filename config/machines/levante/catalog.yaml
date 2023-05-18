@@ -44,3 +44,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/catalog/WOA18/main.yaml"
+  OSI-SAF:
+    description: OSI-SAF sea-ice data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/OSI-SAF/main.yaml"

@@ -9,9 +9,16 @@ on:
   schedule:
     - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
 
+permissions:
+  contents: read
+
 jobs:
   aqua_test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -35,13 +42,61 @@ jobs:
         run: |
           ./download_data_for_tests.sh
       - name: Run tests
+        # NOTE: We could gain a few seconds in the build, if needed,
+        #       by running with coverage in only one matrix job run.
         run: |
+          pytest --cov=aqua --cov-report=xml --cov-branch -m "aqua or slow"
 
-          python -m pytest ./tests/test_basic.py
-          python -m pytest ./tests/test_catalog.py 
-          python -m pytest ./tests/test_fixer.py
-          python -m pytest ./tests/test_fldmean.py   
-          python -m pytest ./tests/test_regrid.py             
-          python -m pytest ./tests/test_streaming.py
-          python -m pytest ./tests/test_timmean.py
+          if [[ "${{ matrix.python-version }}" = "3.10" ]]; then
+            # Here we store the output of pycobertura (a tool that parses the
+            # Cobertura-compatible coverage.xml produced by pytest-cov) in a
+            # shell variable.
+            COVERAGE_REPORT=$(pycobertura show --format markdown coverage.xml 2>/dev/null)
+            # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+            EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+            echo "COVERAGE_REPORT<<$EOF" >> $GITHUB_ENV
+            echo "${COVERAGE_REPORT}" >> $GITHUB_ENV
+            echo "$EOF" >> $GITHUB_ENV
+            
+            echo "Generated coverage report:"
+            echo "${COVERAGE_REPORT}"
+          fi
+      - name: Publish coverage reports
+        # Publish the coverage reports in only one matrix job run.
+        if: matrix.python-version == '3.10'
+        # Comment on an issue or pull request using GH Actions tooling:
+        # https://github.com/actions/github-script#comment-on-an-issue
+        uses: actions/github-script@v6
+        id: coverage-report
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          # Based on: https://github.com/actions/github-script/blob/060d68304cc19ea84d828af10e34b9c6ca7bdb31/.github/workflows/pull-request-test.yml
+          script: |
+            // Get the existing comments.
+            const {data: comments} = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.number,
+            })
 
+            // Find any comment already made by the bot.
+            const botComment = comments.find(comment => comment.user.id === 41898282)
+            const commentBody = `${{ env.COVERAGE_REPORT }}`
+
+            if (botComment) {
+              console.log(`Updating comment in ${context.repo.owner}/${context.repo.repo}, comment ID: ${botComment.id}`)
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              })
+            } else {
+              console.log(`Creating comment in ${context.repo.owner}/${context.repo.repo}`)
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              })
+            }

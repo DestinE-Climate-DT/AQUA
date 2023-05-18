@@ -23,7 +23,7 @@ from .reader_utils import check_catalog_source
 
 
 class Reader(FixerMixin, RegridMixin):
-    """General reader for NextGEMS data (on Levante for now)"""
+    """General reader for NextGEMS data."""
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
                  regrid=None, method="ycon", zoom=None, configdir=None,
@@ -31,31 +31,29 @@ class Reader(FixerMixin, RegridMixin):
                  datamodel=None, streaming=False, stream_step=1, stream_unit='steps',
                  stream_startdate=None, rebuild=False, loglevel=None):
         """
-        The Reader constructor.
-        It uses the catalog `config/config.yaml` to identify the required data.
+        Initializes the Reader class, which uses the catalog `config/config.yaml` to identify the required data.
 
-        Arguments:
-            model (str):            model ID
-            exp (str):              experiment ID
-            source (str):           source ID
-            regrid (str):           perform regridding to grid `regrid`, as defined in `config/regrid.yaml` (None)
-            method (str):           regridding method (ycon)
-            zoom (int):             healpix zoom level
-            configdir (str)         folder where the config/catalog files are located (config)
-            level (int):            level to extract if input data are 3D (starting from 0)
-            areas (bool):           compute pixel areas if needed (True)
-            datamodel (str):        destination data model for coordinates, overrides the one in fixes.yaml (None)
-            streaming (bool):       if to retreive data in a streaming mode (False)
-            stream_step (int):      the number of time steps to stream the data by (Default = 1)
-            stream_unit (str):      the unit of time to stream the data by
-                                    (e.g. 'hours', 'days', 'months', 'years') (None)
-            stream_startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
-            rebuild (bool):         force rebuilding of area and weight files
-            loglevel (string):      Level of logging according to logging module
-                                    (default: log_level_default of loglevel())
+        Args:
+            model (str, optional): Model ID. Defaults to "ICON".
+            exp (str, optional): Experiment ID. Defaults to "tco2559-ng5".
+            source (str, optional): Source ID. Defaults to None.
+            regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
+            method (str, optional): Regridding method. Defaults to "ycon".
+            zoom (int, optional): Healpix zoom level. Defaults to None.
+            configdir (str, optional): Folder where the config/catalog files are located. Defaults to None.
+            level (int, optional): Level to extract if input data are 3D (starting from 0). Defaults to None.
+            areas (bool, optional): Compute pixel areas if needed. Defaults to True.
+            var (str or list, optional): Variable(s) to extract; "vars" is a synonym. Defaults to None.
+            datamodel (str, optional): Destination data model for coordinates, overrides the one in fixes.yaml. Defaults to None.
+            streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
+            stream_step (int, optional): The number of time steps to stream the data by. Defaults to 1.
+            stream_unit (str, optional): The unit of time to stream the data by (e.g. 'hours', 'days', 'months', 'years'). Defaults to 'steps'.
+            stream_startdate (str, optional): The starting date for streaming the data (e.g. '2020-02-25'). Defaults to None.
+            rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
+            loglevel (str, optional): Level of logging according to logging module. Defaults to log_level_default of loglevel().
 
         Returns:
-            A `Reader` class object.
+            Reader: A `Reader` class object.
         """
 
         # define the internal logger
@@ -117,7 +115,7 @@ class Reader(FixerMixin, RegridMixin):
         # Expose grid information for the source
         sgridpath = source_grid.get("path", None)
         if sgridpath:
-            self.src_grid = xr.open_dataset(sgridpath)
+            self.src_grid = xr.open_dataset(sgridpath, decode_times=False)
         else:
             self.src_grid = None
 
@@ -167,12 +165,19 @@ class Reader(FixerMixin, RegridMixin):
 
             # If source areas do not exist, create them
             if rebuild or not os.path.exists(self.src_areafile):
-                if os.path.exists(self.src_areafile):
-                    os.unlink(self.src_areafile)
-                self._make_src_area_file(self.src_areafile, source_grid,
-                                         gridpath=cfg_regrid["cdo-paths"]["download"],
-                                         icongridpath=cfg_regrid["cdo-paths"]["icon"],
-                                         zoom=zoom)
+                # Another possibility: was a "cellarea" file provided in regrid.yaml?
+                cellareas = source_grid.get("cellareas", None)
+                cellarea_var = source_grid.get("cellarea_var", None)
+                if cellareas and cellarea_var:
+                    xr.open_mfdataset(cellareas)[cellarea_var].rename("cell_area").squeeze().to_netcdf(self.src_areafile)
+                else:
+                    # We have to reconstruct it
+                    if os.path.exists(self.src_areafile):
+                        os.unlink(self.src_areafile)
+                    self._make_src_area_file(self.src_areafile, source_grid,
+                                             gridpath=cfg_regrid["cdo-paths"]["download"],
+                                             icongridpath=cfg_regrid["cdo-paths"]["icon"],
+                                             zoom=zoom)
 
             self.src_grid_area = xr.open_mfdataset(self.src_areafile).cell_area
 
