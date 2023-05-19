@@ -1,14 +1,14 @@
 weights:
-   path: /pfs/lustrep1/projappl/project_462000048/davini/aqua/weights
+   path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/weights
    template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
 
 areas:
-   path: /pfs/lustrep1/projappl/project_462000048/davini/aqua/areas
+   path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/areas
    src_template: cell_area_{model}_{exp}_{source}.nc
    dst_template: cell_area_{grid}.nc
 
-paths:
-  grids: /pfs/lustrep1/projappl/project_462000048/davini/aqua/weights
+cdo-paths:
+  download: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/weights
   icon: /pool/data/ICON
 
 target_grids:
@@ -33,7 +33,11 @@ source_grids:
   IFS:
     tco399-orca025:
       default:
-        path: /users/padavini/work/tcogrids/tco399_grid.nc
+        path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/grids/tco399_grid.nc
+        space_coord: ["value"]
+    tco79-eORCA1:
+      ICMGG_atm2d:
+        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
         space_coord: ["value"]
     test-tco79:
       original_2d:

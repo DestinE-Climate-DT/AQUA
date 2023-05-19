@@ -1,0 +1,39 @@
+models:
+    FESOM:
+        default:
+            interpolated_global_TS:
+                data_model: False  # Do not attempto to correct coordinates
+                vars:
+                    ocpt: 
+                        derived: temp
+                        src_units: degC
+                        grib: true
+                        units: degC # Override units from grib tables
+            original_2d:
+                data_model: false
+                delete:  # variables to drop at the end
+                    - a_ice
+                    - m_ice
+                    - sss
+                    - ssh
+                vars:
+                    ci:
+                        derived: a_ice
+                        src_units: frac
+                        grib: true
+                        units: '%'
+                    sst: 
+                        derived: sst
+                        src_units: degC
+                        grib: true
+                        units: K
+                    sos:
+                        derived: sss
+                        grib: true
+                        units: psu
+                    sithick:
+                        derived: m_ice
+                        grib: true
+                    zos:
+                        derived: ssh
+                        grib: true

@@ -13,13 +13,19 @@ from dask.diagnostics import ProgressBar
 from aqua.logger import log_configure
 from aqua.reader import Reader
 from aqua.util import create_folder, generate_random_string, load_yaml
-from aqua.util import get_config_dir, get_machine
+from aqua.util import get_config_dir, get_machine, file_is_complete
 
 
 class LRAgenerator():
     """
     Class to generate LRA data at required frequency/resolution
     """
+
+    @property
+    def dask(self):
+        """Check if dask is needed"""
+        return self.nproc > 1
+
     def __init__(self,
                  model=None, exp=None, source=None,
                  var=None, vars=None, configdir=None,
@@ -69,15 +75,12 @@ class LRAgenerator():
         self.nproc = int(nproc)
         self.tmpdir = tmpdir
         if self.nproc > 1:
-            self.dask = True
             self.logger.info('Running dask.distributed with %s workers', self.nproc)
             if not self.tmpdir:
                 raise KeyError('Please specify tmpdir for dask.distributed.')
 
             self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
                                         generate_random_string(10))
-        else:
-            self.dask = False
 
         # # Data settings
         # self._assign_key('model', model)
@@ -223,7 +226,7 @@ class LRAgenerator():
         }
 
         # find the catalog of my experiment
-        catalogfile = os.path.join(self.configdir, self.machine,
+        catalogfile = os.path.join(self.configdir, 'machines', self.machine,
                                    'catalog', self.model, self.exp+'.yaml')
 
         # load, add the block and close
@@ -265,33 +268,6 @@ class LRAgenerator():
             self.logger.warning('Removing temporary directory %s', self.tmpdir)
             os.removedirs(self.tmpdir)
 
-    def _file_is_complete(self, filename):
-
-        """Basic check to see if file exists and that includes values which are not NaN
-        Return a boolean that can be used as a flag for further operation
-        True means that we have to re-do the computation"""
-
-        if os.path.isfile(filename):
-            self.logger.info('File %s is found...', filename)
-            try:
-                xfield = xr.open_dataset(filename)
-                varname = list(xfield.data_vars)[0]
-                if xfield[varname].isnull().all():
-                #if xfield[varname].isnull().all(dim=['lon','lat']).all():
-                    self.logger.error('File %s is full of NaN! Recomputing...', filename)
-                    check=True
-                else:
-                    check=False
-                    self.logger.info('File %s seems ok!', filename)
-            # we have no clue which kind of exception might show up
-            except BaseException:
-                self.logger.info('Something wrong with file %s! Recomputing...', filename)
-                check= True
-        else:
-            self.logger.info('File %s not found...', filename)
-            check = True
-
-        return check
 
     def _concat_var(self, var, year):
         """
@@ -315,6 +291,35 @@ class LRAgenerator():
             self.logger.info('Cleaning %s...',  infile)
             os.remove(infile)
 
+    def get_filename(self, var, year=None, month=None):
+
+        """Create output filenames"""
+
+        filename = os.path.join(self.outdir,
+                f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc')
+        if (year is not None) and (month is None):
+            filename = filename.replace("*", str(year))
+        if (year is not None) and (month is not None):
+            filename = filename.replace("*", str(year) + str(month).zfill(2))
+
+        return filename
+    
+    def check_integrity(self, varname):
+
+        """To check if the LRA entry is fine before running"""
+                     
+        yearfiles = self.get_filename(varname)
+        yearfiles = glob.glob(yearfiles)
+        checks = [file_is_complete(yearfile) for yearfile in yearfiles]
+        all_checks_true = all(checks)
+        if not all_checks_true and not self.overwrite:
+            self.logger.warning('All the data seem there for var %s...', varname)
+            self.definitive = False
+            return False
+        else:
+            self.logger.warning('Still need to run for var %s...', varname)
+            return True
+
     def _write_var(self, var):
         """
         Write variable to file
@@ -335,9 +340,8 @@ class LRAgenerator():
         for year in years:
 
             self.logger.info('Processing year %s...', str(year))
-            yearfile = os.path.join(self.outdir,
-                                    f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
-            filecheck = self._file_is_complete(yearfile)
+            yearfile = self.get_filename(var, year)
+            filecheck = file_is_complete(yearfile, self.logger)
             if not filecheck and not self.overwrite:
                 self.logger.warning('Yearly file %s already exists, skipping...', yearfile)
                 continue
@@ -347,10 +351,9 @@ class LRAgenerator():
             months = set(year_data.time.dt.month.values)
             for month in months:
                 self.logger.info('Processing month %s...', str(month))
-                outfile = os.path.join(self.outdir,
-                                     f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}{str(month).zfill(2)}.nc')
+                outfile = self.get_filename(var, year, month)
                 # checking if file is there and is complete
-                filecheck = self._file_is_complete(outfile)
+                filecheck = file_is_complete(outfile, self.logger)
                 if not filecheck and not self.overwrite:
                     self.logger.warning('Monthly file %s already exists, skipping...', outfile)
                     continue
@@ -362,9 +365,9 @@ class LRAgenerator():
                     self._write_var_month(month_data, outfile)
 
                     # check everything is correct
-                    self._file_is_complete(outfile)
+                    filecheck = file_is_complete(outfile, self.logger)
                     # we can later add a retry
-                    if not filecheck:
+                    if filecheck:
                         self.logger.error('Something has gone wrong in %s!', outfile)
                 del month_data
             del year_data

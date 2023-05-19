@@ -11,14 +11,16 @@
 name: teleconnections
 channels:
   - conda-forge
+  - numba
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   - python>=3.9,<3.11
   - libnetcdf<=4.8.1
+  - netcdf4
   - xarray
   - dask
   - numpy
-  - netcdf4
+  - numba
   - ecCodes      
   - matplotlib
   - cartopy
@@ -39,7 +41,10 @@ dependencies:
     - sparse
     - docker
     - gribscan
-    # pip install -e of AQUA itself (this will bring in also smmregrid)
+    - smmregrid
+    # get OPA
+    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git
+    # pip install -e of AQUA itself
     - -e ./../../
   
         
