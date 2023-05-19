@@ -1,7 +1,6 @@
 """Regridder mixin for the Reader class"""
 
 import os
-import sys
 
 import subprocess
 import tempfile
@@ -14,7 +13,16 @@ class RegridMixin():
     """Regridding mixin for the Reader class"""
 
     def _make_dst_area_file(self, areafile, grid):
-        """Helper function to create destination (regridded) area files."""
+        """
+        Helper function to create destination (regridded) area files.
+
+        Args:
+            areafile (str): The path to the destination area file to be created.
+            grid (str): The destination grid specification.
+
+        Returns:
+            None
+        """
 
         self.logger.warning("Destination areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
@@ -32,7 +40,19 @@ class RegridMixin():
 
     def _make_src_area_file(self, areafile, source_grid,
                             gridpath="", icongridpath="", zoom=None):
-        """Helper function to create source area files."""
+        """
+        Helper function to create source area files.
+
+        Args:
+            areafile (str): The path to the source area file to be created.
+            source_grid (dict): The source grid specification.
+            gridpath (str, optional): The path to the grid files. Defaults to an empty string.
+            icongridpath (str, optional): The path to the ICON grid files. Defaults to an empty string.
+            zoom (int, optional): The zoom level for the grid (for HealPix grids). Defaults to None.
+
+        Returns:
+            None
+        """
 
         sgridpath = source_grid.get("path", None)
         if not sgridpath:
@@ -63,7 +83,20 @@ class RegridMixin():
         self.logger.warning("Success!")
 
     def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid=None, extra=None, zoom=None):
-        """Helper function to produce weights file"""
+        """
+        Helper function to produce weights file.
+
+        Args:
+            weightsfile (str): The path to the weights file to be created.
+            source_grid (dict): The source grid specification.
+            cfg_regrid (dict): The regrid configuration.
+            regrid (str, optional): The regrid option. Defaults to None.
+            extra (str or list, optional): Extra command(s) to apply to source grid before weight generation. Defaults to None.
+            zoom (int, optional): The zoom level for the grid (for HealPix grids). Defaults to None.
+
+        Returns:
+            None
+        """
 
         sgridpath = source_grid.get("path", None)
         if not sgridpath:
@@ -113,7 +146,7 @@ class RegridMixin():
                 extra (str): command(s) to apply to source grid before weight generation (can be a list)
 
             Returns:
-                :obj:`xarray.DataArray` with cell areas
+                xarray.DataArray: A DataArray containing cell areas.
         """
 
         # Make some temporary files that we'll feed to CDO
@@ -194,15 +227,12 @@ def _rename_dims(da, dim_list):
     If it has two coordinate names (e.g. "lon" and "lat") which appear also in `dim_list`,
     these are not touched.
 
-    Parameters
-    ----------
-    da (xarray.DataArray):  The input DataArray to rename.
-    dim_list (list of str): The list of dimension names to use.
+    Args:
+        da (xarray.DataArray): The input DataArray to rename.
+        dim_list (list of str): The list of dimension names to use.
 
-    Returns
-    -------
-    xarray.DataArray
-        A new DataArray with the renamed dimensions.
+    Returns:
+        xarray.DataArray: A new DataArray with the renamed dimensions.
     """
 
     dims = list(da.dims)

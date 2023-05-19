@@ -14,8 +14,13 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/ebaf-sfc41.yaml"
-  syn-toa41:
+  ebaf-sfc42:
     description: CERES-EBAF
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/ebaf-sfc42.yaml"
+  syn-toa41:
+    description: CERES-SYN
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/syn-toa41.yaml"

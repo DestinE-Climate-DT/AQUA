@@ -1,0 +1,9 @@
+{
+  "[python]": {
+
+        "editor.defaultFormatter": "ms-python.python",
+        "editor.formatOnType": false
+        "editor.formatOnSave": false
+    },
+
+}
