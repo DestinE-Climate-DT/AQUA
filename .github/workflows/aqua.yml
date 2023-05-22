@@ -14,6 +14,11 @@ permissions:
 
 jobs:
   aqua_test:
+    env:
+      # You can disable coverage by changing this to false. You can
+      # also add other Python versions to the matrix, pinning the
+      # coverage job to be executed only on certain versions.
+      COVERAGE_ENABLED: ${{ matrix.python-version == '3.10' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,29 +46,64 @@ jobs:
       - name: Download and setup tests
         run: |
           ./download_data_for_tests.sh
+      # Using GH Action https://github.com/marketplace/actions/cargo-install
+      # as it caches the binary installation (the official cargo is tailored for
+      # building Rust applications, this one is for installing tools with Cargo).
+      - name: Install htmlq
+        if: ${{ env.COVERAGE_ENABLED }}
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: htmlq
+          cache-key: cargo-coverage
+      - run: cargo install htmlq
+        if: ${{ env.COVERAGE_ENABLED }}
       - name: Run tests
         # NOTE: We could gain a few seconds in the build, if needed,
         #       by running with coverage in only one matrix job run.
         run: |
-          pytest --cov=aqua --cov-report=xml --cov-branch -m "aqua or slow"
-
-          if [[ "${{ matrix.python-version }}" = "3.10" ]]; then
-            # Here we store the output of pycobertura (a tool that parses the
-            # Cobertura-compatible coverage.xml produced by pytest-cov) in a
-            # shell variable.
-            COVERAGE_REPORT=$(pycobertura show --format markdown coverage.xml 2>/dev/null)
-            # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-            EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-            echo "COVERAGE_REPORT<<$EOF" >> $GITHUB_ENV
-            echo "${COVERAGE_REPORT}" >> $GITHUB_ENV
-            echo "$EOF" >> $GITHUB_ENV
+          # Produce the HTML report. Defaults to writing in htmlcov/index.html.
+          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow"
+          
+          if [[ ${COVERAGE_ENABLED} ]]; then
+            # Extract the top header of the pytest HTML report.
+            # Passes the HTML through htmlq, extracting the first H1 displayed.
+            # Uses tr to delete breaklines and squeeze-repeats blank spaces,
+            # saving space - this is used for an HTTP REST request to GitHub API.
+            COV_HEADER=$(cat htmlcov/index.html | htmlq --pretty 'header > div > h1:first-of-type' | tr -d '\n' | tr -s ' ')
             
-            echo "Generated coverage report:"
-            echo "${COVERAGE_REPORT}"
+            # Extract the table of the pytest HTML report.
+            # Passes the HTML through htmlq, extracting the table element.
+            # Uses tr to delete breaklines and squeeze-repeats blank spaces.
+            # Then calls sed with an expression that replaces the HTML a
+            # elements by only its text.
+            COV_TABLE=$(cat htmlcov/index.html | htmlq --pretty 'table' | tr -d '\n' | tr -s ' ' | sed 's|<a[^>]*>\([^<]*\)</a>|\1|g')
+
+            # Produce an simplified HTML report.
+            echo "${COV_HEADER}${COV_TABLE}" > coverage.html
+
+            # Now simply use pandoc to convert HTML to Markdown.
+            pandoc --from html --to 'markdown_strict+pipe_tables' coverage.html -o coverage.md
+
+            # Append the missing lines, using pycobertura (which was used previously,
+            # but replaced by pandoc/htmlq due to missing branch coverage info
+            # https://github.com/aconrad/pycobertura/issues/167
+            pycobertura show coverage.xml --format markdown --source aqua | awk -F"|" '{print "|" $2 "|" $6 "|"}' > missing.md
+          
+            echo -en '\n\n## Missing Lines\n\n' >> coverage.md
+
+            cat missing.md >> coverage.md
           fi
-      - name: Publish coverage reports
+      - name: Publish coverage reports (stdout)
         # Publish the coverage reports in only one matrix job run.
-        if: matrix.python-version == '3.10'
+        # Only run if **NOT** running in a pull request (see step below).
+        if: ${{ github.event_name != 'pull_request' && env.COVERAGE_ENABLED }}
+        run: |
+          cat coverage.md
+      - name: Publish coverage reports (bot)
+        # Publish the coverage reports in only one matrix job run.
+        # Only run if running in a pull request.
+        # See for more: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-contexts
+        if: ${{ github.event_name == 'pull_request' && env.COVERAGE_ENABLED }}
         # Comment on an issue or pull request using GH Actions tooling:
         # https://github.com/actions/github-script#comment-on-an-issue
         uses: actions/github-script@v6
@@ -81,7 +121,12 @@ jobs:
 
             // Find any comment already made by the bot.
             const botComment = comments.find(comment => comment.user.id === 41898282)
-            const commentBody = `${{ env.COVERAGE_REPORT }}`
+            const fs = require("fs").promises
+            let commentBody = await fs.readFile("coverage.md", "utf8")
+            // Replace _ by \_ since it is Markdown. Pandoc already adds it,
+            // but pycobertura does not adds it. Thus the negative lookahead
+            // ignoring already escaped underscores.
+            commentBody = `${commentBody}`.replace(/_(?<!\\_)/g, '\\_')
 
             if (botComment) {
               console.log(`Updating comment in ${context.repo.owner}/${context.repo.repo}, comment ID: ${botComment.id}`)
