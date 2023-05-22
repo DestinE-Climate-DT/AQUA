@@ -33,6 +33,12 @@ dependencies:
 # these below are only required for running notebooks
   - ipykernel
   - healpy
+# these below are only required for tests
+  - pytest
+  - pytest-cov
+  - coverage[toml]
+  - pandoc
+  - pycobertura
 # these are extra dependencies for teleconnections
   - python-cdo
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge

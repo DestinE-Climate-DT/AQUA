@@ -16,4 +16,6 @@ AQUA_tests.tar.gz
 .coverage
 coverage.xml
 coverage/
+*.err
+*.out
 
