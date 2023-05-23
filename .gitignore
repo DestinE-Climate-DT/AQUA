@@ -1,5 +1,8 @@
 *.pyc
 diagnostics/ecmean/ECmean4
+iagnostics/ecmean/tempest
+diagnostics/basic_stats/slurm
+diagnostics/basic_stats/__pycache__
 .ipynb_checkpoints
 *.egg-info
 cli/*.err
@@ -8,4 +11,6 @@ cli/*.out
 AQUA_tests/
 AQUA_tests.tar.gz
 **/*.bak
+diagnostics/basic_stats/slurm
+diagnostics/basic_stats/__pycache__
 
