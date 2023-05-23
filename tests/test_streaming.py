@@ -12,8 +12,8 @@ approx_rel = 1e4
 def reader_instance():
     return Reader(model="IFS", exp="test-tco79", source="long")
 
-
 # streaming class for tests
+@pytest.mark.aqua
 class TestAquaStreaming:
     """The streamin testing class"""
 

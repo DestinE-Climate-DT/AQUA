@@ -50,4 +50,4 @@ jobs:
 
       - name: Run dummy-diagnostic tests
         run: |
-          python -m pytest ./tests/dummy-diagnostic/test_dummy-diagnostic.py
+          python -m pytest -m dummy

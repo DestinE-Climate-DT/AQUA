@@ -123,10 +123,14 @@ source_grids:
       #   space_coord: ["lon", "lat"]
       # lra-r100-day: 
       #   space_coord: ["lon", "lat"]
-    hpx:
+    ngc3026:
       default:
-        path: /work/bb1153/b382075/nextgems/grids/icon_hpx{zoom}.nc
-        space_coord: ["pix"]
+        path: '/work/bb1153/b382076/grids/healpix_grids/icon_hpx{zoom}.nc'
+        space_coord: ["cell"]
+    ngc3028:
+      default:
+        path: '/work/bb1153/b382076/grids/healpix_grids/icon_hpx{zoom}.nc'
+        space_coord: ["cell"]
   
   FESOM:
     tco3999-ng5:  

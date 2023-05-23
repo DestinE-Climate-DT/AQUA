@@ -82,7 +82,7 @@ def get_config_dir():
     return configdir
 
 
-def _eval_formula(mystring, xdataset):
+def eval_formula(mystring, xdataset):
     """Evaluate the cmd string provided by the yaml file
     producing a parsing for the derived variables"""
 
@@ -198,8 +198,8 @@ def read_eccodes_dic(filename):
     Returns:
     - A dictionary containing the contents of the ecCodes definition file.
     """
-
-    fn = os.path.join(eccodes.codes_definition_path(), 'grib2', filename)
+    fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
+    fn = os.path.join(fn, 'grib2', filename)
     with open(fn, "r", encoding='utf-8') as file:
         text = file.read()
     text = text.replace(" =", ":").replace('{', '').replace('}', '').replace(';', '').replace('\t', '    ')
@@ -229,7 +229,8 @@ def read_eccodes_def(filename):
     keylist = keylist[:-1]
 
     # WMO lists
-    fn = os.path.join(eccodes.codes_definition_path(), 'grib2', filename)
+    fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
+    fn = os.path.join(fn, 'grib2', filename)
     with open(fn, "r", encoding='utf-8') as f:
         for line in f:
             line = line.replace(" =", "").replace('{', '').replace('}', '').replace(';', '').replace('\t', '#    ')
@@ -351,7 +352,7 @@ def create_folder(folder, loglevel=None):
 def log_history(data, msg):
     """Elementary provenance logger in the history attribute"""
 
-    if isinstance(data, xr.DataArray) or isinstance(data, xr.Dataset):
+    if isinstance(data, (xr.DataArray, xr.Dataset)):
         now = datetime.datetime.now()
         date_now = now.strftime("%Y-%m-%d %H:%M:%S")
         hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"

@@ -1,0 +1,5 @@
+[run]
+omit = 
+   tests/*
+   aqua/docker/*
+   aqua/gribber/*

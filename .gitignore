@@ -7,10 +7,12 @@ diagnostics/basic_stats/__pycache__
 *.egg-info
 cli/*.err
 cli/*.out
+docs/sphinx/build/*
 *.nc
 AQUA_tests/
 AQUA_tests.tar.gz
 **/*.bak
-diagnostics/basic_stats/slurm
-diagnostics/basic_stats/__pycache__
+.coverage
+coverage.xml
+coverage/
 

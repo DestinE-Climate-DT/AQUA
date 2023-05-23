@@ -5,6 +5,7 @@ sys.path.insert(1, './diagnostics/dummy-diagnostic/')
 # test parameters if needed
 approx_rel = 1e-4
 
+@pytest.mark.dummy
 @pytest.mark.parametrize("module_name", ['dummy_class'])
 def test_import(module_name):
     """
