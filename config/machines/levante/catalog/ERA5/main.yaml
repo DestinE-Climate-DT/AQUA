@@ -4,3 +4,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/era5.yaml"
+  era5-aqua:
+    description: AQUA compact version of ERA5 data
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/era5-aqua.yaml"
