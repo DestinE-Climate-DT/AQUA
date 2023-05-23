@@ -13,7 +13,7 @@ author = "Climate DT Team"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'rst2pdf.pdfbuilder']
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
@@ -32,3 +32,6 @@ html_theme_options = {
     "sticky_navigation": True,
     "navigation_depth": 4,
 }
+
+# -- Options for pdf output ------------------------------------------------
+pdf_documents = [('index', u'rst2pdf', u'Sample rst2pdf doc', u'Your Name'),]

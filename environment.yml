@@ -37,6 +37,7 @@ dependencies:
 # these below are only required for documentation
   - sphinx
   - sphinx-rtd-theme
+  - rst2pdf
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
   - pip:
