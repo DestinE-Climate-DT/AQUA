@@ -31,12 +31,13 @@ install_aqua() {
   echo "Environment has been cleaned up."
 
   # load modules
-  #module load LUMI/22.08
-  module use /project/project_465000454/devaraju/modules/LUMI/22.08/C
+  module load LUMI/22.08
   module load lumi-container-wrapper
-  module load pyfdb/0.0.2-cpeCray-22.08
-  module load ecCodes/2.30.0-cpeCray-22.08
-  module load python-climatedt/3.11.3-cpeCray-22.08.lua
+
+  #module use /project/project_465000454/devaraju/modules/LUMI/22.08/C
+  #module load pyfdb/0.0.2-cpeCray-22.08
+  #module load ecCodes/2.30.0-cpeCray-22.08
+  #module load python-climatedt/3.11.3-cpeCray-22.08.lua
 
   echo "Modules have been loaded."
 
@@ -93,4 +94,25 @@ if ! grep -q 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' ~/.bashrc; then
   echo "Please run 'source ~/.bashrc' to load the new configuration."
 else
   echo "export PATH is already present in .bashrc."
+fi
+
+# if requested add the module to the user's .bashrc
+read -p "Do you want to add the module to your .bashrc? (y/n) " -n 1 -r
+echo # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+  # check if the line is already present in the .bashrc file
+  if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' ~/.bashrc; then
+    # if not, append it to the end of the file
+    echo 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' >> ~/.bashrc
+    echo 'module load pyfdb/0.0.2-cpeCray-22.08' >> ~/.bashrc
+    echo 'module load ecCodes/2.30.0-cpeCray-22.08' >> ~/.bashrc
+    echo 'module load python-climatedt/3.11.3-cpeCray-22.08.lua' >> ~/.bashrc
+    echo "module load has been added to .bashrc."
+    echo "Please run 'source ~/.bashrc' to load the new configuration."
+  else
+    echo "module load is already present in .bashrc."
+  fi
+else
+  echo "module load will not be added to .bashrc."
 fi
