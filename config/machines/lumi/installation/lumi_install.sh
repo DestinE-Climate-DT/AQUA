@@ -85,17 +85,6 @@ else
   fi
 fi
 
-# check if the line is already present in the .bashrc file
-if ! grep -q 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' ~/.bashrc; then
-  # if not, append it to the end of the file
-  echo "# AQUA installation path" >> ~/.bashrc
-  echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >> ~/.bashrc
-  echo "export PATH has been added to .bashrc."
-  echo "Please run 'source ~/.bashrc' to load the new configuration."
-else
-  echo "export PATH is already present in .bashrc."
-fi
-
 # if requested add the module to the user's .bashrc
 read -p "Do you want to add the module to your .bashrc? (y/n) " -n 1 -r
 echo # move to a new line
@@ -115,4 +104,15 @@ then
   fi
 else
   echo "module load will not be added to .bashrc."
+fi
+
+# check if the line is already present in the .bashrc file
+if ! grep -q 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' ~/.bashrc; then
+  # if not, append it to the end of the file
+  echo "# AQUA installation path" >> ~/.bashrc
+  echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >> ~/.bashrc
+  echo "export PATH has been added to .bashrc."
+  echo "Please run 'source ~/.bashrc' to load the new configuration."
+else
+  echo "export PATH is already present in .bashrc."
 fi
