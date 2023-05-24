@@ -1,0 +1,39 @@
+metadata:
+  parameters:
+    zoom:
+        allowed:
+          - 10
+          - 9
+          - 8
+          - 7
+          - 6
+          - 5
+          - 4
+          - 3
+          - 2
+          - 1
+          - 0
+        default: 0
+        description: zoom resolution of the dataset
+        type: int
+  grid: 'HealPIX'
+sources:
+  PT30M:
+    args:
+      #chunks: null
+      consolidated: true
+      urlpath: /work/bm1235/k203123/NextGEMS_Cycle3.git/experiments/ngc3026/outdata/ngc3026_PT30M_{{ zoom }}.zarr
+    driver: zarr
+    
+  PT3H:
+    args:
+      #chunks: null
+      consolidated: true
+      urlpath: /work/bm1235/k203123/NextGEMS_Cycle3.git/experiments/ngc3026/outdata/ngc3026_PT3H_{{ zoom }}.zarr
+    driver: zarr
+  P1D:
+    args:
+      #chunks: null
+      consolidated: true
+      urlpath: /work/bm1235/k203123/NextGEMS_Cycle3.git/experiments/ngc3026/outdata/ngc3026_P1D_{{ zoom }}.zarr
+    driver: zarr

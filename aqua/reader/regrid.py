@@ -64,8 +64,7 @@ class RegridMixin():
             _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
         else:
             temp_file = None
-            if zoom:
-                sgridpath = sgridpath.format(zoom=9-zoom)
+            sgridpath = sgridpath.format(zoom=zoom)
 
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
@@ -108,8 +107,7 @@ class RegridMixin():
             _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
         else:
             temp_file = None
-            if zoom:
-                sgridpath = sgridpath.format(zoom=9-zoom)
+            sgridpath = sgridpath.format(zoom=zoom)
 
         self.logger.warning("Weights file not found: %s", weightsfile)
         self.logger.warning("Attempting to generate it ...")

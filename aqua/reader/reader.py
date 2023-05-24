@@ -2,6 +2,7 @@
 
 import os
 import sys
+import re
 
 import intake
 import intake_esm
@@ -39,7 +40,7 @@ class Reader(FixerMixin, RegridMixin):
             source (str, optional): Source ID. Defaults to None.
             regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
             method (str, optional): Regridding method. Defaults to "ycon".
-            zoom (int, optional): Healpix zoom level. Defaults to None.
+            zoom (int):             healpix zoom level. (Default: None)
             configdir (str, optional): Folder where the config/catalog files are located. Defaults to None.
             level (int, optional): Level to extract if input data are 3D (starting from 0). Defaults to None.
             areas (bool, optional): Compute pixel areas if needed. Defaults to True.
@@ -62,8 +63,6 @@ class Reader(FixerMixin, RegridMixin):
         self.exp = exp
         self.model = model
         self.targetgrid = regrid
-        if (exp == "hpx") and not zoom:
-            zoom = 9
         self.zoom = zoom
         self.freq = freq
         self.level = level
@@ -98,6 +97,12 @@ class Reader(FixerMixin, RegridMixin):
         # check source existence
         self.source = check_catalog_source(self.cat, self.model, self.exp, source, name="catalog")
 
+        # safe check for zoom into the catalog parameters
+        if 'zoom' in self.cat[self.model][self.exp].metadata.get('parameters', {}).keys() and self.zoom is None:
+
+            self.logger.warning('No zoom specified but the source requires it, setting zoom=0')
+            self.zoom = 0
+
         # get fixes dictionary and find them
         self.fixes_dictionary = load_multi_yaml(self.fixer_folder)
         self.fixes = self.find_fixes()
@@ -115,7 +120,7 @@ class Reader(FixerMixin, RegridMixin):
         # Expose grid information for the source
         sgridpath = source_grid.get("path", None)
         if sgridpath:
-            self.src_grid = xr.open_dataset(sgridpath, decode_times=False)
+            self.src_grid = xr.open_dataset(sgridpath.format(zoom=self.zoom), decode_times=False)
         else:
             self.src_grid = None
 
@@ -138,14 +143,20 @@ class Reader(FixerMixin, RegridMixin):
             if (level is None) and self.vertcoord:
                 raise RuntimeError("This is a masked 3d source: you should specify a specific level.")
 
-            self.weightsfile = os.path.join(
-                cfg_regrid["weights"]["path"],
-                cfg_regrid["weights"]["template"].format(model=model,
+            template_file = cfg_regrid["weights"]["template"].format(model=model,
                                                          exp=exp,
                                                          method=method,
                                                          target=regrid,
                                                          source=self.source,
-                                                         level=("2d" if level is None else level)))
+                                                         level=("2d" if level is None else level))
+
+            # add the zoom level in the template file (same as done in areas)
+            if self.zoom is not None:
+                template_file = re.sub(r'\.nc', '_z' + str(self.zoom) + r'\g<0>', template_file)
+
+            self.weightsfile = os.path.join(
+                cfg_regrid["weights"]["path"],
+                template_file)
 
             # If weights do not exist, create them
             if rebuild or not os.path.exists(self.weightsfile):
@@ -153,15 +164,22 @@ class Reader(FixerMixin, RegridMixin):
                     os.unlink(self.weightsfile)
                 self._make_weights_file(self.weightsfile, source_grid,
                                         cfg_regrid, regrid=regrid,
-                                        extra=extra, zoom=zoom)
+                                        extra=extra, zoom=self.zoom)
 
             self.weights = xr.open_mfdataset(self.weightsfile)
             self.regridder = rg.Regridder(weights=self.weights)
 
         if areas:
+            
+            template_file = cfg_regrid["areas"]["src_template"].format(model=model, exp=exp, source=self.source)
+
+            # add the zoom level in the template file (same as done in weights)
+            if self.zoom is not None:
+                template_file = re.sub(r'\.nc', '_z' + str(self.zoom) + r'\g<0>', template_file)
+
             self.src_areafile = os.path.join(
                 cfg_regrid["areas"]["path"],
-                cfg_regrid["areas"]["src_template"].format(model=model, exp=exp, source=self.source))
+                template_file)
 
             # If source areas do not exist, create them
             if rebuild or not os.path.exists(self.src_areafile):
@@ -177,7 +195,7 @@ class Reader(FixerMixin, RegridMixin):
                     self._make_src_area_file(self.src_areafile, source_grid,
                                              gridpath=cfg_regrid["cdo-paths"]["download"],
                                              icongridpath=cfg_regrid["cdo-paths"]["icon"],
-                                             zoom=zoom)
+                                             zoom=self.zoom)
 
             self.src_grid_area = xr.open_mfdataset(self.src_areafile).cell_area
 
@@ -221,7 +239,8 @@ class Reader(FixerMixin, RegridMixin):
             A xarray.Dataset containing the required data.
         """
 
-        self.cat = intake.open_catalog(self.catalog_file)
+        # this is done in the __init__
+        #self.cat = intake.open_catalog(self.catalog_file)
         # Extract subcatalogue
         if self.zoom:
             esmcat = self.cat[self.model][self.exp][self.source](zoom=self.zoom)

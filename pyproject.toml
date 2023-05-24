@@ -29,6 +29,7 @@ classifiers = [
 dependencies = [
     "cfgrib",
     "dask",
+    "dask_jobqueue",
     "docker",
     "gribscan",
     "ecCodes",
@@ -43,7 +44,7 @@ dependencies = [
     "sparse",
     "xarray",
     "smmregrid",
-    "one_pass@git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git"
+    "one_pass@git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@v0.2.1"
 ]
 
 [project.optional-dependencies]
