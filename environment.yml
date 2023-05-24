@@ -41,6 +41,7 @@ dependencies:
   - pip
   - pip:
     - sparse
+    - dask_jobqueue
     - docker
     - gribscan
     - smmregrid
