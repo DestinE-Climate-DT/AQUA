@@ -7,5 +7,5 @@ pip install smmregrid
 pip install git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git
 pip install git+https://github.com/ecmwf/pyfdb.git@master
 pip install git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@add_packaging
-# pip install -e of AQUA itself (this will bring in also smmregrid)
+# pip install -e of AQUA itself
 pip install -e $AQUA
