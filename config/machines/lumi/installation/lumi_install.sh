@@ -32,6 +32,10 @@ install_aqua() {
   # load modules
   module load LUMI/22.08
   module load lumi-container-wrapper
+  module load pyfdb/0.0.2-cpeCray-22.08
+  module load ecCodes/2.30.0-cpeCray-22.08
+  module load python-climatedt/3.11.3-cpeCray-22.08.lua
+
   echo "Modules have been loaded."
 
   conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/config/machines/lumi/installation/environment_lumi.yml"
