@@ -3,7 +3,8 @@
 #####################################################################
 # Begin of user input
 machine=lumi 
-user=<USER> # change this to your username
+user=nurissom
+#user=<USER> # change this to your username
 
 # define AQUA path
 if [[ -z "${AQUA}" ]]; then
@@ -30,7 +31,8 @@ install_aqua() {
   echo "Environment has been cleaned up."
 
   # load modules
-  module load LUMI/22.08
+  #module load LUMI/22.08
+  module use /project/project_465000454/devaraju/modules/LUMI/22.08/C
   module load lumi-container-wrapper
   module load pyfdb/0.0.2-cpeCray-22.08
   module load ecCodes/2.30.0-cpeCray-22.08
