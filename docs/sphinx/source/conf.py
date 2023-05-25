@@ -34,11 +34,6 @@ html_theme_options = {
     "navigation_depth": 4,
 }
 
-# -- Options for pdf output ------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-pdf-output
-#pdf_documents = [(u'aqua_documentation', u'AQUA documentation', u'AQUA team')]
-
-
 # -- Options for PDF output --------------------------------------------------
 # Grouping the document tree into PDF files. List of tuples
 # (source start file, target name, title, author, options).
