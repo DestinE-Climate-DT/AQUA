@@ -29,6 +29,7 @@ classifiers = [
 dependencies = [
     "cfgrib",
     "dask",
+    "dask_jobqueue",
     "docker",
     "gribscan",
     "ecCodes",
