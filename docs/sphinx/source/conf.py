@@ -35,4 +35,26 @@ html_theme_options = {
 }
 
 # -- Options for pdf output ------------------------------------------------
-pdf_documents = [('index', u'rst2pdf', u'Sample rst2pdf doc', u'Your Name')]
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-pdf-output
+#pdf_documents = [(u'aqua_documentation', u'AQUA documentation', u'AQUA team')]
+
+
+# -- Options for PDF output --------------------------------------------------
+# Grouping the document tree into PDF files. List of tuples
+# (source start file, target name, title, author, options).
+#
+# The options element is a dictionary that lets you override
+# this config per-document. For example:
+#
+# ('index', 'MyProject', 'My Project', 'Author Name', {'pdf_compressed': True})
+#
+# would mean that specific document would be compressed
+# regardless of the global 'pdf_compressed' setting.
+pdf_documents = [
+('index', 'aqua_doc', 'AQUA documentation', 'AQUA team'),
+]
+# A comma-separated list of custom stylesheets.
+pdf_stylesheets = ['sphinx', 'a4']
+# Additional options that are passed to rst2pdf.
+pdf_use_index = False
+pdf_use_coverpage = False
