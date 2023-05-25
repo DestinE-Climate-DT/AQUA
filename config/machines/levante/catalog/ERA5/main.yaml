@@ -1,11 +1,11 @@
 sources:
   era5:
-    description: main ERA5 data
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/era5.yaml"
-  era5-aqua:
     description: AQUA compact version of ERA5 data
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/era5-aqua.yaml"
+        path: "{{CATALOG_DIR}}/era5.yaml"
+  era5-dkrz:
+    description: ERA5 data from DKRZ catalog
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/era5-dkrz.yaml"

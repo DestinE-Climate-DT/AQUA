@@ -414,7 +414,23 @@ class Reader(FixerMixin, RegridMixin):
             grid_area = self.src_grid_area
 
         # check if coordinates are aligned
-        xr.align(grid_area, data, join='exact')
+        try:
+            xr.align(grid_area, data, join='exact')
+        except ValueError as err:
+            # check in the dimensions what is wrong
+            for coord in self.grid_area.coords:
+                # option1: shape different
+                if len(self.grid_area[coord]) != len(data.coords[coord]):
+                    raise ValueError(f'{coord} has different shape between area files and your dataset.'
+                                     'If using the LRA, try setting the regrid=r100 option') from err
+                # shape are ok, but coords are different
+                if not self.grid_area[coord].equals(data.coords[coord]):
+                    # if they are fine when sorted, there is a sorting mismatch
+                    if self.grid_area[coord].sortby(coord).equals(data.coords[coord].sortby(coord)):
+                        raise ValueError(f'{coord} is sorted in different way between area files and your dataset.') from err
+                    # something else
+                    raise ValueError(f'{coord} has a mismatch in coordinate values!') from err
+
 
         out = data.weighted(weights=grid_area.fillna(0)).mean(dim=space_coord)
 
