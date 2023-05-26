@@ -16,9 +16,11 @@ def reader(request):
     # very slow access, skipped
     if model == 'ICON' and source == 'intake-esm-test':
         pytest.skip()
-    if model == 'MSWEP' and source == 'daily':
+    if model == 'ICON' and exp == 'hpx':
         pytest.skip()
-    if model == 'MSWEP' and source == '3hourly':
+    if model == 'MSWEP':
+        pytest.skip()
+    if model == 'ERA5':
         pytest.skip()
     myread = Reader(model=model, exp=exp, source=source, areas=False)
     data = myread.retrieve(fix=False)

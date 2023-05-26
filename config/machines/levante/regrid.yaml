@@ -113,6 +113,7 @@ source_grids:
         path: /pool/data/ICON/grids/public/mpim/0015/icon_grid_0015_R02B09_G.nc
         extra: "-selname,cell_index" 
         space_coord: ["cell"]
+        vert_coord: ["depth_full", "depth_half"]
       intake-esm-test: 
         path: /pool/data/ICON/grids/public/mpim/0015/icon_grid_0015_R02B09_G.nc
         extra: "-selname,cell_index" 
@@ -125,12 +126,26 @@ source_grids:
       #   space_coord: ["lon", "lat"]
     ngc3026:
       default:
-        path: '/work/bb1153/b382076/grids/healpix_grids/icon_hpx{zoom}.nc'
+        path:
+          2d: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_atm_2d.nc   # this is the default 2d grid
+          2dm: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_oce_2d.nc  # this is an additional and optional 2d grid used if data are masked
+          depth_full: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_oce_depth_full.nc
+          depth_half: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_oce_depth_half.nc
+        masked:   # This is the attribute used to distinguish variables which should go into the masked category
+          component: ocean
         space_coord: ["cell"]
+        vert_coord: ["depth_half", "depth_full"]
     ngc3028:
       default:
-        path: '/work/bb1153/b382076/grids/healpix_grids/icon_hpx{zoom}.nc'
+        path:
+          2d: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_atm_2d.nc   # this is the default 2d grid
+          2dm: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_oce_2d.nc  # this is an additional 2d grid used if data are masked
+          depth_full: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_oce_depth_full.nc
+          depth_half: /work/bb1153/b382075/nextgems/grids/healpix/icon_hpx{zoom}_oce_depth_half.nc
+        masked:   # This is the attribute used to distinguish variables which should go into the masked category
+          component: ocean
         space_coord: ["cell"]
+        vert_coord: ["depth_half", "depth_full"]
   
   FESOM:
     tco3999-ng5:  
@@ -140,10 +155,10 @@ source_grids:
       interpolated_global_TS:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_3d.nc
         space_coord: ["lon", "lat"]
-        vertcoord: depth
+        vert_coord: depth
       interpolated_global_UV:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_3d.nc
-        vertcoord: depth
+        vert_coord: depth
         space_coord: ["lon", "lat"]
       original_2d:
         path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
@@ -152,11 +167,22 @@ source_grids:
           - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
           - -selname,cell_area
       original_3d:
-        path: /work/bb1153/b382075/nextgems/grids/NG5_fesom_mask.nc
+        path:
+          nz: /work/bb1153/b382075/nextgems/grids/NG5_nodes_fesom_mask_nz.nc
+          nz1: /work/bb1153/b382075/nextgems/grids/NG5_nodes_fesom_mask_nz1.nc
         space_coord: ["nod2"]
-        vertcoord: nz1
+        vert_coord: ["nz", "nz1"]
         extra: 
           - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      default:  # default covers all simple cases where this can be computed automatically (eg LRA)
+        space_coord: ["lon", "lat"]
+      original_3d_elem:
+        path: 
+          nz1: /work/bb1153/b382075/nextgems/grids/NG5_elem_fesom_mask_nz1.nc
+        space_coord: ["elem"]
+        vert_coord: ["nz1"]
+        extra: 
+          - -setgrid,/work/bb1153/b382075/nextgems/grids/NG5_griddes_elem_IFS.nc 
       default:  # default covers all simple cases where this can be computed automatically (eg LRA)
         space_coord: ["lon", "lat"]
         
@@ -166,11 +192,11 @@ source_grids:
         space_coord: ["lon", "lat"]
       interpolated_global_TS:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_3d.nc
-        vertcoord: depth
+        vert_coord: depth
         space_coord: ["lon", "lat"]
       interpolated_global_UV:
         path: /work/bb1153/b382075/nextgems/grids/fesom_tco2559_interpolated_3d.nc
-        vertcoord: depth
+        vert_coord: depth
         space_coord: ["lon", "lat"]
       original_2d:
         path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
@@ -179,11 +205,20 @@ source_grids:
           - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
           - -selname,cell_area
       original_3d:
-        path: /work/bb1153/b382075/nextgems/grids/NG5_fesom_mask.nc
+        path: 
+          nz: /work/bb1153/b382075/nextgems/grids/NG5_nodes_fesom_mask_nz.nc
+          nz1: /work/bb1153/b382075/nextgems/grids/NG5_nodes_fesom_mask_nz1.nc
         space_coord: ["nod2"]
-        vertcoord: nz1
+        vert_coord: ["nz", "nz1"]
         extra: 
           - -setgrid,/work/bb1153/b382075/nextgems/grids/NG5_griddes_nodes_IFS.nc 
+      original_3d_elem:
+        path: 
+          nz1: /work/bb1153/b382075/nextgems/grids/NG5_elem_fesom_mask_nz1.nc
+        space_coord: ["elem"]
+        vert_coord: ["nz1"]
+        extra: 
+          - -setgrid,/work/bb1153/b382075/nextgems/grids/NG5_griddes_elems_IFS.nc 
       default:  # default covers all simple cases where this can be computed automatically (eg LRA)
         space_coord: ["lon", "lat"]
 
@@ -208,6 +243,14 @@ source_grids:
         extra:
           - -setgrid,/work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/pi_griddes_nodes_IFS.nc
           - -selname,cell_area
+      original_3d:
+        path: 
+          nz1: /work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/pi_fesom_mask_nz1.nc
+          nz: /work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/pi_fesom_mask_nz.nc
+        space_coord: ["nod2"]
+        vert_coord: ["nz1", "nz"]
+        extra: 
+          - -setgrid,/work/bb1153/b382075/aqua/test_datasets/AQUA_tests/grids/pi_griddes_nodes_IFS.nc 
 
   MSWEP:
     past:
@@ -228,7 +271,7 @@ source_grids:
     woa18_2005_2017:
       default:
         path: /pool/data/AWICM/FESOM2/INITIAL/WOA18/WOA18_2005_2017/woa18_A5B7_t00_04.nc
-        vertcoord: depth
+        vert_coord: depth
         space_coord: ["lon", "lat"]
 
   CERES:
@@ -250,10 +293,14 @@ source_grids:
         space_coord: ["lon", "lat"]
 
   ERA5:
-    era5:
+    era5-dkrz:
       default:
         path: /work/bb1153/b382075/nextgems/grids/n320_unstructured.nc
-        space_coord: ["values"]
+        space_coord: ["values"]  
+    era5:
+      default:
+        path: /work/bb1153/b382076/ERA5/grids/r025_grid.nc
+        space_coord: ["lon", "lat"]
 
   OSI-SAF:
     osi-450:

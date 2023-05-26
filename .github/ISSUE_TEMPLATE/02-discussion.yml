@@ -1,0 +1,16 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+name: Discussion
+description: "Start a discussion"
+labels: ["discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill out the sections below to start a discussion.
+  - type: textarea
+    id: discussion
+    attributes:
+      label: Discussion
+    validations:
+      required: true

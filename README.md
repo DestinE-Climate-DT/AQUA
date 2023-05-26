@@ -35,4 +35,7 @@ pip install ipykernel
 python -m ipykernel install --user --name aqua --display-name="aqua"
 ```
 
+## Contributing guide
+
+A contribution guide is available [here](CONTRIBUTING.md). Please read it before contributing to the project.
 

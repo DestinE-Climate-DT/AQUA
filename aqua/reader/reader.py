@@ -20,7 +20,11 @@ from aqua.logger import log_configure
 from .streaming import Streaming
 from .fixer import FixerMixin
 from .regrid import RegridMixin
-from .reader_utils import check_catalog_source
+from .reader_utils import check_catalog_source, group_shared_dims, set_attrs
+
+# default spatial dimensions and vertical coordinates
+default_space_dims = ['i', 'j', 'x', 'y', 'lon', 'lat', 'longitude', 'latitude',
+                      'cell', 'cells', 'ncells', 'values', 'value', 'nod2', 'pix', 'elem']
 
 
 class Reader(FixerMixin, RegridMixin):
@@ -28,9 +32,9 @@ class Reader(FixerMixin, RegridMixin):
 
     def __init__(self, model="ICON", exp="tco2559-ng5", source=None, freq=None,
                  regrid=None, method="ycon", zoom=None, configdir=None,
-                 level=None, areas=True,  # pylint: disable=W0622
+                 areas=True,  # pylint: disable=W0622
                  datamodel=None, streaming=False, stream_step=1, stream_unit='steps',
-                 stream_startdate=None, rebuild=False, loglevel=None):
+                 stream_startdate=None, rebuild=False, loglevel=None, nproc=4):
         """
         Initializes the Reader class, which uses the catalog `config/config.yaml` to identify the required data.
 
@@ -52,6 +56,7 @@ class Reader(FixerMixin, RegridMixin):
             stream_startdate (str, optional): The starting date for streaming the data (e.g. '2020-02-25'). Defaults to None.
             rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
             loglevel (str, optional): Level of logging according to logging module. Defaults to log_level_default of loglevel().
+            nproc (int,optional): Number of processes to use for weights generation. Defaults to 16.
 
         Returns:
             Reader: A `Reader` class object.
@@ -64,9 +69,9 @@ class Reader(FixerMixin, RegridMixin):
         self.model = model
         self.targetgrid = regrid
         self.zoom = zoom
+        self.nproc = nproc
         self.freq = freq
-        self.level = level
-        self.vertcoord = None
+        self.vert_coord = None
         self.deltat = 1
         extra = []
 
@@ -91,7 +96,8 @@ class Reader(FixerMixin, RegridMixin):
         self.machine = get_machine(self.configdir)
 
         # get configuration from the machine
-        self.catalog_file, self.regrid_file, self.fixer_folder, self.config_file = get_reader_filenames(self.configdir, self.machine)
+        self.catalog_file, self.regrid_file, self.fixer_folder, self.config_file = (
+            get_reader_filenames(self.configdir, self.machine))
         self.cat = intake.open_catalog(self.catalog_file)
 
         # check source existence
@@ -113,14 +119,30 @@ class Reader(FixerMixin, RegridMixin):
 
         # load and check the regrid
         cfg_regrid = load_yaml(self.regrid_file)
-        source_grid_id = check_catalog_source(cfg_regrid["source_grids"], self.model, self.exp, source, name='regrid')
+        source_grid_id = check_catalog_source(cfg_regrid["source_grids"],
+                                              self.model, self.exp, source, name='regrid')
         source_grid = cfg_regrid["source_grids"][self.model][self.exp][source_grid_id]
-        self.vertcoord = source_grid.get("vertcoord", None)  # Some more checks needed
 
-        # Expose grid information for the source
+        # Normalize vert_coord to list
+        self.vert_coord = source_grid.get("vert_coord", "2d")  # If not specified we assume that this is only a 2D case
+
+        if not isinstance(self.vert_coord, list):
+            self.vert_coord = [self.vert_coord]
+
+        self.masked_att = source_grid.get("masked", None)  # Optional selection of masked variables
+
+        # Expose grid information for the source as a dictionary of open xarrays
         sgridpath = source_grid.get("path", None)
         if sgridpath:
-            self.src_grid = xr.open_dataset(sgridpath.format(zoom=self.zoom), decode_times=False)
+            if isinstance(sgridpath, dict):
+                self.src_grid = {}
+                for k, v in sgridpath.items():
+                    self.src_grid.update({k: xr.open_dataset(v.format(zoom=self.zoom), decode_times=False)})
+            else:
+                if self.vert_coord:
+                    self.src_grid = {self.vert_coord[0]: xr.open_dataset(sgridpath.format(zoom=self.zoom), decode_times=False)}
+                else:
+                    self.src_grid = {"2d": xr.open_dataset(sgridpath.format(zoom=self.zoom), decode_times=False)}
         else:
             self.src_grid = None
 
@@ -129,48 +151,58 @@ class Reader(FixerMixin, RegridMixin):
         if not self.dst_datamodel:
             self.dst_datamodel = self.fixes_dictionary["defaults"].get("dst_datamodel", None)
 
-
         self.src_space_coord = source_grid.get("space_coord", None)
         self.space_coord = self.src_space_coord
         self.dst_space_coord = ["lon", "lat"]
 
         if regrid:
-            if level is not None:
-                if not self.vertcoord:
-                    raise KeyError("You should specify a vertcoord key in regrid.yaml for this source to use levels.")
-                extra = f"-sellevidx,{level+1} "
 
-            if (level is None) and self.vertcoord:
-                raise RuntimeError("This is a masked 3d source: you should specify a specific level.")
+            self.weightsfile = {}
+            self.weights = {}
+            self.regridder = {}
 
-            template_file = cfg_regrid["weights"]["template"].format(model=model,
-                                                         exp=exp,
-                                                         method=method,
-                                                         target=regrid,
-                                                         source=self.source,
-                                                         level=("2d" if level is None else level))
+            # List of vertical coordinates or 2d to iterate over
+            if sgridpath:
+                if isinstance(sgridpath, dict):
+                    vclist = sgridpath.keys()
+                else:
+                    vclist = self.vert_coord
+            else:
+                vclist = self.vert_coord
 
-            # add the zoom level in the template file (same as done in areas)
-            if self.zoom is not None:
-                template_file = re.sub(r'\.nc', '_z' + str(self.zoom) + r'\g<0>', template_file)
+            for vc in vclist:
+                # compute correct filename ending
+                levname = vc if vc == "2d" or vc == "2dm" else f"3d-{vc}"
 
-            self.weightsfile = os.path.join(
-                cfg_regrid["weights"]["path"],
-                template_file)
+                template_file = cfg_regrid["weights"]["template"].format(model=model,
+                                                                         exp=exp,
+                                                                         method=method,
+                                                                         target=regrid,
+                                                                         source=self.source,
+                                                                         level=levname)
 
-            # If weights do not exist, create them
-            if rebuild or not os.path.exists(self.weightsfile):
-                if os.path.exists(self.weightsfile):
-                    os.unlink(self.weightsfile)
-                self._make_weights_file(self.weightsfile, source_grid,
-                                        cfg_regrid, regrid=regrid,
-                                        extra=extra, zoom=self.zoom)
+                # add the zoom level in the template file (same as done in areas)
+                if self.zoom is not None:
+                    template_file = re.sub(r'\.nc', '_z' + str(self.zoom) + r'\g<0>', template_file)
 
-            self.weights = xr.open_mfdataset(self.weightsfile)
-            self.regridder = rg.Regridder(weights=self.weights)
+                self.weightsfile.update({vc: os.path.join(
+                    cfg_regrid["weights"]["path"],
+                    template_file)})
+
+                # If weights do not exist, create them
+                if rebuild or not os.path.exists(self.weightsfile[vc]):
+                    if os.path.exists(self.weightsfile[vc]):
+                        os.unlink(self.weightsfile[vc])
+                    self._make_weights_file(self.weightsfile[vc], source_grid,
+                                            cfg_regrid, regrid=regrid, vert_coord=vc,
+                                            extra=extra, zoom=self.zoom, method=method)
+
+                self.weights.update({vc: xr.open_mfdataset(self.weightsfile[vc])})
+                vc2 = None if vc == "2d" or vc == "2dm" else vc
+                self.regridder.update({vc: rg.Regridder(weights=self.weights[vc], vert_coord=vc2, space_dims=default_space_dims)})
 
         if areas:
-            
+
             template_file = cfg_regrid["areas"]["src_template"].format(model=model, exp=exp, source=self.source)
 
             # add the zoom level in the template file (same as done in weights)
@@ -240,7 +272,7 @@ class Reader(FixerMixin, RegridMixin):
         """
 
         # this is done in the __init__
-        #self.cat = intake.open_catalog(self.catalog_file)
+        # self.cat = intake.open_catalog(self.catalog_file)
         # Extract subcatalogue
         if self.zoom:
             esmcat = self.cat[self.model][self.exp][self.source](zoom=self.zoom)
@@ -284,20 +316,16 @@ class Reader(FixerMixin, RegridMixin):
                 else:
                     raise KeyError("You are asking for variables which we cannot find in the catalog!")
 
-        # select only a specific level when reading. Level coord names defined in regrid.yaml
-        if self.level is not None:
-            data = data.isel({self.vertcoord: self.level})
-
         log_history(data, "retrieved by AQUA retriever")
 
         # sequence which should be more efficient: decumulate - averaging - regridding - fixing
-        #if decumulate:
-            # data = data.map(self.decumulate, keep_attrs=True)
-            # data = data.map(self.decumulate)
+        # if decumulate:
+        #     data = data.map(self.decumulate, keep_attrs=True)
+        #     data = data.map(self.decumulate)
         if self.freq and timmean:
             data = self.timmean(data)
         if self.targetgrid and regrid:
-            data = self.regridder.regrid(data)
+            data = self.regrid(data)
             self.grid_area = self.dst_grid_area
         if fix:   # Do not change easily this order. The fixer assumes to be after regridding
             data = self.fixer(data, apply_unit_fix=apply_unit_fix)
@@ -310,7 +338,7 @@ class Reader(FixerMixin, RegridMixin):
                 data = self.streamer.stream(data, stream_step=stream_step,
                                             stream_unit=stream_unit,
                                             stream_startdate=stream_startdate)
-         
+
         # safe check that we provide only what exactly asked by var
         if var:
             data = data[var]
@@ -327,9 +355,25 @@ class Reader(FixerMixin, RegridMixin):
             A xarray.Dataset containing the regridded data.
         """
 
-        out = self.regridder.regrid(data)
+        if self.vert_coord == ["2d"]:
+            datadic = {"2d": data}
+        else:
+            datadic = group_shared_dims(data, self.vert_coord, others="2d",
+                                        masked="2dm", masked_att=self.masked_att)
 
-        out.attrs["regridded"] = 1
+        # Iterate over list of groups of variables, regridding them separately
+        out = []
+        for vc, dd in datadic.items():
+            out.append(self.regridder[vc].regrid(dd))
+
+        if len(out) > 1:
+            out = xr.merge(out)
+        else:
+            # If this was a single dataarray
+            out = out[0]
+
+        out = set_attrs(out, {"regridded": 1})  # set regridded attribute to 1 for all vars
+
         # set these two to the target grid (but they are actually not used so far)
         self.grid_area = self.dst_grid_area
         self.space_coord = ["lon", "lat"]
@@ -414,13 +458,94 @@ class Reader(FixerMixin, RegridMixin):
             grid_area = self.src_grid_area
 
         # check if coordinates are aligned
-        xr.align(grid_area, data, join='exact')
+        try:
+            xr.align(grid_area, data, join='exact')
+        except ValueError as err:
+            # check in the dimensions what is wrong
+            for coord in self.grid_area.coords:
+                # option1: shape different
+                if len(self.grid_area[coord]) != len(data.coords[coord]):
+                    raise ValueError(f'{coord} has different shape between area files and your dataset.'
+                                     'If using the LRA, try setting the regrid=r100 option') from err
+                # shape are ok, but coords are different
+                if not self.grid_area[coord].equals(data.coords[coord]):
+                    # if they are fine when sorted, there is a sorting mismatch
+                    if self.grid_area[coord].sortby(coord).equals(data.coords[coord].sortby(coord)):
+                        raise ValueError(f'{coord} is sorted in different way between area files and your dataset.') from err
+                    # something else
+                    raise ValueError(f'{coord} has a mismatch in coordinate values!') from err
+
 
         out = data.weighted(weights=grid_area.fillna(0)).mean(dim=space_coord)
 
         return out
+    
+    def vertinterp(self, data, levels=None, vert_coord='plev', units=None, method='linear'):
+        """
+        A basic vertical interpolation based on interp function
+        of xarray within AQUA. Given an xarray object, will interpolate the vertical dimension along 
+        the vert_coord. If it is a Dataset, only variables with the required vertical coordinate
+        will be interpolated
 
-    ## TODO: this is not used anymore, check if it can be deleted
+        Args:
+            data (DataArray, Dataset): your dataset
+            levels (float, or list): The level you want to interpolate the vertical coordinate
+            units (str, optional, ): The units of your vertical axis. Default 'Pa'
+            vert_coord (str, optional): The name of the vertical coordinate. Default 'plev'
+            method (str, optional): The type of interpolation method supported by interp()
+        
+        Return
+            A DataArray or a Dataset with the new interpolated vertical dimension
+        """
+
+        if levels is None:
+            raise KeyError('Levels for interpolation must be specified')
+
+        # error if vert_coord is not there
+        if vert_coord not in data.coords:
+            raise KeyError(f'The vert_coord={vert_coord} is not in the data!')
+        
+        # if you not specified the units, guessing from the data
+        if units is None:
+            if hasattr(data[vert_coord], 'units'):
+                self.logger.warning('Units of vert_coord=%s has not defined, reading from the data', vert_coord)
+                units = data[vert_coord].units
+            else:
+                raise ValueError('Original dataset has not unit on the vertical axis, failing!')
+
+        if isinstance(data, xr.DataArray):
+            final = self._vertinterp(data=data, levels=levels, units=units,
+                                     vert_coord=vert_coord, method=method)
+
+        elif isinstance(data, xr.Dataset):
+            selected_vars = [da for da in data.data_vars if vert_coord in data[da].coords]
+            final = data[selected_vars].map(self._vertinterp, keep_attrs=True,
+                                            levels=levels, units=units,
+                                            vert_coord=vert_coord, method=method)
+        else:
+            raise ValueError('This is not an xarray object!')
+
+
+        return final
+    
+    def _vertinterp(self, data, levels=None, units = 'Pa', vert_coord='plev', method='linear'):
+
+        # verify units are good
+        if data[vert_coord].units != units:
+            self.logger.warning('Converting vert_coord units to interpolate from %s to %s',
+                                data[vert_coord].units, units)
+            data = data.metpy.convert_coordinate_units(vert_coord, units)
+
+        # very simple interpolation
+        final = data.interp({vert_coord: levels}, method=method)
+
+        return final
+
+
+    
+
+    # TODO: this is not used anymore, check if it can be deleted
+
     # def _check_if_accumulated_auto(self, data):
     #     """To check if a DataArray is accumulated.
     #     Arbitrary check on the first 20 timesteps"""
