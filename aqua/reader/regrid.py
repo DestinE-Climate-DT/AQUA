@@ -31,8 +31,7 @@ class RegridMixin():
         grid_area = self.cdo_generate_areas(source=dst_extra)
 
         # Make sure that grid areas contain exactly the same coordinates
-        data = self.retrieve(fix=False)
-        data = self.regridder.regrid(data.isel(time=0))
+        data = self.retrieve(fix=False, regrid=True)
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
 
         grid_area.to_netcdf(self.dst_areafile)
@@ -54,22 +53,18 @@ class RegridMixin():
             None
         """
 
-        sgridpath = source_grid.get("path", None)
-        if not sgridpath:
-            # there is no source grid path at all defined in the regrid.yaml file:
-            # let's reconstruct it from the file itself
-            data = self.retrieve(fix=False)
-            temp_file = tempfile.NamedTemporaryFile(mode='w')
-            sgridpath = temp_file.name
-            _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
+        if self.vert_coord and self.vert_coord != ["2d"]:
+            vert_coord = self.vert_coord[0]  # We need only the first one for areas
         else:
-            temp_file = None
-            sgridpath = sgridpath.format(zoom=zoom)
+            vert_coord = None
+
+        sgridpath = self._get_source_gridpath(source_grid, vert_coord, zoom)
 
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
-        self.logger.warning("Source grid: %s", sgridpath)
+
         src_extra = source_grid.get("extra", [])
+
         grid_area = self.cdo_generate_areas(source=sgridpath,
                                             gridpath=gridpath,
                                             icongridpath=icongridpath,
@@ -81,7 +76,8 @@ class RegridMixin():
         grid_area.to_netcdf(areafile)
         self.logger.warning("Success!")
 
-    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, regrid=None, extra=None, zoom=None):
+    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, method='ycon',
+                           regrid=None, extra=None, zoom=None, vert_coord=None):
         """
         Helper function to produce weights file.
 
@@ -92,26 +88,19 @@ class RegridMixin():
             regrid (str, optional): The regrid option. Defaults to None.
             extra (str or list, optional): Extra command(s) to apply to source grid before weight generation. Defaults to None.
             zoom (int, optional): The zoom level for the grid (for HealPix grids). Defaults to None.
-
+            vert_coord (str, optional): The vertical coordinate to use for weight generation. Defaults to None.
+            method (str, optional): The interpolation method to be used (see CDO manual). Defaults to 'ycon'.
         Returns:
             None
         """
 
-        sgridpath = source_grid.get("path", None)
-        if not sgridpath:
-            # there is no source grid path at all defined in the regrid.yaml file:
-            # let's reconstruct it from the file itself
-            data = self.retrieve(fix=False)
-            temp_file = tempfile.NamedTemporaryFile(mode='w')
-            sgridpath = temp_file.name
-            _get_spatial_sample(data, self.src_space_coord).to_netcdf(sgridpath)
-        else:
-            temp_file = None
-            sgridpath = sgridpath.format(zoom=zoom)
+        sgridpath = self._get_source_gridpath(source_grid, vert_coord, zoom)
+
+        if vert_coord == "2d" or vert_coord == "2dm":  # if 2d we need to pass None to smmregrid
+            vert_coord = None
 
         self.logger.warning("Weights file not found: %s", weightsfile)
         self.logger.warning("Attempting to generate it ...")
-        self.logger.warning("Source grid: %s", sgridpath)
 
         # hack to  pass a correct list of all options
         src_extra = source_grid.get("extra", [])
@@ -123,15 +112,66 @@ class RegridMixin():
         else:
             extra = []
         extra = extra + src_extra
+
         weights = rg.cdo_generate_weights(source_grid=sgridpath,
                                           target_grid=cfg_regrid["target_grids"][regrid],
-                                          method='ycon',
+                                          method=method,
                                           gridpath=cfg_regrid["cdo-paths"]["download"],
                                           icongridpath=cfg_regrid["cdo-paths"]["icon"],
                                           extra=extra,
-                                          cdo=self.cdo)
+                                          cdo=self.cdo,
+                                          vert_coord=vert_coord,
+                                          nproc=self.nproc)
         weights.to_netcdf(weightsfile)
         self.logger.warning("Success!")
+
+    def _get_source_gridpath(self, source_grid, vert_coord, zoom):
+        """
+        Helper function to get the source grid path.
+
+        Args:
+            source_grid (dict): The source grid specification.
+
+        Returns:
+            xarray.DataArray: The source grid path.
+        """
+
+        sgridpath = source_grid.get("path", None)
+        self.logger.warning("Source grid: %s", sgridpath)
+
+        if not sgridpath:
+            # there is no source grid path at all defined in the regrid.yaml file:
+            # let's reconstruct it from the file itself
+
+            data = self.retrieve(fix=False)
+
+            # If we have also a vertical coordinate, include it in the sample
+            coords = self.src_space_coord
+
+            if vert_coord and vert_coord != "2d" and vert_coord != "2dm":
+                coords.append(vert_coord)
+
+            data = _get_spatial_sample(data, coords)
+
+            if vert_coord and vert_coord != "2d" and vert_coord != "2dm":
+                varsel = [var for var in data.data_vars if vert_coord in data[var].dims]
+                if varsel:
+                    data = data[varsel]
+                else:
+                    raise ValueError(f"No variable with dimension {vert_coord} found in the dataset")
+
+            sgridpath = data
+        else:
+            if isinstance(sgridpath, dict):
+                if vert_coord:
+                    sgridpath = sgridpath[vert_coord]
+                else:
+                    sgridpath = sgridpath["2d"]
+            if zoom is not None:
+                sgridpath = sgridpath.format(zoom=zoom)
+            sgridpath = xr.open_dataset(sgridpath)
+
+        return sgridpath
 
     def cdo_generate_areas(self, source, icongridpath=None, gridpath=None, extra=None):
         """
@@ -215,7 +255,7 @@ class RegridMixin():
             area_file.close()
 
 
-def _rename_dims(da, dim_list):
+def _rename_dims(data, dim_list):
     """
     Renames the dimensions of a DataArray so that any dimension which is already
     in `dim_list` keeps its name, and the others are renamed to whichever other
@@ -233,7 +273,7 @@ def _rename_dims(da, dim_list):
         xarray.DataArray: A new DataArray with the renamed dimensions.
     """
 
-    dims = list(da.dims)
+    dims = list(data.dims)
     # Lisy of dims which are already there
     shared_dims = list(set(dims) & set(dim_list))
     # List of dims in B which are not in space_coord
@@ -241,15 +281,15 @@ def _rename_dims(da, dim_list):
     # List of dims in da which are not in dim_list
     new_dims = list(set(dim_list) - set(dims))
     i = 0
-    da_out = da
+    da_out = data
     for dim in extra_dims:
         if dim not in shared_dims:
-            da_out = da.rename({dim: new_dims[i]})
+            da_out = data.rename({dim: new_dims[i]})
             i += 1
     return da_out
 
 
-def _get_spatial_sample(da, space_coord):
+def _get_spatial_sample(data, space_coord):
     """
     Selects a single spatial sample along the dimensions specified in `space_coord`.
 
@@ -261,7 +301,7 @@ def _get_spatial_sample(da, space_coord):
         Data array containing a single spatial sample along the specified dimensions.
     """
 
-    dims = list(da.dims)
+    dims = list(data.dims)
     extra_dims = list(set(dims) - set(space_coord))
-    da_out = da.isel({dim: 0 for dim in extra_dims})
+    da_out = data.isel({dim: 0 for dim in extra_dims})
     return da_out

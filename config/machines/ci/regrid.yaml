@@ -29,7 +29,16 @@ source_grids:
         space_coord: ["nod2"]
         extra: 
           - -setgrid,./AQUA_tests/grids/pi_griddes_nodes_IFS.nc 
-          - -selname,cell_area 
+          - -selname,cell_area
+      original_3d:
+        path: 
+          nz1: ./AQUA_tests/grids/pi_fesom_mask_nz1.nc
+          nz: ./AQUA_tests/grids/pi_fesom_mask_nz.nc
+        space_coord: ["nod2"]
+        vert_coord: ["nz1", "nz"]
+        extra: 
+          - -setgrid,./AQUA_tests/grids/pi_griddes_nodes_IFS.nc 
+
   IFS:
     test-tco79:
       short:
