@@ -45,7 +45,8 @@ def set_layout(fig, ax, title=None, xlabel=None, ylabel=None, xlog=False,
 
 def hovmoller_plot(infile, dim='lon', contour=True, levels=8,
                    xlabel=None, ylabel=None, title=None,
-                   invert_axis=False, save=False, outputdir='./',
+                   invert_axis=False, climatology=False,
+                   save=False, outputdir='./',
                    filename='hovmoller.png', **kwargs):
     '''
     Args:
@@ -56,6 +57,7 @@ def hovmoller_plot(infile, dim='lon', contour=True, levels=8,
         xlabel (str,opt):       label of the x axis
         ylabel (str,opt):       label of the y axis
         title (str,opt):        title of the plot
+        climatology (bool, opt) if climatological mean is performed on data sets time coord name to "month" insead of "time"
         invert_axis (bool,opt): enable or disable axis inversion,
                                 default is False
         save (bool,opt):        enable or disable saving the figure,
@@ -74,22 +76,26 @@ def hovmoller_plot(infile, dim='lon', contour=True, levels=8,
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
+    if climatology:
+        time="month"
+    else:
+        time="time"
     # Contour or pcolormesh plot
     if contour:
         if invert_axis:
             im = ax.contourf(infile_mean.coords[infile_mean.dims[-1]],
-                             infile_mean.coords['time'], infile_mean,
+                             infile_mean.coords[time], infile_mean,
                              levels=levels)
         else:
-            im = ax.contourf(infile_mean.coords['time'],
+            im = ax.contourf(infile_mean.coords[time],
                              infile_mean.coords[infile_mean.dims[-1]],
                              infile_mean.T, levels=levels)
     else:
         if invert_axis:
             im = ax.pcolormesh(infile_mean.coords[infile_mean.dims[-1]],
-                               infile_mean.coords['time'], infile_mean)
+                               infile_mean.coords[time], infile_mean)
         else:
-            im = ax.pcolormesh(infile_mean.coords['time'],
+            im = ax.pcolormesh(infile_mean.coords[time],
                                infile_mean.coords[infile_mean.dims[-1]],
                                infile_mean.T)
 
@@ -110,10 +116,10 @@ def hovmoller_plot(infile, dim='lon', contour=True, levels=8,
         if invert_axis:
             ax.set_xlabel(infile_mean.dims[-1])
         else:
-            ax.set_xlabel('time')
+            ax.set_xlabel(time)
     if ylabel is None:
         if invert_axis:
-            ax.set_ylabel('time')
+            ax.set_ylabel(time)
         else:
             ax.set_ylabel(infile_mean.dims[-1])
     if title is None:
