@@ -39,17 +39,21 @@ dependencies:
   - coverage[toml]
   - pandoc
   - pycobertura
+# these below are only required for documentation
+  - sphinx
+  - sphinx-rtd-theme
 # these are extra dependencies for teleconnections
   - python-cdo
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
   - pip:
     - sparse
+    - dask_jobqueue
     - docker
     - gribscan
     - smmregrid
     # get OPA
-    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git
+    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@v0.2.1
     # pip install -e of AQUA itself
     - -e ./../../
   
