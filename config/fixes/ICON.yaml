@@ -86,6 +86,24 @@ models:
                     mtnsrf:
                         derived: rsdt-rsut
                         grib: true
+                    t:
+                        source: ta
+                        grib: true
+                    q: 
+                        source: hus
+                        grib: true
+                    u:
+                        source: ua
+                        grib: true
+                    uo:
+                        source: u
+                        grib: true
+                    v:
+                        source: va
+                        grib: true
+                    vo:
+                        source: v
+                        grib: true
         hpx: 
             default:
                 data_model: false
