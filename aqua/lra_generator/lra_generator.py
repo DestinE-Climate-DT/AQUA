@@ -27,7 +27,7 @@ class LRAgenerator():
         return self.nproc > 1
 
     def __init__(self,
-                 model=None, exp=None, source=None,
+                 model=None, exp=None, source=None, zoom=None,
                  var=None, vars=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
                  outdir=None, tmpdir=None, nproc=1,
@@ -41,6 +41,7 @@ class LRAgenerator():
             source (string):         The sourceid name from the catalog
             var (str, list):         Variable(s) to be processed and archived
                                      in LRA,vars in a synonim
+            zoom (int):              Healpix level of zoom
             resolution (string):     The target resolution for the LRA
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
@@ -101,6 +102,8 @@ class LRAgenerator():
             self.source = source
         else:
             raise KeyError('Please specify source.')
+        
+        self.zoom = zoom
 
         if not configdir:
             self.configdir = get_config_dir()
@@ -144,9 +147,14 @@ class LRAgenerator():
 
         create_folder(self.outdir, loglevel=self.loglevel)
 
+        # Initialize the reader
+        self.reader = Reader(model=self.model, exp=self.exp,
+                             source=self.source, zoom=self.zoom,
+                             regrid=self.resolution, freq=self.frequency,
+                             configdir=self.configdir, loglevel=self.loglevel)
+
         # Initialize variables used by methods
         self.data = None
-        self.reader = None
         self.cluster = None
         self.client = None
 
@@ -172,14 +180,8 @@ class LRAgenerator():
             self.logger.info('I am going to produce LRA at %s resolution...',
                              self.resolution)
 
-        # Initialize the reader
-        self.reader = Reader(model=self.model, exp=self.exp,
-                             source=self.source,
-                             regrid=self.resolution, freq=self.frequency,
-                             configdir=self.configdir, loglevel=self.loglevel)
-
         self.logger.warning('Retrieving data...')
-        self.data = self.reader.retrieve(fix=self.fix)
+        self.data = self.reader.retrieve(var = self.var, fix=self.fix)
         self.logger.debug(self.data)
 
     def generate_lra(self):
@@ -216,6 +218,7 @@ class LRAgenerator():
         # define the block to be uploaded into the catalog
         block_cat = {
             'driver': 'netcdf',
+            'description': f'LRA data {self.frequency} at {self.resolution}',
             'args': {
                 'urlpath': os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_????.nc'),
                 'chunks': {},
@@ -335,6 +338,12 @@ class LRAgenerator():
             temp_data = self.reader.timmean(temp_data)
         temp_data = self.reader.regrid(temp_data)
 
+        # remove regridded attribute to avoid issues with Reader
+        # https://github.com/oloapinivad/AQUA/issues/147
+        if 'regridded' in temp_data.attrs:
+            self.logger.info('Removing regridding attribute...')
+            del temp_data.attrs['regridded']
+
         # Splitting data into yearly files
         years = set(temp_data.time.dt.year.values)
         for year in years:
@@ -391,11 +400,9 @@ class LRAgenerator():
         self.logger.warning('Writing file %s...', outfile)
 
         # Write data to file, lazy evaluation
-        write_job =\
-            month_data.to_netcdf(outfile,
-                                    encoding={'time':
-                                            self.time_encoding},
-                                    compute=False)
+        write_job = month_data.to_netcdf(outfile,
+                                encoding={'time': self.time_encoding},
+                                compute=False)
 
         if self.dask:
             w_job = write_job.persist()
