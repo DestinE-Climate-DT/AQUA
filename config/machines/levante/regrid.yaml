@@ -40,10 +40,9 @@ source_grids:
       default:  # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
 
-  
     tco2559-ng5:
       ICMGG_atm2d:
-        path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids//4km/tcogrids/tco2559_grid.nc
+        path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids/4km/tcogrids/tco2559_grid.nc
         space_coord: ["value"]
       ICMU_atm2d:
         path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids/4km/tcogrids/tco2559_grid.nc
@@ -57,6 +56,63 @@ source_grids:
       default:  # # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
 
+    tco2559-ng5-cycle3:
+      default: 
+        space_coord: ["lon", "lat"]
+      2D_1h_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco2559_grid.nc
+        space_coord: ["value"]
+      3D_1h6h_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco2559_grid.nc
+        space_coord: ["value"]
+      2D_monthly_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco2559_grid.nc
+        space_coord: ["value"]
+      3D_monthly_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco2559_grid.nc
+        space_coord: ["value"]
+      WAM_1h_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco1279_grid.nc
+        space_coord: ["value"]
+      2D_monthly_0.25deg:
+        space_coord: ["value"]
+        extra: -setgrid,/work/bb1153/b382075/nextgems/grids/grid_lonlat_025.txt
+        cellareas: /work/bb1153/b382075/nextgems/grids/cellarea_unstructured_025.nc
+        cellarea_var: cell_area
+      3D_monthly_0.25deg:
+        space_coord: ["value"]
+        extra: -setgrid,/work/bb1153/b382075/nextgems/grids/grid_lonlat_025.txt
+        cellareas: /work/bb1153/b382075/nextgems/grids/cellarea_unstructured_025.nc
+        cellarea_var: cell_area
+  
+    tco1279-orca025-cycle3:
+      default: 
+        space_coord: ["lon", "lat"]
+      2D_1h_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco1279_grid.nc
+        space_coord: ["value"]
+      3D_1h6h_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco1279_grid.nc
+        space_coord: ["value"]
+      2D_monthly_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco1279_grid.nc
+        space_coord: ["value"]
+      3D_monthly_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco1279_grid.nc
+        space_coord: ["value"]
+      WAM_1h_native:
+        path: /work/bm1235/ifs-grids/tco_grids/tco1279_grid.nc
+        space_coord: ["value"]
+      2D_monthly_0.25deg:
+        space_coord: ["value"]
+        extra: -setgrid,/work/bb1153/b382075/nextgems/grids/grid_lonlat_025.txt
+        cellareas: /work/bb1153/b382075/nextgems/grids/cellarea_unstructured_025.nc
+        cellarea_var: cell_area
+      3D_monthly_0.25deg:
+        space_coord: ["value"]
+        extra: -setgrid,/work/bb1153/b382075/nextgems/grids/grid_lonlat_025.txt
+        cellareas: /work/bb1153/b382075/nextgems/grids/cellarea_unstructured_025.nc
+        cellarea_var: cell_area
   
     tco1279-orca025:
       ICMGG_atm2d: 
@@ -70,7 +126,7 @@ source_grids:
         space_coord: ["value"]
       default:  # # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
-
+    
     test-tco2559:
       ICMGG_atm2d:
         path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids/4km/tcogrids/tco2559_grid.nc
@@ -110,6 +166,7 @@ source_grids:
         space_coord: ["ncells"]
       default:  # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
+  
     ngc3026:
       default:
         path:
@@ -212,6 +269,53 @@ source_grids:
           - -setgrid,/work/bb1153/b382075/nextgems/grids/NG5_griddes_elems_IFS.nc 
       default:  # default covers all simple cases where this can be computed automatically (eg LRA)
         space_coord: ["lon", "lat"]
+
+    tco2559-ng5-cycle3:
+      default:  # default covers all simple cases where this can be computed automatically (eg LRA)
+        space_coord: ["lon", "lat"]
+
+      # 2D_1h_native:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
+      # 2D_daily_native:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
+      # 2D_monthly_native:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
+      # 3D_1h_native_zarr:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
+      # 3D_3h_native:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
+      # 3D_daily_native:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
+      # 3D_daily_native_zarr:
+      #   path: /work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc
+      #   space_coord: ["nod2"]
+      #   extra: 
+      #     - -setgrid,/work/bm1235/a270046/meshes/NG5_griddes_nodes_IFS.nc 
+      #     - -selname,cell_area
 
     test-ng5:
       original_2d:
