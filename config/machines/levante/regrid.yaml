@@ -39,11 +39,7 @@ source_grids:
         space_coord: ["lon", "lat"]
       default:  # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
-      # lra-r100-day:
-      #   space_coord: ["lon", "lat"]
-      # lra-r100-mon:
-      #   space_coord: ["lon", "lat"]
-  
+
     tco2559-ng5:
       ICMGG_atm2d:
         path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids/4km/tcogrids/tco2559_grid.nc
@@ -59,10 +55,7 @@ source_grids:
         space_coord: ["lon", "lat"]
       default:  # # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
-      # lra-r100-day:
-      #   space_coord: ["lon", "lat"]
-      # lra-r100-mon:
-      #   space_coord: ["lon", "lat"]
+
     tco2559-ng5-cycle3:
       default: 
         space_coord: ["lon", "lat"]
@@ -91,6 +84,7 @@ source_grids:
         extra: -setgrid,/work/bb1153/b382075/nextgems/grids/grid_lonlat_025.txt
         cellareas: /work/bb1153/b382075/nextgems/grids/cellarea_unstructured_025.nc
         cellarea_var: cell_area
+  
     tco1279-orca025-cycle3:
       default: 
         space_coord: ["lon", "lat"]
@@ -132,10 +126,7 @@ source_grids:
         space_coord: ["value"]
       default:  # # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
-      # lra-r100-day:
-      #   space_coord: ["lon", "lat"]
-      # lra-r100-mon:
-      #   space_coord: ["lon", "lat"]
+    
     test-tco2559:
       ICMGG_atm2d:
         path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids/4km/tcogrids/tco2559_grid.nc
@@ -175,10 +166,7 @@ source_grids:
         space_coord: ["ncells"]
       default:  # default covers all simple cases where this can be computed automatically
         space_coord: ["lon", "lat"]
-      # lra-r100-mon: 
-      #   space_coord: ["lon", "lat"]
-      # lra-r100-day: 
-      #   space_coord: ["lon", "lat"]
+  
     ngc3026:
       default:
         path:
@@ -190,6 +178,9 @@ source_grids:
           component: ocean
         space_coord: ["cell"]
         vert_coord: ["depth_half", "depth_full"]
+      lra-r100-monthly: 
+        space_coord: ["lon", "lat"]
+       
     ngc3028:
       default:
         path:
@@ -201,7 +192,9 @@ source_grids:
           component: ocean
         space_coord: ["cell"]
         vert_coord: ["depth_half", "depth_full"]
-  
+      lra-r100-monthly: 
+        space_coord: ["lon", "lat"]
+        
   FESOM:
     tco3999-ng5:  
       interpolated_global2d:

@@ -68,7 +68,6 @@ class Reader(FixerMixin, RegridMixin):
         self.exp = exp
         self.model = model
         self.targetgrid = regrid
-        self.zoom = zoom
         self.nproc = nproc
         self.freq = freq
         self.vert_coord = None
@@ -103,11 +102,8 @@ class Reader(FixerMixin, RegridMixin):
         # check source existence
         self.source = check_catalog_source(self.cat, self.model, self.exp, source, name="catalog")
 
-        # safe check for zoom into the catalog parameters
-        if 'zoom' in self.cat[self.model][self.exp].metadata.get('parameters', {}).keys() and self.zoom is None:
-
-            self.logger.warning('No zoom specified but the source requires it, setting zoom=0')
-            self.zoom = 0
+        # check that you defined zoom in a correct way
+        self.zoom = self._check_zoom(zoom)
 
         # get fixes dictionary and find them
         self.fixes_dictionary = load_multi_yaml(self.fixer_folder)
@@ -480,6 +476,39 @@ class Reader(FixerMixin, RegridMixin):
 
         return out
     
+    def _check_zoom(self, zoom):
+
+        """
+        Function to check if the zoom parameter is included in the metadata of the 
+        source and performs a few safety checks. 
+        It could be extended to any other metadata flag.
+        
+        Arguments:
+            zoom (integer):
+
+        Returns: 
+            zoom after check has been processed
+        """
+
+        # safe check for zoom into the catalog parameters (at exp or source level)
+        shortcat = self.cat[self.model][self.exp]
+        metadata1 = 'zoom' in shortcat.metadata.get('parameters', {}).keys()
+        metadata2 = 'zoom' in shortcat[self.source].metadata.get('parameters', {}).keys()
+        metadata = metadata1 or metadata2
+        if zoom is None:
+            if metadata:
+                self.logger.warning('No zoom specified but the source requires it, setting zoom=0')
+                return 0
+            return zoom
+
+        if zoom is not None:
+            if metadata:
+                return zoom
+
+            self.logger.warning('%s %s %s has not zoom option, disabling zoom=None',
+                                self.model, self.exp, self.source)
+            return None
+
     def vertinterp(self, data, levels=None, vert_coord='plev', units=None, method='linear'):
         """
         A basic vertical interpolation based on interp function

@@ -36,10 +36,12 @@ def load_yaml(infile):
 
 def load_multi_yaml(folder_path):
     """
-    Load and merge all yaml files located in a given folder into a single dictionary.
+    Load and merge all yaml files located in a given folder
+    into a single dictionary.
 
     Args:
-        folder_path(str): The path of the folder containing the yaml files to be merged.
+        folder_path(str):   The path of the folder containing the yaml
+                            files to be merged.
 
     Returns:
         A dictionary containing the merged contents of all the yaml files.
@@ -56,15 +58,22 @@ def load_multi_yaml(folder_path):
     return dict(merged_dict)
 
 
-def get_config_dir():
+def get_config_dir(filename='config.yaml'):
     """
     Return the path to the configuration directory,
     searching in a list of pre-defined directories.
 
-     Args:
-        None
-     Returns:
-         configdir (str): the dir of the catalog file and other config files
+    Generalized to work for config files with different names.
+
+    Args:
+        filename (str): the name of the configuration file
+                        Default is 'config.yaml'
+
+    Returns:
+        configdir (str): the dir of the catalog file and other config files
+
+    Raises:
+        FileNotFoundError: if no config file is found in the predefined folders
     """
 
     # set of predefined folders to browse
@@ -74,12 +83,18 @@ def get_config_dir():
     homedir = os.environ.get('HOME')
     if homedir:
         configdirs.append(os.path.join(homedir, '.aqua', 'config'))
-    
+
+    # if the AQUA is defined
+    aquadir = os.environ.get('AQUA')
+    if aquadir:
+        configdirs.append(os.path.join(aquadir, 'config'))
+
     # autosearch
     for configdir in configdirs:
-        if os.path.exists(os.path.join(configdir, "config.yaml")):
-            break
-    return configdir
+        if os.path.exists(os.path.join(configdir, filename)):
+            return configdir
+
+    raise FileNotFoundError(f"No config file {filename} found in {configdirs}")
 
 
 def eval_formula(mystring, xdataset):
@@ -174,13 +189,16 @@ def get_reader_filenames(configdir, machine):
     config_file = os.path.join(configdir, "config.yaml")
     if os.path.exists(config_file):
         base = load_yaml(os.path.join(configdir, "config.yaml"))
-        catalog_file = base['reader']['catalog'].format(machine=machine, configdir=configdir)
+        catalog_file = base['reader']['catalog'].format(machine=machine,
+                                                        configdir=configdir)
         if not os.path.exists(catalog_file):
             sys.exit(f'Cannot find catalog file in {catalog_file}')
-        regrid_file = base['reader']['regrid'].format(machine=machine, configdir=configdir)
+        regrid_file = base['reader']['regrid'].format(machine=machine,
+                                                      configdir=configdir)
         if not os.path.exists(regrid_file):
             sys.exit(f'Cannot find catalog file in {regrid_file}')
-        fixer_folder = base['reader']['fixer'].format(machine=machine, configdir=configdir)
+        fixer_folder = base['reader']['fixer'].format(machine=machine,
+                                                      configdir=configdir)
         if not os.path.exists(fixer_folder):
             sys.exit(f'Cannot find catalog file in {fixer_folder}')
 
@@ -218,7 +236,8 @@ def read_eccodes_def(filename):
     """
 
     # ECMWF lists
-    fn = os.path.join(eccodes.codes_definition_path(), 'grib2',  'localConcepts', 'ecmf', filename)
+    fn = os.path.join(eccodes.codes_definition_path(), 'grib2',
+                      'localConcepts', 'ecmf', filename)
     keylist = []
     with open(fn, "r", encoding='utf-8') as f:
         for line in f:
@@ -358,6 +377,7 @@ def log_history(data, msg):
         hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
         data.attrs.update({"history": hist})
 
+
 def file_is_complete(filename, logger=logging.getLogger()):
 
     """Basic check to see if file exists and that includes values which are not NaN
@@ -371,16 +391,16 @@ def file_is_complete(filename, logger=logging.getLogger()):
             xfield = xr.open_dataset(filename)
             varname = list(xfield.data_vars)[0]
             if xfield[varname].isnull().all():
-            #if xfield[varname].isnull().all(dim=['lon','lat']).all():
+            # if xfield[varname].isnull().all(dim=['lon','lat']).all():
                 logger.error('File %s is full of NaN! Recomputing...', filename)
-                check=True
+                check = True
             else:
-                check=False
+                check = False
                 logger.info('File %s seems ok!', filename)
         # we have no clue which kind of exception might show up
         except ValueError:
             logger.info('Something wrong with file %s! Recomputing...', filename)
-            check= True
+            check = True
     else:
         logger.info('File %s not found...', filename)
         check = True
