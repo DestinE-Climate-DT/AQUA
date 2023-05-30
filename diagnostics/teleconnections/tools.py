@@ -65,19 +65,20 @@ def area_selection(indat, lat=None, lon=None, box_brd=True):
     return odat
 
 
-def load_namelist(diagname='teleconnections', configdir='./'):
+def load_namelist(diagname='teleconnections', configdir=None):
     """
     Load diagnostic yaml file.
 
     Args:
-        diagname (str):  diagnostic name
-        configdir (str): path to config directory
+        diagname (str, opt):    diagnostic name. Default is 'teleconnections'
+        configdir (str, opt):   path to config directory. Default is Nones
 
     Returns:
-        namelist (dict): diagnostic config
+        namelist (dict):        Diagnostic configuration
     """
     if configdir is None:
-        configdir = get_config_dir()
+        filename = f'{diagname}.yaml'
+        configdir = get_config_dir(filename)
 
     infile = f'{configdir}/{diagname}.yaml'
     namelist = load_yaml(infile)
