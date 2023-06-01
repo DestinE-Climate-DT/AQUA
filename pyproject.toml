@@ -90,6 +90,7 @@ testpaths = [
 markers = [
     "aqua: mark test as AQUA framework",
     "slow: tests which are slow",
+    "sbatch: tests which require sbatch",
     "dummy: mark test for dummy diagnostic",
     "teleconnections: mark test for teleconnections diagnostic"
 ]
