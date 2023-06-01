@@ -25,7 +25,7 @@ ENSO:
 
 # MJO
 MJO:
-  field: ttr
+  field: mtntrf
   latN:  10
   latS: -10
   lonW:  30

@@ -3,7 +3,13 @@
 The folder contains jupyter-notebooks and python scripts in order to evaluate teleconnections in the DE_340 AQUA model evaluation framework.
 The script are based on the `xarray+dask` framework, a specific list of the packages used can be found inside the notebooks or in the `env-teleconnections.yml` file, that can be used as well to create the `conda` environment needed to run the diagnostic.
 
-## Library files (WIP)
+Teleconnections available:
+
+- NAO
+- ENSO
+- MJO
+
+## Library files
 
 - `cdotesting.py` contains function evaluating teleconnections with cdo bindings, in order to test the python libraries (see test section).
 - `index.py` contains functions for the direct evaluation of teleconnection indices.
@@ -14,7 +20,7 @@ The script are based on the `xarray+dask` framework, a specific list of the pack
 
 Tests are run with github actions, see `.github/workflows/teleconnections.yml` for details.
 
-## Notebooks (WIP)
+## Notebooks
 
 All notebooks are in the `notebooks` folder.
 
@@ -23,13 +29,26 @@ All notebooks are in the `notebooks` folder.
 - `test_cdovslib` contains examples of the usage of functions contained in `cdotesting.py`.
 - `test_hovmoller` contains examples of the usage of functions contained in `plots.py`.
 
-## Create the teleconnections env and add kernel for DKRZ jupyterhub
+## Create the teleconnections env
+
+The `env-teleconnections.yml` file can be used to create the `conda` environment needed to run the diagnostic.
+
+```bash
+mamba env create -f env-teleconnections.yml # or conda
+```
+
+### Add kernel for DKRZ jupyterhub
 
 Documentation on adding kernels: https://docs.dkrz.de/doc/software%26services/jupyterhub/kernels.html#use-your-own-kernel
 
-It should come down to:
+After creating the environment, activate it and install the kernel:
 
 '''bash
-mamba env create -f env-teleconnections.yml # or conda 
 python -m ipykernel install --user --name teleconnections --display-name="teleconnections"
 '''
+
+### Lumi installation
+
+`conda` is not available on Lumi, so the environment has to be created manually.
+
+An installation tool similar to `lumi_installation.sh` has still to be written.

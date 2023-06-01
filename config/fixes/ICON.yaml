@@ -120,4 +120,23 @@ models:
                     10si:
                         source: 10m_wind_speed
                         src_units: m/s
-                        grib: true 
+                        grib: true
+        ngc3026:
+            default:
+                data_model: false
+                vars:
+                    msl:
+                        source: pres_msl
+                        src_units: Pa
+                        grib: true
+        ngc3028:
+            default:
+                data_model: false
+                vars:
+                    msl:
+                        source: pres_msl
+                        src_units: Pa
+                        grib: true
+                    mtntrf:
+                        derived: -rlut
+                        grib: true
