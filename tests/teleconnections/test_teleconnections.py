@@ -12,6 +12,7 @@ approx_rel = 1e4
 
 @pytest.mark.parametrize("module_name", ['cdotesting', 'index', 'plots',
                                          'tools'])
+@pytest.mark.teleconnections
 def test_import(module_name):
     """
     """
@@ -21,6 +22,7 @@ def test_import(module_name):
         assert False, "Module {} could not be imported".format(module_name)
 
 
+@pytest.mark.teleconnections
 def test_lon_conversion():
     """
     Test that the lon conversion works
@@ -31,6 +33,7 @@ def test_lon_conversion():
     assert lon_180_to_360(75) == pytest.approx(75, rel=approx_rel)
 
 
+@pytest.mark.teleconnections
 def test_namelist():
     """
     Test that the namelist can be loaded
@@ -41,6 +44,7 @@ def test_namelist():
     assert len(namelist) > 0
 
 
+@pytest.mark.teleconnections
 @pytest.mark.parametrize("months_window", [1, 3])
 def test_station_based(months_window):
     """
@@ -62,6 +66,7 @@ def test_station_based(months_window):
                                  months_window=months_window)
 
 
+@pytest.mark.teleconnections
 @pytest.mark.parametrize("months_window", [1, 3])
 def test_regional_mean(months_window):
     """
