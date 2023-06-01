@@ -35,7 +35,7 @@ def test_namelist():
     """
     Test that the namelist can be loaded
     """
-    configdir = "./diagnostics/teleconnections/"
+    configdir = "./diagnostics/teleconnections/config"
     diagname = 'teleconnections'
     namelist = load_namelist(diagname, configdir=configdir)
     assert len(namelist) > 0
@@ -47,7 +47,7 @@ def test_station_based(months_window):
     Test that the station_based method works
     """
     filepath = "./nao_test.nc"
-    configdir = "./diagnostics/teleconnections/"
+    configdir = "./diagnostics/teleconnections/config"
     diagname = 'teleconnections'
     telecname = 'NAO'
     rtol = 1e-4
@@ -68,7 +68,7 @@ def test_regional_mean(months_window):
     Test that the regional_mean method works
     """
     filepath = "./enso_test.nc"
-    configdir = "./diagnostics/teleconnections/"
+    configdir = "./diagnostics/teleconnections/config"
     diagname = 'teleconnections'
     telecname = 'ENSO'
     rtol = 1e-4
