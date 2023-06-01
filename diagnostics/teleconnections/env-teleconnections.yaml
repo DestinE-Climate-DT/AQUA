@@ -1,12 +1,7 @@
 # Create the teleconnections environment:
 #   conda env create -f env-teleconnections.yml
 # Alternatively, use mamba
-#   mamba env create -n teleconnections -f env-teleconnections.yml
-#
-# The first part of the list has been manually edited from the env
-# file that is in common to the whole framework, while additional
-# dependencies due to the teleconnections requirements are added
-# at the end of the list (before pip packages).
+#   mamba env create -f env-teleconnections.yml
 
 name: teleconnections
 channels:
@@ -15,55 +10,10 @@ channels:
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   - python>=3.9,<3.11
-  - libnetcdf<=4.8.1
-  - netcdf4
-  - xarray
-  - dask
-  - numpy
-  - numba
-  - ecCodes      
-  - matplotlib
-  - cartopy
-  - cfunits
-  - metpy
-  - cdo
-  - intake-esm<=2021.8.17
-  - intake
-  - intake-xarray
-  - ruamel.yaml
-# these below are only required for running notebooks
-  - ipykernel
-  - healpy
-# these below are only required for tests
-  - pytest
-  - pytest-cov
-  - coverage[toml]
-  - pandoc
-  - pycobertura
-# these below are only required for documentation
-  - sphinx
-  - sphinx-rtd-theme
 # these are extra dependencies for teleconnections
   - python-cdo
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
   - pip:
-    - sparse
-    - dask_jobqueue
-    - docker
-    - gribscan
-    - smmregrid
-    # get OPA
-    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git
     # pip install -e of AQUA itself
     - -e ./../../
-  
-        
-  
-  
-  
-  
-  
-  
-  
-  
