@@ -17,6 +17,7 @@ Welcome to AQUA's documentation!
    lra
    adding_data
    tests
+   slurm
    diagnostics/index
    examples_tutorials
    api_reference

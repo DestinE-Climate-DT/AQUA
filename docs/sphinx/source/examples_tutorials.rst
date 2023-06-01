@@ -12,10 +12,11 @@ Some example notebooks include:
 2. `Regridding <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/regrid.ipynb>`_
 3. `Coordinate, variable name, units fixer <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/fixer.ipynb>`_
 4. `Temporal averaging  <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/timmean.ipynb>`_
-7. `Vertical interpolation <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/vertinterp.ipynb>`_
 5. `Spatial (field) averaging <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/fldmean.ipynb>`_
-6. `Access to other datasets <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/datasets.ipynb>`_
-7. `Streaming emulator <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/streaming.ipynb>`_
+6. `Vertical interpolation <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/vertinterp.ipynb>`_
+7. `Access to other datasets <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/datasets.ipynb>`_
+8. `Streaming emulator <https://github.com/oloapinivad/AQUA/blob/main/notebooks/reader/streaming.ipynb>`_
+9. `Interactive dask-job  <https://github.com/oloapinivad/AQUA/blob/main/notebooks/slurm/slurm.ipynb>`_
 
 
 
