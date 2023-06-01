@@ -3,13 +3,12 @@
 import os
 import copy
 import warnings
-import yaml
 import dask
 import numpy as np
 from dask.distributed import Client, LocalCluster
 from one_pass.opa import Opa
 from aqua.logger import log_configure
-from aqua.util import create_folder, load_yaml
+from aqua.util import create_folder, load_yaml, dump_yaml
 from aqua.util import get_config_dir, get_machine
 from aqua.reader import Reader
 
@@ -93,7 +92,7 @@ class OPAgenerator():
             self.source = source
         else:
             raise KeyError('Please specify source.')
-        
+
         self.zoom = zoom
         if zoom is not None:
             self.logger.info('Zoom level set at: %s', str(zoom))
@@ -249,14 +248,13 @@ class OPAgenerator():
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
         cat_file['sources'][self.entry_name] = block_cat
-        with open(catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=catalogfile, cfg=cat_file)
 
         # find the regrid of my experiment
         regridfile = os.path.join(self.configdir, 'machines', self.machine,
                                   'regrid.yaml')
         cat_file = load_yaml(regridfile)
-        dictexp =  cat_file['source_grids'][self.model][self.exp]
+        dictexp = cat_file['source_grids'][self.model][self.exp]
         if self.source in dictexp:
             regrid_entry = dictexp[self.source]
         elif 'default' in dictexp:
@@ -264,11 +262,10 @@ class OPAgenerator():
             regrid_entry = dictexp['default']
         else:
             raise KeyError('Cannot find experiment information regrid file')
-        
+
         cat_file['source_grids'][self.model][self.exp][self.entry_name] = copy.deepcopy(regrid_entry)
 
-        with open(regridfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=regridfile, cfg=cat_file)
 
     def _remove_catalog_entry(self):
         """Remove the entries"""
@@ -277,13 +274,14 @@ class OPAgenerator():
                             self.model, self.exp, self.entry_name)
 
         # find the catalog of my experiment
+        yaml = YAML()
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
                                    'catalog', self.model, self.exp+'.yaml')
         cat_file = load_yaml(catalogfile)
         if self.entry_name in cat_file['sources']:
             del cat_file['sources'][self.entry_name]
         with open(catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+            yaml.dump(cat_file, file)
 
         # find the regrid of my experiment
         regridfile = os.path.join(self.configdir, 'machines', self.machine,
@@ -292,8 +290,7 @@ class OPAgenerator():
         if self.entry_name in cat_file['source_grids'][self.model][self.exp]:
             del cat_file['source_grids'][self.model][self.exp][self.entry_name]
 
-        with open(regridfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=regridfile, cfg=cat_file)
 
     def _remove_checkpoint(self):
         """Be sure that the checkpoint is removed"""

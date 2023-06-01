@@ -89,7 +89,8 @@ models:
                     t:
                         source: ta
                         grib: true
-                    q: 
+                    q:
+                        src_units: kg/kg
                         source: hus
                         grib: true
                     u:

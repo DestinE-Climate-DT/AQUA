@@ -41,6 +41,7 @@ dependencies = [
     "numpy",
     "pandas",
     "pyYAML",
+    "ruamel.yaml",
     "sparse",
     "xarray",
     "smmregrid",

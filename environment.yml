@@ -25,6 +25,7 @@ dependencies:
   - intake-esm<=2021.8.17
   - intake
   - intake-xarray
+  - ruamel.yaml
 # these below are only required for running notebooks
   - ipykernel
   - healpy

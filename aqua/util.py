@@ -9,7 +9,7 @@ import string
 import sys
 import logging
 from collections import defaultdict
-import yaml
+from ruamel.yaml import YAML
 import eccodes
 import xarray as xr
 from aqua.logger import log_configure
@@ -25,10 +25,11 @@ def load_yaml(infile):
     Returns:
         A dictionary with the yaml file keys
     """
+    yaml = YAML(typ='rt')  # default, if not specified, is 'rt' (round-trip)
 
     try:
         with open(infile, 'r', encoding='utf-8') as file:
-            cfg = yaml.load(file, Loader=yaml.FullLoader)
+            cfg = yaml.load(file)
     except IOError:
         sys.exit(f'ERROR: {infile} not found: you need to have this configuration file!')
     return cfg
@@ -46,16 +47,41 @@ def load_multi_yaml(folder_path):
     Returns:
         A dictionary containing the merged contents of all the yaml files.
     """
+    yaml = YAML()  # default, if not specified, is 'rt' (round-trip)
 
     merged_dict = defaultdict(dict)
     for filename in os.listdir(folder_path):
         if filename.endswith(('.yml', '.yaml')):
             file_path = os.path.join(folder_path, filename)
             with open(file_path, 'r', encoding='utf-8') as file:
-                yaml_dict = yaml.safe_load(file)
+                yaml_dict = yaml.load(file)
                 for key, value in yaml_dict.items():
                     merged_dict[key].update(value)
     return dict(merged_dict)
+
+
+def dump_yaml(outfile=None, cfg=None, typ='rt'):
+    """
+    Dump to a custom yaml file
+
+    Args:
+        outfile(str):   a file path
+        cfg(dict):      a dictionary to be dumped
+        typ(str):       the type of YAML initialisation.
+                        Default is 'rt' (round-trip)
+    """
+    # Initialize YAML object
+    yaml = YAML(typ=typ)
+
+    # Check input
+    if outfile is None:
+        raise ValueError('ERROR: outfile not defined')
+    if cfg is None:
+        raise ValueError('ERROR: cfg not defined')
+
+    # Dump the dictionary
+    with open(outfile, 'w', encoding='utf-8') as file:
+        yaml.dump(cfg, file)
 
 
 def get_config_dir(filename='config.yaml'):

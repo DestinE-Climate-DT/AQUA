@@ -14,6 +14,7 @@ Welcome to AQUA's documentation!
    configuration
    getting_started
    core_components
+   lra
    adding_data
    tests
    diagnostics/index

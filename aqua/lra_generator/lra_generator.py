@@ -6,13 +6,13 @@ import os
 from time import time
 import glob
 import dask
-import yaml
 import xarray as xr
 from dask.distributed import Client, LocalCluster, progress
 from dask.diagnostics import ProgressBar
 from aqua.logger import log_configure
 from aqua.reader import Reader
-from aqua.util import create_folder, generate_random_string, load_yaml
+from aqua.util import create_folder, generate_random_string
+from aqua.util import dump_yaml, load_yaml
 from aqua.util import get_config_dir, get_machine, file_is_complete
 
 
@@ -51,7 +51,7 @@ class LRAgenerator():
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
-            configdir (string):      Configuration directory where the catalog 
+            configdir (string):      Configuration directory where the catalog
                                      are found
             nproc (int, opt):        Number of processors to use. default is 1
             loglevel (string, opt):  Logging level
@@ -102,7 +102,7 @@ class LRAgenerator():
             self.source = source
         else:
             raise KeyError('Please specify source.')
-        
+
         self.zoom = zoom
 
         if not configdir:
@@ -235,9 +235,7 @@ class LRAgenerator():
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
         cat_file['sources'][entry_name] = block_cat
-        with open(catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
-
+        dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def _set_dask(self):
         """
@@ -274,7 +272,7 @@ class LRAgenerator():
 
     def _concat_var(self, var, year):
         """
-        To reduce the amount of files concatenate together all the files 
+        To reduce the amount of files concatenate together all the files
         from the same year
         """
 
@@ -306,11 +304,11 @@ class LRAgenerator():
             filename = filename.replace("*", str(year) + str(month).zfill(2))
 
         return filename
-    
+
     def check_integrity(self, varname):
 
         """To check if the LRA entry is fine before running"""
-                     
+
         yearfiles = self.get_filename(varname)
         yearfiles = glob.glob(yearfiles)
         checks = [file_is_complete(yearfile) for yearfile in yearfiles]
@@ -387,9 +385,8 @@ class LRAgenerator():
         t_end = time()
         self.logger.info('Process took {:.4f} seconds'.format(t_end-t_beg))
 
-
     def _write_var_month(self, month_data, outfile):
-        """Write a single chunk of data - Xarray Dataset - to a specific file 
+        """Write a single chunk of data - Xarray Dataset - to a specific file
         using dask if required and monitoring the progress"""
 
         # File to be written
