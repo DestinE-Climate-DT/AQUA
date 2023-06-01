@@ -1,98 +1,184 @@
 models:
     IFS:
+        default:
             default:
-                default:
-                    data_model: ifs
-                    deltat: 3600
-                    jump: month
-                    vars:
-                        tprate:
-                            source: tp
-                            grib: true
-                            decumulate: true    
-                        var172143:  # cprate
-                            source: cp
-                            grib: true
-                            decumulate: true
-                        mlsprt:
-                            source: lsp
-                            grib: true
-                            decumulate: true  
-                        erate:
-                            source: e
-                            grib: true
-                            src_units: m
-                            decumulate: true 
-                        esrate:
-                            source: es
-                            grib: true
-                            decumulate: true 
-                        mrort:
-                            source: ro
-                            grib: true
-                            decumulate: true
-                        mtsfr:
-                            source: sf
-                            grib: true
-                            decumulate: true
-                        mslhfl:
-                            source: slhf
-                            grib: true
-                            decumulate: true
-                        msshfl:
-                            source: sshf
-                            grib: true
-                            decumulate: true
-                        msnsrf:
-                            source: ssr
-                            grib: true
-                            decumulate: true
-                        msdsrf:
-                            source: ssrd
-                            grib: true
-                            decumulate: true    
-                        msntrf:
-                            source: str
-                            grib: true
-                            decumulate: true
-                        msdtrf:
-                            source: strd
-                            grib: true
-                            decumulate: true
-                        mtnsrf:
-                            source: tsr
-                            grib: true
-                            decumulate: true
-                        mtntrf:
-                            source: ttr
-                            grib: true
-                            decumulate: true         
-                        var172045:  # if the variable has no short name we can use its paramId
-                            source: smlt
-                            grib: true
-                            decumulate: true
-            # These are for tests
-            test-tco79:
-                long:
-                    data_model: ifs
-                    deltat: 3600
-                    jump: month
-                    vars:
-                        ttr:    # Just decumulate OLR
-                            source: ttr
-                            decumulate: true
-                        mtntrf: # Convert with auto unit conversion from eccodes properties
-                            derived: ttr
-                            grib: true
-                            decumulate: true     
-                        var235: # Test to specify using grib code as a target (actually does nothing) and adding a constant
-                            derived: 2t+1.0
-                            grib: true
-                        mtntrf2:
-                            derived: ttr+ttr # example of derived variable, should be double the normal amount
-                            src_units: J m-2 # Overruling source units
-                            decumulate: true  # Test decumulation
-                            units: "{radiation_flux}" # overruling units
-                            attributes:
-                                long_name: Mean top net thermal radiation flux doubled # assigning a long_name
-                                paramId: '999179' # assigning an (invented) paramId
+                data_model: ifs
+                deltat: 3600
+                jump: month
+                vars:
+                    tprate:
+                        source: tp
+                        grib: true
+                        decumulate: true    
+                    var172143:  # cprate
+                        source: cp
+                        grib: true
+                        decumulate: true
+                    mlsprt:
+                        source: lsp
+                        grib: true
+                        decumulate: true  
+                    erate:
+                        source: e
+                        grib: true
+                        src_units: m
+                        decumulate: true 
+                    esrate:
+                        source: es
+                        grib: true
+                        decumulate: true 
+                    mrort:
+                        source: ro
+                        grib: true
+                        decumulate: true
+                    mtsfr:
+                        source: sf
+                        grib: true
+                        decumulate: true
+                    mslhfl:
+                        source: slhf
+                        grib: true
+                        decumulate: true
+                    msshfl:
+                        source: sshf
+                        grib: true
+                        decumulate: true
+                    msnsrf:
+                        source: ssr
+                        grib: true
+                        decumulate: true
+                    msdsrf:
+                        source: ssrd
+                        grib: true
+                        decumulate: true    
+                    msntrf:
+                        source: str
+                        grib: true
+                        decumulate: true
+                    msdtrf:
+                        source: strd
+                        grib: true
+                        decumulate: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                        decumulate: true
+                    mtntrf:
+                        source: ttr
+                        grib: true
+                        decumulate: true         
+                    var172045:  # if the variable has no short name we can use its paramId
+                        source: smlt
+                        grib: true
+                        decumulate: true
+        tco2559-ng5-cycle3:
+            2D_monthly_0.25deg:
+                data_model: ifs
+                vars:
+                    tprate:
+                        source: tp
+                        grib: true
+                    var172143:  # cprate
+                        source: cp
+                        grib: true
+                    mlsprt:
+                        source: lsp
+                        grib: true
+                    mrort:
+                        source: ro
+                        grib: true
+                    mtsfr:
+                        source: sf
+                        grib: true
+                    mslhfl:
+                        source: slhf
+                        grib: true
+                    msshfl:
+                        source: sshf
+                        grib: true
+                    msnsrf:
+                        source: ssr
+                        grib: true
+                    msdsrf:
+                        source: ssrd
+                        grib: true
+                    msntrf:
+                        source: str
+                        grib: true
+                    msdtrf:
+                        source: strd
+                        grib: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                    mtntrf:
+                        source: ttr
+                        grib: true        
+        tco1279-orca025-cycle3:
+            2D_monthly_0.25deg:
+                data_model: ifs
+                vars:
+                    tprate:
+                        source: tp
+                        grib: true
+                    var172143:  # cprate
+                        source: cp
+                        grib: true
+                    mlsprt:
+                        source: lsp
+                        grib: true
+                    mrort:
+                        source: ro
+                        grib: true
+                    mtsfr:
+                        source: sf
+                        grib: true
+                    mslhfl:
+                        source: slhf
+                        grib: true
+                    msshfl:
+                        source: sshf
+                        grib: true
+                    msnsrf:
+                        source: ssr
+                        grib: true
+                    msdsrf:
+                        source: ssrd
+                        grib: true
+                    msntrf:
+                        source: str
+                        grib: true
+                    msdtrf:
+                        source: strd
+                        grib: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                    mtntrf:
+                        source: ttr
+                        grib: true        
+        # These are for tests
+        test-tco79:
+            long:
+                data_model: ifs
+                deltat: 3600
+                jump: month
+                vars:
+                    ttr:    # Just decumulate OLR
+                        source: ttr
+                        decumulate: true
+                    mtntrf: # Convert with auto unit conversion from eccodes properties
+                        derived: ttr
+                        grib: true
+                        decumulate: true     
+                    var235: # Test to specify using grib code as a target (actually does nothing) and adding a constant
+                        derived: 2t+1.0
+                        grib: true
+                    mtntrf2:
+                        derived: ttr+ttr # example of derived variable, should be double the normal amount
+                        src_units: J m-2 # Overruling source units
+                        decumulate: true  # Test decumulation
+                        units: "{radiation_flux}" # overruling units
+                        attributes:
+                            long_name: Mean top net thermal radiation flux doubled # assigning a long_name
+                            paramId: '999179' # assigning an (invented) paramId

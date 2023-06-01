@@ -1,15 +1,7 @@
 models:
     FESOM:
         default:
-            interpolated_global_TS:
-                data_model: False  # Do not attempto to correct coordinates
-                vars:
-                    ocpt: 
-                        derived: temp
-                        src_units: degC
-                        grib: true
-                        units: degC # Override units from grib tables
-            original_2d:
+            default:
                 data_model: false
                 delete:  # variables to drop at the end
                     - a_ice
@@ -37,3 +29,45 @@ models:
                     zos:
                         derived: ssh
                         grib: true
+                    ocpt:
+                        source: temp 
+                        src_units: degC
+                        grib: true
+                        units: degC # Override units from grib tables
+                    uo:
+                        source: u
+                        grib: true
+                    vo:
+                        source: v
+                        grib: true
+                    wo:
+                        source: w
+                        grib: true
+                    so:
+                        source: salt
+                        grib: true
+                    sivn:
+                        source: vice
+                        grib: true
+                    siue:
+                        source: uice
+                        grib: true
+                    vdf: 
+                        source: Kv
+                        grib: true
+                    tprate:
+                        source: prec
+                        grib: true
+                    mlotst125:
+                        source: MLD2
+                        grib: true
+
+            interpolated_global_TS:
+                data_model: False  # Do not attempto to correct coordinates
+                vars:
+                    ocpt: 
+                        derived: temp
+                        src_units: degC
+                        grib: true
+                        units: degC # Override units from grib tables
+    

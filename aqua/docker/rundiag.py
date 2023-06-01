@@ -1,9 +1,10 @@
 """Runs an AQUA diagnostic using Docker"""
 
-import yaml
 import os
 import docker
 from jinja2 import Template, FileSystemLoader, Environment
+from aqua.util import load_yaml
+from ruamel.yaml import YAML
 
 def rundiag(cmd = None, config = '.',
             machine_file=r'machine.yaml',
@@ -29,13 +30,12 @@ def rundiag(cmd = None, config = '.',
 
     if machine_file is dict:
         # We can also pass directly a dict because the config file has been read before
-        machine_cfg = machine_file
+        machinecfg = machine_file
     else:
         # Import directory setting and volumes to mount from machine.yaml
-        with open(machine_file) as file:
-            machinecfg = yaml.load(file, Loader=yaml.FullLoader)
+        machinecfg = load_yaml(machine_file)
 
-    # Transform volumes dict into "host=bind" strings 
+    # Transform volumes dict into "host=bind" strings
     volume_list = []
     for key, value in machinecfg['volumes'].items():
         volume_list += [f'{value}:/{key}']
@@ -44,8 +44,7 @@ def rundiag(cmd = None, config = '.',
         diagcfg = diagnostic_file
     else:
         # Import parameters needed to render templates
-        with open(diagnostic_file) as file:
-            diagcfg = yaml.load(file, Loader=yaml.FullLoader)
+        diagcfg = load_yaml(diagnostic_file)
 
     templateLoader = FileSystemLoader(searchpath=f"{config}/templates")
     templateEnv = Environment(loader=templateLoader)

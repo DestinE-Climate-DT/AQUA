@@ -34,7 +34,15 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10u/netcdf/tco2559-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10v/netcdf/tco2559-ng5_pc.json
-
+      driver: netcdf
+  lra-r100-monthly:
+    description: LRA data monthly at r100
+    driver: 'netcdf'
+    args:
+      urlpath: /work/bb1153/b382076/LRAv3/IFS/tco2559-ng5/r100/monthly/*tco2559-ng5_r100_monthly_????.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
   # interpolated_np:
   #   driver: zarr
   #   args:
@@ -68,13 +76,6 @@ sources:
   #     combine: nested
   #     urlpath:
   #     - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/ci/netcdf/tco2559-ng5_sp.json
-  
-  lra-r100-mon:
-    driver: netcdf
-    description: LRA monthly data 1x1 deg regular grid
-    args:
-      urlpath: /work/bb1153/b382076/LRAv2/IFS/tco2559-ng5/r100/mon/*tco2559-ng5_r100_mon_????.nc
-      chunks: {}
-      xarray_kwargs:
-        decode_times: true
+
+
 

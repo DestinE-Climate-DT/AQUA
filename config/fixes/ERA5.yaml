@@ -13,3 +13,9 @@ models:
                         derived: cp+lsp
                         #src_units: m
                         grib: true
+            monthly:
+                data_model: False
+                vars:
+                    msl:
+                        grib: true
+                        source: MSL

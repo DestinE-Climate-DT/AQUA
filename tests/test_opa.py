@@ -22,6 +22,14 @@ class TestOPA():
                 opaopa.generate_opa()
                 assert os.path.isdir(os.path.join(os.getcwd(), outdir, "IFS/test-tco79/daily"))
 
+    def test_no_checkpoint(self, opa_arguments):
+                model, exp, source, var, outdir, tmpdir = opa_arguments
+                opaopa = OPAgenerator(model=model, exp=exp, source=source, var=var, frequency='daily',
+                outdir=outdir, tmpdir=tmpdir, definitive=False, checkpoint=False)
+                opaopa.retrieve()
+                opaopa.generate_opa()
+                assert os.path.isdir(os.path.join(os.getcwd(), outdir, "IFS/test-tco79/daily"))
+
     def test_definitive_true(self, opa_arguments):
                 model, exp, source, var, outdir, tmpdir = opa_arguments
                 opaopa = OPAgenerator(model=model, exp=exp, source=source, var=var, frequency='monthly',

@@ -25,6 +25,7 @@ dependencies:
   - intake-esm<=2021.8.17
   - intake
   - intake-xarray
+  - ruamel.yaml
 # these below are only required for running notebooks
   - ipykernel
   - healpy
@@ -46,6 +47,6 @@ dependencies:
     - gribscan
     - smmregrid
     # get OPA
-    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@v0.2.1
+    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git
     # pip install -e of AQUA itself
     - -e .
