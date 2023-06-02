@@ -11,6 +11,7 @@ channels:
 dependencies:
   - python>=3.9,<3.11
 # these are extra dependencies for teleconnections
+  - cartopy
 # these are needed only for tests
   - python-cdo
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
