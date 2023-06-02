@@ -310,7 +310,12 @@ class Reader(FixerMixin, RegridMixin):
                 if all(element in data.data_vars for element in loadvar):
                     data = data[loadvar]
                 else:
-                    raise KeyError("You are asking for variables which we cannot find in the catalog!")
+                    try:
+                        data = data[var]
+                        self.logger.warning(f"You are asking for var {var} which is already fixed from {loadvar}.")
+                        self.logger.warning(f"Would be safer to run with fix=False")
+                    except:
+                        raise KeyError("You are asking for variables which we cannot find in the catalog!")
 
         log_history(data, "retrieved by AQUA retriever")
 
