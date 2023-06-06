@@ -202,9 +202,17 @@ class FixerMixin():
         """
 
         if self.fixes is None:
+            self.logger.debug("No fixes available")
             return var
 
         variables = self.fixes.get("vars", None)
+        if variables:
+            self.logger.debug("Variables in the fixes: %s", variables)
+        else:
+            self.logger.warning("No variables in the fixes for source %s",
+                                self.source)
+            self.logger.warning("Returning the original variable")
+            return var
 
         # double check we have a list
         if isinstance(var, str):

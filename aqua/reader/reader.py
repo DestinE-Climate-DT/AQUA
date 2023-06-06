@@ -303,6 +303,7 @@ class Reader(FixerMixin, RegridMixin):
                 # conversion to list guarantee that Dataset is produced
                 if isinstance(var, str):
                     var = var.split()
+                self.logger.info(f"Retrieving variables: {var}")
 
                 # get loadvar
                 loadvar = self.get_fixer_varname(var) if fix else var
