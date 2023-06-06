@@ -3,13 +3,12 @@
 import os
 import copy
 import warnings
-import yaml
 import dask
 import numpy as np
 from dask.distributed import Client, LocalCluster
 from one_pass.opa import Opa
 from aqua.logger import log_configure
-from aqua.util import create_folder, load_yaml
+from aqua.util import create_folder, load_yaml, dump_yaml
 from aqua.util import get_config_dir, get_machine
 from aqua.reader import Reader
 
@@ -93,7 +92,7 @@ class OPAgenerator():
             self.source = source
         else:
             raise KeyError('Please specify source.')
-        
+
         self.zoom = zoom
         if zoom is not None:
             self.logger.info('Zoom level set at: %s', str(zoom))
@@ -204,6 +203,7 @@ class OPAgenerator():
              # get info on the checkpoint file
             if self.checkpoint:
                 self.checkpoint_file = opa_mean.checkpoint_file
+
             # self.checkpoint_file = opa_mean.checkpoint_file
             # self.remove_checkpoint()
             print(vars(opa_mean))
@@ -217,7 +217,12 @@ class OPAgenerator():
             for data in data_gen:
                 self.logger.info(f"start_date: {data.time[0].values} stop_date: {data.time[-1].values}")
                 if self.definitive:
-                    opa_mean.compute(data[variable])
+                    mydata = data[variable]#.load()
+                    opa_mean.compute(mydata)
+                    if os.path.exists(self.checkpoint_file):
+                        file_size = os.path.getsize(self.checkpoint_file)
+                        formatted_size = format_size(file_size)
+                        self.logger.info('The size of the checkpoint file is %s', formatted_size)
 
         self._close_dask()
 
@@ -249,14 +254,13 @@ class OPAgenerator():
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
         cat_file['sources'][self.entry_name] = block_cat
-        with open(catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=catalogfile, cfg=cat_file)
 
         # find the regrid of my experiment
         regridfile = os.path.join(self.configdir, 'machines', self.machine,
                                   'regrid.yaml')
         cat_file = load_yaml(regridfile)
-        dictexp =  cat_file['source_grids'][self.model][self.exp]
+        dictexp = cat_file['source_grids'][self.model][self.exp]
         if self.source in dictexp:
             regrid_entry = dictexp[self.source]
         elif 'default' in dictexp:
@@ -264,11 +268,10 @@ class OPAgenerator():
             regrid_entry = dictexp['default']
         else:
             raise KeyError('Cannot find experiment information regrid file')
-        
+
         cat_file['source_grids'][self.model][self.exp][self.entry_name] = copy.deepcopy(regrid_entry)
 
-        with open(regridfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=regridfile, cfg=cat_file)
 
     def _remove_catalog_entry(self):
         """Remove the entries"""
@@ -282,8 +285,7 @@ class OPAgenerator():
         cat_file = load_yaml(catalogfile)
         if self.entry_name in cat_file['sources']:
             del cat_file['sources'][self.entry_name]
-        with open(catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=catalogfile, cfg=cat_file)
 
         # find the regrid of my experiment
         regridfile = os.path.join(self.configdir, 'machines', self.machine,
@@ -291,9 +293,7 @@ class OPAgenerator():
         cat_file = load_yaml(regridfile)
         if self.entry_name in cat_file['source_grids'][self.model][self.exp]:
             del cat_file['source_grids'][self.model][self.exp][self.entry_name]
-
-        with open(regridfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=regridfile, cfg=cat_file)
 
     def _remove_checkpoint(self):
         """Be sure that the checkpoint is removed"""
@@ -344,3 +344,15 @@ class OPAgenerator():
             self.client.shutdown()
             self.cluster.close()
             self.logger.info('Dask cluster closed')
+
+
+def format_size(size):
+
+    """Trivial function for formatting file size"""
+    power = 2**10
+    n = 0
+    units = ['bytes', 'KB', 'MB', 'GB', 'TB']
+    while size > power:
+        size /= power
+        n += 1
+    return f"{round(size, 2)} {units[n]}"

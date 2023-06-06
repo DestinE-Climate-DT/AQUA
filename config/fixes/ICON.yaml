@@ -86,10 +86,15 @@ models:
                     mtnsrf:
                         derived: rsdt-rsut
                         grib: true
+                    ocpt:
+                        source: to
+                        grib: true
+                        units: degC
                     t:
                         source: ta
                         grib: true
-                    q: 
+                    q:
+                        src_units: kg/kg
                         source: hus
                         grib: true
                     u:

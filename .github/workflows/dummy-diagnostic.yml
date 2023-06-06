@@ -24,14 +24,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Provision with a different conda environment
-        uses: mamba-org/provision-with-micromamba@v15
+      - name: Setup Micromamba with diagnostic environment
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: diagnostics/dummy-diagnostic/env-dummy.yaml
           cache-downloads: true
-          channels: conda-forge,numba
-          channel-priority: flexible
-          extra-specs: |
+          cache-environment: true
+          condarc: |
+            channels:
+              - numba
+              - conda-forge
+          create-args: >-
               python=${{ matrix.python-version }}
 
 # Run framework tests in order to check that the diagnostic environment is

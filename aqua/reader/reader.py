@@ -310,7 +310,12 @@ class Reader(FixerMixin, RegridMixin):
                 if all(element in data.data_vars for element in loadvar):
                     data = data[loadvar]
                 else:
-                    raise KeyError("You are asking for variables which we cannot find in the catalog!")
+                    try:
+                        data = data[var]
+                        self.logger.warning(f"You are asking for var {var} which is already fixed from {loadvar}.")
+                        self.logger.warning(f"Would be safer to run with fix=False")
+                    except:
+                        raise KeyError("You are asking for variables which we cannot find in the catalog!")
 
         log_history(data, "retrieved by AQUA retriever")
 
@@ -490,10 +495,19 @@ class Reader(FixerMixin, RegridMixin):
             zoom after check has been processed
         """
 
-        # safe check for zoom into the catalog parameters (at exp or source level)
+        # safe check for zoom into the catalog parameters (at exp level)
         shortcat = self.cat[self.model][self.exp]
         metadata1 = 'zoom' in shortcat.metadata.get('parameters', {}).keys()
-        metadata2 = 'zoom' in shortcat[self.source].metadata.get('parameters', {}).keys()
+
+        # check at source level (within the parameters)
+        #metadata2 = 'zoom' in shortcat[self.source].metadata.get('parameters', {}).keys()
+        checkentry = shortcat[self.source].describe()['user_parameters']
+        if len(checkentry) > 0:
+            metadata2 = 'zoom' in checkentry[0]['name']
+        else:
+            metadata2 = False
+        
+        # combine the two flags
         metadata = metadata1 or metadata2
         if zoom is None:
             if metadata:

@@ -5,11 +5,11 @@ Gribber module for integrate gribscan within AQUA
 import os
 import subprocess
 from glob import glob
-import yaml
 from aqua.logger import log_configure
-from aqua.util import load_yaml, create_folder
+from aqua.util import load_yaml, dump_yaml, create_folder
 from aqua.util import get_config_dir, get_machine
 from aqua.reader import Reader
+
 
 class Gribber():
     """
@@ -106,9 +106,9 @@ class Gribber():
         self.logger.info("Gribfile wildcard: %s", self.gribfiles)
 
         # Get catalog filename
-        self.catalogfile = os.path.join(self.configdir, self.machine,
-                                        'catalog', self.model,
-                                        self.exp+'.yaml')
+        self.catalogfile = os.path.join(self.configdir, 'machines',
+                                        self.machine, 'catalog',
+                                        self.model, self.exp+'.yaml')
         self.logger.warning("Catalog file: %s", self.catalogfile)
 
         # Get JSON filename
@@ -328,8 +328,7 @@ class Gribber():
             cat_file['sources'][self.source] = block_cat
 
         # Write catalog file
-        with open(self.catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=self.catalogfile, cfg=cat_file)
 
     def _create_main_catalog(self):
         """
@@ -353,8 +352,8 @@ class Gribber():
         self.logger.info(block_main)
 
         # Write main catalog file
-        mainfilepath = os.path.join(self.configdir, self.machine, 'catalog',
-                                    self.model, 'main.yaml')
+        mainfilepath = os.path.join(self.configdir, 'machines', self.machine,
+                                    'catalog', self.model, 'main.yaml')
         main_file = load_yaml(mainfilepath)
 
         # Check if source already exists
@@ -371,8 +370,7 @@ class Gribber():
             main_file['sources'][self.source] = block_main
 
         # Write catalog file
-        with open(mainfilepath, 'w', encoding='utf-8') as file:
-            yaml.dump(main_file, file, sort_keys=False)
+        dump_yaml(outfile=mainfilepath, cfg=main_file)
 
     def help(self):
         """
