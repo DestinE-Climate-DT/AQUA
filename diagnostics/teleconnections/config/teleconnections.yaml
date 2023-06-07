@@ -8,16 +8,9 @@ NAO:
   lat2: 64.1
   lon2: -22
 
-NAO_lisbon:
-  field: msl
-  lat1: 38.7
-  lon1: -9.1
-  lat2: 64.1
-  lon2: -22
-
 # ENSO 3.4 region coordinates 
 ENSO:
-  field: skt
+  field: sst
   latN:  5
   lonW: -170
   latS: -5

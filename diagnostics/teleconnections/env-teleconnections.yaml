@@ -18,4 +18,4 @@ dependencies:
   - pip
   - pip:
     # pip install -e of AQUA itself
-    - -e ./../../[tests]
+    - -e ./../../[tests,notebooks]
