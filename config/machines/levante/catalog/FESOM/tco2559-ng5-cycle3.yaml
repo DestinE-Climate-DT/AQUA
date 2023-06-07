@@ -1679,6 +1679,31 @@ sources:
     driver: netcdf
     metadata:
       source: 3D_daily_native_elem
+  3D_daily_native_zarr:
+    args:
+      consolidated: true
+      urlpath:
+      - /work/bm1344/AWI/Cycle3/test/temp_2020.zarr
+      - /work/bm1344/AWI/Cycle3/test/salt_2020.zarr
+      - /work/bm1344/AWI/Cycle3/test/u_2020.zarr
+      - /work/bm1344/AWI/Cycle3/test/v_2020.zarr
+      - /work/bm1344/AWI/Cycle3/test/temp_2021.zarr
+      - /work/bm1344/AWI/Cycle3/test/salt_2021.zarr
+      - /work/bm1344/AWI/Cycle3/test/u_2021.zarr
+      - /work/bm1344/AWI/Cycle3/test/v_2021.zarr
+      - /work/bm1344/AWI/Cycle3/test/temp_2022.zarr
+      - /work/bm1344/AWI/Cycle3/test/salt_2022.zarr
+      - /work/bm1344/AWI/Cycle3/test/u_2022.zarr
+      - /work/bm1344/AWI/Cycle3/test/v_2022.zarr
+      - /work/bm1344/AWI/Cycle3/test/temp_2023.zarr
+      - /work/bm1344/AWI/Cycle3/test/salt_2023.zarr
+      - /work/bm1344/AWI/Cycle3/test/u_2023.zarr
+      - /work/bm1344/AWI/Cycle3/test/v_2023.zarr
+      - /work/bm1344/AWI/Cycle3/test/temp_2024.zarr
+      - /work/bm1344/AWI/Cycle3/test/salt_2024.zarr
+      - /work/bm1344/AWI/Cycle3/test/u_2024.zarr
+      - /work/bm1344/AWI/Cycle3/test/v_2024.zarr
+    driver: zarr
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100

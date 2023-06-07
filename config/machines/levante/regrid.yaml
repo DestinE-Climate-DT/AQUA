@@ -313,6 +313,13 @@ source_grids:
         vert_coord: ["nz", "nz1"]
         extra: 
           - -setgrid,/work/bb1153/b382075/nextgems/grids/NG5_griddes_nodes_IFS.nc 
+      3D_daily_native_zarr:
+        path: 
+          nz1: /work/bb1153/b382075/nextgems/grids/NG5_nodes_fesom_mask_nz1.nc
+        space_coord: ["nod2"]
+        vert_coord: ["nz1"]
+        extra: 
+          - -setgrid,/work/bb1153/b382075/nextgems/grids/NG5_griddes_nodes_IFS.nc 
       3D_daily_native_elem:
         space_coord: ["elem"]
         path:

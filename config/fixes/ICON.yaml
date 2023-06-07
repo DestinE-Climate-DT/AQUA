@@ -86,6 +86,10 @@ models:
                     mtnsrf:
                         derived: rsdt-rsut
                         grib: true
+                    ocpt:
+                        source: to
+                        grib: true
+                        units: degC
                     t:
                         source: ta
                         grib: true

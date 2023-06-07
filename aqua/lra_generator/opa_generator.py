@@ -203,6 +203,7 @@ class OPAgenerator():
              # get info on the checkpoint file
             if self.checkpoint:
                 self.checkpoint_file = opa_mean.checkpoint_file
+
             # self.checkpoint_file = opa_mean.checkpoint_file
             # self.remove_checkpoint()
             print(vars(opa_mean))
@@ -216,7 +217,12 @@ class OPAgenerator():
             for data in data_gen:
                 self.logger.info(f"start_date: {data.time[0].values} stop_date: {data.time[-1].values}")
                 if self.definitive:
-                    opa_mean.compute(data[variable])
+                    mydata = data[variable]#.load()
+                    opa_mean.compute(mydata)
+                    if os.path.exists(self.checkpoint_file):
+                        file_size = os.path.getsize(self.checkpoint_file)
+                        formatted_size = format_size(file_size)
+                        self.logger.info('The size of the checkpoint file is %s', formatted_size)
 
         self._close_dask()
 
@@ -338,3 +344,15 @@ class OPAgenerator():
             self.client.shutdown()
             self.cluster.close()
             self.logger.info('Dask cluster closed')
+
+
+def format_size(size):
+
+    """Trivial function for formatting file size"""
+    power = 2**10
+    n = 0
+    units = ['bytes', 'KB', 'MB', 'GB', 'TB']
+    while size > power:
+        size /= power
+        n += 1
+    return f"{round(size, 2)} {units[n]}"

@@ -30,7 +30,15 @@ jobs:
         python-version: ["3.10"]
     defaults:
       run:
-        shell: bash -l {0}
+        # NOTE: We must take care with the shell value here. We have steps
+        #       with mutiline YAML strings. These get converted into shell
+        #       scripts. If execute as ``bash -l fail_first_command.sh``
+        #       then it would fail the first command but run the second
+        #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
+        #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
+        #       We added the ``--login`` here for environment variables, and removed
+        #       the noprofile and norc so we have pytest set by Conda in our PATH.
+        shell: bash --login -eo pipefail {0}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

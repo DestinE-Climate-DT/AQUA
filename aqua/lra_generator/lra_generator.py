@@ -147,16 +147,12 @@ class LRAgenerator():
 
         create_folder(self.outdir, loglevel=self.loglevel)
 
-        # Initialize the reader
-        self.reader = Reader(model=self.model, exp=self.exp,
-                             source=self.source, zoom=self.zoom,
-                             regrid=self.resolution, freq=self.frequency,
-                             configdir=self.configdir, loglevel=self.loglevel)
 
         # Initialize variables used by methods
         self.data = None
         self.cluster = None
         self.client = None
+        self.reader = None
 
     # def _assign_key(self, name, key):
 
@@ -171,6 +167,14 @@ class LRAgenerator():
         """
         Retrieve data from the catalog
         """
+
+        # Initialize the reader
+        self.reader = Reader(model=self.model, exp=self.exp,
+                             source=self.source, zoom=self.zoom,
+                             regrid=self.resolution, freq=self.frequency,
+                             configdir=self.configdir, loglevel=self.loglevel)
+
+
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
         if self.frequency:
@@ -312,8 +316,8 @@ class LRAgenerator():
         yearfiles = self.get_filename(varname)
         yearfiles = glob.glob(yearfiles)
         checks = [file_is_complete(yearfile) for yearfile in yearfiles]
-        all_checks_true = all(checks)
-        if not all_checks_true and not self.overwrite:
+        all_checks_true = all(checks) and len(checks)>0
+        if all_checks_true and not self.overwrite:
             self.logger.warning('All the data seem there for var %s...', varname)
             self.definitive = False
             return False
@@ -349,7 +353,7 @@ class LRAgenerator():
             self.logger.info('Processing year %s...', str(year))
             yearfile = self.get_filename(var, year)
             filecheck = file_is_complete(yearfile, self.logger)
-            if not filecheck and not self.overwrite:
+            if filecheck and not self.overwrite:
                 self.logger.warning('Yearly file %s already exists, skipping...', yearfile)
                 continue
 
@@ -361,7 +365,7 @@ class LRAgenerator():
                 outfile = self.get_filename(var, year, month)
                 # checking if file is there and is complete
                 filecheck = file_is_complete(outfile, self.logger)
-                if not filecheck and not self.overwrite:
+                if filecheck and not self.overwrite:
                     self.logger.warning('Monthly file %s already exists, skipping...', outfile)
                     continue
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
@@ -374,7 +378,7 @@ class LRAgenerator():
                     # check everything is correct
                     filecheck = file_is_complete(outfile, self.logger)
                     # we can later add a retry
-                    if filecheck:
+                    if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', outfile)
                 del month_data
             del year_data

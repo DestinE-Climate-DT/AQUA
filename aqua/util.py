@@ -10,6 +10,7 @@ import sys
 import logging
 from collections import defaultdict
 from ruamel.yaml import YAML
+import yaml
 import eccodes
 import xarray as xr
 from aqua.logger import log_configure
@@ -419,16 +420,16 @@ def file_is_complete(filename, logger=logging.getLogger()):
             if xfield[varname].isnull().all():
             # if xfield[varname].isnull().all(dim=['lon','lat']).all():
                 logger.error('File %s is full of NaN! Recomputing...', filename)
-                check = True
-            else:
                 check = False
+            else:
+                check = True
                 logger.info('File %s seems ok!', filename)
         # we have no clue which kind of exception might show up
         except ValueError:
             logger.info('Something wrong with file %s! Recomputing...', filename)
-            check = True
+            check = False
     else:
         logger.info('File %s not found...', filename)
-        check = True
+        check = False
 
     return check
