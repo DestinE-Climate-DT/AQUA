@@ -1,0 +1,13 @@
+# Create the tropical-rainfall environment:
+#   conda env create -f env-tropical-rainfall.yml
+# Alternatively, use mamba
+#   mamba env create -f env-tropical-rainfall.yml
+
+name : tropical-rainfall
+channels:
+  - conda-forge
+dependencies:
+  - pip:
+    - fast_histogram
+    - boost_histogram
+    - dask_histogram
