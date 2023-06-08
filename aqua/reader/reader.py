@@ -308,16 +308,19 @@ class Reader(FixerMixin, RegridMixin):
                 # get loadvar
                 loadvar = self.get_fixer_varname(var) if fix else var
 
-                if all(element in data.data_vars for element in loadvar):
-                    data = data[loadvar]
-                else:
-                    try:
-                        data = data[var]
-                        self.logger.warning(f"You are asking for var {var} which is already fixed from {loadvar}.")
-                        self.logger.warning(f"Would be safer to run with fix=False")
-                    except:
-                        raise KeyError("You are asking for variables which we cannot find in the catalog!")
+                common = list(set(loadvar).intersection(data.data_vars))
+                self.logger.debug(f"Common variables: {common}")
+                missing = list(set(loadvar).difference(data.data_vars))
+                self.logger.debug(f"Missing variables: {missing}")
 
+                if missing:
+                    self.logger.warning(f"Missing variables: {missing}")
+                if common:
+                    data = data[common]
+                else:
+                    raise KeyError("You are asking for variables which we cannot find in the catalog!")
+
+        # Add attributes
         log_history(data, "retrieved by AQUA retriever")
 
         # sequence which should be more efficient: decumulate - averaging - regridding - fixing
@@ -330,7 +333,7 @@ class Reader(FixerMixin, RegridMixin):
             data = self.regrid(data)
             self.grid_area = self.dst_grid_area
         if fix:   # Do not change easily this order. The fixer assumes to be after regridding
-            data = self.fixer(data, apply_unit_fix=apply_unit_fix)
+            data = self.fixer(data, vardst=var, apply_unit_fix=apply_unit_fix)
         if streaming or self.streaming or streaming_generator:
             if streaming_generator:
                 data = self.streamer.stream_generator(data, stream_step=stream_step,
@@ -344,6 +347,7 @@ class Reader(FixerMixin, RegridMixin):
         # safe check that we provide only what exactly asked by var
         if var:
             data = data[var]
+            self.logger.debug(f"Retrieved variables: {var}")
 
         return data
 

@@ -52,12 +52,14 @@ class FixerMixin():
                 return None
         return fixes
 
-    def fixer(self, data, apply_unit_fix=False):
+    def fixer(self, data, vardst=None, apply_unit_fix=False):
         """
         Perform fixes (var name, units, coord name adjustments) of the input dataset.
 
         Arguments:
             data (xr.Dataset):      the input dataset
+            vardst (list, opt):     the list of variables to be derived.
+                                    Default: None (all variables)
             apply_unit_fix (bool):  if to perform immediately unit conversions (which requite a product or an addition).
                                     The fixer sets anyway an offset or a multiplicative factor in the data attributes.
                                     These can be applied also later with the method `apply_unit_fix`. (false)
@@ -83,94 +85,104 @@ class FixerMixin():
         fixd = {}
         varlist = {}
         variables = fix.get("vars", None)
+
+        vardst = variables if vardst is None else vardst
+
         if variables:
             for var in variables:
-                unit = None
-                attributes = {}
-                varname = var
+                if var in vardst:
+                    unit = None
+                    attributes = {}
+                    varname = var
 
-                grib = variables[var].get("grib", None)
-                # This is a grib variable, use eccodes to find attributes
-                if grib:
-                    # Get relevant eccodes attribues
-                    attributes.update(get_eccodes_attr(var))
-                    sn = attributes.get("shortName", None)
-                    if (sn != '~') and (var != sn):
-                        varname = sn
-                        self.logger.info("Grib attributes for %s: %s", varname, attributes)
+                    grib = variables[var].get("grib", None)
+                    # This is a grib variable, use eccodes to find attributes
+                    if grib:
+                        # Get relevant eccodes attribues
+                        attributes.update(get_eccodes_attr(var))
+                        sn = attributes.get("shortName", None)
+                        if (sn != '~') and (var != sn):
+                            varname = sn
+                            self.logger.info("Grib attributes for %s: %s",
+                                             varname, attributes)
 
-                varlist[var] = varname
+                    varlist[var] = varname
 
-                source = variables[var].get("source", None)
-                # This is a renamed variable. This will be done at the end.
-                if source:
-                    if source not in data.variables:
-                        continue
-                    fixd.update({f"{source}": f"{varname}"})
-                    log_history(data[source], "variable renamed by AQUA fixer")
+                    source = variables[var].get("source", None)
+                    # This is a renamed variable. This will be done at the end.
+                    if source:
+                        if source not in data.variables:
+                            continue
+                        fixd.update({f"{source}": f"{varname}"})
+                        log_history(data[source], "variable renamed by AQUA fixer")
 
-                formula = variables[var].get("derived", None)
-                # This is a derived variable, let's compute it and create the new variable
-                if formula:
-                    try:
-                        data[varname] = eval_formula(formula, data)
-                        source = varname
-                        attributes.update({"derived": formula})
-                        self.logger.info("Derived %s from %s", var, formula)
-                        log_history(data[source], "variable derived by AQUA fixer")
-                    except KeyError:
-                        # The variable could not be computed, let's skip it
-                        continue
+                    formula = variables[var].get("derived", None)
+                    # This is a derived variable, let's compute it and create the new variable
+                    if formula:
+                        try:
+                            data[varname] = eval_formula(formula, data)
+                            source = varname
+                            attributes.update({"derived": formula})
+                            self.logger.info("Derived %s from %s", var, formula)
+                            log_history(data[source], "variable derived by AQUA fixer")
+                        except KeyError:
+                            self.logger.debug("Cannot compute %s from %s", var, formula)
+                            # The variable could not be computed, let's skip it
+                            continue
 
-                # Get extra attributes if any
-                attributes.update(variables[var].get("attributes", {}))
+                    # Get extra attributes if any
+                    attributes.update(variables[var].get("attributes", {}))
 
-                # update attributes
-                if attributes:
-                    for att, value in attributes.items():
-                        # Already adjust all attributes but not yet units
-                        if att == "units":
-                            unit = value
-                        else:
-                            data[source].attrs[att] = value
+                    # update attributes
+                    if attributes:
+                        for att, value in attributes.items():
+                            # Already adjust all attributes but not yet units
+                            if att == "units":
+                                unit = value
+                            else:
+                                data[source].attrs[att] = value
 
-                # Override destination units
-                newunits = variables[var].get("units", None)
-                if newunits:
-                    data[source].attrs.update({"units": newunits})
-                    unit = newunits
+                    # Override destination units
+                    newunits = variables[var].get("units", None)
+                    if newunits:
+                        data[source].attrs.update({"units": newunits})
+                        unit = newunits
 
-                # Override source units
-                src_units = variables[var].get("src_units", None)
-                if src_units:
-                    data[source].attrs.update({"units": src_units})
+                    # Override source units
+                    src_units = variables[var].get("src_units", None)
+                    if src_units:
+                        data[source].attrs.update({"units": src_units})
 
-                # adjust units
-                if unit:
-                    if unit.count('{'):
-                        unit = self.fixes_dictionary["defaults"]["units"][unit.replace('{', '').replace('}', '')]
-                    self.logger.info("%s: %s --> %s", var, data[source].units, unit)
-                    factor, offset = self.convert_units(data[source].units, unit, var)
-                    if (factor != 1.0) or (offset != 0):
-                        data[source].attrs.update({"target_units": unit})
-                        data[source].attrs.update({"factor": factor})
-                        data[source].attrs.update({"offset": offset})
-                        self.logger.info("Fixing %s to %s. Unit fix: factor=%f, offset=%f", source, var, factor, offset)
+                    # adjust units
+                    if unit:
+                        if unit.count('{'):
+                            unit = self.fixes_dictionary["defaults"]["units"][unit.replace('{', '').replace('}', '')]
+                        self.logger.info("%s: %s --> %s", var, data[source].units, unit)
+                        factor, offset = self.convert_units(data[source].units, unit, var)
+                        if (factor != 1.0) or (offset != 0):
+                            data[source].attrs.update({"target_units": unit})
+                            data[source].attrs.update({"factor": factor})
+                            data[source].attrs.update({"offset": offset})
+                            self.logger.info("Fixing %s to %s. Unit fix: factor=%f, offset=%f", source, var, factor, offset)
 
         # Only now rename everything
         data = data.rename(fixd)
 
         if variables:
             for var in variables:
-                # Decumulate if required
-                if variables[var].get("decumulate", None):
-                    varname = varlist[var]
-                    if varname in data.variables:
-                        keep_first = variables[var].get("keep_first", True)
-                        data[varname] = self.simple_decumulate(data[varname],
-                                                               jump=jump,
-                                                               keep_first=keep_first)
-                        log_history(data[varname], "variable decumulated by AQUA fixer")
+                if var in vardst:
+                    # Decumulate if required
+                    if variables[var].get("decumulate", None):
+                        varname = varlist[var]
+                        if not data[varname].attrs.get("decumulate", 0):
+                            if varname in data.variables:
+                                keep_first = variables[var].get("keep_first", True)
+                                data[varname] = self.simple_decumulate(data[varname],
+                                                                    jump=jump,
+                                                                    keep_first=keep_first)
+                                log_history(data[varname], "variable decumulated by AQUA fixer")
+                        else:
+                            self.logger.warning("Variable %s already decumulated", varname)
 
         if apply_unit_fix:
             for var in data.variables:
