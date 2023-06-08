@@ -8,6 +8,7 @@ from tools import load_namelist, lon_180_to_360
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e4
+loglevel = 'DEBUG'
 
 
 @pytest.mark.parametrize("module_name", ['cdotesting', 'index', 'plots',
@@ -46,7 +47,7 @@ def test_namelist():
 
 @pytest.mark.teleconnections
 @pytest.mark.parametrize("months_window", [1, 3])
-def test_station_based(months_window):
+def test_station_based(months_window, loglevel=loglevel):
     """
     Test that the station_based method works
     """
@@ -63,7 +64,8 @@ def test_station_based(months_window):
     # 2. -- Comparison cdo vs lib method
     cdo_station_based_comparison(infile=filepath, namelist=namelist,
                                  telecname=telecname, rtol=rtol, atol=atol,
-                                 months_window=months_window)
+                                 months_window=months_window,
+                                 loglevel=loglevel)
 
 
 @pytest.mark.teleconnections
@@ -85,4 +87,5 @@ def test_regional_mean(months_window):
     # 2. -- Comparison cdo vs lib method
     cdo_regional_mean_comparison(infile=filepath, namelist=namelist,
                                  telecname=telecname, rtol=rtol, atol=atol,
-                                 months_window=months_window)
+                                 months_window=months_window,
+                                 loglevel=loglevel)

@@ -64,6 +64,7 @@ def station_based_index(field, namelist, telecname, months_window=3,
     indx = indx.rename('index')
 
     # 7. -- Drop NaNs --
+    logger.debug('Dropping NaNs')
     indx = indx.dropna(dim='time')
 
     logger.info('Index evaluated')
@@ -103,12 +104,15 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
     latN = namelist[telecname]['latN']
     latS = namelist[telecname]['latS']
 
+    logger.info('Region: lon = %s-%s, lat = %s-%s', lonW, lonE, latS, latN)
+
     # 2. -- Evaluate mean value of the field and then the rolling mean --
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
     field_mean = field_mean.rolling(time=months_window,
                                     center=True).mean(skipna=True)
 
     # 7. -- Drop NaNs --
+    logger.debug('Dropping NaNs')
     field_mean = field_mean.dropna(dim='time')
 
     logger.info('Index evaluated')
@@ -147,6 +151,8 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
 
     latN = namelist[telecname]['latN']
     latS = namelist[telecname]['latS']
+    
+    logger.info('Region: lon = %s-%s, lat = %s-%s', lonW, lonE, latS, latN)
 
     # 2. -- Evaluate mean value of the field and then the rolling mean --
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
