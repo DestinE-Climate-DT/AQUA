@@ -1,8 +1,11 @@
 import numpy as np
 import xarray as xr
+import pickle
+
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
+import matplotlib.animation as animation
 import time
 import fast_histogram 
 
@@ -18,9 +21,6 @@ import re
 import cartopy
 import cartopy.feature as cfeature
 import cartopy.crs as ccrs
-
-import matplotlib.animation as animation
-import numpy as np
 
 from aqua import Reader
 
@@ -285,7 +285,7 @@ class TR_PR_Diagnostic:
         return data_1d
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ 
-    def mean_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None, s_time = None, f_time = None, 
+    def mean_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None, coord ='time', s_time = None, f_time = None, 
         s_year = None, f_year = None, s_month = None, f_month = None):
         """Calculating the mean value of varibale in Dataset 
 
@@ -308,16 +308,20 @@ class TR_PR_Diagnostic:
             self.class_attributes_update( s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                    s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         
-        
             coord_lat, coord_lon = self.coordinate_names(data)
 
             ds = self.ds_per_lat_range(data, trop_lat=self.trop_lat)
             ds = self.ds_per_time_range(ds, s_time = self.s_time, f_time = self.f_time,
                                         s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month)
+            
             if 'Dataset' in str(type(data)):
                 ds = ds[variable_1]
-
-            return ds.mean(coord_lat).mean(coord_lon)
+            if coord=='time':
+                return ds.mean(coord_lat).mean(coord_lon)
+            elif coord=='lat':
+                return ds.mean('time').mean('lon')
+            elif coord=='lon':
+                return ds.mean('time').mean('lat')
         else:
             for i in data.dims:
                 coord = i
@@ -326,7 +330,7 @@ class TR_PR_Diagnostic:
 
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-    def median_per_timestep(self, data, variable_1 = 'tprate', trop_lat = None,  s_time = None, f_time = None, 
+    def median_per_timestep(self, data, variable_1 = 'tprate',  coord ='time', trop_lat = None,  s_time = None, f_time = None, 
                             s_year = None, f_year = None, s_month = None, f_month = None):
         """Calculating the median value of varibale in Dataset 
 
@@ -358,16 +362,23 @@ class TR_PR_Diagnostic:
             if 'Dataset' in str(type(data)):
                 ds = ds[variable_1]
 
-            return ds.median(coord_lat).median(coord_lon)
+            if coord=='time':
+                return ds.median(coord_lat).median(coord_lon)
+            elif coord=='lat':
+                return ds.median('time').median(coord_lon)
+            elif coord=='lon':
+                return ds.median('time').median(coord_lat)
         
         else:
             for i in data.dims:
                 coord = i
             return data.median(coord)
     
-    def mean_and_median_plot(self, data,  variable_1 = 'tprate', trop_lat = None, s_time = None, f_time = None, 
-                            s_year = None, f_year = None, s_month = None, f_month = None, savelabel = '', maxticknum = 5,
-                            log=True, highlight_seasons=True):
+    def mean_and_median_plot(self, data,  variable_1 = 'tprate', coord='time', trop_lat = None, 
+                             s_time = None, f_time = None, legend=' ',
+                            s_year = None, f_year = None, s_month = None, f_month = None, 
+                            savelabel = '', maxticknum = 5, color = 'tab:blue', 
+                            log=True, highlight_seasons=True, add=None, save=True):
         """Plotting the mean and median values of variable
 
         Args:
@@ -383,57 +394,89 @@ class TR_PR_Diagnostic:
             savelabel (str, optional):      The unique label of the figure in the filesystem. Defaults to ''.
             maxticknum (int, optional):     The maximal number of ticks on x-axe. Defaults to 8.
         """              
-        fig, ax =  plt.subplots( ) #figsize=(8,5) )
-        data_mean = self.mean_per_timestep(data, variable_1 = variable_1, trop_lat = trop_lat, s_time = s_time, f_time = f_time, 
+        if add is None:
+            fig, ax = plt.subplots() #figsize=(8,5) 
+        else: 
+            fig = add #, ax
+            ax =  fig.gca()
+
+        data_mean = self.mean_per_timestep(data, variable_1 = variable_1, coord=coord, trop_lat = trop_lat, s_time = s_time, f_time = f_time, 
                             s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
-        data_median = self.median_per_timestep(data, variable_1 = variable_1, trop_lat = trop_lat, s_time = s_time, f_time = f_time, 
+        data_median = self.median_per_timestep(data, variable_1 = variable_1, coord=coord,  trop_lat = trop_lat, s_time = s_time, f_time = f_time, 
                             s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
-        ax2=ax.twiny()
+        #ax2 = ax.twiny() #fig.gca() # plt.axes() #ax.twiny()
+        #ax = fig.gca()
         # make a plot with different y-axis using second axis object
-        if 'm' in time_interpreter(data):
-            time_labels = [str(data['time.hour'][i].values)+':'+str(data['time.minute'][i].values) for i in range(0, len(data)) ] 
-        elif 'H' in time_interpreter(data):
-            time_labels = [hour_convert_num_to_str(data, i)  for i in range(0, len(data)) ]
-            #time_labels = [str(data['time.hour'][i].values)+':00' for i in range(0, len(data)) ]
-        elif time_interpreter(data) == 'D':
-            time_labels = [str(data['time.day'][i].values+month_convert_num_to_str(data, i)) for i in range(0, len(data)) ]
-        elif time_interpreter(data) == 'M':   
-            time_labels = [month_convert_num_to_str(data, i) for i in range(0, len(data)) ] 
-            #time_labels = [str(data['time.year'][i].values)+':'+str(data['time.month'][i].values)+':'+str(data['time.day'][i].values) for i in range(0, len(data)) ]
-        else:
-            time_labels = [None for i in range(0, len(data))]
+        if coord=='time':
+            if 'm' in time_interpreter(data):
+                time_labels = [str(data['time.hour'][i].values)+':'+str(data['time.minute'][i].values) for i in range(0, len(data)) ] 
+                time_labels_int = [data['time.hour'][i].values for i in range(0, data.time.size)]
+            elif 'H' in time_interpreter(data):
+                time_labels = [hour_convert_num_to_str(data, i)  for i in range(0, len(data)) ]
+                time_labels_int = [data['time.hour'][i].values for i in range(0, data.time.size)]
+                #time_labels = [str(data['time.hour'][i].values)+':00' for i in range(0, len(data)) ]
+            elif time_interpreter(data) == 'D':
+                time_labels = [str(data['time.day'][i].values+month_convert_num_to_str(data, i)) for i in range(0, len(data)) ]
+                time_labels_int = [data['time.day'][i].values for i in range(0, data.time.size)]
+            elif time_interpreter(data) == 'M':   
+                time_labels = [month_convert_num_to_str(data, i) for i in range(0, len(data)) ] 
+                time_labels_int = [data['time.month'][i].values for i in range(0, data.time.size)]
+                #time_labels = [str(data['time.year'][i].values)+':'+str(data['time.month'][i].values)+':'+str(data['time.day'][i].values) for i in range(0, len(data)) ]
+            else:
+                time_labels = [None for i in range(0, len(data))]
+                time_labels_int = [None for i in range(0, data.time.size)]
+        elif coord=='lat':
+            time_labels_int = data_mean.lat
+            time_labels = [None for i in range(0, data.lat.size)]
+        elif coord=='lon':
+            time_labels_int = data_mean.lon
+            time_labels = [None for i in range(0, data.lat.size)]
         
-        time_labels_int = [data['time.month'][i].values for i in range(0, data.time.size)]
+
+        
 
         if data_mean.size == 1 and data_median.size == 1:
-            ax.axhline(time_labels_int, data_mean, label= 'mean', color = 'tab:blue')
-            ax.axhline(time_labels_int, data_median, label= 'median', lw=3,  alpha=0.7, ls='--', color = 'tab:orange')
+            ax.axhline(time_labels_int, data_mean, label= 'mean '+legend, color = color)
+            #if add is None:
+            #    ax.axhline(time_labels_int, data_median, label= 'median '+legend, lw=3,  alpha=0.7, ls='--', color = 'tab:orange')
+            #else:
+            ax.axhline(time_labels_int, data_median, label= 'median '+legend, lw=3,  alpha=0.7, ls='--', color = color)
 
-            ax2.plot(time_labels, data_median.values, ls = ' ')
+            #ax2.plot(time_labels, data_median.values, ls = ' ')
         else:
-            ax.plot(time_labels_int, data_mean, label= 'mean', color = 'tab:blue')
-            ax.plot(time_labels_int, data_median, label='median', lw=3,  alpha=0.7, ls='--', color = 'tab:orange')
-            ax2.plot(time_labels_int, data_median.values, ls = ' ')
-            ax2.set_xticks(time_labels_int, time_labels)
+            ax.plot(time_labels_int, data_mean, label= 'mean '+legend, color = color)
+            #if add is None:
+            #    ax.plot(time_labels_int, data_median, label='median '+legend, lw=3,  alpha=0.7, ls='--', color = 'tab:orange')
+            #else:
+            ax.plot(time_labels_int, data_median, label='median '+legend, lw=3,  alpha=0.7, ls='--', color = color)
+            #ax2.plot(time_labels_int, data_median.values, ls = ' ')
+            #ax2.set_xticks(time_labels_int, time_labels)
 
-        if highlight_seasons:
+        if coord =='time' and highlight_seasons and time_interpreter(data) == 'M':
             ax.axvspan(6, 9, alpha=0.2, color='red')
             ax.axvspan(11, 12, alpha=0.2, color='blue')
             ax.axvspan(1, 2, alpha=0.2, color='blue')
 
         ax.set_xlim([time_labels_int[0], time_labels_int[-1]])
-        ax2.xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
+        #ax2.xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
         ax.xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
         ax.tick_params(axis='both', which='major', pad=10)
-        ax2.tick_params(axis='both', which='major', pad=10)
+        #ax2.tick_params(axis='both', which='major', pad=10)
 
         ax.grid(True)
-        ax.set_xlabel('Timestep index', fontsize=12)
-        if data['time.year'][0].values==data['time.year'][-1].values:
-            ax2.set_xlabel(str(data['time.year'][0].values), fontsize=12)
-        else:
-            ax2.set_xlabel(str(data['time.year'][0].values)+' - '+str(data['time.year'][-1].values), fontsize=12)
-        ax.set_ylabel('Precipitation per timestep, '+str(data.attrs['units']), fontsize=12)
+        if coord=='time':
+            ax.set_xlabel('Timestep index', fontsize=12)
+            if data['time.year'][0].values==data['time.year'][-1].values:
+                ax.set_xlabel(str(data['time.year'][0].values), fontsize=12)
+            else:
+                ax.set_xlabel(str(data['time.year'][0].values)+' - '+str(data['time.year'][-1].values), fontsize=12)
+        elif coord=='lat':
+            ax.set_xlabel('Latitude', fontsize=12)
+        elif coord=='lon':
+            ax.set_xlabel('Longitude', fontsize=12)   
+
+        
+        ax.set_ylabel('Precipitation, '+str(data.attrs['units']), fontsize=12)
         ax.set_title('Mean/median values of precipitation', fontsize =17, pad=15)
         ax.legend(fontsize=12)
         
@@ -446,13 +489,16 @@ class TR_PR_Diagnostic:
 
         # set the spacing between subplots
         fig.tight_layout()
-        fig.savefig("./figures/"+str(savelabel)+"_mean_and_median.png",
-                    bbox_inches ="tight",
-                    pad_inches = 1,
-                    transparent = True,
-                    facecolor ="w",
-                    edgecolor ='w',
-                    orientation ='landscape')
+        if save:
+            fig.savefig("./figures/"+str(savelabel)+"_mean_and_median.png",
+                        bbox_inches ="tight",
+                        pad_inches = 1,
+                        transparent = True,
+                        facecolor ="w",
+                        edgecolor ='w',
+                        orientation ='landscape')
+            plt.close(fig)
+        return fig 
             
   
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
@@ -483,11 +529,12 @@ class TR_PR_Diagnostic:
                                s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
         if preprocess == True:
             ds_per_time = self.ds_per_time_range(data, s_time=self.s_time, f_time=self.f_time, 
-                                        s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month) 
-            ds_var = ds_per_time[variable_1]
-            #ds_var = xarray_attribute_update(ds_var, data)
+                                        s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month)
+            try: 
+                ds_var = ds_per_time[variable_1]
+            except KeyError: 
+                ds_var = ds_per_time
             ds_per_lat = self.ds_per_lat_range(ds_var, trop_lat=self.trop_lat)
-            #ds_array = self.ds_into_array(ds_per_lat, variable_1=variable_1, sort=sort)
             if dask_array == True:
                 ds = da.from_array(ds_per_lat)
                 return ds
@@ -496,6 +543,69 @@ class TR_PR_Diagnostic:
         else:
             print("Nothong to preprocess")
 
+    def histogram(self, data, preprocess = True,   trop_lat = 10, variable_1 = 'tprate',   weights = None, 
+                    s_time = None, f_time = None,
+                    s_year = None, f_year = None, s_month = None, f_month = None, 
+                    num_of_bins = None, first_edge = None,  width_of_bin  = None,   bins = 0, 
+                    dask = False, delay=False, create_xarray=True, path_to_save=None):
+        
+        if weights is not None:
+            if dask:
+                hist_counts=self.dask_factory_weights(data=data, preprocess=preprocess,  trop_lat=trop_lat,  variable_1=variable_1,  
+                                            s_time=s_time, f_time=f_time,
+                                            s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month, 
+                                            num_of_bins=num_of_bins, first_edge=first_edge,  width_of_bin=width_of_bin,  bins=bins,   
+                                            delay=delay)
+            else:
+                hist_counts=self.hist1d_np(data=data, weights=weights, preprocess=preprocess,   trop_lat=trop_lat, variable_1=variable_1,  
+                    s_time=s_time, f_time = f_time,   
+                    s_year = s_year, f_year =f_year, s_month = s_month, f_month = f_month, 
+                    num_of_bins=num_of_bins, first_edge=first_edge,  width_of_bin=width_of_bin,  bins=bins)
+        else:
+            if dask:
+                hist_counts=self.dask_boost(data=data, preprocess=preprocess, trop_lat=trop_lat,  variable_1=variable_1,  
+                   s_time=s_time, f_time=f_time, 
+                   s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month, 
+                   num_of_bins=num_of_bins, first_edge=first_edge,  width_of_bin=width_of_bin,  bins=bins)
+            elif bins!=0 or self.bins!=0:
+                hist_counts=self.hist1d_np(data=data, weights=weights, preprocess=preprocess,   trop_lat=trop_lat, variable_1=variable_1,  
+                    s_time=s_time, f_time = f_time,   
+                    s_year = s_year, f_year =f_year, s_month = s_month, f_month = f_month, 
+                    num_of_bins=num_of_bins, first_edge=first_edge,  width_of_bin=width_of_bin,  bins=bins)
+            else:
+                hist_counts=self.hist1d_fast(data=data, preprocess=preprocess,   trop_lat=trop_lat, variable_1=variable_1,  
+                    s_time=s_time, f_time=f_time, 
+                    s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month, 
+                    num_of_bins=num_of_bins, first_edge=first_edge,  width_of_bin=width_of_bin,  bins=bins)
+                
+        if create_xarray:
+            return self.histogram_to_xarray(hist_counts=hist_counts, path_to_save=path_to_save, data_with_global_atributes=data)
+        else:
+            return hist_counts
+
+    def histogram_to_xarray(self,  hist_counts=None, path_to_save=None, data_with_global_atributes=None):
+
+        tprate_dataset = hist_counts.to_dataset(name="trop_counts")
+        #tprate_dataset['weighted_counts']=hist_icon_trop_weighted_np
+        tprate_dataset.attrs = data_with_global_atributes.attrs
+
+        hist_frequency = self.convert_counts_to_frequency(hist_counts)
+        tprate_dataset['trop_frequency'] = hist_frequency
+
+        hist_pdf = self.convert_counts_to_pdf(hist_counts)
+        tprate_dataset['trop_pdf'] = hist_pdf
+
+        if path_to_save is not None:
+            with open(path_to_save, 'wb') as output:
+                pickle.dump(tprate_dataset, output)
+        return tprate_dataset
+
+    
+    def load_histogram(self, path_to_dataset=None):
+        with open(path_to_dataset, 'rb') as data:
+            dataset = pickle.load(data)
+        return dataset
+        
 
     """ """ """ """ """ """ """ """ """ """
     def hist1d_fast(self, data, preprocess = True,   trop_lat = 10, variable_1 = 'tprate',  
@@ -537,7 +647,6 @@ class TR_PR_Diagnostic:
             data = self.preprocessing(data, preprocess=preprocess,  variable_1=variable_1, trop_lat=trop_lat, 
                                       s_time = self.s_time, f_time = self.f_time,
                                       s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month,  sort = False, dask_array = False)
-        #print(self.bins)
         if isinstance(self.bins, int):
             left_edges_table   = [self.first_edge + self.width_of_bin*j for j in range(0, self.num_of_bins)]  
             width_table = [self.width_of_bin for j in range(0, self.num_of_bins)]  
@@ -720,8 +829,6 @@ class TR_PR_Diagnostic:
             xarray: The frequency histogram of the specified variable in the Dataset
         """ 
 
-        #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
-        # then the argument becomes a new class attributes.
         self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)
@@ -776,8 +883,6 @@ class TR_PR_Diagnostic:
             xarray: The frequency histogram of the specified variable in the Dataset
         """ 
 
-        #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
-        # then the argument becomes a new class attributes.
         self.class_attributes_update(s_time = s_time, f_time = f_time, trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin)    
@@ -828,8 +933,6 @@ class TR_PR_Diagnostic:
         Returns:
             xarray: The frequency histogram of the specified variable in the Dataset
         """ 
-        #If the user has specified a function argument **trop_lat, s_year, f_year, s_month, f_month***, 
-        # then the argument becomes a new class attributes.
         self.class_attributes_update(s_time = s_time, f_time = f_time,  trop_lat = trop_lat, 
                                s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month, first_edge = first_edge, 
                                num_of_bins = num_of_bins, width_of_bin = width_of_bin) 
@@ -850,12 +953,7 @@ class TR_PR_Diagnostic:
         counts =  dask.compute(counts)
         edges = dask.compute(edges[0]) 
         counts_per_bin =  xr.DataArray(counts[0], coords=[edges[0][0:-1]], dims=["bin"])
-        #counts_per_bin.attrs = data.attrs
-        #else: 
-        #    counts =  dask.compute(counts.to_delayed())
-        #    edges = dask.compute(edges[0].to_delayed())
-           
-
+        counts_per_bin.attrs = data.attrs
         return  counts_per_bin
 
 
@@ -888,7 +986,7 @@ class TR_PR_Diagnostic:
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
     def hist_plot(self, data, weights=None, frequency = False, pdf = True, smooth = True, step = False, viridis = False,  \
-                  ls = '-', xlogscale = False, \
+                  ls = '-', xlogscale = False, figsize=1, \
                   color = 'tab:blue', varname = 'Precipitation', save = True, plot_title = None,  label = None):
         """Ploting the histogram 
 
@@ -904,17 +1002,29 @@ class TR_PR_Diagnostic:
             label (str, optional):      The unique label of the figure in the file system. Defaults to None.
         """        
    
-        #pdf             (bool)      :   If ***_pdf=True***, then function returns the pdf histogram.
-        #                                    If ***_pdf=False***, then function returns the frequency histogram.
-        #Return:
-        #    plot                        :   Frequency or pdf histogram. 
             
 
-        fig = plt.figure( figsize=(8,5) )
+        fig = plt.figure( figsize=(8*figsize,5*figsize) )
 
         if pdf==True and frequency==False:
-            data = self.convert_counts_to_pdf(data)
+            try: 
+                data=data['trop_pdf']
+            except KeyError:
+                try:
+                    data=data['trop_counts']
+                    data = self.convert_counts_to_pdf(data)
+                except KeyError:    
+                    data = self.convert_counts_to_pdf(data)
+
         elif pdf==False and frequency==True:
+            try: 
+                data=data['trop_frequency']
+            except KeyError:
+                try:
+                    data=data['trop_counts']
+                    data = self.convert_counts_to_frequency(data)
+                except KeyError:    
+                    data = self.convert_counts_to_frequency(data)
             data = self.convert_counts_to_frequency(data)
 
         if smooth:
@@ -926,12 +1036,10 @@ class TR_PR_Diagnostic:
                 linewidth=3.0, ls = ls, color = color, label = label )
             plt.grid(True)
         else:
-            N, bins, patches = plt.hist(x= data.left_edge, bins = data.left_edge, weights=data,  label = label)
-            #if weights==None:
-            #    N, bins, patches = plt.hist(x= data.left_edge, bins = data.left_edge,   label = label)
-            #else:
-            #    N, bins, patches = plt.hist(x= data.left_edge, bins = data.left_edge, weights = weights,  label = label)
-
+            if weights is None: 
+                N, bins, patches = plt.hist(x= data.left_edge, bins = data.left_edge, weights=data,  label = label)  
+            else:
+                N, bins, patches = plt.hist(x= data.left_edge, bins = data.left_edge, weights=weights,  label = label)  
             fracs = ((N**(1 / 5)) / N.max())
             norm = colors.Normalize(fracs.min(), fracs.max())
 
@@ -994,7 +1102,7 @@ class TR_PR_Diagnostic:
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
     def hist_figure(self,  data, weights=None, frequency = False, pdf = True, smooth = True, step = False, viridis = False,  \
-                    ls = '-', xlogscale = False, color = 'tab:blue', 
+                    ls = '-', xlogscale = False, color = 'tab:blue',  figsize=1,
                     varname = 'Precipitation', plot_title = None,  add = None, save = True, label = None):
         """Ploting the histogram 
 
@@ -1010,21 +1118,32 @@ class TR_PR_Diagnostic:
             save (bool, optional):      The function saves the figure in the file system if the save is True.
             label (str, optional):      The unique label of the figure in the file system. Defaults to None.
         """        
-   
-        #pdf             (bool)      :   If ***_pdf=True***, then function returns the pdf histogram.
-        #                                    If ***_pdf=False***, then function returns the frequency histogram.
-        #Return:
-        #    plot                        :   Frequency or pdf histogram. 
-            
+
 
         if add==None:
-            fig, ax = plt.subplots() #figsize=(8,5) 
+            fig, ax = plt.subplots( figsize=(8*figsize,5*figsize) )
         else: 
             fig, ax = add
 
         if pdf==True and frequency==False:
-            data = self.convert_counts_to_pdf(data)
+            try: 
+                data=data['trop_pdf']
+            except KeyError:
+                try:
+                    data=data['trop_counts']
+                    data = self.convert_counts_to_pdf(data)
+                except KeyError:    
+                    data = self.convert_counts_to_pdf(data)
+
         elif pdf==False and frequency==True:
+            try: 
+                data=data['trop_frequency']
+            except KeyError:
+                try:
+                    data=data['trop_counts']
+                    data = self.convert_counts_to_frequency(data)
+                except KeyError:    
+                    data = self.convert_counts_to_frequency(data)
             data = self.convert_counts_to_frequency(data)
         
         line_label = re.split(r'/', label)[-1]
@@ -1094,16 +1213,13 @@ class TR_PR_Diagnostic:
                 else: 
                     plt.savefig('../notebooks/figures/'+str(label)+'_counts_histogram_viridis.png') 
         return {fig, ax}   
-        # For i amount of step
-        # Function which compute the histogramn before ploting! 
-        # Save the data
         # Probability to reset the hist values (bool parameters) 
         # Only after plot
 
 
 
     def twin_data_and_observations(self, data, model='era5', source='monthly', plev=0, trop_lat=10, space_grid_factor=-4, 
-                              time_freq=None, new_time_length=None, time_grid_factor=None):  
+                              time_freq=None, time_length=None, time_grid_factor=None):  
         variable_obs='tprate'
         if model=='era5':
             reader = Reader(model="ERA5", exp="era5", source=source)
@@ -1129,44 +1245,65 @@ class TR_PR_Diagnostic:
                                                                                     dummy_data=observations[variable_obs], 
                                                                                     space_grid_factor=space_grid_factor,
                                                                                     time_freq=time_freq, 
-                                                                                    new_time_length=new_time_length, 
+                                                                                    time_length=time_length, 
                                                                                     time_grid_factor=time_grid_factor)
         return data_regrided, observations_regrided
 
-    def twins_discrepancy(self, data,  model='era5', source='monthly', plev=0, trop_lat=10, space_grid_factor=-4, 
-                        time_freq=None, new_time_length=None, time_grid_factor=None):
+    def twins_discrepancy(self, data,  model='era5', source='monthly', time_isel=None, plev=0, trop_lat=10, space_grid_factor=-4, 
+                        time_freq=None, time_length=None, time_grid_factor=None):
 
         data_regrided, observations_regrided =  self.twin_data_and_observations(data=data, model=model, source=source, 
                                                                         plev=plev, trop_lat=trop_lat, 
                                                                         space_grid_factor=space_grid_factor, 
-                                                                        time_freq=time_freq, new_time_length=new_time_length, 
+                                                                        time_freq=time_freq, time_length=time_length, 
                                                                         time_grid_factor=time_grid_factor)
-        ratio = data_regrided.copy(deep=True)
-        ratio.values = observations_regrided.values/data_regrided.values
-        
-        relative_err = data_regrided.copy(deep=True)
-        relative_err.values = abs(data_regrided.values - observations_regrided.values)/abs(data_regrided.values)
+        if time_isel is None:
+            ratio = data_regrided.copy(deep=True)
+            ratio.values = observations_regrided.values/data_regrided.values
+            
+            relative_err = data_regrided.copy(deep=True)
+            relative_err.values = abs(data_regrided.values - observations_regrided.values)/abs(data_regrided.values)
+        else:
+            ratio = data_regrided.isel(time=time_isel).copy(deep=True)
+            ratio.values = observations_regrided.isel(time=time_isel).values/data_regrided.values
 
+            relative_err = data_regrided.isel(time=time_isel).copy(deep=True)
+            relative_err.values = abs(data_regrided.isel(time=time_isel).values - observations_regrided.isel(time=time_isel).values)/abs(data_regrided.isel(time=time_isel).values)
+        
         return ratio, relative_err
 
-    def twins_mean_and_median_comparison(self, data,  model='era5', source='monthly', get_mean=True, get_median=False, plev=0, trop_lat=10, space_grid_factor=-4, 
-                        time_freq=None, new_time_length=None, time_grid_factor=None):
+    def twins_mean_and_median_comparison(self, data,  coord='time', model='era5', source='monthly', get_mean=True, get_median=False, plev=0, trop_lat=10, space_grid_factor=-4, 
+                        time_freq=None, time_length=None, time_grid_factor=None):
 
         data_regrided, observations_regrided =  self.twin_data_and_observations(data=data, model=model, source=source, 
                                                                         plev=plev, trop_lat=trop_lat, 
                                                                         space_grid_factor=space_grid_factor, 
-                                                                        time_freq=time_freq, new_time_length=new_time_length, 
+                                                                        time_freq=time_freq, time_length=time_length, 
                                                                         time_grid_factor=time_grid_factor)
         if get_mean:
-            data_mean = data_regrided.mean('lat').mean('lon')
-            observations_mean = observations_regrided.mean('lat').mean('lon')
+            if coord=='time':
+                data_mean = data_regrided.mean('lat').mean('lon')
+                observations_mean = observations_regrided.mean('lat').mean('lon')
+            elif coord=='lat':
+                data_mean = data_regrided.mean('time').mean('lon')
+                observations_mean = observations_regrided.mean('time').mean('lon')
+            elif coord=='lon':
+                data_mean = data_regrided.mean('time').mean('lat')
+                observations_mean = observations_regrided.mean('time').mean('lat')
             ratio = data_mean/observations_mean
 
             return data_mean, observations_mean, ratio
         
         if get_median:
-            data_median = data_regrided.median('lat').median('lon')
-            observations_median = observations_regrided.median('lat').median('lon')
+            if coord=='time':
+                data_median = data_regrided.median('lat').median('lon')
+                observations_median = observations_regrided.median('lat').median('lon')
+            elif coord=='lat':
+                data_median = data_regrided.median('time').median('lon')
+                observations_median = observations_regrided.median('time').median('lon')
+            elif coord=='lon':
+                data_median = data_regrided.median('time').median('lat')
+                observations_median = observations_regrided.median('time').median('lat')
             ratio = data_median/observations_median
 
             return data_median, observations_median, ratio
