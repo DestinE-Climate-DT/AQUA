@@ -375,7 +375,7 @@ class TR_PR_Diagnostic:
             return data.median(coord)
     
     def mean_and_median_plot(self, data,  variable_1 = 'tprate', coord='time', trop_lat = None, 
-                             s_time = None, f_time = None, legend=' ',
+                             s_time = None, f_time = None, legend=None, figsize=1, 
                             s_year = None, f_year = None, s_month = None, f_month = None, 
                             savelabel = '', maxticknum = 5, color = 'tab:blue', 
                             log=True, highlight_seasons=True, add=None, save=True):
@@ -395,16 +395,19 @@ class TR_PR_Diagnostic:
             maxticknum (int, optional):     The maximal number of ticks on x-axe. Defaults to 8.
         """              
         if add is None:
-            fig, ax = plt.subplots() #figsize=(8,5) 
+            fig, ax = plt.subplots( figsize=(8*figsize,5*figsize) )
+            #ax2 = ax.twiny() 
         else: 
             fig = add #, ax
             ax =  fig.gca()
+            #ax2 = fig.gca()
 
         data_mean = self.mean_per_timestep(data, variable_1 = variable_1, coord=coord, trop_lat = trop_lat, s_time = s_time, f_time = f_time, 
                             s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
         data_median = self.median_per_timestep(data, variable_1 = variable_1, coord=coord,  trop_lat = trop_lat, s_time = s_time, f_time = f_time, 
                             s_year = s_year, f_year = f_year, s_month = s_month, f_month = f_month)
-        #ax2 = ax.twiny() #fig.gca() # plt.axes() #ax.twiny()
+        #fig.gca() # plt.axes() #ax.twiny()
+        
         #ax = fig.gca()
         # make a plot with different y-axis using second axis object
         if coord=='time':
@@ -432,25 +435,41 @@ class TR_PR_Diagnostic:
             time_labels_int = data_mean.lon
             time_labels = [None for i in range(0, data.lat.size)]
         
-
+        ax2 = ax.twiny() 
         
 
         if data_mean.size == 1 and data_median.size == 1:
-            ax.axhline(time_labels_int, data_mean, label= 'mean '+legend, color = color)
+            ax.axhline(time_labels_int, data_mean,  color = color) #label= 'mean '+legend,
             #if add is None:
             #    ax.axhline(time_labels_int, data_median, label= 'median '+legend, lw=3,  alpha=0.7, ls='--', color = 'tab:orange')
             #else:
-            ax.axhline(time_labels_int, data_median, label= 'median '+legend, lw=3,  alpha=0.7, ls='--', color = color)
+            ax.axhline(time_labels_int, data_median,  lw=3,  alpha=0.7, ls='--', color = color) #label= 'median '+legend,
 
             #ax2.plot(time_labels, data_median.values, ls = ' ')
         else:
-            ax.plot(time_labels_int, data_mean, label= 'mean '+legend, color = color)
+            ax.plot(time_labels_int, data_mean,color = color) # label= 'mean '+legend, 
             #if add is None:
             #    ax.plot(time_labels_int, data_median, label='median '+legend, lw=3,  alpha=0.7, ls='--', color = 'tab:orange')
             #else:
-            ax.plot(time_labels_int, data_median, label='median '+legend, lw=3,  alpha=0.7, ls='--', color = color)
+            ax.plot(time_labels_int, data_median,  lw=3,  alpha=0.7, ls='--', color = color) #label='median '+legend,
             #ax2.plot(time_labels_int, data_median.values, ls = ' ')
             #ax2.set_xticks(time_labels_int, time_labels)
+        
+
+        ax.plot([None], [None], ls='-',  label='mean', color = 'k')
+        ax.plot([None], [None], ls='--',  label='median', color = 'k')
+
+        if legend is not None:
+            ax.plot([None], [None], ls='-',  label=legend, color = color)
+            
+            #if  isinstance(legend, str):
+            #    ax2.plot([None], [None], ls='-',  label=legend, color = color)
+            #elif isinstance(legend, list):
+            #    for i in range(0, len(legend)):
+            #        ax2.plot([None], [None], ls='-',  label=legend[i], color = color)
+            #elif isinstance(legend, tuple):
+            #    for i in range(0, len(legend)):
+            #        ax2.plot([None], [None], ls='-',  label=legend[i], color = color)
 
         if coord =='time' and highlight_seasons and time_interpreter(data) == 'M':
             ax.axvspan(6, 9, alpha=0.2, color='red')
@@ -463,6 +482,7 @@ class TR_PR_Diagnostic:
         ax.tick_params(axis='both', which='major', pad=10)
         #ax2.tick_params(axis='both', which='major', pad=10)
 
+    
         ax.grid(True)
         if coord=='time':
             ax.set_xlabel('Timestep index', fontsize=12)
@@ -478,7 +498,10 @@ class TR_PR_Diagnostic:
         
         ax.set_ylabel('Precipitation, '+str(data.attrs['units']), fontsize=12)
         ax.set_title('Mean/median values of precipitation', fontsize =17, pad=15)
-        ax.legend(fontsize=12)
+        if add is None:
+            ax.legend(loc='lower left', fontsize=12, ncol=2)
+        #if legend is not None:
+        #    ax2.legend(fontsize=12)
         
         if log:
             ax.set_yscale('log')
@@ -1005,8 +1028,12 @@ class TR_PR_Diagnostic:
             
 
         fig = plt.figure( figsize=(8*figsize,5*figsize) )
-
-        if pdf==True and frequency==False:
+        if pdf==False and frequency==False:
+            try:
+                data=data['trop_counts']
+            except KeyError:
+                data=data
+        elif pdf==True and frequency==False:
             try: 
                 data=data['trop_pdf']
             except KeyError:
@@ -1125,7 +1152,12 @@ class TR_PR_Diagnostic:
         else: 
             fig, ax = add
 
-        if pdf==True and frequency==False:
+        if pdf==False and frequency==False:
+            try:
+                data=data['trop_counts']
+            except KeyError:
+                data=data
+        elif pdf==True and frequency==False:
             try: 
                 data=data['trop_pdf']
             except KeyError:
