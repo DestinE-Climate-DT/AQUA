@@ -6,6 +6,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.colors import LogNorm
 
 import cartopy
 import cartopy.feature as cfeature
@@ -116,14 +117,15 @@ def animation_creator(ds, vmin = None, vmax = None, trop_lat = 10,  time_ind_max
     plt.yticks([-90, -60, -30, 0, 30, 60, 90],      fontsize=14) 
    
     if save:
-        anim.save('./'+str(label)+'_anim.mp4', writer=writer,  dpi=dpi) #./notebooks/figures/animation
+        anim.save('anim.mp4',  dpi=dpi, fps=30) #  writer=writer,, savefig_kwargs={'bbox_inches' : 'tight'}) #./notebooks/figures/animation
+        plt.show()
     else:
         plt.show()
     print('Done!')
     return  True
 
 """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-def image_creator(ds, vmin = None, vmax = None, trop_lat = 10, figsize =1, contour  = True,   label = 'test',  
+def image_creator(ds, vmin = None, vmax = None, trop_lat = 10, log=False, figsize =1, contour  = True,   label = 'test',  
                   title = 'Tropical precipitation', resol = '110m'):
     """Creating the image of the Dataset.
 
@@ -154,10 +156,13 @@ def image_creator(ds, vmin = None, vmax = None, trop_lat = 10, figsize =1, conto
         ax.coastlines(resolution=resol)
     
     ax.gridlines() 
-    
-    ax.axhspan(-trop_lat, trop_lat, facecolor='grey', alpha=0.3)
-    im = plt.imshow(snapshot, interpolation='none',  aspect='auto', vmin=vmin, vmax=vmax, #alpha = 1., 
-                    extent = (-180, 180, - trop_lat, trop_lat), origin = 'upper')
+
+    if log:
+        im = plt.imshow(snapshot, interpolation='nearest',  aspect='auto',  norm=LogNorm(vmin=vmin, vmax=vmax), alpha=0.9,
+                        extent = (-180, 180, - trop_lat, trop_lat), origin = 'upper')
+    else:
+        im = plt.imshow(snapshot, interpolation='nearest',  aspect='auto',  vmin=vmin, vmax=vmax, alpha=0.9,
+                        extent = (-180, 180, - trop_lat, trop_lat), origin = 'upper')
 
     fig.colorbar(im)
 
@@ -170,15 +175,11 @@ def image_creator(ds, vmin = None, vmax = None, trop_lat = 10, figsize =1, conto
     print('Done!')
 
 
-def interpolate(inp, fi):
-    i, f = int(fi // 1), fi % 1  # Split floating-point index into whole & fractional parts.
-    j = i+1 if f > 0 else i  # Avoid index error.
-    inp2 = inp + [inp[-1]]
-    return inp2[i] + f*(inp2[i+1]-inp2[i])
-
-
-
-
+#def interpolate(inp, fi):
+#    i, f = int(fi // 1), fi % 1  # Split floating-point index into whole & fractional parts.
+#    j = i+1 if f > 0 else i  # Avoid index error.
+#    inp2 = inp + [inp[-1]]
+#    return inp2[i] + f*(inp2[i+1]-inp2[i])
 
 
 def lon_lat_regrider(data, space_grid_factor = None,  new_length=None, coord_name = 'lat'):
@@ -219,48 +220,55 @@ def lon_lat_regrider(data, space_grid_factor = None,  new_length=None, coord_nam
             elif coord_name == 'lon':
                 new_dataset = data.isel(lon=[i for i in range(0, data.lon.size, space_grid_factor)])
             return new_dataset
-    if new_length is not None:
-        old_lenght =  data[coord_name].size     
-        delta = (old_lenght-1) / (new_length)
-        new_dataset = data.copy(deep=True)
+    elif new_length is not None:
+        #old_lenght =  data[coord_name].size 
         #new_dataset[coord_name] = data[coord_name][:] 
-        old_coord = data[coord_name][:] 
-        new_coord=[interpolate(old_coord, i*delta) for i in range(0,new_length)]
+        if  data[coord_name][0]>0 and data[coord_name][-1]<0:
+            old_lenght =  data[coord_name][0].values-data[coord_name][-1].values    
+            delta = (old_lenght-1) / (new_length-1)
+            new_dataset = data.copy(deep=True)
+            new_coord=[data[coord_name][0].values - i*delta for i in range(0, new_length)]
+        else:
+            old_lenght =  data[coord_name][-1].values - data[coord_name][0].values 
+            delta = (old_lenght-1) / (new_length-1)
+            new_dataset = data.copy(deep=True)
+            new_coord=[data[coord_name][0].values + i*delta for i in range(0, new_length)]
+        #old_coord = data[coord_name]
+        #new_coord=[interpolate(old_coord, i*delta) for i in range(0,new_length)]
         #new_dataset = new_dataset.interp(lat=new_dataset[coord_name][:]+del_c, method="linear", kwargs={"fill_value": "extrapolate"})
         if coord_name == 'lat':  
             new_dataset = new_dataset.interp(lat=new_coord, method="linear", kwargs={"fill_value": "extrapolate"})
         elif coord_name == 'lon':
             new_dataset = new_dataset.interp(lon=new_coord, method="linear", kwargs={"fill_value": "extrapolate"}) 
         return new_dataset
+    else:
+        return data
 
-def space_regrider(data, space_grid_factor=None,  new_length=None,  new_lat_length=None, new_lon_length=None):
+def space_regrider(data, space_grid_factor=None,  new_length=None,  lat_length=None, lon_length=None):
     if space_grid_factor is not None:
         new_dataset_lat = lon_lat_regrider(data, space_grid_factor=space_grid_factor, coord_name = 'lat')
         new_dataset_lat_lon = lon_lat_regrider(new_dataset_lat, space_grid_factor=space_grid_factor, coord_name = 'lon')
         return new_dataset_lat_lon
     elif new_length is not None:
-        if new_lat_length is None and new_lon_length is None:
+        if lat_length is None and lon_length is None:
             new_dataset_lat = lon_lat_regrider(data, new_length=new_length, coord_name = 'lat')
             new_dataset_lat_lon = lon_lat_regrider(new_dataset_lat, new_length=new_length, coord_name = 'lon')
             return new_dataset_lat_lon
     elif new_length is None:
-        if new_lat_length is not None and new_lon_length is not None:
-            new_dataset_lat = lon_lat_regrider(data, new_length=new_lat_length, coord_name = 'lat')
-            new_dataset_lat_lon = lon_lat_regrider(new_dataset_lat, new_length=new_lon_length, coord_name = 'lon')
+        if lat_length is not None or lon_length is not None:
+            new_dataset_lat = lon_lat_regrider(data, new_length=lat_length, coord_name = 'lat')
+            new_dataset_lat_lon = lon_lat_regrider(new_dataset_lat, new_length=lon_length, coord_name = 'lon')
             return new_dataset_lat_lon
+    else:
+        return data
 
 
-def new_time_coordinate(data, dummy_data, freq = None, new_time_length=None, factor=None):
+def new_time_coordinate(data, dummy_data, freq = None, time_length=None, factor=None):
     if data.time.size>1 and dummy_data.time.size>1: 
         if data['time'][0]>dummy_data['time'][0]:
             starting_time = str(data['time'][0].values)
         elif data['time'][0]<=dummy_data['time'][0]:
             starting_time = str(dummy_data['time'][0].values)
-
-        if data['time'][-1]<dummy_data['time'][-1]:
-            final_time = str(data['time'][-1].values)
-        elif data['time'][-1]>=dummy_data['time'][-1]:
-            final_time = str(dummy_data['time'][-1].values)
 
         if freq is None:
             if time_interpreter(data)==time_interpreter(dummy_data):
@@ -271,15 +279,21 @@ def new_time_coordinate(data, dummy_data, freq = None, new_time_length=None, fac
                 else:
                     freq=time_interpreter(dummy_data)
 
-        if new_time_length is None:
+        if time_length is None:
             if factor is None:
-                return pd.date_range(start=starting_time, end=final_time, freq="M") 
-                #new_time_length=data.time.size
-            elif isinstance(factor, int) or isinstance(factor, float):
-                new_time_length=data.time.size*abs(factor)
-                return pd.date_range(starting_time, freq="M", periods=new_time_length) 
+                if data['time'][-1]<dummy_data['time'][-1]:
+                    final_time = str(data['time'][-1].values)
+                elif data['time'][-1]>=dummy_data['time'][-1]:
+                    final_time = str(dummy_data['time'][-1].values)
 
-def time_regrider(data, time_grid_factor =None, new_time_unit = None, new_time_length=None):
+                return pd.date_range(start=starting_time, end=final_time, freq=freq) 
+            elif isinstance(factor, int) or isinstance(factor, float):
+                time_length=data.time.size*abs(factor)
+                return pd.date_range(starting_time, freq=freq, periods=time_length) 
+        else:
+            return pd.date_range(starting_time, freq=freq, periods=time_length) 
+
+def time_regrider(data, time_grid_factor =None, new_time_unit = None, time_length=None):
     """The time regrider of the Dataset
 
     Args:
@@ -308,7 +322,7 @@ def time_regrider(data, time_grid_factor =None, new_time_unit = None, new_time_l
             if old_time_unit_name==new_time_unit_name:
                 time_grid_factor  = -  int(new_number/old_number) 
 
-    if isinstance(time_grid_factor , int) and  new_time_length is None:
+    if isinstance(time_grid_factor , int) and  time_length is None:
         if time_grid_factor >1:
             del_t = int((int(data['time'][1])- int(data['time'][0]))/time_grid_factor )
             ds = []
@@ -325,34 +339,38 @@ def time_regrider(data, time_grid_factor =None, new_time_unit = None, new_time_l
             for i in range(0, data['time'].size):
                 new_dataset[i]=data[i:i+time_grid_factor ].mean()
                 return new_dataset      
-    #elif new_time_length is not None:
+    #elif time_length is not None:
     #    old_lenght =  data['time'].size     
-    #    delta = (old_lenght-1) / (new_time_length)
+    #    delta = (old_lenght-1) / (time_length)
     #    new_dataset = data.copy(deep=True)
     ##    old_coord = data['time'][:] 
-    #    new_coord=[interpolate(old_coord, i*delta) for i in range(0,new_time_length)]
+    #    new_coord=[interpolate(old_coord, i*delta) for i in range(0,time_length)]
     #    new_dataset = new_dataset.interp(time=new_coord, method="linear", kwargs={"fill_value": "extrapolate"})
     #    return new_dataset
     
 
 
 
-def mirror_dummy_grid(data,  dummy_data, space_grid_factor=None, time_freq=None, new_time_length=None, time_grid_factor=None):
+def mirror_dummy_grid(data,  dummy_data, space_grid_factor=None, time_freq=None, time_length=None, time_grid_factor=None):
     if 'xarray' in str(type(dummy_data)): 
         if space_grid_factor is not None:
             dummy_data=space_regrider(data=dummy_data, space_grid_factor=space_grid_factor)
-
-        new_dataset_lat = lon_lat_regrider(data, new_length=dummy_data.lat.size, coord_name = 'lat')
-        new_dataset_lat_lon = lon_lat_regrider(new_dataset_lat, new_length=dummy_data.lon.size, coord_name = 'lon')
+            #new_dataset_lat_lon=space_regrider(data, space_grid_factor=space_grid_factor)
+            new_dataset_lat_lon=space_regrider(data, lat_length=dummy_data.lat.size, lon_length=dummy_data.lon.size)
+        else:
+            new_dataset_lat_lon=space_regrider(data, lat_length=dummy_data.lat.size, lon_length=dummy_data.lon.size)
+        
+        #new_dataset_lat = lon_lat_regrider(data, new_length=dummy_data.lat.size, coord_name = 'lat')
+        #new_dataset_lat_lon = lon_lat_regrider(new_dataset_lat, new_length=dummy_data.lon.size, coord_name = 'lon')
     
 
-        #new_time_coordinate(data, dummy_data, freq=None, new_time_length=None, factor=None):
+        #new_time_coordinate(data, dummy_data, freq=None, time_length=None, factor=None):
         if data.time.size>1 and dummy_data.time.size>1: 
             new_time_coord = new_time_coordinate(data=data, dummy_data=dummy_data, freq=time_freq, 
-                                                new_time_length=new_time_length, factor=time_grid_factor)
+                                                time_length=time_length, factor=time_grid_factor)
             new_data = new_dataset_lat_lon.interp(time=new_time_coord, method="linear", kwargs={"fill_value": "extrapolate"})
             new_dummy_data = dummy_data.interp(time=new_time_coord, method="linear", kwargs={"fill_value": "extrapolate"})
-            #new_dataset = time_regrider(new_dataset_lat_lon, new_time_length=dummy_data.time.size)
+            #new_dataset = time_regrider(new_dataset_lat_lon, time_length=dummy_data.time.size)
 
             return new_data, new_dummy_data
         else:
