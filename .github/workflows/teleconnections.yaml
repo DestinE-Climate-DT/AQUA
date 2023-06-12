@@ -39,6 +39,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: diagnostics/teleconnections/env-teleconnections.yaml
+          environment-name: teleconnections
           cache-downloads: true
           cache-environment: true
           condarc: |
