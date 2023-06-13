@@ -3,11 +3,12 @@
 #####################################################################
 # Begin of user input
 machine=lumi 
-user=<USER> # change this to your username
+user=$USER # change this to your username
 
 # define AQUA path
 if [[ -z "${AQUA}" ]]; then
-  export AQUA="/users/${user}/AQUA"
+  #export AQUA="/users/${user}/AQUA"
+  export AQUA=$(realpath $(dirname "$0")"/../../../..")
   echo "AQUA path has been set to ${AQUA}"
 else
   echo "AQUA path is already defined as ${AQUA}"
@@ -23,6 +24,9 @@ echo "Installation path has been set to ${INSTALLATION_PATH}"
 # change machine name in config file
 sed -i "/^machine:/c\\machine: ${machine}" "${AQUA}/config/config.yaml"
 echo "Machine name in config file has been set to ${machine}"
+
+sed -i "/^  lumi:/c\\  lumi: ${INSTALLATION_PATH}/bin/cdo" "${AQUA}/config/config.yaml"
+echo "CDO in config file now points to ${INSTALLATION_PATH}/bin/cdo"
 
 install_aqua() {
   # clean up environment
@@ -79,12 +83,31 @@ else
 fi
 
 # check if the line is already present in the .bashrc file
+if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' ~/.bashrc; then
+    # if not, append it to the end of the file
+  echo 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' >> ~/.bashrc
+  echo 'module purge' >> ~/.bashrc
+  echo 'module load pyfdb/0.0.2-cpeCray-22.08' >> ~/.bashrc
+  echo 'module load ecCodes/2.30.0-cpeCray-22.08' >> ~/.bashrc
+  echo 'module load python-climatedt/3.11.3-cpeCray-22.08.lua' >> ~/.bashrc
+  echo "modules for added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
+else
+  echo "modules already present in .bashrc."
+fi
+
+# Config FDB5
+if ! grep -q 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' ~/.bashrc; then
+  echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >> ~/.bashrc
+  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights' >> ~/.bashrc
+  echo "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
+else
+  echo "exports for FDB5 already present in .bashrc"
+fi
+
 if ! grep -q 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' ~/.bashrc; then
-  # if not, append it to the end of the file
   echo "# AQUA installation path" >> ~/.bashrc
   echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >> ~/.bashrc
-  echo "export PATH has been added to .bashrc."
-  echo "Please run 'source ~/.bashrc' to load the new configuration."
+  echo "export PATH has been added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 else
   echo "export PATH is already present in .bashrc."
 fi

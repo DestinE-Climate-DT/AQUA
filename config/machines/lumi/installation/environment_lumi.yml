@@ -1,4 +1,4 @@
-# Create the ECmean4 environment:
+# Create the environment:
 # mamba env create -f environment.yml 
 # or if you really want to use conda
 # conda env create -f environment.yml
@@ -9,7 +9,6 @@ channels:
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   - python>=3.9,<3.11
-  - libnetcdf<=4.8.1 
   - xarray
   - dask
   - numpy
@@ -20,17 +19,13 @@ dependencies:
   - cfunits
   - metpy
   - cdo
-  - intake-esm<=2021.8.17
+  - intake-esm
   - intake
   - intake-xarray
+  - ruamel.yaml
 # these below are only required for running notebooks
   - ipykernel
   - healpy
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge
   - pip
-  #- pip:
-    #- sparse
-    #- docker
-    #- gribscan
-    # pip install -e of AQUA itself (this will bring in also smmregrid)
-    #- -e .
+

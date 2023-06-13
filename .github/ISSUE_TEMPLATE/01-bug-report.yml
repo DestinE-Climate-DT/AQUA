@@ -1,0 +1,48 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+name: "Bug Report"
+description: "File a bug report"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to fill out this bug report.
+  - type: dropdown
+    id: machine
+    attributes:
+      label: machine
+      description: Which machine are you using?
+      options:
+      - Levante
+      - Lumi
+      - MN4
+      - CI
+      - Others
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect to happen?
+      placeholder: Tell us what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code to reproduce the issue
+      description: Please copy and paste any relevant code. This will be automatically formatted into code, so no need for backticks.
+      render: python
+  - type: dropdown
+    id: contributor
+    attributes:
+      label: Are you interested in making a pull request?
+      description: We welcome pull requests. As an open source project, we have limited resources and a suggested fix is very helpful.
+      options:
+        - 'Yes'
+        - 'Maybe'
+        - 'No'
+    validations:
+      required: false

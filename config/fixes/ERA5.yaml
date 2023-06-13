@@ -13,3 +13,19 @@ models:
                         derived: cp+lsp
                         #src_units: m
                         grib: true
+            monthly:
+                data_model: False
+                vars:
+                    msl:
+                        grib: true
+                        source: MSL
+        fdb:
+            default:
+                deltat: 86400
+                data_model: cf
+                vars:
+                    2t:
+                        source: 2t
+                        src_units: K
+                        grib: true
+            

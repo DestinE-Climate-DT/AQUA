@@ -27,6 +27,9 @@ def parse_arguments(args):
     parser.add_argument('-o', '--overwrite', action='store_true',
                         required=False,
                         help='Overwrite JSON file and indices if they exist')
+    parser.add_argument('-s', '--search', action='store_true',
+                        required=False,
+                        help='Search for generic grib files names')
 
     return parser.parse_args(args)
 
@@ -44,13 +47,16 @@ if __name__ == '__main__':
     model = config['id']['model']
     exp = config['id']['exp']
     source = config['id']['source']
+    description = config['id']['description']
     nprocs = get_arg(args, 'nprocs', 1)
     overwrite = get_arg(args, 'overwrite', False)
+    search = get_arg(args, 'search', False)
 
     # Create Gribber object
     gribber = Gribber(model=model, exp=exp, source=source, nprocs=nprocs,
-                      dirdict=config['dir'],
-                      loglevel=loglevel, overwrite=overwrite)
+                      dirdict=config['dir'], description=description,
+                      loglevel=loglevel, overwrite=overwrite,
+                      search=search)
 
     # Create .catalog entry
     gribber.create_entry(loglevel)

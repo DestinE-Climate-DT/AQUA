@@ -1,0 +1,16 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+name: Question
+description: "Ask a question"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill out the sections below to help us answer your question.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true

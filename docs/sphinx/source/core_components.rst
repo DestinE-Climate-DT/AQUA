@@ -103,7 +103,19 @@ Now we regrid part of the data (the temperature of the first 100 frames):
 
     tasr = reader.regrid(data.tas[0:100,:])
 
-The result is an xarray containing 360x180 grid points for each timeframe.
+The result is an xarray containing 360x180 grid points for each timeframe. 
+
+Aside from the horizontal interpolation, AQUA offers also the possibility of performing a simple linear vertical interpolation building 
+on the capabilities of Xarray. This is done with the `vertinterp` method of the `Reader` class. This can of course be use in the combination
+of the `regrid` method so that it is possible to operate both interpolations in a few steps. Users can also change the unit of the vertical coordinate,
+and the method works with both Datasets and DataArrays
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="tco2559-ng5", regrid = 'r100', source="ICMU_atm3d")
+    data = reader.retrieve()
+    field = reader.regrid(data['u'][0:5,:,:])
+    interp = reader.vertinterp(field, [830, 835], units = 'hPa', method = 'linear')
 
 Averaging and Aggregation
 -------------------------
@@ -209,4 +221,5 @@ in a Jupyter Notebook, you can start a dask cluster to parallelize your computat
 
 The above code will start a dask cluster with 40 workers and one thread per worker.
 
-
+AQUA also provides a simple way to move the computation done by dask to a compute node on your HPC system.
+The description of this feature is provided in the section :ref:`slurm`.

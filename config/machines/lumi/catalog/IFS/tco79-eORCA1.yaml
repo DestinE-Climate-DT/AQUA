@@ -3,8 +3,15 @@ plugins:
   - module: intake_xarray
   - module: gribscan
 sources:
-  ICMGG_atm2d:
+  atm2d:
     driver: zarr
     args:
       consolidated: false
-      urlpath: reference::/projappl/project_465000454/nurissom/gribber-json/tco79-eORCA1/atm2d.json
+      urlpath: 
+        reference::/projappl/project_465000454/nurissom/gribber-json/IFS/tco79-eORCA1/atm2d.json
+  atm3d:
+    driver: zarr
+    args:
+      consolidated: false
+      urlpath: 
+        reference::/projappl/project_465000454/nurissom/gribber-json/IFS/tco79-eORCA1/atm3d.json

@@ -11,16 +11,16 @@ For this reason, whatever object accessed by AQUA is delivered as a `xarray <htt
 The package is built around a few core concepts:
 
 - Data reading and preprocessing: Data are exposed through `intake <https://intake.readthedocs.io/en/stable/>`_ catalogues 
- and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects. This allows us to easily read and preprocess data from various sources, including local files, remote servers, and cloud storage, from climate models and observational datasets.
+  and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects. This allows us to easily read and preprocess data from various sources, including local files, remote servers, and cloud storage, from climate models and observational datasets.
 - Data fixing: AQUA provides capabilities to change metadata (e.g., variable names) and data themselves
- (e.g., convert to different units) so that model data reach the users with a common data format.
+  (e.g., convert to different units) so that model data reach the users with a common data format.
 - Regridding and interpolation: AQUA offers robust regridding and interpolation functionalities 
- to align datasets with different grids and spatial resolutions.
+  to align datasets with different grids and spatial resolutions.
 - Averaging and aggregation: AQUA provides tools to perform temporal and spatial averaging and aggregation of climate data.
 - Parallel processing: AQUA supports parallel processing through `dask <https://examples.dask.org/xarray.html>`_ to 
- speed up the execution of diagnostics.
+  speed up the execution of diagnostics.
 - Diagnostics: most importantly, AQUA includes a set of built-in diagnostic tools,
- and it allows users to create custom diagnostics as well.
+  and it allows users to create custom diagnostics as well.
 
 Example Use Case
 ----------------

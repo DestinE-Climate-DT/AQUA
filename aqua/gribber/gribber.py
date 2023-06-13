@@ -5,11 +5,11 @@ Gribber module for integrate gribscan within AQUA
 import os
 import subprocess
 from glob import glob
-import yaml
 from aqua.logger import log_configure
-from aqua.util import load_yaml, create_folder
+from aqua.util import load_yaml, dump_yaml, create_folder
 from aqua.util import get_config_dir, get_machine
 from aqua.reader import Reader
+
 
 class Gribber():
     """
@@ -20,41 +20,51 @@ class Gribber():
                  model=None, exp=None, source=None,
                  nprocs=1,
                  dirdict={'datadir': None,
-                      'tmpdir': None,
-                      'jsondir': None,
-                      'configdir': None},
+                          'tmpdir': None,
+                          'jsondir': None,
+                          'configdir': None},
                  description=None,
                  loglevel=None,
-                 overwrite=False
+                 overwrite=False,
+                 search=False,
                  ) -> None:
         """
         Initialize the Gribber class.
 
         Args:
-            model (str, optional): Model name. Defaults to None.
-            exp (str, optional): Experiment name. Defaults to None.
-            source (str, optional): Source name. Defaults to None.
-            nprocs (int, optional): Number of processors. Defaults to 1.
-            dirdict (dict, optional): Dictionary with directories:
-                data: data directory
-                tmp: temporary directory
-                json: JSON directory (output)
-                configdir: catalog directory to update
-                Defaults to {'datadir': None, 'tmpdir': None, 'jsondir': None, 'configdir': None}.
-            description (str, optional): Description of the experiment. Defaults to None.
-            loglevel (str, optional): Log level. Defaults to None.
-            overwrite (bool, optional): Overwrite JSON file and indices if they exist. Defaults to False.
+            model (str, optional):          Model name. Defaults to None.
+            exp (str, optional):            Experiment name. Defaults to None.
+            source (str, optional):         Source name. Defaults to None.
+            nprocs (int, optional):         Number of processors.
+                                            Defaults to 1.
+            dirdict (dict, optional):       Dictionary with directories:
+                                                data: data directory
+                                                tmp: temporary directory
+                                                json: JSON directory (output)
+                                                configdir: catalog directory
+                                                to update
+                                            Defaults to {'datadir': None,
+                                                         'tmpdir': None,
+                                                         'jsondir': None,
+                                                         'configdir': None}.
+            description (str, optional):    Description of the experiment.
+                                            Defaults to None.
+            loglevel (str, optional):       Log level. Defaults to None.
+            overwrite (bool, optional):     Overwrite JSON file and indices if
+                                            they exist. Defaults to False.
+            search (bool, optional):        Search for generic names of files.
+                                            Defaults to False.
 
         Methods:
             Only private methods are listed here.
-            _check_steps(): Check which steps have to be performed.
-            _check_dir(): Check if directories exist.
-            _check_indices(): Check if indices exist.
-            _check_json(): Check if JSON file exists.
-            _check_catalog(): Check if catalog file exists.
-            _create_symlinks(): Create symlinks to GRIB files.
-            _create_indices(): Create indices for GRIB files.
-            _create_json(): Create JSON file.
+            _check_steps():          Check which steps have to be performed.
+            _check_dir():            Check if directories exist.
+            _check_indices():        Check if indices exist.
+            _check_json():           Check if JSON file exists.
+            _check_catalog():        Check if catalog file exists.
+            _create_symlinks():      Create symlinks to GRIB files.
+            _create_indices():       Create indices for GRIB files.
+            _create_json():          Create JSON file.
             _create_catalog_entry(): Create catalog entry.
         """
         self.logger = log_configure(loglevel, 'gribber')
@@ -62,6 +72,8 @@ class Gribber():
 
         if model:
             self.model = model
+            if self.model != "IFS":
+                self.logger.warning("Other models than IFS are experimental.")
         else:
             raise KeyError('Please specify model.')
 
@@ -78,14 +90,19 @@ class Gribber():
         self.nprocs = nprocs
 
         self.description = description
+        self.search = search
 
         # Create folders from dir dictionary, default outside of class
         self.dir = dirdict
         self._check_dir()
 
         self.datadir = self.dir['datadir']
-        self.tmpdir = os.path.join(self.dir['tmpdir'], self.exp)
-        self.jsondir = os.path.join(self.dir['jsondir'], self.exp)
+        self.tmpdir = os.path.join(self.dir['tmpdir'], self.model,
+                                   self.exp)
+        self.jsondir = os.path.join(self.dir['jsondir'], self.model,
+                                    self.exp)
+        self.logger.info("JSON directory: %s", self.jsondir)
+
         if not self.dir['configdir']:
             self.configdir = get_config_dir()
         else:
@@ -97,18 +114,32 @@ class Gribber():
         self.logger.info("Catalog directory: %s", self.configdir)
 
         # Get gribtype and tgt_json from source
-        self.gribtype = self.source.split('_')[0]
-        self.tgt_json = self.source.split('_')[1]
+        if not self.search:
+            self.gribtype = self.source.split('_')[0]
+            self.tgt_json = self.source.split('_')[1]
+            self.logger.info("json file will be named as %s.",
+                             self.tgt_json)
+        else:
+            self.tgt_json = self.source
+            self.logger.info("json file will be named as source.",
+                             self.source)
         self.indices = None
 
         # Get gribfiles wildcard from gribtype
-        self.gribfiles = self.gribtype + '????+*'
-        self.logger.info("Gribfile wildcard: %s", self.gribfiles)
+        if not self.search:
+            self.gribfiles = self.gribtype + '????+*'
+            self.logger.info("Gribfile wildcard: %s", self.gribfiles)
+        else:
+            self.logger.warning("Search for generic names of files.")
+            format = ".data"
+            self.logger.warning("Search for files with format: %s", format)
+            self.logger.info("Restart the gribber if you want to change format.")
+            self.gribfiles = '*'+format
 
         # Get catalog filename
-        self.catalogfile = os.path.join(self.configdir, self.machine,
-                                        'catalog', self.model,
-                                        self.exp+'.yaml')
+        self.catalogfile = os.path.join(self.configdir, 'machines',
+                                        self.machine, 'catalog',
+                                        self.model, self.exp+'.yaml')
         self.logger.warning("Catalog file: %s", self.catalogfile)
 
         # Get JSON filename
@@ -220,7 +251,7 @@ class Gribber():
         Returns:
             bool: True if JSON file has to be created, False otherwise.
         """
-        self.logger.info("Checking if JSON file already exists...")
+        self.logger.info(f"Checking if JSON file {self.jsonfile} already exists...")
         if os.path.exists(self.jsonfile):
             if self.overwrite:
                 self.logger.warning("JSON file already exists. Removing it...")
@@ -228,6 +259,7 @@ class Gribber():
                 return True
             else:
                 self.logger.warning("JSON file already exists.")
+                self.logger.info("It will not be generated.")
                 return False
         else:  # JSON file does not exist
             return True
@@ -241,10 +273,12 @@ class Gribber():
         """
         self.logger.info("Checking if catalog file already exists...")
         if os.path.exists(self.catalogfile):
-            self.logger.warning("Catalog file %s already exists.", self.catalogfile)
+            self.logger.warning("Catalog file %s already exists.",
+                                self.catalogfile)
             return True
         else:  # Catalog file does not exist
-            self.logger.warning("Catalog file %s does not exist.", self.catalogfile)
+            self.logger.warning("Catalog file %s does not exist.",
+                                self.catalogfile)
             self.logger.warning("It will be generated.")
             return False
 
@@ -261,7 +295,8 @@ class Gribber():
                     os.symlink(file, os.path.join(self.tmpdir,
                                os.path.basename(file)))
                 except FileExistsError:
-                    self.logger.info("File %s already exists in %s", file, self.tmpdir)
+                    self.logger.info("File %s already exists in %s", file,
+                                     self.tmpdir)
         except FileNotFoundError:
             self.logger.error("Directory %s not found.", self.datadir)
 
@@ -281,13 +316,22 @@ class Gribber():
         """
         Create JSON file.
         """
-        self.logger.info("Creating JSON file...")
+        self.logger.info(f"Creating JSON file {self.jsonfile}...")
+
+        if self.model != 'IFS':
+            self.logger.warning("Model %s is experimental.", self.model)
+            self.logger.warning("JSON file may have a different name.")
 
         #  to be improved without using subprocess
-        cmd = ['gribscan-build', '-o', self.jsondir, '--magician', 'ifs',
-               '--prefix', self.datadir + '/'] +\
-            glob(os.path.join(self.tmpdir, '*index'))
-        #  json = subprocess.run(cmd)
+        if self.model == 'IFS':
+            cmd = ['gribscan-build', '-o', self.jsondir, '--magician', 'ifs',
+                   '--prefix', self.datadir + '/'] +\
+                   glob(os.path.join(self.tmpdir, '*index'))
+        else:
+            self.logger.warning("Model %s is experimental.", self.model)
+            cmd = ['gribscan-build', '-o', self.jsondir,
+                   '--prefix', self.datadir + '/'] +\
+                glob(os.path.join(self.tmpdir, '*index'))
         subprocess.run(cmd)
 
     def _create_catalog_entry(self):
@@ -328,8 +372,7 @@ class Gribber():
             cat_file['sources'][self.source] = block_cat
 
         # Write catalog file
-        with open(self.catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
+        dump_yaml(outfile=self.catalogfile, cfg=cat_file)
 
     def _create_main_catalog(self):
         """
@@ -353,8 +396,8 @@ class Gribber():
         self.logger.info(block_main)
 
         # Write main catalog file
-        mainfilepath = os.path.join(self.configdir, self.machine, 'catalog',
-                                    self.model, 'main.yaml')
+        mainfilepath = os.path.join(self.configdir, 'machines', self.machine,
+                                    'catalog', self.model, 'main.yaml')
         main_file = load_yaml(mainfilepath)
 
         # Check if source already exists
@@ -371,8 +414,7 @@ class Gribber():
             main_file['sources'][self.source] = block_main
 
         # Write catalog file
-        with open(mainfilepath, 'w', encoding='utf-8') as file:
-            yaml.dump(main_file, file, sort_keys=False)
+        dump_yaml(outfile=mainfilepath, cfg=main_file)
 
     def help(self):
         """

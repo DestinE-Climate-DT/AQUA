@@ -1,16 +1,16 @@
 # Which experment to be analysed
 id:
-  # only IFS is supported since is the only one using GRB
-  model: 'IFS'
-  exp: 'tco1279-orca025'
-  source: 'ICMGG_atm2d'
+  model: 'model'
+  exp: 'exp'
+  source: 'source'
+  description: None
 # Directories for gribber
 dir:
   # directory where grib files from the experiments are
-  datadir: '/scratch/b/b382289/tco1279-orca025/nemo_deep/ICMGGc2'
+  datadir: '/path/to/datadir'
   # directory where the index will be generated
-  tmpdir: '/scratch/b/b382289/gribscan'
+  tmpdir: '/path/to/tmpdir'
   # directory where the resulting json will be produced
-  jsondir: '/work/bb1153/b382289/gribscan-json'
+  jsondir: '/path/to/jsondir'
   # directory where the catalog is found
-  configdir: '../../config/'
+  configdir: '/path/to/configdir'

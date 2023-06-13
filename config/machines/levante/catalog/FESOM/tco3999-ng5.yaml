@@ -455,103 +455,112 @@ sources:
       urlpath:
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/temp.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/u.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/w.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/20_17Aug-31Aug2020_tco3999_fesom/salt.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/20_17Aug-31Aug2020_tco3999_fesom/temp.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/20_17Aug-31Aug2020_tco3999_fesom/w.fesom.2020.nc
+    description: original 3d output depending on nod2
+    driver: netcdf
+  original_3d_elem:
+    args:
+      chunks:
+        nz: 1
+        nz1: 1
+        time: 1
+      urlpath:
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/01_20Jan-25Jan2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/02_26Jan-31Jan2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/03_01Feb-06Feb2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/04_07Feb-12Feb2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/05_13Feb-18Feb2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/06_19Feb-24Feb2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/07_25Feb-29Feb2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/08_01Mar-06Mar2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/09_07Mar-18Mar2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/10_19Mar-31Mar2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/11_01Apr-12Apr2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/12_13Apr-30Apr2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/13_01May-10May2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/14_11May-31May2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/15_01Jun-10Jun2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/16_11Jun-30Jun2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/17_01Jul-15Jul2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/18_16Jul-31Jul2020_tco3999_fesom/v.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/u.fesom.2020.nc
+      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/19_01Aug-16Aug2020_tco3999_fesom/v.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/20_17Aug-31Aug2020_tco3999_fesom/u.fesom.2020.nc
       - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/20_17Aug-31Aug2020_tco3999_fesom/v.fesom.2020.nc
-      - /work/bm1235/a270046/cycle2-sync/tco3999-ng5/20_17Aug-31Aug2020_tco3999_fesom/w.fesom.2020.nc
-    description: original 3d output
+    description: original 3d output depending on elem
     driver: netcdf
