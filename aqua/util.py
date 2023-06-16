@@ -107,18 +107,20 @@ def get_config_dir(filename='config.yaml'):
         FileNotFoundError: if no config file is found in the predefined folders
     """
 
+    configdirs = []
+
+    # if AQUA is defined
+    aquadir = os.environ.get('AQUA')
+    if aquadir:
+        configdirs.append(os.path.join(aquadir, 'config'))
+
     # set of predefined folders to browse
-    configdirs = ['./config', '../config', '../../config', '../../../config']
+    configdirs.extend(['./config', '../config', '../../config', '../../../config'])
 
     # if the home is defined
     homedir = os.environ.get('HOME')
     if homedir:
         configdirs.append(os.path.join(homedir, '.aqua', 'config'))
-
-    # if the AQUA is defined
-    aquadir = os.environ.get('AQUA')
-    if aquadir:
-        configdirs.append(os.path.join(aquadir, 'config'))
 
     # autosearch
     for configdir in configdirs:

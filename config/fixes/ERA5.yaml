@@ -19,6 +19,9 @@ models:
                     msl:
                         grib: true
                         source: MSL
+                    sst:
+                        grib: true
+                        source: SSTK
         fdb:
             default:
                 deltat: 86400

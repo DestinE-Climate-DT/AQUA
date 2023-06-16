@@ -133,6 +133,7 @@ class Reader(FixerMixin, RegridMixin):
             self.vert_coord = [self.vert_coord]
 
         self.masked_att = source_grid.get("masked", None)  # Optional selection of masked variables
+        self.masked_vars = source_grid.get("masked_vars", None)  # Optional selection of masked variables
 
         # Expose grid information for the source as a dictionary of open xarrays
         sgridpath = source_grid.get("path", None)
@@ -365,7 +366,8 @@ class Reader(FixerMixin, RegridMixin):
             datadic = {"2d": data}
         else:
             datadic = group_shared_dims(data, self.vert_coord, others="2d",
-                                        masked="2dm", masked_att=self.masked_att)
+                                        masked="2dm", masked_att=self.masked_att,
+                                        masked_vars=self.masked_vars)
 
         # Iterate over list of groups of variables, regridding them separately
         out = []

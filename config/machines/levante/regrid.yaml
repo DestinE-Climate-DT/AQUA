@@ -467,8 +467,14 @@ source_grids:
         space_coord: ["values"]  
     era5:
       default:
-        path: /work/bb1153/b382076/ERA5/grids/r025_grid.nc
+        path: 
+          2d: /work/bb1153/b382075/nextgems/grids/r025_grid.nc
+          2dm: /work/bb1153/b382075/nextgems/grids/r025_grid_masked.nc
+        masked_vars:
+          - sst
+          - SSTK
         space_coord: ["lon", "lat"]
+        vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this  
 
   OSI-SAF:
     osi-450:

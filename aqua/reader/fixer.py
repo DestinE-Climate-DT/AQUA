@@ -52,11 +52,10 @@ class FixerMixin():
                                     self.model, self.exp, self.source)
                 return None
         return fixes
-    
 
     def fixer(self, data, **kwargs):
         """Call the fixer function returnin container or iterator"""
-        if type(data) is types.GeneratorType:
+        if isinstance(data, types.GeneratorType):
             return self._fixergen(data, **kwargs)
         else:
             return self._fixer(data, **kwargs)
@@ -386,7 +385,7 @@ class FixerMixin():
             data (xr.DataArray):  input DataArray
         """
         target_units = data.attrs.get("target_units", None)
-        real_units =  data.attrs.get("units", None)
+        real_units = data.attrs.get("units", None)
         if target_units and real_units != target_units:
             d = {"src_units": data.attrs["units"], "units_fixed": 1}
             data.attrs.update(d)
@@ -406,7 +405,10 @@ def normalize_units(src):
     if src == '1':
         return 'dimensionless'
     else:
-        return str(src).replace("of", "").replace("water", "").replace("equivalent", "")
+        src = str(src)
+        src = src.replace("of", "").replace("water", "").replace("equivalent", "")
+        src = src.replace("deg C", "degC")
+        return src
 
 
 def units_extra_definition():

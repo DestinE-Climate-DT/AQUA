@@ -59,7 +59,8 @@ def check_att(da, att):
         return False
 
 
-def group_shared_dims(ds, shared_dims, others=None, masked=None, masked_att=None):
+def group_shared_dims(ds, shared_dims, others=None, masked=None,
+                      masked_att=None, masked_vars=None):
     """
     Groups variables in a dataset that share the same dimension.
 
@@ -69,7 +70,8 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None, masked_att=None
         others (str, optional): Name of group for variables not in `shared_dims`.
         masked (str, optional): Name of extra group for masked variables.
                                 Used only if the "others" option is set.
-        masked_att (dict, optional): Dictionary of attributes to use to check if variable is masked.
+        masked_att (dict, optional): Dictionary of attributes to use to check if variable has to be masked.
+        masked_vars (dict, optional): List of variables to mask.
 
     Raises:
         ValueError: If no shared dimensions are found.
@@ -77,7 +79,6 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None, masked_att=None
     Returns:
         Dictionary containing datasets that share the same dimension
     """
-
     # Is this a DataArray?
     if not isinstance(ds, xr.Dataset):
         dim = [x for x in shared_dims if x in ds.dims]
@@ -85,7 +86,7 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None, masked_att=None
             return {dim[0]: ds}
         else:
             if others:
-                if check_att(ds, masked_att):
+                if check_att(ds, masked_att) or ds.name in masked_vars:
                     return {masked: ds}
                 else:
                     return {others: ds}
@@ -104,7 +105,7 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None, masked_att=None
         vlistm = []
         for var in ds.data_vars:
             if not any(x in shared_dims for x in ds[var].dims):
-                if check_att(ds[var], masked_att):
+                if check_att(ds[var], masked_att) or var in masked_vars:
                     vlistm.append(var)
                 else:
                     vlist.append(var)
@@ -112,7 +113,6 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None, masked_att=None
             shared_vars.update({others: ds[vlist]})
         if vlistm:
             shared_vars.update({masked: ds[vlistm]})
-
     return shared_vars
 
 
