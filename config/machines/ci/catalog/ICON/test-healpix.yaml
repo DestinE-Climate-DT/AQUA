@@ -1,0 +1,15 @@
+plugins:
+  source:
+  - module: intake_xarray
+sources:
+  healpix_0:
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ./AQUA_tests/models/ICON/healpix0/healpix_0.nc
+    description: healpix_0
+    driver: netcdf
+
+
+  

@@ -1,0 +1,6 @@
+sources:
+  test-healpix:
+    description: ICON
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/test-healpix.yaml"
