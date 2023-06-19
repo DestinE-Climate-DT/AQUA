@@ -1,15 +1,15 @@
 # experiment
 dataset:
   model: "IFS"
-  exp: "tco2559-ng5-cycle3"
-  source2d: "2D_1h_native"
-  source3d: "3D_1h6h_native"
+  exp: "tco2559-ng5"
+  source2d: "ICMGG_atm2d"
+  source3d: "ICMU_atm3d"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
-  regdir: '/scratch/b/b382216/regrid_tco2559-ng5-cycle3'
-  tmpdir: '/scratch/b/b382216/tmpdir_tco2559-ng5-cycle3'
-  fulldir: '/scratch/b/b382216/fullres_tco2559-ng5-cycle3'
+  regdir: '/scratch/b/b382216/regrid_tco2559-ng5'
+  tmpdir: '/scratch/b/b382216/tmpdir_tco2559-ng5'
+  fulldir: '/scratch/b/b382216/fullres_tco2559-ng5'
   plotdir: "/home/b/b382216/AQUA_test_logger/AQUA/diagnostics/tempest/plot"
 
 # grid on which operate
@@ -18,7 +18,7 @@ grids:
   highgrid: 'r010'
 
 # variables to stored 
-varlist: ['msl', '10u', '10v', 'tp']
+varlist: ['msl', '10u', '10v', 'tprate']
 
 # temporal definition (YYYY-MM-DD)
 time: 
