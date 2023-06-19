@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
@@ -9,19 +10,31 @@ from functions_TCs import getTrajectories
 
 def multi_plot(tracks_nc_file):
 
-    # create 10 subplots of a selected variable
+    delta=10 # further extension of the are domain for plotting
+
+    # Create 10 subplots of a selected variable
     fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(16, 8), subplot_kw={'projection': ccrs.PlateCarree()})
     axs = axs.flatten()
 
-    # loop over subplots and plot different time slices in each one
+    # Loop over subplots and plot different time slices in each one
     for i, ax in enumerate(axs):
+        # Get the non-NaN indices for the selected variable
+        non_nan_indices = np.where(~np.isnan(tracks_nc_file.isel(time=i)))
+        # Get the longitude and latitude coordinates for the non-NaN values
+        lon = tracks_nc_file.lon.values[non_nan_indices[1]]
 
+        lon_min = int(np.min(lon))-delta
+        lon_max= int(np.max(lon))+delta
+        lat = tracks_nc_file.lat.values[non_nan_indices[0]]
+        lat_min = int(np.min(lat))-delta
+        lat_max= int(np.max(lat))+delta
+        # Plot the non-NaN values using scatter plot
         tracks_nc_file.isel(time=i).plot.pcolormesh(ax=ax, transform=ccrs.PlateCarree(), add_colorbar=False)
-        ax.set_extent([-180, 180, -40, 40], ccrs.PlateCarree())
+        ax.set_extent([lon_min, lon_max, lat_min, lat_max], ccrs.PlateCarree())
         ax.coastlines()
         ax.set_title(tracks_nc_file.name + " " + f'{str(tracks_nc_file.time[i].values)[:13]}')
 
-    # add a colorbar
+    # Add a colorbar
     if 'units' in tracks_nc_file.attrs:
         plt.colorbar(ax.collections[0], ax=axs, shrink=0.4, pad=0.1, location='bottom', label=tracks_nc_file.attrs['units'])
     elif tracks_nc_file.name=="uas":
@@ -83,6 +96,6 @@ def plot_trajectories(trajfile, plotdir, block, dates):
                     marker=".",
                     alpha=0.8,
                     transform=ccrs.PlateCarree()) ## Important
-
+    plt.show()
     # create DatetimeIndex with daily frequency
     plt.savefig(plotdir + f"tracks_{block.strftime('%Y%m%d')}-{dates[-1].strftime('%Y%m%d')}.png", bbox_inches='tight', dpi=350)
