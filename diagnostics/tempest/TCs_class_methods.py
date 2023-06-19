@@ -60,6 +60,8 @@ class TCs():
             self.paths = tdict['paths']
             self.model = tdict['dataset']['model']
             self.exp = tdict['dataset']['exp']
+            self.source2d = tdict['dataset']['source2d']
+            self.source3d = tdict['dataset']['source3d']
             self.boxdim = tdict['detect']['boxdim']
             self.lowgrid =  tdict['grids']['lowgrid']
             self.highgrid = tdict['grids']['highgrid']
@@ -134,14 +136,14 @@ class TCs():
             self.logger.warning(f'Initialised streaming for {self.stream_step} {self.stream_units} starting on {self.stream_startdate}')
         if self.model in 'IFS':
             self.varlist2d = ['msl', '10u', '10v']
-            self.reader2d = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+            self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d, 
                                 regrid=self.lowgrid, streaming=self.streaming, stream_step=self.stream_step, 
                                 stream_unit=self.stream_units, stream_startdate=self.stream_startdate, loglevel=self.loglevel)
             self.varlist3d = ['z']
-            self.reader3d = Reader(model=self.model, exp=self.exp, source="ICMU_atm3d", 
+            self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d, 
                                 regrid=self.lowgrid, streaming=self.streaming, loglevel=self.loglevel,
                                 stream_step=self.stream_step, stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
-            self.reader_fullres = Reader(model=self.model, exp=self.exp, source="ICMGG_atm2d", 
+            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d, 
                                         regrid=self.highgrid,
                                         streaming=self.streaming, stream_step=self.stream_step, loglevel=self.loglevel,
                                         stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
