@@ -162,7 +162,7 @@ class TCs():
         else:
             self.data2d = self.reader2d.retrieve(vars = self.varlist2d)
             self.data3d = self.reader3d.retrieve(vars = self.varlist3d)
-            self.fullres = self.reader_fullres.retrieve(fix=False, var = self.var2store)
+            self.fullres = self.reader_fullres.retrieve( var = self.var2store)
 
         if self.streaming:     
             self.stream_enddate = self.data2d.time[-1].values
