@@ -1,0 +1,80 @@
+#!/usr/bin/sh
+
+# An example hook script to verify that each commit that is about to be pushed
+# pass the `./run_tests` suite. Called by "git push" after it has checked the
+# remote status, but before anything has been pushed.
+# If the test suite (and so the script) exits with a non-zero status, nothing
+# will be pushed.
+#
+# In any case, we revert to the pre `$ git push` state.
+
+
+# Retrieve arguments
+remote="$1"
+url="$2"
+
+z40=0000000000000000000000000000000000000000 # SHA of a non existing commit
+
+
+# Save current "git state"
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+STASH_NAME="pre-push-$(date +%s)"
+git stash save -q --keep-index $STASH_NAME
+
+
+# Do wonders
+
+while read local_ref local_sha remote_ref remote_sha
+do
+        if [ "$local_sha" = $z40 ]
+        then
+                # Handle delete
+                continue # to the next branch
+        elif [ "$remote_sha" = $z40 ]
+        then
+                # New branch, examine all commits
+                range="$local_sha"
+        else
+                # Update to existing branch, examine new commits
+                range="$remote_sha..$local_sha"
+        fi
+
+        # Retrieve list of commit in "chronological" order
+        commits=$(git rev-list --reverse $range)
+
+        # Loop over each commit
+        for commit in $commits
+        do
+            git checkout $commit
+
+            ## Run the tests 
+            pytest -v -m tropical_rainfall
+
+            # Retrieve exit code
+            is_test_passed=$?
+
+            # Stop iterating if error
+            if [ $is_test_passed -ne 0 ]
+            then
+                echo -e "Aborting push: Test failed for commit $commit,"\
+                  "with following error trace:\n"
+                # something like: tail test/run_tests.log
+                break 2
+            fi
+        done
+done
+
+
+# Revert to pre-push state
+git checkout $current_branch
+
+STASH_NUM=$(git stash list | grep $STASH_NAME | sed -re 's/stash@\{(.*)\}.*/\1/')
+if [ -n "$STASH_NUM" ]
+then
+    git stash pop -q stash@{$STASH_NUM}
+fi
+#removed fi
+
+# Return exit code
+exit $is_test_passed
