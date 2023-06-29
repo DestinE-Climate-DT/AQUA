@@ -1,11 +1,11 @@
 weights:
-   path: ./AQUA_tests/weights
-   template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
+  path: ./AQUA_tests/weights
+  template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
 
 areas:
-   path: ./AQUA_tests/weights
-   src_template: cell_area_{model}_{exp}_{source}.nc
-   dst_template: cell_area_{grid}.nc
+  path: ./AQUA_tests/weights
+  src_template: cell_area_{model}_{exp}_{source}.nc
+  dst_template: cell_area_{grid}.nc
 
 cdo-paths:
   download: ./AQUA_tests/weights
@@ -26,24 +26,33 @@ source_grids:
     test-pi:
       original_2d:
         path: ./AQUA_tests/grids/pi_griddes_nodes_IFS.nc
-        space_coord: ["nod2"]
-        extra: 
-          - -setgrid,./AQUA_tests/grids/pi_griddes_nodes_IFS.nc 
-          - -selname,cell_area
+        space_coord: [nod2]
+        extra:
+        - -setgrid,./AQUA_tests/grids/pi_griddes_nodes_IFS.nc
+        - -selname,cell_area
       original_3d:
-        path: 
+        path:
           nz1: ./AQUA_tests/grids/pi_fesom_mask_nz1.nc
           nz: ./AQUA_tests/grids/pi_fesom_mask_nz.nc
-        space_coord: ["nod2"]
-        vert_coord: ["nz1", "nz"]
-        extra: 
-          - -setgrid,./AQUA_tests/grids/pi_griddes_nodes_IFS.nc 
+        space_coord: [nod2]
+        vert_coord: [nz1, nz]
+        extra:
+        - -setgrid,./AQUA_tests/grids/pi_griddes_nodes_IFS.nc
 
   IFS:
     test-tco79:
       short:
         path: ./AQUA_tests/grids/tco79_grid.nc
-        space_coord: ["cell"]
-      long: 
-        space_coord: ["lon", "lat"]
+        space_coord: [cell]
+      long:
+        space_coord: [lon, lat]
 
+  ICON:
+    test-healpix:
+      short:
+        path: ./AQUA_tests/grids/icon_healpix0.nc
+        space_coord: [x]
+    test-r2b0:
+      short:
+        path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc
+        space_coord: [cell]

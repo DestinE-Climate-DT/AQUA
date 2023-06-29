@@ -5,6 +5,7 @@ from aqua import Reader
 
 @pytest.mark.aqua
 class TestFldmean():
+    """Test class for fldmean"""
 
     @pytest.mark.parametrize(('source,value,shape'),
                             [('short', 285.75920, 2), ('long', 285.86724, 4728)])
@@ -26,3 +27,21 @@ class TestFldmean():
         assert avg.shape == (2,)
         #assert avg[1] == pytest.approx(17.9806)
         assert avg[1] == pytest.approx(291.1306)
+
+
+    def test_fldmean_healpix(self):
+        """Fldmean test for FESOM"""
+        reader = Reader(model="ICON", exp="test-healpix", source='short')
+        data = reader.retrieve()
+        avg = reader.fldmean(data['2t']).values
+        assert avg.shape == (2,)
+        assert avg[1] == pytest.approx(286.1479)
+
+
+    def test_fldmean_icon(self):
+        """Fldmean test for FESOM"""
+        reader = Reader(model="ICON", exp="test-r2b0", source='short')
+        data = reader.retrieve()
+        avg = reader.fldmean(data['t']).values
+        assert avg.shape == (2,90)
+        assert avg[1,1] == pytest.approx(214.4841)

@@ -1,17 +1,20 @@
 Dummy
 ================
 
+Dummy provides an example on how the documentation for diagnostics of the AQUA framework should be organised and written.
+This documentation provides also guidelines on how a diagnostic developer should write documentation about their diagnostic,
+covering a short description of its contents and of its scientific basis. 
+Please try to adhere to the suggested scheme as far as possible.
+
 Description
 -----------
 
-Dummy provides an example on how diagnostics of the AQUA framework should be organised and written.
-This documentation provides also guidelines on how a diagnostic developer should write documentation about their diagnostic,
-covering a short description of its contents and of its scientific basis. The documentation should explain in a clear and concise manner
-what the diagnostic is about and what it is supposed to be doing  and the motivation behind it (i.e. which phenomenon or physical process 
+Please write here in a clear and concise manner what the diagnostic is about 
+and what it is supposed to be doing and the motivation behind it (i.e. which phenomenon or physical process 
 is diagnosed and why it is important in the context of the analysis of high-resulution climate simulations).
 In case the diagnostic is based on some already published material it is strongly 
 recommended to include references to the inherent literature (we have a reference list below).
-Please try to adhere to the suggested scheme as far as possible.
+
 
 Structure
 -----------
@@ -33,7 +36,8 @@ Input variables example
 Output 
 ------
 
-List here types of files/datasets produced by the diagnostic
+List here types of files/datasets produced by the diagnostic. Please keep in mind that diagnostic output should be both
+figures (PDF format is recommended) and data (NetCDF file is recommended). 
 
 Methods used
 ------------
@@ -46,7 +50,11 @@ Examples from the DummyDiagnostic class contained in the dummy_class.py file:
 * "multiplication": method to compute the multiplication of the retrieved data. 
                     It is an example of method that uses of external functions of the module dummy_func
 
-...
+Note that it is important to add docstrings to each method.
+We are following `Google-style docstring <https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html>`_
+
+.. note::
+    Please note that there is no need to list all the methods used, but the most important which are exposed to the users should be presented
 
 Functions used
 --------------
@@ -55,7 +63,11 @@ Example of functions contained in the dummy_func.py file:
 
 * "dummy_func": dummy function used in the dummy class.
 
-Note that it is important to add docstrings to each method or function.
+Note that it is important to add docstrings to each function.
+We are following `Google-style docstring <https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html>`_
+
+.. note::
+    Please note that there is no need to list all the methods used, but the most important which are exposed to the users should be presented
 
 Observations
 ------------
@@ -81,7 +93,8 @@ Available demo notebooks
 
 Notebooks are stored in diagnostics/dummy-diagnostic/notebooks
 
-* `dummy.ipynb <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/dummy-diagnostic/notebooks/dummy.ipynb>`_
+* `dummy_class_readerwrapper.ipynb <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/dummy/notebooks/dummy_class_readerwrapper.ipynb>`_
+* `dummy_class_timeband.ipynb <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/dummy/notebooks/dummy_class_timeband.ipynb>`_
         
 Detailed API
 ------------

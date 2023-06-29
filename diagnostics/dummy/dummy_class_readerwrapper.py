@@ -26,7 +26,7 @@ class DummyDiagnosticWrapper():
     """
     def __init__(self, model=None, exp=None, source=None,
                  custom_diagvar="I'm a custom variable",
-                 configdir=None, regrid=None,
+                 diagconfigdir=None, regrid=None,
                  freq=None, var=None,
                  savefig=False, outputfig=None,
                  savefile=False, outputdir=None,
@@ -57,7 +57,7 @@ class DummyDiagnosticWrapper():
                                   Default is None.
             source (str):         the source name to be used by the Reader class.
                                   Default is None.
-            configdir (str, opt): the path to the directory containing the config files.
+            diagconfigdir (str, opt): the path to the directory containing the config files.
                                   Default is None.
                                   Please change it to the path of your config files,
                                   if you have any or if there is a clear config directory.
@@ -171,7 +171,7 @@ class DummyDiagnosticWrapper():
 
         # Here we first load a configuration file and then we load the diagnostic variables.
         # If no variable is specified in the configuration file, the default value is used.
-        self._load_config(configdir)  # adapt or remove if you do not need it, check the method
+        self._load_config(diagconfigdir)  # adapt or remove if you do not need it, check the method
         self._load_diagvar(custom_diagvar)  # adapt or remove if you do not need it, check the method
 
         # Output variables
@@ -186,24 +186,24 @@ class DummyDiagnosticWrapper():
 
         # Plese if some more initialization is needed for the diagnostic, do it in this functions.
 
-    def _load_config(self, configdir=None):
+    def _load_config(self, diagconfigdir=None):
         """Load the config file, if one is present.
 
         Args:
-            configdir (str): path to the config directory.
+            diagconfigdir (str): path to the config directory.
                              Default is None.
         """
 
-        self.configdir = configdir  # adapt or remove if you do not need it
-        if self.configdir is None:
+        self.diagconfigdir = diagconfigdir  # adapt or remove if you do not need it
+        if self.diagconfigdir is None:
             self.logger.warning('No config directory specified')
         else:
-            self.logger.info('Config directory: {}'.format(self.configdir))
+            self.logger.info('Config directory: {}'.format(self.diagconfigdir))
 
         # Here you can load the config files if you have any.
         try:
-            configname = 'config.yaml'  # adapt or remove if you do not need it
-            configpath = os.path.join(self.configdir, configname)  # adapt or remove if you do not need it
+            configname = 'diagconfig.yaml'  # adapt or remove if you do not need it
+            configpath = os.path.join(self.diagconfigdir, configname)  # adapt or remove if you do not need it
             self.config = load_yaml(configpath)  # customise the name of the config file if you need it
         except (FileNotFoundError, TypeError):
             self.logger.warning('Config file not found')
@@ -366,12 +366,12 @@ class DummyDiagnosticWrapper():
         self.logger.info('Multiplication computed')
         self.logger.debug('Multiplication: {}'.format(self.multiplication))
 
-    def _secret_method(self):
-        """The secret method.
-        This method is a secret one, so it has "_" at the beginning.
+    def _private_method(self):
+        """The private method.
+        This method is a private one, so it has "_" at the beginning.
         If your methods are explicit, remove "_" at the beginning of the method name.
         """
-        self.logger.debug('This is a secret method')
+        self.logger.debug('This is a private method, should not be accessed from outside the class')
         self.logger.debug('Congratulations, you found it!')
 
 # Notice that more methods can be added to the class, and they can be explicit or not.

@@ -9,3 +9,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/IFS/main.yaml"
+  ICON:
+    description: ICON atmospheric model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/ICON/main.yaml"

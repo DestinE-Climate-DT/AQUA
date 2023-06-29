@@ -22,4 +22,3 @@ def test_vertinterp():
     # change unit
     interp = reader.vertinterp(select['ocpt'], levels = [0.1, 0.2, 0.3], units = 'km', vert_coord='nz1')
     assert interp.shape == (3, 3140)
-

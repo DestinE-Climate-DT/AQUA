@@ -49,3 +49,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/catalog/OSI-SAF/main.yaml"
+  EN4:
+    description: EN4 3D temperature and salinity observational data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/EN4/main.yaml"

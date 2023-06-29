@@ -9,32 +9,45 @@ models:
                     tprate:
                         source: tp
                         grib: true
-                        decumulate: true    
-                    var172143:  # cprate
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    cprate:
                         source: cp
                         grib: true
                         decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mlsprt:
                         source: lsp
                         grib: true
-                        decumulate: true  
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     erate:
                         source: e
                         grib: true
+                        decumulate: true
                         src_units: m
-                        decumulate: true 
+                        units: kg m**-2 s**-1
                     esrate:
                         source: es
                         grib: true
-                        decumulate: true 
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mrort:
                         source: ro
                         grib: true
                         decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mtsfr:
                         source: sf
                         grib: true
                         decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mslhfl:
                         source: slhf
                         grib: true
@@ -72,91 +85,305 @@ models:
                         grib: true
                         decumulate: true
         tco2559-ng5-cycle3:
-            2D_monthly_0.25deg:
+         # for this exp we have a lot of output from MultI/O, already decumulated and
+         # averaged monthly, so default is without decumulation
+            default:
                 data_model: ifs
+                vars:
+                    tprate:
+                        src_units: m s**-1
+                        source: tp
+                        grib: true
+                        units: kg m**-2 s**-1
+                    cprate:
+                        src_units: m s**-1
+                        source: cp
+                        grib: true
+                        units: kg m**-2 s**-1
+                    mlsprt:
+                        src_units: m s**-1
+                        source: lsp
+                        grib: true
+                        units: kg m**-2 s**-1 
+                    erate:
+                        src_units: m s**-1
+                        source: e
+                        grib: true
+                        units: kg m**-2 s**-1 
+                    esrate:
+                        src_units: m s**-1
+                        source: es
+                        grib: true
+                        units: kg m**-2 s**-1 
+                    mrort:
+                        src_units: m s**-1
+                        source: ro
+                        grib: true
+                        units: kg m**-2 s**-1
+                    mtsfr:
+                        src_units: m s**-1
+                        source: sf
+                        grib: true
+                        units: kg m**-2 s**-1
+                    mslhfl:
+                        src_units: W/m2
+                        source: slhf
+                        grib: true
+                    msshfl:
+                        src_units: W/m2
+                        source: sshf
+                        grib: true
+                    msnsrf:
+                        src_units: W/m2
+                        source: ssr
+                        grib: true
+                    msdsrf:
+                        src_units: W/m2
+                        source: ssrd
+                        grib: true
+                    msntrf:
+                        src_units: W/m2
+                        source: str
+                        grib: true
+                    msdtrf:
+                        src_units: W/m2
+                        source: strd
+                        grib: true
+                    mtnsrf:
+                        src_units: W/m2
+                        source: tsr
+                        grib: true
+                    mtntrf:
+                        src_units: W/m2
+                        source: ttr
+                        grib: true  
+            2D_1h_native: 
+                data_model: ifs
+                deltat: 3600
+                jump: month
                 vars:
                     tprate:
                         source: tp
                         grib: true
-                    var172143:  # cprate
-                        source: cp
+                        decumulate: true 
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    erate:
+                        source: e
                         grib: true
-                    mlsprt:
-                        source: lsp
+                        decumulate: true 
+                        src_units: m
+                        units: kg m**-2 s**-1 
+                    esrate:
+                        source: es
                         grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mrort:
                         source: ro
                         grib: true
+                        decumulate: true
+                        src_units: m 
+                        units: kg m**-2 s**-1
                     mtsfr:
                         source: sf
                         grib: true
+                        decumulate: true
+                        src_units: m 
+                        units: kg m**-2 s**-1
                     mslhfl:
                         source: slhf
                         grib: true
+                        decumulate: true
                     msshfl:
                         source: sshf
                         grib: true
+                        decumulate: true
                     msnsrf:
                         source: ssr
                         grib: true
+                        decumulate: true
                     msdsrf:
                         source: ssrd
                         grib: true
+                        decumulate: true    
                     msntrf:
                         source: str
                         grib: true
+                        decumulate: true
                     msdtrf:
                         source: strd
                         grib: true
+                        decumulate: true
                     mtnsrf:
                         source: tsr
                         grib: true
+                        decumulate: true
                     mtntrf:
                         source: ttr
-                        grib: true        
+                        grib: true
+                        decumulate: true         
+                    var172045:  # if the variable has no short name we can use its paramId
+                        source: smlt
+                        grib: true
+                        decumulate: true     
         tco1279-orca025-cycle3:
-            2D_monthly_0.25deg:
+         # for this exp we have a lot of output from MultI/O, already decumulated and
+         # averaged monthly, so default is without decumulation
+            default:
                 data_model: ifs
+                vars:
+                    tprate:
+                        src_units: m s**-1
+                        source: tp
+                        grib: true
+                        units: kg m**-2 s**-1
+                    cprate:
+                        src_units: m s**-1
+                        source: cp
+                        grib: true
+                        units: kg m**-2 s**-1
+                    mlsprt:
+                        src_units: m s**-1
+                        source: lsp
+                        grib: true
+                        units: kg m**-2 s**-1 
+                    erate:
+                        src_units: m s**-1
+                        source: e
+                        grib: true
+                        units: kg m**-2 s**-1 
+                    esrate:
+                        src_units: m s**-1
+                        source: es
+                        grib: true
+                        units: kg m**-2 s**-1 
+                    mrort:
+                        src_units: m s**-1
+                        source: ro
+                        grib: true
+                        units: kg m**-2 s**-1
+                    mtsfr:
+                        src_units: m s**-1
+                        source: sf
+                        grib: true
+                        units: kg m**-2 s**-1
+                    mslhfl:
+                        src_units: W/m2
+                        source: slhf
+                        grib: true
+                    msshfl:
+                        src_units: W/m2
+                        source: sshf
+                        grib: true
+                    msnsrf:
+                        src_units: W/m2
+                        source: ssr
+                        grib: true
+                    msdsrf:
+                        src_units: W/m2
+                        source: ssrd
+                        grib: true
+                    msntrf:
+                        src_units: W/m2
+                        source: str
+                        grib: true
+                    msdtrf:
+                        src_units: W/m2
+                        source: strd
+                        grib: true
+                    mtnsrf:
+                        src_units: W/m2
+                        source: tsr
+                        grib: true
+                    mtntrf:
+                        src_units: W/m2
+                        source: ttr
+                        grib: true  
+            2D_1h_native: 
+                data_model: ifs
+                deltat: 3600
+                jump: month
                 vars:
                     tprate:
                         source: tp
                         grib: true
-                    var172143:  # cprate
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    cprate:
                         source: cp
                         grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mlsprt:
                         source: lsp
                         grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1 
+                    erate:
+                        source: e
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1 
+                    esrate:
+                        source: es
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1 
                     mrort:
                         source: ro
                         grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mtsfr:
                         source: sf
                         grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
                     mslhfl:
                         source: slhf
                         grib: true
+                        decumulate: true
                     msshfl:
                         source: sshf
                         grib: true
+                        decumulate: true
                     msnsrf:
                         source: ssr
                         grib: true
+                        decumulate: true
                     msdsrf:
                         source: ssrd
                         grib: true
+                        decumulate: true    
                     msntrf:
                         source: str
                         grib: true
+                        decumulate: true
                     msdtrf:
                         source: strd
                         grib: true
+                        decumulate: true
                     mtnsrf:
                         source: tsr
                         grib: true
+                        decumulate: true
                     mtntrf:
                         source: ttr
-                        grib: true        
+                        grib: true
+                        decumulate: true         
+                    var172045:  # if the variable has no short name we can use its paramId
+                        source: smlt
+                        grib: true
+                        decumulate: true   
         # These are for tests
         test-tco79:
             long:

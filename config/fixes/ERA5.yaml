@@ -1,34 +1,96 @@
 models:  
     ERA5:
-        default:
-            default:
-                deltat: 86400
-                data_model: cf
-            monthly_acc:
-                deltat: 86400
-                data_model: cf
-                vars:
-                    # Derive a variable and determine destination units etc. automatically from eccodes
-                    tprate:
-                        derived: cp+lsp
-                        #src_units: m
-                        grib: true
+        era5:
             monthly:
-                data_model: False
+                data_model: cf
                 vars:
+                    2t: 
+                        grib: true
+                        source: T2M
                     msl:
                         grib: true
                         source: MSL
+                    erate:
+                        grib: true
+                        source: E
+                        src_units: m/day
+                        units: kg m**-2 s**-1
+                    tprate: 
+                        grib: true
+                        source: TP
+                        src_units: m/day
+                    tcc: 
+                        src_units: frac
+                        grib: true 
+                        source: TCC
                     sst:
                         grib: true
                         source: SSTK
-        fdb:
-            default:
-                deltat: 86400
-                data_model: cf
-                vars:
-                    2t:
-                        source: 2t
-                        src_units: K
+                    mslhfl:
+                        source: SLHF
                         grib: true
+                    msshfl:
+                        source: SSHF
+                        grib: true
+                    msnsrf:
+                        source: SSR
+                        grib: true
+                    msdsrf:
+                        source: SSRD
+                        grib: true
+                    msntrf:
+                        source: STR
+                        grib: true
+                    msdtrf:
+                        source: STRD
+                        grib: true
+                    mtnsrf:
+                        source: TSR
+                        grib: true
+                    mtntrf:
+                        source: TTR
+                        grib: true 
+                    u:
+                        source: U
+                        grib: true
+                    v:
+                        source: V
+                        grib: true
+                    q:
+                        source: Q
+                        grib: true
+                    t:
+                        source: T
+                        grib: true         
+        # default:
+        #     default:
+        #         deltat: 86400
+        #         data_model: cf
+        #     monthly_acc:
+        #         deltat: 86400
+        #         data_model: cf
+        #         vars:
+        #             # Derive a variable and determine destination units etc. automatically from eccodes
+        #             tprate:
+        #                 derived: cp+lsp
+        #                 #src_units: m
+        #                 grib: true
+        #     monthly:
+        #         data_model: False
+        #         vars:
+        #             msl:
+        #                 grib: true
+        #                 source: MSL
+        #             sst:
+        #                 grib: true
+        #                 source: SSTK
+        # fdb:
+        #     default:
+        #         deltat: 86400
+        #         data_model: cf
+        #         vars:
+        #             2t:
+        #                 source: 2t
+        #                 src_units: K
+        #                 grib: true
             

@@ -13,9 +13,6 @@ from ruamel.yaml import YAML
 import yaml
 import eccodes
 import xarray as xr
-import string
-import random
-import datetime
 import types
 from aqua.logger import log_configure
 
@@ -268,21 +265,21 @@ def read_eccodes_def(filename):
         A list containing the keys of the ecCodes definition file.
     """
 
-    # ECMWF lists
-    fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
-    fn = os.path.join(fn, 'grib2',  'localConcepts', 'ecmf', filename)
     keylist = []
+
+    # WMO lists
+    fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
+    fn = os.path.join(fn, 'grib2', filename)
     with open(fn, "r", encoding='utf-8') as f:
         for line in f:
             line = line.replace(" =", "").replace('{', '').replace('}', '').replace(';', '').replace('\t', '#    ')
             if not line.startswith("#"):
                 keylist.append(line.strip().replace("'", ""))
+    keylist = keylist[:-1]  # The last entry is no good
 
-    keylist = keylist[:-1]
-
-    # WMO lists
+    # ECMWF lists
     fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
-    fn = os.path.join(fn, 'grib2', filename)
+    fn = os.path.join(fn, 'grib2',  'localConcepts', 'ecmf', filename)
     with open(fn, "r", encoding='utf-8') as f:
         for line in f:
             line = line.replace(" =", "").replace('{', '').replace('}', '').replace(';', '').replace('\t', '#    ')
@@ -346,7 +343,7 @@ def generate_random_string(length):
 
 def log_history_iter(data, msg):
     """Elementary provenance logger in the history attribute also for iterators."""
-    if type(data) is types.GeneratorType:
+    if isinstance(data, types.GeneratorType):
         for ds in data:
             ds = log_history(ds, msg)
             yield ds
@@ -415,14 +412,18 @@ def file_is_complete(filename, logger=logging.getLogger()):
         logger.info('File %s is found...', filename)
         try:
             xfield = xr.open_dataset(filename)
-            varname = list(xfield.data_vars)[0]
-            if xfield[varname].isnull().all():
-            # if xfield[varname].isnull().all(dim=['lon','lat']).all():
-                logger.error('File %s is full of NaN! Recomputing...', filename)
+            if len(xfield.data_vars) == 0:
+                logger.error('File %s is empty! Recomputing...', filename)
                 check = False
             else:
-                check = True
-                logger.info('File %s seems ok!', filename)
+                varname = list(xfield.data_vars)[0]
+                if xfield[varname].isnull().all():
+                    # if xfield[varname].isnull().all(dim=['lon','lat']).all():
+                    logger.error('File %s is full of NaN! Recomputing...', filename)
+                    check = False
+                else:
+                    check = True
+                    logger.info('File %s seems ok!', filename)
         # we have no clue which kind of exception might show up
         except ValueError:
             logger.info('Something wrong with file %s! Recomputing...', filename)
@@ -432,4 +433,3 @@ def file_is_complete(filename, logger=logging.getLogger()):
         check = False
 
     return check
-

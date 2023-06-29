@@ -62,9 +62,13 @@ models:
                     tprate:
                         source: pr
                         grib: true
+                        src_units: kg m**-2 s**-1
+                        units: kg m**-2 s**-1
                     mlsprt:
                         source: prlr
                         grib: true
+                        src_units: kg m**-2 s**-1
+                        units: kg m**-2 s**-1
                     tcwv:
                         source: prw
                         grib: true

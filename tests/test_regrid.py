@@ -7,7 +7,9 @@ from aqua import Reader
 @pytest.fixture(
     params=[
         ("IFS", "test-tco79", "short", "2t", 0),
-        ("IFS", "test-tco79", "long", "ttr", 0),
+        ("IFS", "test-tco79", "long", "mtntrf", 0),
+        ("ICON", "test-r2b0", "short", "2t", 0),
+        ("ICON", "test-healpix", "short", "2t", 0),
         ("FESOM", "test-pi", "original_2d", "sst", 0.33925926),
     ]
 )
@@ -17,6 +19,7 @@ def reader_arguments(request):
 
 @pytest.mark.aqua
 class TestRegridder():
+    """class for regridding test"""
 
     def test_basic_interpolation(self, reader_arguments):
         """Test basic interpolation on a set of variable,
@@ -24,7 +27,7 @@ class TestRegridder():
         fraction of land (i.e. any missing points)"""
         model, exp, source, variable, ratio = reader_arguments
         reader = Reader(model=model, exp=exp, source=source, regrid="r200")
-        data = reader.retrieve(fix=False)
+        data = reader.retrieve(fix=True)
         rgd = reader.regrid(data[variable])
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
@@ -52,6 +55,16 @@ class TestRegridder():
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
         assert len(rgd.time) == 4728
+
+    def test_recompute_weights_healpix(self):
+        """Test Healpix and areas/weights are reconstructed from the file itself"""
+        reader = Reader(model='ICON', exp='test-healpix', source='short',
+                        regrid='r100', rebuild=True)
+        rgd = reader.retrieve(vars='t', regrid=True)
+        assert len(rgd.lon) == 360
+        assert len(rgd.lat) == 180
+        assert len(rgd.level_full) == 90
+        assert len(rgd.time) == 2
 
     def test_recompute_weights_fesom3D(self):
         """Test interpolation on FESOM, at different grid rebuilding weights,

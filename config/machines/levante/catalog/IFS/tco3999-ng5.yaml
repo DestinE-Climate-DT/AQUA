@@ -39,7 +39,7 @@ sources:
     driver: netcdf
     description: LRA data monthly at r100
     args:
-      urlpath: /work/bb1153/b382076/LRAv3/IFS/tco3999-ng5/r100/mon/*tco3999-ng5_r100_mon_????.nc
+      urlpath: /work/bb1153/b382076/LRAv3/IFS/tco3999-ng5/r100/monthly/*tco3999-ng5_r100_monthly_*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
