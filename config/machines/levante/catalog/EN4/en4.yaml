@@ -10,6 +10,6 @@ sources:
     args:
       urlpath: '/work/bb1153/b382119/EN4/*nc'
       chunks: 
-        time: 1
+        time: 876
       xarray_kwargs:
         decode_times: True
