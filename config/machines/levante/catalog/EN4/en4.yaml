@@ -13,3 +13,4 @@ sources:
         time: 876
       xarray_kwargs:
         decode_times: True
+      engine: netcdf4
