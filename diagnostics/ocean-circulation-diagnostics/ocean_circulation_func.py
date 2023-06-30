@@ -450,14 +450,17 @@ def convert_variables(data):
 
 
 
-def plot_temporal_split(data, area_name):
+def plot_strat_2halves(datamod, dataobs, area_name):
     """
-    Plot temporal split of mean state annual temperature, salinity, and density stratification.
+    Plot the mean state annual temperature, salinity, and density stratification splitting the temporal window in 2 halves 
+    to identified potential changes in stratification
 
     Parameters
     ----------
-    data : xarray.Dataset
-        Dataset containing the data for potential temperature (ocpt), practical salinity (so), and density (rho).
+    datamod : xarray.Dataset
+        Model dataset containing inputs of potential temperature (ocpt), practical salinity (so), and density (rho).
+    dataobs : xarray.Dataset
+        Obs dataset containing inputs of potential temperature (ocpt), practical salinity (so), and density (rho)
     area_name : str
         Name of the area for the plot title.
 
@@ -504,7 +507,58 @@ def plot_temporal_split(data, area_name):
 
 
 
+    # Here we compute the MLD from the densit    # interpolate density data to 10m
+
+def computemld(rho):
+    """To compute the mixed layer depth from density fields 
+    Parameters
+    ----------
+    rho : xarray.DataArray for sigma0, dims must be time, space, depth (must be in metres)
+    Returns
+    -------
+    mld: xarray.DataArray, dims of time, space
     
+      This function developed by Dhruv Balweda, Andrew Pauling, Sarah Ragen, Lettie Roach
+      
+    """
+    mld=rho
+    
+    # Here we identify the last level before 10m
+    slevs=rho.lev
+    ilev0=0
+
+    for ilev in range(len(slevs)):   
+     tlev = slevs[ilev]
+     if tlev<= 10: slev10=ilev
+
+    # And we take the 10m sigma0 as our surface reference
+     surf_ref = rho[slev10]
+
+    # We compute the density difference between surface and whole field
+     dens_diff = rho-surf_ref
+        
+    
+    # keep density differences exceeding threshold, discard other values
+    dens_diff = dens_diff.where(dens_diff > 0.03)   ### The threshold should be 0.03!!
+
+    # We determine the level at which the threshold is exceeded by the minimum margin
+    cutoff_lev=dens_diff.lev.where(dens_diff==dens_diff.min(["lev"])).max(["lev"])        
+    mld=cutoff_lev.rename("mld")
+
+    
+    # compute water depth
+    # note: pressure.lev, cthetao.lev, and abs_salinity.lev are identical
+#    test = sigma0.isel(time=0) + sigma0.lev
+#    bottom_depth = (
+#        pressure.lev.where(test == test.max(dim="lev"))
+#        .max(dim="lev")
+#        .rename("bottom_depth")
+#    )  # units 'meters'
+
+    # set MLD to water depth where MLD is NaN
+#    mld = mld.where(~np.isnan(mld), bottom_depth)
+
+    return mld
 
 
 
