@@ -443,7 +443,7 @@ def convert_variables(data):
     rho = compute_rho(absso, occt, 0)
 
     # Merge the density variable with so and ocpt into a new dataset
-    converted_data = converted_data.merge({"so": so, "ocpt": ocpt, "rho": rho})
+    converted_data = converted_data.merge({"so": data.so, "ocpt": data.ocpt, "rho": rho})
 
     return converted_data
 
