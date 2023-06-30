@@ -506,10 +506,7 @@ def plot_strat_2halves(datamod, dataobs, area_name):
     plt.show()
 
 
-
-    # Here we compute the MLD from the densit    # interpolate density data to 10m
-
-def computemld(rho):
+def compute_mld(rho):
     """To compute the mixed layer depth from density fields 
     Parameters
     ----------
