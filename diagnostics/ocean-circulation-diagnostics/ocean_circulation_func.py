@@ -442,7 +442,7 @@ def convert_variables(data):
     # Compute potential density in-situ at reference pressure 0 dbar
     rho = compute_rho(absso, occt, 0)
 
-    # Merge the density variable with so and thetao into a new dataset
+    # Merge the density variable with so and ocpt into a new dataset
     converted_data = converted_data.merge({"so": so, "ocpt": ocpt, "rho": rho})
 
     return converted_data
