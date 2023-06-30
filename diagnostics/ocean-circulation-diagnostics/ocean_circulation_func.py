@@ -49,7 +49,7 @@ def mean_value_plot(data, title):
             data_level = data.isel(lev=0)
 
         # Plot temperature
-        data_level.thetao.plot.line(ax=ax1)
+        data_level.ocpt.plot.line(ax=ax1)
 
         # Plot salinity
         data_level.so.plot.line(ax=ax2)
@@ -137,12 +137,12 @@ def std_anom_wrt_time_mean(data, latN: float, latS: float, lonW: float, lonE: fl
 
 
 
-def thetao_so_anom_plot(data, title):
+def ocpt_so_anom_plot(data, title):
     """
     Create a Hovmoller plot of temperature and salinity anomalies.
 
     Args:
-        data (DataArray): Input data containing temperature (thetao) and salinity (so).
+        data (DataArray): Input data containing ocean potential temperature (ocpt) and practical salinity (so).
         title (str): Title of the plot.
 
     Returns:
@@ -153,7 +153,7 @@ def thetao_so_anom_plot(data, title):
     fig.suptitle(title, fontsize=16)
 
     # Extract temperature data and plot the contour filled plot
-    tgt = data.thetao.transpose()
+    tgt = data.ocpt.transpose()
     tgt.plot.contourf(levels=12, ax=ax1)
 
     # Add contour lines with black color and set the line width
@@ -188,7 +188,7 @@ def time_series(data, title):
     Create time series plots of global temperature and salinity standardised anomalies at selected levels.
 
     Args:
-        data (DataArray): Input data containing temperature (thetao) and salinity (so).
+        data (DataArray): Input data containing ocean potential temperature (ocpt) and practical salinity (so).
         title (str): Title of the plots.
 
     Returns:
@@ -212,7 +212,7 @@ def time_series(data, title):
             data_level = data.isel(lev=0)
 
         # Plot the temperature time series
-        data_level.thetao.plot.line(ax=ax1)
+        data_level.ocpt.plot.line(ax=ax1)
 
         # Plot the salinity time series
         data_level.so.plot.line(ax=ax2)
@@ -258,7 +258,7 @@ def convert_so(so):
     return so / 0.99530670233846
 
 
-def convert_thetao(absso, thetao):
+def convert_ocpt(absso, ocpt):
     """
     convert potential temperature to conservative temperature
     
@@ -266,12 +266,12 @@ def convert_thetao(absso, thetao):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values.
-    thetao: dask.array.core.Array
+    ocpt: dask.array.core.Array
         Masked array containing the potential temperature values (degC).
 
     Returns
     -------
-    bigthetao: dask.array.core.Array
+    occt: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
 
     Note
@@ -280,7 +280,7 @@ def convert_thetao(absso, thetao):
 
     """
     x = np.sqrt(0.0248826675584615*absso)
-    y = thetao*0.025e0
+    y = ocpt*0.025e0
     enthalpy = 61.01362420681071e0 + y*(168776.46138048015e0 +
         y*(-2735.2785605119625e0 + y*(2574.2164453821433e0 +
         y*(-1536.6644434977543e0 + y*(545.7340497931629e0 +
@@ -301,7 +301,7 @@ def convert_thetao(absso, thetao):
     return enthalpy/3991.86795711963
 
 
-def compute_rho(absso, bigthetao, ref_pressure):
+def compute_rho(absso, occt, ref_pressure):
     """
     Computes the potential density in-situ.
 
@@ -309,7 +309,7 @@ def compute_rho(absso, bigthetao, ref_pressure):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values (g/kg).
-    bigthetao: dask.array.core.Array
+    occt: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
     ref_pressure: float
         Reference pressure (dbar).
@@ -330,7 +330,7 @@ def compute_rho(absso, bigthetao, ref_pressure):
     Zu = 1e4
     deltaS = 32.
     ss = np.sqrt((absso+deltaS)/SAu)
-    tt = bigthetao / CTu
+    tt = occt / CTu
     pp = ref_pressure / Zu
 
     # vertical reference profile of density
@@ -427,7 +427,7 @@ def convert_variables(data):
     Returns
     -------
     converted_data : xarray.Dataset
-        Dataset containing the converted variables: absolute salinity (so), conservative temperature (thetao),
+        Dataset containing the converted variables: absolute salinity (absso), conservative temperature (ocpt),
         and potential density (rho) at reference pressure 0 dbar.
 
     """
@@ -437,13 +437,13 @@ def convert_variables(data):
     absso = convert_so(data.so)
 
     # Convert potential temperature to conservative temperature
-    thetao = convert_thetao(absso, data.thetao)
+    occt = convert_ocpt(absso, data.ocpt)
 
     # Compute potential density in-situ at reference pressure 0 dbar
-    rho = compute_rho(absso, thetao, 0)
+    rho = compute_rho(absso, occt, 0)
 
-    # Merge the converted variables into a new dataset
-    converted_data = converted_data.merge({"so": absso, "thetao": thetao, "rho": rho})
+    # Merge the density variable with so and thetao into a new dataset
+    converted_data = converted_data.merge({"so": so, "ocpt": ocpt, "rho": rho})
 
     return converted_data
 
@@ -457,7 +457,7 @@ def plot_temporal_split(data, area_name):
     Parameters
     ----------
     data : xarray.Dataset
-        Dataset containing the data for temperature (thetao), salinity (so), and density (rho).
+        Dataset containing the data for potential temperature (ocpt), practical salinity (so), and density (rho).
     area_name : str
         Name of the area for the plot title.
 
@@ -479,8 +479,8 @@ def plot_temporal_split(data, area_name):
     fig.suptitle(f"Mean state annual T, S, rho0 stratification in {area_name}", fontsize=16)
 
     ax1.set_ylim((4500, 0))
-    ax1.plot(data_1.thetao.mean("time"), data.lev, 'g-', linewidth=2.0)
-    ax1.plot(data_2.thetao.mean("time"), data.lev, 'b-', linewidth=2.0)
+    ax1.plot(data_1.ocpt.mean("time"), data.lev, 'g-', linewidth=2.0)
+    ax1.plot(data_2.ocpt.mean("time"), data.lev, 'b-', linewidth=2.0)
     ax1.set_title("Temperature Profile", fontsize=14)
     ax1.set_ylabel("Depth (m)", fontsize=12)
     ax1.set_xlabel("Temperature (°C)", fontsize=12)
