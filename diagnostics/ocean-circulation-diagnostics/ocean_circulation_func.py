@@ -584,7 +584,7 @@ def compute_mld_cont(rho):
 
     #  We take the last level before 10m  as our sigma0 surface reference
 
-    surf_ref = rho[slev10,]
+    surf_ref = rho[:,slev10]
     print(surf_ref.values)
 
     # We compute the density difference between surface and whole field
