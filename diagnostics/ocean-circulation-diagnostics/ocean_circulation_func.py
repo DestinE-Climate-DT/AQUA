@@ -506,8 +506,8 @@ def plot_strat_2halves(datamod, dataobs, area_name):
     plt.show()
 
 
-def compute_mld(rho):
-    """To compute the mixed layer depth from density fields in discrete levels
+def compute_mld_monthly(rho):
+    """To compute the mixed layer depth from monthly density fields in discrete levels
     Parameters
     ----------
     rho : xarray.DataArray for sigma0, dims must be time, space, depth (must be in metres)
@@ -530,7 +530,7 @@ def compute_mld(rho):
 
     #  We take the last level before 10m  as our sigma0 surface reference
 
-    surf_ref = rho[slev10,]
+    surf_ref = rho[:,slev10]
 
     # We compute the density difference between surface and whole field
     dens_diff = rho-surf_ref
@@ -559,8 +559,8 @@ def compute_mld(rho):
     return mld
 
 
-def compute_mld_cont(rho):
-    """To compute the mixed layer depth from density fields in continuous levels
+def compute_mld_cont_monthly(rho):
+    """To compute the mixed layer depth from monthly density fields in continuous levels
 
     Parameters
     ----------
@@ -582,10 +582,10 @@ def compute_mld_cont(rho):
      tlev = slevs[ilev]
      if tlev<= 10: slev10=ilev
 
-    #  We take the last level before 10m  as our sigma0 surface reference
+    #  We take the density at 10m as the mean of the upper and lower level around 10 m
 
-    surf_ref = rho[:,slev10]
-    print(surf_ref.values)
+    surf_ref = (rho[:,slev10]+rho[:,slev10+1])/2
+    #print(surf_ref.values)
 
     # We compute the density difference between surface and whole field
     dens_diff = rho-surf_ref
@@ -593,9 +593,14 @@ def compute_mld_cont(rho):
     
     # keep density differences exceeding threshold, discard other values
     dens_diff = dens_diff.where(dens_diff > 0.03)   ### The threshold to exit the MLD is 0.03 kg/m3
-
+    
     # We determine the level at which the threshold is exceeded by the minimum margin
-    cutoff_lev=dens_diff.lev.where(dens_diff==dens_diff.min(["lev"])).max(["lev"])        
+ #   print(dens_diff.values)
+ #   cutoff1=dens_diff.lev.where(dens_diff==dens_diff.min(["lev"]))
+ #   print(cutoff1.values)
+  
+    cutoff_lev=dens_diff.lev.where(dens_diff==dens_diff.min(["lev"])).max(["lev"])
+ #   print(cutoff_lev.values) 
     mld=cutoff_lev.rename("mld")
 
     
