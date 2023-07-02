@@ -27,27 +27,35 @@ models:
                         grib: true
                         source: SSTK
                     mslhfl:
+                        src_units: J m**-2 day**-1
                         source: SLHF
                         grib: true
                     msshfl:
+                        src_units: J m**-2 day**-1
                         source: SSHF
                         grib: true
                     msnsrf:
+                        src_units: J m**-2 day**-1
                         source: SSR
                         grib: true
                     msdsrf:
+                        src_units: J m**-2 day**-1
                         source: SSRD
                         grib: true
                     msntrf:
+                        src_units: J m**-2 day**-1
                         source: STR
                         grib: true
                     msdtrf:
+                        src_units: J m**-2 day**-1
                         source: STRD
                         grib: true
                     mtnsrf:
+                        src_units: J m**-2 day**-1
                         source: TSR
                         grib: true
                     mtntrf:
+                        src_units: J m**-2 day**-1
                         source: TTR
                         grib: true 
                     u:

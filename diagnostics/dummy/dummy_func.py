@@ -9,12 +9,10 @@ Functions here contained are then used in the dummy class.
 You should ideally move here blocks of code that you used in the notebooks.
 Formalize them as functions.
 
-
 Most of the import should stay here or in the class definition file.
 Your notebook should only import the class and call the run method.
 Eventually plot functions can be imported in the notebook.
 """
-import xarray as xr
 
 
 def dummy_func(data=None):
