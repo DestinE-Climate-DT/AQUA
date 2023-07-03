@@ -1,14 +1,4 @@
 #!/bin/bash
-#SBATCH -p compute
-#SBATCH -A bb1153
-#SBATCH -n 1
-#SBATCH --cpus-per-task=256
-#SBATCH --mem=50G
-#SBATCH -t 04:30:50
-#SBATCH --mail-type=FAIL       # Notify user by email in case of job failure
-#SBATCH --output=/home/b/b382216/AQUA/diagnostics/tempest/slurm_jobs/tempest_TCs.o%j    # File name for standard output
-#SBATCH --error=/home/b/b382216/AQUA/diagnostics/tempest/slurm_jobs/tempest_TCs.e%j
-
 
 DIR=/home/b/b382216/AQUA/diagnostics/tempest
 
