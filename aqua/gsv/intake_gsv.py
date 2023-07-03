@@ -11,7 +11,6 @@ try:
     from gsv.retriever import GSVRetriever
     gsv_available = True
 except RuntimeError:
-    print("FDB5 binary library not present on system, disabling FDB support.")
     gsv_available = False
 
 class GSVSource(base.DataSource):
@@ -35,6 +34,7 @@ class GSVSource(base.DataSource):
             self.gsv = GSVRetriever()
         else:
             self.gsv = None
+            print("FDB5 binary library not present on system, FDB support disabled.")
         self._dataset = None
         super(GSVSource, self).__init__(metadata=metadata)
 
