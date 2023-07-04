@@ -1,5 +1,6 @@
 *.pyc
 diagnostics/ecmean/ECmean4
+diagnostics/tropical_cyclones/slurm_jobs/*
 .ipynb_checkpoints
 *.egg-info
 cli/*.err
