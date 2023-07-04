@@ -1,0 +1,11 @@
+telecname: 'NAO' # NAO or ENSO
+model: 'ERA5'
+exp: 'era5'
+source: 'monthly'
+#regrid: 'r100'
+# freq: 'monthly' # uncomment if data are not monthly
+# zoom: None # needed only if ICON
+months_window: 3
+# outputfig: 'path/to/fig/folder'
+# outputdir: 'path/to/files/folder'
+# filename: 'custom_filename'

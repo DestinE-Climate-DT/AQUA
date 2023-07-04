@@ -8,8 +8,8 @@ sources:
     description: EN4 data v4.2.2_g10 version from 1950 to 2022
     driver: netcdf
     args:
-      urlpath: '/work/bb1153/b382119/EN4/*nc'
+      urlpath: '/work/bb1153/b382119/EN4/*-1950_2022.nc'
       chunks: 
-        time: 1
+        time: 12
       xarray_kwargs:
         decode_times: True
