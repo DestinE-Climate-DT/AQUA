@@ -1,0 +1,38 @@
+# experiment
+dataset:
+  model: "FESOM"
+  exp: "tco2559-ng5"
+
+# folders for regridded data, temporary and stored high res data
+paths:
+  regdir: '/scratch/b/b382216/regrid_new'
+  tmpdir: '/scratch/b/b382216/tmpdir_new'
+  fulldir: '/scratch/b/b382216/fullres_new'
+  plotdir: "/home/b/b382216/AQUA_test_logger/AQUA/diagnostics/tempest/plot"
+
+# grid on which operate
+grids:
+  lowgrid: 'r100'
+  highgrid: 'r025'
+
+# variables to stored 
+varlist: ['msl', '10u', '10v', 'tp']
+
+# temporal definition (YYYY-MM-DD)
+time: 
+  startdate: '2020-08-01'
+  enddate: '2020-09-01'
+  frequency: '6h'
+
+stream:
+  streamstep: 5 #n of days fore streaming
+
+# detect nodes options
+detect:
+  boxdim: 10    # dimension of lat/lon box to save data in the vicinity of the TCs centres (in degrees)
+
+# stich nodes options
+stitch:
+  n_days_freq: 5 # run stitch nodes (tracks computation) and save tracks every n days
+  n_days_ext: 2  # n of days to extend time boundaries not to miss tracks which may start/end before/after the chosen n of days
+

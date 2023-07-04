@@ -1,0 +1,42 @@
+# Spatial delimitations of sub-regions of the Arctic and Southern Oceans
+
+Arctic:
+    latS: 0.0
+    latN: 90.0
+    lonW: 0.0
+    lonE: 360.0
+Hudson Bay:
+    latS: 50.0
+    latN: 63.0
+    lonW: 265.0
+    lonE: 285.0
+Southern Ocean:
+    latS: -90.0
+    latN: 0.0
+    lonW: 0.0
+    lonE: 360.0
+Ross Sea:
+    latS: -90.0
+    latN: 0.0
+    lonW: 160.0
+    lonE: 230.0
+Amundsen-Bellingshausen Seas:
+    latS: -90.0
+    latN: 0.0
+    lonW: 230.0
+    lonE: 300.0
+Weddell Sea:
+    latS: -90.0
+    latN: 0.0
+    lonW: 300.0
+    lonE: 20.0
+Indian Ocean:
+    latS: -90.0
+    latN: 0.0
+    lonW: 20.0
+    lonE: 90.0
+Pacific Ocean:
+    latS: -90.0
+    latN: 0.0
+    lonW: 90.0
+    lonE: 160.0
