@@ -576,15 +576,16 @@ def compute_mld_cont_monthly(rho):
     
     # Here we identify the last level before 10m
     slevs=rho.lev
-    ilev0=0
-    slevs
-    for ilev in range(len(slevs)):   
-     tlev = slevs[ilev]
-     if tlev<= 10: slev10=ilev
+   # ilev0=0
+   # slevs
+   # for ilev in range(len(slevs)):   
+   #  tlev = slevs[ilev]
+   #  if tlev<= 10: slev10=ilev
 
     #  We take the density at 10m as the mean of the upper and lower level around 10 m
 
-    surf_ref = (rho[:,slev10]+rho[:,slev10+1])/2
+    #surf_ref = (rho[:,slev10]+rho[:,slev10+1])/2
+    surf_ref = rho.interp(lev=10) # We interpolate to the level of 10 m
     #print(surf_ref.values)
 
     # We compute the density difference between surface and whole field
