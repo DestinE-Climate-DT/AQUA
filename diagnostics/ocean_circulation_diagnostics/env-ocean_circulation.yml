@@ -1,0 +1,24 @@
+# At the moment diagnostics have to create their own environment
+# with the required dependencies.
+# To install the diagnostic in a new conda environment run:
+# conda env create -f env-dummy.yml
+# To install the diagnostic in an existing conda environment run:
+# conda env update -f env-dummy.yml
+# To activate the environment run:
+# conda activate dummy-diagnostic
+
+name: OceanCirculation
+channels:
+  - conda-forge
+# please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
+dependencies:
+  - python>=3.9,<3.11
+# these below are required for running the dummy diagnostic
+  # - dummy-package
+# these are pip-based since it provides more recent versions or packages unavailable on conda-forge
+  - pip
+  - pip:
+    # pip install -e of AQUA itself
+    - -e ./../../[all] # this is the path to the AQUA root folder
+    # these below are only required for the dummy diagnostic
+    # - dummy-pip-package
