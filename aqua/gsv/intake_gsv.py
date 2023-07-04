@@ -1,4 +1,3 @@
-import os
 import sys
 import xarray as xr
 from intake.source import base
@@ -12,6 +11,7 @@ try:
     gsv_available = True
 except RuntimeError:
     gsv_available = False
+
 
 class GSVSource(base.DataSource):
     container = 'xarray'
@@ -33,8 +33,7 @@ class GSVSource(base.DataSource):
         if gsv_available:
             self.gsv = GSVRetriever()
         else:
-            self.gsv = None
-            print("FDB5 binary library not present on system, FDB support disabled.")
+            raise ImportError("FDB5 binary library not present on system or outdated.")
         self._dataset = None
         super(GSVSource, self).__init__(metadata=metadata)
 
@@ -44,7 +43,7 @@ class GSVSource(base.DataSource):
         return base.Schema(
             datashape=None,
             dtype=xr.Dataset,
-            #shape=self._dataset.shape,
+            # shape=self._dataset.shape,
             shape=None,
             npartitions=self._npartitions,
             extra_metadata={},
@@ -62,10 +61,10 @@ class GSVSource(base.DataSource):
         ds = [self._get_partition(i) for i in range(self._npartitions)]
         ds = xr.concat(ds, dim='time')
         return ds
-    
+
     def to_dask(self):
         return self.read_chunked()
-    
+
     # def _load(self):
     #     self._dataset = self._get_partition(0)
 
@@ -79,7 +78,7 @@ def make_date_list(start, end, step="M", numsteps=1):
     elif step == "H":
         delta = relativedelta(hours=numsteps)
     else:
-        sys.exit("step not recognized")        
+        sys.exit("step not recognized")
 
     start_date = datetime.strptime(start, '%Y%m%d')
     end_date = datetime.strptime(end, '%Y%m%d')
