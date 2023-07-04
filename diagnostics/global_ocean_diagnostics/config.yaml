@@ -1,0 +1,8 @@
+# Config file for Global Ocean diagnostics
+# This file is in YAML format
+
+# It may contains folder defaults
+outputfig: './figs'
+outputdir: './output'
+filename: 'dummy'
+custom_diagvar: 'I was read from config.yaml'
