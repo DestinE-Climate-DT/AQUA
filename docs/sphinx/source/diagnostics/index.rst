@@ -15,6 +15,7 @@ AQUA provides a collection of built-in diagnostics to analyze climate model outp
    tropical_cyclones
    tropical-rainfall-diagnostic
 
+   global_mean_timeseries
 
 
 Creating Custom Diagnostics
