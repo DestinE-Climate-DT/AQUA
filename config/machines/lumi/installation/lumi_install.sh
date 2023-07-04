@@ -91,11 +91,17 @@ if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/
   echo 'module load ecCodes/2.30.0-cpeCray-22.08' >> ~/load_aqua.sh
   echo 'module load python-climatedt/3.11.3-cpeCray-22.08.lua' >> ~/load_aqua.sh
   
-  # Config FDB5
+  # Config FDB: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
   echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >> ~/load_aqua.sh
-  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights' >> ~/load_aqua.sh
   echo "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 
+  # Config GSV: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
+  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights' >> ~/load_aqua.sh
+  echo 'export GSV_TEST_FILES=/scratch/project_465000454/igonzalez/gsv_test_files' >> ~/load_aqua.sh
+  echo 'export GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions' >> ~/load_aqua.sh
+  echo "export for GSV has been added to .bashrc. Please run 'source ~/load_aqua.sh' to load the new configuration."
+
+  # Install path
   echo "# AQUA installation path" >> ~/load_aqua.sh
   echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >> ~/load_aqua.sh
   echo "export PATH has been added to .bashrc. Please run 'source ~/load_aqua.sh' to load the new configuration."
