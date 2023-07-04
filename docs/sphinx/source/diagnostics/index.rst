@@ -13,6 +13,8 @@ AQUA provides a collection of built-in diagnostics to analyze climate model outp
    ssh_variability
    teleconnections
    tropical_cyclones
+   tropical-rainfall-diagnostic
+
 
 
 Creating Custom Diagnostics

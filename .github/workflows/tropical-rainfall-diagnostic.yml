@@ -1,0 +1,57 @@
+name: tropical rainfall diagnostic test
+
+on:
+  pull_request:
+    paths:
+      - 'diagnostics/tropical-rainfall-diagnostic/**'
+      - 'tests/tropical-rainfall-diagnostic/**'
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" # Run every Monday night at 3AM UTC
+
+permissions:
+  contents: read
+
+jobs:
+  tropical-rainfall-diagnostic_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Micromamba with diagnostic environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml  #diagnostics/tropical-rainfall-diagnostic/env-tropical-rainfall.yml
+          cache-downloads: true
+          cache-environment: true
+          condarc: |
+            channels:
+              - numba
+              - conda-forge
+          create-args: >-
+              python=${{ matrix.python-version }}
+
+# Run framework tests in order to check that the diagnostic environment is
+# compatible with the framework
+      - name: Download and setup framework tests
+        run: |
+          ./download_data_for_tests.sh
+      #- name: Run framework tests
+      #  run: |
+      #    python -m pytest ./tests/test_basic.py 
+
+# Run diagnostic tests
+      - name: Download and setup dummy-diagnostic tests
+        run: |
+          ./tests/tropical-rainfall-diagnostic/download_data_for_tests.sh
+
+      - name: Run tropical-rainfall-diagnostic tests
+        run: |
+          pytest -v -m tropical_rainfall
