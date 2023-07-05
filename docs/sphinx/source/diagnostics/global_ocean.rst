@@ -53,7 +53,7 @@ Examples from the GlobaloOceanDiagnostic class contained in the global_ocean_cla
 
 
 Functions Used
-==============
+------------------------
 
 global_ocean_func.py
 --------------------
