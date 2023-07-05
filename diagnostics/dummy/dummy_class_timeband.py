@@ -4,15 +4,15 @@
 
 """
 
+
 class DummyDiagnostic:
     """This class is a minimal version of the Dummy Diagnostic.
     """
     def __init__(self,
-            s_year      = None,
-            f_year      = None,
-            s_month     = None,
-            f_month     = None):
-
+                 s_year=None,
+                 f_year=None,
+                 s_month=None,
+                 f_month=None):
 
         """ The constructor of the class.
 
@@ -22,11 +22,10 @@ class DummyDiagnostic:
             s_month (int, optional):                The start month of the time interval. Defaults to None.
             f_month (int, optional):                The end month of the time interval. Defaults to None."""
 
-
-        self.s_year     = s_year
-        self.f_year     = f_year   
-        self.s_month    = s_month
-        self.f_month    = f_month    
+        self.s_year = s_year
+        self.f_year = f_year
+        self.s_month = s_month
+        self.f_month = f_month
 
     def class_attributes_update(self, s_year=None, f_year=None, s_month=None, f_month=None):
         """ Function to update the class attributes.
@@ -60,7 +59,6 @@ class DummyDiagnostic:
         elif f_month is not None and not isinstance(f_month, int):
             raise Exception("f_month must to be integer")
 
-
     def time_band(self, data, s_year=None, f_year=None, s_month=None, f_month=None):
         """ Function to select the Dataset for specified time range
 
@@ -77,15 +75,15 @@ class DummyDiagnostic:
 
         self.class_attributes_update(s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
 
-        if self.s_year != None and self.f_year == None:
-            data= data.where(data['time.year'] == self.s_year, drop=True)
-        elif self.s_year != None and self.f_year != None:
+        if self.s_year is not None and self.f_year is None:
+            data = data.where(data['time.year'] == self.s_year, drop=True)
+        elif self.s_year is not None and self.f_year is None:
             data = data.where(data['time.year'] >= self.s_year, drop=True)
             data = data.where(data['time.year'] <= self.f_year, drop=True)
 
-        if self.s_month != None and self.f_month != None:
+        if self.s_month is not None and self.f_month is None:
             data = data.where(data['time.month'] >= self.s_month, drop=True)
             data = data.where(data['time.month'] <= self.f_month, drop=True)
-        elif self.s_year == None and self.f_year == None:
+        elif self.s_year is None and self.f_year is None:
             print('The function returns the original dataset because all arguments are None')
         return data

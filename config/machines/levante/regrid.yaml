@@ -461,8 +461,7 @@ source_grids:
     en4:
       default:
         path:
-          so: /work/bb1153/b382119/EN4/so/
-          thetao: /work/bb1153/b382119/EN4/thetao
+          lev: /work/bb1153/b382076/AQUA-archive/grids/EN4/en4-grid.nc
         space_coord: ["lon", "lat"]
         vert_coord: ["lev"]
   ERA5:
@@ -483,7 +482,7 @@ source_grids:
 
   OSI-SAF:
     osi-450:
-      nh:
+      nh-monthly:
         space_coord:
         - xc
         - yc
@@ -491,7 +490,23 @@ source_grids:
         cellarea_var: areacello
         mask: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
         mask_var: sftof
-      sh:
+      nh-daily:
+        space_coord:
+        - xc
+        - yc
+        cellareas: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
+        cellarea_var: areacello
+        mask: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
+        mask_var: sftof
+      sh-daily:
+        space_coord:
+        - xc
+        - yc
+        cellareas: /work/bb1153/b382075/nextgems/grids/grid_sh.nc
+        cellarea_var: areacello
+        mask: /work/bb1153/b382075/nextgems/grids/grid_nh.nc
+        mask_var: sftof
+      sh-monthly:
         space_coord:
         - xc
         - yc

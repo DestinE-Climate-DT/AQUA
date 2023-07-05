@@ -10,7 +10,7 @@ import cf2cdm
 from metpy.units import units
 
 from aqua.util import eval_formula, get_eccodes_attr
-from aqua.util import log_history
+from aqua.logger import log_history
 
 
 class FixerMixin():

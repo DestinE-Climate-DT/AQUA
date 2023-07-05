@@ -3,11 +3,13 @@ import numpy as np
 from aqua import Reader, catalogue
 
 # pytest approximation, to bear with different machines
-approx_rel=1e-4
+approx_rel = 1e-4
+
 
 @pytest.fixture
 def reader_instance():
     return Reader(model="FESOM", exp="test-pi", source="original_2d", regrid="r200")
+
 
 # aqua class for tests
 @pytest.mark.aqua
@@ -31,7 +33,7 @@ class TestAqua:
         """
         Test the initialization of the Reader class
         """
-        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", configdir = "config")
+        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", configdir="config")
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
@@ -78,7 +80,7 @@ class TestAqua:
         """
         Test if the Reader class works with different combinations of arguments
         """
-        model, exp, source, regrid, variable = reader_arguments
+        model, exp, source, regrid, _ = reader_arguments
         reader = Reader(model=model, exp=exp, source=source, regrid=regrid)
         data = reader.retrieve(fix=False)
         assert len(data) > 0

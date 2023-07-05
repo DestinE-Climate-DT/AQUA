@@ -1,6 +1,9 @@
 """Module to implement logging configurations"""
 
 import logging
+import types
+import datetime
+import xarray as xr
 
 
 def log_configure(log_level=None, log_name=None):
@@ -44,7 +47,7 @@ def log_configure(log_level=None, log_name=None):
 
     # create console handler which logs
     terminal = logging.StreamHandler()
-    #ch.setLevel(log_level)
+    # ch.setLevel(log_level)
     terminal.setFormatter(formatter)
     logger.addHandler(terminal)
 
@@ -85,4 +88,31 @@ def _check_loglevel(log_level=None):
         logging.warning("Invalid logging level '%s' specified. Setting it back to default %s", log_level, log_level_default)
         log_level = log_level_default
 
-    return(log_level)
+    return log_level
+
+
+def log_history_iter(data, msg):
+    """Elementary provenance logger in the history attribute also for iterators."""
+    if isinstance(data, types.GeneratorType):
+        data = _log_history_iter(data, msg)
+        return data
+    else:
+        log_history(data, msg)
+        return data
+
+
+def _log_history_iter(data, msg):
+    """Iterator loop convenience function for log_history_iter"""
+    for ds in data:
+        log_history(ds, msg)
+        yield ds
+
+
+def log_history(data, msg):
+    """Elementary provenance logger in the history attribute"""
+
+    if isinstance(data, (xr.DataArray, xr.Dataset)):
+        now = datetime.datetime.now()
+        date_now = now.strftime("%Y-%m-%d %H:%M:%S")
+        hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
+        data.attrs.update({"history": hist})

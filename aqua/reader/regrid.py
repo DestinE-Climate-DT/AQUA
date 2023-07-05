@@ -255,7 +255,7 @@ class RegridMixin():
 
         except subprocess.CalledProcessError as err:
             # Print the CDO error message
-            #self.logger.critical(err.output.decode('utf-8'))
+            # self.logger.critical(err.output.decode('utf-8'))
             self.logger.critical(err.stderr.decode('utf-8'))
             raise
 

@@ -18,4 +18,13 @@ sources:
       - ./AQUA_tests/models/IFS/long/regridded_r18x9.nc
     description: coarse IFS data 1y
     driver: netcdf
-  
+  intake-esm-test:
+    driver: intake_esm.esm_datastore
+    description: Test Intake-ESM Catalog
+    args:
+      obj: ./config/machines/ci/catalog/IFS/test-esm.json
+    metadata:
+      query:
+        experiment: historical
+        frequency: hourly
+

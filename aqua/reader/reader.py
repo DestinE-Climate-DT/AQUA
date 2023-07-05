@@ -16,8 +16,7 @@ import smmregrid as rg
 
 from aqua.util import load_yaml, load_multi_yaml
 from aqua.util import get_reader_filenames, get_config_dir, get_machine
-from aqua.util import log_history, log_history_iter
-from aqua.logger import log_configure
+from aqua.logger import log_configure, log_history, log_history_iter
 import aqua.gsv
 
 from .streaming import Streaming
@@ -308,7 +307,7 @@ class Reader(FixerMixin, RegridMixin):
         else:
             data = self.reader_intake(esmcat, var, loadvar)  # Returns a generator object
 
-        log_history_iter(data, "retrieved by AQUA retriever")
+        data = log_history_iter(data, "retrieved by AQUA retriever")
 
         # sequence which should be more efficient: decumulate - averaging - regridding - fixing
 
@@ -486,7 +485,7 @@ class Reader(FixerMixin, RegridMixin):
                     if self.grid_area[coord].sortby(coord).equals(data.coords[coord].sortby(coord)):
                         self.logger.warning('%s is sorted in different way between area files and your dataset. Flipping it!', coord)
                         self.grid_area = self.grid_area.reindex({coord: list(reversed(self.grid_area[coord]))})
-                        #raise ValueError(f'{coord} is sorted in different way between area files and your dataset.') from err
+                        # raise ValueError(f'{coord} is sorted in different way between area files and your dataset.') from err
                     # something else
                     else:
                         raise ValueError(f'{coord} has a mismatch in coordinate values!') from err

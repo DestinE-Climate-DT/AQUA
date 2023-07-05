@@ -1,17 +1,13 @@
 """Dummy diagnostic for testing purposes"""
 import os
-import sys
-import xarray as xr
 
 from aqua.logger import log_configure
 from aqua.util import load_yaml
 from aqua.reader import Reader
 
-# This is to access the dummy_func.py file
 # Please import only functions that are used in the class
 # and not the entire module
-sys.path.insert(0, '../')
-from dummy_func import dummy_func
+from .dummy_func import dummy_func
 
 
 class DummyDiagnosticWrapper():
@@ -149,12 +145,12 @@ class DummyDiagnosticWrapper():
         self.regrid = regrid  # adapt or remove if you do not need it
         if self.regrid is None:
             self.logger.warning('No regridding will be performed')
-        self.logger.info('Regridding resolution: {}'.format(self.regrid))
+        self.logger.info('Regridding resolution: %s', self.regrid)
 
-        self.freq = freq # adapt or remove if you do not need it
+        self.freq = freq  # adapt or remove if you do not need it
         if self.freq:
             self.logger.warning('Time mean will be computed')
-            self.logger.info('Time mean frequency: {}'.format(self.freq))
+            self.logger.info('Time mean frequency: %s', self.freq)
         # Consider that the Reader has more arguments that can be passed to it.
         # Please adapt the code to your needs.
         # You can find more information about the Reader class in the documentation.
@@ -165,7 +161,7 @@ class DummyDiagnosticWrapper():
         self.var = var  # adapt or remove if you do not need it
         if self.var is None:
             raise ValueError('var must be specified')  # you may have (and probably should) a default different from None
-        if type(self.var) is not str:  # it is a string in this example, but it may be a list as well
+        if not isinstance(self.var, str):  # it is a string in this example, but it may be a list as well
             raise ValueError('var must be a string')
         # If you want to retrieve all data consider removing the var argument from the class __init__.
 
@@ -184,6 +180,12 @@ class DummyDiagnosticWrapper():
         # Initialize the Reader class
         self._reader()  # self has not to be passed to the method as it is contained in the class
 
+        self.fieldmean = None
+        self.product = None
+        self.outputdir = None
+        self.outputfig = None
+        self.data = None
+
         # Plese if some more initialization is needed for the diagnostic, do it in this functions.
 
     def _load_config(self, diagconfigdir=None):
@@ -198,7 +200,7 @@ class DummyDiagnosticWrapper():
         if self.diagconfigdir is None:
             self.logger.warning('No config directory specified')
         else:
-            self.logger.info('Config directory: {}'.format(self.diagconfigdir))
+            self.logger.info('Config directory: %s', self.diagconfigdir)
 
         # Here you can load the config files if you have any.
         try:
@@ -223,7 +225,7 @@ class DummyDiagnosticWrapper():
         except (KeyError, TypeError):
             self.logger.warning('No diagnostic variables specified, using the default ones')
             self.custom_diagvar = custom_diagvar
-        self.logger.debug('Diagnostic variables: {}'.format(self.custom_diagvar))
+        self.logger.debug('Diagnostic variables: %s', self.custom_diagvar)
 
     def _load_figs_options(self, savefig=False, outputfig=None):
         """Load the figure options.
@@ -266,7 +268,7 @@ class DummyDiagnosticWrapper():
                 except (KeyError, TypeError):
                     self.logger.warning('No filename specified, using the default one')
                     filename = 'dummy.nc'
-            self.logger.debug('Output filename: {}'.format(filename))
+            self.logger.debug('Output filename: %s', filename)
             self.filename = filename
 
     def _load_folder_info(self, folder=None, folder_type=None):
@@ -277,13 +279,13 @@ class DummyDiagnosticWrapper():
                           Default is None.
             folder_type (str): type of the folder.
                                Default is None.
-                            
-        Raises:
+
+      Raises:
             KeyError: if the folder_type is not recognised.
             TypeError: if the folder_type is not a string.
         """
         if not folder:
-            self.logger.info('No {} folder specified, trying to use the config file setting'.format(folder_type))
+            self.logger.info('No %s folder specified, trying to use the config file setting', folder_type)
             try:
                 if folder_type == 'figure':
                     folder = self.config['outputfig']
@@ -291,19 +293,19 @@ class DummyDiagnosticWrapper():
                     folder = self.config['outputdir']
                 # Check if the path exists
                 if not os.path.exists(folder):
-                    self.logger.warning('{} folder does not exist, creating it'.format(folder_type))
+                    self.logger.warning('%s folder does not exist, creating it', folder_type)
                     os.makedirs(folder)
             except (KeyError, TypeError):
-                self.logger.warning('No {} folder specified, using the current directory'.format(folder_type))
+                self.logger.warning('No %s folder specified, using the current directory', folder_type)
                 folder = os.getcwd()
 
         # Store the folder in the class
         if folder_type == 'figure':
             self.outputfig = folder
-            self.logger.debug('Figure output folder: {}'.format(self.outputfig))
+            self.logger.debug('Figure output folder: %s', self.outputfig)
         elif folder_type == 'data':
             self.outputdir = folder
-            self.logger.debug('Data output folder: {}'.format(self.outputdir))
+            self.logger.debug('Data output folder: %s', self.outputdir)
 
     def _reader(self):
         """The reader method.
@@ -334,11 +336,11 @@ class DummyDiagnosticWrapper():
                 self.data = self.reader.regrid(self.data)
         except ValueError:
             try:
-                self.logger.warning('Variable {} not found'.format(self.var))
+                self.logger.warning('Variable %s not found', self.var)
                 self.logger.warning('Trying to retrieve without fixing')
                 self.data = self.reader.retrieve(var=self.var, fix=False)
             except ValueError:
-                raise ValueError('Variable {} not found'.format(self.var))
+                raise ValueError(f'Variable {self.var} not found')
         self.logger.info('Data retrieved')
 
     def fldmean(self):
@@ -349,22 +351,17 @@ class DummyDiagnosticWrapper():
         Raises:
             TypeError: if the variable is not a string
         """
-        if type(self.var) is str:
-            self.fldmean = self.reader.fldmean(self.data)
-            self.logger.info('Field mean computed')
-            self.logger.info('Field mean: {}'.format(self.fldmean))
-        else:
-            raise TypeError('Variable is not a string, cannot compute field mean')
+        self.logger.info('Field mean computed')
+        self.fieldmean = self.reader.fldmean(self.data)
 
     def multiplication(self):
         """The multiplication method.
-        This method computes the multiplication of the retrieved data.
+        This method computes the some product by a constant of the retrieved data.
         It is an example of method that uses of external functions of the module
         """
 
-        self.multiplication = dummy_func(self.data)  # dummy_func is a function defined in the module
         self.logger.info('Multiplication computed')
-        self.logger.debug('Multiplication: {}'.format(self.multiplication))
+        self.product = dummy_func(self.data)  # dummy_func is a function defined in the module
 
     def _private_method(self):
         """The private method.
