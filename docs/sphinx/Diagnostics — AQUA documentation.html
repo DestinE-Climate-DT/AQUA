@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<!-- saved from url=(0068)http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html -->
+<html class="writer-html5" lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnostics — AQUA  documentation</title>
+      <link rel="stylesheet" href="./Diagnostics — AQUA documentation_files/pygments.css" type="text/css">
+      <link rel="stylesheet" href="./Diagnostics — AQUA documentation_files/theme.css" type="text/css">
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="./Diagnostics — AQUA documentation_files/documentation_options.js"></script>
+        <script src="./Diagnostics — AQUA documentation_files/doctools.js"></script>
+        <script src="./Diagnostics — AQUA documentation_files/sphinx_highlight.js"></script>
+    <script src="./Diagnostics — AQUA documentation_files/theme.js"></script>
+    <link rel="index" title="Index" href="http://localhost:52330/docs/sphinx/build/html/genindex.html">
+    <link rel="search" title="Search" href="http://localhost:52330/docs/sphinx/build/html/search.html">
+    <link rel="next" title="Dummy" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html">
+    <link rel="prev" title="Interactive dask-job" href="http://localhost:52330/docs/sphinx/build/html/slurm.html"> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+
+          
+          
+          <a href="http://localhost:52330/docs/sphinx/build/html/index.html" class="icon icon-home">
+            AQUA
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="http://localhost:52330/docs/sphinx/build/html/search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs">
+    <input type="hidden" name="check_keywords" value="yes">
+    <input type="hidden" name="area" value="default">
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/introduction.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/introduction.html#overview-of-aqua">Overview of AQUA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/introduction.html#purpose-and-scope">Purpose and Scope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/introduction.html#key-features">Key Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/installation.html#creating-a-conda-mamba-environment-and-installing-packages">Creating a Conda/Mamba Environment and Installing Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/installation.html#installation-on-lumi">Installation on Lumi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/installation.html#working-with-personal-kernel-in-jupyter-hub">Working with personal kernel in Jupyter Hub</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/getting_started.html#basic-concepts">Basic Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/getting_started.html#example-use-case">Example Use Case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html">Core Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#the-reader-class">The <cite>Reader</cite> Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#data-reading-and-preprocessing">Data Reading and Preprocessing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#supported-file-formats">Supported File Formats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#data-structures">Data Structures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#basic-usage">Basic Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#interpolation-and-regridding">Interpolation and Regridding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#averaging-and-aggregation">Averaging and Aggregation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#fixing-metadata-correction">Fixing: Metadata correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#streaming-simulation">Streaming simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/core_components.html#parallel-processing">Parallel Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/lra.html">Low Resolution Archive</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/lra.html#basic-concepts">Basic Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/lra.html#access-to-the-lra">Access to the LRA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/lra.html#generation-of-the-lra">Generation of the LRA</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/lra.html#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/adding_data.html">Adding data to AQUA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/tests.html">Tests</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/tests.html#running-tests-locally">Running Tests Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/tests.html#writing-tests">Writing Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/tests.html#continuous-integration-ci">Continuous Integration (CI)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/tests.html#test-coverage">Test Coverage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/slurm.html">Interactive dask-job</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/slurm.html#the-slurm-class">The <cite>Slurm</cite> Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/slurm.html#the-dask-job-initialization">The dask-job initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/slurm.html#path-to-the-output">Path to the output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/slurm.html#the-dask-job-cancelation">The dask-job cancelation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html#">Diagnostics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html#overview-of-available-diagnostics">Overview of Available Diagnostics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html">Dummy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#input-variables-example">Input variables example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#methods-used">Methods used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#functions-used">Functions used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#observations">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#references">References</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#example-plot-s">Example Plot(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html">SSH variability</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#input-variables-example">Input variables example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#observations">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html">Teleconnections diagnostic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#input-variables">Input variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#how-to-install-the-diagnostic">How to install the diagnostic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#how-to-run-the-diagnostic">How to run the diagnostic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#command-line-interface">Command line interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#example-plot">Example plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html">Tropical Cyclones detection, tracking and zoom in diagnostic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#input-variables">Input variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#methods-used">Methods used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#functions-used">Functions used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#observations">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#references">References</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#example-plot-s">Example Plot(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html">Tropical rainfall diagnostic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#overview-of-available-diagnostics">Overview of Available Diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#the-main-attributes-of-tr-pr-diagnostic-class">The main attributes of <cite>TR_PR_Diagnostic</cite> Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#the-histogram-calculation">The histogram calculation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#the-lazy-mode">The lazy mode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#list-of-histograms">List of histograms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#the-histogram-plots">The histogram plots</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html#notebooks">Notebooks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html">Global mean time series</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#input-variables-example">Input variables example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#observations">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#example-plot-s">Example Plot(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/seaice.html">Sea Ice Diagnostics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/seaice.html#sea-ice-extent">Sea ice extent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/radiation.html">Radiation Budget Diagnostic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/radiation.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/radiation.html#run-the-diagnostic">Run the diagnostic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/radiation.html#example-plots">Example plots</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/atm_global_mean.html">Atmospheric Global Mean Diagnostic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/atm_global_mean.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/atm_global_mean.html#data-requirements">Data requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/atm_global_mean.html#run-the-diagnostic">Run the diagnostic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/atm_global_mean.html#example-plots">Example plots</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html">Ocean Circulation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#input-variables-example">Input variables example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#methods-used">Methods used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#functions-used">Functions used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#observations">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#references">References</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#example-plot-s">Example Plot(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html">Global Ocean</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#structure">Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#input-variables-example">Input variables example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#methods-used">Methods used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#functions-used">Functions Used</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#global-ocean-func-py">global_ocean_func.py</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#observations">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#references">References</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#example-plot-s">Example Plot(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#available-demo-notebooks">Available demo notebooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html#detailed-api">Detailed API</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html#creating-custom-diagnostics">Creating Custom Diagnostics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/examples_tutorials.html">Examples and Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/examples_tutorials.html#jupyter-notebooks-for-various-use-cases">Jupyter Notebooks for Various Use Cases</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber"><code class="docutils literal notranslate"><span class="pre">Gribber</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._check_steps"><code class="docutils literal notranslate"><span class="pre">Gribber._check_steps()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._check_dir"><code class="docutils literal notranslate"><span class="pre">Gribber._check_dir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._check_indices"><code class="docutils literal notranslate"><span class="pre">Gribber._check_indices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._check_json"><code class="docutils literal notranslate"><span class="pre">Gribber._check_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._check_catalog"><code class="docutils literal notranslate"><span class="pre">Gribber._check_catalog()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._create_symlinks"><code class="docutils literal notranslate"><span class="pre">Gribber._create_symlinks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._create_indices"><code class="docutils literal notranslate"><span class="pre">Gribber._create_indices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._create_json"><code class="docutils literal notranslate"><span class="pre">Gribber._create_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber._create_catalog_entry"><code class="docutils literal notranslate"><span class="pre">Gribber._create_catalog_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber.check_entry"><code class="docutils literal notranslate"><span class="pre">Gribber.check_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber.create_entry"><code class="docutils literal notranslate"><span class="pre">Gribber.create_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Gribber.help"><code class="docutils literal notranslate"><span class="pre">Gribber.help()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator"><code class="docutils literal notranslate"><span class="pre">LRAgenerator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator.check_integrity"><code class="docutils literal notranslate"><span class="pre">LRAgenerator.check_integrity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator.create_catalog_entry"><code class="docutils literal notranslate"><span class="pre">LRAgenerator.create_catalog_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator.dask"><code class="docutils literal notranslate"><span class="pre">LRAgenerator.dask</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator.generate_lra"><code class="docutils literal notranslate"><span class="pre">LRAgenerator.generate_lra()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator.get_filename"><code class="docutils literal notranslate"><span class="pre">LRAgenerator.get_filename()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.LRAgenerator.retrieve"><code class="docutils literal notranslate"><span class="pre">LRAgenerator.retrieve()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.OPAgenerator"><code class="docutils literal notranslate"><span class="pre">OPAgenerator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.OPAgenerator.clean"><code class="docutils literal notranslate"><span class="pre">OPAgenerator.clean()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.OPAgenerator.create_catalog_entry"><code class="docutils literal notranslate"><span class="pre">OPAgenerator.create_catalog_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.OPAgenerator.dask"><code class="docutils literal notranslate"><span class="pre">OPAgenerator.dask</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.OPAgenerator.generate_opa"><code class="docutils literal notranslate"><span class="pre">OPAgenerator.generate_opa()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.OPAgenerator.retrieve"><code class="docutils literal notranslate"><span class="pre">OPAgenerator.retrieve()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.fldmean"><code class="docutils literal notranslate"><span class="pre">Reader.fldmean()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.reader_esm"><code class="docutils literal notranslate"><span class="pre">Reader.reader_esm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.reader_fdb"><code class="docutils literal notranslate"><span class="pre">Reader.reader_fdb()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.reader_intake"><code class="docutils literal notranslate"><span class="pre">Reader.reader_intake()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.regrid"><code class="docutils literal notranslate"><span class="pre">Reader.regrid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.retrieve"><code class="docutils literal notranslate"><span class="pre">Reader.retrieve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.timmean"><code class="docutils literal notranslate"><span class="pre">Reader.timmean()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Reader.vertinterp"><code class="docutils literal notranslate"><span class="pre">Reader.vertinterp()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Streaming"><code class="docutils literal notranslate"><span class="pre">Streaming</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Streaming.reset_stream"><code class="docutils literal notranslate"><span class="pre">Streaming.reset_stream()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Streaming.stream"><code class="docutils literal notranslate"><span class="pre">Streaming.stream()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.Streaming.stream_generator"><code class="docutils literal notranslate"><span class="pre">Streaming.stream_generator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.catalogue"><code class="docutils literal notranslate"><span class="pre">catalogue()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.inspect_catalogue"><code class="docutils literal notranslate"><span class="pre">inspect_catalogue()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.job"><code class="docutils literal notranslate"><span class="pre">job()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.max_resources_per_node"><code class="docutils literal notranslate"><span class="pre">max_resources_per_node()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.output_dir"><code class="docutils literal notranslate"><span class="pre">output_dir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.rundiag"><code class="docutils literal notranslate"><span class="pre">rundiag()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.scancel"><code class="docutils literal notranslate"><span class="pre">scancel()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/api_reference.html#aqua.squeue"><code class="docutils literal notranslate"><span class="pre">squeue()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/troubleshooting_faq.html">Troubleshooting and FAQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/troubleshooting_faq.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/contributing.html">Contributing to AQUA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/contributing.html#reporting-bugs">Reporting Bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/contributing.html#suggesting-features">Suggesting Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/contributing.html#contributing-code">Contributing Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/contributing.html#documentation-and-tutorials">Documentation and Tutorials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/references_acknowledgments.html">References and Acknowledgments</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/references_acknowledgments.html#citing-aqua">Citing AQUA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/references_acknowledgments.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="http://localhost:52330/docs/sphinx/build/html/index.html">AQUA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="http://localhost:52330/docs/sphinx/build/html/index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Diagnostics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="http://localhost:52330/docs/sphinx/build/html/_sources/diagnostics/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="diagnostics">
+<h1>Diagnostics<a class="headerlink" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html#diagnostics" title="Permalink to this heading"></a></h1>
+<section id="overview-of-available-diagnostics">
+<h2>Overview of Available Diagnostics<a class="headerlink" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html#overview-of-available-diagnostics" title="Permalink to this heading"></a></h2>
+<p>AQUA provides a collection of built-in diagnostics to analyze climate model outputs.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html">Dummy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ssh_variability.html">SSH variability</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/teleconnections.html">Teleconnections diagnostic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical_cyclones.html">Tropical Cyclones detection, tracking and zoom in diagnostic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/tropical-rainfall.html">Tropical rainfall diagnostic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_mean_timeseries.html">Global mean time series</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/seaice.html">Sea Ice Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/radiation.html">Radiation Budget Diagnostic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/atm_global_mean.html">Atmospheric Global Mean Diagnostic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/ocean_circulation.html">Ocean Circulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/global_ocean.html">Global Ocean</a></li>
+</ul>
+</div>
+</section>
+<section id="creating-custom-diagnostics">
+<h2>Creating Custom Diagnostics<a class="headerlink" href="http://localhost:52330/docs/sphinx/build/html/diagnostics/index.html#creating-custom-diagnostics" title="Permalink to this heading"></a></h2>
+<p>AQUA allows users to create custom diagnostics to suit their specific needs.
+Custom diagnostics can be implemented as Python functions or classes and integrated into AQUA’s diagnostic framework.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="http://localhost:52330/docs/sphinx/build/html/slurm.html" class="btn btn-neutral float-left" title="Interactive dask-job" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="http://localhost:52330/docs/sphinx/build/html/diagnostics/dummy.html" class="btn btn-neutral float-right" title="Dummy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr>
+
+  <div role="contentinfo">
+    <p>© Copyright 2023, Climate DT Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org/">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+
+</body></html>
