@@ -16,18 +16,18 @@ class SeaIceExtent:
         The SeaIceExtent constructor.
 
         Args:
-            loglevel (str): The log level
-                            Default: WARNING
-            threshold (float): The sea ice extent threshold
-                               Default: 0.15
-            regions (str): The path to the regions.yml file
-                           Default: ../regions.yml
-            outputdir (str): The path to the folder where outputs (NetCDF)
-                             will be stored
-                           Default: ./NetCDF
+            loglevel (str):     The log level
+                                Default: WARNING
+            threshold (float):  The sea ice extent threshold
+                                Default: 0.15
+            regions (str):      The path to the regions.yml file
+                                Default: ../regions.yml
+            outputdir (str):    The path to the folder where outputs (NetCDF) will be stored
+                                Default: ./NetCDF
 
         Returns:
             A SeaIceExtent object.
+        
         """
 
         # Configure logger
@@ -54,6 +54,7 @@ class SeaIceExtent:
                       A setup = model, experiment, source
             myRegions: A list of regions to analyse.
                        See regions.yml file for the full list.
+        
         """
 
         self.nRegions = len(myRegions)

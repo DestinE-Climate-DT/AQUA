@@ -56,8 +56,9 @@ Other available functions:
 *  `process_era5_data`: extracts ERA5 data for further analysis;
 *  `gregory_plot`: creates a Gregory Plot with various models and ERA5 data;
 *  `barplot_model_data`: creates a bar plot with various models and CERES data;
-*  `plot_maps`: creates monthly bias maps of various models to show the bias wrt CERES data;
-*  `plot_model_comparison_timeseries`: creates a time series and visualizes the variability of the values wrt CERES years.
+*  `plot_maps`: creates monthly bias maps of various models to show the bias wrt CERES data for ttr, tnr, tsr;
+*  `plot_model_comparison_timeseries`: creates a time series and visualizes the variability of the values wrt CERES years;
+*  `plot_mean_bias`: Compare the model climatology against CERES climatology for ttr, tnr and tsr
 
 
 Observation
@@ -76,22 +77,22 @@ Example plots
 -------------
 
 .. figure:: figures/radiation/Gregory_Plot.png
-   :width: 200px
+   :width: 600px
    :align: center
 
-   Gregory Plot of different models and ERA5 data.
+   Figure1: Gregory Plot (temperature vs net radiation) of different models and ERA5 data.
    
 .. figure:: figures/radiation/TimeSeries.png
-   :width: 200px
+   :width: 600px
    :align: center
 
-   Time series of model biases with respect to CERES data.   
+   Figure2: Time series of model biases with respect to CERES data.   
 
 .. figure:: figures/radiation/BarPlot.png
-   :width: 200px
+   :width: 600px
    :align: center
 
-   Bar plot to show the radiation imbalances
+   Figure3: Bar plot to show the globally averaged incoming and outgoing TOA radiation.
    
    
 Available demo notebooks

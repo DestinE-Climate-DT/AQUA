@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   aqua_test:
-    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    #if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
     env:
       # You can disable coverage by changing this to false. You can
       # also add other Python versions to the matrix, pinning the
