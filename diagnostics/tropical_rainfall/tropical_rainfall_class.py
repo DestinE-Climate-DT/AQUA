@@ -717,6 +717,7 @@ class Tropical_Rainfall:
             if name_of_file is None:
                 name_of_file = '_'
             time_band = dataset.attrs['time_band']
+            #self.logger.debug('Time band is {}'.format(time_band))
             try:
                 name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[
                     0] + '_' + re.split(":", re.split(", ", time_band)[1])[0]
@@ -727,7 +728,7 @@ class Tropical_Rainfall:
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '_histogram.nc'
 
             dataset.to_netcdf(path=path_to_netcdf)
-            self.logger.info("Histogram is saved in the storage.")
+            self.logger.info("NetCDF is saved in the storage.")
         else:
             self.logger.debug(
                 "The path to save the histogram needs to be provided.")
@@ -779,9 +780,9 @@ class Tropical_Rainfall:
                 history_attr = tprate_dataset.attrs['history'] + history_update
                 tprate_dataset.attrs['history'] = history_attr
             except KeyError:
-                pass
                 self.logger.debug(
                     "The obtained xarray.Dataset doesn't have global attributes. Consider adding global attributes manually to the dataset.")
+                pass
             tprate_dataset.attrs['time_band'] = time_band
             tprate_dataset.attrs['lat_band'] = lat_band
             tprate_dataset.attrs['lon_band'] = lon_band
@@ -1330,7 +1331,7 @@ class Tropical_Rainfall:
                                                       model_variable=model_variable,     trop_lat=self.trop_lat,
                                                       s_time=self.s_time,                f_time=self.f_time,
                                                       s_year=self.s_year,                f_year=self.f_year,
-                                                      s_month=self.s_month,              f_month=self.f_month,
+                                                      s_month=None,                      f_month=None,
                                                       dask_array=False)
 
         if get_mean:
@@ -1345,7 +1346,6 @@ class Tropical_Rainfall:
                 seasonal_average["JJA"] = data_average[2]
                 seasonal_average["SON"] = data_average[3]
                 seasonal_average["Yearly"] = data_average[4]
-                self.logger.debug("Seasonal mean calculated.")
             else:
                 data_average = self.mean_along_coordinate(data,                           preprocess=preprocess,
                                                           glob=glob,                      model_variable=model_variable,
@@ -1353,7 +1353,6 @@ class Tropical_Rainfall:
                                                           s_time=self.s_time,             f_time=self.f_time,
                                                           s_year=self.s_year,             f_year=self.f_year,
                                                           s_month=self.s_month,           f_month=self.f_month)
-                self.logger.debug("Mean calculated.")
         if get_median:
             data_average = self.median_along_coordinate(data,                           preprocess=preprocess,
                                                         glob=glob,                      model_variable=model_variable,
@@ -1361,8 +1360,9 @@ class Tropical_Rainfall:
                                                         s_time=self.s_time,             f_time=self.f_time,
                                                         s_year=self.s_year,             f_year=self.f_year,
                                                         s_month=self.s_month,           f_month=self.f_month)
-            self.logger.debug("Median calculated.")
 
+        s_month, f_month = None, None
+        self.class_attributes_update(s_month=s_month,       f_month=f_month)
         if seasons:
             seasonal_average.attrs = data_with_final_grid.attrs
             seasonal_average = self.grid_attributes(
@@ -1378,10 +1378,11 @@ class Tropical_Rainfall:
                 data=data_with_final_grid,      tprate_dataset=data_average)
             average_dataset = data_average
 
+        if average_dataset.time_band == []:
+            raise Exception('Time band is empty')
         if path_to_netcdf is not None and name_of_file is not None:
             self.dataset_to_netcdf(
                 average_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file+'_'+str(coord))
-            self.logger.debug("Dataset or DataArray is saved into storage.")
         else:
             return average_dataset
 
