@@ -1,0 +1,63 @@
+#!/bin/bash
+#SBATCH --partition=<partition> # compute is suggested on levante
+#SBATCH --job-name=<job_name>
+#SBATCH --output=<job_name>_%j.out
+#SBATCH --error=<job_name>_%j.err
+#SBATCH --account=<account>
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=<ntasks_per_node>
+#SBATCH --time=08:00:00
+#SBATCH --mem=0
+set -e
+
+# configure AQUA folder path
+export AQUA=<AQUA_PATH>
+
+# get machine name
+machine=levante
+
+# if machine is levante use mamba/conda
+if [ $machine == "levante" ]; then
+    # find mamba/conda (to be refined)
+    whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+    source $whereconda/etc/profile.d/conda.sh
+
+    # activate conda environment
+    # be aware that the loaded environment is hard-coded to the default environment name
+    conda activate teleconnections
+fi 
+
+function load_environment_teleconnections() {
+	# Load env modules on LUMI
+    module purge
+    module use LUMI/22.08
+    module load python-xarray/3.10.6-cpeCray-22.08
+}
+
+# if machine is lumi use modules
+if [ $machine == "lumi" ]; then
+    load_environment_teleconnections
+
+    # get username
+    username=$USER
+    # be aware that the path to mambaforge is hard-coded to the default environment name
+    export PATH="/users/$username/mambaforge/teleconnections/bin:$PATH"
+fi
+
+# run the Python script
+
+# You can run 2 different scripts:
+# - single_dataset: to compute the teleconnections for a single dataset
+# - dataset_comparison: to compare the teleconnections for different datasets
+#                       and an observational dataset
+# Uncomment the script you want to run
+
+# -c to specify the configuration file (--config)
+# -d to run a definitive run (default is False, but the flag is activated in the template)
+# -l to set the log level (default is WARNING)
+
+# $AQUA/diagnostics/teleconnections/cli/comparison_analysis/cli_teleconnections.py \
+# --config $AQUA/diagnostics/teleconnections/cli/comparison_analysis/teleconnections_config.yaml -d
+
+# $AQUA/diagnostics/teleconnections/cli/single_analysis/cli_teleconnections.py \
+# --config $AQUA/diagnostics/teleconnections/cli/single_analysis/teleconnections_config.yaml -d

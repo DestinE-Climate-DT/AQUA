@@ -1,0 +1,41 @@
+# experiment
+dataset:
+  model: "IFS"
+  #exp: "tco2559-ng5-cycle3"
+  exp: "tco1279-orca025-cycle3"
+  source2d: "2D_1h_native"
+  source3d: "3D_1h_native"
+
+# folders for regridded data, temprorary and stored high res data
+paths: 
+  tmpdir: '/home/b/b382075/work/tc/tmpdir'
+  fulldir: '/home/b/b382075/work/tc/fullres'
+  plotdir: "/home/b/b382075/work/tc/tropical_cyclones/Figures/"
+
+
+# grid on which operate
+grids:
+  lowgrid: 'r100'
+  highgrid: 'r010'
+
+# variables to stored 
+varlist: ['msl', '10u', '10v', 'tprate']
+
+# temporal definition (YYYY-MM-DD)
+time: 
+  startdate: '2020-01-20'
+  enddate: '2024-12-31'
+  frequency: '6h'
+
+stream:
+  streamstep: 10 #n of days for streaming
+
+# detect nodes options
+detect:
+  boxdim: 10    # dimension of lat/lon box to save data in the vicinity of the TCs centres (in degrees)
+
+# stich nodes options
+stitch:
+  n_days_freq: 30 # run stitch nodes (tracks computation) and save tracks every n days
+  n_days_ext: 2  # n of days to extend time boundaries not to miss tracks which may start/end before/after the chosen n of days
+

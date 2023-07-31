@@ -1,0 +1,18 @@
+defaults:
+
+    # The default datamodel for sources if not specified below
+    src_datamodel: cf
+    # The datamodel convention (axes names, directions) for output coordinates
+    dst_datamodel: cds
+
+    units:
+        mass_flux:  kg m-2 s-1
+        radiation_flux: W m-2
+        temperature: K
+
+    
+    
+                    
+
+
+

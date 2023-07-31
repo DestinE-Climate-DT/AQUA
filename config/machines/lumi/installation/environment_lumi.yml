@@ -1,0 +1,31 @@
+# Create the environment:
+# mamba env create -f environment.yml 
+# or if you really want to use conda
+# conda env create -f environment.yml
+
+name: aqua
+channels:
+  - conda-forge
+# please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
+dependencies:
+  - python>=3.9,<3.11
+  - xarray
+  - dask
+  - numpy
+  - netcdf4
+  - ecCodes      
+  - matplotlib
+  - cartopy
+  - cfunits
+  - metpy
+  - cdo
+  - intake-esm
+  - intake
+  - intake-xarray
+  - ruamel.yaml
+# these below are only required for running notebooks
+  - ipykernel
+  - healpy
+# these are pip-based since it provides more recent versions or packages unavailable on conda-forge
+  - pip
+

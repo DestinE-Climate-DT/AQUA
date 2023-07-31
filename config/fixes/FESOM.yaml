@@ -1,0 +1,83 @@
+models:
+    FESOM:
+        default:
+            default:
+                data_model: false
+                delete:  # variables to drop at the end
+                    - a_ice
+                    - m_ice
+                    - sss
+                    - ssh
+                vars:
+                    ci:
+                        derived: a_ice
+                        src_units: frac
+                        grib: true
+                        units: '%'
+                    sst: 
+                        derived: sst
+                        src_units: degC
+                        grib: true
+                        units: K
+                    sos:
+                        derived: sss
+                        grib: true
+                        units: psu
+                    sithick:
+                        derived: m_ice
+                        grib: true
+                    zos:
+                        derived: ssh
+                        grib: true
+                    ocpt:
+                        source: temp 
+                        src_units: degC
+                        grib: true
+                        units: degC 
+                    uo:
+                        source: u
+                        grib: true
+                    vo:
+                        source: v
+                        grib: true
+                    wo:
+                        source: w
+                        grib: true
+                    so:
+                        src_units: psu
+                        source: salt
+                        grib: true
+                        units: psu
+                    sivn:
+                        source: vice
+                        grib: true
+                    siue:
+                        source: uice
+                        grib: true
+                    vdf: 
+                        source: Kv
+                        grib: true
+                    tprate:
+                        source: prec
+                        grib: true
+                    mlotst125:
+                        source: MLD2
+                        grib: true
+
+            interpolated_global_TS:
+                data_model: False  # Do not attempto to correct coordinates
+                vars:
+                    ocpt: 
+                        derived: temp
+                        src_units: degC
+                        grib: true
+                        units: degC # Override units from grib tables
+
+            lra-r100-monthly:
+                data_model: False
+                vars:
+                    sst: 
+                        derived: sst
+                        grib: true
+                        units: K
+    

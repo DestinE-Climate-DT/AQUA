@@ -1,0 +1,12 @@
+plugins:
+  source:
+  - module: intake_xarray
+sources:
+  short:
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ./AQUA_tests/models/ICON/healpix0/healpix_0.nc
+    description: Healpix coarser resolution
+    driver: netcdf

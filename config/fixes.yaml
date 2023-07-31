@@ -237,7 +237,7 @@ models:
                 vars:
                     ci:
                         derived: a_ice
-                        src_units: frac
+                        src_units: "1"
                         grib: true
                         units: '%'
                     sst: 

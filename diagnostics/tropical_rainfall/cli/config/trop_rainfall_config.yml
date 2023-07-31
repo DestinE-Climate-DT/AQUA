@@ -1,0 +1,17 @@
+class_attributes:
+  trop_lat:    15
+  num_of_bins: 20
+  first_edge:   0
+  width_of_bin: 2.5e-05
+
+model_variable: 'tprate'
+new_unit:       'm/day'
+
+path:
+  path_to_netcdf: "/work/bb1153/b382267/tropical_rainfall_cicle3/NetCDF/histograms/"
+  path_to_pdf: "/work/bb1153/b382267/tropical_rainfall_cicle3/NetCDF/PDF/"
+
+data:
+  model:  "ICON"
+  exp:    "ngc3028" 
+  source: "lra-r100-monthly"

@@ -1,0 +1,62 @@
+weights:
+   path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/weights
+   template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
+
+areas:
+   path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/areas
+   src_template: cell_area_{model}_{exp}_{source}.nc
+   dst_template: cell_area_{grid}.nc
+
+cdo-paths:
+  download: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/weights
+  icon: /pool/data/ICON
+
+target_grids:
+  r005: r7200x3600
+  r010: r3600x1800
+  r020: r1800x900
+  r025: r1440x720
+  r050: r720x360
+  r100: r360x180
+  r200: r180x90
+  r250: r144x72
+
+# extra is an extra special cdo command to be applied before generating the weights
+source_grids:
+  FESOM:
+    test-pi:
+      original_2d:
+        path: ../AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc
+        space_coord: ["nod2"]
+        extra: 
+          - -setgrid,../AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc 
+          - -selname,cell_area 
+  IFS:
+    tco399-orca025:
+      default:
+        path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/grids/tco399_grid.nc
+        space_coord: ["value"]
+    tco79-eORCA1:
+      atm2d:
+        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
+        space_coord: ["value"]
+      atm3d:
+        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
+        space_coord: ["value"]
+    test-tco79:
+      original_2d:
+        path: ../AQUA_tests_short/grids/tco79_grid.nc
+        space_coord: ["rgrid"]
+  ERA5:
+    fdb:
+      default:
+        space_coord: ["lon", "lat"]
+  NEMO:
+    tco79-eORCA1:
+      default:
+        path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/grids/ORCA1_mesh_sfc_grid_T.nc
+        space_coord: ["cell"]
+        # path: /pfs/lustrep3/scratch/project_465000454/pool/data/IFS/inputs_de_48r1/nemo/V40/eORCA1_Z75/common/mesh_mask.nc
+        # extra:
+        #   - selname,tmask          
+        # space_coord: ["nav_lon", "nav_lat"]

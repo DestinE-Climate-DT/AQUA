@@ -1,0 +1,57 @@
+name: tropical rainfall diagnostic test
+# comment line is added to test all workflows with a common environment
+on:
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'diagnostics/tropical_rainfall/**'
+      - 'tests/tropical-rainfall/**'
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" # Run every Monday night at 3AM UTC
+
+permissions:
+  contents: read
+
+jobs:
+  tropical-rainfall-diagnostic_test:
+    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Micromamba with diagnostic environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment-common.yml
+          environment-name: tropical-rainfall
+          cache-downloads: true
+          cache-environment: true
+          condarc: |
+            channels:
+              - numba
+              - conda-forge
+          create-args: >-
+              python=${{ matrix.python-version }}
+
+# Run framework tests in order to check that the diagnostic environment is
+# compatible with the framework
+      - name: Download and setup framework tests
+        run: |
+          ./download_data_for_tests.sh
+
+# Run diagnostic tests
+      - name: Download and setup dummy-diagnostic tests
+        run: |
+          ./tests/tropical-rainfall/download_data_for_tests.sh
+
+      - name: Run tropical-rainfall tests
+        run: |
+          pytest -v -m tropical_rainfall

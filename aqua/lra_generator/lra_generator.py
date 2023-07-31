@@ -6,22 +6,28 @@ import os
 from time import time
 import glob
 import dask
-import yaml
 import xarray as xr
 from dask.distributed import Client, LocalCluster, progress
 from dask.diagnostics import ProgressBar
 from aqua.logger import log_configure
 from aqua.reader import Reader
-from aqua.util import create_folder, generate_random_string, load_yaml
-from aqua.util import get_config_dir, get_machine
+from aqua.util import create_folder, generate_random_string
+from aqua.util import dump_yaml, load_yaml
+from aqua.util import get_config_dir, get_machine, file_is_complete
 
 
 class LRAgenerator():
     """
     Class to generate LRA data at required frequency/resolution
     """
+
+    @property
+    def dask(self):
+        """Check if dask is needed"""
+        return self.nproc > 1
+
     def __init__(self,
-                 model=None, exp=None, source=None,
+                 model=None, exp=None, source=None, zoom=None,
                  var=None, vars=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
                  outdir=None, tmpdir=None, nproc=1,
@@ -35,6 +41,7 @@ class LRAgenerator():
             source (string):         The sourceid name from the catalog
             var (str, list):         Variable(s) to be processed and archived
                                      in LRA,vars in a synonim
+            zoom (int):              Healpix level of zoom
             resolution (string):     The target resolution for the LRA
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
@@ -44,7 +51,7 @@ class LRAgenerator():
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
-            configdir (string):      Configuration directory where the catalog 
+            configdir (string):      Configuration directory where the catalog
                                      are found
             nproc (int, opt):        Number of processors to use. default is 1
             loglevel (string, opt):  Logging level
@@ -69,15 +76,12 @@ class LRAgenerator():
         self.nproc = int(nproc)
         self.tmpdir = tmpdir
         if self.nproc > 1:
-            self.dask = True
             self.logger.info('Running dask.distributed with %s workers', self.nproc)
             if not self.tmpdir:
                 raise KeyError('Please specify tmpdir for dask.distributed.')
 
             self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
                                         generate_random_string(10))
-        else:
-            self.dask = False
 
         # # Data settings
         # self._assign_key('model', model)
@@ -98,6 +102,8 @@ class LRAgenerator():
             self.source = source
         else:
             raise KeyError('Please specify source.')
+
+        self.zoom = zoom
 
         if not configdir:
             self.configdir = get_config_dir()
@@ -141,11 +147,12 @@ class LRAgenerator():
 
         create_folder(self.outdir, loglevel=self.loglevel)
 
+
         # Initialize variables used by methods
         self.data = None
-        self.reader = None
         self.cluster = None
         self.client = None
+        self.reader = None
 
     # def _assign_key(self, name, key):
 
@@ -160,6 +167,14 @@ class LRAgenerator():
         """
         Retrieve data from the catalog
         """
+
+        # Initialize the reader
+        self.reader = Reader(model=self.model, exp=self.exp,
+                             source=self.source, zoom=self.zoom,
+                             regrid=self.resolution, freq=self.frequency,
+                             configdir=self.configdir, loglevel=self.loglevel)
+
+
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
         if self.frequency:
@@ -169,14 +184,8 @@ class LRAgenerator():
             self.logger.info('I am going to produce LRA at %s resolution...',
                              self.resolution)
 
-        # Initialize the reader
-        self.reader = Reader(model=self.model, exp=self.exp,
-                             source=self.source,
-                             regrid=self.resolution, freq=self.frequency,
-                             configdir=self.configdir, loglevel=self.loglevel)
-
         self.logger.warning('Retrieving data...')
-        self.data = self.reader.retrieve(fix=self.fix)
+        self.data = self.reader.retrieve(var = self.var, fix=self.fix)
         self.logger.debug(self.data)
 
     def generate_lra(self):
@@ -213,6 +222,7 @@ class LRAgenerator():
         # define the block to be uploaded into the catalog
         block_cat = {
             'driver': 'netcdf',
+            'description': f'LRA data {self.frequency} at {self.resolution}',
             'args': {
                 'urlpath': os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_????.nc'),
                 'chunks': {},
@@ -223,15 +233,13 @@ class LRAgenerator():
         }
 
         # find the catalog of my experiment
-        catalogfile = os.path.join(self.configdir, self.machine,
+        catalogfile = os.path.join(self.configdir, 'machines', self.machine,
                                    'catalog', self.model, self.exp+'.yaml')
 
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
         cat_file['sources'][entry_name] = block_cat
-        with open(catalogfile, 'w', encoding='utf-8') as file:
-            yaml.dump(cat_file, file, sort_keys=False)
-
+        dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def _set_dask(self):
         """
@@ -265,37 +273,10 @@ class LRAgenerator():
             self.logger.warning('Removing temporary directory %s', self.tmpdir)
             os.removedirs(self.tmpdir)
 
-    def _file_is_complete(self, filename):
-
-        """Basic check to see if file exists and that includes values which are not NaN
-        Return a boolean that can be used as a flag for further operation
-        True means that we have to re-do the computation"""
-
-        if os.path.isfile(filename):
-            self.logger.info('File %s is found...', filename)
-            try:
-                xfield = xr.open_dataset(filename)
-                varname = list(xfield.data_vars)[0]
-                if xfield[varname].isnull().all():
-                #if xfield[varname].isnull().all(dim=['lon','lat']).all():
-                    self.logger.error('File %s is full of NaN! Recomputing...', filename)
-                    check=True
-                else:
-                    check=False
-                    self.logger.info('File %s seems ok!', filename)
-            # we have no clue which kind of exception might show up
-            except BaseException:
-                self.logger.info('Something wrong with file %s! Recomputing...', filename)
-                check= True
-        else:
-            self.logger.info('File %s not found...', filename)
-            check = True
-
-        return check
 
     def _concat_var(self, var, year):
         """
-        To reduce the amount of files concatenate together all the files 
+        To reduce the amount of files concatenate together all the files
         from the same year
         """
 
@@ -315,6 +296,35 @@ class LRAgenerator():
             self.logger.info('Cleaning %s...',  infile)
             os.remove(infile)
 
+    def get_filename(self, var, year=None, month=None):
+
+        """Create output filenames"""
+
+        filename = os.path.join(self.outdir,
+                f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc')
+        if (year is not None) and (month is None):
+            filename = filename.replace("*", str(year))
+        if (year is not None) and (month is not None):
+            filename = filename.replace("*", str(year) + str(month).zfill(2))
+
+        return filename
+
+    def check_integrity(self, varname):
+
+        """To check if the LRA entry is fine before running"""
+
+        yearfiles = self.get_filename(varname)
+        yearfiles = glob.glob(yearfiles)
+        checks = [file_is_complete(yearfile) for yearfile in yearfiles]
+        all_checks_true = all(checks) and len(checks)>0
+        if all_checks_true and not self.overwrite:
+            self.logger.warning('All the data seem there for var %s...', varname)
+            self.definitive = False
+            return False
+        else:
+            self.logger.warning('Still need to run for var %s...', varname)
+            return True
+
     def _write_var(self, var):
         """
         Write variable to file
@@ -330,15 +340,20 @@ class LRAgenerator():
             temp_data = self.reader.timmean(temp_data)
         temp_data = self.reader.regrid(temp_data)
 
+        # remove regridded attribute to avoid issues with Reader
+        # https://github.com/oloapinivad/AQUA/issues/147
+        if 'regridded' in temp_data.attrs:
+            self.logger.info('Removing regridding attribute...')
+            del temp_data.attrs['regridded']
+
         # Splitting data into yearly files
         years = set(temp_data.time.dt.year.values)
         for year in years:
 
             self.logger.info('Processing year %s...', str(year))
-            yearfile = os.path.join(self.outdir,
-                                    f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
-            filecheck = self._file_is_complete(yearfile)
-            if not filecheck and not self.overwrite:
+            yearfile = self.get_filename(var, year)
+            filecheck = file_is_complete(yearfile, self.logger)
+            if filecheck and not self.overwrite:
                 self.logger.warning('Yearly file %s already exists, skipping...', yearfile)
                 continue
 
@@ -347,11 +362,10 @@ class LRAgenerator():
             months = set(year_data.time.dt.month.values)
             for month in months:
                 self.logger.info('Processing month %s...', str(month))
-                outfile = os.path.join(self.outdir,
-                                     f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}{str(month).zfill(2)}.nc')
+                outfile = self.get_filename(var, year, month)
                 # checking if file is there and is complete
-                filecheck = self._file_is_complete(outfile)
-                if not filecheck and not self.overwrite:
+                filecheck = file_is_complete(outfile, self.logger)
+                if filecheck and not self.overwrite:
                     self.logger.warning('Monthly file %s already exists, skipping...', outfile)
                     continue
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
@@ -362,7 +376,7 @@ class LRAgenerator():
                     self._write_var_month(month_data, outfile)
 
                     # check everything is correct
-                    self._file_is_complete(outfile)
+                    filecheck = file_is_complete(outfile, self.logger)
                     # we can later add a retry
                     if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', outfile)
@@ -375,9 +389,8 @@ class LRAgenerator():
         t_end = time()
         self.logger.info('Process took {:.4f} seconds'.format(t_end-t_beg))
 
-
     def _write_var_month(self, month_data, outfile):
-        """Write a single chunk of data - Xarray Dataset - to a specific file 
+        """Write a single chunk of data - Xarray Dataset - to a specific file
         using dask if required and monitoring the progress"""
 
         # File to be written
@@ -388,11 +401,9 @@ class LRAgenerator():
         self.logger.warning('Writing file %s...', outfile)
 
         # Write data to file, lazy evaluation
-        write_job =\
-            month_data.to_netcdf(outfile,
-                                    encoding={'time':
-                                            self.time_encoding},
-                                    compute=False)
+        write_job = month_data.to_netcdf(outfile,
+                                encoding={'time': self.time_encoding},
+                                compute=False)
 
         if self.dask:
             w_job = write_job.persist()

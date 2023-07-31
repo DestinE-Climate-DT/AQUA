@@ -5,26 +5,29 @@
 
 # flag to clean environ,ent
 do_clean=true
-do_pip=false
+do_pip=true
 branch=main
 
+# you can change in the case you do not have mamba, please use conda
+mamba=mamba
+
 # find mamba/conda (to be refined)
-whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+whereconda=$(which $mamba | rev | cut -f 3-10 -d"/" | rev)
 source $whereconda/etc/profile.d/conda.sh
 
 # check if you want to remove enviornment and repo
 if [[ $do_clean == true ]] ; then
         echo "Removing the env..."
         rm -rf ECmean4
-        mamba env remove -n aqua-ecmean
+        $mamba env remove -n aqua-ecmean
 fi
 
 sleep 5
 
 # create the env
-if [[ -z $(mamba env list | grep aqua-ecmean) ]] ; then
+if [[ -z $($mamba env list | grep aqua-ecmean) ]] ; then
         echo "Creating the env..."
-        mamba env create -f environment-ecmean.yml
+        $mamba env create -f environment-ecmean.yml
 fi
 
 sleep 5
@@ -32,12 +35,13 @@ sleep 5
 # set up env
 conda activate aqua-ecmean
 
+if [[ ! -d ECmean4 ]] ; then
+        echo "Cloning..."
+        git clone https://github.com/oloapinivad/ECmean4.git
+fi
+
 if [[ $do_pip == false ]] ; then
         # clone
-        if [[ ! -d ECmean4 ]] ; then
-                echo "Cloning..."
-                git clone https://github.com/oloapinivad/ECmean4.git
-        fi
         
         sleep 5
 

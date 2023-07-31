@@ -1,0 +1,40 @@
+# Create the tropical_cyclones environment:
+# mamba env create -f environment-tcs.yml 
+# or if you really want to use conda
+# conda env create -f environment.yml
+
+name: TCs
+channels:
+  - conda-forge
+# please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
+dependencies:
+  - python>=3.9,<3.11
+  - libnetcdf<=4.8.1 
+  - netcdf4
+  - xarray
+  - dask
+  - numpy
+  - numba
+  - ecCodes      
+  - matplotlib
+  - cartopy
+  - cfunits
+  - metpy
+  - cdo
+  - intake-esm<=2021.8.17
+  - intake
+  - intake-xarray
+  # the tempest-extremes python library
+  - tempest-extremes
+# these below are only required for running notebooks
+  - ipykernel
+  - healpy
+# these below are only required for documentation
+  - sphinx
+  - sphinx-rtd-theme
+# these are pip-based since it provides more recent versions or packages unavailable on conda-forge
+  - pip
+  - pip:
+    # pip install -e of AQUA itself
+    - -e ../../
+

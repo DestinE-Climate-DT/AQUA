@@ -1,20 +1,71 @@
 """Fixer mixin for the Reader class"""
 
 import os
+import re
 import json
 import warnings
+import types
 import xarray as xr
 import cf2cdm
 from metpy.units import units
 
-from aqua.util import load_yaml, _eval_formula, get_eccodes_attr
+from aqua.util import eval_formula, get_eccodes_attr
 from aqua.util import log_history
 
 
 class FixerMixin():
     """Fixer mixin for the Reader class"""
 
-    def fixer(self, data, apply_unit_fix=False):
+    def find_fixes(self):
+
+        """
+        Get the fixes for the model/exp/source hierarchy.
+
+        Args:
+            The fixer class
+
+        Return:
+            The fixer dictionary
+        """
+
+        # look for model fix
+        fix_model = self.fixes_dictionary["models"].get(self.model, None)
+        if not fix_model:
+            self.logger.warning("No fixes available for model %s",
+                                self.model)
+            return None
+
+        # look for exp fix, look for default
+        fix_exp = fix_model.get(self.exp, None)
+        if not fix_exp:
+            fix_exp = fix_model.get('default', None)
+            if not fix_exp:
+                self.logger.warning("No fixes available for model %s, experiment %s",
+                                    self.model, self.exp)
+                return None
+
+        fixes = fix_exp.get(self.source, None)
+        if not fixes:
+            fixes = fix_exp.get('default', None)
+            if not fixes:
+                self.logger.warning("No fixes available for model %s, experiment %s, source %s",
+                                    self.model, self.exp, self.source)
+                return None
+        return fixes
+
+    def fixer(self, data, **kwargs):
+        """Call the fixer function returnin container or iterator"""
+        if isinstance(data, types.GeneratorType):
+            return self._fixergen(data, **kwargs)
+        else:
+            return self._fixer(data, **kwargs)
+
+    def _fixergen(self, data, **kwargs):
+        """Iterator version of the fixer"""
+        for ds in data:
+            yield self._fixer(ds, **kwargs)
+
+    def _fixer(self, data, apply_unit_fix=False):
         """
         Perform fixes (var name, units, coord name adjustments) of the input dataset.
 
@@ -30,33 +81,14 @@ class FixerMixin():
 
         # add extra units (might be moved somewhere else)
         units_extra_definition()
+        fix = self.fixes
 
-        fixes = load_yaml(self.fixer_file)
-        model = self.model
-        exp = self.exp
-        src = self.source
-
-        # Default input datamodel
-        src_datamodel = fixes["defaults"].get("src_datamodel", None)
-
-        fixm = fixes["models"].get(model, None)
-        if not fixm:
-            self.logger.warning("No fixes defined for model %s", model)
+        # if there are no fixes, return
+        if fix is None:
             return data
 
-        fixexp = fixm.get(exp, None)
-        if not fixexp:
-            fixexp = fixm.get('default', None)
-            if not fixexp:
-                self.logger.warning("No fixes defined for model %s, experiment %s", model, exp)
-                return data
-
-        fix = fixexp.get(src, None)
-        if not fix:
-            fix = fixexp.get('default', None)
-            if not fix:
-                self.logger.warning("No fixes defined for model %s, experiment %s, source %s", model, exp, src)
-                return data
+        # Default input datamodel
+        src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
 
         self.deltat = fix.get("deltat", 1.0)
         jump = fix.get("jump", None)  # if to correct for a monthly accumulation jump
@@ -74,11 +106,16 @@ class FixerMixin():
                 # This is a grib variable, use eccodes to find attributes
                 if grib:
                     # Get relevant eccodes attribues
-                    attributes.update(get_eccodes_attr(var))
-                    sn = attributes.get("shortName", None)
-                    if (sn != '~') and (var != sn):
-                        varname = sn
-                        self.logger.info("Grib attributes for %s: %s", varname, attributes)
+                    try:
+                        attributes.update(get_eccodes_attr(var))
+                        sn = attributes.get("shortName", None)
+                        if (sn != '~') and (var != sn):
+                            varname = sn
+                            self.logger.info("Grib attributes for %s: %s", varname, attributes)
+                    except TypeError:
+                        self.logger.warning("Cannot get eccodes attributes for %s", var)
+                        self.logger.warning("Information may be missing in the output file")
+                        self.logger.warning("Please check your version of eccodes")
 
                 varlist[var] = varname
 
@@ -94,7 +131,7 @@ class FixerMixin():
                 # This is a derived variable, let's compute it and create the new variable
                 if formula:
                     try:
-                        data[varname] = _eval_formula(formula, data)
+                        data[varname] = eval_formula(formula, data)
                         source = varname
                         attributes.update({"derived": formula})
                         self.logger.info("Derived %s from %s", var, formula)
@@ -129,7 +166,7 @@ class FixerMixin():
                 # adjust units
                 if unit:
                     if unit.count('{'):
-                        unit = fixes["defaults"]["units"][unit.replace('{', '').replace('}', '')]
+                        unit = self.fixes_dictionary["defaults"]["units"][unit.replace('{', '').replace('}', '')]
                     self.logger.info("%s: %s --> %s", var, data[source].units, unit)
                     factor, offset = self.convert_units(data[source].units, unit, var)
                     if (factor != 1.0) or (offset != 0):
@@ -157,6 +194,7 @@ class FixerMixin():
             for var in data.variables:
                 self.apply_unit_fix(data[var])
 
+        # remove variables which should be deleted
         dellist = [x for x in fix.get("delete", []) if x in data.variables]
         if dellist:
             data = data.drop_vars(dellist)
@@ -168,6 +206,53 @@ class FixerMixin():
             log_history(data, "coordinates adjusted by AQUA fixer")
 
         return data
+
+    def get_fixer_varname(self, var):
+
+        """
+        Load the fixes and check if the variable requested is there
+
+        Args:
+            var (str or list):  The variable to be checked
+
+        Return:
+            A list of variables to be loaded
+        """
+
+        if self.fixes is None:
+            self.logger.debug("No fixes available")
+            return var
+
+        variables = self.fixes.get("vars", None)
+        if variables:
+            self.logger.debug("Variables in the fixes: %s", variables)
+        else:
+            self.logger.warning("No variables in the fixes for source %s",
+                                self.source)
+            self.logger.warning("Returning the original variable")
+            return var
+
+        # double check we have a list
+        if isinstance(var, str):
+            var = [var]
+
+        # if a source/derived is available in the fixes, replace it
+        loadvar = []
+        for vvv in var:
+            if vvv in variables.keys():
+
+                # get the source ones
+                if 'source' in variables[vvv]:
+                    loadvar.append(variables[vvv]['source'])
+
+                # get the ones from the equation of the derived ones
+                if 'derived' in variables[vvv]:
+                    required = [s for s in re.split(r'[-+*/]', variables[vvv]['derived']) if s]
+                    loadvar = loadvar + required
+            else:
+                loadvar.append(vvv)
+
+        return loadvar
 
     def simple_decumulate(self, data, jump=None, keep_first=True):
         """
@@ -208,7 +293,6 @@ class FixerMixin():
         # add an attribute that can be later used to infer about decumulation
         deltas.attrs['decumulated'] = 1
 
-        log_history(deltas, "decumulated by AQUA fixer")
         return deltas
 
     def change_coord_datamodel(self, data, src_datamodel, dst_datamodel):
@@ -301,7 +385,8 @@ class FixerMixin():
             data (xr.DataArray):  input DataArray
         """
         target_units = data.attrs.get("target_units", None)
-        if target_units:
+        real_units = data.attrs.get("units", None)
+        if target_units and real_units != target_units:
             d = {"src_units": data.attrs["units"], "units_fixed": 1}
             data.attrs.update(d)
             data.attrs["units"] = normalize_units(target_units)
@@ -312,15 +397,24 @@ class FixerMixin():
             if offset != 0:
                 data += offset
             log_history(data, "units changed by AQUA fixer")
+            data.attrs.pop('target_units', None)
 
 
 def normalize_units(src):
-    """Get rid of crazy grib units"""
+    """
+    Get rid of crazy grib units: this is a collection of HACK and need to be improved
+    We might want to introdue a dictionary of unit fixes read from dictionary
+    """
     if src == '1':
         return 'dimensionless'
     else:
-        return str(src).replace("of", "").replace("water", "").replace("equivalent", "")
-    
+        src = str(src)
+        src = src.replace("of", "").replace("water", "").replace("equivalent", "")
+        src = src.replace("deg C", "degC")
+        src = src.replace("mm 3h-1", "mm/(3h)") #MSWEP fix
+        return src
+
+
 def units_extra_definition():
     """Add units to the pint registry"""
 
@@ -328,7 +422,7 @@ def units_extra_definition():
     # needed to work with metpy 1.4.0 see
     # https://github.com/Unidata/MetPy/issues/2884
     units._on_redefinition = 'ignore'
-    units.define('fraction = [] = frac')
+    units.define('fraction = [] = Fraction = frac')
     units.define('psu = 1e-3 frac')
     units.define('PSU = 1e-3 frac')
     units.define('Sv = 1e+6 m^3/s')

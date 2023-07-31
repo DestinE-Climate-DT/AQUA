@@ -1,0 +1,15 @@
+plugins:
+  source:
+    - module: intake_xarray
+
+
+sources:
+  monthly:
+    description: ERA5 monthly data from 1940 to 2022
+    driver: netcdf
+    args:
+      urlpath: '/work/bb1153/b382076/ERA5/mon/ERA5_*_mon_full**.nc'
+      chunks: 
+        time: 12
+      xarray_kwargs:
+        decode_times: True
