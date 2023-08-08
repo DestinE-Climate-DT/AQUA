@@ -42,13 +42,13 @@ filetype:
 # If a relative path is used this is attached to $ECEDIR/$basedir
 component:
   cmoratm:
-    maskfile: '/work/bb1153/b382076/AQUA-archive/masks/lonlat/atm_mask_r100.nc'
+    maskfile: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/data/mask_r100.nc'
     gridfile: ''
-    areafile: '/work/bb1153/b382076/AQUA-archive/grids/lonlat/cell_area_r100.nc'
+    areafile: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/weights/cell_area_r100.nc'
   cmoroce:
     maskfile: ''
     gridfile: ''
-    areafile: '/work/bb1153/b382075/nextgems/weights/cell_area_r100.nc'
+    areafile: '/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/weights/cell_area_r100.nc'
 
 # Definition of individual variables
 variables:
