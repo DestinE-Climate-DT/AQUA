@@ -43,6 +43,13 @@ source_grids:
       atm3d:
         path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
         space_coord: ["value"]
+    tco79-eORCA2:
+      atm2d:
+        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
+        space_coord: ["value"]
+      atm3d:
+        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
+        space_coord: ["value"]
     test-tco79:
       original_2d:
         path: ../AQUA_tests_short/grids/tco79_grid.nc
