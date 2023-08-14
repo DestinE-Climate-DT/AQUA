@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- AQUA new common environment installation tool for LUMI added (#413)
+
 ## [v0.2-beta]
 
 This is the `AQUA` version part of the Deliverable D340.7.1.2. 

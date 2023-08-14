@@ -1,0 +1,12 @@
+# pip dependencies
+pip install -e $AQUA/diagnostics/teleconnections/[all]
+pip install sparse
+pip install dask_jobqueue
+pip install docker
+pip install gribscan
+pip install smmregrid
+pip install ECmean4
+pip install fast_histogram
+pip install boost_histogram
+pip install dask_histogram
+pip install -e $AQUA

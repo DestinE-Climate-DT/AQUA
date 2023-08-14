@@ -1,6 +1,6 @@
 #!/bin/bash
 
-file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/framework/AQUA_tests.tar.gz?temp_url_sig=2560144f40d5269887830a64b3b417977621c151&temp_url_expires=2023-08-09T16:05:16Z"
+file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/framework/AQUA_tests.tar.gz?temp_url_sig=cbc57346e214b29bf44b094ee079eb12c8f4cb22&temp_url_expires=2025-07-10T09:59:23Z"
 file_path="AQUA_tests.tar.gz"
 
 if [ ! -f "$file_path" ]; then
