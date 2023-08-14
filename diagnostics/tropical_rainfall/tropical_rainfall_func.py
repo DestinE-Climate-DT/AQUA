@@ -362,29 +362,26 @@ def space_regrider(data, space_grid_factor=None, lat_length=None, lon_length=Non
         xarray:                        The regridded Dataset
     """
     # work only for lat and lon only for now. Check the line with interpolation command and modify it in the future
-    if isinstance(space_grid_factor, int):
+    if isinstance(space_grid_factor, (int, float)):
         if space_grid_factor > 0:
-            del_lat = float((float(data['lat'][1]) - float(data['lat'][0]))/2)
-            del_lon = float((float(data['lon'][1]) - float(data['lon'][0]))/2)
-            ds = []
-            ds_element = data.copy(deep=True)
-            for i in range(1, space_grid_factor):
-                ds_element = ds_element.interp(
-                    lat=ds_element['lat'][:] + del_lat, method="linear", kwargs={"fill_value": "extrapolate"})
-                ds_element = ds_element.interp(
-                    lon=ds_element['lon'][:] + del_lon, method="linear", kwargs={"fill_value": "extrapolate"})
-                ds.append(ds_element)
-                del_lat = del_lat/2
-                del_lon = del_lon/2
-            new_dataset = xarray.concat(ds, dim='lat')
-            new_dataset = new_dataset.sortby(new_dataset['lat'])
+            new_dataset = data
+            lon_length = int(data.lon.size * space_grid_factor)
+            lat_length = int(data.lat.size * space_grid_factor)
+            new_lon_coord = new_space_coordinate(
+                new_dataset, coord_name='lon', new_length=lon_length)
+            new_lat_coord = new_space_coordinate(
+                new_dataset, coord_name='lat', new_length=lat_length)
+            new_dataset = new_dataset.interp(lon=new_lon_coord, method="linear", kwargs={
+                                            "fill_value": "extrapolate"})
+            new_dataset = new_dataset.interp(lat=new_lat_coord, method="linear", kwargs={
+                                            "fill_value": "extrapolate"})
 
         elif space_grid_factor < 0:
             space_grid_factor = abs(space_grid_factor)
             new_dataset = data.isel(
-                lat=[i for i in range(0, data.lat.size, space_grid_factor)])
-            new_dataset = data.isel(
-                lon=[i for i in range(0, data.lon.size, space_grid_factor)])
+                lat=[i for i in range(0, data.lat.size, int(space_grid_factor))])
+            new_dataset = new_dataset.isel(
+                lon=[i for i in range(0, data.lon.size, int(space_grid_factor))])
     else:
         new_dataset = data
 
