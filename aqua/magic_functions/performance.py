@@ -184,9 +184,7 @@ class ExecutionMagics(Magics):
         _dataset_time_size, two_steps, _stmt_original = self._two_time_elements(_stmt)
 
         logger.debug("Time-sliced dataset: {}".format(stmt))
-        logger.debug("Two Time-sliced dataset: {}".format(two_steps))
-        #logger.debug("Original/Full dataset: {}".format(stmt_original))
-        #logger.debug("Numer of timesteps of original dataset: {}".format(dataset_time_size))
+        #logger.debug("Two Time-sliced dataset: {}".format(two_steps))
 
         transform  = self.shell.transform_cell
 
