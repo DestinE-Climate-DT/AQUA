@@ -11,6 +11,11 @@ from datetime import datetime
 import numpy as np
 import xarray as xr
 
+from datetime import datetime
+from timezonefinder import TimezoneFinder
+import pytz
+
+
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 # import boost_histogram as bh  # pip
@@ -33,7 +38,7 @@ from aqua import Reader
 from aqua.util import create_folder
 
 from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_clock, convert_monthnumber_to_str
-from .tropical_rainfall_func import mirror_dummy_grid, space_regrider
+from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
 from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
 
 
@@ -1549,7 +1554,6 @@ class Tropical_Rainfall:
 
                 if coord == 'lon':
                     # twin object for two different y-axis on the sample plot
-                    #      transform = ccrs.PlateCarree(), extend='both')
                     ax_span = axs[i].twinx()
                     ax_span.axhspan(-self.trop_lat, self.trop_lat,
                                     alpha=0.05, color='tab:red')
@@ -2268,3 +2272,47 @@ class Tropical_Rainfall:
                 seasonal_095level, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return seasonal_095level
+
+    def _convert_time_into_UTC_time(self, latitude = 40.7128, longitude = -74.0060, local_datetime = datetime(2023, 8, 15, 12, 0, 0) ):
+        tf = TimezoneFinder()
+        time_zone_str = tf.timezone_at(lng=longitude, lat=latitude)
+        local_time = pytz.timezone(time_zone_str).localize(local_datetime)
+        utc_time = local_time.astimezone(pytz.UTC)
+        return np.datetime64(utc_time)
+        
+    def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor = 1, time_length=None,
+                          #freq=None,  time_grid_factor=None, 
+                          tqdm=True):
+        try:
+            data = data[model_variable]
+        except KeyError:
+            pass
+
+
+        utc_data=[]
+        progress_bar_template = "[{:<40}] {}%"
+        if  time_length is not None:
+            data = data.isel(time=slice(0, time_length))
+        data = space_regrider(data, space_grid_factor=space_grid_factor)
+        for time_ind in range(0, data.time.size):
+            utc_data.append([])
+            for lat_ind in range(0, data.lat.size):
+                utc_data[time_ind].append([])
+                for lon_ind in range(0, data.lon.size):
+                    total_ind =   time_ind*data.lat.size*data.lon.size + lat_ind*data.lon.size + lon_ind + 1  
+                    ratio =  total_ind / (data.lat.size*data.lon.size*data.time.size)
+                    progress = int(40 * ratio)
+                    print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
+                    
+                    local_time = data.time[time_ind]
+                    latitude = data.lat[lat_ind].values
+                    longitude = data.lon[lon_ind].values - 180
+                    
+                    local_datetime = datetime(local_time['time.year'].values, local_time['time.month'].values, local_time['time.day'].values, 
+                                local_time['time.hour'].values, local_time['time.minute'].values, local_time['time.second'].values)
+                    utc_element = self._convert_time_into_UTC_time(latitude = latitude, longitude=longitude, local_datetime =local_datetime )
+                    utc_data[time_ind][lat_ind].append(utc_element)
+        new_dataset = data.to_dataset(name="tprate")
+        new_dataset.attrs = data.attrs
+        new_dataset.update({'utc_time': (['time', 'lat', 'lon'], utc_data)})
+        return new_dataset
