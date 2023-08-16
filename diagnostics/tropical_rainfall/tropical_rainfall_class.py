@@ -2282,7 +2282,7 @@ class Tropical_Rainfall:
         
     def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor = 1, time_length=None,
                           #freq=None,  time_grid_factor=None, 
-                          tqdm=True):
+                          path_to_netcdf = None, name_of_file = None, tqdm=True):
         try:
             data = data[model_variable]
         except KeyError:
@@ -2315,4 +2315,11 @@ class Tropical_Rainfall:
         new_dataset = data.to_dataset(name="tprate")
         new_dataset.attrs = data.attrs
         new_dataset.update({'utc_time': (['time', 'lat', 'lon'], utc_data)})
-        return new_dataset
+
+        self.grid_attributes(data=new_dataset, tprate_dataset=new_dataset)
+        
+        if path_to_netcdf is not None and name_of_file is not None:
+            self.dataset_to_netcdf(
+                new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
+        else:
+            return new_dataset
