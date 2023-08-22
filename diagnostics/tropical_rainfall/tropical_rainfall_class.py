@@ -15,6 +15,9 @@ from datetime import datetime
 from timezonefinder import TimezoneFinder
 import pytz
 
+from itertools import groupby
+from statistics import mean
+
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -768,28 +771,38 @@ class Tropical_Rainfall:
             KeyError: If the obtained xarray.Dataset doesn't have global attributes.
         """
         coord_lat, coord_lon = self.coordinate_names(data)
-
-        if data.time.size > 1:
-            time_band = str(
-                data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(time_interpreter(data))
-        else:
-            time_band = str(data.time.values)
-        if data[coord_lat].size > 1:
-            latitude_step = data[coord_lat][1].values - \
-                data[coord_lat][0].values
-            lat_band = str(data[coord_lat][0].values)+', ' + \
-                str(data[coord_lat][-1].values)+', freq='+str(latitude_step)
-        else:
-            lat_band = data[coord_lat].values
-            latitude_step = data[coord_lat].values
-        if data[coord_lon].size > 1:
-            longitude_step = data[coord_lon][1].values - \
-                data[coord_lon][0].values
-            lon_band = str(data[coord_lon][0].values)+', ' + \
-                str(data[coord_lon][-1].values)+', freq='+str(longitude_step)
-        else:
-            longitude_step = data[coord_lon].values
-            lon_band = data[coord_lon].values
+        try:
+            if data.time.size > 1:
+                time_band = str(
+                    data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(time_interpreter(data))
+            else:
+                time_band = str(data.time.values)
+        except KeyError:
+            time_band = 'None'
+        try:
+            if data[coord_lat].size > 1:
+                latitude_step = data[coord_lat][1].values - \
+                    data[coord_lat][0].values
+                lat_band = str(data[coord_lat][0].values)+', ' + \
+                    str(data[coord_lat][-1].values)+', freq='+str(latitude_step)
+            else:
+                lat_band = data[coord_lat].values
+                latitude_step = data[coord_lat].values
+        except KeyError:
+            lat_band = 'None'
+            latitude_step = 'None'
+        try:
+            if data[coord_lon].size > 1:
+                longitude_step = data[coord_lon][1].values - \
+                    data[coord_lon][0].values
+                lon_band = str(data[coord_lon][0].values)+', ' + \
+                    str(data[coord_lon][-1].values)+', freq='+str(longitude_step)
+            else:
+                longitude_step = data[coord_lon].values
+                lon_band = data[coord_lon].values
+        except KeyError:
+            lon_band = 'None'
+            longitude_step = 'None'
 
         if variable is None:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -2273,53 +2286,212 @@ class Tropical_Rainfall:
         else:
             return seasonal_095level
 
-    def _convert_time_into_UTC_time(self, latitude = 40.7128, longitude = -74.0060, local_datetime = datetime(2023, 8, 15, 12, 0, 0) ):
-        tf = TimezoneFinder()
-        time_zone_str = tf.timezone_at(lng=longitude, lat=latitude)
-        local_time = pytz.timezone(time_zone_str).localize(local_datetime)
-        utc_time = local_time.astimezone(pytz.UTC)
-        return np.datetime64(utc_time)
+    #def _convert_time_into_UTC_time(self, latitude = 40.7128, longitude = -74.0060, local_datetime = datetime(2023, 8, 15, 12, 0, 0) ):
+    #    tf = TimezoneFinder()
+    #    time_zone_str = tf.timezone_at(lng=longitude, lat=latitude)
+    #    local_time = pytz.timezone(time_zone_str).localize(local_datetime)
+    #    utc_time = local_time.astimezone(pytz.UTC)
+    #    return np.datetime64(utc_time)
+
+    def _utc_to_local(self, utc_time, longitude):
+        # Calculate the time zone offset based on longitude
+        # Each 15 degrees of longitude corresponds to 1 hour of time difference
+        time_zone_offset_hours = int(longitude / 15)
+
+        # Apply the time zone offset to convert UTC time to local time
+        local_time = (utc_time + time_zone_offset_hours) % 24
         
-    def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor = 1, time_length=None,
+        return local_time
+        
+    def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor = None, time_length=None,
+                          trop_lat       = None, new_unit='mm/day',
                           #freq=None,  time_grid_factor=None, 
                           path_to_netcdf = None, name_of_file = None, tqdm=True):
+        self.class_attributes_update(trop_lat = trop_lat)
         try:
             data = data[model_variable]
         except KeyError:
             pass
 
-
         utc_data=[]
         progress_bar_template = "[{:<40}] {}%"
         if  time_length is not None:
             data = data.isel(time=slice(0, time_length))
-        data = space_regrider(data, space_grid_factor=space_grid_factor)
+            self.logger.debug('Time selected')
+
+        
+        _data = data.sel(lat=slice(-self.trop_lat, self.trop_lat))
+        data = _data.mean('lat')
+        self.logger.debug('Latitude selected and mean calculated')
+        self.logger.debug("Mean value: {}".format(data.mean()))
+        if space_grid_factor is not None:
+            data = space_regrider(data, lon_length=space_grid_factor*data.lon.size)
+            self.logger.debug('Space regrided')
         for time_ind in range(0, data.time.size):
             utc_data.append([])
-            for lat_ind in range(0, data.lat.size):
-                utc_data[time_ind].append([])
-                for lon_ind in range(0, data.lon.size):
-                    total_ind =   time_ind*data.lat.size*data.lon.size + lat_ind*data.lon.size + lon_ind + 1  
-                    ratio =  total_ind / (data.lat.size*data.lon.size*data.time.size)
-                    progress = int(40 * ratio)
-                    print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
-                    
-                    local_time = data.time[time_ind]
-                    latitude = data.lat[lat_ind].values
-                    longitude = data.lon[lon_ind].values - 180
-                    
-                    local_datetime = datetime(local_time['time.year'].values, local_time['time.month'].values, local_time['time.day'].values, 
-                                local_time['time.hour'].values, local_time['time.minute'].values, local_time['time.second'].values)
-                    utc_element = self._convert_time_into_UTC_time(latitude = latitude, longitude=longitude, local_datetime =local_datetime )
-                    utc_data[time_ind][lat_ind].append(utc_element)
-        new_dataset = data.to_dataset(name="tprate")
-        new_dataset.attrs = data.attrs
-        new_dataset.update({'utc_time': (['time', 'lat', 'lon'], utc_data)})
-
-        self.grid_attributes(data=new_dataset, tprate_dataset=new_dataset)
+            for lon_ind in range(0, data.lon.size): 
+                total_ind =   time_ind*data.lon.size + lon_ind
+                ratio =  total_ind / (data.lon.size*data.time.size)
+                progress = int(40 * ratio)
+                print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
+                
+                local_time = data.time[time_ind]
+                longitude = data.lon[lon_ind].values - 180
+                
+                local_datetime = float(local_time['time.hour'].values+local_time['time.minute'].values/60)
+                              
+                utc_element = self._utc_to_local(longitude=longitude, utc_time =local_datetime )
+                utc_data[time_ind].append(utc_element)
         
+        
+        _dataset = data.to_dataset(name="tprate")
+        _dataset.attrs = data.attrs
+        _dataset.update({'utc_time': (['time', 'lon'], utc_data)})
+
+        self.grid_attributes(data=_dataset, tprate_dataset=_dataset)
+        
+        data = _dataset.where(~np.isnan(_dataset.tprate), 0)
+            
+        utc_time = data['utc_time'].stack(total=['time','lon']).values 
+        tprate = data['tprate'].stack(total=['time','lon']).values
+
+        if new_unit is not None and 'xarray' in str(type(tprate)):
+            tprate = self.precipitation_rate_units_converter(tprate, new_unit=new_unit)
+            units = new_unit
+        elif new_unit is not None and 'ndarray' in str(type(tprate)):
+            result_list = []
+            for element in tprate:
+                result_list.append(self.precipitation_rate_units_converter(float(element), old_unit=data.units, new_unit=new_unit))
+            tprate = np.array(result_list, dtype=np.float64)
+        else:
+            units = tprate.units
+
+        new_data = []
+        for i in range(0, len(utc_time)):
+            new_data.append([utc_time[i], tprate[i]])
+
+        
+        #tprate_rel = [tprate[i]- mean_val for i in range(0, len(tprate))]
+
+        # Sorted list with corresponding values
+        sorted_list = sorted(new_data , key=lambda x: x[0])
+
+        # Group elements by the first value in each element
+        grouped_data = {key: [value for _, value in group] for key, group in groupby(sorted_list, key=lambda x: x[0])}
+
+        # Calculate the mean for each group and create the result list
+        result = [[key, mean(values)] for key, values in grouped_data.items()]
+
+        
+
+        new_data = [result[i][1] for i in range(0, len(result))]
+        new_coord = [result[i][0] for i in range(0, len(result))]
+
+        
+
+        da = xr.DataArray(new_data,
+                        dims=('utc_time'),
+                        coords={'utc_time': new_coord})
+
+        
+
+        new_dataset = da.to_dataset(name="tprate")
+        new_dataset.attrs = _dataset.attrs
+
+        mean_val = da.mean()
+
+        da = [(new_data[i] - mean_val)/mean_val for i in range(0, len(new_data))]
+
+
+        new_dataset.update({'tprate_relative': (['utc_time'], da)})
+
         if path_to_netcdf is not None and name_of_file is not None:
             self.dataset_to_netcdf(
                 new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return new_dataset
+
+        
+    
+    def daily_variability_plot(self, ymax=12,
+                        trop_lat=None,             relative=True,         get_median=False,
+                        legend='_Hidden',          figsize=1,             ls='-',
+                        maxticknum=12,             color='tab:blue',      varname='tprate',
+                        ylogscale=False,           xlogscale=False,       loc='upper right',
+                        add=None,                  fig=None,              plot_title=None,
+                        path_to_pdf=None,          new_unit='mm/day',     name_of_file=None,
+                        pdf_format=True,       path_to_netcdf=None):
+
+
+        self.class_attributes_update(trop_lat=trop_lat)
+        if path_to_netcdf is None:
+            raise Exception('The path needs to be provided')
+        else:
+            data = self.open_dataset(
+                path_to_netcdf=path_to_netcdf)
+            
+        
+            
+        utc_time = data['utc_time']
+        if relative:
+            tprate = data['tprate_relative']
+        else:
+            tprate = data['tprate']
+        try:
+            units = data.units
+        except AttributeError:
+            try:
+                units = data.tprate.units
+            except AttributeError:
+                units = 'mm/day'#'kg m**-2 s**-1'
+
+        #if new_unit is not None and 'xarray' in str(type(tprate)):
+        #    tprate = self.precipitation_rate_units_converter(tprate, new_unit=new_unit)
+        #    units = new_unit
+        #elif new_unit is not None and 'ndarray' in str(type(tprate)):
+        #    result_list = []
+        #    for element in tprate:
+        #        result_list.append(self.precipitation_rate_units_converter(float(element), old_unit=data.units, new_unit=new_unit))
+        #    tprate = np.array(result_list, dtype=np.float64)
+        #else:
+        #    units = data.units
+        if 'Dataset' in str(type(data)):
+            y_lim_max = self.precipitation_rate_units_converter(
+                ymax, old_unit='mm/day', new_unit=new_unit)
+            if fig is not None:
+                fig, ax = fig
+            elif add is None and fig is None:
+                fig, ax = plt.subplots(
+                    figsize=(11*figsize, 10*figsize), layout='constrained')
+            elif add is not None:
+                fig, ax  = add
+        ax.plot(utc_time, tprate,
+                    color=color,  label=legend,  ls=ls)
+
+        if relative:
+            ax.set_title('Relative Value of Daily Precipitation Variability', fontsize=15)
+            ax.set_xlabel('tprate variability, '+units,  fontsize=12)
+        else:
+            ax.set_title('Daily Precipitation Variability', fontsize=15)
+            ax.set_xlabel('relative tprate',  fontsize=12)
+
+        ax.set_frame_on(True)
+        ax.grid(True)
+
+        ax.set_xlabel('Local time', fontsize=12)
+
+        if legend != '_Hidden':
+                plt.legend(loc=loc,
+                           fontsize=12,    ncol=2)
+
+        if path_to_pdf is not None:
+            plt.savefig(path_to_pdf,
+                                format="pdf",
+                                bbox_inches="tight",
+                                pad_inches=1,
+                                transparent=True,
+                                facecolor="w",
+                                edgecolor='w',
+                                orientation='landscape')
+            
+        return [fig,  ax]
