@@ -440,12 +440,6 @@ source_grids:
         space_coord:
         - longitude
         - latitude
-  PHC3:
-    phc3:
-      default:
-        space_coord:
-        - lon
-        - lat
   WOA18:
     woa18_2005_2017:
       default:
