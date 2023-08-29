@@ -29,13 +29,13 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/tco1279-orca025-cycle3.yaml"
-  dev-control-1950:
+  control-1950-devcon:
     description: DE340 development control run with fixed GHG from 1950
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/dev-control-1950.yaml"
-  dev-historical-1990:
+        path: "{{CATALOG_DIR}}/control-1950-devcon.yaml"
+  historical-1990-devcon:
     description: DE340 development control run with fixed GHG from 1950
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/dev-historical-1990.yaml"
+        path: "{{CATALOG_DIR}}/historical-1990-devcon.yaml"
