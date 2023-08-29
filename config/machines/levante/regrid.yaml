@@ -19,10 +19,10 @@ target_grids:
   r250: r144x72
 source_grids:
   IFS:
-    control-1950-devcon:
+    dev-control-1950:
       default:
         space_coord: ["lon", "lat"]
-    historical-1990-devcon:
+    dev-historical-1990:
       default:
         space_coord: ["lon", "lat"]
   
