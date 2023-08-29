@@ -41,5 +41,6 @@ performance_indices(exp, year1, year2, numproc = numproc, config = config,
             interface = interface, loglevel = 'warning', xdataset = data)
 
 img = WImage(filename=f'/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/figures/PI4_EC23_{exp}_AQUA_r1i1p1f1_{year1}_{year2}.pdf')
+filename=f'/pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/figures/PI4_EC23_{exp}_AQUA_r1i1p1f1_{year1}_{year2}.pdf'
 print(filename)
 # img
