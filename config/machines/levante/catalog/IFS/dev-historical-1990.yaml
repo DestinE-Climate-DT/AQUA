@@ -3,7 +3,7 @@ sources:
     driver: netcdf
     description: LRA data monthly at r100
     args:
-      urlpath: /work/bb1153/b382076/LRA-fdb/IFS/fdb-historical-1950/r100/monthly/*fdb-historical-1950_r100_monthly_????.nc
+      urlpath: /work/bb1153/b382076/LRA-fdb/IFS/fdb-historical-1990/r100/monthly/*fdb-historical-1990_r100_monthly_????.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true

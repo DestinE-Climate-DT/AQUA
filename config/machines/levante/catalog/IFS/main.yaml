@@ -34,8 +34,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/dev-control-1950.yaml"
-  dev-historical-1950:
+  dev-historical-1990:
     description: DE340 development control run with fixed GHG from 1950
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/dev-historical-1950.yaml"
+        path: "{{CATALOG_DIR}}/dev-historical-1990.yaml"
