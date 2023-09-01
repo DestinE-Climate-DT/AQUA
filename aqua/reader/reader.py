@@ -155,7 +155,7 @@ class Reader(FixerMixin, RegridMixin):
 
         # load and check the regrid
         if regrid or areas:
-            cfg_regrid = load_yaml(self.regrid_file)
+            cfg_regrid = load_yaml(self.regrid_file, definitions="paths")
             source_grid_id = check_catalog_source(cfg_regrid["source_grids"],
                                                   self.model, self.exp,
                                                   self.source, name='regrid')

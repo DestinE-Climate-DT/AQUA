@@ -4,32 +4,13 @@ import operator
 import os
 import re
 import sys
+from string import Template
 import xarray as xr
 from collections import defaultdict
 from ruamel.yaml import YAML
 
 
-def load_yaml(infile):
-    """
-    Load generic yaml file
-
-    Args:
-        infile(str): a file path
-
-    Returns:
-        A dictionary with the yaml file keys
-    """
-    yaml = YAML(typ='rt')  # default, if not specified, is 'rt' (round-trip)
-
-    try:
-        with open(infile, 'r', encoding='utf-8') as file:
-            cfg = yaml.load(file)
-    except IOError:
-        sys.exit(f'ERROR: {infile} not found: you need to have this configuration file!')
-    return cfg
-
-
-def load_multi_yaml(folder_path):
+def load_multi_yaml(folder_path, definitions=None):
     """
     Load and merge all yaml files located in a given folder
     into a single dictionary.
@@ -37,21 +18,70 @@ def load_multi_yaml(folder_path):
     Args:
         folder_path(str):   The path of the folder containing the yaml
                             files to be merged.
+        definitions (str or dict, optional): name of the section containing string template
+                                             definitions or a dictionary with the same
 
     Returns:
         A dictionary containing the merged contents of all the yaml files.
     """
     yaml = YAML()  # default, if not specified, is 'rt' (round-trip)
 
-    merged_dict = defaultdict(dict)
-    for filename in os.listdir(folder_path):
-        if filename.endswith(('.yml', '.yaml')):
-            file_path = os.path.join(folder_path, filename)
-            with open(file_path, 'r', encoding='utf-8') as file:
-                yaml_dict = yaml.load(file)
+    # Helper function to read combined yaml
+    def load_merge(folder_path, definitions):
+        merged_dict = defaultdict(dict)
+        for filename in os.listdir(folder_path):
+            if filename.endswith(('.yml', '.yaml')):
+                file_path = os.path.join(folder_path, filename)
+                yaml_dict = load_yaml(file_path, definitions)
                 for key, value in yaml_dict.items():
                     merged_dict[key].update(value)
-    return dict(merged_dict)
+        return dict(merged_dict)
+    
+    if isinstance(definitions, str):  # if definitions is a string we need to read twice
+        yaml_dict = load_merge(folder_path, None)
+        definitions = yaml_dict.get(definitions)
+        yaml_dict = load_merge(folder_path, definitions)  # Read again with definitions
+    else:  # if a dictionary or None has been passed for definitions we read only once
+        yaml_dict = load_merge(folder_path, definitions)
+
+    return yaml_dict
+
+
+def load_yaml(infile, definitions=None):
+    """
+    Load yaml file with template substitution
+
+    Args:
+        infile (str): a file path to the yaml
+        definitions (str or dict, optional): name of the section containing string template
+                                             definitions or a dictionary with the same
+    Returns:
+        A dictionary with the yaml file keys
+    """
+    
+    if not os.path.exists(infile):
+        sys.exit(f'ERROR: {infile} not found: you need to have this configuration file!')
+         
+    yaml = YAML(typ='rt')  # default, if not specified, is 'rt' (round-trip)
+    
+    cfg = None
+    # Load the YAML file as a text string
+    with open(infile, 'r', encoding='utf-8') as file:
+        yaml_text = file.read()
+
+    if isinstance(definitions, str):  # if it is a string extract from original yaml, else it is directly a dict
+        cfg = yaml.load(yaml_text)
+        definitions = cfg.get(definitions)
+    
+    if definitions:
+        # perform template substitution
+        template = Template(yaml_text).safe_substitute(definitions)
+        cfg = yaml.load(template)
+    else:
+        if not cfg:  # did we already load it ?
+            cfg = yaml.load(yaml_text)
+
+    return cfg
 
 
 def dump_yaml(outfile=None, cfg=None, typ='rt'):
