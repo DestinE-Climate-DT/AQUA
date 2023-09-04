@@ -7,7 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+<<<<<<< HEAD
 - AQUA new common environment installation tool for LUMI added (#413)
+=======
+- Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
+>>>>>>> aqua_container
 
 ## [v0.2-beta]
 

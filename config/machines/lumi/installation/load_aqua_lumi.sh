@@ -1,30 +1,38 @@
 #!/bin/bash
 
-# This container /project/project_465000454/containers/aqua/aqua-v0.2.sif
-# is based on this https://github.com/oloapinivad/AQUA/blob/main/environment-common.yml env and AQUA v0.2.
+AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.2.sif"
+FDB5_CONFIG_FILE="/scratch/project_465000454/sughosh/config.yaml"
+GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
+GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
 
-# To load AQUA-common environment
-singularity shell  \
- --cleanenv \
- --env FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml \
- --env GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/ \
- --env GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions \
- --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
- --bind /pfs/lustrep3/scratch/project_465000454 \
- --bind /scratch/project_465000454 \
- /project/project_465000454/containers/aqua/aqua-v0.2.sif
+singularity shell \
+    --cleanenv \
+    --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
+    --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
+    --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
+    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
+    --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
+    --bind /pfs/lustrep3/scratch/project_465000454 \
+    --bind /scratch/project_465000454 \
+    $AQUA_container
+# Run this script in LUMI in VSCode 
 
 # For different FDB config files, export specific FDB5_CONFIG_FILE.
 
-######## Jupyter-Notebook Run ##########
+##### To update any python package e.g. gsv interface, opa, aqua ######
+# Do "pip install /path/to/repo/package_name" inside the singularity container.
+# Remember, when you close the container, your changes get lost.
+# You need to do it everytime you load the container.
+
+######## Jupyter-Notebook Run in VSCode ##########
 # Now, to run the Jupyter-notebooks with the AQUA environemnt
-# just run "jupyter-lab"
+# Run "jupyter-lab"
 
-# You will get a jupyter-server like this: "http://localhost:8888/lab?token=********"
+# You will get a jupyter-server like this: "http://localhost:port/lab?token=random_token"
 
-# If you are using VS-Code, just open a notebook.
+# If you are using VS-Code, open a notebook.
 # On top right corner of the notebook, select for "select kernel" option.
-# Then "Select another kernel" and then "Existing Jupyter Server".
+# Next "Select another kernel" and then "Existing Jupyter Server".
 # Paste the jupyter server url there and keep the password blank and Enter.
 # Then you can use "Python 3(ipykernel)" kernel for AQUA env. 
 
@@ -33,4 +41,4 @@ singularity shell  \
 # run this in your system terminal "ssh -L port:localhost:port lumi_user@lumi.csc.fi", port is localhost channel.
 # Then paste the jupyter url on your web browser.
 
-# If you face any issue, ask in the mattermost AQUA channel.
+# Detailed instructions can be found here: https://github.com/oloapinivad/AQUA/issues/420

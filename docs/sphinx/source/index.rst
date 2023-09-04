@@ -19,6 +19,7 @@ Welcome to AQUA's documentation!
    adding_data
    tests
    slurm
+   aqua_container
    examples_tutorials
    api_reference
    troubleshooting_faq

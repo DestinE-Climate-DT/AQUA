@@ -1,3 +1,10 @@
+# import ptvsd
+# import pdb
+
+# # Enable the ptvsd debugger
+# ptvsd.enable_attach(address=("0.0.0.0", 7001))
+# ptvsd.wait_for_attach()
+
 import sys
 # sys.path.append("/users/sughosh/AQUA")
 from aqua import Reader
@@ -10,8 +17,8 @@ from wand.image import Image as WImage # to open PDFs in jupyter
 model_atm = 'IFS'
 model_oce = 'FESOM'
 exp = 'tco79-orca1'
-year1 = 1991
-year2 = 2019
+year1 = 2000
+year2 = 2001
 numproc = 1
 interface = '../config/interface_AQUA.yml'
 config = '../config/ecmean_config_replicability.yml'
@@ -19,10 +26,15 @@ config = '../config/ecmean_config_replicability.yml'
 clim=xr.open_mfdataset("/pfs/lustrep3/scratch/project_465000454/kkeller/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology/EC23/r360x180/*")
 clim= clim.isel(time=0).squeeze().ta
 
-reader_atm2d = Reader(model="IFS", exp="tco79-eORCA2", source="atm2d", areas=False)
-data_atm2d = reader_atm2d.retrieve(fix=True)
-reader_atm3d = Reader(model="IFS", exp="tco79-eORCA2", source="atm3d", areas=False)
-data_atm3d = reader_atm3d.retrieve(fix=True)
+# reader_atm2d = Reader(model="IFS", exp="tco79-eORCA2", source="atm2d", areas=False)
+# data_atm2d = reader_atm2d.retrieve(fix=True)
+# reader_atm3d = Reader(model="IFS", exp="tco79-eORCA2", source="atm3d", areas=False)
+# data_atm3d = reader_atm3d.retrieve(fix=True)
+data_path= "/scratch/project_465000454/sughosh/replicability_data"
+
+data_atm2d = xr.open_mfdataset(data_path+"/atm_2d.nc")
+data_atm3d = xr.open_mfdataset(data_path+"/atm_3d.nc")
+
 
 data = data_atm3d.merge(data_atm2d)
 
