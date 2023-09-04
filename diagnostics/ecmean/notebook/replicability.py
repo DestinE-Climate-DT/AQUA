@@ -39,6 +39,8 @@ data_path= "/scratch/project_465000454/tmp/a09x/"
 data = xr.open_mfdataset(data_path+"/*nc")
 
 data["2t_mean"].attrs["units"]=data["2t_mean"].attrs["GRIB_units"]
+data= data.rename({"2t_mean":"2t"})
+
 # data["msl"].attrs["units"]=data["msl"].attrs["GRIB_units"]
 # data["tprate"].attrs["units"]=data["tprate"].attrs["GRIB_units"]
 # data["t"].attrs["units"]=data["t"].attrs["GRIB_units"]
