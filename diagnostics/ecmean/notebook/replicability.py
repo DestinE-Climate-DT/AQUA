@@ -21,7 +21,7 @@ year1 = 2021
 year2 = 2022
 numproc = 1
 interface = '../config/interface_AQUA.yml'
-config = '../config/ecmean_config_replicability.yml'
+config = '../config/ecmean_wf_config.yml'
 
 clim=xr.open_mfdataset("/pfs/lustrep3/scratch/project_465000454/kkeller/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology/EC23/r360x180/*")
 clim= clim.isel(time=0).squeeze().ta
