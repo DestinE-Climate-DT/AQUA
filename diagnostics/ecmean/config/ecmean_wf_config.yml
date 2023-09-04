@@ -1,0 +1,36 @@
+# Choice of interface
+interface: AQUA
+# Choice of model name. It is printed in the output table
+model:
+  name: AQUA
+
+dirs:
+  exp: '' #not necessary we use xarray dataset instead of files
+  clm: /pfs/lustrep3/scratch/project_465000454/kkeller/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology
+  tab: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/tables
+  fig: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/figures
+
+global:
+  atm_vars: [psl,tas,pr]
+  # [tas, psl, pr, evspsbl, pme, cll, clm, clh,
+  #           pr_oce, pme_oce, pr_land, pme_land,
+  #           rsnt, rlnt, net_toa, rsns, rlns, hfss, hfls, net_sfc_nosn]
+  oce_vars: [] #[tos, sos]
+  ice_vars: [] #[siconc]
+  tab_vars: []
+  regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
+  seasons: ['ALL', 'DJF', 'JJA']
+
+PI:
+  2d_vars:
+    field: [tas]
+  3d_vars:
+    field: []
+  oce_vars:
+    field: [] #[tos, sos]
+  ice_vars:
+    field: [] #[siconc]
+  regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
+  seasons: ['ALL', 'DJF', 'JJA']
+  resolution: r360x180
+
