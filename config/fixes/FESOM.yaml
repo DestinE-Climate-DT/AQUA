@@ -10,24 +10,22 @@ models:
                     - ssh
                 vars:
                     ci:
-                        derived: a_ice
+                        source: a_ice
                         src_units: frac
                         grib: true
                         units: '%'
                     sst: 
-                        derived: sst
-                        src_units: degC
+                        source: sst
                         grib: true
-                        units: K
                     sos:
-                        derived: sss
+                        source: sss
                         grib: true
                         units: psu
                     sithick:
-                        derived: m_ice
+                        source: m_ice
                         grib: true
                     zos:
-                        derived: ssh
+                        source: ssh
                         grib: true
                     ocpt:
                         source: temp 

@@ -19,7 +19,7 @@ from aqua.reader import Reader
 from teleconnections.index import station_based_index, regional_mean_anomalies
 from teleconnections.plots import index_plot
 from teleconnections.statistics import reg_evaluation, cor_evaluation
-from teleconnections.tools import load_namelist
+from teleconnections.tools import TeleconnectionsConfig
 
 
 class Teleconnection():
@@ -87,7 +87,7 @@ class Teleconnection():
             self.logger.debug('Zoom: {}'.format(self.zoom))
 
         # Teleconnection variables
-        avail_telec = ['NAO', 'ENSO']
+        avail_telec = ['NAO', 'ENSO', 'ENSO_test']
         if telecname in avail_telec:
             self.telecname = telecname
         else:
@@ -104,7 +104,7 @@ class Teleconnection():
         self.logger.debug('Teleconnection type: {}'.format(self.telec_type))
 
         # At the moment it is used by all teleconnections
-        if self.telecname == 'NAO' or self.telecname == 'ENSO':
+        if self.telecname == 'NAO' or self.telecname == 'ENSO' or self.telecname == 'ENSO_test':
             self.months_window = months_window
 
         # Output variables
@@ -136,9 +136,9 @@ class Teleconnection():
             configdir (str, optional): Path to diagnostics configuration folder.
                                        If None, the default diagnostics folder is used.
         """
+        config = TeleconnectionsConfig(configdir=configdir)
 
-        self.namelist = load_namelist(diagname='teleconnections',
-                                      configdir=configdir)
+        self.namelist = config.load_namelist()
         self.logger.info('Namelist loaded')
 
     def _reader(self, **kwargs):

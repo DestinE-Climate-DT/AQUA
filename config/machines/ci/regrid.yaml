@@ -46,6 +46,13 @@ source_grids:
         space_coord: [cell]
       long:
         space_coord: [lon, lat]
+      intake-esm-test:
+        space_coord: [lon, lat]
+      teleconnections:
+        space_coord: [lon, lat]
+    test-fdb:
+      fdb:
+        space_coord: [lon, lat]
 
   ICON:
     test-healpix:

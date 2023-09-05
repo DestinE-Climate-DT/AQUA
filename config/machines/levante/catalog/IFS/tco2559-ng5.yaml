@@ -1,31 +1,31 @@
 plugins:
   source:
-  - module: intake_xarray
-  - module: gribscan
+    - module: intake_xarray
+    - module: gribscan
 sources:
   ICMGG_atm2d:
     driver: zarr
     description: original 2d output
     args:
-      consolidated: false
-      urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMGGall_update/json.dir/atm2d.json
+      consolidated: False
+      urlpath: reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco2559-ng5/varfiles_all/json.dir/atm2d.json
   ICMU_atm2d:
     driver: zarr
     description: original 2d output (lnsp)
     args:
-      consolidated: false
-      urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMUAall/json.dir/atm2d.json
+      consolidated: False
+      urlpath: reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco2559-ng5/varfiles_all/json.dir/atm2d.json
   ICMU_atm3d:
     driver: zarr
     description: original 3d output
     args:
-      consolidated: false
-      urlpath: reference::/work/bm1235/a270046/cycle2-sync/tco2559-ng5/ICMUAall/json.dir/atm3d.json
+      consolidated: False
+      urlpath: reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco2559-ng5/varfiles_all/json.dir/atm3d.json
   interpolated_global:
     driver: zarr
     description: NN interpolation to 5400x2700 grid (lon=[-180,180], lat=[-90, 90])
     args:
-      consolidated: false
+      consolidated: False
       compat: override
       combine: nested
       urlpath:
@@ -34,7 +34,6 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/lcc/netcdf/tco2559-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10u/netcdf/tco2559-ng5_pc.json
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/10v/netcdf/tco2559-ng5_pc.json
-      driver: netcdf
   lra-r100-monthly:
     description: LRA data monthly at r100
     driver: 'netcdf'
@@ -43,6 +42,15 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+  # interpolated_sp_ci:
+  #   driver: zarr
+  #   args:
+  #     consolidated: False
+  #     compat: override
+  #     combine: nested
+  #     urlpath:
+  #     - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS4.5/ci/netcdf/tco2559-ng5_sp.json
+
   # interpolated_np:
   #   driver: zarr
   #   args:

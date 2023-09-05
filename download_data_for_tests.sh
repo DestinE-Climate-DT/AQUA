@@ -12,15 +12,15 @@ if [ ! -f "$file_path" ]; then
 else
     echo "File already exists."
 fi
-cp ./config/config.yaml ./config/config.yaml.bak
+cp ./config/config-aqua.yaml ./config/config-aqua.yaml.bak
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # Mac OSX
   sed -i '' "/^machine:/c\\
-machine: ci" "./config/config.yaml"
+machine: ci" "./config/config-aqua.yaml"
 else
   # Linux
-  sed -i "/^machine:/c\\machine: ci" "./config/config.yaml"
+  sed -i "/^machine:/c\\machine: ci" "./config/config-aqua.yaml"
 fi
 
 #python -m pytest ./tests/test_basic.py

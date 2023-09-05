@@ -5,7 +5,7 @@ from .plots import index_plot, maps_plot
 from .plots import single_map_plot, maps_diffs_plot
 from .statistics import reg_evaluation, cor_evaluation
 from .tc_class import Teleconnection
-from .tools import load_namelist
+from .tools import TeleconnectionsConfig
 from .tools import area_selection, wgt_area_mean
 
 __version__ = '0.0.9'
@@ -15,7 +15,7 @@ __all__ = ['station_based_index', 'regional_mean_index',
            'index_plot', 'maps_plot',
            'single_map_plot', 'maps_diffs_plot',
            'reg_evaluation', 'cor_evaluation',
-           'Teleconnection', 'load_namelist',
+           'Teleconnection', 'TeleconnectionsConfig',
            'area_selection', 'wgt_area_mean']
 
 # Change log

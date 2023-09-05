@@ -1,11 +1,5 @@
 import pytest
 
-# if os.getenv('PYTEST_CURRENT_TEST') and 'teleconnections' in os.getenv('PYTEST_CURRENT_TEST'):
-#     from teleconnections.cdo_testing import cdo_station_based_comparison
-#     from teleconnections.cdo_testing import cdo_regional_mean_comparison
-#     from teleconnections.tools import load_namelist, lon_180_to_360
-
-
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
 loglevel = 'DEBUG'
@@ -15,6 +9,7 @@ loglevel = 'DEBUG'
 @pytest.mark.teleconnections
 def test_import(module_name):
     """
+    Test that the module can be imported
     """
     try:
         __import__(module_name)
@@ -40,11 +35,12 @@ def test_namelist():
     """
     Test that the namelist can be loaded
     """
-    from teleconnections.tools import load_namelist
+    from teleconnections.tools import TeleconnectionsConfig
 
     configdir = "./diagnostics/teleconnections/config"
     diagname = 'teleconnections'
-    namelist = load_namelist(diagname, configdir=configdir)
+    config = TeleconnectionsConfig(diagname=diagname, configdir=configdir)
+    namelist = config.load_namelist()
     assert len(namelist) > 0
 
 
@@ -54,18 +50,19 @@ def test_station_based(months_window, loglevel=loglevel):
     """
     Test that the station_based method works
     """
-    from teleconnections.tools import load_namelist
+    from teleconnections.tools import TeleconnectionsConfig
     from teleconnections.cdo_testing import cdo_station_based_comparison
 
-    filepath = "./nao_test.nc"
+    filepath = "./AQUA_tests/models/IFS/teleconnections/nao_test.nc"
     configdir = "./diagnostics/teleconnections/config"
     diagname = 'teleconnections'
     telecname = 'NAO'
     rtol = approx_rel
     atol = approx_rel
 
-    # 1. -- Opening yml files
-    namelist = load_namelist(diagname, configdir=configdir)
+    # 1. -- Opening yaml file
+    config = TeleconnectionsConfig(diagname=diagname, configdir=configdir)
+    namelist = config.load_namelist()
 
     # 2. -- Comparison cdo vs lib method
     cdo_station_based_comparison(infile=filepath, namelist=namelist,
@@ -80,18 +77,19 @@ def test_regional_mean(months_window):
     """
     Test that the regional_mean method works
     """
-    from teleconnections.tools import load_namelist
+    from teleconnections.tools import TeleconnectionsConfig
     from teleconnections.cdo_testing import cdo_regional_mean_comparison
 
-    filepath = "./enso_test.nc"
+    filepath = "./AQUA_tests/models/IFS/teleconnections/enso_test.nc"
     configdir = "./diagnostics/teleconnections/config"
     diagname = 'teleconnections'
     telecname = 'ENSO_test'
     rtol = approx_rel
     atol = approx_rel
 
-    # 1. -- Opening yml files
-    namelist = load_namelist(diagname, configdir=configdir)
+    # 1. -- Opening yaml file
+    config = TeleconnectionsConfig(diagname=diagname, configdir=configdir)
+    namelist = config.load_namelist()
 
     # 2. -- Comparison cdo vs lib method
     cdo_regional_mean_comparison(infile=filepath, namelist=namelist,

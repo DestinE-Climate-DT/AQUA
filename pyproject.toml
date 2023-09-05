@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
@@ -34,7 +35,7 @@ dependencies = [
     "gribscan",
     "ecCodes",
     "intake",
-    "intake-esm",
+    "intake-esm>=2023.4.20",
     "intake-xarray",
     "jinja2",
     "metpy",
@@ -42,6 +43,7 @@ dependencies = [
     "pandas",
     "pydantic<2.0.0",
     "pyYAML",
+    "matplotlib",
     "ruamel.yaml",
     "sparse",
     "xarray",
@@ -99,6 +101,8 @@ markers = [
     "aqua: mark test as AQUA framework",
     "slow: tests which are slow",
     "sbatch: tests which require sbatch",
+    "gsv: mark test that requires ECMWF FDB libraries",
+    # beginning of diagnostic tests
     "dummy: mark test for dummy diagnostic",
     "teleconnections: mark test for teleconnections diagnostic",
     "tropical_rainfall: mark test for tropical_rainfall diagnostic"

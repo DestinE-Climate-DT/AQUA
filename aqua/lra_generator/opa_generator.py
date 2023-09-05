@@ -10,7 +10,7 @@ from dask.distributed import Client, LocalCluster
 from one_pass.opa import Opa
 from aqua.logger import log_configure
 from aqua.util import create_folder, load_yaml, dump_yaml
-from aqua.util import get_config_dir, get_machine
+from aqua.util import ConfigPath
 from aqua.reader import Reader
 
 
@@ -98,11 +98,9 @@ class OPAgenerator():
         if zoom is not None:
             self.logger.info('Zoom level set at: %s', str(zoom))
 
-        if not configdir:
-            self.configdir = get_config_dir()
-        else:
-            self.configdir = configdir
-        self.machine = get_machine(self.configdir)
+        Configurer = ConfigPath(configdir=configdir)
+        self.configdir = Configurer.configdir
+        self.machine = Configurer.machine
 
         # Initialize variable(s)
         self.var = None

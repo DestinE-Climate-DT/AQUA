@@ -54,13 +54,13 @@ As mentioned, the `Reader` access is built on a 3-level hierarchy of model, expe
 
 .. code-block:: python
 
-    reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09")
+    reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09", fix=False)
 
 Now we can read the actual data with the "retrieve" method.
 
 .. code-block:: python
 
-    data = reader.retrieve(fix=False)
+    data = reader.retrieve()
 
 The reader returns an xarray.Dataset with raw ICON data on the original grid.
 
@@ -133,6 +133,16 @@ For example, if we run the following commands:
 
 we get a time series of the global average tprate.
 
+It is also possible to apply a regional section to the domain before performing the averaging
+
+.. code-block:: python
+
+    tprate = data.tprate
+    global_mean = reader.fldmean(tprate, lon_limits=[-50, 50], lat_limits=[-10,20])
+
+.. warning ::
+    Please note that in order to apply an area selection the data Xarray must include `lon` and `lat` as coordinates. It can work also on unstructured grids, but information on coordinate must be available. 
+
 Input data may not be available at the desired time frequency. It is possible to perform time averaging at a given
 frequency by specifying a frequency in the reader definition and then using the `timmean` method. 
 
@@ -144,6 +154,9 @@ frequency by specifying a frequency in the reader definition and then using the 
 
 Data have now been averaged at the desired daily timescale.
 
+..  note ::
+    The `time_bounds` boolean flag can be activated to build time bounds in a similar way to CMOR standard.
+
 
 Fixing: Metadata correction 
 ---------------------------
@@ -152,17 +165,18 @@ fixing variable or coordinate names and performing unit conversions.
 The general idea is to convert data from different models to a uniform file format
 with the same variable names and units. The default format is GRIB2.
 
-The fixing is done by default (``apply_unit_fix=False`` to switch it off) when we retrieve the data, 
-using the instructions in the 'config/fixes.yaml' file.
+The fixing is done by default (``apply_unit_fix=False`` to switch it off) when we initialize the reader, 
+using the instructions in the `config/fixes` folder. Each model has its own YAML file that specify the fixes, and a `default.yaml`` 
+file is used for common unit corrections.
 
 The fixer performs a range of operations on data:
 
 - adopt a common 'coordinate data model' (default is the CDS data model): names of coordinates and dimensions (lon, lat, etc.), coordinate units and direction, name (and meaning) of the time dimension. 
 - derive new variables. In particular, it derives from accumulated variables like "tp" (in mm), the equivalent mean-rate variables (like "tprate", paramid 172228; in mm/s). The fixer can identify these derived variables by their Short Names (ECMWF and WMO eccodes tables are used).
 - using the metpy.units module, it is capable of guessing some basic conversions. In particular, if a density is missing, it will assume that it is the density of water and will take it into account. If there is an extra time unit, it will assume that division by the timestep is needed.
+- 
 
-
-In the `fixer.yaml` file, it is also possible to specify in a flexible way custom derived variables. For example:
+In the `fixer` folder, it is also possible to specify in a flexible way custom derived variables. For example:
 
 .. code-block:: markdown
 
@@ -223,3 +237,44 @@ The above code will start a dask cluster with 40 workers and one thread per work
 
 AQUA also provides a simple way to move the computation done by dask to a compute node on your HPC system.
 The description of this feature is provided in the section :ref:`slurm`.
+
+Reading from FDB/GSV
+--------------------
+
+If an appropriate entry has been created in the catalogue, the reader can also read data from a FDB/GSV source. 
+The request is transparent to the user (no apparent difference to other data sources) in the call.
+
+For example (on Lumi):
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D", regrid="r025")
+    data = reader.retrieve(startdate='20200120', enddate='20200413', var='ci')
+
+The main difference compared to a regular call to the reader is that in this case the reader always returns an *iterator/generator* object.
+So the next block of data can be read from the iterator with:
+
+.. code-block:: python
+
+    dd = next(data)
+
+or with a loop iterating over `data`. The result is a regular xarray.Dataset containg the data.
+It is possible to specify the size of the data blocks read at each iteration with the `aggregation` keyword (`M` is month, `D`is day etc.). 
+The default is 'S' (step), i.e. single timesteps are read at each iteration.
+Since this is a data stream the user should also specify the desired initial time and the final time (the latter can be omitted and will default to the end of the dataset).
+Specifying the variable is essential, but a list can be passed.
+
+Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
+Please consider memory usage in choosing an appropriate value for the `aggregation`keyword.
+
+In case you wish not to change your workflow and strongly prefer to work with a lazy dask xarray.Dataset, it is possible to store the results of the iterator into a temporary directory (i.e. to buffer them).
+Of course, you will pay the price of additional disk traffic and disk storage.
+The `buffer` keyword should specify the location of a directory with enough space to create large temporary directories.
+
+.. code-block:: python
+    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D", regrid="r025", buffer="/scratch/jost/aqua/buffer", loglevel="INFO")
+    data = reader.retrieve(startdate='20200201', enddate='20200301', var='ci')
+
+The result will now be a regular dask xarray Dataset, not an iterator.
+In theory the temporary directory will be erased automatically if the program terminates in an orderly fashion. This is not always the case with jupyter notebooks, 
+so you should monitor your buffer directory and do manual housekeeping.

@@ -7,7 +7,7 @@
 #SBATCH -J aqua_jupyter
 #SBATCH --output=aqua_slurm.out
 #SBATCH --error=aqua_slurm.err
-#SBATCH -p dev-g    #change the partition
+#SBATCH -p debug    #change the partition
 
 AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.2.sif
 FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml #Change it to your simulation
@@ -29,7 +29,6 @@ singularity exec  \
     ' 
     #You can edit below code for your required script.
     
-    pip install /scratch/project_465000454/softwares/gsv_interface
     export FDB5_CONFIG_FILE=/scratch/project_465000454/sughosh/config.yaml
     
     # To run jupyter-lab in compute node

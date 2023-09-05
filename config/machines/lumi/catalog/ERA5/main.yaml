@@ -1,6 +1,6 @@
 sources:
-  fdb:
-    description: ERA5 data on fdb
+  era5:
+    description: AQUA compact version of ERA5 data
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/fdb.yaml"
+        path: "{{CATALOG_DIR}}/era5.yaml"

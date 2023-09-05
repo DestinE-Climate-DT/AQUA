@@ -34,6 +34,7 @@ fi
 #####################################################################
 # Begin of user input
 machine=lumi 
+configfile=config-aqua.yaml
 user=$USER # change this to your username if automatic detection fails
 MAMBADIR="$HOME/mambaforge" #check if $HOME does not exist
 load_aqua_file="$HOME/load_aqua.sh" #check if $HOME does not exist
@@ -95,10 +96,10 @@ echo "Paths containing '$word_to_remove' have been removed from \$PATH."
 #####################################################################
 
 # change machine name in config file
-sed -i "/^machine:/c\\machine: ${machine}" "${AQUA}/config/config.yaml"
+sed -i "/^machine:/c\\machine: ${machine}" "${AQUA}/config/$configfile"
 echo "Machine name in config file has been set to ${machine}"
 
-sed -i "/^  lumi:/c\\  lumi: ${INSTALLATION_PATH}/bin/cdo" "${AQUA}/config/config.yaml"
+sed -i "/^  lumi:/c\\  lumi: ${INSTALLATION_PATH}/bin/cdo" "${AQUA}/config/$configfile"
 echo "CDO in config file now points to ${INSTALLATION_PATH}/bin/cdo"
 
 install_aqua() {

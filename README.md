@@ -30,7 +30,7 @@ mamba env create -f environment-common.yml
 
 Please look at the `notebook` folder to explore AQUA functionalities
 
-### add kernel for DKRZ jupyterhub
+### Note on adding a kernel for DKRZ jupyterhub
 
 Documentation on adding kernels: https://docs.dkrz.de/doc/software%26services/jupyterhub/kernels.html#use-your-own-kernel
 

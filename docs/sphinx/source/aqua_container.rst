@@ -6,39 +6,20 @@ Using a Singularity container, you can quickly load the AQUA environment on plat
 Load AQUA Environment into the Shell
 -------------------------------------
 
-1. Create a shell script named `load_aqua.sh` using the following code:
+1. Navigate to the AQUA repository:
+
+.. code-block:: bash
+   
+   cd AQUA
+
+
+2. Run the `load_aqua_lumi.sh <https://github.com/oloapinivad/AQUA/blob/main/config/machines/lumi/container/load_aqua_lumi.sh>`_ script  to load the AQUA environment into the shell:
 
 .. code-block:: bash
 
-   cat << 'EOF' > load_aqua.sh
-   #!/bin/bash
+   ./config/machines/lumi/container/load_aqua_lumi.sh
 
-   AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.2.sif"
-   FDB5_CONFIG_FILE="/scratch/project_465000454/igonzalez/fdb-long/config.yaml"
-   GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
-   GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
-
-   singularity shell \
-       --cleanenv \
-       --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
-       --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
-       --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
-       --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
-       --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
-       --bind /pfs/lustrep3/scratch/project_465000454 \
-       --bind /scratch/project_465000454 \
-       $AQUA_container
-   EOF
-
-   chmod +x load_aqua.sh
-
-2. Run the following code to load the AQUA environment into the shell:
-
-.. code-block:: bash
-
-   ./load_aqua.sh
-
-In this way, you will have your shell with AQUA environment active.
+In this way, you will have your AQUA environment activated on the shell.
 
 Running Jupyter Notebook
 ------------------------
@@ -49,19 +30,19 @@ To run a Jupyter Notebook using the AQUA environment, follow these steps.
 
 .. code-block:: bash
 
-   ./load_aqua.sh
+   ./config/machines/lumi/container/load_aqua_lumi.sh
 
-2. Start Jupyter Lab, which will provide a server URL like: http://localhost:8888/lab?token=random_token.
+2. Start Jupyter Lab, which will provide a server URL like: http://localhost:<port>/lab?token=random_token.
 
 .. code-block:: bash
 
-   jupyter-lab --port=8888 --no-browser
+   jupyter-lab --no-browser
 
 3. If you wish to open Jupyter Lab in your browser, execute the following command in a separate terminal, replacing "lumi" with your SSH hostname:
 
 .. code-block:: bash
 
-   ssh -L 8888:localhost:8888 lumi
+   ssh -L <port>:localhost:<port> lumi
 
 4. Open the Jupyter Lab URL in your browser. It will launch Jupyter Lab. Choose the "Python 3 (ipykernel)" kernel for the AQUA environment.
 
@@ -98,11 +79,44 @@ Pointing to a Specific FDB
 
    export FDB5_CONFIG_FILE=/path/to/config.yaml
 
+Points for AQUA Developers or Advanced Users 
+-----------------------------------------------
+If you check the details of the path in Python, you may see this :
+
+.. code-block:: bash
+
+      Singularity> python
+      Python 3.10.12 | packaged by conda-forge | (main, Jun 23 2023, 22:40:32) [GCC 12.3.0] on linux
+      Type "help", "copyright", "credits" or "license" for more information.
+      >>> import sys
+      >>> sys.path
+      ['', '/opt/conda/lib/python3.10/site-packages', '/opt/conda/lib/python310.zip', '/opt/conda/lib/python3.10',
+      '/opt/conda/lib/python3.10/lib-dynload', '__editable__.aqua-0.2.finder.__path_hook__',
+      '__editable__.teleconnections-0.0.9.finder.__path_hook__']
+      >>> import aqua
+      >>> aqua.__file__
+      '/app/AQUA/aqua/__init__.py'
+
+This directory, '/app/AQUA/' is in the container, and aqua is installed as an editable project.
+
+In case you are developing an AQUA project, you want to update the '/app/AQUA/' path with your repository location.
+Add the path of AQUA in Python like this:
+
+.. code-block:: bash
+
+   import sys
+   sys.path.clear()
+   local_repo_path = '/path/to/your/AQUA/'
+   sys.path.insert(0, local_repo_path)
+   import aqua
+   print(aqua.__file__)
+
 Submitting Slurm Job Using the Container
 -----------------------------------------
 
 It might be required to use the container within a batch job. 
-Below is a template for a Slurm script on Lumi. Customize it according to your needs.
+Below you can find a template for a Slurm script on Lumi.
+You can customize it according to your needs.
 
 .. code-block:: bash
 

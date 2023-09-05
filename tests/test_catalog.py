@@ -1,9 +1,11 @@
 """Test checking if all catalog entries can be read"""
 
 import pytest
+import types
 import xarray
 from aqua import Reader, catalogue, inspect_catalogue
 from aqua.reader.reader_utils import check_catalog_source
+
 
 @pytest.fixture(params=[(model, exp, source)
                         for model in catalogue()
@@ -22,16 +24,28 @@ def reader(request):
         pytest.skip()
     if model == 'ERA5':
         pytest.skip()
-    myread = Reader(model=model, exp=exp, source=source, areas=False)
-    data = myread.retrieve(fix=False)
+    if model == 'IFS' and source == 'fdb':  # there is another test for that
+        pytest.skip()
+    # teleconnections catalogue, only on teleconnections workflow
+    if model == 'IFS' and exp == 'test-tco79' and source == 'teleconnections':
+        pytest.skip()
+    myread = Reader(model=model, exp=exp, source=source, areas=False,
+                    fix=False)
+    data = myread.retrieve()
     return myread, data
+
 
 @pytest.mark.slow
 def test_catalogue(reader):
-    """Checking that both reader and Dataset are retrived in reasonable shape"""
+    """
+    Checking that both reader and Dataset are retrived in reasonable shape
+    """
     aaa, bbb = reader
     assert isinstance(aaa, Reader)
-    assert isinstance(bbb, xarray.Dataset)
+    try:
+        assert isinstance(bbb, xarray.Dataset)
+    except AssertionError: #fdb is a generator
+        assert isinstance(bbb, types.GeneratorType)
 
 @pytest.mark.aqua
 def test_inspect_catalogue():
@@ -43,6 +57,7 @@ def test_inspect_catalogue():
     assert isinstance(exps, list)
     sources = inspect_catalogue(cat, model='IFS', exp='test-tco79')
     assert isinstance(sources, list)
+
 
 @pytest.mark.aqua
 @pytest.mark.parametrize(
@@ -56,7 +71,8 @@ def test_inspect_catalogue():
             "source1",
             "source1"
         ),
-        # Test case 2: Source is specified but does not exist, default source exists
+        # Test case 2: Source is specified but does not exist,
+        # default source exists
         (
             {"model1": {"exp1": {"default": "default_data", "source2": "data2"}}},
             "model1",
@@ -64,7 +80,8 @@ def test_inspect_catalogue():
             "source1",
             "default"
         ),
-        # Test case 3: Source is specified but does not exist, default source does not exist
+        # Test case 3: Source is specified but does not exist,
+        # default source does not exist
         (
             {"model1": {"exp1": {"source2": "data2"}}},
             "model1",
@@ -88,7 +105,8 @@ def test_inspect_catalogue():
             None,
             pytest.raises(KeyError)
         ),
-        # Test case 6: Source is not specified, no sources available, but a default source exists
+        # Test case 6: Source is not specified, no sources available,
+        # but a default source exists
         (
             {"model1": {"exp1": {"default": "default_data"}}},
             "model1",

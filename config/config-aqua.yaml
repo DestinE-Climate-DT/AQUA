@@ -7,6 +7,6 @@ reader:
   regrid: '{configdir}/machines/{machine}/regrid.yaml'
   fixer: '{configdir}/fixes'
 
-cdo:
+cdo:  # CDO path is found automatically with which if not specified here
   levante: /home/m/m214003/local/bin/cdo # CDO 2.2.0 by Uwe Schulzweida (HEALPix support)
-  lumi: /users/jvonhar/mambaforge/aqua/bin/cdo
+

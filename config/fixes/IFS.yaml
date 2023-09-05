@@ -84,6 +84,90 @@ models:
                         source: smlt
                         grib: true
                         decumulate: true
+        fdb-tco399:   # fdb-long test archive
+            default:
+                data_model: ifs
+                deltat: 3600
+                jump: month
+                vars:
+                    tprate:
+                        source: tp
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    cprate:
+                        source: cp
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mlsprt:
+                        source: lsp
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    erate:
+                        source: e
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    esrate:
+                        source: es
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mrort:
+                        source: ro
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mtsfr:
+                        source: sf
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mslhfl:
+                        source: slhf
+                        grib: true
+                        decumulate: true
+                    msshfl:
+                        source: sshf
+                        grib: true
+                        decumulate: true
+                    msnsrf:
+                        source: ssr
+                        grib: true
+                        decumulate: true
+                    msdsrf:
+                        source: ssrd
+                        grib: true
+                        decumulate: true    
+                    msntrf:
+                        source: str
+                        grib: true
+                        decumulate: true
+                    msdtrf:
+                        source: strd
+                        grib: true
+                        decumulate: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                        decumulate: true
+                    mtntrf:
+                        source: ttr
+                        grib: true
+                        decumulate: true         
+                    var172045:  # if the variable has no short name we can use its paramId
+                        source: smlt
+                        grib: true
+                        decumulate: true
         tco2559-ng5-cycle3:
          # for this exp we have a lot of output from MultI/O, already decumulated and
          # averaged monthly, so default is without decumulation
@@ -383,7 +467,212 @@ models:
                     var172045:  # if the variable has no short name we can use its paramId
                         source: smlt
                         grib: true
-                        decumulate: true   
+                        decumulate: true
+
+        control-1950-devcon:
+            default:
+                data_model: ifs
+            hourly-1deg:
+                data_model: ifs
+                deltat: 3600
+                jump: month
+                vars:
+                    tprate:
+                        source: 260048
+                    cprate:
+                        source: cp
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    erate:
+                        source: 182
+                        grib: true
+                        decumulate: true
+                        #src_units: m
+                        units: kg m**-2 s**-1 #forced to be equal to tprate
+                    mtsfr:
+                        source: sf
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mslhfl:
+                        source: slhf
+                        grib: true
+                        decumulate: true
+                    msshfl:
+                        source: sshf
+                        grib: true
+                        decumulate: true
+                    msnsrf:
+                        source: ssr
+                        grib: true
+                        decumulate: true
+                    msdsrf:
+                        source: ssrd
+                        grib: true
+                        decumulate: true    
+                    msntrf:
+                        source: str
+                        grib: true
+                        decumulate: true
+                    msdtrf:
+                        source: strd
+                        grib: true
+                        decumulate: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                        decumulate: true
+                    mtntrf:
+                        source: ttr
+                        grib: true
+                        decumulate: true    
+                    iews:
+                        source: ewss
+                        grib: true
+                        decumulate: true  
+                    inss: 
+                        source: nsss
+                        grib: true
+                        decumulate: true
+                    blh:
+                        source: 159
+                    chnk:
+                        source: 148
+                    surfror:  # a very recent version of eccodes is needed for this one
+                        source: 8
+                        grib: true
+                        decumulate: true 
+            hourly-native:
+                data_model: ifs
+                vars:
+                    tprate:
+                        source: 260048
+                    blh:
+                        source: 159
+                    chnk:
+                        source: 148          
+            monthly-1deg-2d:
+                data_model: ifs
+                vars:
+                    tprate:
+                        source: 260048
+                    lcc:
+                        source: 186
+                    mcc:
+                        source: 187
+                    hcc:
+                        source: 188
+            monthly-1deg-3d:
+                data_model: ifs
+                vars:
+                    q:
+                        source: 133
+
+        historical-1990-devcon:
+            default:
+                data_model: ifs
+            hourly-1deg:
+                data_model: ifs
+                deltat: 3600
+                jump: month
+                vars:
+                    tprate:
+                        source: 260048
+                    cprate:
+                        source: cp
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    erate:
+                        source: 182
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mtsfr:
+                        source: sf
+                        grib: true
+                        decumulate: true
+                        src_units: m
+                        units: kg m**-2 s**-1
+                    mslhfl:
+                        source: slhf
+                        grib: true
+                        decumulate: true
+                    msshfl:
+                        source: sshf
+                        grib: true
+                        decumulate: true
+                    msnsrf:
+                        source: ssr
+                        grib: true
+                        decumulate: true
+                    msdsrf:
+                        source: ssrd
+                        grib: true
+                        decumulate: true    
+                    msntrf:
+                        source: str
+                        grib: true
+                        decumulate: true
+                    msdtrf:
+                        source: strd
+                        grib: true
+                        decumulate: true
+                    mtnsrf:
+                        source: tsr
+                        grib: true
+                        decumulate: true
+                    mtntrf:
+                        source: ttr
+                        grib: true
+                        decumulate: true    
+                    iews:
+                        source: ewss
+                        grib: true
+                        decumulate: true  
+                    inss: 
+                        source: nsss
+                        grib: true
+                        decumulate: true
+                    blh:
+                        source: 159
+                    chnk:
+                        source: 148
+                    surfror:  # a very recent version of eccodes is needed for this one
+                        source: 8
+                        grib: true
+                        decumulate: true
+            hourly-native:
+                data_model: ifs
+                vars:
+                    tprate:
+                        source: 260048
+                    blh:
+                        source: 159
+                    chnk:
+                        source: 148 
+            monthly-1deg-2d:
+                data_model: ifs
+                vars:
+                    tprate:
+                        source: 260048
+                    lcc:
+                        source: 186
+                    mcc:
+                        source: 187
+                    hcc:
+                        source: 188
+            monthly-1deg-3d:
+                data_model: ifs
+                vars:
+                    q:
+                        source: 133
+
         # These are for tests
         test-tco79:
             long:

@@ -19,6 +19,13 @@ target_grids:
   r250: r144x72
 source_grids:
   IFS:
+    control-1950-devcon:
+      default:
+        space_coord: ["lon", "lat"]
+    historical-1990-devcon:
+      default:
+        space_coord: ["lon", "lat"]
+  
     tco3999-ng5:
       ICMGG_atm2d:
         path: /work/bm1344/AWI/nextGEMS_Cycle2_IFS/tcogrids/2.8km/tcogrids/tco3999_grid.nc
@@ -449,7 +456,8 @@ source_grids:
   WOA18:
     woa18_2005_2017:
       default:
-        # path: /pool/data/AWICM/FESOM2/INITIAL/WOA18/WOA18_2005_2017/woa18_A5B7_t00_04.nc
+        path:
+          depth: /work/bb1153/b382076/AQUA-archive/grids/WOA18/grid-woa18.nc
         vert_coord: depth
         space_coord: ["lon", "lat"]
 
