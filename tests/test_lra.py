@@ -33,7 +33,7 @@ class TestLRA():
             month = year.sel(time=year.time.dt.month == 1)
             test.data = month
             test.generate_lra()
-            path = os.path.join(os.getcwd(), outdir, "IFS/test-tco79/r100/monthly/2t_test-tco79_r100_monthly_2020.nc")
+            path = os.path.join(os.getcwd(), outdir, "IFS/test-tco79/r100/monthly/2t_test-tco79_r100_monthly_202001.nc")
             test.check_integrity(varname=var)
             assert os.path.isfile(path)    
             file = xr.open_dataset(path)

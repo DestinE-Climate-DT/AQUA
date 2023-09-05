@@ -5,6 +5,7 @@ import copy
 import warnings
 import dask
 import numpy as np
+import xarray as xr
 from dask.distributed import Client, LocalCluster
 from one_pass.opa import Opa
 from aqua.logger import log_configure
@@ -163,6 +164,9 @@ class OPAgenerator():
         """
 
         data = self.reader.retrieve(var=self.var)
+        if not isinstance(data, xr.Dataset):
+            data = next(data)
+        
         time_diff = np.diff(data.time.values).astype('timedelta64[m]')
         self.timedelta = time_diff[0].astype(int)
         self.logger.info('Timedelta is %s minutes', str(self.timedelta))
@@ -186,7 +190,7 @@ class OPAgenerator():
 
         return Opa(self.opa_dict)
 
-    def generate_opa(self):
+    def generate_opa(self, gsv=False, start=None, end=None):
         """
         Run the actual computation of the OPA looping on the dataset
         and on the variables
@@ -210,16 +214,23 @@ class OPAgenerator():
             # self.remove_checkpoint()
             print(vars(opa_mean))
 
-            self.logger.warning('Initializing the streaming generator...')
-            self.reader.reset_stream()
-            data_gen = self.reader.retrieve(streaming_generator=True,
-                                            stream_step=self.stream_step,
-                                            stream_unit='days')
-
+            if not gsv: 
+                self.logger.warning('Initializing the streaming generator...')
+                self.reader.reset_stream()
+                data_gen = self.reader.retrieve(streaming_generator=True,
+                                                stream_step=self.stream_step,
+                                                stream_unit='days',
+                                                var=self.var)
+            else: 
+                self.logger.warning('Initializing the FDB access...')
+                data_gen = self.reader.retrieve(startdate=start, enddate=end, var=self.var)
+            
             for data in data_gen:
                 self.logger.info(f"start_date: {data.time[0].values} stop_date: {data.time[-1].values}")
+                               
                 if self.definitive:
                     mydata = data[variable]#.load()
+                    #print(mydata)
                     opa_mean.compute(mydata)
                     if os.path.exists(self.checkpoint_file):
                         file_size = os.path.getsize(self.checkpoint_file)
@@ -248,6 +259,19 @@ class OPAgenerator():
                 }
             }
         }
+
+        if self.zoom:
+            block_zoom = {
+                'parameters': {
+                    'zoom': {
+                        'allowed': [self.zoom],
+                        'default': self.zoom,
+                        'description': 'zoom resolution of the dataset',
+                        'type': 'int'
+                    }
+                }
+            }
+            block_cat.update(block_zoom)
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,

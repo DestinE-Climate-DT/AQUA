@@ -8,10 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased is the current development version.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - AQUA new common environment installation tool for LUMI added (#413)
 =======
 - Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
 >>>>>>> aqua_container
+=======
+## [v0.2]
+
+- Improve the LRA generator and worklow CLI (Streaming for the LRA #289)
+- AQUA new common environment installation tool for LUMI added (#413)
+- Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
+>>>>>>> main
 
 ## [v0.2-beta]
 
@@ -24,7 +32,7 @@ This is the `AQUA` version part of the Deliverable D340.7.1.2.
 - ECmean improvements (various improvement for ecmean #392)
 - Seaice diagnostic improvements (Deliverable340.7.1.2 fix seaice #389, Linting Seaice diagnostics #376)
 - Teleconnections diagnostic graphics module enhanced and various improvements (Teleconnections corrections for D340.7.1.2 #379, Fix import in teleconnections notebooks #395, Teleconnections fix docs #408)
-- Tropical cyclones linting of the diagnostic ([WIP] Linting tropical cyclones diagnostics #380, Improved plotting functions for tropical cyclones #391)
+- Tropical cyclones linting of the diagnostic (Linting tropical cyclones diagnostics #380, Improved plotting functions for tropical cyclones #391)
 - Ocean diagnostics restructured in a single folder, sharing common functions and other improvements (Linting+Fixes Ocean diagnostics #374, Adding units for MLD plot in ocean3d package #406)
 - Documentation fixes (Documentation fixes after review #403)
 - Atmglobalmean and radiation diagnostic improvements (Atmglobalmean fix #371)
@@ -68,7 +76,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.2-beta...HEAD
+[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.2...HEAD
+[v0.2]: https://github.com/oloapinivad/AQUA/compare/v0.2-beta...v0.2
 [v0.2-beta]: https://github.com/oloapinivad/AQUA/compare/v0.2-alpha...v0.2-beta
 [v0.2-alpha]: https://github.com/oloapinivad/AQUA/compare/v0.1-beta...v0.2-alpha
 [v0.1-beta]: https://github.com/oloapinivad/AQUA/compare/v0.1-alpha...v0.1-beta
