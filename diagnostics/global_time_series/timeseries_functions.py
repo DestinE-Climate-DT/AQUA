@@ -31,6 +31,7 @@ def plot_timeseries(
     variable,
     resample=None,
     plot_era5=False,
+    ylim={},
     reader_kw={},
     plot_kw={},
     ax=None,
@@ -46,6 +47,7 @@ def plot_timeseries(
         variable (str): Variable name.
         resample (str): Optional resample rate (e.g. "M").
         plot_era5 (bool): Include ERA5 reference data.
+        ylim (dict): Keyword arguments passed to `set_ylim()`.
         reader_kw (dict): Additional keyword arguments passed to the `aqua.Reader`.
         plot_kw (dict): Additional keyword arguments passed to the plotting function.
         ax (matplotlib.Axes): (Optional) axes to plot in.
@@ -83,6 +85,7 @@ def plot_timeseries(
         if eradata is not None:
             eradata.plot(color="grey", label="ERA5", ax=ax)
     ax.legend()
+    ax.set_ylim(**ylim)
 
 
 def plot_gregory(model, exp, reader_kw={}, plot_kw={}, ax=None, **kwargs):

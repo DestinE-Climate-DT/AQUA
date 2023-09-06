@@ -22,6 +22,9 @@ timeseries:
             plot_kw:
                 color: "tab:red"
                 label: "IFS"
+            ylim:
+                bottom: 282
+                top: 292
             resample: "M"
             outfile: "ifs_2t_mean.nc"
     savefig: "timeseries.png"
