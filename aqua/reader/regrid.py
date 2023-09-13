@@ -32,9 +32,7 @@ class RegridMixin():
         grid_area = self.cdo_generate_areas(source=dst_extra)
 
         # Make sure that grid areas contain exactly the same coordinates
-        data = self.retrieve(fix=False, regrid=True)
-        if isinstance(data, types.GeneratorType):
-            data = next(data)
+        data = self._retrieve_plain(regrid=True)
 
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
 
@@ -75,9 +73,7 @@ class RegridMixin():
                                             extra=src_extra)
         # Make sure that the new DataArray uses the expected spatial dimensions
         grid_area = _rename_dims(grid_area, self.src_space_coord)
-        data = self.retrieve(fix=False, startdate=None)
-        if isinstance(data, types.GeneratorType):
-            data = next(data)
+        data = self._retrieve_plain(startdate=None)
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.src_space_coord})
         grid_area.to_netcdf(areafile)
         self.logger.warning("Success!")
@@ -150,9 +146,7 @@ class RegridMixin():
             # let's reconstruct it from the file itself
 
             self.logger.info('Grid file is not defined, retrieving the source itself...')
-            data = self.retrieve(fix=False)
-            if isinstance(data, types.GeneratorType):
-                data = next(data)
+            data = self._retrieve_plain()
 
             # If we have also a vertical coordinate, include it in the sample
             coords = self.src_space_coord
@@ -160,7 +154,7 @@ class RegridMixin():
             if vert_coord and vert_coord != "2d" and vert_coord != "2dm":
                 coords.append(vert_coord)
 
-            data = _get_spatial_sample(data, coords)
+            data = _get_spatial_sample(data, coords, self.support_dims)
 
             if vert_coord and vert_coord != "2d" and vert_coord != "2dm":
                 varsel = [var for var in data.data_vars if vert_coord in data[var].dims]
@@ -170,7 +164,7 @@ class RegridMixin():
                     raise ValueError(f"No variable with dimension {vert_coord} found in the dataset")
 
             # We need only one variable
-            sgridpath = data[list(data.data_vars)[0]]
+            sgridpath = data.drop_vars(list(data.data_vars)[1:])
         else:
             if isinstance(sgridpath, dict):
                 if vert_coord:
@@ -255,7 +249,7 @@ class RegridMixin():
 
         except subprocess.CalledProcessError as err:
             # Print the CDO error message
-            #self.logger.critical(err.output.decode('utf-8'))
+            # self.logger.critical(err.output.decode('utf-8'))
             self.logger.critical(err.stderr.decode('utf-8'))
             raise
 
@@ -265,6 +259,26 @@ class RegridMixin():
                 source_grid_file.close()
             area_file.close()
 
+
+    def _retrieve_plain(self, *args, **kwargs):
+        """
+        Retrieves making sure that no buffering and agregation are used
+        and converts iterator to data
+        """
+        
+        buffer = self.buffer
+        aggregation = self.aggregation
+        self.buffer = None
+        self.aggregation = None
+        data = self.retrieve(*args, **kwargs)
+        self.buffer = buffer
+        self.aggregation = aggregation
+
+        if isinstance(data, types.GeneratorType):
+            data = next(data)
+
+        return data
+            
 
 def _rename_dims(data, dim_list):
     """
@@ -300,19 +314,20 @@ def _rename_dims(data, dim_list):
     return da_out
 
 
-def _get_spatial_sample(data, space_coord):
+def _get_spatial_sample(data, space_coord, support_dims):
     """
     Selects a single spatial sample along the dimensions specified in `space_coord`.
 
     Arguments:
-        da (xarray.DataArray):     Input data array to select the spatial sample from.
+        da (xarray.DataArray): Input data array to select the spatial sample from.
         space_coord (list of str): List of dimension names corresponding to the spatial coordinates to select.
+        support_dims (list of str): List of additional dimensions to keep when a single slice is taken (eg. "cell_corners")
 
     Returns:
         Data array containing a single spatial sample along the specified dimensions.
     """
 
     dims = list(data.dims)
-    extra_dims = list(set(dims) - set(space_coord))
+    extra_dims = list(set(dims) - set(space_coord) - set(support_dims))
     da_out = data.isel({dim: 0 for dim in extra_dims})
     return da_out

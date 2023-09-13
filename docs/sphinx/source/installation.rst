@@ -34,17 +34,19 @@ Change to the AQUA directory:
    
    cd AQUA
 
-Create a new Mamba environment and install the required packages using the provided environment.yml file:
+Create a new Mamba environment and install the required packages using the provided environment-common.yml file:
 
 .. code-block:: bash
    
-   mamba env create -f environment.yml
+   mamba env create -f environment-common.yml
+
+This will install the packages required for the AQUA framework and all the available diagnostics.
 
 Activate the newly created aqua environment:
 
 .. code-block:: bash
    
-   conda activate aqua
+   conda activate aqua_common
 
 At this point, you should have successfully installed the AQUA package and its dependencies 
 in the newly created aqua environment.
@@ -54,10 +56,6 @@ If you are not working on Levante, remember to change the machine name in the `c
 .. code-block:: markdown
    
    machine: levante
-
-.. note ::
-   Since version v0.2, a `environment-common.yaml` is provided in the AQUA main directory in order to integrate all the requirements from the diagnostics. 
-   Installing with mamba/conda this environment instead of the AQUA default one allows for running all AQUA diagnostic without the need of switching among the enviornments.
 
 Installation on Lumi
 --------------------
@@ -86,7 +84,7 @@ In essence, the process comes down to the following steps:
 
 .. code-block:: bash
    
-   conda activate aqua
+   conda activate aqua_common
 
 2. Install the ipykernel package
 

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.logger import log_configure
-from .plot_utils import minmax_maps, plot_box
+from .plot_utils import minmax_maps, plot_box, add_cyclic_lon
 
 
 def maps_plot(maps=None, models=None, exps=None,
@@ -169,6 +169,14 @@ def single_map_plot(map=None, save=False, **kwargs):
     if map is None:
         raise ValueError('Nothing to plot')
 
+    # Add cyclic longitude
+    map = add_cyclic_lon(map)
+
+    # Evaluate min and max values for the common colorbar
+    vmin, vmax = minmax_maps([map])
+    logger.debug('Min value for the colorbar: {}'.format(vmin))
+    logger.debug('Max value for the colorbar: {}'.format(vmax))
+
     model = kwargs.get('model')
     exp = kwargs.get('exp')
 
@@ -179,7 +187,7 @@ def single_map_plot(map=None, save=False, **kwargs):
                            figsize=figsize)
 
     # Set the number of levels for the colorbar
-    nlevels = kwargs.get('nlevels', 11)
+    nlevels = kwargs.get('nlevels', 10)
 
     # Plot the map
     try:
@@ -191,7 +199,7 @@ def single_map_plot(map=None, save=False, **kwargs):
     cs = map.plot.contourf(ax=ax, transform=ccrs.PlateCarree(),
                            cmap='RdBu_r', levels=nlevels,
                            add_colorbar=False, add_labels=False,
-                           extend='both')
+                           extend='both', vmin=vmin, vmax=vmax)
 
     # Title
     title = kwargs.get('title')

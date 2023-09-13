@@ -35,3 +35,12 @@ ENSO_test:
   lonW: -170
   latS: -5
   lonE: -120
+
+# ENSO if both sst and skt are missing
+ENSO_2t:
+  telec_type: 'region'
+  field: 2t
+  latN:  5
+  lonW: -170
+  latS: -5
+  lonE: -120

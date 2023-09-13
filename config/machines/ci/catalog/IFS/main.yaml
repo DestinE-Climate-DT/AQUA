@@ -4,3 +4,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/test-tco79.yaml"
+  test-fdb:
+    description: Test FDB archive
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/test-fdb.yaml"

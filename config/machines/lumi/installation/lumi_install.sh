@@ -1,9 +1,44 @@
 #!/bin/bash
 
+# Two installation options:
+# 1. Install AQUA framework only. Flag --only-aqua
+# 2. Install AQUA framework and diagnostics.
+#    This is the default option if no flag is provided.
+
+# Usage
+# bash lumi_install.sh 
+
+set -e
+
+#####################################################################
+# Getting the installation type from flags
+# Check if the script is called with at least one argument (the flag)
+if [ $# -lt 1 ]; then
+  echo "No flag provided. Installing AQUA framework and diagnostics."
+  # set diag variable to true
+  diag=true
+else
+  # Check the value of the flag
+  flag="$1"
+  if [ "$flag" = "--only-aqua" ]; then
+    echo "Installing AQUA framework only."
+    # set diag variable to false
+    diag=false
+  else
+    echo "Invalid flag. Installing AQUA framework and diagnostics."
+    # set diag variable to true
+    diag=true
+  fi
+fi
+
 #####################################################################
 # Begin of user input
 machine=lumi 
-user=$USER # change this to your username
+configfile=config-aqua.yaml
+user=$USER # change this to your username if automatic detection fails
+MAMBADIR="$HOME/mambaforge" #check if $HOME does not exist
+load_aqua_file="$HOME/load_aqua.sh" #check if $HOME does not exist
+
 
 # define AQUA path
 if [[ -z "${AQUA}" ]]; then
@@ -15,17 +50,56 @@ else
 fi
 
 # define installation path
-export INSTALLATION_PATH="/users/${user}/mambaforge/aqua"
+if $diag; then
+  export INSTALLATION_PATH="$MAMBADIR/aqua_common"
+else
+  export INSTALLATION_PATH="$MAMBADIR/aqua"
+fi
 echo "Installation path has been set to ${INSTALLATION_PATH}"
 
 # End of user input
 #####################################################################
 
+# Remove the installation path from the $PATH. 
+# This is AI-based block which creates a new $PATH removing path including 'aqua'
+
+# Word to check and remove from $PATH
+word_to_remove="aqua"
+
+# Function to check if a path contains the specified word
+contains_word() {
+  [[ "$1" == *"$word_to_remove"* ]]
+}
+
+# Split the $PATH into individual components using ":" as the separator
+IFS=":" read -ra path_components <<< "$PATH"
+
+# Create a new array to store the modified path components
+new_path_components=()
+
+# Loop through each path component and check if it contains the specified word
+for component in "${path_components[@]}"; do
+  if ! contains_word "$component"; then
+    # If the component does not contain the word, add it to the new array
+    new_path_components+=("$component")
+  fi
+done
+
+# Join the new array back into a single string with ":" as the separator
+new_path=$(IFS=":"; echo "${new_path_components[*]}")
+
+# Update the $PATH variable with the new value
+export PATH="$new_path"
+
+echo "Paths containing '$word_to_remove' have been removed from \$PATH."
+
+#####################################################################
+
 # change machine name in config file
-sed -i "/^machine:/c\\machine: ${machine}" "${AQUA}/config/config.yaml"
+sed -i "/^machine:/c\\machine: ${machine}" "${AQUA}/config/$configfile"
 echo "Machine name in config file has been set to ${machine}"
 
-sed -i "/^  lumi:/c\\  lumi: ${INSTALLATION_PATH}/bin/cdo" "${AQUA}/config/config.yaml"
+sed -i "/^  lumi:/c\\  lumi: ${INSTALLATION_PATH}/bin/cdo" "${AQUA}/config/$configfile"
 echo "CDO in config file now points to ${INSTALLATION_PATH}/bin/cdo"
 
 install_aqua() {
@@ -38,10 +112,17 @@ install_aqua() {
   module load lumi-container-wrapper
   echo "Modules have been loaded."
 
-  conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/config/machines/lumi/installation/environment_lumi.yml"
-  
-  conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/config/machines/lumi/installation/pip_lumi.txt"
-  echo "AQUA has been installed."
+  if $diag; then
+    # install AQUA framework and diagnostics
+    conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/config/machines/lumi/installation/environment_lumi_common.yml"
+    conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/config/machines/lumi/installation/pip_lumi_common.txt"
+    echo "AQUA framework and diagnostics have been installed."
+  else
+    # install AQUA framework only
+    conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/config/machines/lumi/installation/environment_lumi.yml"
+    conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/config/machines/lumi/installation/pip_lumi.txt"
+    echo "AQUA framework has been installed."
+  fi
 }
 
 # if INSTALLATION_PATH does not exist, create it
@@ -71,9 +152,10 @@ else
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
       rm -rf "${INSTALLATION_PATH}"
+      mkdir -p "${INSTALLATION_PATH}"
     else
       echo "Deletion cancelled."
-      return 1
+      exit 1
     fi
     echo "Installing AQUA..."
     install_aqua
@@ -82,43 +164,59 @@ else
   fi
 fi
 
-# check if the line is already present in the load_aqua.sh file
-if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' ~/load_aqua.sh; then
-  # if not, append it to the end of the file
-  echo 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' >> ~/load_aqua.sh
-  echo 'module purge' >> ~/load_aqua.sh
-  echo 'module load pyfdb/0.0.2-cpeCray-22.08' >> ~/load_aqua.sh
-  echo 'module load ecCodes/2.30.0-cpeCray-22.08' >> ~/load_aqua.sh
-  echo 'module load python-climatedt/3.11.3-cpeCray-22.08.lua' >> ~/load_aqua.sh
-  
+# check if load_aqua_file exist and clean it
+if [ -f "$load_aqua_file" ]; then
+  read -p "Existing ${load_aqua_file} found. Would you like to remove it? Safer to say yes (y/n) " -n 1 -r
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    rm $load_aqua_file
+    echo "Existing ${load_aqua_file} removed."
+  elif [[ $REPLY =~ ^[Nn]$ ]]; then
+    echo "Keeping the old $load_aqua_file"
+  else
+    echo "Invalid response. Please enter 'y' or 'n'."
+  fi
+fi
+
+#if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C'  "~/load_aqua.sh" ; then
+if [ ! -f $load_aqua_file ] ; then
+  echo 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' >> $load_aqua_file
+  echo 'module purge' >> $load_aqua_file
+  echo 'module load pyfdb/0.0.2-cpeCray-22.08' >> $load_aqua_file
+  echo 'module load ecCodes/2.30.0-cpeCray-22.08' >> $load_aqua_file
+  echo 'module load python-climatedt/3.11.3-cpeCray-22.08.lua' >> $load_aqua_file
+    
   # Config FDB: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
-  echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >> ~/load_aqua.sh
+  echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >>  $load_aqua_file
   echo "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 
   # Config GSV: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
-  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights' >> ~/load_aqua.sh
-  echo 'export GSV_TEST_FILES=/scratch/project_465000454/igonzalez/gsv_test_files' >> ~/load_aqua.sh
-  echo 'export GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions' >> ~/load_aqua.sh
-  echo "export for GSV has been added to .bashrc. Please run 'source ~/load_aqua.sh' to load the new configuration."
+  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights' >>  $load_aqua_file
+  echo 'export GSV_TEST_FILES=/scratch/project_465000454/igonzalez/gsv_test_files' >> $load_aqua_file
+  echo 'export GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions' >>  $load_aqua_file
+  echo "export for GSV has been added to .bashrc. Please run 'source  $load_aqua_file' to load the new configuration."
 
   # Install path
-  echo "# AQUA installation path" >> ~/load_aqua.sh
-  echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >> ~/load_aqua.sh
-  echo "export PATH has been added to .bashrc. Please run 'source ~/load_aqua.sh' to load the new configuration."
+  echo "# AQUA installation path" >>  $load_aqua_file
+  echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >>  $load_aqua_file
+  echo "export PATH has been added to .bashrc. Please run 'source $load_aqua_file' to load the new configuration."
 else
-  echo "A load_aqua.sh is already available in your home!"
+  echo "A $(basename $load_aqua_file) is already available in your home. Nothing to add!"
 fi
 
 # ask if you want to add this to the bash profile
-read -p "Would you like to source load_aqua.sh in your .bash_profile? " -n 1 -r
-echo 
+read -p "Would you like to source $load_aqua_file in your .bash_profile? (y/n) " -n 1 -r
+echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-  if ! grep -q 'source  ~/load_aqua.sh' ~/.bash_profile; then
-    echo 'source  ~/load_aqua.sh' >> ~/.bash_profile
-  else 
+  if ! grep -q "source  $load_aqua_file" ~/.bash_profile; then
+    echo "source  $load_aqua_file" >> ~/.bash_profile
+    echo 'load_aqua.sh added to your .bash_profile.'
+  else
     echo 'load_aqua.sh is already in your bash profile, not adding it again!'
   fi
-else
+elif [[ $REPLY =~ ^[Nn]$ ]]; then
   echo "source load_aqua.sh not added to .bash_profile"
+else
+  echo "Invalid response. Please enter 'y' or 'n'."
 fi
+
  

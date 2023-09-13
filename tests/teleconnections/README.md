@@ -2,16 +2,17 @@
 
 ## Requirements
 
-- `teleconnections` environment installed (see [README.md](../../diagnostics/teleconnectionsREADME.md))
+- the `AQUA` framework and diagnostics installed, use the `conda` environment `aqua_common` in the main `AQUA` directory.
 - an internet connection
 
 ## Run the tests
 
 You should be located in the main `AQUA` directory.
 
-- download the test data:
+- download the test data, both the framework and the teleconnections data:
 
 ```bash
+source download_data_for_tests.sh
 source tests/teleconnections/download_data_for_tests.sh
 ```
 

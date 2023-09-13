@@ -2,6 +2,7 @@ plugins:
   source:
   - module: intake_xarray
   - module: gribscan
+
 sources:
 
   atm_2d_ml_R02B09:
@@ -40,7 +41,7 @@ sources:
       driver: intake_esm.esm_datastore
       description: Test Intake-ESM Catalog
       args:
-        esmcol_obj: /work/ka1081/Catalogs/dyamond-nextgems.json
+        obj: /work/ka1081/Catalogs/dyamond-nextgems.json
       metadata:
         query:
           simulation_id: ngc2009

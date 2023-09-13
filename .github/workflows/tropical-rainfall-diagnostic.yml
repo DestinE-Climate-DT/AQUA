@@ -41,12 +41,6 @@ jobs:
           create-args: >-
               python=${{ matrix.python-version }}
 
-# Run framework tests in order to check that the diagnostic environment is
-# compatible with the framework
-      - name: Download and setup framework tests
-        run: |
-          ./download_data_for_tests.sh
-
 # Run diagnostic tests
       - name: Download and setup dummy-diagnostic tests
         run: |

@@ -1,11 +1,21 @@
 sources:
-  test-tco79:
-    description: 5km experiment, coupuled with IFS
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/test-tco79.yaml'
   tco79-eORCA1:
     description: tco79-eORCA1 data
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/tco79-eORCA1.yaml'
+  fdb-tco399:  #  https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/wikis/Specifications-of-fdb-long
+    description: fdb-long data tco399 grid 
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/fdb-tco399.yaml'
+  control-1950-devcon:
+    description: FDB IFS/NEMO control run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/control-1950-devcon.yaml'
+  historical-1990-devcon:
+    description: FDB IFS/NEMO historical run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990-devcon.yaml'

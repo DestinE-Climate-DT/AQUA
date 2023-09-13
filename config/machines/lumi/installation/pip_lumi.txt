@@ -1,2 +1,2 @@
 # pip dependencies
-pip install -e $AQUA
+pip install -e $AQUA[tests,notebooks]

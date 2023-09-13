@@ -90,11 +90,11 @@ variables:
     derived: msl
   tauu: 
     varname: 'Zonal Wind Stress'
-    derived: ewss
+    derived: iews
     filetype: atmbase
   tauv:
     varname: 'Meridional Wind Stress'
-    derived: nsss
+    derived: inss
     filetype: atmbase
   cll:
     derived: lcc

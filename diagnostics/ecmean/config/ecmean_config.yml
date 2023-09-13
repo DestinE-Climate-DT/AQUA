@@ -22,7 +22,7 @@ global:
 
 PI:
   2d_vars:
-    field: [tas, pr, psl]
+    field: [tas, pr, psl, tauu, tauv]
   3d_vars:
     field: [ta, ua, va, hus]
   oce_vars:
