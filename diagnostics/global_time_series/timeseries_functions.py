@@ -31,6 +31,7 @@ def plot_timeseries(
     variable,
     resample=None,
     plot_era5=False,
+    ylim={},
     reader_kw={},
     plot_kw={},
     ax=None,
@@ -46,6 +47,7 @@ def plot_timeseries(
         variable (str): Variable name.
         resample (str): Optional resample rate (e.g. "M").
         plot_era5 (bool): Include ERA5 reference data.
+        ylim (dict): Keyword arguments passed to `set_ylim()`.
         reader_kw (dict): Additional keyword arguments passed to the `aqua.Reader`.
         plot_kw (dict): Additional keyword arguments passed to the plotting function.
         ax (matplotlib.Axes): (Optional) axes to plot in.
@@ -83,9 +85,10 @@ def plot_timeseries(
         if eradata is not None:
             eradata.plot(color="grey", label="ERA5", ax=ax)
     ax.legend()
+    ax.set_ylim(**ylim)
 
 
-def plot_gregory(model, exp, reader_kw={}, plot_kw={}, ax=None, **kwargs):
+def plot_gregory(model, exp, reader_kw={}, plot_kw={}, ax=None, freq='M', **kwargs):
     """Plot global mean SST against net radiation at TOA.
 
     Parameters:
@@ -93,6 +96,7 @@ def plot_gregory(model, exp, reader_kw={}, plot_kw={}, ax=None, **kwargs):
         exp (str): Experiment ID.
         reader_kw (dict): Additional keyword arguments passed to the `aqua.Reader`.
         plot_kw (dict): Additional keyword arguments passed to the plotting function.
+        freq (str): frequency for timmean applied to data, default is 'M' (monthly)
     """
     if ax is None:
         ax = plt.gca()
@@ -100,8 +104,8 @@ def plot_gregory(model, exp, reader_kw={}, plot_kw={}, ax=None, **kwargs):
     reader = Reader(model, exp, **reader_kw)
     data = reader.retrieve()
 
-    ts = reader.timmean(data=reader.fldmean(data["2t"]), freq="M").values - 273.15
-    toa = reader.timmean(data=reader.fldmean(data["mtnsrf"] + data["mtntrf"]), freq="M").values
+    ts = reader.timmean(data=reader.fldmean(data["2t"]), freq=freq).values - 273.15
+    toa = reader.timmean(data=reader.fldmean(data["mtnsrf"] + data["mtntrf"]), freq=freq).values
 
     ax.axhline(0, color="k", lw=0.8)
     lh, = ax.plot(ts, toa, marker=".", **plot_kw)

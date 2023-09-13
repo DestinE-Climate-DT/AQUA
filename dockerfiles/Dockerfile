@@ -39,7 +39,7 @@ ENV ENV_NAME=base
 
 SHELL ["/usr/local/bin/_dockerfile_shell.sh"]
 
-ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]
+# ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]
 # Optional: if you want to customize the ENTRYPOINT and have a conda
 # environment activated, then do this:
 # ENTRYPOINT ["/usr/local/bin/_entrypoint.sh", "my_entrypoint_program"]
@@ -55,8 +55,8 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 # Generate conda environment (env name does not matter,
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
-RUN micromamba install -y -n base -c conda-forge gcc git jupyterlab && \
-    micromamba install -y -n base -f AQUA/environment.yml python=3.10
+RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab && \
+    micromamba install -y -n base -f AQUA/environment-common.yml
 
 EXPOSE 8888
 
@@ -86,14 +86,13 @@ ARG MAMBA_DOCKERFILE_ACTIVATE=1
 # https://github.com/apcamargo/genomad/issues/7#issuecomment-1365256139,
 # which is linked to this issue in numba
 # https://github.com/numba/numba/issues/8615
-RUN micromamba remove --force --yes numpy && \
-    micromamba install -c conda-forge numpy=1.23.5 && \
-    micromamba clean --all --yes
+# RUN micromamba remove --force --yes numpy && \
+#     micromamba install -c conda-forge numpy=1.23.5 && \
+#     micromamba clean --all --yes
 
-ENV JUPYTER_TOKEN=docker
 
 # Bruno: If aqua has some entrypoint script (e.g. `aqua`), or another
 #        useful command just replace it here.
 # CMD ["python", "-c", "'import aqua'"]
-CMD ["jupyter", "lab", "--ip", "0.0.0.0", "--port", "8888"]
+# CMD ["jupyter", "lab", "--ip", "0.0.0.0", "--port", "8888"]
 

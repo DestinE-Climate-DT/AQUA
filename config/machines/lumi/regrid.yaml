@@ -1,15 +1,18 @@
 weights:
-   path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/weights
-   template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
+  path: /pfs/lustrep3/projappl/project_465000454/data/AQUA/weights
+  template: weights_{model}_{exp}_{source}_{method}_{target}_l{level}.nc
 
 areas:
-   path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/areas
-   src_template: cell_area_{model}_{exp}_{source}.nc
-   dst_template: cell_area_{grid}.nc
+  path: /pfs/lustrep3/projappl/project_465000454/data/AQUA/areas
+  src_template: cell_area_{model}_{exp}_{source}.nc
+  dst_template: cell_area_{grid}.nc
+
+paths:
+  grids: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids
 
 cdo-paths:
-  download: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/weights
-  icon: /pool/data/ICON
+  download: $grids
+  icon: /pool/data/ICON #WRONG
 
 target_grids:
   r005: r7200x3600
@@ -30,33 +33,170 @@ source_grids:
         space_coord: ["nod2"]
         extra: 
           - -setgrid,../AQUA_tests_short/grids/pi_griddes_nodes_IFS.nc 
-          - -selname,cell_area 
+          - -selname,cell_area
+
   IFS:
     tco399-orca025:
       default:
-        path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/grids/tco399_grid.nc
+        path: $grids/IFS/tco399_grid.nc
         space_coord: ["value"]
     tco79-eORCA1:
       atm2d:
-        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
+        path: $grids/IFS/tco79_grid.nc
         space_coord: ["value"]
       atm3d:
-        path: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/tco_grids/tco79_grid.nc
+        path: $grids/IFS/tco79_grid.nc
         space_coord: ["value"]
-    test-tco79:
-      original_2d:
-        path: ../AQUA_tests_short/grids/tco79_grid.nc
-        space_coord: ["rgrid"]
-  ERA5:
-    fdb:
+    fdb-tco399:
       default:
+        path: 
+          2d: $grids/IFS/tco399_grid.nc
+          2dm: $grids/IFS/tco399_grid_masked.nc
+        masked_vars:
+          - ci
+          - sst
+        space_coord: ["ncells"]
+        vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this
+    control-1950-devcon:
+      default:
+        space_coord: ["ncells"]
+        support_dims: ["cell_corners"]  # dimensions to keep when selecting a single spatial sample
+      hourly-1deg:
         space_coord: ["lon", "lat"]
+      6hourly-1deg:
+        space_coord: ["lon", "lat"]
+      monthly-1deg-2d:
+        space_coord: ["lon", "lat"]
+      monthly-1deg-3d:
+        space_coord: ["lon", "lat"]
+      lra-r100-monthly:
+        space_coord: ["lon", "lat"]
+    historical-1990-devcon:
+      default:
+        space_coord: ["ncells"]
+        support_dims: ["cell_corners"]
+      hourly-1deg:
+        space_coord: ["lon", "lat"]
+      6hourly-1deg:
+        space_coord: ["lon", "lat"]
+      monthly-1deg-2d:
+        space_coord: ["lon", "lat"]
+      monthly-1deg-3d:
+        space_coord: ["lon", "lat"]
+
+  ERA5:
+    era5:
+      default:
+        path: 
+          2d: $grids/lonlat/r025_grid.nc
+          2dm: $grids/lonlat/r025_grid_masked.nc
+        masked_vars:
+          - sst
+          - SSTK
+        space_coord: ["lon", "lat"]
+        vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this  
   NEMO:
     tco79-eORCA1:
       default:
-        path: /pfs/lustrep3/projappl/project_465000454/padavini/aqua/grids/ORCA1_mesh_sfc_grid_T.nc
+        path: $grids/NEMO/ORCA1_mesh_sfc_grid_T.nc
         space_coord: ["cell"]
         # path: /pfs/lustrep3/scratch/project_465000454/pool/data/IFS/inputs_de_48r1/nemo/V40/eORCA1_Z75/common/mesh_mask.nc
         # extra:
         #   - selname,tmask          
         # space_coord: ["nav_lon", "nav_lat"]
+  MSWEP:
+    past:
+      default:
+        space_coord:
+        - lon
+        - lat
+  
+  CERES:
+    ebaf-toa42:
+      default:
+        space_coord:
+        - lon
+        - lat
+    ebaf-toa41:
+      default:
+        space_coord:
+        - lon
+        - lat
+    ebaf-sfc41:
+      default:
+        space_coord:
+        - lon
+        - lat
+    ebaf-sfc42:
+      default:
+        space_coord:
+        - lon
+        - lat
+    syn-toa41:
+      default:
+        space_coord:
+        - lon
+        - lat
+
+  OSI-SAF:
+    osi-450:
+      nh-monthly:
+        space_coord:
+        - xc
+        - yc
+        cellareas: $grids/OSI-SAF/grid_nh.nc
+        cellarea_var: areacello
+        mask: $grids/OSI-SAF/grid_nh.nc
+        mask_var: sftof
+      nh-daily:
+        space_coord:
+        - xc
+        - yc
+        cellareas: $grids/OSI-SAF/grid_nh.nc
+        cellarea_var: areacello
+        mask: $grids/OSI-SAF/grid_nh.nc
+        mask_var: sftof
+      sh-daily:
+        space_coord:
+        - xc
+        - yc
+        cellareas: $grids/OSI-SAF/grid_sh.nc
+        cellarea_var: areacello
+        mask: $grids/OSI-SAF/grid_nh.nc
+        mask_var: sftof
+      sh-monthly:
+        space_coord:
+        - xc
+        - yc
+        cellareas: $grids/OSI-SAF/grid_sh.nc
+        cellarea_var: areacello
+        mask: $grids/OSI-SAF/grid_nh.nc
+        mask_var: sftof
+
+  EN4:
+    en4:
+      default:
+        path:
+          lev: $grids/EN4/en4-grid.nc
+        space_coord: ["lon", "lat"]
+        vert_coord: ["lev"]
+
+  AVISO:
+    ssh-L4:
+      default:
+        space_coord:
+        - longitude
+        - latitude
+  PHC3:
+    phc3:
+      default:
+        space_coord:
+        - lon
+        - lat
+  WOA18:
+    woa18_2005_2017:
+      default:
+        path:
+          depth: $grids/WOA18/grid-woa18.nc
+        vert_coord: depth
+        space_coord: ["lon", "lat"]

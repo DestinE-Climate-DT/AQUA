@@ -21,6 +21,19 @@ body:
       - Others
     validations:
       required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: version
+      description: Which AQUA version are you using?
+      options:
+      - main
+      - v0.3
+      - v0.2.1
+      - v0.2
+      - older
+    validations:
+      required: true
   - type: textarea
     id: what-happened
     attributes:

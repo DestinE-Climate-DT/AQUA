@@ -7,10 +7,9 @@ diagnostic
 import sys
 import argparse
 import xarray as xr
+from ecmean.performance_indices import performance_indices
 from aqua.util import load_yaml, get_arg
 from aqua import Reader
-from ecmean.performance_indices import performance_indices
-
 
 def parse_arguments(args):
     """
@@ -25,20 +24,21 @@ def parse_arguments(args):
 
     return parser.parse_args(args)
 
-
 def reader_data(model, exp, keep_vars):
     """
     Simple function to retrieve and do some operation on reader data
     """
-
-    reader = Reader(model=model, exp=exp, source="lra-r100-monthly", areas=False)
-    data = reader.retrieve(fix=False)
+    # if False/None return empty array
+    if not model:
+        return None
+    reader = Reader(model=model, exp=exp, source="lra-r100-monthly", areas=False, fix=False)
+    data = reader.retrieve()
 
     # return only vars that are available
     if keep_vars is None:
         return data
     return data[[value for value in keep_vars if value in data.data_vars]]
-    
+ 
 if __name__ == '__main__':
 
     print('Running AQUA Performance Indices diagnostic...')
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     loglevel = get_arg(args, 'loglevel', loglevel)
 
     # these are hard coded because are the ones we need to check
-    atm_vars = ['2t', 'tprate', 'msl', 'u', 'v', 't', 'q']
+    atm_vars = ['2t', 'tprate', 'msl', 'iews', 'inss', 'u', 'v', 't', 'q']
     data_atm = reader_data(model=model_atm, exp=exp, keep_vars=atm_vars)
     oce_vars = ['sst', 'ci', 'sos']
     data_oce = reader_data(model=model_oce, exp=exp, keep_vars=oce_vars)
@@ -73,8 +73,13 @@ if __name__ == '__main__':
     #    data_atm = data_atm.rename({'level': 'plev'})
 
     # create a single dataset
-    data = xr.merge([data_atm, data_oce])
- 
+    if data_oce is None:
+        data = data_atm
+    elif data_atm is None:
+        data = data_oce
+    else:
+        data = xr.merge([data_atm, data_oce])
+
 
     # run the performance indices
     performance_indices(exp, year1, year2, numproc = numproc, config = config,

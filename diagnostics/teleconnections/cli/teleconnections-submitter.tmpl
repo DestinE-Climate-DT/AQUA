@@ -24,10 +24,10 @@ if [ $machine == "levante" ]; then
 
     # activate conda environment
     # be aware that the loaded environment is hard-coded to the default environment name
-    conda activate teleconnections
+    conda activate aqua_common
 fi 
 
-function load_environment_teleconnections() {
+function load_aqua() {
 	# Load env modules on LUMI
     module purge
     module use LUMI/22.08
@@ -36,12 +36,12 @@ function load_environment_teleconnections() {
 
 # if machine is lumi use modules
 if [ $machine == "lumi" ]; then
-    load_environment_teleconnections
+    load_aqua
 
     # get username
     username=$USER
     # be aware that the path to mambaforge is hard-coded to the default environment name
-    export PATH="/users/$username/mambaforge/teleconnections/bin:$PATH"
+    export PATH="/users/$username/mambaforge/aqua_common/bin:$PATH"
 fi
 
 # run the Python script

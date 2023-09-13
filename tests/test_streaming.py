@@ -5,12 +5,13 @@ import pandas as pd
 from aqua import Reader
 
 # pytest approximation, to bear with different machines
-approx_rel = 1e4
-
+approx_rel = 1e-4
+loglevel = "DEBUG"
 
 @pytest.fixture(scope="function")
 def reader_instance():
-    return Reader(model="IFS", exp="test-tco79", source="long")
+    return Reader(model="IFS", exp="test-tco79", source="long",
+                  fix=False, loglevel=loglevel)
 
 # streaming class for tests
 @pytest.mark.aqua
@@ -32,12 +33,13 @@ class TestAquaStreaming:
                             {"stream_step": 3}])
     def stream_args(self, request, stream_date, stream_units):
         req = request.param
-        req.update({"streaming": True, "fix": False})
+        req.update({"streaming": True})
         req["stream_startdate"] = stream_date
         req["stream_unit"] = stream_units
         return req
 
-    def test_stream_retrieve(self, reader_instance, stream_units, stream_date, stream_args):
+    def test_stream_retrieve(self, reader_instance, stream_units, stream_date,
+                             stream_args):
         """
         Test if the retrieve method returns streamed data with streaming=true
         changing start date
@@ -51,7 +53,8 @@ class TestAquaStreaming:
             offset = pd.DateOffset(**{stream_units: 3})
         step = pd.DateOffset(hours=1)
 
-        dates = pd.date_range(start=start_date, end=start_date+offset, freq='1H')
+        dates = pd.date_range(start=start_date, end=start_date+offset,
+                              freq='1H')
         num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
 
         data = reader.retrieve(**stream_args)
@@ -87,12 +90,14 @@ class TestAquaStreaming:
                             {"stream_step": 3}])
     def reader_instance_with_args(self, request, stream_date, stream_units):
         req = request.param
-        req.update({"streaming": True, "model": "IFS", "exp": "test-tco79", "source": "long"})
+        req.update({"streaming": True, "model": "IFS", "exp": "test-tco79",
+                    "source": "long", "fix": False})
         req["stream_unit"] = stream_units
         req["stream_startdate"] = stream_date
         return Reader(**req)
 
-    def test_stream_reader(self, reader_instance_with_args, stream_units, stream_date):
+    def test_stream_reader(self, reader_instance_with_args, stream_units,
+                           stream_date):
         """
         Test if the retrieve method returns streamed data with streaming=true
         changing start date
@@ -106,10 +111,11 @@ class TestAquaStreaming:
             offset = pd.DateOffset(**{stream_units: 3})
         step = pd.DateOffset(hours=1)
 
-        dates = pd.date_range(start=start_date, end=start_date+offset, freq='1H')
+        dates = pd.date_range(start=start_date, end=start_date+offset,
+                              freq='1H')
         num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
 
-        data = reader.retrieve(fix=False)
+        data = reader.retrieve()
         # Test if it has the right size
         assert data['2t'].shape == (num_hours, 9, 18)
         # Test if starting date is ok
@@ -118,10 +124,10 @@ class TestAquaStreaming:
         assert data.time.values[-1] == start_date + offset - step
 
         # Test if we can go to the next date
-        data = reader.retrieve(fix=False)
+        data = reader.retrieve()
         assert data.time.values[0] == start_date + offset
 
         # Test if reset_stream works
         reader.reset_stream()
-        data = reader.retrieve(fix=False)
+        data = reader.retrieve()
         assert data.time.values[0] == start_date

@@ -1,9 +1,9 @@
 dataset:
-  model_atm: ICON
-  model_oce: ICON
-  exp: ngc2009
-  year1: 2020
-  year2: 2020
+  model_atm: IFS
+  model_oce: False
+  exp: control-1950-devcon
+  year1: 1950
+  year2: 1959
 
 compute:
   numproc: 1

@@ -9,21 +9,24 @@ sources:
     args:
       consolidated: false
       urlpath: 
-        reference::/work/bm1235/a270046/cycle2-sync/tco1279-orca025/nemo_deep/ICMGGc2/json.dir/atm2d.json
+        #reference::/work/bm1235/a270046/cycle2-sync/tco1279-orca025/nemo_deep/ICMGGc2/json.dir/atm2d.json
+        reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco1279-orca025/nemo_deep/varfiles_all/json.dir/atm2d.json
   ICMU_atm2d:
     driver: zarr
     description: original 2d output (lnsp)
     args:
       consolidated: false
       urlpath: 
-        reference::/work/bm1235/a270046/cycle2-sync/tco1279-orca025/nemo_deep/ICMUAc2/json.dir/atm2d.json
+        #reference::/work/bm1235/a270046/cycle2-sync/tco1279-orca025/nemo_deep/ICMUAc2/json.dir/atm2d.json
+        reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco1279-orca025/nemo_deep/varfiles_all/json.dir/atm2d.json
   ICMU_atm3d:
     driver: zarr
     description: original 3d output
     args:
       consolidated: false
       urlpath: 
-        reference::/work/bm1235/a270046/cycle2-sync/tco1279-orca025/nemo_deep/ICMUAc2/json.dir/atm3d.json
+        #reference::/work/bm1235/a270046/cycle2-sync/tco1279-orca025/nemo_deep/ICMUAc2/json.dir/atm3d.json
+        reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco1279-orca025/nemo_deep/varfiles_all/json.dir/atm3d.json
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100

@@ -1,9 +1,11 @@
+metadata:
+  parameters:
+    DATA_PATH:
+      type: str
+      description: the path to observational datasets
+      default: /pfs/lustrep3/projappl/project_465000454/data/AQUA/datasets
+  
 sources:
-  FESOM:
-    description: FESOM ocean model
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/catalog/FESOM/main.yaml"
   IFS:
     description: IFS atmospheric model
     driver: yaml_file_cat
@@ -14,8 +16,38 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/ERA5/main.yaml"
-  NEMO:
-    description: NEMO ocean model
+  MSWEP:
+    description: MSWEP_V280 precipitation data
     driver: yaml_file_cat
     args:
-        path: "{{CATALOG_DIR}}/catalog/NEMO/main.yaml"
+        path: "{{CATALOG_DIR}}/catalog/MSWEP/main.yaml"
+  CERES:
+    description: CERES-EBAF radiation data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/CERES/main.yaml"
+  PHC3:
+    description: PHC3 climatology
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/PHC3/main.yaml"
+  WOA18:
+    description: World Ocean Atlas climatology
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/WOA18/main.yaml"
+  OSI-SAF:
+    description: OSI-SAF sea-ice data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/OSI-SAF/main.yaml"
+  EN4:
+    description: EN4 3D temperature and salinity observational data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/EN4/main.yaml"
+  AVISO:
+    description: AVISO SSH data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/AVISO/main.yaml"

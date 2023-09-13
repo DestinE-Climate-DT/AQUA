@@ -4,6 +4,7 @@ target:
   frequency: monthly
   outdir: /work/bb1153/b382076/LRAv3
   tmpdir: /scratch/b/b382076
+  aggregation: 'M'
 
 configdir: '../../config/'
 loglevel: INFO
@@ -14,6 +15,11 @@ opa:
   opacheckpoint: True
   opastreamstep: 5
   opadir: /scratch/b/b382076/one_pass
+
+gsv: 
+  use_gsv: False
+  start: None
+  end: None
 
 # all the variable listed here will be processed by the LRA creator
 catalog:

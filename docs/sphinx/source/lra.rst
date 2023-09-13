@@ -93,7 +93,7 @@ A basic example usage can thus be:
 
 .. code-block:: python
 
-    ./cli_lra_generator.py -d -w 4
+    ./cli_lra_generator.py -c lra_config.yaml -d -w 4
 
 
 .. warning ::
@@ -106,3 +106,17 @@ A basic example usage can thus be:
 At the end of the generation, a new entry for the LRA is added to the catalog structure, 
 so that you will be able to access the exactly as shown above.
 
+Further LRA CLI tools
+^^^^^^^^^^^^^^^^^^^^^
+
+Due to integration with workflow, two other CLI tools are available to generate the LRA in a more complex environment accessing data from the GSV
+
+- `cli_lra_workflow.py` is the LRA generator used within the DE340 workflow. It is made to work from OPA output and then process them to fix and standardize it.
+Please refer to workflow developers to get more information on how to use this tool. A template configuration file `workflow_lra.tmpl` is included in the folder.
+The usage is the same as the main LRA generator script discussed above. 
+
+
+-  `cli_lra_streaming.py` is used to generate a LRA starting from an access to the GSV, plus calling the OPA and the LRA generator. 
+Currently this script is extremely sperimental and its usage is not recommended. 
+
+    

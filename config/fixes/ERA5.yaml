@@ -20,9 +20,9 @@ models:
                         source: TP
                         src_units: m/day
                     tcc: 
-                        src_units: frac
                         grib: true 
                         source: TCC
+                        units: frac
                     sst:
                         grib: true
                         source: SSTK

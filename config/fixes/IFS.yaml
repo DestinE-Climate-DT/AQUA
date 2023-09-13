@@ -84,11 +84,24 @@ models:
                         source: smlt
                         grib: true
                         decumulate: true
+                    iews:
+                        source: ewss
+                        grib: true
+                        decumulate: true  
+                    inss: 
+                        source: nsss
+                        grib: true
+                        decumulate: true
+                    surfror:  # a very recent version of eccodes is needed for this one
+                        source: sro
+                        grib: true
+                        decumulate: true 
         tco2559-ng5-cycle3:
-         # for this exp we have a lot of output from MultI/O, already decumulated and
-         # averaged monthly, so default is without decumulation
+        # for this exp we have a lot of output from MultI/O, already decumulated and
+        # averaged monthly, so default is without decumulation
             default:
                 data_model: ifs
+                method: replace
                 vars:
                     tprate:
                         src_units: m s**-1
@@ -158,76 +171,7 @@ models:
                         source: ttr
                         grib: true  
             2D_1h_native: 
-                data_model: ifs
-                deltat: 3600
-                jump: month
-                vars:
-                    tprate:
-                        source: tp
-                        grib: true
-                        decumulate: true 
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    erate:
-                        source: e
-                        grib: true
-                        decumulate: true 
-                        src_units: m
-                        units: kg m**-2 s**-1 
-                    esrate:
-                        source: es
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mrort:
-                        source: ro
-                        grib: true
-                        decumulate: true
-                        src_units: m 
-                        units: kg m**-2 s**-1
-                    mtsfr:
-                        source: sf
-                        grib: true
-                        decumulate: true
-                        src_units: m 
-                        units: kg m**-2 s**-1
-                    mslhfl:
-                        source: slhf
-                        grib: true
-                        decumulate: true
-                    msshfl:
-                        source: sshf
-                        grib: true
-                        decumulate: true
-                    msnsrf:
-                        source: ssr
-                        grib: true
-                        decumulate: true
-                    msdsrf:
-                        source: ssrd
-                        grib: true
-                        decumulate: true    
-                    msntrf:
-                        source: str
-                        grib: true
-                        decumulate: true
-                    msdtrf:
-                        source: strd
-                        grib: true
-                        decumulate: true
-                    mtnsrf:
-                        source: tsr
-                        grib: true
-                        decumulate: true
-                    mtntrf:
-                        source: ttr
-                        grib: true
-                        decumulate: true         
-                    var172045:  # if the variable has no short name we can use its paramId
-                        source: smlt
-                        grib: true
-                        decumulate: true     
+                method: default    
         tco1279-orca025-cycle3:
          # for this exp we have a lot of output from MultI/O, already decumulated and
          # averaged monthly, so default is without decumulation
@@ -302,91 +246,27 @@ models:
                         source: ttr
                         grib: true  
             2D_1h_native: 
-                data_model: ifs
-                deltat: 3600
-                jump: month
+                method: default
+
+        # this should be exatly the same but we have tprate without decumulation         
+        control-1950-devcon:
+            hourly-1deg:
+                method: merge
                 vars:
-                    tprate:
-                        source: tp
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    cprate:
-                        source: cp
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mlsprt:
-                        source: lsp
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1 
-                    erate:
-                        source: e
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1 
-                    esrate:
-                        source: es
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1 
-                    mrort:
-                        source: ro
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mtsfr:
-                        source: sf
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mslhfl:
-                        source: slhf
-                        grib: true
-                        decumulate: true
-                    msshfl:
-                        source: sshf
-                        grib: true
-                        decumulate: true
-                    msnsrf:
-                        source: ssr
-                        grib: true
-                        decumulate: true
-                    msdsrf:
-                        source: ssrd
-                        grib: true
-                        decumulate: true    
-                    msntrf:
-                        source: str
-                        grib: true
-                        decumulate: true
-                    msdtrf:
-                        source: strd
-                        grib: true
-                        decumulate: true
-                    mtnsrf:
-                        source: tsr
-                        grib: true
-                        decumulate: true
-                    mtntrf:
-                        source: ttr
-                        grib: true
-                        decumulate: true         
-                    var172045:  # if the variable has no short name we can use its paramId
-                        source: smlt
-                        grib: true
-                        decumulate: true   
+                    tprate: 
+                        source: tprate
+        # this should be exatly the same but we have tprate without decumulation     
+        historical-1990-devcon:
+            hourly-1deg:
+                method: merge
+                vars:
+                    tprate:  # a very recent version of eccodes is needed for this one
+                        source: tprate
+
         # These are for tests
         test-tco79:
             long:
+                method: merge #replace #merge
                 data_model: ifs
                 deltat: 3600
                 jump: month
@@ -409,3 +289,12 @@ models:
                         attributes:
                             long_name: Mean top net thermal radiation flux doubled # assigning a long_name
                             paramId: '999179' # assigning an (invented) paramId
+            short:
+                method: replace
+                data_model: ifs
+                vars:
+                    2t:
+                        source: 2t
+                        attributes: 
+                            mickey: 'mouse'
+

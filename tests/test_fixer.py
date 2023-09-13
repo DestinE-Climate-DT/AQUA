@@ -3,14 +3,17 @@
 import pytest
 from aqua import Reader
 
+loglevel = 'DEBUG'
+
 @pytest.mark.aqua
-#@pytest.mark.skip(reason="excluded from GH actions")
-def test_fixer():
+# @pytest.mark.skip(reason="excluded from GH actions")
+def test_fixer_ifs_long():
     """Test basic fixing"""
 
     ntime = [10, 20, 1000]  # points in time to be checked (includes 1 month jump)
-    reader = Reader(model="IFS", exp="test-tco79", source="long")
-    data0 = reader.retrieve(var=['2t', 'ttr'], fix=False)  # Retrieve not fixed data
+    reader = Reader(model="IFS", exp="test-tco79", source="long", 
+                    fix=False, loglevel=loglevel)
+    data0 = reader.retrieve(var=['2t', 'ttr'])  # Retrieve not fixed data
     ttr0 = data0.ttr[ntime, 0, 0]
     tas0 = data0['2t'][ntime, 5, 5]
 
@@ -19,7 +22,8 @@ def test_fixer():
     assert pytest.approx(ttr0.values) == [-6969528.64626286, -14032413.9597565, -9054387.41655567]
 
     # Now let's fix
-    data1 = reader.retrieve(fix=True)  # Retrieve fixed data
+    reader1 = Reader(model="IFS", exp="test-tco79", source="long", loglevel='debug')
+    data1 = reader1.retrieve()  # Retrieve fixed data
     ttr1 = data1.ttr[ntime, 0, 0]
     tas1 = data1['skt'][ntime, 5, 5]
     mtntrf = data1.mtntrf[ntime, 0, 0]
@@ -53,3 +57,11 @@ def test_fixer():
     assert mtntrf2.attrs['units_fixed'] == 1
     assert mtntrf2.attrs['units'] == 'W m-2'  # these were coded by hand
     assert mtntrf2.attrs['long_name'] == 'Mean top net thermal radiation flux doubled'
+
+def test_fixer_ifs_short():
+
+    """Check alternative fix with replace method"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="short")
+    data = reader.retrieve()
+    assert data['2t'].attrs['mickey'] == 'mouse'

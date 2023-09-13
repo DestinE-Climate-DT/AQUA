@@ -4,7 +4,7 @@ import re
 from dask_jobqueue import SLURMCluster  # pip
 from dask.distributed import Client, progress
 from aqua.logger import log_configure
-from aqua.util import create_folder, get_machine, get_config_dir
+from aqua.util import create_folder, ConfigPath
 
 """
 The Slurm module contains functions to create and control the SLURM job:
@@ -176,9 +176,8 @@ def job(exclusive=False, max_resources=False, cores=1, memory="10 GB",
 
     # Getting the machine name
     if machine is None:
-        if configdir is None:
-            configdir = get_config_dir()
-        machine_name = get_machine(configdir=configdir)
+        Configurer = ConfigPath(configdir=configdir)
+        machine_name = Configurer.machine
     else:
         machine_name = machine
 

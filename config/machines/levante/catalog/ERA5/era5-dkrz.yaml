@@ -7,7 +7,7 @@ sources:
   monthly_inst:
       driver: intake_esm.esm_datastore
       args:
-        csv_kwargs:
+        read_csv_kwargs:
           usecols:
           - level_type
           - frequency
@@ -24,7 +24,7 @@ sources:
           dtype:
             initialization_date: str
             validation_date: str
-        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
+        obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 instantaneous 2D data monthly averaged
       metadata:
         query_var: short_name
@@ -42,7 +42,7 @@ sources:
   monthly_acc:
       driver: intake_esm.esm_datastore
       args:
-        csv_kwargs:
+        read_csv_kwargs:
           usecols:
           - level_type
           - frequency
@@ -59,7 +59,7 @@ sources:
           dtype:
             initialization_date: str
             validation_date: str
-        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
+        obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 accumulated 2D data monthly averaged
       metadata:
         query_var: short_name
@@ -78,7 +78,7 @@ sources:
   daily_inst:
       driver: intake_esm.esm_datastore
       args:
-        csv_kwargs:
+        read_csv_kwargs:
           usecols:
           - level_type
           - frequency
@@ -95,7 +95,7 @@ sources:
           dtype:
             initialization_date: str
             validation_date: str
-        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
+        obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 instantaneous 2D data daily
       metadata:
         query_var: short_name
@@ -111,7 +111,7 @@ sources:
   daily_acc:
       driver: intake_esm.esm_datastore
       args:
-        csv_kwargs:
+        read_csv_kwargs:
           usecols:
           - level_type
           - frequency
@@ -144,7 +144,7 @@ sources:
           dtype:
             initialization_date: str
             validation_date: str
-        esmcol_obj: /pool/data/Catalogs/dkrz_era5_disk.json
+        obj: /pool/data/Catalogs/dkrz_era5_disk.json
       description: ERA5 accumulated 2D data daily
       metadata:
         query_var: short_name
