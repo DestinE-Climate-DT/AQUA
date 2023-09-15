@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 
 from datetime import datetime
-from timezonefinder import TimezoneFinder
+#from timezonefinder import TimezoneFinder
 import pytz
 
 from itertools import groupby
