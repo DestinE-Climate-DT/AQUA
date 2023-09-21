@@ -744,9 +744,12 @@ class Tropical_Rainfall:
                 name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[
                     0] + '_' + re.split(":", re.split(", ", time_band)[1])[0]
             except IndexError:
-                name_of_file = name_of_file + '_' + \
-                    re.split("'", re.split(":", time_band)[0])[1]
-
+                try:
+                    name_of_file = name_of_file + '_' + \
+                        re.split("'", re.split(":", time_band)[0])[1]
+                except IndexError:
+                    name_of_file = name_of_file + '_' + \
+                        re.split("'", re.split(":", time_band)[0])[0]
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '_histogram.nc'
 
             dataset.to_netcdf(path=path_to_netcdf)
@@ -884,9 +887,16 @@ class Tropical_Rainfall:
                                **tprate_dataset_2.attrs}
 
             for attribute in tprate_dataset_1.attrs:
-                if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute]:
-                    dataset_3.attrs[attribute] = str(
-                        tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                try:
+                    if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute]:
+                        dataset_3.attrs[attribute] = str(
+                            tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                except ValueError:
+                    if tprate_dataset_1.attrs[attribute].all != tprate_dataset_2.attrs[attribute].all:
+                        dataset_3.attrs[attribute] = str(
+                            tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+
+                    
 
             dataset_3.counts.values = tprate_dataset_1.counts.values + \
                 tprate_dataset_2.counts.values
@@ -900,9 +910,14 @@ class Tropical_Rainfall:
                 for attribute in tprate_dataset_1.counts.attrs:
                     dataset_3[variable].attrs = {
                         **tprate_dataset_1[variable].attrs, **tprate_dataset_2[variable].attrs}
-                    if tprate_dataset_1[variable].attrs[attribute] != tprate_dataset_2[variable].attrs[attribute]:
-                        dataset_3[variable].attrs[attribute] = str(
-                            tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
+                    try:
+                        if tprate_dataset_1[variable].attrs[attribute] != tprate_dataset_2[variable].attrs[attribute]:
+                            dataset_3[variable].attrs[attribute] = str(
+                                tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
+                    except ValueError:
+                        if tprate_dataset_1[variable].attrs[attribute].all != tprate_dataset_2[variable].attrs[attribute].all:
+                            dataset_3[variable].attrs[attribute] = str(
+                                tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
                 dataset_3[variable].attrs['size_of_the_data'] = tprate_dataset_1[variable].size_of_the_data + \
                     tprate_dataset_2[variable].size_of_the_data
             return dataset_3
