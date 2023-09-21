@@ -186,6 +186,11 @@ class FixerMixin():
         # fixer_tgt_units: name of fixer target units
 
         # Add extra units (might be moved somewhere else, function is at the bottom of this file)
+
+        # Fix GRIB attribute names. This removes "GRIB_" from the beginning
+        for var in data.data_vars:
+            data[var].attrs = {key.split("GRIB_")[-1]: value for key, value in data[var].attrs.items()}
+
         units_extra_definition()
 
         # if there are no fixes defined, return

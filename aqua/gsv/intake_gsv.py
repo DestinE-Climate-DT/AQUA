@@ -1,13 +1,14 @@
 """An intake driver for FDB/GSV access"""
-
-import sys
 import os
-import contextlib
+
 import datetime
+import sys
+import io
 import xarray as xr
+import dask
 from intake.source import base
-from .timeutil import compute_date_steps, compute_date, check_dates, compute_mars_timerange
-from .timeutil import shift_time_dataset, shift_time_datetime, compute_steprange, dateobj, set_stepmin, split_date
+from .timeutil import check_dates, shift_time_dataset
+from .timeutil import split_date, make_timeaxis, date2str, add_offset
 
 # Test if FDB5 binary library is available
 try:
@@ -26,10 +27,21 @@ class GSVSource(base.DataSource):
     name = 'gsv'
     version = '0.0.2'
     partition_access = True
+    timeaxis = None
+    chk_start_idx = None
+    chk_start_date = None
+    chk_end_idx = None
+    chk_end_date = None
+    chk_size = None
+
+    _ds = None  # This will contain a sample of the data for dask access
+    dask_access = False  # Flag if dask has been requested
+    timeaxis = None  # Used for dask access
 
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
-                 aggregation="S", timestep="H", timeshift=None,
-                 startdate=None, enddate=None, var='167', metadata=None, verbose=False, **kwargs):
+                 aggregation="S", savefreq="H", timestep="H", timeshift=None,
+                 startdate=None, enddate=None, var='167', metadata=None, verbose=False,
+                 logging=False, **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalogue entry, but can also be specified upon accessing the catalogue.
 
@@ -45,129 +57,223 @@ class GSVSource(base.DataSource):
             var (str, optional): Variable ID. Defaults to "167".
             metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
             verbose (bool, optional): Whether to print additional info to screen. Used only for FDB access. Defaults to False.
+            logging (bool, optional): Whether to print to screen. Used only for FDB access. Defaults to False.
             kwargs: other keyword arguments.
         """
+
+        if not gsv_available:
+            raise ImportError(gsv_error_cause)
         
+        if metadata:
+            self.fdbpath = metadata.get('fdb_path', None)
+        else:
+            self.fdbpath = None
+
         if not startdate:
             startdate = data_start_date
         if not enddate:
             enddate = data_end_date
-        
-        check_dates(startdate, data_start_date, enddate, data_end_date)
 
+        offset = int(request["step"])  # optional initial offset for steps (in timesteps)
+
+        startdate = add_offset(data_start_date, startdate, offset, timestep)  # special for 6h: set offset startdate if needed
+        
         self.timestyle = timestyle
 
-        if aggregation.upper() == "S":  # special case: 'aggegation at single step level
-            aggregation = timestep
+        if aggregation.upper() == "S":  # special case: 'aggegation at single saved level
+            aggregation = savefreq
 
-        self.aggregation = aggregation
-        self.timestep = timestep
         self.timeshift = timeshift
+        self.itime = 0  # position of time dim
 
         self.data_startdate, self.data_starttime = split_date(data_start_date)
-        self.startdate, self.starttime = split_date(startdate)
-        self.enddate, self.endtime = split_date(enddate)
 
-        self.stepmin = request["step"]  # The minimum existing timestep 
         self._var = var
         self.verbose = verbose
+        self.logging = logging
 
-        self.request = request
+        self._request = request.copy()
         self._kwargs = kwargs
 
-        if timestyle == "step" and self.stepmin > 0:  # make sure that we start retrieving data from the first available step
-            self.startdate, self.starttime = set_stepmin(self.startdate, self.starttime,
-                                                         self.data_startdate, self.data_starttime,
-                                                         self.stepmin, self.timestep)
+        sys._gsv_work_counter = 0  # used to suppress printing
 
-        self._npartitions = compute_date_steps(self.startdate, self.enddate, aggregation,
-                                                   starttime=self.starttime, endtime=self.endtime)
+        self.data_start_date = data_start_date
+        self.data_end_date = data_end_date
+        self.startdate = startdate
+        self.enddate = enddate
+        
+        (self.timeaxis, self.chk_start_idx,
+         self.chk_start_date, self.chk_end_idx,
+         self.chk_end_date, self.chk_size) = make_timeaxis(self.data_start_date, self.startdate, self.enddate,
+                                                           shiftmonth=self.timeshift, timestep=timestep,
+                                                           savefreq=savefreq, chunkfreq=aggregation)
 
-        if gsv_available:
-            self.gsv = GSVRetriever()
-        else:
-            raise ImportError(gsv_error_cause)
-        self._dataset = None
+        self._npartitions = len(self.chk_start_date)
+
         super(GSVSource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
         """Standard method providing data schema"""
 
-        return base.Schema(
-            datashape=None,
-            dtype=xr.Dataset,
-            # shape=self._dataset.shape,
-            shape=None,
-            npartitions=self._npartitions,
-            extra_metadata={},
-        )
+        # check if dates are within acceptable range
+        check_dates(self.startdate, self.data_start_date, self.enddate, self.data_end_date)
 
-    def _get_partition(self, i):
-        """Standard internal method reading i-th data partition from FDB"""
+        if self.dask_access:  # We need a better schema for dask access
+            if not self._ds:  # we still have to retrieve a sample dataset
+                self._ds = self._get_partition(0, first=True)
+            
+            var = list(self._ds.data_vars)[0]
+            da = self._ds[var]  # get first variable dataarray
+
+            metadata = {
+                 'dims': da.dims,
+                 'attrs': self._ds.attrs
+            }
+            schema = base.Schema(
+                datashape=None,
+                dtype=str(da.dtype),
+                shape=da.shape,
+                name=var,
+                npartitions=self._npartitions,
+                extra_metadata=metadata)
+        else:            
+            schema = base.Schema(
+                datashape=None,
+                dtype=str(xr.Dataset),
+                shape=None,
+                name=None,
+                npartitions=self._npartitions,
+                extra_metadata={},
+            )
+
+        return schema
+
+    def _get_partition(self, i, first=False, dask=False):
+        """
+        Standard internal method reading i-th data partition from FDB
+        Args:
+            i (int): partition number
+            first (boo): read only the first step (used for schema retrieval)
+        Returns:
+            An xarray.DataSet
+        """
+
+        request = self._request.copy()  # We are going to change it, threads do need this
 
         if self.timestyle == "date":
-            dd, tt, _ = compute_date(self.startdate, self.starttime, self.aggregation, i, self._npartitions)
-            dform, tform = compute_mars_timerange(dd, tt, self.aggregation, self.timestep)  # computes date and time range in mars style
-            self.request["date"] = dform
-            self.request["time"] = tform
+            dds, tts = date2str(self.chk_start_date[i])
+            dde, tte = date2str(self.chk_end_date[i])
+            request["date"] = f"{dds}/to/{dde}"
+            request["time"] = f"{tts}/to/{tte}"
+            s0 = None
+            s1 = None
         else:  # style is 'step'
-            self.request["date"] = self.data_startdate
-            self.request["time"] = self.data_starttime
+            request["date"] = self.data_startdate
+            request["time"] = self.data_starttime
 
-            date0 = dateobj(self.data_startdate, self.data_starttime)
+            s0 = self.chk_start_idx[i]
+            s1 = self.chk_end_idx[i]
 
-            _, _, ndate0 = compute_date(self.startdate, self.starttime, self.aggregation, i, self._npartitions)
-            _, _, ndate1 = compute_date(self.startdate, self.starttime, self.aggregation, i + 1, self._npartitions)
-
-            if self.timeshift:  # shift time for selection by given amount (needed eg. by GSV monthly)
-                ndate0 = shift_time_datetime(ndate0, self.timeshift, sign=-1)
-                ndate1 = shift_time_datetime(ndate1, self.timeshift, sign=-1)
-
-            s0 = compute_steprange(date0, ndate0, self.timestep)
-            s1 = compute_steprange(date0, ndate1, self.timestep) - 1
-
-            if s0 == s1:
-                self.request["step"] = f'{s0}'
+            if s0 == s1 or first:
+                request["step"] = f'{s0}'
             else:
-                self.request["step"] = f'{s0}/to/{s1}'
+                request["step"] = f'{s0}/to/{s1}'
 
         if self._var:  # if no var provided keep the default in the catalogue
-            self.request["param"] = self._var
+            request["param"] = self._var
+
+        if self.fdbpath:  # if fdbpath provided, use it, since we are creating a new gsv
+            os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
+
+        gsv = GSVRetriever()  # for some reason this is needed here and not in init
 
         if self.verbose:
-            print("Request: ", self.request)
-            dataset = self.gsv.request_data(self.request)
+            print("Request: ", i, self._var, s0, s1, request)
+            dataset = gsv.request_data(request)
         else:
-            with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
-                dataset = self.gsv.request_data(self.request)
-
-        if self.timeshift:  # shift time by given amount (needed eg. by GSV monthly)
-            dataset = shift_time_dataset(dataset, self.timeshift)
-
-        # Fix GRIB attribute names. This removes "GRIB_" from the beginning
-        for var in dataset.data_vars:
-            dataset[var].attrs = {key.split("GRIB_")[-1]: value for key, value in dataset[var].attrs.items()}
+            with NoPrinting():
+                dataset = gsv.request_data(request)
+    
+        if self.timeshift:  # shift time by one month (special case)
+            dataset = shift_time_dataset(dataset)
 
         # Log history
-        log_history(dataset, "dataset retrieved by GSV interface")
+        if self.logging:
+            log_history(dataset, "Dataset retrieved by GSV interface")
 
         return dataset
 
+
     def read(self):
-        """Public method providing iterator to read the data"""
+        """Return a in-memory dask dataset"""
         ds = [self._get_partition(i) for i in range(self._npartitions)]
         ds = xr.concat(ds, dim='time')
         return ds
 
-    def to_dask(self):
-        return self.read_chunked()
 
-    # def _load(self):
-    #     self._dataset = self._get_partition(0)
+    def get_part_delayed(self, i, var, shape, dtype):
+        """
+        Function to read a delayed partition.
+        Returns a dask.array
+        """
+        ds = dask.delayed(self._get_partition)(i, dask=True)[var].data
+        newshape = list(shape)
+        newshape[self.itime] = self.chk_size[i]
+        return dask.array.from_delayed(ds, newshape, dtype)
+
+
+    def to_dask(self):
+        """Return a dask xarray dataset for this data source"""
+
+        self.dask_access = True  # This is used to tell _get_schema() to load dask info
+        self._load_metadata()
+
+        var = self._schema.name
+        shape = self._schema.shape
+        dtype = self._schema.dtype
+
+        da0 = self._ds[var]  # sample dataarray
+
+        self.itime = da0.dims.index("time")
+
+        # Create a dask array from a list of delayed get_partition calls
+        dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
+        darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
+
+        coords = da0.coords.copy()
+        coords['time'] = self.timeaxis
+
+        da = xr.DataArray(darr,
+                  name = da0.name,
+                  attrs = da0.attrs,
+                  dims = da0.dims,
+                  coords = coords)
+
+        ds = da.to_dataset()
+        ds.attrs.update(self._ds.attrs)
+
+        return ds
+
+
+class NoPrinting:
+    """
+    Context manager to suppress printing
+    """
+
+    def __enter__(self):
+        sys._gsv_work_counter += 1
+        if sys._gsv_work_counter == 1 and not isinstance(sys.stdout, io.StringIO):  # We are really the first
+             sys._org_stdout = sys.stdout  # Record the original in sys
+             self._trap = io.StringIO()
+             sys.stdout = self._trap
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys._gsv_work_counter -= 1
+        if sys._gsv_work_counter == 0:  # We are really the last one
+             sys.stdout = sys._org_stdout  # Restore the original
 
 
 # This function is repeated here in order not to create a cross dependency between GSVSource and AQUA
-
 def log_history(data, msg):
     """Elementary provenance logger in the history attribute"""
 

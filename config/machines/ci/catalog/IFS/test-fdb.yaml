@@ -13,8 +13,8 @@ sources:
         date: "20080101"
         time: "0000"
         step: 0
-      data_start_date: "20080101:1200"
-      data_end_date: "20080101:1200"
+      data_start_date: "20080101T1200"
+      data_end_date: "20080101T1200"
       aggregation: H
       timestep: H
       timestyle: date

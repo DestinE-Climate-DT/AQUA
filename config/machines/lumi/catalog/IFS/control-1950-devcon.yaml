@@ -12,12 +12,13 @@ sources:
         param: 2t
         levtype: sfc
         step: 0
-      data_start_date: 19500101:0000
-      data_end_date: 19591231:2300
-      aggregation: H  # Default aggregation if timestep=S is used
-      timestep: H
-      timestyle: step
-    description: hourly data on native grid TCo2560 (about 4.5km). Contains tprate(260048),
+      data_start_date: 19500101T0000
+      data_end_date: 19591231T2300
+      aggregation: D  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: step  # variable date or variable step
+    description: hourly data on native grid TCo2559 (about 4.5km). Contains tprate(260048),
       2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
       sd(141), 2d(168), skt(235), chnk(148). See fix yaml for derived vars.
     driver: gsv
@@ -36,11 +37,12 @@ sources:
         param: sf
         levtype: sfc
         step: 0
-      data_start_date: 19500101:0000
-      data_end_date: 19591231:2300
-      aggregation: H  # Default aggregation if timestep=S is used
-      timestep: H
-      timestyle: step
+      data_start_date: 19500101T0000
+      data_end_date: 19591231T2300
+      aggregation: D  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: step  # variable date or variable step
     description: hourly data on r100 grid. Contains tprate(260048), sf(144), 2t(167),
       10u(165), 10v(166), blh(159), sshf(146), slhf(147), ssrd(169), ssr(176), strd(175),
       str(177), ttr(179), e(182), tsr(178), ewss(180), nsss(181), chnk(148). See fix
@@ -63,10 +65,11 @@ sources:
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 6  # First available step
-      data_start_date: 19500101:0000
-      data_end_date: 19591231:1800
-      aggregation: 6H  # Default aggregation if timestep=S is used
+      data_start_date: 19500101T0000
+      data_end_date: 19591231T1800
+      aggregation: D  # Default aggregation / chunk size
       timestep: H  # What one step means
+      savefreq: 6H
       timestyle: step
     description: 6hourly data on r100 grid. Contains z(129).
     driver: gsv
@@ -87,11 +90,12 @@ sources:
         step: 0
       data_start_date: '19500101'
       data_end_date: '19591201'
-      aggregation: M  # Default aggregation if timestep=S is used
+      aggregation: Y  # Default aggregation / chunk size
       timestep: H
+      savefreq: M
       timestyle: step
-      timeshift: -M    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+      timeshift: Yes    # shift time of resulting xarray by this amount
+    description: monthly data on r100 grid. Contains tprate(260048), 2t(167), tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata: {fdb_path: 
         /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-CONTROL_1950_DEVCON.yaml}
@@ -112,12 +116,12 @@ sources:
         step: 0
       data_start_date: '19500101'
       data_end_date: '19591201'
-      aggregation: M  # Default aggregation if timestep=S is used
+      aggregation: M  # Default aggregation / chunk size
       timestep: H
+      savefreq: M
       timestyle: step
-      timeshift: -M    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157),
-      w(135), q(133).
+      timeshift: Yes    # shift time of resulting xarray by this amount
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), w(135), q(133).
     driver: gsv
     metadata: {fdb_path: 
         /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-CONTROL_1950_DEVCON.yaml}

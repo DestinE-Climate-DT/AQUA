@@ -1,0 +1,6 @@
+sources:
+  historical-1990-fesom:
+    description: historical 1990 development
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/historical-1990-fesom.yaml"

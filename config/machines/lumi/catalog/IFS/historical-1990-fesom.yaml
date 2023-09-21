@@ -1,10 +1,11 @@
+# one month of data so far
 sources:
   hourly-native:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: lwda
         date: 19900101
@@ -13,23 +14,23 @@ sources:
         levtype: sfc
         step: 0
       data_start_date: 19900101T0000
-      data_end_date: 19901231T2300
+      data_end_date: 19900131T2300
       aggregation: D  # Default aggregation / chunk size
       savefreq: H  # at what frequency are data saved
       timestep: H  # base timestep for step timestyle
       timestyle: step  # variable date or variable step
-    description: hourly data on native grid TCo2559 (about 4.5km). Contains tprate(260048),
+    description: hourly data on native grid Tco1279. Contains tprate(260048),
       2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
       sd(141), 2d(168), skt(235), chnk(148). See fix yaml for derived vars.
     driver: gsv
     metadata: {fdb_path: 
-        /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml}
+       /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml}
   hourly-1deg:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: scda
         date: 19900101
@@ -38,7 +39,7 @@ sources:
         levtype: sfc
         step: 0
       data_start_date: 19900101T0000
-      data_end_date: 19901231T2300
+      data_end_date: 19900131T2300
       aggregation: D  # Default aggregation / chunk size
       savefreq: H  # at what frequency are data saved
       timestep: H  # base timestep for step timestyle
@@ -49,24 +50,24 @@ sources:
       yaml for derived vars.
     driver: gsv
     metadata: {fdb_path: 
-        /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml}
+        /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml}
   6hourly-1deg:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: scwv
         date: 19900101
-        time: "0000"
+        time: '0000'
         param: z
         levtype: pl
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 6  # First available step
       data_start_date: 19900101T0000
-      data_end_date: 19991231T1800
+      data_end_date: 19900131T1800
       aggregation: D  # Default aggregation / chunk size
       timestep: H  # What one step means
       savefreq: 6H
@@ -74,13 +75,13 @@ sources:
     description: 6hourly data on r100 grid. Contains z(129).
     driver: gsv
     metadata: {fdb_path: 
-        /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml}
+       /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml}
   monthly-1deg-2d:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: monr
         date: 19900101
@@ -89,7 +90,7 @@ sources:
         levtype: sfc
         step: 0
       data_start_date: '19900101'
-      data_end_date: '19901201'
+      data_end_date: '19900101'
       aggregation: Y  # Default aggregation / chunk size
       savefreq: M
       timestep: H
@@ -99,13 +100,13 @@ sources:
       sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata: {fdb_path: 
-        /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml}
+       /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml}
   monthly-1deg-3d:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: monr
         date: 19900101
@@ -116,7 +117,7 @@ sources:
           700, 850, 925, 1000]
         step: 0
       data_start_date: '19900101'
-      data_end_date: '19901201'
+      data_end_date: '19900101'
       aggregation: M  # Default aggregation / chunk size
       savefreq: M
       timestep: H
@@ -126,13 +127,4 @@ sources:
       w(135), q(133).
     driver: gsv
     metadata: {fdb_path: 
-        /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml}
-  lra-r100-monthly:
-    driver: netcdf
-    description: LRA data monthly at r100
-    args:
-      urlpath: 
-        /pfs/lustrep3/projappl/project_465000454/padavini/LRA-dev/IFS/historical-1990-devcon/r100/monthly/*historical-1990-devcon_r100_monthly_????.nc
-      chunks: {}
-      xarray_kwargs:
-        decode_times: true
+       /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml}

@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- Fix ocean3d diagnostic colorbars not being symmetric when missing values are present (#504) 
+- FDB NEMO test access to data (#488)
+- Xarray dask access to FDB (#476)
 - Issue a warning when multiple gribcodes are associated to the same shortname (Cases for multiple eccodes grib codes #483)
 - Allowing fixer to overwrite or merge default configuration (Increasing flexibiity of the fixer allowing for merge, replace and default options #480)
 - Added new tests (Increase testing #250)

@@ -256,26 +256,55 @@ For example (on Lumi):
 
 .. code-block:: python
 
-    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D", regrid="r025")
-    data = reader.retrieve(startdate='20200120', enddate='20200413', var='ci')
+    reader = Reader(model="IFS", exp="control-1950-devcon", source="hourly-1deg")
+    data = reader.retrieve(var='2t')
 
-The main difference compared to a regular call to the reader is that in this case the reader always returns an *iterator/generator* object.
-So the next block of data can be read from the iterator with:
+The default is that this call returns a regular dask-enabled (lazy) xarray.Dataset, like all other data sources.
+The magic behind this is performed by an intake driver for FDB which has been specifically developed from scratch in AQUA.
+Please notice that in the case of FDB access specifying the variable is compulsory, but a list can be provided. 
+If not specified, the default variable defined in the catalogue is used.
+
+**In general we recommend to use the default xarray (dask) dataset output**, since this also supports `dask.distributed` multiprocessing.
+For example you could create a `LocalCluster` and its client with:
 
 .. code-block:: python
 
+    import dask
+    from dask.distributed import LocalCluster, Client
+    cluster = LocalCluster(threads_per_worker=1, n_workers=8)
+    client = Client(cluster)
+
+This will enormously accelerate any computation on the xarray.
+
+An optional keyword, which in general we do **not** recommend to specify for dask access, is `aggregation`,
+which specifies the chunk size for dask access.
+Values could be "D", "M", "Y" etc. (in pandas notation) to specify daily, monthly and yearly aggregation.
+It is best to use the default, which is already specified in the catalogue for each data source.
+This default is based on the memory footprint of single grib message, so for example for IFS/NEMO dative data
+we use "D" for Tco2559 (native) and "1deg" streams, "Y" for monthly 2D data and "M" for 3D monthly data.
+In any case, if you use multiprocessing and run into memory troubles for your workers, you may wish to decrease
+the aggregation (i.e. chunk size).
+
+In alternative it is also possible to ask the reader to return an *iterator/generator* object passing the `streaming_generator=True` 
+keyword to the `retrieve()` method.
+In that case the next block of data can be read from the iterator with `next()` as follows:
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D", regrid="r025")
+    data = reader.retrieve(startdate='20200120', enddate='20200413', var='ci', streaming_generator=True)
     dd = next(data)
 
-or with a loop iterating over `data`. The result is a regular xarray.Dataset containg the data.
-It is possible to specify the size of the data blocks read at each iteration with the `aggregation` keyword (`M` is month, `D`is day etc.). 
-The default is 'S' (step), i.e. single timesteps are read at each iteration.
+or with a loop iterating over `data`. The result of these operations is in turn a regular xarray.Dataset containg the data.
 Since this is a data stream the user should also specify the desired initial time and the final time (the latter can be omitted and will default to the end of the dataset).
-Specifying the variable is essential, but a list can be passed.
+When using an iterator it is possible to specify the size of the data blocks read at each iteration with the `aggregation` keyword (`M` is month, `D`is day etc.). 
+The default is 'S' (step), i.e. single saved timesteps are read at each iteration.
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
-Please consider memory usage in choosing an appropriate value for the `aggregation`keyword.
+Please consider memory usage in choosing an appropriate value for the `aggregation` keyword.
 
-In case you wish not to change your workflow and strongly prefer to work with a lazy dask xarray.Dataset, it is possible to store the results of the iterator into a temporary directory (i.e. to buffer them).
+A final option is 'buffering' (*this is actually superseded by the dask access and may be entirely be removed in future releases*).
+In this case it is possible to store the results of the iterator access into a temporary directory (i.e. to buffer them).
 Of course, you will pay the price of additional disk traffic and disk storage.
 The `buffer` keyword should specify the location of a directory with enough space to create large temporary directories.
 
