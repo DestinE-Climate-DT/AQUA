@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.logger import log_configure
-from .plot_utils import plot_box, add_cyclic_lon, evaluate_colorbar_limits
+from aqua.util import add_cyclic_lon
+from .plot_utils import plot_box, evaluate_colorbar_limits
 
 
 def maps_plot(maps=None, models=None, exps=None,

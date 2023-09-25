@@ -3,41 +3,6 @@ Module with utility functions for plotting.
 """
 import math
 
-import xarray as xr
-import cartopy.util as cutil
-
-
-def add_cyclic_lon(da: xr.DataArray):
-    """
-    Add a cyclic longitude point to a DataArray using cartopy
-    and preserving the DataArray as data structure.
-
-    It assumes that the longitude coordinate is named 'lon' and
-    the latitude coordinate is named 'lat'.
-
-    Parameters:
-    da (xarray.DataArray): Input data array with longitude coordinate
-
-    Returns:
-    xarray.DataArray: The same input data array with the cyclic point added
-                      along longitude
-    """
-    if not isinstance(da, xr.DataArray) or da is None:
-        raise ValueError("Input must be an xarray.DataArray object.")
-
-    lon = da.lon
-
-    cyclic_da, cyclic_lon = cutil.add_cyclic_point(da, coord=lon)
-
-    # update the longitude coordinate with cyclic longitude
-    new_da = xr.DataArray(cyclic_da, dims=da.dims)
-    new_da = new_da.assign_coords(lon=cyclic_lon)
-    new_da = new_da.assign_coords(lat=da.lat)
-
-    # TODO: add old attributes to the new DataArray
-
-    return new_da
-
 
 def plot_box(num_plots=0):
     """

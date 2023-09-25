@@ -33,6 +33,7 @@ def add_cyclic_lon(da: xr.DataArray):
     new_da = new_da.assign_coords(lat=da.lat)
 
     # TODO: add old attributes to the new DataArray
+    # Is it necessary since it is a plot routine?
 
     return new_da
 
