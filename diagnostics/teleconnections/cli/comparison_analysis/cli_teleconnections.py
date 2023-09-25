@@ -8,7 +8,7 @@ import sys
 import argparse
 
 from aqua.util import load_yaml, get_arg
-from teleconnections.plots import single_map_plot
+from aqua.graphics import single_map_plot
 from teleconnections.tc_class import Teleconnection
 from teleconnections.tools import get_dataset_config
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
             filename = filename + telecname + '_regression.pdf'
             title = telecname + ' regression map' + ' (' + teleconnection.model + ', ' + teleconnection.exp + ')'
             single_map_plot(map=teleconnection.regression, loglevel=loglevel,
-                            save=True, outputdir=teleconnection.outputfig,
+                            save=True, outputdir=teleconnection.outputfig, sym=True,
                             filename=filename, title=title, cbar_label=cbar_label)
 
             # Correlation
@@ -129,7 +129,7 @@ if __name__ == '__main__':
             filename = filename + telecname + '_correlation.pdf'
             title = telecname + ' correlation map' + ' (' + teleconnection.model + ', ' + teleconnection.exp + ')'
             single_map_plot(map=teleconnection.correlation, loglevel=loglevel,
-                            save=True, outputdir=teleconnection.outputfig,
+                            save=True, outputdir=teleconnection.outputfig, sym=True,
                             filename=filename, title=title,
                             cbar_label='Pearson correlation coefficient')
 
@@ -140,7 +140,7 @@ if __name__ == '__main__':
         filename = filename + telecname + '_regression.pdf'
         title = telecname + ' regression map' + ' (' + teleconnection_obs.model + ', ' + teleconnection_obs.exp + ')'
         single_map_plot(map=teleconnection_obs.regression, loglevel=loglevel,
-                        save=True, outputdir=teleconnection_obs.outputfig,
+                        save=True, outputdir=teleconnection_obs.outputfig, sym=True,
                         filename=filename, title=title)
 
         # Correlation
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         filename = filename + telecname + '_correlation.pdf'
         title = telecname + ' correlation map' + ' (' + teleconnection_obs.model + ', ' + teleconnection_obs.exp + ')'
         single_map_plot(map=teleconnection_obs.correlation, loglevel=loglevel,
-                        save=True, outputdir=teleconnection_obs.outputfig,
+                        save=True, outputdir=teleconnection_obs.outputfig, sym=True,
                         filename=filename, title=title)
 
     print('Teleconnections diagnostic test run completed.')
