@@ -591,7 +591,7 @@ class Tropical_Rainfall:
                   s_time=None,            f_time=None,        s_year=None,
                   f_year=None,            s_month=None,       f_month=None,
                   num_of_bins=None,       first_edge=None,    width_of_bin=None,       bins=0,
-                  path_to_histogram=None, name_of_file=None,  positive=True, new_unit=None, threshold=2, test=False):
+                  path_to_histogram=None, name_of_file=None,  positive=True, new_unit=None, threshold=2, test=False, seasons=None):
         """ Function to calculate a histogram of the high-resolution Dataset.
 
         Args:
@@ -632,6 +632,14 @@ class Tropical_Rainfall:
                                       dask_array=False)
         size_of_the_data = data_size(data)
         data_with_final_grid = data
+
+        if seasons is not None:
+            if seasons:
+                seasons_or_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
+                                    model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+            else:
+                seasons_or_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
+                                    model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
         if isinstance(self.bins, int):
             bins = [self.first_edge + i *
                     self.width_of_bin for i in range(0, self.num_of_bins+1)]
@@ -647,16 +655,30 @@ class Tropical_Rainfall:
                              for i in range(0, len(self.bins)-1)]
         if positive:
             data = np.maximum(data, 0.)
+            if seasons is not None:
+                for i in range(0, len(seasons_or_months)):
+                    seasons_or_months[i] = np.maximum(seasons_or_months[i], 0.)
         if isinstance(self.bins, int):
             hist_fast = fast_histogram.histogram1d(data,
                                                 range=[
                                                     self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
                                                 bins=self.num_of_bins)
-            #print(hist_fast, bins, center_of_bin, width_table)
+            hist_seasons_or_months = []
+            if seasons is not None:
+                for i in range(0, len(seasons_or_months)):
+                    hist_seasons_or_months.append(fast_histogram.histogram1d(seasons_or_months[i],
+                                                        range=[
+                                                            self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
+                                                        bins=self.num_of_bins))
+
+                                    
         else:
             hist_np = np.histogram(data,  weights=weights, bins = self.bins) 
-            #print(hist_np[0], hist_np[1], center_of_bin, width_table)
             hist_fast = hist_np[0]
+            hist_seasons_or_months = []
+            if seasons is not None:
+                for i in range(0, len(seasons_or_months)):
+                    hist_seasons_or_months.append(np.histogram(seasons_or_months[i],  weights=weights, bins = self.bins)[0])
         self.logger.info('Histogram of the data is created')
         self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
                           .format(data_size(data), int(sum(hist_fast))))
@@ -682,6 +704,16 @@ class Tropical_Rainfall:
         tprate_dataset = self.add_frequency_and_pdf(
             tprate_dataset=tprate_dataset, test=test)
 
+        if seasons is not None:
+            if seasons:
+                seasonal_or_monthly_labels = ['DJF', 'MMA', 'JJA', 'SON', 'glob']
+            else:
+                seasonal_or_monthly_labels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'J']
+            for i in range(0, len(seasons_or_months)):
+                tprate_dataset['counts'+seasonal_or_monthly_labels[i]] = hist_seasons_or_months[i]
+                tprate_dataset = self.add_frequency_and_pdf(
+                    tprate_dataset=tprate_dataset, test=test, label = seasonal_or_monthly_labels[i])
+           
         mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_original, old_unit=data.units, new_unit=new_unit,
                                                                                 model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
         relative_discrepancy = (
@@ -828,7 +860,7 @@ class Tropical_Rainfall:
 
         return tprate_dataset
 
-    def add_frequency_and_pdf(self,  tprate_dataset=None, path_to_histogram=None, name_of_file=None,  test=False):
+    def add_frequency_and_pdf(self,  tprate_dataset=None, path_to_histogram=None, name_of_file=None,  test=False, label=None):
         """ Function to convert the histogram to xarray.Dataset.
 
         Args:
@@ -845,6 +877,16 @@ class Tropical_Rainfall:
         hist_pdf = self.convert_counts_to_pdf(tprate_dataset.counts,  test=test)
         tprate_dataset['pdf'] = hist_pdf
 
+        hist_pdfP = self.convert_counts_to_pdfP(tprate_dataset.counts,  test=test)
+        tprate_dataset['pdfP'] = hist_pdfP
+
+        if label is not None:
+            hist_frequency = self.convert_counts_to_frequency(
+                tprate_dataset['counts'+label],  test=test)
+            tprate_dataset['frequency'+label] = hist_frequency
+
+            hist_pdf = self.convert_counts_to_pdf(tprate_dataset['counts'+label],  test=test)
+            tprate_dataset['pdf'+label] = hist_pdf
         if path_to_histogram is not None and name_of_file is not None:
             self.dataset_to_netcdf(
                 dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
@@ -1058,6 +1100,32 @@ class Tropical_Rainfall:
                                 .format(abs(sum_of_pdf.values)))
                 raise AssertionError("Test failed.")
         return pdf_per_bin
+    
+    def convert_counts_to_pdfP(self, data, test=False):
+        """ Function to convert the counts to the pdf multiplied by center of bin.
+
+        Args:
+            data (xarray): The counts.
+
+        Returns:
+            xarray: The pdfP.
+        """
+        pdfP = data[0:]*data.center_of_bin[0:]/(data.size_of_the_data*data.width[0:])
+        pdfP_per_bin = xr.DataArray(
+            pdfP, coords=[data.center_of_bin],    dims=["center_of_bin"])
+        pdfP_per_bin = pdfP_per_bin.assign_coords(
+            width=("center_of_bin", data.width.values))
+        pdfP_per_bin.attrs = data.attrs
+        sum_of_pdfP = sum(pdfP_per_bin[:]*data.width[0:])
+
+        if test:
+            if sum(data[:]) == 0 or abs(sum_of_pdfP-data.mean()) < 10**(-4): #10**(-4)
+                pass
+            else:
+                self.logger.debug('Sum of PDF: {}'
+                                .format(abs(sum_of_pdfP.values)))
+                raise AssertionError("Test failed.")
+        return pdfP_per_bin
 
     def mean_from_histogram(self, hist, data=None, old_unit='kg m**-2 s**-1', new_unit=None,
                             model_variable='tprate', trop_lat=None, positive=True):
@@ -1118,7 +1186,7 @@ class Tropical_Rainfall:
 
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
 
-    def histogram_plot(self, data,        new_unit=None,
+    def histogram_plot(self, data,        new_unit=None,        pdfP=False,
                        weights=None,      frequency=False,      pdf=True,
                        smooth=True,       step=False,           color_map=False,
                        ls='-',            ylogscale=True,       xlogscale=False,
@@ -1161,17 +1229,17 @@ class Tropical_Rainfall:
         elif add is not None:
             fig, ax = add
 
-        if not pdf and not frequency:
-            if 'Dataset' in str(type(data)):
+        if 'Dataset' in str(type(data)):
                 data = data['counts']
-        elif pdf and not frequency:
-            if 'Dataset' in str(type(data)):
-                data = data['counts']
+        if not pdf and not frequency and not pdfP:
+            pass
+        elif pdf and not frequency and not pdfP:
             data = self.convert_counts_to_pdf(data,  test=test)
-        elif not pdf and frequency:
-            if 'Dataset' in str(type(data)):
-                data = data['counts']
+        elif not pdf and frequency and not pdfP:
             data = self.convert_counts_to_frequency(data,  test=test)
+        elif pdfP:
+            data = self.convert_counts_to_pdfP(data,  test=test)
+
 
         x = data.center_of_bin.values
         # if new_unit is not None:
@@ -1214,12 +1282,14 @@ class Tropical_Rainfall:
         if xlogscale:
             plt.xscale('log')
 
-        if pdf and not frequency:
+        if pdf and not frequency and not pdfP:
             plt.ylabel('PDF',       fontsize=14)
-        elif not pdf and frequency:
+        elif not pdf and frequency and not pdfP:
             plt.ylabel('Frequency', fontsize=14)
-        else:
+        elif not frequency and not pdfP and not pdf:
             plt.ylabel('Counts',    fontsize=14)
+        elif pdfP:
+            plt.ylabel('PDF * P',    fontsize=14)
 
         plt.title(plot_title,       fontsize=16)
 
@@ -1821,6 +1891,80 @@ class Tropical_Rainfall:
                                                                 time_length=time_length,                  time_grid_factor=time_grid_factor)
         return data_regrided, dummy_data_regrided
 
+    def get_seasonal_or_monthly_data(self,  data,               preprocess=True,        seasons=True,
+                                 model_variable='tprate',       trop_lat=None,          new_unit=None):
+        """ Function to select the seasonal or monthly of the data.
+
+        Args:
+            data (xarray.DataArray):        Data to be calculated.
+            preprocess (bool, optional):    If True, the data will be preprocessed.                 The default is True.
+            seasons (bool, optional):       If True, the data will be calculated for the seasons.   The default is True.
+            model_variable (str, optional): Name of the model variable.                             The default is 'tprate'.
+            trop_lat (float, optional):     Latitude of the tropical region.                        The default is None.
+            new_unit (str, optional):       New unit of the data.                                   The default is None.
+            coord (str, optional):          Name of the coordinate.                                 The default is None.
+
+        Returns:
+            xarray.DataArray:             Seasonal or monthly data.
+
+        """
+
+        self.class_attributes_update(trop_lat=trop_lat)
+        if seasons:
+
+            if preprocess:
+                glob = self.preprocessing(data,                               preprocess=preprocess,
+                                          trop_lat=self.trop_lat,         model_variable=model_variable)
+                #glob_mean = glob.mean('time')
+
+                DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
+                                           trop_lat=self.trop_lat,         model_variable=model_variable,
+                                           s_month=12,                       f_month=12)
+                DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
+                                           trop_lat=self.trop_lat,         model_variable=model_variable,
+                                           s_month=1,                        f_month=2)
+                DJF = xr.concat([DJF_1, DJF_2], dim='time')
+                #DJF_mean = DJF.mean('time')
+
+                MAM = self.preprocessing(data,                               preprocess=preprocess,
+                                         trop_lat=self.trop_lat,         model_variable=model_variable,
+                                         s_month=3,                        f_month=5)
+                #MAM_mean = MAM.mean('time')
+
+                JJA = self.preprocessing(data,                               preprocess=preprocess,
+                                         trop_lat=self.trop_lat,         model_variable=model_variable,
+                                         s_month=6,                        f_month=8)
+                #JJA_mean = JJA.mean('time')
+
+                SON = self.preprocessing(data,                               preprocess=preprocess,
+                                         trop_lat=self.trop_lat,         model_variable=model_variable,
+                                         s_month=9,                        f_month=11)
+                #SON_mean = SON.mean('time')
+
+            all_season = [DJF, MAM, JJA, SON, glob]
+
+            for i in range(0, len(all_season)):
+
+                if new_unit is not None:
+                    all_season[i] = self.precipitation_rate_units_converter(
+                        all_season[i], new_unit=new_unit)
+            return all_season
+
+        else:
+            all_months = []
+            for i in range(1, 13):
+                if preprocess:
+                    mon = self.preprocessing(data,                               preprocess=preprocess,
+                                             trop_lat=self.trop_lat,         model_variable=model_variable,
+                                             s_month=i,                        f_month=i)
+                    #mon_mean = mon.mean('time')
+                    if new_unit is not None:
+                        mon = self.precipitation_rate_units_converter(
+                            mon, new_unit=new_unit)
+                all_months.append(mon)
+            return all_months
+
+
     def seasonal_or_monthly_mean(self,  data,                      preprocess=True,            seasons=True,
                                  model_variable='tprate',          trop_lat=None,              new_unit=None,
                                  coord=None):
@@ -1842,64 +1986,72 @@ class Tropical_Rainfall:
 
         self.class_attributes_update(trop_lat=trop_lat)
         if seasons:
+            [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
+                                 model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+            glob_mean = glob.mean('time')
+            DJF_mean = DJF.mean('time')
+            MAM_mean = MAM.mean('time')
+            JJA_mean = JJA.mean('time')
+            SON_mean = SON.mean('time')
+            #if preprocess:
+            #    glob = self.preprocessing(data,                               preprocess=preprocess,
+                                          #trop_lat=self.trop_lat,         model_variable=model_variable)
+                #glob_mean = glob.mean('time')
 
-            if preprocess:
-                glob = self.preprocessing(data,                               preprocess=preprocess,
-                                          trop_lat=self.trop_lat,         model_variable=model_variable)
-                glob_mean = glob.mean('time')
+                #DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
+                #                           trop_lat=self.trop_lat,         model_variable=model_variable,
+                #                           s_month=12,                       f_month=12)
+                #DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
+                #                           trop_lat=self.trop_lat,         model_variable=model_variable,
+                #                           s_month=1,                        f_month=2)
+                #DJF = xr.concat([DJF_1, DJF_2], dim='time')
+                #DJF_mean = DJF.mean('time')
 
-                DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-                                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                                           s_month=12,                       f_month=12)
-                DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-                                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                                           s_month=1,                        f_month=2)
-                DJF = xr.concat([DJF_1, DJF_2], dim='time')
-                DJF_mean = DJF.mean('time')
+                #MAM = self.preprocessing(data,                               preprocess=preprocess,
+                #                         trop_lat=self.trop_lat,         model_variable=model_variable,
+                #                         s_month=3,                        f_month=5)
+                #MAM_mean = MAM.mean('time')
 
-                MAM = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=3,                        f_month=5)
-                MAM_mean = MAM.mean('time')
+                #JJA = self.preprocessing(data,                               preprocess=preprocess,
+                #                         trop_lat=self.trop_lat,         model_variable=model_variable,
+                #                         s_month=6,                        f_month=8)
+                #JJA_mean = JJA.mean('time')
 
-                JJA = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=6,                        f_month=8)
-                JJA_mean = JJA.mean('time')
+                #SON = self.preprocessing(data,                               preprocess=preprocess,
+                #                         trop_lat=self.trop_lat,         model_variable=model_variable,
+                #                         s_month=9,                        f_month=11)
+                #SON_mean = SON.mean('time')
 
-                SON = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=9,                        f_month=11)
-                SON_mean = SON.mean('time')
-
-                if coord == 'lon' or coord == 'lat':
-                    DJF_mean = DJF_mean.mean(coord)
-                    MAM_mean = MAM_mean.mean(coord)
-                    JJA_mean = JJA_mean.mean(coord)
-                    SON_mean = SON_mean.mean(coord)
-                    glob_mean = glob_mean.mean(coord)
+            if coord == 'lon' or coord == 'lat':
+                DJF_mean = DJF_mean.mean(coord)
+                MAM_mean = MAM_mean.mean(coord)
+                JJA_mean = JJA_mean.mean(coord)
+                SON_mean = SON_mean.mean(coord)
+                glob_mean = glob_mean.mean(coord)
 
             all_season = [DJF_mean, MAM_mean, JJA_mean, SON_mean, glob_mean]
 
-            for i in range(0, len(all_season)):
+            #for i in range(0, len(all_season)):
 
-                if new_unit is not None:
-                    all_season[i] = self.precipitation_rate_units_converter(
-                        all_season[i], new_unit=new_unit)
+            #    if new_unit is not None:
+            #        all_season[i] = self.precipitation_rate_units_converter(
+            #            all_season[i], new_unit=new_unit)
             return all_season
 
         else:
-            all_months = []
+            all_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
+                                 model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+            
             for i in range(1, 13):
-                if preprocess:
-                    mon = self.preprocessing(data,                               preprocess=preprocess,
-                                             trop_lat=self.trop_lat,         model_variable=model_variable,
-                                             s_month=i,                        f_month=i)
-                    mon_mean = mon.mean('time')
-                    if new_unit is not None:
-                        mon_mean = self.precipitation_rate_units_converter(
-                            mon_mean, new_unit=new_unit)
-                all_months.append(mon_mean)
+                #if preprocess:
+                #    mon = self.preprocessing(data,                               preprocess=preprocess,
+                #                             trop_lat=self.trop_lat,         model_variable=model_variable,
+                #                             s_month=i,                        f_month=i)
+                mon_mean = all_months[i].mean('time')
+                    #if new_unit is not None:
+                    #    mon_mean = self.precipitation_rate_units_converter(
+                    #        mon_mean, new_unit=new_unit)
+                all_months[i]=mon_mean
             return all_months
 
     def plot_bias(self,         data,         preprocess=True,                  seasons=True,
