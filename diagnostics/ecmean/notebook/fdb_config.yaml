@@ -1,0 +1,10 @@
+
+  ---
+  type: local
+  engine: toc
+  schema: /pfs/lustrep3/scratch/project_465000454/bjimenez/a08t/fdb/rd:a08t:monr:19500101:0000:g/schema
+  spaces:
+  - handler: Default
+    roots:
+    - path: /pfs/lustrep3/scratch/project_465000454/bjimenez/a08t/fdb/
+  
