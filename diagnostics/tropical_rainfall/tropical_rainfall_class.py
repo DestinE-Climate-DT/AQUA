@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 
 from datetime import datetime
-#from timezonefinder import TimezoneFinder
+# from timezonefinder import TimezoneFinder
 import pytz
 
 from itertools import groupby
@@ -571,8 +571,10 @@ class Tropical_Rainfall:
                     data=data_with_final_grid, tprate_dataset=tprate_dataset, variable=variable)
 
             if path_to_histogram is not None and name_of_file is not None:
+                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins))
+                bins_info = bins_info.replace('.', '-')
                 self.dataset_to_netcdf(
-                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return tprate_dataset
         else:
             tprate_dataset = counts_per_bin.to_dataset(name="counts")
@@ -582,8 +584,10 @@ class Tropical_Rainfall:
             tprate_dataset = self.grid_attributes(
                 data=data_with_final_grid, tprate_dataset=tprate_dataset)
             if path_to_histogram is not None and name_of_file is not None:
+                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+                bins_info = bins_info.replace('.', '-')
                 self.dataset_to_netcdf(
-                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return counts_per_bin
 
     def histogram(self,                   data,               data_with_global_atributes=None,
@@ -636,10 +640,10 @@ class Tropical_Rainfall:
         if seasons is not None:
             if seasons:
                 seasons_or_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
-                                    model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                      model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
             else:
                 seasons_or_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
-                                    model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                      model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
         if isinstance(self.bins, int):
             bins = [self.first_edge + i *
                     self.width_of_bin for i in range(0, self.num_of_bins+1)]
@@ -660,25 +664,25 @@ class Tropical_Rainfall:
                     seasons_or_months[i] = np.maximum(seasons_or_months[i], 0.)
         if isinstance(self.bins, int):
             hist_fast = fast_histogram.histogram1d(data,
-                                                range=[
-                                                    self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
-                                                bins=self.num_of_bins)
+                                                   range=[
+                                                       self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
+                                                   bins=self.num_of_bins)
             hist_seasons_or_months = []
             if seasons is not None:
                 for i in range(0, len(seasons_or_months)):
                     hist_seasons_or_months.append(fast_histogram.histogram1d(seasons_or_months[i],
-                                                        range=[
-                                                            self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
-                                                        bins=self.num_of_bins))
+                                                                             range=[
+                        self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
+                        bins=self.num_of_bins))
 
-                                    
         else:
-            hist_np = np.histogram(data,  weights=weights, bins = self.bins) 
+            hist_np = np.histogram(data,  weights=weights, bins=self.bins)
             hist_fast = hist_np[0]
             hist_seasons_or_months = []
             if seasons is not None:
                 for i in range(0, len(seasons_or_months)):
-                    hist_seasons_or_months.append(np.histogram(seasons_or_months[i],  weights=weights, bins = self.bins)[0])
+                    hist_seasons_or_months.append(np.histogram(
+                        seasons_or_months[i],  weights=weights, bins=self.bins)[0])
         self.logger.info('Histogram of the data is created')
         self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
                           .format(data_size(data), int(sum(hist_fast))))
@@ -706,14 +710,17 @@ class Tropical_Rainfall:
 
         if seasons is not None:
             if seasons:
-                seasonal_or_monthly_labels = ['DJF', 'MMA', 'JJA', 'SON', 'glob']
+                seasonal_or_monthly_labels = [
+                    'DJF', 'MMA', 'JJA', 'SON', 'glob']
             else:
-                seasonal_or_monthly_labels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'J']
+                seasonal_or_monthly_labels = [
+                    'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'J']
             for i in range(0, len(seasons_or_months)):
-                tprate_dataset['counts'+seasonal_or_monthly_labels[i]] = hist_seasons_or_months[i]
+                tprate_dataset['counts'+seasonal_or_monthly_labels[i]
+                               ] = hist_seasons_or_months[i]
                 tprate_dataset = self.add_frequency_and_pdf(
-                    tprate_dataset=tprate_dataset, test=test, label = seasonal_or_monthly_labels[i])
-           
+                    tprate_dataset=tprate_dataset, test=test, label=seasonal_or_monthly_labels[i])
+
         mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_original, old_unit=data.units, new_unit=new_unit,
                                                                                 model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
         relative_discrepancy = (
@@ -751,8 +758,10 @@ class Tropical_Rainfall:
                 tprate_dataset[variable].attrs['relative_discrepancy'] = float(
                     relative_discrepancy)
         if path_to_histogram is not None and name_of_file is not None:
+            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+            bins_info = bins_info.replace('.', '-')
             self.dataset_to_netcdf(
-                tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
 
         return tprate_dataset
 
@@ -771,18 +780,18 @@ class Tropical_Rainfall:
             if name_of_file is None:
                 name_of_file = '_'
             time_band = dataset.attrs['time_band']
-            #self.logger.debug('Time band is {}'.format(time_band))
+            # self.logger.debug('Time band is {}'.format(time_band))
             try:
                 name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[
-                    0] + '_' + re.split(":", re.split(", ", time_band)[1])[0]
+                    0] + '_' + re.split(":", re.split(", ", time_band)[1])[0] + '_' + re.split("=", re.split(", ", time_band)[2])[1]
             except IndexError:
-                try:
-                    name_of_file = name_of_file + '_' + \
-                        re.split("'", re.split(":", time_band)[0])[1]
-                except IndexError:
-                    name_of_file = name_of_file + '_' + \
-                        re.split("'", re.split(":", time_band)[0])[0]
-            path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '_histogram.nc'
+                name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
+                # try:
+                #    name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
+                # except IndexError:
+                #    name_of_file = name_of_file + '_' + \
+                #        re.split("'", re.split(":", time_band)[0])[0]
+            path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
             dataset.to_netcdf(path=path_to_netcdf)
             self.logger.info("NetCDF is saved in the storage.")
@@ -819,7 +828,8 @@ class Tropical_Rainfall:
                 latitude_step = data[coord_lat][1].values - \
                     data[coord_lat][0].values
                 lat_band = str(data[coord_lat][0].values)+', ' + \
-                    str(data[coord_lat][-1].values)+', freq='+str(latitude_step)
+                    str(data[coord_lat][-1].values) + \
+                    ', freq='+str(latitude_step)
             else:
                 lat_band = data[coord_lat].values
                 latitude_step = data[coord_lat].values
@@ -831,7 +841,8 @@ class Tropical_Rainfall:
                 longitude_step = data[coord_lon][1].values - \
                     data[coord_lon][0].values
                 lon_band = str(data[coord_lon][0].values)+', ' + \
-                    str(data[coord_lon][-1].values)+', freq='+str(longitude_step)
+                    str(data[coord_lon][-1].values) + \
+                    ', freq='+str(longitude_step)
             else:
                 longitude_step = data[coord_lon].values
                 lon_band = data[coord_lon].values
@@ -874,10 +885,12 @@ class Tropical_Rainfall:
             tprate_dataset.counts,  test=test)
         tprate_dataset['frequency'] = hist_frequency
 
-        hist_pdf = self.convert_counts_to_pdf(tprate_dataset.counts,  test=test)
+        hist_pdf = self.convert_counts_to_pdf(
+            tprate_dataset.counts,  test=test)
         tprate_dataset['pdf'] = hist_pdf
 
-        hist_pdfP = self.convert_counts_to_pdfP(tprate_dataset.counts,  test=test)
+        hist_pdfP = self.convert_counts_to_pdfP(
+            tprate_dataset.counts,  test=test)
         tprate_dataset['pdfP'] = hist_pdfP
 
         if label is not None:
@@ -885,11 +898,20 @@ class Tropical_Rainfall:
                 tprate_dataset['counts'+label],  test=test)
             tprate_dataset['frequency'+label] = hist_frequency
 
-            hist_pdf = self.convert_counts_to_pdf(tprate_dataset['counts'+label],  test=test)
+            hist_pdf = self.convert_counts_to_pdf(
+                tprate_dataset['counts'+label],  test=test)
             tprate_dataset['pdf'+label] = hist_pdf
         if path_to_histogram is not None and name_of_file is not None:
+
+            if isinstance(self.bins, int):
+                bins = [self.first_edge + i *
+                        self.width_of_bin for i in range(0, self.num_of_bins+1)]
+            else:
+                bins = self.bins
+            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins))
+            bins_info = bins_info.replace('.', '-')
             self.dataset_to_netcdf(
-                dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
         return tprate_dataset
 
     def open_dataset(self, path_to_netcdf=None):
@@ -930,15 +952,63 @@ class Tropical_Rainfall:
 
             for attribute in tprate_dataset_1.attrs:
                 try:
-                    if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute]:
+                    if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute] and attribute not in 'time_band':
                         dataset_3.attrs[attribute] = str(
                             tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                    
+                    elif attribute in 'time_band':
+                        dataset_3.attrs['time_band_history'] = str(
+                            tprate_dataset_1.attrs['time_band']) + ';\n '+str(tprate_dataset_2.attrs['time_band'])
+                        if tprate_dataset_1.attrs['time_band'].count(':') <= 2 and tprate_dataset_2.attrs['time_band'].count(':') <= 2:
+                            if np.datetime64(tprate_dataset_2.time_band) > np.datetime64(tprate_dataset_1.time_band):
+                                timedelta = np.datetime64(
+                                    tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
+                                tprate_dataset_1_sm = tprate_dataset_1
+                                tprate_dataset_2_bg = tprate_dataset_2
+                            elif np.datetime64(tprate_dataset_2.time_band) < np.datetime64(tprate_dataset_1.time_band):
+                                timedelta = np.datetime64(
+                                    tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
+                                tprate_dataset_1_sm = tprate_dataset_2
+                                tprate_dataset_2_bg = tprate_dataset_1
+
+                            days = timedelta / np.timedelta64(1, 'D')
+                            if days < 1:
+                                hrs = timedelta / np.timedelta64(1, 'h')
+                                dataset_3.attrs['time_band'] = str(
+                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
+                            elif days == 1:
+                                dataset_3.attrs['time_band'] = str(
+                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
+                            elif days < 32 and days > 27:
+                                dataset_3.attrs['time_band'] = str(
+                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
+                            elif days < 367 and days > 364:
+                                dataset_3.attrs['time_band'] = str(
+                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
+                            else:
+                                dataset_3.attrs['time_band'] = str(
+                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
+                        else:
+                            if tprate_dataset_1.time_band.split(',')[2] == tprate_dataset_2.time_band.split(',')[2]:
+                                if np.datetime64(tprate_dataset_1.time_band.split(',')[0]) < np.datetime64(tprate_dataset_2.time_band.split(',')[0]):
+                                    if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
+                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                    else:
+                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                else:
+                                    if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
+                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                    else:
+                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+
                 except ValueError:
                     if tprate_dataset_1.attrs[attribute].all != tprate_dataset_2.attrs[attribute].all:
                         dataset_3.attrs[attribute] = str(
                             tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
-
-                    
 
             dataset_3.counts.values = tprate_dataset_1.counts.values + \
                 tprate_dataset_2.counts.values
@@ -946,7 +1016,8 @@ class Tropical_Rainfall:
                 tprate_dataset_2.counts.size_of_the_data
             dataset_3.frequency.values = self.convert_counts_to_frequency(
                 dataset_3.counts,  test=test)
-            dataset_3.pdf.values = self.convert_counts_to_pdf(dataset_3.counts,  test=test)
+            dataset_3.pdf.values = self.convert_counts_to_pdf(
+                dataset_3.counts,  test=test)
 
             for variable in ('counts', 'frequency', 'pdf'):
                 for attribute in tprate_dataset_1.counts.attrs:
@@ -994,7 +1065,8 @@ class Tropical_Rainfall:
                 if tqdm:
                     ratio = i / len(histogram_list)
                     progress = int(40 * ratio)
-                    print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
+                    print(progress_bar_template.format(
+                        "=" * progress, int(ratio * 100)), end="\r")
 
                 name_of_file = histogram_list[i]
                 re.split(r"[^0-9\s]", name_of_file)
@@ -1067,11 +1139,11 @@ class Tropical_Rainfall:
         sum_of_frequency = sum(frequency_per_bin[:])
 
         if test:
-            if sum(data[:]) == 0 or abs(sum_of_frequency - 1) < 10**(-4): #10**(-4)
+            if sum(data[:]) == 0 or abs(sum_of_frequency - 1) < 10**(-4):  # 10**(-4)
                 pass
             else:
                 self.logger.debug('Sum of Frequency: {}'
-                                .format(abs(sum_of_frequency.values)))
+                                  .format(abs(sum_of_frequency.values)))
                 raise AssertionError("Test failed.")
         return frequency_per_bin
 
@@ -1093,14 +1165,14 @@ class Tropical_Rainfall:
         sum_of_pdf = sum(pdf_per_bin[:]*data.width[0:])
 
         if test:
-            if sum(data[:]) == 0 or abs(sum_of_pdf-1.) < 10**(-4): #10**(-4)
+            if sum(data[:]) == 0 or abs(sum_of_pdf-1.) < 10**(-4):  # 10**(-4)
                 pass
             else:
                 self.logger.debug('Sum of PDF: {}'
-                                .format(abs(sum_of_pdf.values)))
+                                  .format(abs(sum_of_pdf.values)))
                 raise AssertionError("Test failed.")
         return pdf_per_bin
-    
+
     def convert_counts_to_pdfP(self, data, test=False):
         """ Function to convert the counts to the pdf multiplied by center of bin.
 
@@ -1110,7 +1182,8 @@ class Tropical_Rainfall:
         Returns:
             xarray: The pdfP.
         """
-        pdfP = data[0:]*data.center_of_bin[0:]/(data.size_of_the_data*data.width[0:])
+        pdfP = data[0:]*data.center_of_bin[0:] / \
+            (data.size_of_the_data*data.width[0:])
         pdfP_per_bin = xr.DataArray(
             pdfP, coords=[data.center_of_bin],    dims=["center_of_bin"])
         pdfP_per_bin = pdfP_per_bin.assign_coords(
@@ -1119,11 +1192,11 @@ class Tropical_Rainfall:
         sum_of_pdfP = sum(pdfP_per_bin[:]*data.width[0:])
 
         if test:
-            if sum(data[:]) == 0 or abs(sum_of_pdfP-data.mean()) < 10**(-4): #10**(-4)
+            if sum(data[:]) == 0 or abs(sum_of_pdfP-data.mean()) < 10**(-4):  # 10**(-4)
                 pass
             else:
                 self.logger.debug('Sum of PDF: {}'
-                                .format(abs(sum_of_pdfP.values)))
+                                  .format(abs(sum_of_pdfP.values)))
                 raise AssertionError("Test failed.")
         return pdfP_per_bin
 
@@ -1230,7 +1303,7 @@ class Tropical_Rainfall:
             fig, ax = add
 
         if 'Dataset' in str(type(data)):
-                data = data['counts']
+            data = data['counts']
         if not pdf and not frequency and not pdfP:
             pass
         elif pdf and not frequency and not pdfP:
@@ -1239,7 +1312,6 @@ class Tropical_Rainfall:
             data = self.convert_counts_to_frequency(data,  test=test)
         elif pdfP:
             data = self.convert_counts_to_pdfP(data,  test=test)
-
 
         x = data.center_of_bin.values
         # if new_unit is not None:
@@ -1892,7 +1964,7 @@ class Tropical_Rainfall:
         return data_regrided, dummy_data_regrided
 
     def get_seasonal_or_monthly_data(self,  data,               preprocess=True,        seasons=True,
-                                 model_variable='tprate',       trop_lat=None,          new_unit=None):
+                                     model_variable='tprate',       trop_lat=None,          new_unit=None):
         """ Function to select the seasonal or monthly of the data.
 
         Args:
@@ -1915,7 +1987,7 @@ class Tropical_Rainfall:
             if preprocess:
                 glob = self.preprocessing(data,                               preprocess=preprocess,
                                           trop_lat=self.trop_lat,         model_variable=model_variable)
-                #glob_mean = glob.mean('time')
+                # glob_mean = glob.mean('time')
 
                 DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
                                            trop_lat=self.trop_lat,         model_variable=model_variable,
@@ -1924,22 +1996,22 @@ class Tropical_Rainfall:
                                            trop_lat=self.trop_lat,         model_variable=model_variable,
                                            s_month=1,                        f_month=2)
                 DJF = xr.concat([DJF_1, DJF_2], dim='time')
-                #DJF_mean = DJF.mean('time')
+                # DJF_mean = DJF.mean('time')
 
                 MAM = self.preprocessing(data,                               preprocess=preprocess,
                                          trop_lat=self.trop_lat,         model_variable=model_variable,
                                          s_month=3,                        f_month=5)
-                #MAM_mean = MAM.mean('time')
+                # MAM_mean = MAM.mean('time')
 
                 JJA = self.preprocessing(data,                               preprocess=preprocess,
                                          trop_lat=self.trop_lat,         model_variable=model_variable,
                                          s_month=6,                        f_month=8)
-                #JJA_mean = JJA.mean('time')
+                # JJA_mean = JJA.mean('time')
 
                 SON = self.preprocessing(data,                               preprocess=preprocess,
                                          trop_lat=self.trop_lat,         model_variable=model_variable,
                                          s_month=9,                        f_month=11)
-                #SON_mean = SON.mean('time')
+                # SON_mean = SON.mean('time')
 
             all_season = [DJF, MAM, JJA, SON, glob]
 
@@ -1957,13 +2029,12 @@ class Tropical_Rainfall:
                     mon = self.preprocessing(data,                               preprocess=preprocess,
                                              trop_lat=self.trop_lat,         model_variable=model_variable,
                                              s_month=i,                        f_month=i)
-                    #mon_mean = mon.mean('time')
+                    # mon_mean = mon.mean('time')
                     if new_unit is not None:
                         mon = self.precipitation_rate_units_converter(
                             mon, new_unit=new_unit)
                 all_months.append(mon)
             return all_months
-
 
     def seasonal_or_monthly_mean(self,  data,                      preprocess=True,            seasons=True,
                                  model_variable='tprate',          trop_lat=None,              new_unit=None,
@@ -1987,40 +2058,40 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
         if seasons:
             [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
-                                 model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                           model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
             glob_mean = glob.mean('time')
             DJF_mean = DJF.mean('time')
             MAM_mean = MAM.mean('time')
             JJA_mean = JJA.mean('time')
             SON_mean = SON.mean('time')
-            #if preprocess:
+            # if preprocess:
             #    glob = self.preprocessing(data,                               preprocess=preprocess,
-                                          #trop_lat=self.trop_lat,         model_variable=model_variable)
-                #glob_mean = glob.mean('time')
+            # trop_lat=self.trop_lat,         model_variable=model_variable)
+            # glob_mean = glob.mean('time')
 
-                #DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-                #                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                #                           s_month=12,                       f_month=12)
-                #DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-                #                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                #                           s_month=1,                        f_month=2)
-                #DJF = xr.concat([DJF_1, DJF_2], dim='time')
-                #DJF_mean = DJF.mean('time')
+            # DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
+            #                           trop_lat=self.trop_lat,         model_variable=model_variable,
+            #                           s_month=12,                       f_month=12)
+            # DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
+            #                           trop_lat=self.trop_lat,         model_variable=model_variable,
+            #                           s_month=1,                        f_month=2)
+            # DJF = xr.concat([DJF_1, DJF_2], dim='time')
+            # DJF_mean = DJF.mean('time')
 
-                #MAM = self.preprocessing(data,                               preprocess=preprocess,
-                #                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                #                         s_month=3,                        f_month=5)
-                #MAM_mean = MAM.mean('time')
+            # MAM = self.preprocessing(data,                               preprocess=preprocess,
+            #                         trop_lat=self.trop_lat,         model_variable=model_variable,
+            #                         s_month=3,                        f_month=5)
+            # MAM_mean = MAM.mean('time')
 
-                #JJA = self.preprocessing(data,                               preprocess=preprocess,
-                #                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                #                         s_month=6,                        f_month=8)
-                #JJA_mean = JJA.mean('time')
+            # JJA = self.preprocessing(data,                               preprocess=preprocess,
+            #                         trop_lat=self.trop_lat,         model_variable=model_variable,
+            #                         s_month=6,                        f_month=8)
+            # JJA_mean = JJA.mean('time')
 
-                #SON = self.preprocessing(data,                               preprocess=preprocess,
-                #                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                #                         s_month=9,                        f_month=11)
-                #SON_mean = SON.mean('time')
+            # SON = self.preprocessing(data,                               preprocess=preprocess,
+            #                         trop_lat=self.trop_lat,         model_variable=model_variable,
+            #                         s_month=9,                        f_month=11)
+            # SON_mean = SON.mean('time')
 
             if coord == 'lon' or coord == 'lat':
                 DJF_mean = DJF_mean.mean(coord)
@@ -2031,7 +2102,7 @@ class Tropical_Rainfall:
 
             all_season = [DJF_mean, MAM_mean, JJA_mean, SON_mean, glob_mean]
 
-            #for i in range(0, len(all_season)):
+            # for i in range(0, len(all_season)):
 
             #    if new_unit is not None:
             #        all_season[i] = self.precipitation_rate_units_converter(
@@ -2040,18 +2111,18 @@ class Tropical_Rainfall:
 
         else:
             all_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
-                                 model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
-            
+                                                           model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+
             for i in range(1, 13):
-                #if preprocess:
+                # if preprocess:
                 #    mon = self.preprocessing(data,                               preprocess=preprocess,
                 #                             trop_lat=self.trop_lat,         model_variable=model_variable,
                 #                             s_month=i,                        f_month=i)
                 mon_mean = all_months[i].mean('time')
-                    #if new_unit is not None:
-                    #    mon_mean = self.precipitation_rate_units_converter(
-                    #        mon_mean, new_unit=new_unit)
-                all_months[i]=mon_mean
+                # if new_unit is not None:
+                #    mon_mean = self.precipitation_rate_units_converter(
+                #        mon_mean, new_unit=new_unit)
+                all_months[i] = mon_mean
             return all_months
 
     def plot_bias(self,         data,         preprocess=True,                  seasons=True,
@@ -2088,11 +2159,11 @@ class Tropical_Rainfall:
     def plot_seasons_or_months(self,     data,             preprocess=True,                  seasons=True,
                                dataset_2=None,             model_variable='tprate',          figsize=1,
                                trop_lat=None,              plot_title=None,                  new_unit=None,
-                               vmin=None,                  vmax=None,                        get_mean = True, 
-                               percent95_level = False, 
-                               path_to_pdf=None,           name_of_file=None,                pdf_format=True,    
-                                path_to_netcdf = None,                           
-                                value = 0.95,                           rel_error = 0.1):
+                               vmin=None,                  vmax=None,                        get_mean=True,
+                               percent95_level=False,
+                               path_to_pdf=None,           name_of_file=None,                pdf_format=True,
+                               path_to_netcdf=None,
+                               value=0.95,                           rel_error=0.1):
         """ Function to plot seasonal data.
 
         Args:
@@ -2133,18 +2204,17 @@ class Tropical_Rainfall:
                 data = self.open_dataset(
                     path_to_netcdf=path_to_netcdf)
             try:
-                all_season = [data.DJF, data.MAM, data.JJA, data.SON, data.Yearly]
+                all_season = [data.DJF, data.MAM,
+                              data.JJA, data.SON, data.Yearly]
             except AttributeError:
                 if get_mean:
                     all_season = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons=seasons,
-                                                       model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
+                                                               model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
-                    temp = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons,  
-                                                model_variable = model_variable,              path_to_netcdf = path_to_netcdf,              
-                                                name_of_file = name_of_file,                    trop_lat       = trop_lat,              
-                                                value = value,                           rel_error = rel_error)
-
-
+                    temp = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons,
+                                                              model_variable=model_variable,              path_to_netcdf=path_to_netcdf,
+                                                              name_of_file=name_of_file,                    trop_lat=trop_lat,
+                                                              value=value,                           rel_error=rel_error)
 
             if vmin is None and vmax is None:
                 vmax = float(all_season[0].max().values)/10
@@ -2158,7 +2228,7 @@ class Tropical_Rainfall:
                 for i in range(0, len(all_season)):
                     all_season[i].values = all_season[i].values - \
                         all_season_2[i].values
-                #data_new = data - dataset_2
+                # data_new = data - dataset_2
             titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
 
             for i in range(0, len(all_season)):
@@ -2294,96 +2364,345 @@ class Tropical_Rainfall:
                             edgecolor='w',
                             orientation='landscape')
 
+    def map(self,     data,    ncols=1, nrows=1, titles='',    lonmin=-180, lonmax=181, latmin=-90, latmax=91,
+            pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
+            model_variable='tprate',          figsize=1, number_of_ticks=8,
+            trop_lat=None,              plot_title=None,                  new_unit=None,
+            vmin=None,                  vmax=None,
+            path_to_pdf=None,           name_of_file=None,                pdf_format=True,
+            path_to_netcdf=None):
+        """ Function to plot seasonal data.
 
-    def get_95percent_level(self, data = None, original_hist = None, value = 0.95, preprocess = True, rel_error = 0.1, model_variable='tprate', 
-                            new_unit = None, weights = None,  trop_lat = None):        
+        Args:
+            data (xarray): First dataset to be plotted
+            seasons (bool, optional):       If True, data is plotted in seasons. If False, data is plotted in months. Defaults to True.
+            model_variable (str, optional): Name of the model variable.             Defaults to 'tprate'.
+            figsize (float, optional):      Size of the figure.                     Defaults to 1.
+            trop_lat (float, optional):     Latitude of the tropical region.        Defaults to None.
+            plot_title (str, optional):     Title of the plot.                      Defaults to None.
+            new_unit (str, optional):       Unit of the data.                       Defaults to None.
+            vmin (float, optional):         Minimum value of the colorbar.          Defaults to None.
+            vmax (float, optional):         Maximum value of the colorbar.          Defaults to None.
+            contour (bool, optional):       If True, contours are plotted.          Defaults to True.
+            path_to_pdf (str, optional):    Path to the pdf file.                   Defaults to None.
+            name_of_file (str, optional):   Name of the pdf file.                   Defaults to None.
+            pdf_format (bool, optional):    If True, the figure is saved in PDF format. Defaults to True.
 
-        value               = 1 - value
-        rel_error           = value*rel_error 
+        Returns:
+            The pyplot figure in the PDF format
+        """
+
+        self.class_attributes_update(trop_lat=trop_lat)
+
+        if pacific_ocean:
+            latmax = 65
+            latmin = -70
+            lonmin = -120
+            lonmax = 120
+        elif atlantic_ocean:
+            latmax = 70
+            latmin = -60
+            lonmin = -70
+            lonmax = 20
+        elif indian_ocean:
+            latmax = 30
+            latmin = -60
+            lonmin = 20
+            lonmax = 120
+
+        if tropical:
+            latmax = 15
+            latmin = -15
+
+        if ncols == 1 and nrows == 1:
+
+            if new_unit is None:
+                try:
+                    unit = data[model_variable].units
+                except KeyError:
+                    unit = data.units
+            else:
+                unit = new_unit
+
+            fig = plt.figure(figsize=(11*figsize, 10*figsize),
+                             layout='constrained')
+            ax1 = plt.axes(projection=ccrs.PlateCarree())
+            if path_to_netcdf is not None:
+                data = self.open_dataset(
+                    path_to_netcdf=path_to_netcdf)
+
+            if lonmin != -180 or lonmax != 181:
+                data = data.sel(lon=slice(lonmin, lonmax))
+            if latmin != -90 or latmax != 91:
+                data = data.sel(lat=slice(latmin, latmax))
+
+            if vmin is None and vmax is None:
+                vmax = float(data.max().values)/10
+                vmin = 0
+                ticks = [
+                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
+            elif isinstance(vmax, int) and isinstance(vmin, int):
+                ticks = []
+                i = 0
+                while vmin+i <= vmax:
+                    ticks.append(vmin+i)
+                    i = i + 1
+            elif isinstance(vmax, float) or isinstance(vmin, float):
+                ticks = [
+                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
+            vmin, vmax = ticks[0], ticks[-1]+1
+            # del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
+            # clevs = np.arange(vmin, vmax, del_tick)
+
+            try:
+                del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
+                clevs = np.arange(vmin, vmax, del_tick)
+            except ZeroDivisionError:
+                del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
+                clevs = np.arange(vmin, vmax, del_tick)
+
+            data = data.where(data > vmin)
+            data_cycl, lons = add_cyclic_point(
+                data, coord=data['lon'])
+
+            im1 = ax1.contourf(lons, data['lat'], data_cycl, clevs,
+                               transform=ccrs.PlateCarree(),
+                               cmap='coolwarm', extend='both')
+
+            ax1.set_title(titles, fontsize=17)
+
+            ax1.coastlines()
+
+            dellon = int(lonmax-lonmin)/6
+            # Longitude labels
+            ax1.set_xticks(np.arange(lonmin, lonmax, dellon),
+                           crs=ccrs.PlateCarree())
+            lon_formatter = cticker.LongitudeFormatter()
+            ax1.xaxis.set_major_formatter(lon_formatter)
+
+            dellat = int(latmax-latmin)/6
+            # Latitude labels
+            ax1.set_yticks(np.arange(latmin, latmax, dellat),
+                           crs=ccrs.PlateCarree())
+            lat_formatter = cticker.LatitudeFormatter()
+            ax1.yaxis.set_major_formatter(lat_formatter)
+            ax1.grid(True)
+
+            # if vmin is None and vmax is None:
+            if vmax is not None and vmin is not None:
+                cbar = fig.colorbar(
+                    im1, ticks=ticks, ax=ax1, location='bottom')
+            else:
+                cbar = fig.colorbar(
+                    im1, ax=ax1, location='bottom')
+            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
+
+        else:
+            if new_unit is None:
+                try:
+                    unit = data[0][model_variable].units
+                except KeyError:
+                    unit = data[0].units
+            else:
+                unit = new_unit
+
+            fig, axes = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
+                                     figsize=(11*figsize, 8.5*figsize), layout='constrained')
+
+            if vmin is None and vmax is None:
+                vmax = float(data.max().values)/10
+                vmin = 0
+                ticks = [
+                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
+            elif isinstance(vmax, int) and isinstance(vmin, int):
+                ticks = []
+                i = 0
+                while vmin+i <= vmax:
+                    ticks.append(vmin+i)
+                    i = i + 1
+            elif isinstance(vmax, float) or isinstance(vmin, float):
+                ticks = [
+                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
+            vmin, vmax = ticks[0], ticks[-1]+1
+            try:
+                del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
+                clevs = np.arange(vmin, vmax, del_tick)
+            except ZeroDivisionError:
+                del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
+                clevs = np.arange(vmin, vmax, del_tick)
+            axs = axes.flatten()
+
+            for i in range(0, len(data)):
+                if lonmin != -180 or lonmax != 181:
+                    data[i] = data[i].sel(lon=slice(lonmin, lonmax))
+                if latmin != -90 or latmax != 91:
+                    data[i] = data[i].sel(lat=slice(latmin, latmax))
+
+                data[i] = data[i].where(data[i] > vmin)
+                if lonmin != -180 or lonmax != 181:
+                    data[i] = data[i].sel(lon=slice(lonmin, lonmax))
+                if latmin != -90 or latmax != 91:
+                    data[i] = data[i].sel(lat=slice(latmin, latmax))
+
+                data_cycl, lons = add_cyclic_point(
+                    data[i], coord=data[i]['lon'])
+
+                im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs,
+                                      transform=ccrs.PlateCarree(),
+                                      cmap='coolwarm', extend='both')
+
+                axs[i].set_title(titles[i], fontsize=17)
+
+                axs[i].coastlines()
+
+                dellon = int(lonmax-lonmin)/6
+                # Longitude labels
+                axs[i].set_xticks(np.arange(-lonmin, lonmax, dellon),
+                                  crs=ccrs.PlateCarree())
+                lon_formatter = cticker.LongitudeFormatter()
+                axs[i].xaxis.set_major_formatter(lon_formatter)
+
+                dellat = int(latmax-latmin)/6
+                # Latitude labels
+                axs[i].set_yticks(np.arange(latmin, latmax, dellat),
+                                  crs=ccrs.PlateCarree())
+                lat_formatter = cticker.LatitudeFormatter()
+                axs[i].yaxis.set_major_formatter(lat_formatter)
+                axs[i].grid(True)
+            cbar = fig.colorbar(
+                im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=axs[-1], location='bottom')
+            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
+        # Draw the colorbar
+
+        if plot_title is not None:
+            plt.suptitle(plot_title,                       fontsize=17)
+
+        if pdf_format:
+            if path_to_pdf is not None and name_of_file is not None:
+                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
+
+            if path_to_pdf is not None and isinstance(path_to_pdf, str):
+
+                create_folder(folder=extract_directory_path(
+                    path_to_pdf), loglevel='WARNING')
+
+                plt.savefig(path_to_pdf,
+                            format="pdf",
+                            bbox_inches="tight",
+                            pad_inches=1,
+                            transparent=True,
+                            facecolor="w",
+                            edgecolor='w',
+                            orientation='landscape')
+        else:
+            if path_to_pdf is not None and name_of_file is not None:
+                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.png'
+
+            if path_to_pdf is not None and isinstance(path_to_pdf, str):
+
+                create_folder(folder=extract_directory_path(
+                    path_to_pdf), loglevel='WARNING')
+
+                plt.savefig(path_to_pdf,
+                            bbox_inches="tight",
+                            pad_inches=1,
+                            transparent=True,
+                            facecolor="w",
+                            edgecolor='w',
+                            orientation='landscape')
+
+    def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable='tprate',
+                            new_unit=None, weights=None,  trop_lat=None):
+
+        value = 1 - value
+        rel_error = value*rel_error
         if original_hist is None:
 
-            self.class_attributes_update(trop_lat = trop_lat)
+            self.class_attributes_update(trop_lat=trop_lat)
 
-            original_hist = self.histogram(data,         weights = weights,       preprocess = preprocess,      
-                                           trop_lat = self.trop_lat,              model_variable = model_variable,
-                  num_of_bins = self.num_of_bins,   first_edge = self.first_edge,      width_of_bin  = self.width_of_bin,       bins = self.bins)
-        
-        counts_sum          = sum(original_hist.counts)
-        relative_value      = [float((original_hist.counts[i]/counts_sum).values) for i in range(0, len(original_hist.counts))]
-        new_sum             = 0
+            original_hist = self.histogram(data,         weights=weights,       preprocess=preprocess,
+                                           trop_lat=self.trop_lat,              model_variable=model_variable,
+                                           num_of_bins=self.num_of_bins,   first_edge=self.first_edge,      width_of_bin=self.width_of_bin,       bins=self.bins)
+
+        counts_sum = sum(original_hist.counts)
+        relative_value = [float((original_hist.counts[i]/counts_sum).values)
+                          for i in range(0, len(original_hist.counts))]
+        new_sum = 0
 
         for i in range(len(relative_value)-1, 0, -1):
-            new_sum         += relative_value[i]
-            if new_sum      > 0.05:
+            new_sum += relative_value[i]
+            if new_sum > 0.05:
                 break
-        
-        bin_i               = float(original_hist.center_of_bin[i-1].values)
-        del_bin             = float(original_hist.center_of_bin[i].values) - float(original_hist.center_of_bin[i-1].values)
-        last_bin            = float(original_hist.center_of_bin[-1].values)
 
-        self.num_of_bins    = None
-        self.first_edge     = None
-        self.width_of_bin   = None
+        bin_i = float(original_hist.center_of_bin[i-1].values)
+        del_bin = float(
+            original_hist.center_of_bin[i].values) - float(original_hist.center_of_bin[i-1].values)
+        last_bin = float(original_hist.center_of_bin[-1].values)
+
+        self.num_of_bins = None
+        self.first_edge = None
+        self.width_of_bin = None
 
         for i in range(0, 100):
-            self.bins       = np.sort([0, bin_i + 0.5*del_bin, last_bin]) 
-            new_hist        = self.histogram(data)
+            self.bins = np.sort([0, bin_i + 0.5*del_bin, last_bin])
+            new_hist = self.histogram(data)
 
-            counts_sum      = sum(new_hist.counts.values)
-            threshold       = new_hist.counts[-1].values/counts_sum
+            counts_sum = sum(new_hist.counts.values)
+            threshold = new_hist.counts[-1].values/counts_sum
             if abs(threshold-value) < rel_error:
                 break
-            if threshold     < value:
-                del_bin     =  del_bin - abs(0.5*del_bin)
+            if threshold < value:
+                del_bin = del_bin - abs(0.5*del_bin)
             else:
-                del_bin     =  del_bin + abs(0.5*del_bin) 
+                del_bin = del_bin + abs(0.5*del_bin)
 
         try:
-            units           = data[model_variable].units
+            units = data[model_variable].units
         except KeyError:
-            units           = data.units
+            units = data.units
 
         bin_value = bin_i + del_bin
 
         if new_unit is not None:
-            bin_value        = self.precipitation_rate_units_converter(bin_value, old_unit = units, new_unit = new_unit)
+            bin_value = self.precipitation_rate_units_converter(
+                bin_value, old_unit=units, new_unit=new_unit)
             units = new_unit
 
         return bin_value, units, 1 - threshold
 
-    def seasonal_095level_into_netcdf(self,     data,           preprocess=True,        seasons = True,     
-                                                model_variable = 'tprate',              path_to_netcdf = None,              
-                                                name_of_file = None,                    trop_lat       = None,              
-                                                value = 0.95,                           rel_error = 0.1,
-                                                lon_length=None,                        lat_length=None,
-                                                space_grid_factor=None,                 tqdm=True):
-                 
+    def seasonal_095level_into_netcdf(self,     data,           preprocess=True,        seasons=True,
+                                      model_variable='tprate',              path_to_netcdf=None,
+                                      name_of_file=None,                    trop_lat=None,
+                                      value=0.95,                           rel_error=0.1,
+                                      lon_length=None,                        lat_length=None,
+                                      space_grid_factor=None,                 tqdm=True):
         """ Function to plot.
         Args:"""
 
-        data = space_regrider(data, space_grid_factor=space_grid_factor, lat_length=lat_length, lon_length=lon_length)
+        data = space_regrider(data, space_grid_factor=space_grid_factor,
+                              lat_length=lat_length, lon_length=lon_length)
 
-        self.class_attributes_update(trop_lat = trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat)
         if seasons:
             glob = self.preprocessing(data,                               preprocess=preprocess,
-                                        trop_lat=self.trop_lat,         model_variable=model_variable)
+                                      trop_lat=self.trop_lat,         model_variable=model_variable)
             DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-                                        trop_lat=self.trop_lat,         model_variable=model_variable,
-                                        s_month=12,                       f_month=12)
+                                       trop_lat=self.trop_lat,         model_variable=model_variable,
+                                       s_month=12,                       f_month=12)
             DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-                                        trop_lat=self.trop_lat,         model_variable=model_variable,
-                                        s_month=1,                        f_month=2)
+                                       trop_lat=self.trop_lat,         model_variable=model_variable,
+                                       s_month=1,                        f_month=2)
             DJF = xr.concat([DJF_1, DJF_2], dim='time')
             MAM = self.preprocessing(data,                               preprocess=preprocess,
-                                        trop_lat=self.trop_lat,         model_variable=model_variable,
-                                        s_month=3,                        f_month=5)
+                                     trop_lat=self.trop_lat,         model_variable=model_variable,
+                                     s_month=3,                        f_month=5)
             JJA = self.preprocessing(data,                               preprocess=preprocess,
-                                        trop_lat=self.trop_lat,         model_variable=model_variable,
-                                        s_month=6,                        f_month=8)
+                                     trop_lat=self.trop_lat,         model_variable=model_variable,
+                                     s_month=6,                        f_month=8)
             SON = self.preprocessing(data,                               preprocess=preprocess,
-                                        trop_lat=self.trop_lat,         model_variable=model_variable,
-                                        s_month=9,                        f_month=11)
-            
+                                     trop_lat=self.trop_lat,         model_variable=model_variable,
+                                     s_month=9,                        f_month=11)
+
             num_of_bins, first_edge, width_of_bin, bins = self.num_of_bins, self.first_edge, self.width_of_bin, self.bins
             self.s_month, self.f_month = None, None
             s_month, f_month = None, None
@@ -2392,41 +2711,52 @@ class Tropical_Rainfall:
 
                 for lon_i in range(0, DJF.lon.size):
                     if tqdm:
-                        ratio = ((DJF.lon.size-1)*lat_i + lon_i) / (DJF.lat.size*DJF.lon.size)
+                        ratio = ((DJF.lon.size-1)*lat_i + lon_i) / \
+                            (DJF.lat.size*DJF.lon.size)
                         progress = int(40 * ratio)
-                        print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
+                        print(progress_bar_template.format(
+                            "=" * progress, int(ratio * 100)), end="\r")
 
-                    self.class_attributes_update(s_month = s_month, f_month = f_month, num_of_bins = num_of_bins, first_edge = first_edge, width_of_bin = width_of_bin, bins = bins)
+                    self.class_attributes_update(s_month=s_month, f_month=f_month, num_of_bins=num_of_bins,
+                                                 first_edge=first_edge, width_of_bin=width_of_bin, bins=bins)
                     DJF_095level = DJF.isel(time=0).copy(deep=True)
                     self.logger.debug('DJF:{}'.format(DJF))
-                    bin_value, units, threshold = self.get_95percent_level(DJF.isel(lat=lat_i).isel(lon=lon_i), preprocess=False, 
-                                                                            value = value, rel_error = rel_error)
-                    DJF_095level.isel(lat=lat_i).isel(lon=lon_i).values = bin_value
-                    
-                    self.class_attributes_update(s_month = s_month, f_month = f_month, num_of_bins = num_of_bins, first_edge = first_edge, width_of_bin = width_of_bin, bins = bins)
+                    bin_value, units, threshold = self.get_95percent_level(DJF.isel(lat=lat_i).isel(lon=lon_i), preprocess=False,
+                                                                           value=value, rel_error=rel_error)
+                    DJF_095level.isel(lat=lat_i).isel(
+                        lon=lon_i).values = bin_value
+
+                    self.class_attributes_update(s_month=s_month, f_month=f_month, num_of_bins=num_of_bins,
+                                                 first_edge=first_edge, width_of_bin=width_of_bin, bins=bins)
                     MAM_095level = MAM.isel(time=0).copy(deep=True)
                     bin_value, units, threshold = self.get_95percent_level(MAM.isel(lat=lat_i).isel(lon=lon_i), preprocess=False,
-                                                                           value = value, rel_error = rel_error)
-                    MAM_095level.isel(lat=lat_i).isel(lon=lon_i).values = bin_value
+                                                                           value=value, rel_error=rel_error)
+                    MAM_095level.isel(lat=lat_i).isel(
+                        lon=lon_i).values = bin_value
 
-                    self.class_attributes_update(s_month = s_month, f_month = f_month, num_of_bins = num_of_bins, first_edge = first_edge, width_of_bin = width_of_bin, bins = bins)
+                    self.class_attributes_update(s_month=s_month, f_month=f_month, num_of_bins=num_of_bins,
+                                                 first_edge=first_edge, width_of_bin=width_of_bin, bins=bins)
                     JJA_095level = JJA.isel(time=0).copy(deep=True)
-                    bin_value, units, threshold = self.get_95percent_level(JJA.isel(lat=lat_i).isel(lon=lon_i), preprocess=False, 
-                                                                           value = value, rel_error = rel_error)
-                    JJA_095level.isel(lat=lat_i).isel(lon=lon_i).values = bin_value
+                    bin_value, units, threshold = self.get_95percent_level(JJA.isel(lat=lat_i).isel(lon=lon_i), preprocess=False,
+                                                                           value=value, rel_error=rel_error)
+                    JJA_095level.isel(lat=lat_i).isel(
+                        lon=lon_i).values = bin_value
 
-                    self.class_attributes_update(s_month = s_month, f_month = f_month, num_of_bins = num_of_bins, first_edge = first_edge, width_of_bin = width_of_bin, bins = bins)
+                    self.class_attributes_update(s_month=s_month, f_month=f_month, num_of_bins=num_of_bins,
+                                                 first_edge=first_edge, width_of_bin=width_of_bin, bins=bins)
                     SON_095level = SON.isel(time=0).copy(deep=True)
-                    bin_value, units, threshold = self.get_95percent_level(SON.isel(lat=lat_i).isel(lon=lon_i), preprocess=False, 
-                                                                           value = value, rel_error = rel_error)
-                    SON_095level.isel(lat=lat_i).isel(lon=lon_i).values = bin_value
+                    bin_value, units, threshold = self.get_95percent_level(SON.isel(lat=lat_i).isel(lon=lon_i), preprocess=False,
+                                                                           value=value, rel_error=rel_error)
+                    SON_095level.isel(lat=lat_i).isel(
+                        lon=lon_i).values = bin_value
 
-                    self.class_attributes_update(s_month = s_month, f_month = f_month, num_of_bins = num_of_bins, first_edge = first_edge, width_of_bin = width_of_bin, bins = bins)
+                    self.class_attributes_update(s_month=s_month, f_month=f_month, num_of_bins=num_of_bins,
+                                                 first_edge=first_edge, width_of_bin=width_of_bin, bins=bins)
                     glob_095level = glob.isel(time=0).copy(deep=True)
-                    bin_value, units, threshold = self.get_95percent_level(glob.isel(lat=lat_i).isel(lon=lon_i), preprocess=False, 
-                                                                           value = value, rel_error = rel_error)
-                    glob_095level.isel(lat=lat_i).isel(lon=lon_i).values = bin_value
-
+                    bin_value, units, threshold = self.get_95percent_level(glob.isel(lat=lat_i).isel(lon=lon_i), preprocess=False,
+                                                                           value=value, rel_error=rel_error)
+                    glob_095level.isel(lat=lat_i).isel(
+                        lon=lon_i).values = bin_value
 
             seasonal_095level = DJF_095level.to_dataset(name="DJF")
             seasonal_095level["MAM"] = MAM_095level
@@ -2435,7 +2765,8 @@ class Tropical_Rainfall:
             seasonal_095level["Yearly"] = glob_095level
 
             s_month, f_month = None, None
-            self.class_attributes_update(s_month=s_month,       f_month=f_month)
+            self.class_attributes_update(
+                s_month=s_month,       f_month=f_month)
 
             seasonal_095level.attrs = SON.attrs
             seasonal_095level = self.grid_attributes(
@@ -2453,7 +2784,7 @@ class Tropical_Rainfall:
         else:
             return seasonal_095level
 
-    #def _convert_time_into_UTC_time(self, latitude = 40.7128, longitude = -74.0060, local_datetime = datetime(2023, 8, 15, 12, 0, 0) ):
+    # def _convert_time_into_UTC_time(self, latitude = 40.7128, longitude = -74.0060, local_datetime = datetime(2023, 8, 15, 12, 0, 0) ):
     #    tf = TimezoneFinder()
     #    time_zone_str = tf.timezone_at(lng=longitude, lat=latitude)
     #    local_time = pytz.timezone(time_zone_str).localize(local_datetime)
@@ -2467,68 +2798,72 @@ class Tropical_Rainfall:
 
         # Apply the time zone offset to convert UTC time to local time
         local_time = (utc_time + time_zone_offset_hours) % 24
-        
+
         return local_time
-        
-    def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor = None, time_length=None,
-                          trop_lat       = None, new_unit='mm/day',
-                          #freq=None,  time_grid_factor=None, 
-                          path_to_netcdf = None, name_of_file = None, tqdm=True):
-        self.class_attributes_update(trop_lat = trop_lat)
+
+    def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor=None, time_length=None,
+                          trop_lat=None, new_unit='mm/day',
+                          # freq=None,  time_grid_factor=None,
+                          path_to_netcdf=None, name_of_file=None, tqdm=True):
+        self.class_attributes_update(trop_lat=trop_lat)
         try:
             data = data[model_variable]
         except KeyError:
             pass
 
-        utc_data=[]
+        utc_data = []
         progress_bar_template = "[{:<40}] {}%"
-        if  time_length is not None:
+        if time_length is not None:
             data = data.isel(time=slice(0, time_length))
             self.logger.debug('Time selected')
 
-        
         _data = data.sel(lat=slice(-self.trop_lat, self.trop_lat))
         data = _data.mean('lat')
         self.logger.debug('Latitude selected and mean calculated')
         self.logger.debug("Mean value: {}".format(data.mean()))
         if space_grid_factor is not None:
-            data = space_regrider(data, lon_length=space_grid_factor*data.lon.size)
+            data = space_regrider(
+                data, lon_length=space_grid_factor*data.lon.size)
             self.logger.debug('Space regrided')
         for time_ind in range(0, data.time.size):
             utc_data.append([])
-            for lon_ind in range(0, data.lon.size): 
-                total_ind =   time_ind*data.lon.size + lon_ind
-                ratio =  total_ind / (data.lon.size*data.time.size)
+            for lon_ind in range(0, data.lon.size):
+                total_ind = time_ind*data.lon.size + lon_ind
+                ratio = total_ind / (data.lon.size*data.time.size)
                 progress = int(40 * ratio)
-                print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
-                
+                print(progress_bar_template.format(
+                    "=" * progress, int(ratio * 100)), end="\r")
+
                 local_time = data.time[time_ind]
                 longitude = data.lon[lon_ind].values - 180
-                
-                local_datetime = float(local_time['time.hour'].values+local_time['time.minute'].values/60)
-                              
-                utc_element = self._utc_to_local(longitude=longitude, utc_time =local_datetime )
+
+                local_datetime = float(
+                    local_time['time.hour'].values+local_time['time.minute'].values/60)
+
+                utc_element = self._utc_to_local(
+                    longitude=longitude, utc_time=local_datetime)
                 utc_data[time_ind].append(utc_element)
-        
-        
+
         _dataset = data.to_dataset(name="tprate")
         _dataset.attrs = data.attrs
         _dataset.update({'utc_time': (['time', 'lon'], utc_data)})
 
         self.grid_attributes(data=_dataset, tprate_dataset=_dataset)
-        
+
         data = _dataset.where(~np.isnan(_dataset.tprate), 0)
-            
-        utc_time = data['utc_time'].stack(total=['time','lon']).values 
-        tprate = data['tprate'].stack(total=['time','lon']).values
+
+        utc_time = data['utc_time'].stack(total=['time', 'lon']).values
+        tprate = data['tprate'].stack(total=['time', 'lon']).values
 
         if new_unit is not None and 'xarray' in str(type(tprate)):
-            tprate = self.precipitation_rate_units_converter(tprate, new_unit=new_unit)
+            tprate = self.precipitation_rate_units_converter(
+                tprate, new_unit=new_unit)
             units = new_unit
         elif new_unit is not None and 'ndarray' in str(type(tprate)):
             result_list = []
             for element in tprate:
-                result_list.append(self.precipitation_rate_units_converter(float(element), old_unit=data.units, new_unit=new_unit))
+                result_list.append(self.precipitation_rate_units_converter(
+                    float(element), old_unit=data.units, new_unit=new_unit))
             tprate = np.array(result_list, dtype=np.float64)
         else:
             units = tprate.units
@@ -2537,30 +2872,24 @@ class Tropical_Rainfall:
         for i in range(0, len(utc_time)):
             new_data.append([utc_time[i], tprate[i]])
 
-        
-        #tprate_rel = [tprate[i]- mean_val for i in range(0, len(tprate))]
+        # tprate_rel = [tprate[i]- mean_val for i in range(0, len(tprate))]
 
         # Sorted list with corresponding values
-        sorted_list = sorted(new_data , key=lambda x: x[0])
+        sorted_list = sorted(new_data, key=lambda x: x[0])
 
         # Group elements by the first value in each element
-        grouped_data = {key: [value for _, value in group] for key, group in groupby(sorted_list, key=lambda x: x[0])}
+        grouped_data = {key: [value for _, value in group]
+                        for key, group in groupby(sorted_list, key=lambda x: x[0])}
 
         # Calculate the mean for each group and create the result list
         result = [[key, mean(values)] for key, values in grouped_data.items()]
 
-        
-
         new_data = [result[i][1] for i in range(0, len(result))]
         new_coord = [result[i][0] for i in range(0, len(result))]
 
-        
-
         da = xr.DataArray(new_data,
-                        dims=('utc_time'),
-                        coords={'utc_time': new_coord})
-
-        
+                          dims=('utc_time'),
+                          coords={'utc_time': new_coord})
 
         new_dataset = da.to_dataset(name="tprate")
         new_dataset.attrs = _dataset.attrs
@@ -2568,7 +2897,6 @@ class Tropical_Rainfall:
         mean_val = da.mean()
 
         da = [(new_data[i] - mean_val)/mean_val for i in range(0, len(new_data))]
-
 
         new_dataset.update({'tprate_relative': (['utc_time'], da)})
 
@@ -2578,17 +2906,14 @@ class Tropical_Rainfall:
         else:
             return new_dataset
 
-        
-    
     def daily_variability_plot(self, ymax=12,
-                        trop_lat=None,             relative=True,         get_median=False,
-                        legend='_Hidden',          figsize=1,             ls='-',
-                        maxticknum=12,             color='tab:blue',      varname='tprate',
-                        ylogscale=False,           xlogscale=False,       loc='upper right',
-                        add=None,                  fig=None,              plot_title=None,
-                        path_to_pdf=None,          new_unit='mm/day',     name_of_file=None,
-                        pdf_format=True,       path_to_netcdf=None):
-
+                               trop_lat=None,             relative=True,         get_median=False,
+                               legend='_Hidden',          figsize=1,             ls='-',
+                               maxticknum=12,             color='tab:blue',      varname='tprate',
+                               ylogscale=False,           xlogscale=False,       loc='upper right',
+                               add=None,                  fig=None,              plot_title=None,
+                               path_to_pdf=None,          new_unit='mm/day',     name_of_file=None,
+                               pdf_format=True,       path_to_netcdf=None):
 
         self.class_attributes_update(trop_lat=trop_lat)
         if path_to_netcdf is None:
@@ -2596,9 +2921,7 @@ class Tropical_Rainfall:
         else:
             data = self.open_dataset(
                 path_to_netcdf=path_to_netcdf)
-            
-        
-            
+
         utc_time = data['utc_time']
         if relative:
             tprate = data['tprate_relative']
@@ -2610,17 +2933,17 @@ class Tropical_Rainfall:
             try:
                 units = data.tprate.units
             except AttributeError:
-                units = 'mm/day'#'kg m**-2 s**-1'
+                units = 'mm/day'  # 'kg m**-2 s**-1'
 
-        #if new_unit is not None and 'xarray' in str(type(tprate)):
+        # if new_unit is not None and 'xarray' in str(type(tprate)):
         #    tprate = self.precipitation_rate_units_converter(tprate, new_unit=new_unit)
         #    units = new_unit
-        #elif new_unit is not None and 'ndarray' in str(type(tprate)):
+        # elif new_unit is not None and 'ndarray' in str(type(tprate)):
         #    result_list = []
         #    for element in tprate:
         #        result_list.append(self.precipitation_rate_units_converter(float(element), old_unit=data.units, new_unit=new_unit))
         #    tprate = np.array(result_list, dtype=np.float64)
-        #else:
+        # else:
         #    units = data.units
         if 'Dataset' in str(type(data)):
             y_lim_max = self.precipitation_rate_units_converter(
@@ -2631,12 +2954,13 @@ class Tropical_Rainfall:
                 fig, ax = plt.subplots(
                     figsize=(11*figsize, 10*figsize), layout='constrained')
             elif add is not None:
-                fig, ax  = add
+                fig, ax = add
         ax.plot(utc_time, tprate,
-                    color=color,  label=legend,  ls=ls)
+                color=color,  label=legend,  ls=ls)
 
         if relative:
-            ax.set_title('Relative Value of Daily Precipitation Variability', fontsize=15)
+            ax.set_title(
+                'Relative Value of Daily Precipitation Variability', fontsize=15)
             ax.set_xlabel('tprate variability, '+units,  fontsize=12)
         else:
             ax.set_title('Daily Precipitation Variability', fontsize=15)
@@ -2648,17 +2972,17 @@ class Tropical_Rainfall:
         ax.set_xlabel('Local time', fontsize=12)
 
         if legend != '_Hidden':
-                plt.legend(loc=loc,
-                           fontsize=12,    ncol=2)
+            plt.legend(loc=loc,
+                       fontsize=12,    ncol=2)
 
         if path_to_pdf is not None:
             plt.savefig(path_to_pdf,
-                                format="pdf",
-                                bbox_inches="tight",
-                                pad_inches=1,
-                                transparent=True,
-                                facecolor="w",
-                                edgecolor='w',
-                                orientation='landscape')
-            
+                        format="pdf",
+                        bbox_inches="tight",
+                        pad_inches=1,
+                        transparent=True,
+                        facecolor="w",
+                        edgecolor='w',
+                        orientation='landscape')
+
         return [fig,  ax]
