@@ -15,44 +15,46 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.logger import log_configure
-from .plot_utils import minmax_maps, plot_box, add_cyclic_lon
+from .plot_utils import plot_box, add_cyclic_lon, evaluate_colorbar_limits
 
 
 def maps_plot(maps=None, models=None, exps=None,
-              titles=None, save=False, **kwargs):
+              titles=None, save=False, figsize=(11, 8.5),
+              nlevels=12, cbar_label=None, title=None,
+              sym=True, outputdir='.', filename='maps.png',
+              loglevel='WARNING'):
     """Plot maps (regression, correlation, etc.)
     A list of xarray.DataArray objects is expected
     and a map is plotted for each of them
 
     Args:
-        maps (list):        list of xarray.DataArray objects
-        models (list):      list of models
-        exps (list):        list of experiments
-        titles (list, opt): list of titles for each map
-                            overrides models and exps standard titles
-        save (bool, opt):   save the figure
-
-    Kwargs:
-        - loglevel (str,opt):   log level for the logger, default is 'WARNING'
-        - figsize (tuple,opt):  figure size, default is (11, 8.5)
-        - nlevels (int,opt):    number of levels for the colorbar, default is 11
-        - cbar_label (str,opt): label for the colorbar
-        - title (str,opt):      title for the figure (suptitle)
+        maps (list):          list of xarray.DataArray objects
+        models (list):        list of models
+        exps (list):          list of experiments
+        titles (list, opt):   list of titles for each map
+                              overrides models and exps standard titles
+        save (bool, opt):     save the figure
+        figsize (tuple,opt):  figure size, default is (11, 8.5)
+        nlevels (int,opt):    number of levels for the colorbar, default is 12
+        cbar_label (str,opt): label for the colorbar
+        title (str,opt):      title for the figure (suptitle)
+        sym (bool,opt):       symmetrical colorbar, default is True
+        outputdir (str,opt):  output directory for the figure, default is '.' (current directory)
+        filename (str,opt):   filename for the figure, default is 'maps.png'
+        loglevel (str,opt):   log level for the logger, default is 'WARNING'
     """
-    loglevel = kwargs.get('loglevel', 'WARNING')
     logger = log_configure(loglevel, 'Multiple maps')
 
     if maps is None:
         raise ValueError('Nothing to plot')
 
     if models is None and titles is None:
-        logger.warning('No titles provided')
+        logger.info('No titles provided')
     if exps is None and titles is None:
-        logger.warning('No titles provided')
+        logger.info('No titles provided')
 
     # Generate the figure
     nrows, ncols = plot_box(len(maps))
-    figsize = kwargs.get('figsize', (11, 8.5))
 
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols,
                             subplot_kw={'projection': ccrs.PlateCarree()},
@@ -60,7 +62,8 @@ def maps_plot(maps=None, models=None, exps=None,
     axs = axs.flatten()
 
     # Evaluate min and max values for the common colorbar
-    vmin, vmax = minmax_maps(maps)
+    vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
+
     logger.debug('Min value for the colorbar: {}'.format(vmin))
     logger.debug('Max value for the colorbar: {}'.format(vmax))
 
@@ -69,9 +72,6 @@ def maps_plot(maps=None, models=None, exps=None,
         if i >= len(maps):
             axs[i].axis('off')
             logger.debug('Dropping unused axes {}'.format(i))
-
-    # Set the number of levels for the colorbar
-    nlevels = kwargs.get('nlevels', 11)
 
     # Plot the maps
     for i in range(len(maps)):
@@ -120,25 +120,24 @@ def maps_plot(maps=None, models=None, exps=None,
     fig.colorbar(cs, cax=cbar_ax, orientation='horizontal')
 
     # Colorbar label
-    cbar_label = kwargs.get('cbar_label', '')
     if cbar_label is not None:
         cbar_ax.set_xlabel(cbar_label)
 
     # Add a super title
-    title = kwargs.get('title')
     if title is not None:
         fig.suptitle(title, fontsize=16)
 
     # Save the figure
     if save is True:
-        outputdir = kwargs.get('outputdir', '.')
-        filename = kwargs.get('filename', 'maps.png')
         logger.info('Saving figure to {}/{}'.format(outputdir, filename))
         fig.savefig('{}/{}'.format(outputdir, filename), format='pdf',
                     dpi=300, bbox_inches='tight')
 
 
-def single_map_plot(map=None, save=False, **kwargs):
+def single_map_plot(map=None, save=False, model=None, exp=None,
+                    figsize=(11, 8.5), nlevels=12, title=None,
+                    cbar_label=None, outputdir='.', filename='maps.png',
+                    sym=True, loglevel='WARNING'):
     """
     Plot a single map (regression, correlation, etc.)
     An xarray.DataArray objects is expected
@@ -147,23 +146,20 @@ def single_map_plot(map=None, save=False, **kwargs):
     Args:
         map (xarray.DataArray): xarray.DataArray object
         save (bool, opt):       save the figure
-        **kwargs:               additional arguments
-
-    Kwargs:
-        - loglevel (str,opt):   log level for the logger, default is 'WARNING'
-        - model (str,opt):      model name
-        - exp (str,opt):        experiment name
-        - figsize (tuple,opt):  figure size, default is (11, 8.5)
-        - nlevels (int,opt):    number of levels for the colorbar, default is 11
-        - title (str,opt):      title for the figure
-        - cb_label (str,opt):   label for the colorbar
-        - outputdir (str,opt):  output directory for the figure, default is '.' (current directory)
-        - filename (str,opt):   filename for the figure, default is 'maps.png'
+        model (str,opt):        model name
+        exp (str,opt):          experiment name
+        figsize (tuple,opt):    figure size, default is (11, 8.5)
+        nlevels (int,opt):      number of levels for the colorbar, default is 12
+        title (str,opt):        title for the figure
+        cb_label (str,opt):     label for the colorbar
+        outputdir (str,opt):    output directory for the figure, default is '.' (current directory)
+        filename (str,opt):     filename for the figure, default is 'maps.png'
+        sym (bool,opt):         symmetrical colorbar, default is True
+        loglevel (str,opt):     log level for the logger, default is 'WARNING'
 
     Raises:
         ValueError: if no map is provided
     """
-    loglevel = kwargs.get('loglevel', 'WARNING')
     logger = log_configure(loglevel, 'Single map')
 
     if map is None:
@@ -172,22 +168,11 @@ def single_map_plot(map=None, save=False, **kwargs):
     # Add cyclic longitude
     map = add_cyclic_lon(map)
 
-    # Evaluate min and max values for the common colorbar
-    vmin, vmax = minmax_maps([map])
-    logger.debug('Min value for the colorbar: {}'.format(vmin))
-    logger.debug('Max value for the colorbar: {}'.format(vmax))
+    vmin, vmax = evaluate_colorbar_limits(maps=[map], sym=sym)
 
-    model = kwargs.get('model')
-    exp = kwargs.get('exp')
-
-    # Generate the figure
-    figsize = kwargs.get('figsize', (11, 8.5))
-
+    # Generate the figure)
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()},
                            figsize=figsize)
-
-    # Set the number of levels for the colorbar
-    nlevels = kwargs.get('nlevels', 10)
 
     # Plot the map
     try:
@@ -202,7 +187,6 @@ def single_map_plot(map=None, save=False, **kwargs):
                            extend='both', vmin=vmin, vmax=vmax)
 
     # Title
-    title = kwargs.get('title')
     if title is not None:
         ax.set_title(title)
     else:
@@ -232,7 +216,6 @@ def single_map_plot(map=None, save=False, **kwargs):
     cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.02])
 
     # Add the colorbar
-    cbar_label = kwargs.get('cbar_label')
     if cbar_label is not None:
         fig.colorbar(cs, cax=cbar_ax, orientation='horizontal',
                      label=cbar_label)
@@ -245,15 +228,11 @@ def single_map_plot(map=None, save=False, **kwargs):
 
     # Save the figure
     if save is True:
-        outputdir = kwargs.get('outputdir', '.')
-
         # check the outputdir exists and create it if necessary
         if not os.path.exists(outputdir):
             logger.info('Creating output directory {}'.format(outputdir))
             os.makedirs(outputdir)
-        try:
-            filename = kwargs.get('filename')
-        except ValueError:
+        if filename is None:
             try:
                 filename = model + '_' + exp + '.pdf'
             except ValueError:
@@ -265,33 +244,33 @@ def single_map_plot(map=None, save=False, **kwargs):
 
 
 def maps_diffs_plot(maps=None, diffs=None, models=None, exps=None,
-                    titles=None, save=False, **kwargs):
+                    titles=None, save=False, figsize=(11, 8.5),
+                    vmin_diff=None, vmax_diff=None,
+                    sym=True, nlevels=12,
+                    cbar_label=None, title=None, outputdir='.',
+                    filename='maps.png', loglevel='WARNING'):
     """
     Plot maps (regression, correlation, etc.)
     A list of xarray.DataArray objects is expected
     and a map is plotted for each of them
 
     Args:
-        maps (list):        list of xarray.DataArray objects
-        diffs (list):       list of xarray.DataArray objects
-        models (list):      list of models
-        exps (list):        list of experiments
-        titles (list, opt): list of titles for each map
-                            overrides models and exps standard titles
-        save (bool, opt):   save the figure
-        **kwargs:           additional arguments
-
-    Kwargs:
-        - loglevel (str,opt):      log level for the logger, default is 'WARNING'
-        - figsize (tuple,opt):     figure size, default is (11, 8.5)
-        - vmin_diff (float,opt):   min value for the colorbar of the differences
-        - vimax_diff (float,opt):  max value for the colorbar of the differences
-        - nlevels (int,opt):       number of levels for the colorbar, default is 11
-        - cbar_label (str,opt):    label for the colorbar
-        - outputdir (str,opt):     output directory for the figure, default is '.' (current directory)
-        - filename (str,opt):      filename for the figure, default is 'map.png'
+        maps (list):             list of xarray.DataArray objects
+        diffs (list):            list of xarray.DataArray objects
+        models (list):           list of models
+        exps (list):             list of experiments
+        titles (list, opt):      list of titles for each map
+                                 overrides models and exps standard titles
+        save (bool, opt):        save the figure
+        figsize (tuple,opt):     figure size, default is (11, 8.5)
+        vmin_diff (float,opt):   min value for the colorbar of the differences
+        vimax_diff (float,opt):  max value for the colorbar of the differences
+        nlevels (int,opt):       number of levels for the colorbar, default is 12
+        cbar_label (str,opt):    label for the colorbar
+        outputdir (str,opt):     output directory for the figure, default is '.' (current directory)
+        filename (str,opt):      filename for the figure, default is 'map.png'
+        loglevel (str,opt):      log level for the logger, default is 'WARNING'
     """
-    loglevel = kwargs.get('loglevel', 'WARNING')
     logger = log_configure(loglevel, 'Multiple maps and differences')
 
     if maps is None:
@@ -304,7 +283,6 @@ def maps_diffs_plot(maps=None, diffs=None, models=None, exps=None,
 
     # Generate the figure
     nrows, ncols = plot_box(len(maps))
-    figsize = kwargs.get('figsize', (11, 8.5))
 
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols,
                             subplot_kw={'projection': ccrs.PlateCarree()},
@@ -312,16 +290,14 @@ def maps_diffs_plot(maps=None, diffs=None, models=None, exps=None,
     axs = axs.flatten()
 
     # Evaluate min and max values for the common colorbar
-    vmin, vmax = minmax_maps(maps)
+    vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
     logger.debug('Min value for the colorbar: {}'.format(vmin))
     logger.debug('Max value for the colorbar: {}'.format(vmax))
 
     if diffs is not None:
-        vmin_diff = kwargs.get('vmin_diff', None)
-        vmax_diff = kwargs.get('vmax_diff', None)
-
         if vmin_diff is None or vmax_diff is None:
-            vmin_diff, vmax_diff = minmax_maps(diffs)
+            vmin_diff, vmax_diff = evaluate_colorbar_limits(maps=diffs,
+                                                            sym=sym)
         logger.info('Min value for the colorbar (diffs): {}'.format(vmin_diff))
         logger.info('Max value for the colorbar (diffs): {}'.format(vmax_diff))
 
@@ -330,9 +306,6 @@ def maps_diffs_plot(maps=None, diffs=None, models=None, exps=None,
         if i >= len(maps):
             axs[i].axis('off')
             logger.debug('Dropping unused axes {}'.format(i))
-
-    # Set the number of levels for the colorbar
-    nlevels = kwargs.get('nlevels', 11)
 
     # Plot the maps
     for i in range(len(maps)):
@@ -344,16 +317,18 @@ def maps_diffs_plot(maps=None, diffs=None, models=None, exps=None,
 
         # Contour plot
         cs = maps[i].plot.contourf(ax=axs[i], transform=ccrs.PlateCarree(),
-                                cmap='RdBu_r', levels=nlevels,
-                                add_colorbar=False, add_labels=False,
-                                extend='both', vmin=vmin, vmax=vmax)
+                                   cmap='RdBu_r', levels=nlevels,
+                                   add_colorbar=False, add_labels=False,
+                                   extend='both', vmin=vmin, vmax=vmax)
 
         # Line contours with diffs
         if diffs is not None:
             try:
-                ds = diffs[i].plot.contour(ax=axs[i], transform=ccrs.PlateCarree(),
-                                      colors='k', levels=10, linewidths=0.5,
-                                      vmin=vmin_diff, vmax=vmax_diff)
+                ds = diffs[i].plot.contour(ax=axs[i],
+                                           transform=ccrs.PlateCarree(),
+                                           colors='k', levels=10,
+                                           linewidths=0.5,
+                                           vmin=vmin_diff, vmax=vmax_diff)
 
                 axs[i].clabel(ds, fmt='%1.1f', fontsize=6, inline=True)
             except IndexError:
@@ -391,19 +366,15 @@ def maps_diffs_plot(maps=None, diffs=None, models=None, exps=None,
     fig.colorbar(cs, cax=cbar_ax, orientation='horizontal')
 
     # Colorbar label
-    cbar_label = kwargs.get('cbar_label', '')
     if cbar_label is not None:
         cbar_ax.set_xlabel(cbar_label)
 
     # Add a super title
-    title = kwargs.get('title')
     if title is not None:
         fig.suptitle(title, fontsize=16)
 
     # Save the figure
     if save is True:
-        outputdir = kwargs.get('outputdir', '.')
-        filename = kwargs.get('filename', 'maps.png')
         logger.info('Saving figure to {}/{}'.format(outputdir, filename))
         fig.savefig('{}/{}'.format(outputdir, filename), format='pdf',
                     dpi=300, bbox_inches='tight')

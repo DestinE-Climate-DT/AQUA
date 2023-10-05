@@ -12,8 +12,8 @@ singularity shell \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
-    --bind /pfs/lustrep3/scratch/project_465000454 \
-    --bind /scratch/project_465000454 \
+    --bind /pfs/lustrep3/ \
+    --bind /scratch/ \
     $AQUA_container
 # Run this script in LUMI in VSCode 
 

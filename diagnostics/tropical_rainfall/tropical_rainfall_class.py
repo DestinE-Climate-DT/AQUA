@@ -488,9 +488,13 @@ class Tropical_Rainfall:
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
-        size_of_the_data = data_size(data)
-        data_with_final_grid = data
 
+        size_of_the_data = data_size(data)
+
+        if new_unit is not None:
+            data = self.precipitation_rate_units_converter(
+                data, model_variable=model_variable, new_unit=new_unit)
+        data_with_final_grid = data
         if weights is not None:
 
             weights = self.latitude_band(weights, trop_lat=self.trop_lat)
@@ -545,11 +549,10 @@ class Tropical_Rainfall:
         if not lazy and create_xarray:
             tprate_dataset = counts_per_bin.to_dataset(name="counts")
             tprate_dataset.attrs = data_with_global_atributes.attrs
-            # , path_to_histogram = path_to_histogram)
             tprate_dataset = self.add_frequency_and_pdf(
                 tprate_dataset=tprate_dataset, test=test)
 
-            mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_original, old_unit=data.units, new_unit=new_unit,
+            mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
                                                                                     model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
             relative_discrepancy = abs(
                 mean_modified - mean_from_hist)*100/mean_modified
@@ -635,6 +638,10 @@ class Tropical_Rainfall:
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
         size_of_the_data = data_size(data)
+
+        if new_unit is not None:
+            data = self.precipitation_rate_units_converter(
+                data, model_variable=model_variable, new_unit=new_unit)
         data_with_final_grid = data
 
         if seasons is not None:
@@ -721,7 +728,7 @@ class Tropical_Rainfall:
                 tprate_dataset = self.add_frequency_and_pdf(
                     tprate_dataset=tprate_dataset, test=test, label=seasonal_or_monthly_labels[i])
 
-        mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_original, old_unit=data.units, new_unit=new_unit,
+        mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
                                                                                 model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
         relative_discrepancy = (
             mean_original - mean_from_hist)*100/mean_original
@@ -786,11 +793,6 @@ class Tropical_Rainfall:
                     0] + '_' + re.split(":", re.split(", ", time_band)[1])[0] + '_' + re.split("=", re.split(", ", time_band)[2])[1]
             except IndexError:
                 name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
-                # try:
-                #    name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
-                # except IndexError:
-                #    name_of_file = name_of_file + '_' + \
-                #        re.split("'", re.split(":", time_band)[0])[0]
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
             dataset.to_netcdf(path=path_to_netcdf)
@@ -820,7 +822,10 @@ class Tropical_Rainfall:
                 time_band = str(
                     data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(time_interpreter(data))
             else:
-                time_band = str(data.time.values)
+                try:
+                    time_band = str(data.time.values[0])
+                except IndexError:
+                    time_band = str(data.time.values)
         except KeyError:
             time_band = 'None'
         try:
@@ -832,7 +837,7 @@ class Tropical_Rainfall:
                     ', freq='+str(latitude_step)
             else:
                 lat_band = data[coord_lat].values
-                latitude_step = data[coord_lat].values
+                latitude_step = 'None'
         except KeyError:
             lat_band = 'None'
             latitude_step = 'None'
@@ -844,7 +849,7 @@ class Tropical_Rainfall:
                     str(data[coord_lon][-1].values) + \
                     ', freq='+str(longitude_step)
             else:
-                longitude_step = data[coord_lon].values
+                longitude_step = 'None'
                 lon_band = data[coord_lon].values
         except KeyError:
             lon_band = 'None'
@@ -902,13 +907,12 @@ class Tropical_Rainfall:
                 tprate_dataset['counts'+label],  test=test)
             tprate_dataset['pdf'+label] = hist_pdf
         if path_to_histogram is not None and name_of_file is not None:
-
             if isinstance(self.bins, int):
                 bins = [self.first_edge + i *
                         self.width_of_bin for i in range(0, self.num_of_bins+1)]
             else:
                 bins = self.bins
-            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins))
+            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
             bins_info = bins_info.replace('.', '-')
             self.dataset_to_netcdf(
                 dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
@@ -955,7 +959,6 @@ class Tropical_Rainfall:
                     if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute] and attribute not in 'time_band':
                         dataset_3.attrs[attribute] = str(
                             tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
-                    
                     elif attribute in 'time_band':
                         dataset_3.attrs['time_band_history'] = str(
                             tprate_dataset_1.attrs['time_band']) + ';\n '+str(tprate_dataset_2.attrs['time_band'])
@@ -1074,8 +1077,6 @@ class Tropical_Rainfall:
                     filter(None, re.split(r"[^0-9\s]", name_of_file)))
                 syear, fyear = int(splitted_name[-8]), int(splitted_name[-4])
                 smonth, fmonth = int(splitted_name[-7]), int(splitted_name[-3])
-                # sday, fday = int(splitted_name[-6]), int(splitted_name[-2])
-                # shour, fhour = int(splitted_name[-5]), int(splitted_name[-1])
 
                 if syear == fyear:
                     if fmonth - smonth == 1:
@@ -1139,7 +1140,7 @@ class Tropical_Rainfall:
         sum_of_frequency = sum(frequency_per_bin[:])
 
         if test:
-            if sum(data[:]) == 0 or abs(sum_of_frequency - 1) < 10**(-4):  # 10**(-4)
+            if sum(data[:]) == 0 or abs(sum_of_frequency - 1) < 10**(-4):
                 pass
             else:
                 self.logger.debug('Sum of Frequency: {}'

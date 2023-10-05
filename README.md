@@ -10,21 +10,18 @@ Diagnostics can be introduced within the AQUA framework making use of a specific
 
 ## Installation
 
-The code works on both py3.10 and py3.9.  Recommended installation through mamba (a package manager for conda-forge)
+The code works with python>=3.9.  Recommended installation through mamba (a package manager for conda-forge)
 
 ### create conda/mamba environment and install packages
 ```
 git clone git@github.com:oloapinivad/AQUA.git
 cd AQUA
-mamba env create -f environment.yml
-conda activate aqua
+mamba env create -f environment-common.yml
+conda activate aqua_common
 ```
 
 Some diagnostics of aqua require extra conda or pip dependencies and have their environment files (for example, `teleconnections/env-teleconnections.yml` or `diagnostics/tropical_rainfall/env-tropical-rainfall.yml`).
-For simplicity, we provide the user with an additional environment file, `environment-common.yml `, which contains all standard dependencies of aqua and extra dependencies for each diagnostic:
-``` 
-mamba env create -f environment-common.yml 
-``` 
+For simplicity, we provide them already in the environment file, `environment-common.yml `, which contains all standard dependencies of aqua and extra dependencies for each diagnostic. 
 
 ## Examples
 
@@ -38,7 +35,7 @@ It should come down to:
 
 ```
 pip install ipykernel
-python -m ipykernel install --user --name aqua --display-name="aqua"
+python -m ipykernel install --user --name aqua_common --display-name="aqua_common"
 ```
 
 ## Contributing guide

@@ -28,27 +28,28 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
+    "cartopy",
     "cfgrib",
     "dask",
     "dask_jobqueue",
     "docker",
     "gribscan",
     "ecCodes",
+    "pandas",
     "intake",
-    "intake-esm>=2023.4.20",
+    "intake-esm",
     "intake-xarray",
     "jinja2",
+    "matplotlib",
     "metpy",
     "numpy",
-    "pandas",
-    "pydantic<2.0.0",
+    "pydantic",
     "pyYAML",
-    "matplotlib",
     "ruamel.yaml",
+    "smmregrid",
     "sparse",
     "xarray",
-    "smmregrid",
-    "one_pass@git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@v0.3.3",
+    "one_pass@git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@master",
     "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git"
 ]
@@ -69,10 +70,24 @@ tests = [
     "pandoc",
     "pycobertura"
 ]
+# Here we list the packages that are required for each diagnostic
+# The syntax is "aqua[diagnostic_name]"
+# If a diagnostic is missing it means that it needs no extra dependencies
+ecmean = [
+    "ECmean4"
+]
+tropical-rainfall = [
+    "boost_histogram",
+    "dask_histogram",
+    "fast_histogram"
+]
 all = [
     "aqua[docs]",
     "aqua[notebooks]",
-    "aqua[tests]"
+    "aqua[tests]",
+    # diagnostics
+    "aqua[ecmean]",
+    "aqua[tropical-rainfall]"
 ]
 
 [project.urls]

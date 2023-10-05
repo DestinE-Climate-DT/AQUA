@@ -21,4 +21,12 @@ sources:
       timestyle: step
     description: 'FDB data tco399 grid'
     driver: gsv
-    metadata: {fdb_path: /scratch/project_465000454/igonzalez/fdb-long/config.yaml}
+    metadata:
+      fdb_path: /scratch/project_465000454/igonzalez/fdb-long/config.yaml
+      variables: ['sro', 'ssro', 'ci', 'rsn', 'sst', 'swvl1', 'swvl2', 'swvl3', 'swvl4',
+                  'tclw', 'tciw', 'sp', 'tcwv', 'stl1', 'sd',
+                  'sf', 'sshf', 'slhf', 'msl', 'tcc', '10u', '10v', '2t', '2d', 'ssrd',
+                  'stl2', 'lsm', 'strd', 'ssr', 'str', 'tsr', 'ttr', 'ewss', 'nsss',
+                  'stl3', 'lgws', 'mgws', 'tisr', 'tp', 'skt', 'stl4','so', 'ocu', 'ocv',
+                  'zos', 't20d', 'tav300', 'sav300', 'sithick', 'fdir', 'i10fg', 'tcrw',
+                  'tcsw', 'ssrdc', '100u', '100v']

@@ -11,7 +11,7 @@ import numpy as np
 import cf2cdm
 from metpy.units import units
 
-from aqua.util import eval_formula, get_eccodes_attr
+from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction
 from aqua.logger import log_history
 
 
@@ -280,7 +280,7 @@ class FixerMixin():
                 tgt_units = self._override_tgt_units(tgt_units, varfix, var)
 
                 if "units" not in data[source].attrs:  # Houston we have had a problem, no units!
-                    self.logger.error('Variable %s has no units!', var)
+                    self.logger.error('Variable %s has no units!', source)
 
                 # adjust units
                 if tgt_units:
@@ -617,6 +617,7 @@ class FixerMixin():
                 data.height.attrs["standard_name"] = "air_pressure"
                 data.height.attrs["long_name"] = "pressure"
 
+        lat_coord, lat_dir = find_lat_dir(data)
         # this is needed since cf2cdm issues a (useless) UserWarning
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
@@ -624,6 +625,8 @@ class FixerMixin():
             # Hack needed because cfgrib.cf2cdm mixes up coordinates with dims
             if "forecast_reference_time" in data.dims:
                 data = data.swap_dims({"forecast_reference_time": "time"})
+        
+        check_direction(data, lat_coord, lat_dir)  # set 'flipped' attribute if lat direction has changed
         return data
 
     def convert_units(self, src, dst, var="input var"):

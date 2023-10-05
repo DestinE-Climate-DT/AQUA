@@ -2,7 +2,7 @@ Tests
 =====
 
 Testing is an essential part of developing and maintaining a robust Python package.
-Our package uses `pytest`, a widely-used testing framework in the Python ecosystem, 
+Our package uses ``pytest``, a widely-used testing framework in the Python ecosystem, 
 for writing and running tests. 
 
 Continuous Integration/Continuous Deployment (CI/CD) is currently handled by GitHub Actions, 
@@ -12,7 +12,7 @@ In the future (CI/CD) will also be run on HPC systems.
 Running Tests Locally
 ---------------------
 
-Before running tests locally, ensure you have installed all the necessary dependencies, including `pytest`.
+Before running tests locally, ensure you have installed all the necessary dependencies, including ``pytest``.
 
 To run the test suite, navigate to the root directory of the project and run the following:
 
@@ -20,7 +20,7 @@ To run the test suite, navigate to the root directory of the project and run the
 
     ./download_data_for_tests.sh
 
-This will download the data needed for the tests and change the machine name in the `config/config.yaml` to `ci`. 
+This will download the data needed for the tests and change the machine name in the ``config/config-aqua.yaml`` to ``ci``. 
 Remember to change it to your machine name after the tests are finished.
 
 Then, run the following command:
@@ -29,7 +29,7 @@ Then, run the following command:
 
     python -m pytest ./tests/test_basic.py
 
-This will run the basic test suite and print the results to the terminal. Have a look at the `tests` directory for more tests.
+This will run the basic test suite and print the results to the terminal. Have a look at the ``tests`` directory for more tests.
 
 
 Writing Tests
@@ -58,11 +58,11 @@ Continuous Integration (CI)
 We use GitHub Actions for Continuous Integration. 
 GitHub Actions automatically runs our test suite on Python 3.10 whenever a change is pushed to the repository.
 
-The configuration for GitHub Actions is located in the `.github/workflows` directory. 
+The configuration for GitHub Actions is located in the ``.github/workflows`` directory. 
 
 Test Coverage
 -------------
 
-We are currently implementing test coverage using `pytest-cov`.
+We are currently implementing test coverage using ``pytest-cov``.
 
 

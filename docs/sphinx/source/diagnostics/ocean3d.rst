@@ -6,8 +6,8 @@ Description
 
 This package contains two submodules to monitor and evaluate the 3D ocean evolution and mean state:
 
-`Ocean Drifts` to characterise and monitor model drifts 
-`Ocean Circulation` to evaluate the realism of the model in simulating key precursors of the ocean circulation
+``Ocean Drifts` to characterise and monitor model drifts 
+``Ocean Circulation`` to evaluate the realism of the model in simulating key precursors of the ocean circulation
 
 All these diagnostics are produced in a consistent way, for a selected model simulation.
 
@@ -16,18 +16,18 @@ Structure
 
 The ocean3d diagnostic follows a class structure and consists of the files:
 
-* `ocean_drifts.py`: a python file that contains the functions that are specific for the computation of the ocean drift diagnostics;
-* `ocean_circulation.py`: a python file that contains the functions that are specific for the computation of the ocean circulation diagnostics;
-* `ocean_utils.py`: a python file that contains functions that are used in both ocean3d diagnostic modules; 
-* `notebooks/ocean_drifts.ipynb`: an ipython notebook with examples on how to apply the ocean drift diagnostics;
-* `notebooks/ocean_circulation.ipynb`: an ipython notebook with examples on how to apply the ocean circulation diagnostics;
-* `README.md` : a readme file which contains some tecnical information on how to install the ocean3d diagnostic and its environment. 
+* ``ocean_drifts.py``: a python file that contains the functions that are specific for the computation of the ocean drift diagnostics;
+* ``ocean_circulation.py``: a python file that contains the functions that are specific for the computation of the ocean circulation diagnostics;
+* ``ocean_utils.py``: a python file that contains functions that are used in both ocean3d diagnostic modules; 
+* ``notebooks/ocean_drifts.ipynb``: an ipython notebook with examples on how to apply the ocean drift diagnostics;
+* ``notebooks/ocean_circulation.ipynb``: an ipython notebook with examples on how to apply the ocean circulation diagnostics;
+* ``README.md`` : a readme file which contains some tecnical information on how to install the ocean3d diagnostic and its environment. 
 
 Input variables example
 ------------------------
 
-* ocpt (Ocean potential temperature, GRIB paramid 150129)
-* so     (Sea water practical salinity, GRIB paramid 151130)
+* ``ocpt`` (Ocean potential temperature, GRIB paramid 150129)
+* ``so``     (Sea water practical salinity, GRIB paramid 151130)
 
 
 
@@ -47,8 +47,10 @@ Functions used
                             output= False, output_dir= None)
 
 *hovmoller_lev_time_plot*: This function requires data, a region, and the type of data processing. 
-It produces a Hovmöller plot of regionally averaged temperature and salinity with the selected preprocessing of the data (e.g., whether anomalies are computed and how, and whether they are normalized or not). 
-The region name supports all the major oceans and seas, in case users require a custom region, they can fill in the values of latitude, and longitude in the boxes as desired.
+It produces a Hovmöller plot of regionally averaged temperature and salinity with the selected
+preprocessing of the data (e.g., whether anomalies are computed and how, and whether they are normalized or not). 
+The region name supports all the major oceans and seas, in case users require a custom region,
+they can fill in the values of latitude, and longitude in the boxes as desired.
 
 
 .. code-block:: python
@@ -59,8 +61,10 @@ The region name supports all the major oceans and seas, in case users require a 
                           output= True, output_dir = None)
 
 *time_series_multilevs*: This function requires data, a region, the type of data processing, and optional depth levels. 
-It produces time series plots of regionally averaged temperature and salinity with the selected preprocessing of the data for a predefined or customized list of vertical levels. 
-The region name supports all the major oceans and seas, in case users require a custom region, they can fill in the values of latitude, and longitude in the boxes.
+It produces time series plots of regionally averaged temperature and salinity with the selected preprocessing of the data
+for a predefined or customized list of vertical levels. 
+The region name supports all the major oceans and seas, in case users require a custom region,
+they can fill in the values of latitude, and longitude in the boxes.
 
 
 .. code-block:: python
@@ -70,8 +74,10 @@ The region name supports all the major oceans and seas, in case users require a 
                               output=True, output_dir= None)
 
 *multilevel_t_s_trend_plot*: This function requires data, a region, and optional depth levels. 
-It produces lon-lat maps of linear temporal trends of temperature and salinity over the selected region for a predefined or customized list of vertical levels. 
-The region name supports all the major oceans and seas, in case users require a custom region, they can fill in the values of latitude, and longitude in the boxes.
+It produces lon-lat maps of linear temporal trends of temperature and salinity over the selected
+region for a predefined or customized list of vertical levels. 
+The region name supports all the major oceans and seas, in case users require a custom region,
+they can fill in the values of latitude, and longitude in the boxes.
 
 
 .. code-block:: python
@@ -82,8 +88,8 @@ The region name supports all the major oceans and seas, in case users require a 
 
 *Zonal Mean Trend Plot*: This function requires data for a region. 
 It produces plots of zonally averaged linear temporal trends plot of temperature and salinity as a function of depth and latitude. 
-The zonal average is produced over the selected region, whose name supports all the major oceans and seas; in case users require a custom region, 
-they can fill in the values of latitude and longitude in the boxes.
+The zonal average is produced over the selected region, whose name supports all the major oceans and seas;
+in case users require a custom region, they can fill in the values of latitude and longitude in the boxes.
 
 
 .. code-block:: python
@@ -94,7 +100,8 @@ they can fill in the values of latitude and longitude in the boxes.
 
 *Stratification plot*: This function requires data, a region, and the time of the climatology. 
 It produces a stratification plot of Temperature, salinity and Density, including the overlapped data with the observation. 
-The region name supports all the major oceans and seas, in case users require a custom region, they can fill in the values of latitude, and longitude in the boxes.
+The region name supports all the major oceans and seas, in case users require a custom region, they can fill in the values of latitude,
+and longitude in the boxes.
 
 
 .. code-block:: python
@@ -106,7 +113,8 @@ The region name supports all the major oceans and seas, in case users require a 
 Mixed Layer Depth Plot: This function requires data, a region, and the time of the climatology. 
 It produces a time series plot of temperature and salinity.
 Users have the option of choosing whether they want to use the whole obs data or overlapped obs data with the model. 
-The region name supports all the major oceans and seas; in case users require a custom region, they can fill in the values of latitude, and longitude in the boxes.
+The region name supports all the major oceans and seas; in case users require a custom region, they can fill in the values of latitude,
+and longitude in the boxes.
 
 
 Methods used 
@@ -115,9 +123,11 @@ All regional averages have been produced with area weights.
 
 Temporal trends are computed as linear trends and estimated over the whole temporal span of the dataset.
 
-The mixed layer depth is computed by the function `compute_mld_cont` from sigma0 monthly fields following the criteria from de Boyer Montegut et al (2004)
+The mixed layer depth is computed by the function ``compute_mld_cont`` from sigma0 monthly fields following the criteria from de Boyer Montegut et al (2004)
 
-Density fields are computed from absolute salinity and conservative temperature fields using the TEOS-10 equations. Absolute salinity and conservative temperature are also computed from practical salinity and potential temperature fields with TEOS-10 equations.
+Density fields are computed from absolute salinity and conservative temperature fields using the TEOS-10 equations.
+Absolute salinity and conservative temperature are also computed from practical salinity and potential temperature fields with
+TEOS-10 equations.
 
 
 Observations  

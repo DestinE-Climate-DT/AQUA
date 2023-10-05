@@ -17,14 +17,14 @@ Basic Concepts
 --------------
 
 The LRA is basically a wrapper of the functionalities included in AQUA, combining the regridding, the fixing
-and time averaging capabilities. A specific class `LRAgenerator` has been developed, using `dask` in order to exploit parallel
+and time averaging capabilities. A specific class ``LRAgenerator`` has been developed, using ``dask`` in order to exploit parallel
 computations, and can be investigated in a the `LRA generator notebook <https://github.com/oloapinivad/AQUA/blob/main/notebooks/lra_generator/lra_generator.ipynb>`_
 
 Access to the LRA
 -----------------
 
-Once the LRA has been generated, access is possible via the standard `Reader` interface.
-The only difference is that a specific source must be defined, following the syntax `lra-$resolution-$frequency`
+Once the LRA has been generated, access is possible via the standard ``Reader`` interface.
+The only difference is that a specific source must be defined, following the syntax ``lra-$resolution-$frequency``
 
 .. code-block:: python
 
@@ -35,22 +35,22 @@ The only difference is that a specific source must be defined, following the syn
 
 .. note ::
 
-    LRA built available on Levante and Lumi by AQUA team are all at `r100` (i.e. 1 deg resolution) and at `monthly` or `daily` frequency
+    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg resolution) and at ``monthly`` or ``daily`` frequency
 
 Generation of the LRA
 ---------------------
 
 Given the character of the computation required, the standard approach is to use the LRA through a command line 
-interface (CLI) which is available in `cli/lra/cli_lra_generator.py`
+interface (CLI) which is available in ``cli/lra/cli_lra_generator.py``
 
-The configuration of the CLI is done via a YAML file that can be build from the `lra_config.tmpl` template, which include the target resolution, the target frequency,
-the temporary directory and the directory where you want to store the obtained LRA. A template for the file is included in the folder.
+The configuration of the CLI is done via a YAML file that can be build from the ``lra_config.tmpl`` template, which include the target resolution, the target frequency,
+the temporary directory and the directory where you want to store the obtained LRA.
+A template for the file is included in the folder.
 
-Other options includes the logging level and the usage of the One Pass Algorithm to produce the temporal
-aggregation.
+Other options includes the logging level and the usage of the One Pass Algorithm to produce the temporal aggregation.
 
-Most importantly, you have to edit the entries of the `catalog` dictionary, which follows the model-exp-source hierarchy.
-On top of that you must specify the variables you want to produce under the `vars` key.
+Most importantly, you have to edit the entries of the ``catalog`` dictionary, which follows the model-exp-source hierarchy.
+On top of that you must specify the variables you want to produce under the ``vars`` key.
 
 
 Usage
@@ -99,7 +99,7 @@ A basic example usage can thus be:
 .. warning ::
 
     Keep in mind that this script is ideally submitted via batch to a HPC node, 
-    so that a template for SLURM is also available in the same directory (`lra-submitter.tmpl`). 
+    so that a template for SLURM is also available in the same directory (``lra-submitter.tmpl``). 
     Be aware that although the computation is split among different months, the memory consumption of loading very big data
     is a limiting factor, so that unless you have very fat node it is unlikely you can use more than 16 nodes
 
@@ -111,12 +111,11 @@ Further LRA CLI tools
 
 Due to integration with workflow, two other CLI tools are available to generate the LRA in a more complex environment accessing data from the GSV
 
-- `cli_lra_workflow.py` is the LRA generator used within the DE340 workflow. It is made to work from OPA output and then process them to fix and standardize it.
-Please refer to workflow developers to get more information on how to use this tool. A template configuration file `workflow_lra.tmpl` is included in the folder.
-The usage is the same as the main LRA generator script discussed above. 
+- ``cli_lra_workflow.py`` is the LRA generator used within the DE340 workflow. It is made to work from OPA output and then process them to fix and standardize it.
+  Please refer to workflow developers to get more information on how to use this tool. A template configuration file ``workflow_lra.tmpl`` is included in the folder.
+  The usage is the same as the main LRA generator script discussed above. 
 
-
--  `cli_lra_streaming.py` is used to generate a LRA starting from an access to the GSV, plus calling the OPA and the LRA generator. 
-Currently this script is extremely sperimental and its usage is not recommended. 
+- ``cli_lra_streaming.py`` is used to generate a LRA starting from an access to the GSV, plus calling the OPA and the LRA generator. 
+  Currently this script is extremely sperimental and its usage is not recommended. 
 
     

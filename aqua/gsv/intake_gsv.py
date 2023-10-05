@@ -1,9 +1,9 @@
 """An intake driver for FDB/GSV access"""
 import os
-
 import datetime
 import sys
 import io
+import eccodes
 import xarray as xr
 import dask
 from intake.source import base
@@ -66,8 +66,10 @@ class GSVSource(base.DataSource):
         
         if metadata:
             self.fdbpath = metadata.get('fdb_path', None)
+            self.eccodes_path = metadata.get('eccodes_path', None)
         else:
             self.fdbpath = None
+            self.eccodes_path = None
 
         if not startdate:
             startdate = data_start_date
@@ -184,6 +186,11 @@ class GSVSource(base.DataSource):
 
         if self.fdbpath:  # if fdbpath provided, use it, since we are creating a new gsv
             os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
+
+        if self.eccodes_path:  # if needed switch eccodes path
+            if self.eccodes_path and (self.eccodes_path != eccodes.codes_definition_path()):  # unless we have already switched
+                eccodes.codes_context_delete()  # flush old definitions in cache
+                eccodes.codes_set_definitions_path(self.eccodes_path)
 
         gsv = GSVRetriever()  # for some reason this is needed here and not in init
 

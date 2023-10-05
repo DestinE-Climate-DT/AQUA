@@ -21,9 +21,9 @@ singularity exec  \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk  \
-    --bind /pfs/lustrep3/scratch/project_465000454  \
-    --bind /scratch/project_465000454  \
-    /project/project_465000454/containers/aqua/aqua-v0.3.sif \
+    --bind /pfs/lustrep3/ \
+    --bind /scratch/ \
+    $AQUA_container \
     bash -c \
     
     ' 
