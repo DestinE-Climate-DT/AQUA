@@ -15,18 +15,13 @@ class_attributes:
 plot:
   color: 'tab:green'
   figsize: 1
-  legend: 'ICON_ngc3028_lra'
+  legend: '_Hidden'
   xmax: 100
-  plot_title: 'Monthly, 1 degree res (100km)'
   loc: 'upper right'
-  pdf_format: False
+  pdf_format: True
 
 path:
   path_to_output: "/work/bb1153/b382267/tropical_rainfall_cicle3/"
-  #path_to_netcdf: "/work/bb1153/b382267/tropical_rainfall_cicle3/NetCDF/histograms/"
-  #path_to_pdf: "/work/bb1153/b382267/tropical_rainfall_cicle3/NetCDF/PDF/"
-  name_of_netcdf: "ICON_ngc3028_lra"
-  name_of_pdf: "ICON_ngc3028_lra"
 
 slurm:
   waiting_time: 60

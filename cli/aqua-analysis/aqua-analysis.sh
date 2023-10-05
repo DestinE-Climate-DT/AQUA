@@ -9,8 +9,8 @@ model_oce="NEMO"
 exp="control-1950-devcon"
 source="lra-r100-monthly"
 
-outputdir="/scratch/project_465000454/nurissom/cli_outpturdir"
-aqua="/users/nurissom/AQUA"
+outputdir="/work/bb1153/b382267/cli_test"
+aqua="/work/bb1153/b382267/AQUA"
 
 # Set as true the diagnostics you want to run
 # -------------------------------------------
@@ -22,6 +22,7 @@ ocean3d=false
 radiation=false
 seaice=false
 teleconnection=false
+tropical_rainfall=true
 
 # End of user defined variables
 # -----------------------------
@@ -78,6 +79,13 @@ if [ "$teleconnection" = true ] ; then
   echo "Running teleconnection"
   python $aqua/diagnostics/teleconnection/cli/cli_teleconnection.py $args_atm --outputdir $outputdir/teleconnection --config $aqua/diagnostics/teleconnection/cli/config_atm.yaml
   python $aqua/diagnostics/teleconnection/cli/cli_teleconnection.py $args_oce --outputdir $outputdir/teleconnection --config $aqua/diagnostics/teleconnection/cli/config_oce.yaml
+fi
+
+if [ "$tropical_rainfall" = true ] ; then
+  echo "Running tropical rainfall"
+  cd $aqua/diagnostics/tropical_rainfall/cli
+  python $aqua/diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py $args_atm --outputdir $outputdir/tropical_rainfall
+  cd $aqua/cli/aqua-analysis
 fi
 
 echo "Finished"
