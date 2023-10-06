@@ -230,25 +230,11 @@ class TCs(DetectNodes, StitchNodes):
 
         # now retrieve 2d and 3d data needed
         else:
-
-            # Retrieve data and append it to the list
-            data2d1=self.reader2d.retrieve(vars=self.varlist2d[3]).load()
-            data2d2=self.reader2d.retrieve(vars=self.varlist2d[1]).load()
-            data2d3=self.reader2d.retrieve(vars=self.varlist2d[2]).load()
-            data2d4=self.reader2d.retrieve(vars=self.varlist2d[0]).load()
-
-
-            self.data2d=xr.merge([data2d1,data2d2,data2d3,data2d4])
-
+            self.data2d = self.reader2d.retrieve(vars=self.varlist2d)
             self.data3d = self.reader3d.retrieve(vars=self.varlist3d)
+            self.fullres = self.reader_fullres.retrieve(var=self.var2store)
 
 
-            fullres1 = self.reader_fullres.retrieve(var=self.var2store[0])
-            fullres2 = self.reader_fullres.retrieve(var=self.var2store[1])
-            fullres3 = self.reader_fullres.retrieve(var=self.var2store[2])
-            fullres4 = self.reader_fullres.retrieve(var=self.var2store[3])
-
-            self.fullres=xr.merge([fullres1, fullres2, fullres3, fullres4])
 
         if self.streaming:
             self.stream_enddate = self.data2d.time[-1].values

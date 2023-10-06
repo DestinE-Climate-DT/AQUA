@@ -1,29 +1,17 @@
 # experiment
 dataset:
   model: "IFS"
-  exp: "tco2559-ng5-cycle3"
+  exp: "fdb-tco399"
   #exp: "tco1279-orca025-cycle3"
-<<<<<<< HEAD
   #exp: "control-1950-devcon"
-  source2d: "2D_1h_native" #"2D_1h_native"
-  source3d: "2D_1h_native" #"3D_1h_native"
+  source2d: "fdb-long-2d" #"2D_1h_native"
+  source3d: "fdb-long-3d" #"3D_1h_native"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
   tmpdir: '/users/pghinass/tc_output/tmpdir'
   fulldir: '/users/pghinass/tc_output/fullres'
   plotdir: "/users/pghinass/tc_output/Figures/"
-=======
-  source2d: "2D_1h_native"
-  source3d: "3D_1h_native"
-
-# folders for regridded data, temprorary and stored high res data
-paths: 
-  tmpdir: '/home/b/b382216/scratch/test/tmpdir'
-  fulldir: '/home/b/b382216/scratch/test/tmpdir'
-  plotdir: "/home/b/b382216/scratch/test/tmpdir/Figures/"
-
->>>>>>> bd6b5910862e2112acab653113d6de6ef57e6b0f
 
 # grid on which operate
 grids:

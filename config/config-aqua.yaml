@@ -1,6 +1,6 @@
 # machine dependent configuration file for AQUA
 # so far nothing is really strict
-machine: levante
+machine: lumi
 
 reader: 
   catalog: '{configdir}/machines/{machine}/catalog.yaml'
