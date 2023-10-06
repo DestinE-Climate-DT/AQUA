@@ -1988,7 +1988,6 @@ class Tropical_Rainfall:
             if preprocess:
                 glob = self.preprocessing(data,                               preprocess=preprocess,
                                           trop_lat=self.trop_lat,         model_variable=model_variable)
-                # glob_mean = glob.mean('time')
 
                 DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
                                            trop_lat=self.trop_lat,         model_variable=model_variable,
@@ -1997,22 +1996,18 @@ class Tropical_Rainfall:
                                            trop_lat=self.trop_lat,         model_variable=model_variable,
                                            s_month=1,                        f_month=2)
                 DJF = xr.concat([DJF_1, DJF_2], dim='time')
-                # DJF_mean = DJF.mean('time')
 
                 MAM = self.preprocessing(data,                               preprocess=preprocess,
                                          trop_lat=self.trop_lat,         model_variable=model_variable,
                                          s_month=3,                        f_month=5)
-                # MAM_mean = MAM.mean('time')
 
                 JJA = self.preprocessing(data,                               preprocess=preprocess,
                                          trop_lat=self.trop_lat,         model_variable=model_variable,
                                          s_month=6,                        f_month=8)
-                # JJA_mean = JJA.mean('time')
 
                 SON = self.preprocessing(data,                               preprocess=preprocess,
                                          trop_lat=self.trop_lat,         model_variable=model_variable,
                                          s_month=9,                        f_month=11)
-                # SON_mean = SON.mean('time')
 
             all_season = [DJF, MAM, JJA, SON, glob]
 
@@ -2030,7 +2025,6 @@ class Tropical_Rainfall:
                     mon = self.preprocessing(data,                               preprocess=preprocess,
                                              trop_lat=self.trop_lat,         model_variable=model_variable,
                                              s_month=i,                        f_month=i)
-                    # mon_mean = mon.mean('time')
                     if new_unit is not None:
                         mon = self.precipitation_rate_units_converter(
                             mon, new_unit=new_unit)
@@ -2065,34 +2059,6 @@ class Tropical_Rainfall:
             MAM_mean = MAM.mean('time')
             JJA_mean = JJA.mean('time')
             SON_mean = SON.mean('time')
-            # if preprocess:
-            #    glob = self.preprocessing(data,                               preprocess=preprocess,
-            # trop_lat=self.trop_lat,         model_variable=model_variable)
-            # glob_mean = glob.mean('time')
-
-            # DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-            #                           trop_lat=self.trop_lat,         model_variable=model_variable,
-            #                           s_month=12,                       f_month=12)
-            # DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-            #                           trop_lat=self.trop_lat,         model_variable=model_variable,
-            #                           s_month=1,                        f_month=2)
-            # DJF = xr.concat([DJF_1, DJF_2], dim='time')
-            # DJF_mean = DJF.mean('time')
-
-            # MAM = self.preprocessing(data,                               preprocess=preprocess,
-            #                         trop_lat=self.trop_lat,         model_variable=model_variable,
-            #                         s_month=3,                        f_month=5)
-            # MAM_mean = MAM.mean('time')
-
-            # JJA = self.preprocessing(data,                               preprocess=preprocess,
-            #                         trop_lat=self.trop_lat,         model_variable=model_variable,
-            #                         s_month=6,                        f_month=8)
-            # JJA_mean = JJA.mean('time')
-
-            # SON = self.preprocessing(data,                               preprocess=preprocess,
-            #                         trop_lat=self.trop_lat,         model_variable=model_variable,
-            #                         s_month=9,                        f_month=11)
-            # SON_mean = SON.mean('time')
 
             if coord == 'lon' or coord == 'lat':
                 DJF_mean = DJF_mean.mean(coord)
@@ -2102,12 +2068,6 @@ class Tropical_Rainfall:
                 glob_mean = glob_mean.mean(coord)
 
             all_season = [DJF_mean, MAM_mean, JJA_mean, SON_mean, glob_mean]
-
-            # for i in range(0, len(all_season)):
-
-            #    if new_unit is not None:
-            #        all_season[i] = self.precipitation_rate_units_converter(
-            #            all_season[i], new_unit=new_unit)
             return all_season
 
         else:
@@ -2115,14 +2075,7 @@ class Tropical_Rainfall:
                                                            model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
 
             for i in range(1, 13):
-                # if preprocess:
-                #    mon = self.preprocessing(data,                               preprocess=preprocess,
-                #                             trop_lat=self.trop_lat,         model_variable=model_variable,
-                #                             s_month=i,                        f_month=i)
                 mon_mean = all_months[i].mean('time')
-                # if new_unit is not None:
-                #    mon_mean = self.precipitation_rate_units_converter(
-                #        mon_mean, new_unit=new_unit)
                 all_months[i] = mon_mean
             return all_months
 
@@ -2212,7 +2165,7 @@ class Tropical_Rainfall:
                     all_season = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons=seasons,
                                                                model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
-                    temp = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons,
+                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons,
                                                               model_variable=model_variable,              path_to_netcdf=path_to_netcdf,
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
@@ -2229,7 +2182,6 @@ class Tropical_Rainfall:
                 for i in range(0, len(all_season)):
                     all_season[i].values = all_season[i].values - \
                         all_season_2[i].values
-                # data_new = data - dataset_2
             titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
 
             for i in range(0, len(all_season)):
@@ -2488,8 +2440,6 @@ class Tropical_Rainfall:
             lat_formatter = cticker.LatitudeFormatter()
             ax1.yaxis.set_major_formatter(lat_formatter)
             ax1.grid(True)
-
-            # if vmin is None and vmax is None:
             if vmax is not None and vmin is not None:
                 cbar = fig.colorbar(
                     im1, ticks=ticks, ax=ax1, location='bottom')
@@ -2790,7 +2740,7 @@ class Tropical_Rainfall:
     #    time_zone_str = tf.timezone_at(lng=longitude, lat=latitude)
     #    local_time = pytz.timezone(time_zone_str).localize(local_datetime)
     #    utc_time = local_time.astimezone(pytz.UTC)
-    #    return np.datetime64(utc_time)
+    #    return np.datetime64(utc_time) 
 
     def _utc_to_local(self, utc_time, longitude):
         # Calculate the time zone offset based on longitude
