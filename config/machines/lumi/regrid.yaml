@@ -1,8 +1,8 @@
 # Default paths for regridding
 paths:
   grids: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids
-  weights: /pfs/lustrep3/projappl/project_465000454/data/AQUA/weights
-  areas: /pfs/lustrep3/projappl/project_465000454/data/AQUA/areas
+  weights: /scratch/project_465000454/tmp/a07x/regrid/weights
+  areas: /scratch/project_465000454/tmp/a07x/regrid/areas
 
 # available grids, not worth to become machine independent, add here
 # grids:
