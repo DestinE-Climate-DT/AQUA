@@ -8,6 +8,7 @@ import logging
 import xarray as xr
 import numpy as np
 from aqua import Reader
+from aqua.exceptions import NoObservationError
 
 warnings.filterwarnings("ignore")
 
@@ -265,7 +266,12 @@ def load_obs_data(model='EN4', exp='en4', source='monthly'):
     Returns:
         xarray.Dataset: Observational data containing ocean temperature and salinity.
     """
-    reader = Reader(model, exp, source)
+    try:
+        reader = Reader(model, exp, source)
+    except KeyError:
+        raise NoObservationError(
+            f"No observation of {model}, {exp}, {source} available")
+
     den4 = reader.retrieve()
     # We standardise the name for the vertical dimension
     den4 = den4.rename({"depth": "lev"})
@@ -413,8 +419,8 @@ def dir_creation(region=None,  latS: float = None, latN: float = None, lonW: flo
         filename = f"{plot_name}_{region.replace(' ', '_').lower()}"
 
     # output_path = f"{output_dir}/"
-    fig_dir = f"{output_dir}/PDF"
-    data_dir = f"{output_dir}/NetCDF"
+    fig_dir = f"{output_dir}/pdf"
+    data_dir = f"{output_dir}/netcdf"
     os.makedirs(fig_dir, exist_ok=True)
     os.makedirs(data_dir, exist_ok=True)
     return output_dir, fig_dir, data_dir, filename

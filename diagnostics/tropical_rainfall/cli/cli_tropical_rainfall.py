@@ -1,24 +1,21 @@
 import sys
-print("Tropical Rainfall Diagnostic is started.")
 try:
     # All nesessarry import for a cli diagnostic
     from aqua.util import load_yaml, get_arg
     import os
-    import yaml
     import argparse
     from aqua import Reader
+    from aqua.logger import log_configure
     sys.path.insert(0, '../../')
     from tropical_rainfall import Tropical_Rainfall
 except ImportError as import_error:
     # Handle ImportError
     print(f"ImportError occurred: {import_error}")
     sys.exit(0)
-except OtherCustomError as custom_error:
-    # Handle other custom exceptions if needed
+except Exception as custom_error:
     print(f"CustomError occurred: {custom_error}")
     sys.exit(0)
 else:
-    # Code to run if the import was successful (optional)
     print("Modules imported successfully.")
 
 
@@ -55,18 +52,27 @@ if __name__ == '__main__':
 
     loglevel = get_arg(
         args, 'loglevel', config['class_attributes']['loglevel'])
+    logger = log_configure(log_name="Tropical Rainfall CLI",
+                           log_level=loglevel)
 
     model = get_arg(args, 'model', config['data']['model'])
     exp = get_arg(args, 'exp', config['data']['exp'])
     source = get_arg(args, 'source', config['data']['source'])
 
+    logger.debug(f"Accessing {model} {exp} {source} data")
+
     path_to_output = get_arg(
         args, 'outputdir', config['path']['path_to_output'])
     if path_to_output is not None:
-        path_to_netcdf = os.path.join(path_to_output, 'NetCDF/'+model+'_'+exp+'_'+source+'/')
-        path_to_pdf = os.path.join(path_to_output, 'PDF/'+model+'_'+exp+'_'+source+'/')
+        path_to_netcdf = os.path.join(
+            path_to_output, 'netcdf/'+model+'_'+exp+'_'+source+'/')
+        path_to_pdf = os.path.join(
+            path_to_output, 'pdf/'+model+'_'+exp+'_'+source+'/')
     name_of_netcdf = model+'_'+exp+'_'+source
     name_of_pdf = model+'_'+exp+'_'+source
+
+    logger.debug(f"NetCDF folder: {path_to_netcdf}")
+    logger.debug(f"PDF folder: {path_to_pdf}")
 
     trop_lat = config['class_attributes']['trop_lat']
     num_of_bins = config['class_attributes']['num_of_bins']
@@ -84,7 +90,7 @@ if __name__ == '__main__':
     loc = config['plot']['loc']
     pdf_format = config['plot']['pdf_format']
 
-    reader = Reader(model=model, exp=exp, source=source)
+    reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
     data = reader.retrieve(var=model_variable)
 
     try:
@@ -93,24 +99,25 @@ if __name__ == '__main__':
         hist = diag.histogram(data, model_variable=model_variable,  new_unit=new_unit,
                               path_to_histogram=path_to_netcdf+'histograms/', name_of_file=name_of_netcdf)
 
-        hist_merged = diag.merge_list_of_histograms(path_to_histograms = path_to_netcdf+'histograms/',  all = True)
+        hist_merged = diag.merge_list_of_histograms(
+            path_to_histograms=path_to_netcdf+'histograms/',  all=True)
         diag.histogram_plot(hist_merged, figsize=figsize, new_unit=new_unit,
                             legend=legend, color=color, xmax=xmax, plot_title=plot_title, loc=loc,
                             path_to_pdf=path_to_pdf, pdf_format=pdf_format, name_of_file=name_of_pdf)
-        print("The histogram is calculated, plotted, and saved in storage.")
+        logger.error("The histogram is calculated, plotted, and saved in storage.")
     except ZeroDivisionError as zd_error:
         # Handle ZeroDivisionError
-        print(f"ZeroDivisionError occurred: {zd_error}")
+        logger.error(f"ZeroDivisionError occurred: {zd_error}")
     except ValueError as value_error:
         # Handle ValueError
-        print(f"ValueError occurred: {value_error}")
+        logger.error(f"ValueError occurred: {value_error}")
     except KeyError as key_error:
         # Handle KeyError
-        print(f"KeyError occurred: {key_error}")
+        logger.error(f"KeyError occurred: {key_error}")
     except FileNotFoundError as file_error:
         # Handle FileNotFoundError
-        print(f"FileNotFoundError occurred: {file_error}")
+        logger.error(f"FileNotFoundError occurred: {file_error}")
     except Exception as e:
         # Handle other exceptions
-        print(f"An unexpected error occurred: {e}")
-    print("Tropical Rainfall Diagnostic is terminated.")
+        logger.error(f"An unexpected error occurred: {e}")
+    logger.info("Tropical Rainfall Diagnostic is terminated.")

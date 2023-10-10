@@ -963,34 +963,38 @@ class Tropical_Rainfall:
                         dataset_3.attrs['time_band_history'] = str(
                             tprate_dataset_1.attrs['time_band']) + ';\n '+str(tprate_dataset_2.attrs['time_band'])
                         if tprate_dataset_1.attrs['time_band'].count(':') <= 2 and tprate_dataset_2.attrs['time_band'].count(':') <= 2:
-                            if np.datetime64(tprate_dataset_2.time_band) > np.datetime64(tprate_dataset_1.time_band):
-                                timedelta = np.datetime64(
-                                    tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
-                                tprate_dataset_1_sm = tprate_dataset_1
-                                tprate_dataset_2_bg = tprate_dataset_2
-                            elif np.datetime64(tprate_dataset_2.time_band) < np.datetime64(tprate_dataset_1.time_band):
-                                timedelta = np.datetime64(
-                                    tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
-                                tprate_dataset_1_sm = tprate_dataset_2
-                                tprate_dataset_2_bg = tprate_dataset_1
-
-                            days = timedelta / np.timedelta64(1, 'D')
-                            if days < 1:
-                                hrs = timedelta / np.timedelta64(1, 'h')
+                            if np.datetime64(tprate_dataset_2.time_band) == np.datetime64(tprate_dataset_1.time_band):
                                 dataset_3.attrs['time_band'] = str(
-                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
-                            elif days == 1:
-                                dataset_3.attrs['time_band'] = str(
-                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
-                            elif days < 32 and days > 27:
-                                dataset_3.attrs['time_band'] = str(
-                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
-                            elif days < 367 and days > 364:
-                                dataset_3.attrs['time_band'] = str(
-                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
+                                    tprate_dataset_1.attrs['time_band'])
                             else:
-                                dataset_3.attrs['time_band'] = str(
-                                    tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
+                                if np.datetime64(tprate_dataset_2.time_band) > np.datetime64(tprate_dataset_1.time_band):
+                                    timedelta = np.datetime64(
+                                        tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
+                                    tprate_dataset_1_sm = tprate_dataset_1
+                                    tprate_dataset_2_bg = tprate_dataset_2
+                                elif np.datetime64(tprate_dataset_2.time_band) < np.datetime64(tprate_dataset_1.time_band):
+                                    timedelta = np.datetime64(
+                                        tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
+                                    tprate_dataset_1_sm = tprate_dataset_2
+                                    tprate_dataset_2_bg = tprate_dataset_1
+
+                                days = timedelta / np.timedelta64(1, 'D')
+                                if days < 1:
+                                    hrs = timedelta / np.timedelta64(1, 'h')
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
+                                elif days == 1:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
+                                elif days < 32 and days > 27:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
+                                elif days < 367 and days > 364:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
+                                else:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
                         else:
                             if tprate_dataset_1.time_band.split(',')[2] == tprate_dataset_2.time_band.split(',')[2]:
                                 if np.datetime64(tprate_dataset_1.time_band.split(',')[0]) < np.datetime64(tprate_dataset_2.time_band.split(',')[0]):

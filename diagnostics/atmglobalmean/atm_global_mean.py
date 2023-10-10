@@ -11,16 +11,10 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from aqua import Reader
 import pandas as pd
 import datetime
+from aqua.util import create_folder
 
-outputfig = "./output/figs"
-if not os.path.exists(outputfig):
-    os.makedirs(outputfig)
-outputdir = "./output/data"    
-if not os.path.exists(outputdir):
-    os.makedirs(outputdir)
-    
-    
-def seasonal_bias(dataset1, dataset2, var_name, plev, statistic, model_label1, model_label2, start_date1, end_date1, start_date2, end_date2):
+
+def seasonal_bias(dataset1, dataset2, var_name, plev, statistic, model_label1, model_label2, start_date1, end_date1, start_date2, end_date2, outputdir, outputfig):
     '''
     Plot the seasonal bias maps between two datasets for specific variable and time ranges.
 
@@ -138,12 +132,14 @@ def seasonal_bias(dataset1, dataset2, var_name, plev, statistic, model_label1, m
     fig.suptitle(overall_title, fontsize=14, fontweight='bold')
     plt.subplots_adjust(hspace=0.5)
 
+    create_folder(folder=str(outputfig), loglevel='WARNING')
+
     # Save the figure
-    filename = f"{outputfig}/Seasonal_Bias_Plot_{model_label1}_{var_name}_{statistic}_{start_date1}_{end_date1}_{start_date2}_{end_date2}.pdf"
+    filename = f"{outputfig}Seasonal_Bias_Plot_{model_label1}_{var_name}_{statistic}_{start_date1}_{end_date1}_{start_date2}_{end_date2}.pdf"
     plt.savefig(filename, dpi=300, format='pdf')
     plt.show()
 
-
+    create_folder(folder=str(outputdir), loglevel='WARNING')
     # Write the data into a NetCDF file
     data_directory = outputdir
     data_filename = f"Seasonal_Bias_Data_{model_label1}_{var_name}_{statistic}_{start_date1}_{end_date1}_{start_date2}_{end_date2}.nc"
@@ -165,7 +161,7 @@ def seasonal_bias(dataset1, dataset2, var_name, plev, statistic, model_label1, m
 #---------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------
 
-def compare_datasets_plev(dataset1, dataset2, var_name, start_date1, end_date1, start_date2, end_date2, model_label1, model_label2):
+def compare_datasets_plev(dataset1, dataset2, var_name, start_date1, end_date1, start_date2, end_date2, model_label1, model_label2, outputdir, outputfig):
     """
     Compare two datasets and plot the zonal bias for a selected model time range with respect to the second dataset.
 
@@ -206,6 +202,7 @@ def compare_datasets_plev(dataset1, dataset2, var_name, start_date1, end_date1, 
     coord_values_2d, plev_2d = np.meshgrid(coord_values, plev)
     z_values = np.mean(mean_bias, axis=2)
 
+    create_folder(folder=str(outputfig), loglevel='WARNING')
     # Create the plot
     fig, ax = plt.subplots(figsize=(10, 8))
     cax = ax.contourf(coord_values_2d, plev_2d, z_values, cmap='RdBu_r')
@@ -219,27 +216,27 @@ def compare_datasets_plev(dataset1, dataset2, var_name, start_date1, end_date1, 
     # Add colorbar
     cbar = fig.colorbar(cax)
     cbar.set_label(f'{var_name} [{dataset1[var_name].units}]')
- 
+
     # Save the plot as a PDF file
     filename = f"Vertical_biases_{model_label1}_{model_label2}_{var_name}_{start_date1}_{end_date1}_{start_date2}_{end_date2}.pdf"
     output_path = os.path.join(outputfig, filename)
     plt.savefig(output_path, dpi=300, format='pdf')
 
+    create_folder(folder=str(outputdir), loglevel='WARNING')
     # Save the data into a NetCDF file
     filename = f"{outputdir}/Vertical_bias_{model_label1}_{model_label2}_{var_name}_{start_date1}_{end_date1}_{start_date2}_{end_date2}.nc"
     mean_bias.to_netcdf(filename)
-    
+
     plt.show()
     print(f"The vertical bias plots have been saved to {outputfig}.")
     print(f"The vertical bias data has been saved to {outputdir}.")
 
-    
 #---------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------
 
 
 
-def plot_map_with_stats(dataset, var_name, start_date, end_date, model_label):
+def plot_map_with_stats(dataset, var_name, start_date, end_date, model_label, outputdir, outputfig):
     """
     Plot a map of a chosen variable from a dataset with colorbar and statistics.
 
@@ -253,7 +250,7 @@ def plot_map_with_stats(dataset, var_name, start_date, end_date, model_label):
     """
     start_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
-    
+
     # Calculate statistics
     var_data = dataset[var_name].sel(time=slice(start_date, end_date)).mean(dim='time')
     weights = np.cos(np.deg2rad(dataset.lat))
@@ -262,7 +259,7 @@ def plot_map_with_stats(dataset, var_name, start_date, end_date, model_label):
     var_std = var_data.std().values.item()
     var_min = var_data.min().values.item()
     var_max = var_data.max().values.item()
-    
+
     # Plot the map
     fig = plt.figure(figsize=(10, 8))
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -286,12 +283,14 @@ def plot_map_with_stats(dataset, var_name, start_date, end_date, model_label):
     # Display statistics below the plot
     stat_text = f'Mean: {var_mean:.2f} {dataset[var_name].units}    Std: {var_std:.2f}    Min: {var_min:.2f}    Max: {var_max:.2f}'
     ax.text(0.5, -0.3, stat_text, transform=ax.transAxes, ha='center')
-    
+
+    create_folder(folder=str(outputfig), loglevel='WARNING')
     # Save the plot as a PDF file
     filename = f"Statistics_maps_{model_label}_{var_name}.pdf"
     output_path = os.path.join(outputfig, filename)
     plt.savefig(output_path, dpi=300, format='pdf')
 
+    create_folder(folder=str(outputdir), loglevel='WARNING')
     # Save the data into a NetCDF file
     data_filename = f"Statistics_Data_{model_label}_{var_name}.nc"
     data_path = os.path.join(outputdir, data_filename)
@@ -301,7 +300,7 @@ def plot_map_with_stats(dataset, var_name, start_date, end_date, model_label):
     data_array.attrs['model_label'] = model_label
 
     data_array.to_netcdf(data_path)
-     
+ 
     plt.show()
     print(f"The plot has been saved to {outputfig}.")
     print(f"The data has been saved to {outputdir}.")

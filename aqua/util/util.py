@@ -89,3 +89,11 @@ def file_is_complete(filename, logger=logging.getLogger()):
         check = False
 
     return check
+
+def find_vert_coord(ds):
+    """
+    Identify the vertical coordinate name(s) based on coordinate units. Returns always a list.
+    The list will be empty if none found. 
+    """
+    vert_coord = [x for x in ds.coords if ds.coords[x].attrs.get("units") in ["Pa", "hPa", "m", "km", "Km", "cm", ""] ]
+    return vert_coord

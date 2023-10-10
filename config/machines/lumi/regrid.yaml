@@ -32,6 +32,7 @@ sources:
       monthly-1deg-2d: lon-lat
       monthly-1deg-3d: lon-lat
       lra-r100-monthly: lon-lat
+      opa: lon-lat
     historical-1990-devcon:
       default: tco1279
       hourly-1deg: lon-lat
@@ -39,12 +40,14 @@ sources:
       monthly-1deg-2d: lon-lat
       monthly-1deg-3d: lon-lat
       lra-r100-monthly: lon-lat
+      opa: lon-lat
     historical-1990-fesom:
       default: tco1279
       hourly-1deg: lon-lat
       6hourly-1deg: lon-lat
       monthly-1deg-2d: lon-lat
       monthly-1deg-3d: lon-lat
+      opa: lon-lat
 
   NEMO:
     fdb-tco79-eorca1:

@@ -137,7 +137,7 @@ def maps_plot(maps=None, models=None, exps=None,
 def single_map_plot(map=None, save=False, model=None, exp=None,
                     figsize=(11, 8.5), nlevels=12, title=None,
                     cbar_label=None, outputdir='.', filename='maps.png',
-                    sym=True, loglevel='WARNING'):
+                    sym=True, loglevel='WARNING', **kwargs):
     """
     Plot a single map (regression, correlation, etc.)
     An xarray.DataArray objects is expected
@@ -157,6 +157,10 @@ def single_map_plot(map=None, save=False, model=None, exp=None,
         sym (bool,opt):         symmetrical colorbar, default is True
         loglevel (str,opt):     log level for the logger, default is 'WARNING'
 
+    Keyword Args:
+        transform_first (bool):  transform the data before plotting with cartopy
+                                 default is False, True can solve ocean/land issues
+
     Raises:
         ValueError: if no map is provided
     """
@@ -174,26 +178,44 @@ def single_map_plot(map=None, save=False, model=None, exp=None,
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()},
                            figsize=figsize)
 
+    logger.debug('Min value for the colorbar: {}'.format(vmin))
+    logger.debug('Max value for the colorbar: {}'.format(vmax))
+
     # Plot the map
-    try:
+    if model is not None and exp is not None:
         logger.info('Plotting model {} experiment {}'.format(model, exp))
-    except ValueError:
-        logger.info('Plotting map')
+    else:
+        logger.debug('Plotting map')
+
+    # Build the lon/lat grid
+    try:
+        lon, lat = np.meshgrid(map.lon, map.lat)
+    except AttributeError:
+        try:
+            lon, lat = np.meshgrid(map.longitude, map.latitude)
+        except AttributeError:
+            raise AttributeError('No lon/lat or longitude/latitude in the map')
 
     # Contour plot
-    cs = map.plot.contourf(ax=ax, transform=ccrs.PlateCarree(),
-                           cmap='RdBu_r', levels=nlevels,
-                           add_colorbar=False, add_labels=False,
-                           extend='both', vmin=vmin, vmax=vmax)
+    transform_first = kwargs.get('transform_first', False) # cartopy kwarg
+    logger.info('transform_first: {}'.format(transform_first))
+
+    cmap = plt.get_cmap('RdBu_r')
+    cmap.set_bad('white')
+
+    cs = ax.contourf(lon, lat, map, transform=ccrs.PlateCarree(),
+                     cmap=cmap, levels=nlevels,
+                     extend='both', vmin=vmin, vmax=vmax,
+                     transform_first=transform_first)
 
     # Title
     if title is not None:
         ax.set_title(title)
     else:
-        try:
+        if model is not None and exp is not None:
             ax.set_title('{} {}'.format(model, exp))
-        except ValueError:
-            logger.warning('No title for map')
+        else:
+            logger.warning('No title provided')
 
     # Coastlines
     ax.coastlines()

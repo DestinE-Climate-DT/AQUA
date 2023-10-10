@@ -5,87 +5,168 @@
 # The following variables can be changed by the user.
 # ---------------------------------------------------
 model_atm="IFS"
-model_oce="NEMO"
-exp="control-1950-devcon"
+model_oce="FESOM"
+exp="tco2559-ng5-cycle3"
 source="lra-r100-monthly"
 
-outputdir="/work/bb1153/b382267/cli_test"
-aqua="/work/bb1153/b382267/AQUA"
+# LUMI
+# outputdir="/scratch/project_465000454/nurissom/cli_outpturdir"
+# aqua="/users/nurissom/AQUA"
+
+# LEVANTE
+outputdir="/scratch/b/b382289/cli_test"
+aqua="/home/b/b382289/AQUA"
+
+machine="levante" # will change the aqua config file
+
+# When available, this will set the loglevel for the diagnostics
+loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 # Set as true the diagnostics you want to run
 # -------------------------------------------
-atmglobalmean=false
-dummy=false # dummy is a test diagnostic
-ecmean=false
-global_time_series=false
-ocean3d=false
-radiation=false
-seaice=false
-teleconnection=false
-tropical_rainfall=true
+run_dummy=true # dummy is a diagnostic that checks if the setup is correct
+run_atmglobalmean=true
+run_ecmean=true
+# ---------------------------------------
+# Command line extra arguments for ecmean
+# -c --config ecmean config file
+# -i --interface custom interface file
+# ---------------------------------------
+run_global_time_series=true
+run_ocean3d=true
+run_radiation=false # not implemented yet
+run_seaice=false # not implemented yet
+run_teleconnections=true
+# teleconnections additional flags
+# ---------------------------------------------------------------
+# --dry, -d (dry run, if set it will run without producing plots)
+# --obs (if set it will run the teleconnections also for ERA5)
+# ---------------------------------------------------------------
+run_tropical_rainfall=true
 
 # End of user defined variables
 # -----------------------------
 
+# Define colors for echo output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+colored_echo() {
+  local color=$1
+  shift
+  echo -e "${color}$@${NC}"
+}
+
+# Define the arguments for the diagnostics
 args_atm="--model $model_atm --exp $exp --source $source"
 args_oce="--model $model_oce --exp $exp --source $source"
 args="--model_atm $model_atm --model_oce $model_oce --exp $exp --source $source"
 
 # use $AQUA if defined otherwise use aqua
 if [[ -z "${AQUA}" ]]; then
-  echo "AQUA path is not defined, using user defined aqua in the script"
+  colored_echo $GREEN "AQUA path is not defined, using user defined aqua in the script"
 else
-  echo "AQUA path is defined, using $AQUA"
+  colored_echo $GREEN "AQUA path is defined, using $AQUA"
   aqua=$AQUA
 fi
 
-if [ "$atmglobalmean" = true ] ; then
-  echo "Running atmglobalmean"
-  python $aqua/diagnostics/atmglobalmean/cli/cli_atmglobalmean.py $args_atm --outputdir $outputdir/atmglobalmean
+# set the correct machine in the config file
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # Mac OSX
+  sed -i '' "/^machine:/c\\
+machine: $machine" "$aqua/config/config-aqua.yaml"
+else
+  # Linux
+  sed -i "/^machine:/c\\machine: $machine" "$aqua/config/config-aqua.yaml"
 fi
 
-if [ "$dummy" = true ] ; then
-  echo "Running dummy"
-  python $aqua/diagnostics/dummy/cli/cli_dummy.py $args --outputdir $outputdir/dummy
+# print the output directory
+colored_echo $GREEN "Output directory: $outputdir"
+
+if [ "$run_dummy" = true ] ; then
+  colored_echo $GREEN "Running setup checker"
+  python $aqua/diagnostics/dummy/cli/cli_dummy.py $args -l $loglevel
+
+  # exit if dummy fails
+  if [ $? -ne 0 ]; then
+    colored_echo $RED "Setup checker failed, exiting"
+    exit 1
+  fi
+  colored_echo $GREEN "Finished setup checker"
 fi
 
-if [ "$ecmean" = true ] ; then
-  echo "Running ecmean"
-  python $aqua/diagnostics/ecmean/cli/cli_ecmean.py $args --outputdir $outputdir/ecmean
-fi
-
-if [ "$global_time_series" = true ] ; then
-  echo "Running global_time_series"
-  python $aqua/diagnostics/global_time_series/cli/cli_global_time_series.py $args_atm --outputdir $outputdir/global_time_series --config $aqua/diagnostics/global_time_series/cli/config_atm.yaml
-  python $aqua/diagnostics/global_time_series/cli/cli_global_time_series.py $args_oce --outputdir $outputdir/global_time_series --config $aqua/diagnostics/global_time_series/cli/config_oce.yaml
-fi
-
-if [ "$ocean3d" = true ] ; then
-  echo "Running ocean3d"
-  python $aqua/diagnostics/ocean3d/cli/cli_ocean3d.py $args_oce --outputdir $outputdir/ocean3d
-fi
-
-if [ "$radiation" = true ] ; then
-  echo "Running radiation"
-  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation
-fi
-
-if [ "$seaice" = true ] ; then
-  echo "Running seaice"
-  python $aqua/diagnostics/seaice/cli/cli_seaice.py $args_oce --outputdir $outputdir/seaice
-fi
-
-if [ "$teleconnection" = true ] ; then
-  echo "Running teleconnection"
-  python $aqua/diagnostics/teleconnection/cli/cli_teleconnection.py $args_atm --outputdir $outputdir/teleconnection --config $aqua/diagnostics/teleconnection/cli/config_atm.yaml
-  python $aqua/diagnostics/teleconnection/cli/cli_teleconnection.py $args_oce --outputdir $outputdir/teleconnection --config $aqua/diagnostics/teleconnection/cli/config_oce.yaml
-fi
-
-if [ "$tropical_rainfall" = true ] ; then
-  echo "Running tropical rainfall"
-  cd $aqua/diagnostics/tropical_rainfall/cli
-  python $aqua/diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py $args_atm --outputdir $outputdir/tropical_rainfall
+if [ "$run_atmglobalmean" = true ] ; then
+  colored_echo $GREEN "Running atmglobalmean"
+  cd $aqua/diagnostics/atmglobalmean/cli
+  python cli_atm_mean_bias.py $args_atm --outputdir $outputdir/atmglobalmean -l $loglevel
   cd $aqua/cli/aqua-analysis
+  colored_echo $GREEN "Finished atmglobalmean"
 fi
 
-echo "Finished"
+if [ "$run_ecmean" = true ] ; then
+  colored_echo $GREEN "Running ecmean"
+  scriptpy="$aqua/diagnostics/ecmean/cli/ecmean_cli.py"
+  python $scriptpy $args -o $outputdir/ecmean -l $loglevel
+  colored_echo $GREEN "Finished ecmean"
+fi
+
+if [ "$run_global_time_series" = true ] ; then
+  colored_echo $GREEN "Running global_time_series"
+
+  filepy="$aqua/diagnostics/global_time_series/cli/single_analysis/cli_global_time_series.py"
+  conf_atm="$aqua/diagnostics/global_time_series/cli/single_analysis/config_time_series_atm.yaml"
+  conf_oce="$aqua/diagnostics/global_time_series/cli/single_analysis/config_time_series_oce.yaml"
+
+  python $filepy $args_atm --outputdir $outputdir/global_time_series --config $conf_atm -l $loglevel
+  python $filepy $args_oce --outputdir $outputdir/global_time_series --config $conf_oce -l $loglevel
+  colored_echo $GREEN "Finished global_time_series"
+fi
+
+if [ "$run_ocean3d" = true ] ; then
+  colored_echo $GREEN "Running ocean3d"
+  # Moving to ocean3d directory to run the ocean3d_cli.py script
+  cd $aqua/diagnostics/ocean3d/cli
+  python $aqua/diagnostics/ocean3d/cli/ocean3d_cli.py $args_oce --outputdir $outputdir/ocean3d
+
+  # Moving back to aqua-analysis directory
+  cd $aqua/cli/aqua-analysis
+
+  colored_echo $GREEN "Finished ocean3d"
+fi
+
+if [ "$run_radiation" = true ] ; then
+  colored_echo $GREEN "Running radiation"
+  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation
+  colored_echo $GREEN "Finished radiation"
+fi
+
+if [ "$run_seaice" = true ] ; then
+  colored_echo $GREEN "Running seaice"
+  python $aqua/diagnostics/seaice/cli/cli_seaice.py $args_oce --outputdir $outputdir/seaice
+  colored_echo $GREEN "Finished seaice"
+fi
+
+if [ "$run_teleconnections" = true ] ; then
+  colored_echo $GREEN "Running teleconnections"
+  # Move to the teleconnection CLI directory
+  cd $aqua/diagnostics/teleconnections/cli/single_analysis
+
+  python cli_teleconnections.py $args_atm --outputdir $outputdir/teleconnections --config cli_config_atm.yaml --obs -l $loglevel
+  python cli_teleconnections.py $args_oce --outputdir $outputdir/teleconnections --config cli_config_oce.yaml --obs -l $loglevel
+
+  # Move back to the aqua-analysis directory
+  cd $aqua/cli/aqua-analysis
+
+  colored_echo $GREEN "Finished teleconnections"
+fi
+
+if [ "$run_tropical_rainfall" = true ] ; then
+  colored_echo $GREEN "Running tropical rainfall"
+  cd $aqua/diagnostics/tropical_rainfall/cli
+  python $aqua/diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py $args_atm --outputdir $outputdir/tropical_rainfall -l $loglevel
+  cd $aqua/cli/aqua-analysis
+  colored_echo $GREEN "Finished tropical rainfall"
+fi
+
+colored_echo $GREEN "Finished all diagnostics"

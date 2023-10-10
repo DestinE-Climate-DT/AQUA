@@ -83,21 +83,29 @@ def inspect_catalogue(cat=None, model=None, exp=None, source=None, verbose=True)
         if verbose:
             print("Models available in catalogue:")
         return list(cat.keys())
-    
-    elif model and exp and source:  # Check if variables can be explored
-        if is_in_cat(cat, model, exp, source):
-            # Ok, it exists, but does it have metadata?
-            try:
-                if verbose:
+
+    elif model and exp and source:
+        # Check if variables can be explored
+        # Added a try/except to avoid the KeyError when the source is not in the catalogue
+        # because model or exp are not in the catalogue
+        # This allows to always have a True/False or var list return
+        # when model/exp/source are provided
+        try:
+            if is_in_cat(cat, model, exp, source):
+                # Ok, it exists, but does it have metadata?
+                try:
                     vars = cat[model][exp][source].metadata['variables']
-                    print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
-                return vars
-            except KeyError:
-                return True
+                    if verbose:
+                        print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
+                    return vars
+                except KeyError:
+                    return True
+        except KeyError:
+            pass  # go to return False
 
     if verbose:
-        print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalogue.")  
-  
+        print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalogue.")
+
     return False
 
 
@@ -108,6 +116,6 @@ def is_in_cat(cat, model, exp, source):
     if source:
         return source in list(cat[model][exp].keys())
     elif exp:
-        return exp in cat[model].keys() 
+        return exp in cat[model].keys()
     else:
         return model in cat.keys()

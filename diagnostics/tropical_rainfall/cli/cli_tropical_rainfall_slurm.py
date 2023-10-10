@@ -56,7 +56,8 @@ if __name__ == '__main__':
     print('Reading configuration yaml file..')
     config = load_yaml(file)
 
-    loglevel = get_arg(args, 'loglevel', config['class_attributes']['loglevel'])
+    loglevel = get_arg(
+        args, 'loglevel', config['class_attributes']['loglevel'])
 
     model = get_arg(args, 'model', config['data']['model'])
     exp = get_arg(args, 'exp', config['data']['exp'])
@@ -65,10 +66,12 @@ if __name__ == '__main__':
     path_to_output = get_arg(
         args, 'outputdir', config['path']['path_to_output'])
     if path_to_output is not None:
-        path_to_netcdf = os.path.join(path_to_output, 'NetCDF/')
-        path_to_pdf = os.path.join(path_to_output, 'PDF/')
-    name_of_netcdf = config['path']['name_of_netcdf']
-    name_of_pdf = config['path']['name_of_pdf']
+        path_to_netcdf = os.path.join(
+            path_to_output, 'NetCDF/'+model+'_'+exp+'_'+source+'/')
+        path_to_pdf = os.path.join(
+            path_to_output, 'PDF/'+model+'_'+exp+'_'+source+'/')
+    name_of_netcdf = model+'_'+exp+'_'+source
+    name_of_pdf = model+'_'+exp+'_'+source
 
     trop_lat = config['class_attributes']['trop_lat']
     num_of_bins = config['class_attributes']['num_of_bins']
@@ -82,7 +85,7 @@ if __name__ == '__main__':
     figsize = config['plot']['figsize']
     legend = config['plot']['legend']
     xmax = config['plot']['xmax']
-    plot_title = config['plot']['plot_title']
+    plot_title = model+'_'+exp+'_'+source
     loc = config['plot']['loc']
     pdf_format = config['plot']['pdf_format']
 
@@ -110,7 +113,10 @@ if __name__ == '__main__':
                                          first_edge=first_edge,   width_of_bin=width_of_bin, loglevel=loglevel)
                 hist = diag.histogram(data, model_variable=model_variable,  new_unit=new_unit,
                                       path_to_histogram=path_to_netcdf+'/histograms/', name_of_file=name_of_netcdf)
-                diag.histogram_plot(hist, figsize=figsize, new_unit=new_unit,
+                
+                hist_merged = diag.merge_list_of_histograms(
+                    path_to_histograms=path_to_netcdf+'histograms/',  all=True)
+                diag.histogram_plot(hist_merged, figsize=figsize, new_unit=new_unit,
                                     legend=legend, color=color, xmax=xmax, plot_title=plot_title, loc=loc,
                                     path_to_pdf=path_to_pdf, pdf_format=pdf_format, name_of_file=name_of_pdf)
                 print("The histogram is calculated, plotted, and saved in storage.")

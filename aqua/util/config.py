@@ -44,7 +44,7 @@ class ConfigPath():
             configdirs.append(os.path.join(aquadir, 'config'))
 
         # set of predefined folders to browse
-        configdirs.extend(['./config', '../config', '../../config', '../../../config'])
+        configdirs.extend(['./../../AQUA/config', './config', '../config', '../../config', '../../../config'])
 
         # if the home is defined
         homedir = os.environ.get('HOME')

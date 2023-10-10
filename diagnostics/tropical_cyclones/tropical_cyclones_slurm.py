@@ -1,64 +1,83 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """CLI interface to run the TempestExtemes TCs tracking"""
 
-import copy
-import numpy as np
-import pandas as pd
-from tropical_cyclones import TCs
-from aqua.util import load_yaml
-from aqua.logger import log_configure
+import argparse
+import sys
 
+sys.path.insert(0, '../')
+
+from tropical_cyclones import TCs
+from aqua.util import load_yaml, get_arg
+from aqua.logger import log_configure
 
 mainlogger = log_configure('INFO', log_name='MAIN')
 
-# load the config file
-tdict = load_yaml('config/config_tcs.yaml')
 
-# initialise tropical class with streaming options
-tropical = TCs(tdict=tdict, streaming=True, stream_step=tdict['stream']['streamstep'], stream_unit="days",
-               stream_startdate=tdict['time']['startdate'], loglevel="WARNING")
+def parse_arguments(args):
+    """Parse command line arguments"""
 
-# retrieve the data and call detect nodes on the first chunk of data
-tropical.data_retrieve()
-tropical.detect_nodes_zoomin()
+    parser = argparse.ArgumentParser(description='Tropical Cyclones CLI')
+    parser.add_argument('-c', '--config', type=str,
+                        help='yaml configuration file')
+    parser.add_argument('-d', '--dry', action='store_true',
+                        required=False,
+                        help='if True, run is dry, no files are written')
+    parser.add_argument('-l', '--loglevel', type=str,
+                        help='log level [default: WARNING]')
 
-# parameters for stitch nodes (to save tracks of selected variables in netcdf)
-n_days_stitch = tdict['stitch']['n_days_freq'] + tdict['stitch']['n_days_ext']
-last_run_stitch = pd.Timestamp(tropical.startdate)
+    # This arguments will override the configuration file if provided
+    parser.add_argument('--model', type=str, help='model name',
+                        required=False)
+    parser.add_argument('--exp', type=str, help='experiment name',
+                        required=False)
+    parser.add_argument('--source2d', type=str, help='2d source name',
+                        required=False)
+    
+    parser.add_argument('--source3d', type=str, help='3d source name',
+                        required=False)
+    parser.add_argument('--outputdir', type=str, help='output directory',
+                        required=False)
 
-# loop to simulate streaming
-while len(np.unique(tropical.data2d.time.dt.day)) == tdict['stream']['streamstep']:
-    tropical.data_retrieve()
-    mainlogger.warning(
-        "New streaming from %s to %s", pd.Timestamp(tropical.stream_startdate).strftime('%Y%m%dT%H'), pd.Timestamp(tropical.stream_enddate).strftime('%Y%m%dT%H'))
-    timecheck = (tropical.data2d.time.values >
-                 np.datetime64(tdict['time']['enddate']))
+    return parser.parse_args(args)
 
-    if timecheck.any():
-        tropical.stream_enddate = tropical.data2d.time.values[np.where(timecheck)[
-            0][0]-1]
-        mainlogger.warning(
-            'Modifying the last stream date %s', tropical.stream_enddate)
+if __name__ == '__main__':
+    
+    print('Running tropical cyclones diagnostic...')
+    
+    args = parse_arguments(sys.argv[1:])
 
-    tropical.detect_nodes_zoomin()
+    # Read configuration file
 
-    if timecheck.any():
-        break
+    file = get_arg(args, 'config', 'config/config_tcs.yaml')
+    print('Reading tcs configuration yaml file.')
+    config = load_yaml(file)
+    
+    #in case you passed args as commands
 
-    # add one hour since time ends at 23
-    dayspassed = (tropical.stream_enddate + np.timedelta64(1,
-                  'h') - last_run_stitch) / np.timedelta64(1, 'D')
+    loglevel = get_arg(args, 'loglevel', 'WARNING')
 
-    if dayspassed >= n_days_stitch:
-        end_run_stitch = last_run_stitch + \
-            np.timedelta64(tdict['stitch']['n_days_freq'], 'D')
-        mainlogger.warning(
-            'Running stitch nodes from %s to %s', last_run_stitch, end_run_stitch)
-        tropical.stitch_nodes_zoomin(startdate=last_run_stitch, enddate=end_run_stitch,
-                                     n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
-        last_run_stitch = copy.deepcopy(end_run_stitch)
-# problem: bring the time handling to pandas to avoid mismatch with dates
-end_run_stitch = np.datetime64(tdict['time']['enddate'])
-mainlogger.warning(
-    'Running stitch nodes from %s to %s', last_run_stitch, end_run_stitch)
-tropical.stitch_nodes_zoomin(startdate=pd.Timestamp(last_run_stitch), enddate=pd.Timestamp(end_run_stitch),
-                             n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
+    model = get_arg(args, 'model', config['dataset']['model'])
+    exp = get_arg(args, 'exp', config['dataset']['exp'])
+    source2d = get_arg(args, 'source2d', config['dataset']['source2d'])
+    source3d = get_arg(args, 'source3d', config['dataset']['source3d'])
+
+    dry = get_arg(args, 'dry', False)
+    
+    if dry:
+        print('Dry run, no files will be written')
+        savefile = False
+    else:
+        savefile = True
+
+    # initialise tropical class with streaming options
+    tropical = TCs(tdict=config, streaming=True, 
+                    model=model,exp=exp, source2d=source2d, source3d=source3d,
+                    stream_step=config['stream']['streamstep'], 
+                    stream_unit="days", 
+                    stream_startdate=config['time']['startdate'], 
+                    loglevel = loglevel,
+                    nproc=1)
+    
+    tropical.loop_streaming(config)

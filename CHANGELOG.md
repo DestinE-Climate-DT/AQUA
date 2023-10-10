@@ -7,8 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- Helper function to identify vertical coordinates in a dataset (#552)
+- Orography for tempest extremes TCs detection and update TCs CLI (Orography threshold included and CLI update #404)
+- Improvement of performance indices CLI (Update of ECmean CLI #528)
+- Fix to allow reading a list of multiple variables from FDB (#545)
+- Further improvement of function to inspect the catalogue (#533)
+- Custom exceptions for AQUA (#518)
+- Speed up of the `retrieve_plain` method (#524)
 - Update documention for adding new data and setting up the container (Increase documentation coverage #519)
-- CLI wrapper for the state-of-the-art diagnostics analysis (#517, #527)
+- CLI wrapper for the state-of-the-art diagnostics analysis (#517, #527, #525, #530, #534, #536, #539, #548, #559)
 - Refactor the regrid.yaml as grid-based instead of experiment-based (#291)
 - aqua_common environment simplified and updated (#498)
 - Update available variables in FDB catalogues on lumi (#514)

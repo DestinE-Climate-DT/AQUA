@@ -40,7 +40,7 @@ class GSVSource(base.DataSource):
 
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
                  aggregation="S", savefreq="H", timestep="H", timeshift=None,
-                 startdate=None, enddate=None, var='167', metadata=None, verbose=False,
+                 startdate=None, enddate=None, var=None, metadata=None, verbose=False,
                  logging=False, **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalogue entry, but can also be specified upon accessing the catalogue.
@@ -54,7 +54,7 @@ class GSVSource(base.DataSource):
             timestep (str, optional): Time step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y. Defaults to "H". 
             startdate (str, optional): Start date for request. Defaults to None.
             enddate (str, optional): End date for request. Defaults to None.
-            var (str, optional): Variable ID. Defaults to "167".
+            var (str, optional): Variable ID. Defaults to those in the catalogue.
             metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
             verbose (bool, optional): Whether to print additional info to screen. Used only for FDB access. Defaults to False.
             logging (bool, optional): Whether to print to screen. Used only for FDB access. Defaults to False.
@@ -90,7 +90,11 @@ class GSVSource(base.DataSource):
 
         self.data_startdate, self.data_starttime = split_date(data_start_date)
 
-        self._var = var
+        if not var:  # if no var provided keep the default in the catalogue
+            self._var = request["param"]
+        else:
+            self._var = var
+
         self.verbose = verbose
         self.logging = logging
 
@@ -122,7 +126,7 @@ class GSVSource(base.DataSource):
 
         if self.dask_access:  # We need a better schema for dask access
             if not self._ds:  # we still have to retrieve a sample dataset
-                self._ds = self._get_partition(0, first=True)
+                self._ds = self._get_partition(0, var=self._var[0], first=True)
             
             var = list(self._ds.data_vars)[0]
             da = self._ds[var]  # get first variable dataarray
@@ -150,12 +154,13 @@ class GSVSource(base.DataSource):
 
         return schema
 
-    def _get_partition(self, i, first=False, dask=False):
+    def _get_partition(self, i, var=None, first=False, dask=False):
         """
         Standard internal method reading i-th data partition from FDB
         Args:
             i (int): partition number
-            first (boo): read only the first step (used for schema retrieval)
+            var (string, optional): single variable to retrieve. Defaults to using those set at init
+            first (bool, optional): read only the first step (used for schema retrieval)
         Returns:
             An xarray.DataSet
         """
@@ -181,7 +186,9 @@ class GSVSource(base.DataSource):
             else:
                 request["step"] = f'{s0}/to/{s1}'
 
-        if self._var:  # if no var provided keep the default in the catalogue
+        if var:
+            request["param"] = var
+        else:
             request["param"] = self._var
 
         if self.fdbpath:  # if fdbpath provided, use it, since we are creating a new gsv
@@ -223,7 +230,7 @@ class GSVSource(base.DataSource):
         Function to read a delayed partition.
         Returns a dask.array
         """
-        ds = dask.delayed(self._get_partition)(i, dask=True)[var].data
+        ds = dask.delayed(self._get_partition)(i, var=var, dask=True)[var].data
         newshape = list(shape)
         newshape[self.itime] = self.chk_size[i]
         return dask.array.from_delayed(ds, newshape, dtype)
@@ -235,28 +242,30 @@ class GSVSource(base.DataSource):
         self.dask_access = True  # This is used to tell _get_schema() to load dask info
         self._load_metadata()
 
-        var = self._schema.name
         shape = self._schema.shape
         dtype = self._schema.dtype
 
-        da0 = self._ds[var]  # sample dataarray
+        da0 = self._ds[self._schema.name]  # sample dataarray
 
         self.itime = da0.dims.index("time")
-
-        # Create a dask array from a list of delayed get_partition calls
-        dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
-        darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
-
         coords = da0.coords.copy()
         coords['time'] = self.timeaxis
 
-        da = xr.DataArray(darr,
-                  name = da0.name,
-                  attrs = da0.attrs,
-                  dims = da0.dims,
-                  coords = coords)
+        ds = xr.Dataset()
 
-        ds = da.to_dataset()
+        for var in self._var:
+            # Create a dask array from a list of delayed get_partition calls
+            dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
+            darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
+
+            da = xr.DataArray(darr,
+                    name = da0.name,
+                    attrs = da0.attrs,
+                    dims = da0.dims,
+                    coords = coords)
+
+            ds[var] = da
+
         ds.attrs.update(self._ds.attrs)
 
         return ds

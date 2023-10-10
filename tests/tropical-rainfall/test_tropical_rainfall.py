@@ -17,6 +17,7 @@ import os
 import sys
 path_to_diagnostic = './diagnostics/'
 sys.path.insert(1, path_to_diagnostic)
+from tropical_rainfall import Tropical_Rainfall
 
 approx_rel = 1e-4
 

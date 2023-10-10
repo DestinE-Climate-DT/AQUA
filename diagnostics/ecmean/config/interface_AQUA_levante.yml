@@ -46,7 +46,7 @@ component:
     gridfile: ''
     areafile: '/work/bb1153/b382076/AQUA-archive/grids/lonlat/cell_area_r100.nc'
   cmoroce:
-    maskfile: ''
+    maskfile: '/work/bb1153/b382076/AQUA-archive/masks/lonlat/oce_mask_r100.nc'
     gridfile: ''
     areafile: '/work/bb1153/b382075/nextgems/weights/cell_area_r100.nc'
 
