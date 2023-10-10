@@ -1,4 +1,5 @@
 """Test of tropical rainfall diagnostic"""
+from tropical_rainfall import Tropical_Rainfall
 import pytest
 import numpy as np
 import xarray
@@ -62,7 +63,6 @@ def test_module_import():
     except ModuleNotFoundError:
         assert False, "Diagnostic could not be imported"
 
-from tropical_rainfall import Tropical_Rainfall
 
 @pytest.fixture
 def data_size(reader):
@@ -163,7 +163,7 @@ def test_histogram_load_to_memory(histogram_output):
         re_time_band = re.split(":", re.split(", ", time_band)[0])[
             0]+'_' + re.split(":", re.split(", ", time_band)[1])[0] in files[0]
     except IndexError:
-        re_time_band = re.split("'", re.split(":", time_band)[0])[1]
+        re_time_band = re.split(":", time_band)[0]
     assert re_time_band in time_band
 
 
