@@ -2381,9 +2381,12 @@ class Tropical_Rainfall:
             else:
                 unit = new_unit
 
-            fig = plt.figure(figsize=(11*figsize, 10*figsize),
-                             layout='constrained')
-            ax1 = plt.axes(projection=ccrs.PlateCarree())
+            fig, ax1 = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
+                                     figsize=(11*figsize*ncols, 8.5*figsize*nrows), layout='constrained')
+
+            #fig = plt.figure(figsize=(11*figsize, 10*figsize),
+            #                 layout='constrained')
+            #ax1 = plt.axes(projection=ccrs.PlateCarree())
             if path_to_netcdf is not None:
                 data = self.open_dataset(
                     path_to_netcdf=path_to_netcdf)
@@ -2426,6 +2429,9 @@ class Tropical_Rainfall:
                                transform=ccrs.PlateCarree(),
                                cmap='coolwarm', extend='both')
 
+            print(lonmin, lonmax) #, latmin, latmax)
+            print(lons[0], lons[-1]) #, data_cycl['lon'][0], data_cycl['lon'][-1])
+            print( data['lon'][0].values, data['lon'][-1].values) 
             ax1.set_title(titles, fontsize=17)
 
             ax1.coastlines()
@@ -2434,9 +2440,10 @@ class Tropical_Rainfall:
             # Longitude labels
             ax1.set_xticks(np.arange(lonmin, lonmax, dellon),
                            crs=ccrs.PlateCarree())
+            
             lon_formatter = cticker.LongitudeFormatter()
             ax1.xaxis.set_major_formatter(lon_formatter)
-
+            print(np.arange(lonmin, lonmax, dellon), lon_formatter)
             dellat = int(latmax-latmin)/6
             # Latitude labels
             ax1.set_yticks(np.arange(latmin, latmax, dellat),
@@ -2462,10 +2469,10 @@ class Tropical_Rainfall:
                 unit = new_unit
 
             fig, axes = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize, 8.5*figsize), layout='constrained')
+                                     figsize=(11*figsize*ncols, 8.5*figsize*nrows), layout='constrained')
 
             if vmin is None and vmax is None:
-                vmax = float(data.max().values)/10
+                vmax = float(data[0].max().values)/10
                 vmin = 0
                 ticks = [
                     vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
@@ -2493,6 +2500,7 @@ class Tropical_Rainfall:
                 if latmin != -90 or latmax != 91:
                     data[i] = data[i].sel(lat=slice(latmin, latmax))
 
+                
                 data[i] = data[i].where(data[i] > vmin)
                 if lonmin != -180 or lonmax != 181:
                     data[i] = data[i].sel(lon=slice(lonmin, lonmax))
@@ -2501,7 +2509,10 @@ class Tropical_Rainfall:
 
                 data_cycl, lons = add_cyclic_point(
                     data[i], coord=data[i]['lon'])
-
+                #print(data_cycl)
+                print(lonmin, lonmax) #, latmin, latmax)
+                print(lons[0], lons[-1]) #, data_cycl['lon'][0], data_cycl['lon'][-1])
+                print( data[i]['lon'][0].values, data[i]['lon'][-1].values) #,  data[i]['lat'][0].values, data[i]['lat'][-1].values)
                 im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs,
                                       transform=ccrs.PlateCarree(),
                                       cmap='coolwarm', extend='both')
@@ -2516,7 +2527,7 @@ class Tropical_Rainfall:
                                   crs=ccrs.PlateCarree())
                 lon_formatter = cticker.LongitudeFormatter()
                 axs[i].xaxis.set_major_formatter(lon_formatter)
-
+                print(np.arange(lonmin, lonmax, dellon), lon_formatter)
                 dellat = int(latmax-latmin)/6
                 # Latitude labels
                 axs[i].set_yticks(np.arange(latmin, latmax, dellat),
@@ -2639,24 +2650,8 @@ class Tropical_Rainfall:
 
         self.class_attributes_update(trop_lat=trop_lat)
         if seasons:
-            glob = self.preprocessing(data,                               preprocess=preprocess,
-                                      trop_lat=self.trop_lat,         model_variable=model_variable)
-            DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-                                       trop_lat=self.trop_lat,         model_variable=model_variable,
-                                       s_month=12,                       f_month=12)
-            DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-                                       trop_lat=self.trop_lat,         model_variable=model_variable,
-                                       s_month=1,                        f_month=2)
-            DJF = xr.concat([DJF_1, DJF_2], dim='time')
-            MAM = self.preprocessing(data,                               preprocess=preprocess,
-                                     trop_lat=self.trop_lat,         model_variable=model_variable,
-                                     s_month=3,                        f_month=5)
-            JJA = self.preprocessing(data,                               preprocess=preprocess,
-                                     trop_lat=self.trop_lat,         model_variable=model_variable,
-                                     s_month=6,                        f_month=8)
-            SON = self.preprocessing(data,                               preprocess=preprocess,
-                                     trop_lat=self.trop_lat,         model_variable=model_variable,
-                                     s_month=9,                        f_month=11)
+            [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
+                                                                           model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
 
             num_of_bins, first_edge, width_of_bin, bins = self.num_of_bins, self.first_edge, self.width_of_bin, self.bins
             self.s_month, self.f_month = None, None
@@ -2739,13 +2734,6 @@ class Tropical_Rainfall:
         else:
             return seasonal_095level
 
-    # def _convert_time_into_UTC_time(self, latitude = 40.7128, longitude = -74.0060, local_datetime = datetime(2023, 8, 15, 12, 0, 0) ):
-    #    tf = TimezoneFinder()
-    #    time_zone_str = tf.timezone_at(lng=longitude, lat=latitude)
-    #    local_time = pytz.timezone(time_zone_str).localize(local_datetime)
-    #    utc_time = local_time.astimezone(pytz.UTC)
-    #    return np.datetime64(utc_time) 
-
     def _utc_to_local(self, utc_time, longitude):
         # Calculate the time zone offset based on longitude
         # Each 15 degrees of longitude corresponds to 1 hour of time difference
@@ -2826,8 +2814,6 @@ class Tropical_Rainfall:
         new_data = []
         for i in range(0, len(utc_time)):
             new_data.append([utc_time[i], tprate[i]])
-
-        # tprate_rel = [tprate[i]- mean_val for i in range(0, len(tprate))]
 
         # Sorted list with corresponding values
         sorted_list = sorted(new_data, key=lambda x: x[0])
