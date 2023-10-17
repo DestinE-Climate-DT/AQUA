@@ -1,0 +1,14 @@
+models:  
+  EC-Earth3-LR:
+    midHolocene:
+      monthly:
+        data_model: cf
+        vars:
+          msl:
+            source: psl
+    piControl:
+      monthly:
+        data_model: cf
+        vars:
+          msl:
+            source: psl
