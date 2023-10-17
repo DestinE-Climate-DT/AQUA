@@ -1,0 +1,13 @@
+plugins:
+  source:
+    - module: intake_xarray
+
+
+sources:
+  monthly:
+    description: piControl monthly data
+    driver: netcdf
+    args:
+      urlpath: '/archive/paolo/cmip6/CMIP6/model-output/EC-Earth-Consortium/EC-Earth3-LR/piControl/atmos/Amon/r1i1p1f1/psl/psl_Amon_EC-Earth3-LR_piControl_r1i1p1f1_gr_*.nc'
+      xarray_kwargs:
+        decode_times: True

@@ -2,3 +2,10 @@ paths:
   grids: /work/users/mnurisso/aqua-archive/grids
   weights: /work/users/mnurisso/aqua-archive/weights
   areas: /work/users/mnurisso/aqua-archive/areas
+
+sources:
+  EC-Earth3-LR:
+    midHolocene:
+      default: lon-lat
+    piControl:
+      default: lon-lat
