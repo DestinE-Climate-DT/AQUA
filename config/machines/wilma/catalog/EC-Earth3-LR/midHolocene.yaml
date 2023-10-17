@@ -9,9 +9,10 @@ sources:
     driver: netcdf
     args:
       urlpath:
-        - /archive/paolo/cmip6/CMIP6/model-output/EC-Earth-Consortium/EC-Earth3-LR/midHolocene/atmos/Amon/r1i1p1f1/tas/tas-Earth3-LR_midHolocene_r1i1p1f1_gr_*.nc
-        - /archive/paolo/cmip6/CMIP6/model-output/EC-Earth-Consortium/EC-Earth3-LR/midHolocene/atmos/Amon/r1i1p1f1/psl/psl-Earth3-LR_midHolocene_r1i1p1f1_gr_*.nc
-      # chunks: 
-      #   time: 12
+        - /archive/paolo/cmip6/CMIP6/model-output/EC-Earth-Consortium/EC-Earth3-LR/midHolocene/atmos/Amon/r1i1p1f1/tas/tas_Amon_EC-Earth3-LR_midHolocene_r1i1p1f1_gr_*.nc
+        - /archive/paolo/cmip6/CMIP6/model-output/EC-Earth-Consortium/EC-Earth3-LR/midHolocene/atmos/Amon/r1i1p1f1/psl/psl_Amon_EC-Earth3-LR_midHolocene_r1i1p1f1_gr_*.nc
+      chunks: 
+        time: 1
+        use_cftime: True
       xarray_kwargs:
         decode_times: False
