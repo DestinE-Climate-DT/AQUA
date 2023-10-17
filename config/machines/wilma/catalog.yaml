@@ -1,0 +1,6 @@
+sources:
+  EC-Earth3-LR:
+    description: EC-Earth3-LR model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/EC-Earth3-LR/main.yaml"

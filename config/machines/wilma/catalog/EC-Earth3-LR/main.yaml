@@ -1,0 +1,11 @@
+sources:
+  midHolocene:
+    description: midHolocene data
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/midHolocene.yaml'
+  piControl:
+    description: 1850 fixed data
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/piControl.yaml'
