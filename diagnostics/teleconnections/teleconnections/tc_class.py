@@ -137,7 +137,7 @@ class Teleconnection():
         else:
             self._reader()
 
-    def run(self):
+    def run(self, **kwargs):
         """Run teleconnection analysis.
 
         The analysis consists of:
@@ -151,15 +151,19 @@ class Teleconnection():
         - Evaluating the correlation
 
         These methods can be also run separately.
+
+        Keyword arguments:
+            - rebuild (bool): If True, the index, regression and correlation
+                              are recalculated. Default is False.
         """
 
         self.logger.debug('Running teleconnection analysis for data: {}/{}/{}'
                           .format(self.model, self.exp, self.source))
 
         self.retrieve()
-        self.evaluate_index()
-        self.evaluate_regression()
-        self.evaluate_correlation()
+        self.evaluate_index(**kwargs)
+        self.evaluate_regression(**kwargs)
+        self.evaluate_correlation(**kwargs)
 
         self.logger.info('Teleconnection analysis completed')
 
@@ -232,6 +236,9 @@ class Teleconnection():
             self.logger.warning('Index already calculated, skipping')
             return
 
+        if rebuild and self.index is not None:
+            self.logger.info('Rebuilding index')
+
         if self.data is None:
             self.logger.warning('No retrieve has been performed, trying to retrieve')
             self.retrieve()
@@ -299,6 +306,9 @@ class Teleconnection():
             self.logger.warning('Regression already calculated, skipping')
             return
 
+        if rebuild and self.regression is not None:
+            self.logger.info('Rebuilding regression')
+
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 
         if var is None:
@@ -361,6 +371,9 @@ class Teleconnection():
         if self.correlation is not None and var is None and not rebuild:
             self.logger.warning('Correlation already calculated, skipping')
             return
+
+        if rebuild and self.correlation is not None:
+            self.logger.info('Rebuilding correlation')
 
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 

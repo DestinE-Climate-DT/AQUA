@@ -13,7 +13,7 @@ from aqua.util import load_yaml, get_arg
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
 from teleconnections import __version__ as telecversion
-from teleconnections.plots import single_map_plot
+from teleconnections.plots import plot_single_map
 from teleconnections.tc_class import Teleconnection
 
 
@@ -157,57 +157,61 @@ if __name__ == '__main__':
             # Regression map
             if telec == 'NAO':
                 cbar_label = 'msl [hPa]'
+                transform_first = False
             elif telec == 'ENSO':
                 cbar_label = 'sst [K]'
+                transform_first = True
 
             try:
-                # NOTE: we always try transform_first=False because it
-                # gives a better image quality
-                single_map_plot(map=teleconnection.regression,
-                                loglevel=loglevel,
-                                model=model, exp=exp,
+                plot_single_map(data=teleconnection.regression,
+                                save=True,
+                                cbar_label=cbar_label,
                                 outputdir=teleconnection.outputfig,
                                 filename=teleconnection.filename + '_regression.pdf',
-                                save=True, cbar_label=cbar_label, sym=True,
-                                transform_first=False)
+                                title='{} {} {} regression'.format(model, exp, telec),
+                                transform_first=transform_first,
+                                loglevel=loglevel)
             except Exception as e:
                 try:
-                    logger.error('Error plotting {} regression: '.format(telec), e)
-                    logger.info('Trying transform_first=True')
-                    single_map_plot(map=teleconnection.regression,
-                                    loglevel=loglevel,
-                                    model=model, exp=exp,
+                    logger.debug('Error plotting {} {} {} regression: '.format(model, exp, telec), e)
+                    logger.info('Trying without contour')
+                    plot_single_map(data=teleconnection.regression,
+                                    save=True, contour=False,
+                                    cbar_label=cbar_label,
                                     outputdir=teleconnection.outputfig,
-                                    filename=teleconnection.filename + '_regression.pdf',
-                                    save=True, cbar_label=cbar_label, sym=True,
-                                    transform_first=True)
+                                    filename=teleconnection.filename + '_regression',
+                                    title='{} {} {} regression'.format(model, exp, telec),
+                                    transform_first=transform_first,
+                                    loglevel=loglevel)
                 except Exception as e:
-                    logger.error('Error plotting {} regression: '.format(telec), e)
+                    logger.error('Error plotting {} {} {} regression: '.format(model, exp, telec), e)
 
             # Correlation map
             cbar = 'Pearson correlation'
 
             try:
-                single_map_plot(map=teleconnection.correlation,
-                                loglevel=loglevel,
-                                model=model, exp=exp,
+                plot_single_map(data=teleconnection.correlation,
+                                save=True,
+                                cbar_label=cbar_label,
                                 outputdir=teleconnection.outputfig,
-                                filename=teleconnection.filename + '_correlation.pdf',
-                                save=True, cbar_label=cbar, sym=True,
-                                transform_first=False)
+                                filename=teleconnection.filename + '_correlation',
+                                title='{} {} {} correlation'.format(model, exp, telec),
+                                transform_first=transform_first,
+                                loglevel=loglevel)
             except Exception as e:
-                logger.error('Error plotting {} correlation: '.format(telec), e)
-                logger.info('Trying transform_first=True')
                 try:
-                    single_map_plot(map=teleconnection.correlation,
-                                    loglevel=loglevel,
-                                    model=model, exp=exp,
+                    logger.debug('Error plotting {} {} {} correlation: '.format(model, exp, telec), e)
+                    logger.info('Trying without contour')
+                    plot_single_map(data=teleconnection.correlation,
+                                    save=True, contour=False,
+                                    cbar_label=cbar_label,
                                     outputdir=teleconnection.outputfig,
-                                    filename=teleconnection.filename + '_correlation.pdf',
-                                    save=True, cbar_label=cbar, sym=True,
-                                    transform_first=True)
+                                    filename=teleconnection.filename + '_correlation',
+                                    title='{} {} {} correlation'.format(model, exp, telec),
+                                    transform_first=transform_first,
+                                    loglevel=loglevel)
                 except Exception as e:
-                    logger.error('Error plotting {} correlation: '.format(telec), e)
+                    logger.error('Error plotting {} {} {} correlation: '.format(model, exp, telec), e)
 
         if obs:
             logger.warning('Analysing ERA5')
@@ -247,56 +251,59 @@ if __name__ == '__main__':
                 # Regression map
                 if telec == 'NAO':
                     cbar_label = 'msl [hPa]'
+                    transform_first = False
                 elif telec == 'ENSO':
                     cbar_label = 'sst [K]'
+                    transform_first = True
 
                 try:
-                    single_map_plot(map=teleconnection_ERA5.regression,
-                                    loglevel=loglevel,
-                                    title='ERA5',
+                    plot_single_map(data=teleconnection_ERA5.regression,
+                                    save=True,
+                                    cbar_label=cbar_label,
                                     outputdir=teleconnection_ERA5.outputfig,
-                                    filename=teleconnection_ERA5.filename + '_regression.pdf',
-                                    save=True, cbar_label=cbar_label,
-                                    sym=True, transform_first=False)
+                                    filename=teleconnection_ERA5.filename + '_regression',
+                                    title='{} {} {} regression'.format('ERA5', 'era5', telec),
+                                    loglevel=loglevel)
                 except Exception as e:
-                    logger.error('Error plotting ERA5 {} regression: '.format(telec), e)
-                    logger.info('Trying transform_first=True')
+                    logger.debug('Error plotting {} {} {} regression: '.format('ERA5', 'era5', telec), e)
+                    logger.info('Trying without contour')
                     try:
-                        single_map_plot(map=teleconnection_ERA5.regression,
-                                        loglevel=loglevel,
-                                        title='ERA5',
+                        plot_single_map(data=teleconnection_ERA5.regression,
+                                        save=True, contour=False,
+                                        cbar_label=cbar_label,
                                         outputdir=teleconnection_ERA5.outputfig,
-                                        filename=teleconnection_ERA5.filename + '_regression.pdf',
-                                        save=True, cbar_label=cbar_label,
-                                        sym=True, transform_first=True)
+                                        filename=teleconnection_ERA5.filename + '_regression',
+                                        title='{} {} {} regression'.format('ERA5', 'era5', telec),
+                                        transform_first=transform_first,
+                                        loglevel=loglevel)
                     except Exception as e:
-                        logger.error('Error plotting ERA5 {} regression: '.format(telec), e)
+                        logger.error('Error plotting {} {} {} regression: '.format('ERA5', 'era5', telec), e)
 
                 # Correlation map
                 cbar_label = 'Pearson correlation'
 
                 try:
-                    single_map_plot(map=teleconnection_ERA5.correlation,
-                                    loglevel=loglevel,
-                                    title='ERA5',
-                                    outputdir=teleconnection_ERA5.outputfig,
-                                    filename=teleconnection_ERA5.filename + '_correlation.pdf',
+                    plot_single_map(data=teleconnection_ERA5.correlation,
                                     save=True,
-                                    cbar_label='Pearson correlation',
-                                    sym=True, transform_first=False)
+                                    cbar_label=cbar_label,
+                                    outputdir=teleconnection_ERA5.outputfig,
+                                    filename=teleconnection_ERA5.filename + '_correlation',
+                                    title='{} {} {} correlation'.format('ERA5', 'era5', telec),
+                                    transform_first=transform_first,
+                                    loglevel=loglevel)
                 except Exception as e:
-                    logger.error('Error plotting ERA5 {} correlation: '.format(telec), e)
-                    logger.info('Trying transform_first=True')
                     try:
-                        single_map_plot(map=teleconnection_ERA5.correlation,
-                                        loglevel=loglevel,
-                                        title='ERA5',
+                        logger.debug('Error plotting {} {} {} correlation: '.format('ERA5', 'era5', telec), e)
+                        logger.info('Trying without contour')
+                        plot_single_map(data=teleconnection_ERA5.correlation,
+                                        save=True, contour=False,
+                                        cbar_label=cbar_label,
                                         outputdir=teleconnection_ERA5.outputfig,
-                                        filename=teleconnection_ERA5.filename + '_correlation.pdf',
-                                        save=True,
-                                        cbar_label='Pearson correlation',
-                                        sym=True, transform_first=True)
+                                        filename=teleconnection_ERA5.filename + '_correlation',
+                                        title='{} {} {} correlation'.format('ERA5', 'era5', telec),
+                                        transform_first=transform_first,
+                                        loglevel=loglevel)
                     except Exception as e:
-                        logger.error('Error plotting ERA5 {} correlation: '.format(telec), e)
+                        logger.error('Error plotting {} {} {} correlation: '.format('ERA5', 'era5', telec), e)
 
     logger.warning('Teleconnections diagnostic finished.')

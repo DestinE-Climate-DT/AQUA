@@ -6,6 +6,8 @@ import math
 import xarray as xr
 import cartopy.util as cutil
 
+from aqua.logger import log_configure
+
 
 def add_cyclic_lon(da: xr.DataArray):
     """
@@ -34,7 +36,8 @@ def add_cyclic_lon(da: xr.DataArray):
     new_da = new_da.assign_coords(lon=cyclic_lon)
     new_da = new_da.assign_coords(lat=da.lat)
 
-    # TODO: add old attributes to the new DataArray
+    # Add old attributes to the new DataArray
+    new_da.attrs = da.attrs
 
     return new_da
 
@@ -115,3 +118,63 @@ def evaluate_colorbar_limits(maps: list, sym: bool = True):
         vmax = max([map.max().values for map in maps])
 
     return vmin, vmax
+
+
+def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
+                   loglevel='WARNING'):
+    """
+    Evaluate the colorbar label.
+
+    Args:
+        data (xarray.DataArray): Input data array.
+        cbar_label (str, opt):   Colorbar label.
+        loglevel (str, opt):     Log level.
+
+    Returns:
+        cbar_label (str): Colorbar label.
+    """
+    logger = log_configure(loglevel, 'cbar get label')
+
+    if cbar_label is None:
+        try:
+            cbar_label = data.long_name
+            logger.debug("Using long_name as colorbar label")
+        except AttributeError:
+            cbar_label = data.short_name
+            logger.debug("Using short_name as colorbar label")
+
+        units = getattr(data, 'units', None)
+
+        if units:
+            cbar_label = f"{cbar_label} [{units}]"
+            logger.debug("Adding units to colorbar label")
+
+    return cbar_label
+
+
+def set_map_title(data: xr.DataArray, title: str = None,
+                  model: str = None, exp: str = None,
+                  loglevel='WARNING'):
+    """
+    Evaluate the map title.
+
+    Args:
+        data (xarray.DataArray): Input data array.
+        title (str, opt):        Map title.
+        loglevel (str, opt):     Log level.
+
+    Returns:
+        title (str): Map title.
+    """
+    logger = log_configure(loglevel, 'set map title')
+
+    if title is None:
+        try:
+            title = data.long_name
+            logger.debug("Using long_name as map title")
+        except AttributeError:
+            if model is not None and exp is not None:
+                title = f"{model} {exp}"
+                logger.debug("Using model and exp as map title")
+
+    return title

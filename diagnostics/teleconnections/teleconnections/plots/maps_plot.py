@@ -137,7 +137,8 @@ def maps_plot(maps=None, models=None, exps=None,
 def single_map_plot(map=None, save=False, model=None, exp=None,
                     figsize=(11, 8.5), nlevels=12, title=None,
                     cbar_label=None, outputdir='.', filename='maps.png',
-                    sym=True, loglevel='WARNING', **kwargs):
+                    sym=True, contour=True,
+                    loglevel='WARNING', **kwargs):
     """
     Plot a single map (regression, correlation, etc.)
     An xarray.DataArray objects is expected
@@ -155,6 +156,7 @@ def single_map_plot(map=None, save=False, model=None, exp=None,
         outputdir (str,opt):    output directory for the figure, default is '.' (current directory)
         filename (str,opt):     filename for the figure, default is 'maps.png'
         sym (bool,opt):         symmetrical colorbar, default is True
+        contour (bool,opt):     plot contours, default is True
         loglevel (str,opt):     log level for the logger, default is 'WARNING'
 
     Keyword Args:
@@ -203,10 +205,17 @@ def single_map_plot(map=None, save=False, model=None, exp=None,
     cmap = plt.get_cmap('RdBu_r')
     cmap.set_bad('white')
 
-    cs = ax.contourf(lon, lat, map, transform=ccrs.PlateCarree(),
-                     cmap=cmap, levels=nlevels,
-                     extend='both', vmin=vmin, vmax=vmax,
-                     transform_first=transform_first)
+    if contour is True:
+        logger.debug('Plotting contours')
+        cs = ax.contourf(lon, lat, map, transform=ccrs.PlateCarree(),
+                        cmap=cmap, levels=nlevels,
+                        extend='both', vmin=vmin, vmax=vmax,
+                        transform_first=transform_first)
+    else:
+        logger.debug('Not plotting contours')
+        logger.debug('Transform first: {} is ignored'.format(transform_first))
+        cs = ax.pcolormesh(lon, lat, map, transform=ccrs.PlateCarree(),
+                            cmap=cmap, vmin=vmin, vmax=vmax)
 
     # Title
     if title is not None:

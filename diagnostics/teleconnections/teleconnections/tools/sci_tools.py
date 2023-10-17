@@ -6,9 +6,11 @@ This module contains scientific tools for the teleconnections diagnostic.
 - weighted area mean function, to deal with weighted area mean
 '''
 import numpy as np
+from aqua.logger import log_configure
 
 
-def area_selection(indat, lat=None, lon=None, box_brd=True):
+def area_selection(indat, lat=None, lon=None, box_brd=True,
+                   loglevel='WARNING'):
     """
         Extract a custom area from a DataArray.
 
@@ -19,6 +21,7 @@ def area_selection(indat, lat=None, lon=None, box_brd=True):
             box_brd (bool,opt):       choose if coordinates are
                                       comprised or not.
                                       Default is True
+            loglevel (str, opt):      log level, default is WARNING
 
         Returns:
             (xarray.DataArray):  data on a custom surface
@@ -28,6 +31,10 @@ def area_selection(indat, lat=None, lon=None, box_brd=True):
             ValueError: if lat or lon are not in ascending order
             AttributeError: if lat or lon are not found in input data
     """
+    # 0. -- Logging --
+    logger = log_configure(loglevel, 'area selection')
+    logger.debug("Selecting area: lat = %s, lon = %s", lat, lon)
+
     # 1. -- Extract coordinates from indat --
     if lat is None and lon is None:
         raise ValueError('lat and lon cannot be both None')
@@ -50,6 +57,7 @@ def area_selection(indat, lat=None, lon=None, box_brd=True):
 
     # 2. -- Select area --
     if box_brd:
+        logger.debug('Selecting area with box boundaries')
         if lat:
             iplat = lat_coord.where((lat_coord >= lat[0]) &
                                     (lat_coord <= lat[1]), drop=True)
@@ -57,6 +65,7 @@ def area_selection(indat, lat=None, lon=None, box_brd=True):
             iplon = lon_coord.where((lon_coord >= lon[0]) &
                                     (lon_coord <= lon[1]), drop=True)
     else:
+        logger.debug('Selecting area without box boundaries')
         if lat:
             iplat = lat_coord.where((lat_coord > lat[0]) &
                                     (lat_coord < lat[1]), drop=True)
@@ -67,10 +76,13 @@ def area_selection(indat, lat=None, lon=None, box_brd=True):
     # 3. -- Area selection --
     odat = indat
     if lat:
+        logger.debug('Selecting latitudes')
         odat = odat.sel(lat=iplat)
     if lon:
+        logger.debug('Selecting longitudes')
         odat = odat.sel(lon=iplon)
 
+    logger.debug('Area selected')
     return odat
 
 
@@ -105,7 +117,8 @@ def lon_360_to_180(lon: float):
 
 
 def wgt_area_mean(indat, latN: float, latS: float,
-                  lonW: float, lonE: float, box_brd=True):
+                  lonW: float, lonE: float, box_brd=True,
+                  loglevel='WARNING'):
     """
     Evaluate the weighted mean of a quantity on a custom surface.
 
@@ -117,18 +130,28 @@ def wgt_area_mean(indat, latN: float, latS: float,
         lonE (float):             Est longitude
         box_brd (bool,opt):       choose if coordinates are comprised or not.
                                   Default is True
+        loglevel (str, opt):      log level, default is WARNING
 
     Returns:
         (xarray.DataArray): average of input data on a custom surface
     """
+    # 0. -- Logging --
+    logger = log_configure(loglevel, 'weighted area mean')
+
     # 1. -- Extract coordinates from indat --
     lat = indat.lat
 
     # 2. -- Select area --
     indat = area_selection(indat, lat=[latS, latN],
-                           lon=[lonW, lonE], box_brd=box_brd)
+                           lon=[lonW, lonE], box_brd=box_brd,
+                           loglevel=loglevel)
 
     # 3. -- Weighted area mean --
+    logger.debug('Computing weighted area mean')
+
+    # Rechunk to avoid memory issues
+    indat = indat.chunk({'time': -1, 'lat': 1, 'lon': 1})
+
     wgt = np.cos(np.deg2rad(lat))
     odat = indat.weighted(wgt).mean(("lon", "lat"), skipna=True)
     # HACK added with ICON, to avoid NaNs in the output

@@ -40,6 +40,10 @@ def index_plot(indx, save=False, outputdir='./', filename='index.png',
     # Configure the logger
     logger = log_configure(loglevel, 'Index plot')
 
+    # Load the data in memory
+    logger.debug('Loading data in memory')
+    indx = indx.load()
+
     # Generate the figure
     figsize = kwargs.get('figsize', (11, 8.5))
     fig, ax = plt.subplots(figsize=figsize)

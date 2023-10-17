@@ -8,7 +8,7 @@ from .tc_class import Teleconnection
 from .tools import TeleconnectionsConfig
 from .tools import area_selection, wgt_area_mean
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 __all__ = ['station_based_index', 'regional_mean_index',
            'regional_mean_anomalies',
@@ -19,6 +19,8 @@ __all__ = ['station_based_index', 'regional_mean_index',
            'area_selection', 'wgt_area_mean']
 
 # Changelog
+# 0.2.1: Performance improvements
+#        Refactory of single map plot function
 # 0.2.0: CLI working with the AQUA wrapper
 # 0.1.2: symmetric colorbar on/off for maps_plot
 # 0.1.1: bugfix of single_maps, ENSO available with 2t and skt

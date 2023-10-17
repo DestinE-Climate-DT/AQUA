@@ -7,34 +7,35 @@ Functions:
     regional_mean_index: evaluate regional mean index
     regional_mean_anomalies: evaluate regional mean anomalies
 '''
+import xarray as xr
+
 from aqua.logger import log_configure
 from teleconnections.tools import lon_180_to_360, wgt_area_mean
 
 
-def station_based_index(field, namelist, telecname, months_window=3,
+def station_based_index(field: xr.DataArray,
+                        namelist: dict,
+                        telecname='NAO',
+                        months_window=3,
                         loglevel='WARNING'):
     """
     Evaluate station based index for a teleconnection.
+    Field data must be monthly gridded data.
 
     Args:
-        field (xarray.DataArray): field over which evaluate the index
-        namelist:                 teleconnection yaml infos
-        telecname (str):          name of the teleconnection to be evaluated
+        field (xr.DataArray):     field over which evaluate the index
+        namelist (dict):          teleconnection yaml infos
+        telecname (str, opt):     name of the teleconnection to be evaluated
+                                  Default is NAO
         months_window (int, opt): months for rolling average, default is 3
         loglevel (str, opt):      log level, default is WARNING
 
     Returns:
         (xarray.DataArray): standardized station based index
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'station based index')
     logger.info('Evaluating station based index for %s', telecname)
 
-    # 1. -- Monthly field average and anomalies--
-    field_av = field.groupby("time.month").mean(dim="time")
-    field_an = field.groupby("time.month") - field_av
-
-    # 2. -- Acquiring latitude and longitude of stations --
     if field.lon.min() < 0:
         logger.debug('Data longitudes are -180-180, not converting')
         lon1 = namelist[telecname]['lon1']
@@ -50,25 +51,35 @@ def station_based_index(field, namelist, telecname, months_window=3,
     logger.info('Station 1: lon = %s, lat = %s', lon1, lat1)
     logger.info('Station 2: lon = %s, lat = %s', lon2, lat2)
 
-    # 3. -- Extracting field data at the acquired coordinates --
-    field_an1 = field_an.sel(lon=lon1, lat=lat1, method='nearest')
-    field_an2 = field_an.sel(lon=lon2, lat=lat2, method='nearest')
+    # We select first the field data at the two stations
+    field1 = field.sel(lon=lon1, lat=lat1, method='nearest')
+    field2 = field.sel(lon=lon2, lat=lat2, method='nearest')
 
-    # 4. -- Rolling average over months = months_window --
-    #  to be generalized to data not gridded monthly
-    field_an1_ma = field_an1.rolling(time=months_window, center=True).mean()
-    field_an2_ma = field_an2.rolling(time=months_window, center=True).mean()
+    logger.debug("Loading data in memory")
+    field1 = field1.load()
+    field2 = field2.load()
 
-    # 5. -- Evaluate average and std for the station based difference --
-    diff_ma = field_an1_ma-field_an2_ma
+    # Monthly field average and anomalies
+    field1_av = field1.groupby("time.month").mean(dim="time")
+    field1_an = field1.groupby("time.month") - field1_av
+
+    field2_av = field2.groupby("time.month").mean(dim="time")
+    field2_an = field2.groupby("time.month") - field2_av
+
+    # Rolling average over months = months_window
+    field1_an_ma = field1_an.rolling(time=months_window, center=True).mean()
+    field2_an_ma = field2_an.rolling(time=months_window, center=True).mean()
+
+    # Evaluate average and std for the station based difference
+    diff_ma = field1_an_ma-field2_an_ma
     mean_ma = diff_ma.mean()
     std_ma = diff_ma.std()
 
-    # 6. -- Evaluate the index and rename the variable in the DataArray --
+    # Evaluate the index and rename the variable in the DataArray
     indx = (diff_ma-mean_ma)/std_ma
     indx = indx.rename('index')
 
-    # 7. -- Drop NaNs --
+    # 7. Drop NaNs
     logger.debug('Dropping NaNs')
     indx = indx.dropna(dim='time')
 
@@ -81,6 +92,7 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
                         loglevel='WARNING'):
     """
     Evaluate regional field mean for a teleconnection.
+    Data must be monthly gridded data.
 
     Args:
         field (xarray.DataArray): field over which evaluate the index
@@ -129,6 +141,7 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
                             loglevel='WARNING'):
     """
     Evaluate regional field mean anomalies for a teleconnection.
+    Data must be monthly gridded data.
 
     Args:
         field (xarray.DataArray): field over which evaluate the index
@@ -150,7 +163,7 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
         lonW = namelist[telecname]['lonW']
         lonE = namelist[telecname]['lonE']
     else:
-        logger.debug('Data longitudes are 0-360, converting teleconnection coords')
+        logger.debug('Data longitudes are 0-360, converting')
         lonW = lon_180_to_360(namelist[telecname]['lonW'])
         lonE = lon_180_to_360(namelist[telecname]['lonE'])
 
@@ -160,9 +173,15 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
     logger.debug('Region: lon = %s; %s, lat = %s; %s', lonW, lonE, latS, latN)
 
     # 2. -- Evaluate mean value of the field and then the rolling mean --
-    field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
+    field_mean = wgt_area_mean(field, latN, latS, lonW, lonE,
+                               loglevel=loglevel)
+
+    logger.debug("Loading data in memory")
+    field_mean = field_mean.load()
+
     field_mean_an = field_mean.groupby("time.month") -\
         field_mean.groupby("time.month").mean(dim="time")
+
     field_mean_an = field_mean_an.rolling(time=months_window,
                                           center=True).mean(skipna=True)
 
