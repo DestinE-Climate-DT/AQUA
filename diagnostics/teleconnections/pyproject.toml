@@ -26,6 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "xarray"
+    "nc-time-axis"
 ]
 
 [tool.setuptools.package-data]
