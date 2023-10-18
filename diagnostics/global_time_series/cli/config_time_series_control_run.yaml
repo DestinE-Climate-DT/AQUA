@@ -2,7 +2,7 @@ timeseries:
 # We will append the variable name to the output file name
 # and the savefig name
     variables:
-        - "skt"
+        - "skt_mean"
        # - "erate"
         #- "tprate"
        # - "tcc"
