@@ -2325,21 +2325,101 @@ class Tropical_Rainfall:
                     except KeyError:
                         self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
                 else:
-                    if data.sel(time=time_selection).time.size == 1:
-                        self.logger.debug(f'The input time value for selection does not contain a day, but it is not matter for the lra dataset.')
-                    else:
-                        try:
-                            time_selection = time_selection + '-' + '01'
-                            data.sel(time=time_selection)
-                        except KeyError:
-                            time_selection = time_selection + '-' + '25'
-                        self.logger.debug(f'The input time value for selection does not contain a day. The new time value for selection is: {time_selection}')
+                    try:
+                        time_selection = time_selection + '-' + '01'
+                        data.sel(time=time_selection)
+                    except KeyError:
+                        time_selection = time_selection + '-' + '25'
+                    self.logger.debug(f'The input time value for selection does not contain a day. The new time value for selection is: {time_selection}')
+        self.logger.info(f'The time value for selection is: {time_selection}')
         return time_selection
+    
+    def zoom_in_data(self, trop_lat=None,
+                     pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False):
+        """
+        Zooms into specific geographical regions or the tropics in the data.
+
+        Args:
+            trop_lat (float, optional): The tropical latitude. Defaults to None.
+            pacific_ocean (bool, optional): Whether to zoom into the Pacific Ocean. Defaults to False.
+            atlantic_ocean (bool, optional): Whether to zoom into the Atlantic Ocean. Defaults to False.
+            indian_ocean (bool, optional): Whether to zoom into the Indian Ocean. Defaults to False.
+            tropical (bool, optional): Whether to zoom into the tropical region. Defaults to False.
+
+        Returns:
+            tuple: A tuple containing the longitude and latitude bounds after zooming.
+
+        Note:
+            The longitude and latitude boundaries will be adjusted based on the provided ocean or tropical settings.
+
+        Example:
+            lonmin, lonmax, latmin, latmax = zoom_in_data(trop_lat=23.5, atlantic_ocean=True)
+        """
+        self.class_attributes_update(trop_lat=trop_lat)
+
+        if pacific_ocean:
+            latmax = 65
+            latmin = -70
+            lonmin = -120
+            lonmax = 120
+        elif atlantic_ocean:
+            latmax = 70
+            latmin = -60
+            lonmin = -70
+            lonmax = 20
+        elif indian_ocean:
+            latmax = 30
+            latmin = -60
+            lonmin = 20
+            lonmax = 120
+
+        if tropical:
+            latmax = self.trop_lat
+            latmin = -self.trop_lat
+        self.logger.info(f'The data was zoomed in.')
+        return lonmin, lonmax, latmin, latmax
+    
+    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable='tprate', number_of_ticks=6):
+        """Compute ticks and levels for a color bar based on provided data.
+
+        Args:
+            data: The data from which to compute the color bar.
+            vmin: The minimum value of the color bar. If None, it is derived from the data.
+            vmax: The maximum value of the color bar. If None, it is derived from the data.
+            model_variable: The variable to consider for the color bar computation.
+            number_of_ticks: The number of ticks to be computed for the color bar.
+
+        Returns:
+            Tuple: A tuple containing the computed ticks and levels for the color bar.
+
+        Raises:
+            ZeroDivisionError: If a division by zero occurs during computation.
+        """
+        if vmin is None and vmax is None:
+            try:
+                vmax = float(data[model_variable].max().values) / 10
+            except KeyError:
+                vmax = float(data.max().values) / 10
+            vmin = -vmax
+            ticks = [vmin + i * (vmax - vmin) / number_of_ticks for i in range(number_of_ticks + 1)]
+        elif isinstance(vmax, int) and isinstance(vmin, int):
+            ticks = list(range(vmin, vmax + 1))
+        elif isinstance(vmax, float) or isinstance(vmin, float):
+            ticks = [vmin + i * (vmax - vmin) / number_of_ticks for i in range(number_of_ticks + 1)]
+
+        try:
+            del_tick = abs(vmax - 2 - vmin) / (number_of_ticks + 1)
+        except ZeroDivisionError:
+            del_tick = abs(vmax - 2.01 - vmin) / (number_of_ticks + 1)
+        clevs = np.arange(vmin, vmax, del_tick)
+
+        return ticks, clevs
+
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
-            model_variable='tprate', figsize=1, number_of_ticks=8,
-            trop_lat=None, plot_title=None, new_unit=None,
+            model_variable='tprate', figsize=1, number_of_ticks=6,
+            trop_lat=None, plot_title=None, new_unit="mm/day",
             vmin=None, vmax=None, time_selection='01',
             path_to_pdf=None, name_of_file=None, pdf_format=True,
             path_to_netcdf=None):
@@ -2376,38 +2456,13 @@ class Tropical_Rainfall:
 
         self.class_attributes_update(trop_lat=trop_lat)
 
-        if pacific_ocean:
-            latmax = 65
-            latmin = -70
-            lonmin = -120
-            lonmax = 120
-        elif atlantic_ocean:
-            latmax = 70
-            latmin = -60
-            lonmin = -70
-            lonmax = 20
-        elif indian_ocean:
-            latmax = 30
-            latmin = -60
-            lonmin = 20
-            lonmax = 120
-
-        if tropical:
-            latmax = 15
-            latmin = -15
-
         data = data if isinstance(data, list) else [data]
         data_len = len(data)
 
         if titles is None:
             titles = [""] * data_len
-        elif isinstance(data, str):
-            if data_len != 1:
-                raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
-        else:
-            if len(titles) != data_len:
-                raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
-
+        elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
+            raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
         
         if data_len == 1:
             ncols, nrows = 1, 1
@@ -2415,6 +2470,8 @@ class Tropical_Rainfall:
             ncols, nrows = 2, data_len // 2
         elif data_len % 3 == 0:
             ncols, nrows = 3, data_len // 3
+        
+        # modify
         if new_unit is None:
             try:
                 unit = data[0][model_variable].units
@@ -2428,35 +2485,17 @@ class Tropical_Rainfall:
         # Add subplots using the grid
         axs =  [fig.add_subplot(gs[i, j], projection=ccrs.PlateCarree()) for i in range(nrows) for j in range(ncols)]
 
-        if vmin is None and vmax is None:
-            try:
-                vmax = float(data[0][model_variable].max().values)/10
-            except KeyError:
-                vmax = float(data[0].max().values)/10
-            vmin = 0
-            ticks = [
-                vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-        elif isinstance(vmax, int) and isinstance(vmin, int):
-            ticks = []
-            i = 0
-            while vmin+i <= vmax:
-                ticks.append(vmin+i)
-                i = i + 1
-        elif isinstance(vmax, float) or isinstance(vmin, float):
-            ticks = [
-                vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-        vmin, vmax = ticks[0], ticks[-1]+1
-        try:
-            del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
-            clevs = np.arange(vmin, vmax, del_tick)
-        except ZeroDivisionError:
-            del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
-            clevs = np.arange(vmin, vmax, del_tick)            
+        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_ticks=number_of_ticks)
+                
 
-        for i in range(0, len(data)):
-            if lonmin != -180 or lonmax != 181:
+        for i in range(0, len(data)):   
+            if any((pacific_ocean, atlantic_ocean, indian_ocean, tropical)):
+                lonmin, lonmax, latmin, latmax = self.zoom_in_data(trop_lat=self.trop_lat,
+                        pacific_ocean=pacific_ocean, atlantic_ocean=atlantic_ocean, indian_ocean=indian_ocean, tropical=tropical)
+                
+            if lonmin is not -180 or lonmax not in (180, 181):
                 data[i] = data[i].sel(lon=slice(lonmin, lonmax))
-            if latmin != -90 or latmax != 91:
+            if latmin is not -90 or latmax not in (90, 91):
                 data[i] = data[i].sel(lat=slice(latmin, latmax))
 
             
@@ -2486,27 +2525,18 @@ class Tropical_Rainfall:
 
             axs[i].set_title(titles[i], fontsize=17)
             axs[i].coastlines()
-
-            dellon = int(lonmax-lonmin)/6
             # Longitude labels
-            axs[i].set_xticks(np.arange(lonmin, lonmax, dellon),
-                            crs=ccrs.PlateCarree())
-            lon_formatter = cticker.LongitudeFormatter()
-            axs[i].xaxis.set_major_formatter(lon_formatter)
-            
-            dellat = int(latmax-latmin)/6
+            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/number_of_ticks), crs=ccrs.PlateCarree())
+            axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())           
             # Latitude labels
-            axs[i].set_yticks(np.arange(latmin, latmax, dellat),
-                            crs=ccrs.PlateCarree())
-            lat_formatter = cticker.LatitudeFormatter()
-            axs[i].yaxis.set_major_formatter(lat_formatter)
+            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/number_of_ticks), crs=ccrs.PlateCarree())
+            axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
             axs[i].grid(True)
 
         # Draw the colorbar
         cbar_ax = fig.add_subplot(gs[:, -1]) # Adjust the column index as needed
         cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='vertical', extend='both') #, shrink=0.8, pad=0.05, aspect=30)
         cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-    
         if plot_title is not None:
             plt.suptitle(plot_title,                       fontsize=17)
 
