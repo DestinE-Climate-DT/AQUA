@@ -7,11 +7,8 @@ Overview of Available Diagnostics
 AQUA provides a collection of built-in diagnostics to analyze climate model outputs. 
 In order to provide a comprehensive assessment, AQUA diagnostics have been divided in two big families: 
 
-1.	The first set, named **frontier**, identifies a set of diagnostics which will run digesting the high-resolution - both temporal and spatial - full GSV data to provide insight 
-at climatological scales on physical/dynamical processes that could not be investigated with classical climate simulations so far.  
-
-2.	The second family, named **state-of-the-art**, lists diagnostics which will use the archived low resolution GSV data as input, accessed through Data Bridge.
-Most of these diagnostics can be compared with observations to produce metrics of evaluation and aim at providing an assessment of the model against observational datasets and, in some selected occasions, pre-existing climate simulations. 
+1.	The first set, named **frontier**, identifies a set of diagnostics which will run digesting the high-resolution - both temporal and spatial - full GSV data to provide insight  at climatological scales on physical/dynamical processes that could not be investigated with classical climate simulations so far.  
+2.	The second family, named **state-of-the-art**, lists diagnostics which will use the archived low resolution GSV data as input, accessed through Data Bridge. Most of these diagnostics can be compared with observations to produce metrics of evaluation and aim at providing an assessment of the model against observational datasets and, in some selected occasions, pre-existing climate simulations. 
 
 Frontier Diagnostics
 ++++++++++++++++++++

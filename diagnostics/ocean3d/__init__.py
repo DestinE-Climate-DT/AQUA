@@ -1,4 +1,4 @@
-"""Ocean3D module""" 
+"""Ocean3D module"""
 
 from .ocean_util import *
 from .ocean_circulation import *

@@ -6,7 +6,8 @@ Description
 -----------
 
 The sea ice extent (SIE) is defined as the areal integral of all ocean grid cells that contain at least 15% of sea ice concentration (SIC).
-This threshold-based definition has its drawbacks (it is subjective, it is not as physical as sea ice area, it is not linear under time averaging) but has the advantage to be practical, as it corresponds to the surface enclosed by the sea ice edge.
+This threshold-based definition has its drawbacks (it is subjective, it is not as physical as sea ice area,
+it is not linear under time averaging) but has the advantage to be practical, as it corresponds to the surface enclosed by the sea ice edge.
 
 Further details on the definition can be gound on the National Snow and Ice Data Center (NSIDC) `website <https://nsidc.org/learn/ask-scientist/what-difference-between-sea-ice-area-and-extent#:~:text=Sea%20ice%20area%20is%20the,15%20percent%20sea%20ice%20cover>`_.
 
@@ -18,23 +19,24 @@ Structure
 
 The sea ice extent diagnostic follows a class structure and consists of the files:
 
-* `seaice_class.py`: a python file in which the SeaIceExtent class constructor and the other class methods are included;
-* `regions.yml`: a yaml file with the definitions of regions where SIE can be calculated
-* `notebooks/seaice.ipynb`: an ipython notebook which uses the `seaice_class` class and its methods;
-* `README.md`: a readme file which contains some technical information on how to install the sea ice diagnostic and its environment. 
+* ``seaice_class.py``: a python file in which the SeaIceExtent class constructor and the other class methods are included;
+* ``regions.yml``: a yaml file with the definitions of regions where SIE can be calculated
+* ``notebooks/seaice.ipynb``: an ipython notebook which uses the ``seaice_class`` class and its methods;
+* ``README.md``: a readme file which contains some technical information on how to install the sea ice diagnostic and its environment. 
 
 Input variables
 ---------------
 
-* `ci` (sea ice concentration, GRIB paramid 31)
+* ``ci`` (sea ice concentration, GRIB paramid 31)
 * usual model-specific invariants (latitude, longitude, grid cell areas)
 
 Output 
 ------
 
-The script produces `figSIE.pdf` and `figSIE.png`,  two figures showing the full seasonal cycles of sea ice extent in the specified regions for the available time of integrations.
+The script produces ``figSIE.pdf`` and ``figSIE.png``,  two figures showing the full seasonal cycles of sea
+ice extent in the specified regions for the available time of integrations.
 
-The script also produces as many NetCDF files as there were items provided in the `mySetups` list.
+The script also produces as many NetCDF files as there were items provided in the ``mySetups`` list.
 Each NetCDF file has the time series of sea ice extent recorded for the various regions.
 
 Methods used
@@ -42,9 +44,9 @@ Methods used
 
 Examples from the seaIce class contained in the seaice_class.py file:
 
-* "computeExtent": method to retrieve the data and compute the sea ice extent of the retrieved data. 
-* "plotExtent": method to plot the sea ice extent time series.
-* "createNetCDF": method to create a NetCDF file with the sea ice extent time series.
+* ``computeExtent``: method to retrieve the data and compute the sea ice extent of the retrieved data. 
+* ``plotExtent``: method to plot the sea ice extent time series.
+* ``createNetCDF``: method to create a NetCDF file with the sea ice extent time series.
 
 
 Observations

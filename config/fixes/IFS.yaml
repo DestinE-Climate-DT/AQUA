@@ -248,19 +248,30 @@ models:
             2D_1h_native: 
                 method: default
 
-        # this should be exatly the same but we have tprate without decumulation         
+        # this should be exactly the same but we have tprate without decumulation already in the fdb       
         control-1950-devcon:
             hourly-1deg:
                 method: merge
                 vars:
-                    tprate: 
+                    tprate:
                         source: tprate
-        # this should be exatly the same but we have tprate without decumulation     
+            hourly-native:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+
+        # this should be exactly the same but we have tprate without decumulation already in the fdb 
         historical-1990-devcon:
             hourly-1deg:
                 method: merge
                 vars:
-                    tprate:  # a very recent version of eccodes is needed for this one
+                    tprate:
+                        source: tprate
+            hourly-native:
+                method: merge
+                vars:
+                    tprate:
                         source: tprate
 
         # These are for tests

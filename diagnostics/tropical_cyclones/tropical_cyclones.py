@@ -21,7 +21,7 @@ class TCs(DetectNodes, StitchNodes):
     """
 
     def __init__(self, tdict=None,
-                 paths=None, model="IFS", exp="tco2559-ng5",
+                 paths=None, model=None, exp="None", source2d="None", source3d="None",
                  boxdim=10, lowgrid='r100', highgrid='r010', var2store=None,
                  streaming=False, frequency='6h',
                  startdate=None, enddate=None,
@@ -82,6 +82,8 @@ class TCs(DetectNodes, StitchNodes):
                 raise ValueError('Define startdate and/or enddate')
             self.model = model
             self.exp = exp
+            self.source2d = source2d
+            self.source3d = source3d
             self.boxdim = boxdim
             self.lowgrid = lowgrid
             self.highgrid = highgrid
@@ -190,7 +192,7 @@ class TCs(DetectNodes, StitchNodes):
             self.logger.warning(
                 'Initialised streaming for %s %s starting on %s', self.stream_step, self.stream_units, self.stream_startdate)
         if self.model in 'IFS':
-            self.varlist2d = ['msl', '10u', '10v']
+            self.varlist2d = ['msl', '10u', '10v', 'z']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
                                    regrid=self.lowgrid, streaming=self.streaming,
                                    stream_step=self.stream_step,
@@ -231,6 +233,7 @@ class TCs(DetectNodes, StitchNodes):
             self.data2d = self.reader2d.retrieve(vars=self.varlist2d)
             self.data3d = self.reader3d.retrieve(vars=self.varlist3d)
             self.fullres = self.reader_fullres.retrieve(var=self.var2store)
+
 
         if self.streaming:
             self.stream_enddate = self.data2d.time[-1].values

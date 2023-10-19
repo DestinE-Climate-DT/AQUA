@@ -8,8 +8,10 @@ and a set of variables defined in a yaml configuration file.
 import argparse
 import sys
 import matplotlib.pyplot as plt
+sys.path.insert(0, "../../../") 
 from aqua.util import load_yaml
-sys.path.insert(0, "../../")
+from aqua.exceptions import NotEnoughDataError
+sys.path.insert(0, "../../") 
 from global_time_series import plot_timeseries, plot_gregory
 
 def create_plots_filename(config=None, var=None):
@@ -83,6 +85,11 @@ def _main():
                 outfile = create_outfile_filename(config=src_config, var=var)
                 if verbose:
                     print(f"Saving data to {outfile}")
+                try:
+                    plot_timeseries(**src_config, variable=var, ax=ax, outfile=outfile)
+                except NotEnoughDataError as e:                  
+                    print(f"Error: {e}")
+                    exit(0)
                 plot_timeseries(**src_config, variable=var, ax=ax, outfile=outfile)
             if "savefig" in config["timeseries"]:
                 filename = create_plots_filename(config=config, var=var)

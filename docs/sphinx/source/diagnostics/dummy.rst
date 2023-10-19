@@ -21,28 +21,29 @@ Structure
 
 The dummy diagnostic follows a class structure and consists of the files:
 
-* `dummy_class.py`: a python file in which the DummyDiagnostic class constructor and the other class methods are included;
-* `dummy_func.py`: a python file which contains functions that are called and used in the dummy class;
-* `env-dummy.yml`: a yaml file with the required dependencies for the dummy diagnostic;
-* `notebooks/dummy.ipynb`: an ipython notebook which uses the dymmy class and its methods;
-* `README.md` : a readme file which contains some tecnical information on how to install the dummy diagnostic and its environment. 
+* ``dummy_class.py``: a python file in which the DummyDiagnostic class constructor and the other class methods are included;
+* ``dummy_func.py``: a python file which contains functions that are called and used in the dummy class;
+* ``notebooks/dummy.ipynb``: an ipython notebook which uses the dymmy class and its methods;
+* ``cli/cli_dummy.py``: a python file which contains the command line interface (CLI) of the dummy diagnostic;
+* ``README.md`` : a readme file which contains some tecnical information on how to install the dummy diagnostic and its environment. 
 
 Input variables example
 ------------------------
 
-* `tprate` (total precipitation rate, GRIB paramid 260048)
-* `2t`     (2 metre temperature, GRIB pramid 167)
+* ``tprate`` (total precipitation rate, GRIB paramid 260048)
+* ``2t``     (2 metre temperature, GRIB pramid 167)
 
 Output 
 ------
 
-List here types of files/datasets produced by the diagnostic. Please keep in mind that diagnostic output should be both
-figures (PDF format is recommended) and data (NetCDF file is recommended). 
+List here types of files/datasets produced by the diagnostic.
+Please keep in mind that diagnostic output should be both figures (PDF format is recommended)
+and data (NetCDF file is recommended). 
 
 Methods used
 ------------
 
-Examples from the DummyDiagnostic class contained in the dummy_class.py file:
+Examples from the DummyDiagnostic class contained in the ``dummy_class.py`` file:
 
 * "DummyDiagnostic": the Dummy diagnostic class;
 * "retrieve": method to retrieve the data from the Reader class;
@@ -67,12 +68,13 @@ Note that it is important to add docstrings to each function.
 We are following `Google-style docstring <https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html>`_
 
 .. note::
-    Please note that there is no need to list all the methods used, but the most important which are exposed to the users should be presented
+    Please note that there is no need to list all the functions used, but the most important which are exposed to the users should be presented
 
 Observations
 ------------
 
-If relevant, list the observational datasets used by this diagnostic (e.g. for validation/comparison). Some examples are ERA5 reanalysis, CERES, MSWEP etc...
+If relevant, list the observational datasets used by this diagnostic (e.g. for validation/comparison).
+Some examples are ERA5 reanalysis, CERES, MSWEP etc...
 
 References
 ----------

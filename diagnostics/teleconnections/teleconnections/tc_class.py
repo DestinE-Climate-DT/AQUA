@@ -14,8 +14,10 @@ Available teleconnections:
 """
 import os
 
+from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.reader import Reader
+from aqua.reader import Reader, inspect_catalogue
+from aqua.util import ConfigPath
 from teleconnections.index import station_based_index, regional_mean_anomalies
 from teleconnections.plots import index_plot
 from teleconnections.statistics import reg_evaluation, cor_evaluation
@@ -26,7 +28,8 @@ class Teleconnection():
     """Class for teleconnection objects."""
 
     def __init__(self, model: str, exp: str, source: str,
-                 telecname: str, configdir=None,
+                 telecname: str,
+                 configdir=None, aquaconfigdir=None,
                  regrid=None, freq=None,
                  zoom=None,
                  savefig=False, outputfig=None,
@@ -41,6 +44,7 @@ class Teleconnection():
             telecname (str):                Teleconnection name.
                                             See documentation for available teleconnections.
             configdir (str, optional):      Path to diagnostics configuration folder.
+            aquaconfigdir (str, optional):  Path to AQUA configuration folder.
             regrid (str, optional):         Regridding resolution. Defaults to None.
             freq (str, optional):           Frequency of the data. Defaults to None.
             zoom (str, optional):           Zoom for ICON data. Defaults to None.
@@ -56,6 +60,7 @@ class Teleconnection():
             loglevel (str, optional):       Log level. Defaults to 'WARNING'.
 
         Raises:
+            NoDataError: If the data is not available.
             ValueError: If telecname is not one of the available teleconnections.
         """
 
@@ -67,8 +72,11 @@ class Teleconnection():
         self.model = model
         self.exp = exp
         self.source = source
-        self.logger.debug('Open dataset: {}/{}/{}'.format(self.model, self.exp,
-                                                          self.source))
+
+        # Load AQUA config and check that the data is available
+        self.machine = None
+        self.aquaconfigdir = aquaconfigdir
+        self._aqua_config()
 
         self.regrid = regrid
         if self.regrid is None:
@@ -129,30 +137,6 @@ class Teleconnection():
         else:
             self._reader()
 
-    def _load_namelist(self, configdir=None):
-        """Load namelist.
-
-        Args:
-            configdir (str, optional): Path to diagnostics configuration folder.
-                                       If None, the default diagnostics folder is used.
-        """
-        config = TeleconnectionsConfig(configdir=configdir)
-
-        self.namelist = config.load_namelist()
-        self.logger.info('Namelist loaded')
-
-    def _reader(self, **kwargs):
-        """Initialize AQUA reader.
-
-        Args:
-            **kwargs: Keyword arguments to be passed to the reader.
-        """
-
-        self.reader = Reader(model=self.model, exp=self.exp, source=self.source,
-                             regrid=self.regrid, freq=self.freq,
-                             loglevel=self.loglevel, **kwargs)
-        self.logger.info('Reader initialized')
-
     def run(self):
         """Run teleconnection analysis.
 
@@ -193,14 +177,15 @@ class Teleconnection():
 
         Returns:
             xarray.DataArray: Data retrieved if a variable is specified.
+
+        Raises:
+            NoDataError: If the data is not available.
         """
         if var is None:
             try:
                 self.data = self.reader.retrieve(var=self.var, **kwargs)
-            except ValueError:
-                self.logger.warning('Variable {} not found'.format(self.var))
-                self.logger.warning('Trying to retrieve without fixing and **kwargs')
-                self.data = self.reader.retrieve(var=self.var, fix=False)
+            except (ValueError, KeyError):
+                raise NoDataError('Variable {} not found'.format(self.var))
             self.logger.info('Data retrieved')
 
             if self.regrid:
@@ -214,10 +199,8 @@ class Teleconnection():
         else:
             try:
                 data = self.reader.retrieve(var=var, **kwargs)
-            except ValueError:
-                self.logger.warning('Variable {} not found'.format(var))
-                self.logger.warning('Trying to retrieve without fixing and **kwargs')
-                data = self.reader.retrieve(var=var, fix=False)
+            except (ValueError, KeyError):
+                raise NoDataError('Variable {} not found'.format(var))
             self.logger.info('Data retrieved')
 
             if self.regrid:
@@ -240,6 +223,9 @@ class Teleconnection():
             rebuild (bool, optional): If True, the index is recalculated.
                                       Default is False.
             **kwargs: Keyword arguments to be passed to the index function.
+
+        Raises:
+            ValueError: If the index is not calculated correctly.
         """
 
         if self.index is not None and not rebuild:
@@ -249,6 +235,10 @@ class Teleconnection():
         if self.data is None:
             self.logger.warning('No retrieve has been performed, trying to retrieve')
             self.retrieve()
+
+        # Check that data have at least 2 years:
+        if len(self.data[self.var].time) < 24:
+            raise NotEnoughDataError('Data have less than 24 months')
 
         if self.telec_type == 'station':
             self.logger.debug('Calculating {} index'.format(self.telecname))
@@ -426,6 +416,34 @@ class Teleconnection():
                        loglevel=self.loglevel, step=step, title=title,
                        ylabel=ylabel, **kwargs)
 
+    def _load_namelist(self, configdir=None):
+        """Load namelist.
+
+        Args:
+            configdir (str, optional): Path to diagnostics configuration folder.
+                                       If None, the default diagnostics folder is used.
+        """
+        config = TeleconnectionsConfig(configdir=configdir)
+
+        self.namelist = config.load_namelist()
+        self.logger.info('Namelist loaded')
+
+    def _aqua_config(self):
+        """Load AQUA configuration.
+
+        Raises:
+            NoDataError: If the data is not available.
+        """
+        aqua_config = ConfigPath(configdir=self.aquaconfigdir)
+        self.machine = aqua_config.machine
+        self.logger.debug('Machine: {}'.format(self.machine))
+
+        # Check that the data is available in the catalogue
+        if inspect_catalogue(model=self.model, exp=self.exp,
+                             source=self.source,
+                             verbose=False) is False:
+            raise NoDataError('Data not available')
+
     def _load_figs_options(self, savefig=False, outputfig=None):
         """Load the figure options.
         Args:
@@ -500,6 +518,20 @@ class Teleconnection():
         elif folder_type == 'data':
             self.outputdir = folder
             self.logger.debug('Data output folder: {}'.format(self.outputdir))
+
+    def _reader(self, **kwargs):
+        """Initialize AQUA reader.
+
+        Args:
+            **kwargs: Keyword arguments to be passed to the reader.
+        """
+
+        self.reader = Reader(model=self.model, exp=self.exp, source=self.source,
+                             regrid=self.regrid, freq=self.freq,
+                             loglevel=self.loglevel, 
+                             configdir=self.aquaconfigdir,
+                             **kwargs)
+        self.logger.info('Reader initialized')
 
     def _prepare_corr_reg(self, data=None, var=None,
                           dim='time'):

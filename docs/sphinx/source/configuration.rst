@@ -1,12 +1,12 @@
 Configuration
 =============
 
-AQUA configuration is based on a configuration folder `config`, which includes a few different files, both local and machine-dependent. 
-The `config.yml` includes the most crucial path to be stored.
+AQUA configuration is based on a configuration folder ``config``, which includes a few different files, both local and machine-dependent. 
+The ``config-aqua.yml`` includes the most crucial path to be stored.
 
 Then, machine-dependent folders are used to specify the data access properties and the AQUA functions as the interpolation features.
 
-The `config` folder is structured as follows:
+The ``config`` folder is structured as follows:
 
 
 .. code-block:: text
@@ -15,9 +15,16 @@ The `config` folder is structured as follows:
     │   ├── data_models
     │   ├── fixes
     │   └── machines
-    ├── config.yaml
+    │       ├── levante
+    !       │   ├── catalog 
+    │       │   ├── catalog.yaml
+    │       │   └── regrid.yaml
+    │       ├── lumi
+    │       └── ...
+    ├── aqua-grids.yaml
+    ├── config-aqua.yaml
     
-In the `config.yaml` file, the following paths are specified:
+In the ``config-aqua.yaml`` file, the following paths are specified:
 
 .. code-block:: yaml
 
@@ -28,27 +35,27 @@ In the `config.yaml` file, the following paths are specified:
       regrid: '{configdir}/machines/{machine}/regrid.yaml'
       fixer: '{configdir}/fixes'
 
-    cdo: # path to the cdo executable, that is necessary for generation interpolation weights
-      levante: /sw/spack-levante/cdo-2.0.6-jkuh4i/bin/cdo
-      lumi: /scratch/project_465000454/devaraju/SW/LUMI-22.08/C/python-xarray/bin/cdo
+    cdo: # CDO path is found automatically with which if not specified here
+      levante: /home/m/m214003/local/bin/cdo # CDO 2.2.0 by Uwe Schulzweida (HEALPix support)
 
+In the ``aqua-grids.yaml`` file, the available grids are described.
+The grid name is used to identify the grid in the ``regrid.yaml`` file, where sources are associated to the grid name.
+This file is used by the AQUA ``Reader`` to identify the grid of the dataset and to interpolate the data to the target grid.
 
+The ``data_models`` folder contains the data model configuration files, which are used to specify the data model of the datasets.
+The ``fixes`` folder contains the fixer configuration files used to fix the data in terms of variable names and units.
 
-The `data_models` folder contains the data model configuration files, which are used to specify the data model of the datasets.
-The `fixes` folder contains the fixer configuration files used to fix the data in terms of variable names and units.
-
-Each machine folder contains a `catalog.yaml` file specifying the data access properties
-and a `regrid.yaml` file specifying the interpolation properties. 
-The `catalog` folder inside each `machine` folder contains intake catalogues for individual datasets.
+Each machine folder contains a ``catalog.yaml`` file specifying the data access properties and a ``regrid.yaml`` file specifying the grids associated to a catalogue entry. 
+The ``catalog`` folder inside each ``machine`` folder contains intake catalogues for individual datasets.
 
 For a more detailed description of the content in the machine folder, see the section on :doc:`adding_data`.
 
-By default the AQUA `Reader` looks for its configuration files in a `config` folder in a series of predefined directory, with the following order:
+By default the AQUA ``Reader`` looks for its configuration files in a ``config`` folder in a series of predefined directory, with the following order:
 
-- An environment variable defined as `$AQUA`
+- An environment variable defined as ``$AQUA``
 - The current directory
 - A 3-level parent directory hierarchy (.., ../.., ../../..)
-- A `.aqua/config` folder
+- A ``.aqua/config`` folder
 
 This gives the user the freedom to run scripts and notebooks from different locations without worrying about the location of configuration files. 
-In any case it is also possible to pass explicitly a `configdir` keyword when you instantiate an AQUA `Reader` object.
+In any case it is also possible to pass explicitly a ``configdir`` keyword when you instantiate an AQUA ``Reader`` object.

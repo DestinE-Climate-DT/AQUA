@@ -1,0 +1,4 @@
+model: 'FESOM' 
+exp: 'tco2559-ng5-cycle3'
+source: "lra-r100-monthly"
+outputdir: './output'

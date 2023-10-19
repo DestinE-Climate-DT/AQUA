@@ -16,4 +16,4 @@ AQUA_tests.tar.gz
 .coverage
 coverage.xml
 coverage/
-
+.vscode/*

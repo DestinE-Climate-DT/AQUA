@@ -135,8 +135,8 @@ class StitchNodes():
                 with open(fname) as infile:
                     outfile.write(infile.read())
 
-        stitch_string = f'StitchNodes --in {full_nodes} --out {self.track_file} --in_fmt lon,lat,slp,wind --range 8.0 --mintime {mintime} ' \
-            f'--maxgap {maxgap} --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10'
+        stitch_string = f'StitchNodes --in {full_nodes} --out {self.track_file} --in_fmt lon,lat,slp,wind,zs --range 8.0 --mintime {mintime} ' \
+            f'--maxgap {maxgap} --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10;zs,<=,1500.0,10"'
         self.logger.info(stitch_string)
         subprocess.run(stitch_string.split(),
                        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
@@ -160,7 +160,7 @@ class StitchNodes():
             # print(parts_list)
             tracks = {'slon': [parts[3] for parts in parts_list],
                       'slat':  [parts[4] for parts in parts_list],
-                      'date': [parts[7] + parts[8].zfill(2) + parts[9].zfill(2) + parts[10].zfill(2) for parts in parts_list],
+                      'date': [parts[8] + parts[9].zfill(2) + parts[10].zfill(2) + parts[11].zfill(2) for parts in parts_list],
                       }
 
         reordered_tracks = {}

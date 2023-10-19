@@ -51,36 +51,36 @@ sources:
       consolidated: false
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_0.25deg/json.dir/atm3d.json
-  2D_1h_1deg:
-    driver: zarr
-    args:
-      consolidated: false
-      urlpath: 
-        reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_1deg/json.dir/atm2d.json
+  # 2D_1h_1deg:
+  #   driver: zarr
+  #   args:
+  #     consolidated: false
+  #     urlpath: 
+  #       reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_1deg/json.dir/atm2d.json
   # 3D_1h_1deg:
   #   driver: zarr
   #   args:
   #     consolidated: false
   #     urlpath: 
   #       reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_1deg/json.dir/atm3d.json
-  2D_monthly_1deg:
-    driver: zarr
-    args:
-      consolidated: false
-      urlpath: 
-        reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_1deg/json.dir/atm2d.json
-  3D_monthly_1deg:
-    driver: zarr
-    args:
-      consolidated: false
-      urlpath: 
-        reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_1deg/json.dir/atm3d.json
-  WAM_1h_native:
-    driver: zarr
-    args:
-      consolidated: false
-      urlpath: 
-        reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h_wam/json.dir/atm2d.json
+  # 2D_monthly_1deg:
+  #   driver: zarr
+  #   args:
+  #     consolidated: false
+  #     urlpath: 
+  #       reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_1deg/json.dir/atm2d.json
+  # 3D_monthly_1deg:
+  #   driver: zarr
+  #   args:
+  #     consolidated: false
+  #     urlpath: 
+  #       reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_1deg/json.dir/atm3d.json
+  # WAM_1h_native:
+  #   driver: zarr
+  #   args:
+  #     consolidated: false
+  #     urlpath: 
+  #       reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h_wam/json.dir/atm2d.json
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100

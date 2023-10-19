@@ -1,0 +1,33 @@
+# This block can be overridden in the command line by using:
+# --model, --exp, --source, --outputdir
+model: "IFS"
+exp: "tco2559-ng5-cycle3"
+source: "lra-r100-monthly"
+outputdir: "./"
+
+# This is the list of variables that will be plotted as timeseries
+timeseries: ['2t', 'tprate', 'erate', 'ci', 'msl', 'mslhfl', 'msnsrf',
+             'msntrf', 'msshfl', 'mtnsrf', 'mtntrf', 'tcc']
+
+gregory:
+  resample: "M"
+  savefig: True
+
+timeseries_plot_params:
+# These are options that specify how the data is plotted
+# Default values are used if the variable that is being
+# plotted is not specified here.
+# If you need specific options for a variable, you can
+# add it here.
+  default:
+    plot_kw:
+      color: "tab:blue"
+    plot_era5: True
+    resample: "M"
+    savefig: True
+  # 2t:
+  #   plot_kw:
+  #     color: "tab:blue"
+  #   plot_era5: True
+  #   resample: "M"
+  #   savefig: True

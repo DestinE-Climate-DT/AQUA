@@ -100,7 +100,10 @@ def _init_get_eccodes_attr():
                    "cfVarName": cfvarname[i],
                    "shortName": shortname[i]}
             return dic
-        except ValueError:
+        
+        except (ValueError, IndexError) as error:
+            logger.debug('ERROR: %s', error)
+            logger.warning('Cannot find any grib codes for ShortName %s, returning empty dictionary', sn)
             return None
 
     return _get_eccodes_attr

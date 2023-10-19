@@ -7,8 +7,8 @@ from aqua import OPAgenerator, Reader
 loglevel = "DEBUG"
 
 @pytest.fixture(
-    params=[("IFS", "test-tco79", "long", "2t", "onepass_test",
-             "onepass_test")]
+    params=[("IFS", "test-tco79", "long", "2t", "onepass_test/",
+             "onepass_test/")]
 )
 def opa_arguments(request):
     return request.param
@@ -33,7 +33,7 @@ class TestOPA():
         """Test the OPA generator with checkpoint = False"""
         model, exp, source, var, outdir, tmpdir = opa_arguments
         opaopa = OPAgenerator(model=model, exp=exp, source=source, var=var,
-                              frequency='dailly', outdir=outdir, tmpdir=tmpdir,
+                              frequency='daily', outdir=outdir, tmpdir=tmpdir,
                               definitive=False, checkpoint=False, loglevel=loglevel)
         opaopa.retrieve()
         opaopa.generate_opa()

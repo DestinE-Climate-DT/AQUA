@@ -218,8 +218,8 @@ def hovmoller_lev_time_plot(data, region, anomaly: bool = False, standardise: bo
     # plt.pcolor(X, Y, Z, vmin=vmin, vmax=vmax, norm=norm)
 
     # To center the colorscale around zero when we plot temperature anomalies
-    ocptmin = round(np.min(data.ocpt.values), 2)
-    ocptmax = round(np.max(data.ocpt.values), 2)
+    ocptmin = round(np.nanmin(data.ocpt.values), 2)
+    ocptmax = round(np.nanmax(data.ocpt.values), 2)
 
     if ocptmin < 0:
         if abs(ocptmin) < ocptmax:
@@ -233,8 +233,8 @@ def hovmoller_lev_time_plot(data, region, anomaly: bool = False, standardise: bo
         ocptlevs = 20
 
     # And we do the same for salinity
-    somin = round(np.min(data.so.values), 3)
-    somax = round(np.max(data.so.values), 3)
+    somin = round(np.nanmin(data.so.values), 3)
+    somax = round(np.nanmax(data.so.values), 3)
 
     if somin < 0:
         if abs(somin) < somax:

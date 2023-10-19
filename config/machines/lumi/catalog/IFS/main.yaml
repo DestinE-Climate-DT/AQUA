@@ -14,6 +14,11 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/control-1950-devcon.yaml'
+  historical-1990-fesom:
+    description: FDB IFS/FESOM control run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990-fesom.yaml'
   historical-1990-devcon:
     description: FDB IFS/NEMO historical run
     driver: yaml_file_cat

@@ -1,17 +1,17 @@
 # experiment
 dataset:
   model: "IFS"
-  #exp: "tco2559-ng5-cycle3"
-  exp: "tco1279-orca025-cycle3"
-  source2d: "2D_1h_native"
-  source3d: "3D_1h_native"
+  exp: "tco2559-ng5-cycle3"
+  #exp: "tco1279-orca025-cycle3"
+  #exp: "control-1950-devcon"
+  source2d: "2D_1h_native" #"2D_1h_native"
+  source3d: "2D_1h_native" #"3D_1h_native"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
-  tmpdir: '/home/b/b382075/work/tc/tmpdir'
-  fulldir: '/home/b/b382075/work/tc/fullres'
-  plotdir: "/home/b/b382075/work/tc/tropical_cyclones/Figures/"
-
+  tmpdir: '/users/pghinass/tc_output/tmpdir'
+  fulldir: '/users/pghinass/tc_output/fullres'
+  plotdir: "/users/pghinass/tc_output/Figures/"
 
 # grid on which operate
 grids:
@@ -24,7 +24,7 @@ varlist: ['msl', '10u', '10v', 'tprate']
 # temporal definition (YYYY-MM-DD)
 time: 
   startdate: '2020-01-20'
-  enddate: '2024-12-31'
+  enddate: '2023-02-01'
   frequency: '6h'
 
 stream:

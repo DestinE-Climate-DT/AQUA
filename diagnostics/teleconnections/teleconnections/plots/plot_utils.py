@@ -91,3 +91,27 @@ def minmax_maps(maps: list):
     vmax = absmax
 
     return vmin, vmax
+
+
+def evaluate_colorbar_limits(maps: list, sym: bool = True):
+    """
+    Evaluate the minimum and maximum values of the colorbar
+
+    Args:
+        maps (list):     List of maps.
+        sym (bool, opt): If True, the colorbar is symmetrical around 0.
+
+    Returns:
+        vmin (float): Minimum value of the colorbar.
+        vmax (float): Maximum value of the colorbar.
+    """
+    if maps is None:
+        raise ValueError('maps must be specified.')
+
+    if sym:
+        vmin, vmax = minmax_maps(maps)
+    else:
+        vmin = min([map.min().values for map in maps])
+        vmax = max([map.max().values for map in maps])
+
+    return vmin, vmax
