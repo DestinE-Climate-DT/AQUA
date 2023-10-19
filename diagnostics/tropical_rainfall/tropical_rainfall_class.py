@@ -783,7 +783,7 @@ class Tropical_Rainfall:
         Returns:
             str: The path to save the histogram.
         """
-        if path_to_netcdf is not None:
+        if isinstance(path_to_netcdf, str):
             create_folder(folder=str(path_to_netcdf), loglevel='WARNING')
             if name_of_file is None:
                 name_of_file = '_'
@@ -1378,18 +1378,16 @@ class Tropical_Rainfall:
             plt.xlim([0, xmax])
 
         if pdf_format:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
 
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
                 plt.savefig(path_to_pdf,  format="pdf",  bbox_inches="tight")
         else:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.png'
 
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
                 plt.savefig(path_to_pdf,  bbox_inches="tight")
@@ -1591,7 +1589,8 @@ class Tropical_Rainfall:
 
         if average_dataset.time_band == []:
             raise Exception('Time band is empty')
-        if path_to_netcdf is not None and name_of_file is not None:
+        
+        if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
                 average_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file+'_'+str(coord))
         else:
@@ -1856,10 +1855,8 @@ class Tropical_Rainfall:
                 plt.xscale('log')
         if pdf_format:
             # set the spacing between subplots
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
 
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -1873,10 +1870,8 @@ class Tropical_Rainfall:
                             edgecolor='w',
                             orientation='landscape')
         else:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
 
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -2159,7 +2154,7 @@ class Tropical_Rainfall:
             ax4 = fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree())
             ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
             axs = [ax1, ax2, ax3, ax4, ax5]
-            if path_to_netcdf is not None:
+            if isinstance(path_to_netcdf, str):
                 data = self.open_dataset(
                     path_to_netcdf=path_to_netcdf)
             try:
@@ -2283,13 +2278,11 @@ class Tropical_Rainfall:
             plt.suptitle(plot_title,                       fontsize=17)
 
         if pdf_format:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 if seasons:
                     path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
                 else:
                     path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
 
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -2303,13 +2296,11 @@ class Tropical_Rainfall:
                             edgecolor='w',
                             orientation='landscape')
         else:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 if seasons:
                     path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.png'
                 else:
                     path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
 
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -2643,7 +2634,7 @@ class Tropical_Rainfall:
 
         if seasonal_095level.time_band == []:
             raise Exception('Time band is empty')
-        if path_to_netcdf is not None and name_of_file is not None:
+        if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
                 seasonal_095level, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
@@ -2756,7 +2747,7 @@ class Tropical_Rainfall:
 
         new_dataset.update({'tprate_relative': (['utc_time'], da)})
 
-        if path_to_netcdf is not None and name_of_file is not None:
+        if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
                 new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
