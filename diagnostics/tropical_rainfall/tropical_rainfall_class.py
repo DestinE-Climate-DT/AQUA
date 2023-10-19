@@ -2474,9 +2474,9 @@ class Tropical_Rainfall:
                 lonmin, lonmax, latmin, latmax = self.zoom_in_data(trop_lat=self.trop_lat,
                         pacific_ocean=pacific_ocean, atlantic_ocean=atlantic_ocean, indian_ocean=indian_ocean, tropical=tropical)
                 
-            if lonmin is not -180 or lonmax not in (180, 181):
+            if lonmin != -180 or lonmax not in (180, 181):
                 data[i] = data[i].sel(lon=slice(lonmin, lonmax))
-            if latmin is not -90 or latmax not in (90, 91):
+            if latmin != -90 or latmax not in (90, 91):
                 data[i] = data[i].sel(lat=slice(latmin, latmax))
 
             
