@@ -2280,13 +2280,67 @@ class Tropical_Rainfall:
             plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
                         transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
 
+    def improve_time_selection(self, data=None, time_selection=None): 
+        """
+        Perform time selection based on the provided criteria.
+
+        Args:
+            data (xarray): The input data to be processed.
+            time_selection (str): The time selection criteria.
+
+        Returns:
+            str: The updated time selection value.
+
+        The function checks if the time selection criteria contains a year and a date in the format 'YYYY-MM-DD'. If the input string doesn't include a year or a date, the function appends the necessary values to the string. The processed time selection value is then returned.
+
+        Examples:
+            >>> time_selection(data=data, time_selection='2023-09-25')
+            '2023-09-25'
+        """
+        if time_selection is not None:
+            if not isinstance(time_selection, str):
+                time_selection = str(time_selection)    
+            
+            year_pattern = re.compile(r'\b\d{4}\b')
+            match_year = re.search(year_pattern, time_selection)
+            
+            if match_year:
+                self.logger.debug(f'The input time value for selection contains a year: {time_selection}')
+                try:
+                    data.sel(time=time_selection)
+                except KeyError:
+                    self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
+            else:
+                self.logger.debug(f'The input time value for selection does not contain a year: {time_selection}')
+                time_selection = str(data['time.year'][0].values) + '-' + time_selection
+                self.logger.debug(f'The new time value for selection is: {time_selection}')
                 
-    
+                date_pattern = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+                match_date = re.search(date_pattern, time_selection)
+
+                if match_date:
+                    self.logger.debug(f'The input time value for selection contains a month and a day: {time_selection}')
+                    try:
+                        data.sel(time=time_selection)
+                    except KeyError:
+                        self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
+                else:
+                    if data.sel(time=time_selection).time.size == 1:
+                        self.logger.debug(f'The input time value for selection does not contain a day, but it is not matter for the lra dataset.')
+                    else:
+                        try:
+                            time_selection = time_selection + '-' + '01'
+                            data.sel(time=time_selection)
+                        except KeyError:
+                            time_selection = time_selection + '-' + '25'
+                        self.logger.debug(f'The input time value for selection does not contain a day. The new time value for selection is: {time_selection}')
+        return time_selection
+
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
             model_variable='tprate', figsize=1, number_of_ticks=8,
             trop_lat=None, plot_title=None, new_unit=None,
-            vmin=None, vmax=None,
+            vmin=None, vmax=None, time_selection='01',
             path_to_pdf=None, name_of_file=None, pdf_format=True,
             path_to_netcdf=None):
         """
@@ -2407,10 +2461,15 @@ class Tropical_Rainfall:
 
             
             data[i] = data[i].where(data[i] > vmin)
-            if lonmin != -180 or lonmax != 181:
-                data[i] = data[i].sel(lon=slice(lonmin, lonmax))
-            if latmin != -90 or latmax != 91:
-                data[i] = data[i].sel(lat=slice(latmin, latmax))
+
+            if data[i].time.size==1:
+                pass
+            else:
+                time_selection = self.improve_time_selection(data[i], time_selection=time_selection)
+                data[i] = data[i].sel(time=time_selection)
+                if data[i].time.size!=1:
+                    self.logger.error(f'The time selection went wrong. Please check the value of input time.')
+
             try:
                 data[i] = data[i][model_variable]
             except KeyError:
