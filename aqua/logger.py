@@ -40,15 +40,10 @@ def log_configure(log_level=None, log_name=None):
     # cannot use BasicConfig for specific loggers
     logger.setLevel(log_level)
 
-    # create formatter
-    formatter = logging.Formatter(
-        fmt='%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-
     # create console handler which logs
     terminal = logging.StreamHandler()
     # ch.setLevel(log_level)
-    terminal.setFormatter(formatter)
+    terminal.setFormatter(CustomLogColors()) # use the custom formatter
     logger.addHandler(terminal)
 
     # this can be used in future to log to file
@@ -116,3 +111,31 @@ def log_history(data, msg):
         date_now = now.strftime("%Y-%m-%d %H:%M:%S")
         hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
         data.attrs.update({"history": hist})
+
+
+class CustomLogColors(logging.Formatter):
+    """small class for setting up personalized colors for logging"""
+
+    GREY = "\x1b[38;20m"
+    LGREY = "\x1b[37m;1m"
+    DGREY = "\x1b[90m"
+    GREEN = "\x1b[32m"
+    ORANGE = "\x1b[33m"
+    RED = "\x1b[31;20m"
+    BOLD_RED = "\x1b[31;1m"
+    RESET = "\x1b[0m"
+
+    FORMATS = {
+        logging.DEBUG: f"{LGREY}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
+        logging.INFO: f"{GREY}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
+        logging.WARNING: f"{ORANGE}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
+        logging.ERROR: f"{RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
+        logging.CRITICAL: f"{BOLD_RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}"
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        datefmt = '%Y-%m-%d %H:%M:%S'
+        formatter = logging.Formatter(fmt=log_fmt, datefmt=datefmt)
+        return formatter.format(record)
+

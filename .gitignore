@@ -1,19 +1,31 @@
+# general
 *.pyc
-diagnostics/ecmean/ECmean4
+__pycache__/
 .ipynb_checkpoints
 *.egg-info
-cli/*.err
-cli/*.out
+
+# logfiles
+*.err
+*.out
+*.bal
+
+# documentation
 docs/sphinx/build/*
+
+# output
 *.nc
 *.png
 *.pdf
+
+# tests
 AQUA_tests/
 AQUA_tests.tar.gz
-**/*.bak
-*.err
-*.out
+
+# coverage and vscode
 .coverage
 coverage.xml
 coverage/
 .vscode/*
+
+# diagnostic specific
+diagnostics/ecmean/ECmean4

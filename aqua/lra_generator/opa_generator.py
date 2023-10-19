@@ -176,15 +176,15 @@ class OPAgenerator():
 
         self.opa_dict = {
                          "stat": "mean",
-                         "percentile_list": None,
-                         "thresh_exceed" : None,
+                         #"percentile_list": None,
+                         #"thresh_exceed" : None,
                          "stat_freq": self.frequency,
                          "output_freq": "monthly",
                          "time_step": self.timedelta,
                          "variable": var,
                          "save": True,
                          "checkpoint": self.checkpoint,
-                         "out_filepath": self.outdir,
+                         "save_filepath": self.outdir,
                          "checkpoint_filepath": self.tmpdir
         }
 
