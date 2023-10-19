@@ -1377,20 +1377,10 @@ class Tropical_Rainfall:
         if xmax is not None:
             plt.xlim([0, xmax])
 
-        if pdf_format:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
+            self.savefig(path_to_pdf, pdf_format)
 
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-                plt.savefig(path_to_pdf,  format="pdf",  bbox_inches="tight")
-        else:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.png'
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-                plt.savefig(path_to_pdf,  bbox_inches="tight")
         return {fig, ax}
 
     def mean_along_coordinate(self, data,       model_variable='tprate',      preprocess=True,
@@ -1853,36 +1843,11 @@ class Tropical_Rainfall:
                 plt.yscale('log')
             if xlogscale:
                 plt.xscale('log')
-        if pdf_format:
-            # set the spacing between subplots
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
 
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
+            self.savefig(path_to_pdf, pdf_format)
 
-                plt.savefig(path_to_pdf,
-                            format="pdf",
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-        else:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.png'
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
         if 'Dataset' in str(type(data)):
             return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5]
         else:
@@ -2277,41 +2242,44 @@ class Tropical_Rainfall:
         if plot_title is not None:
             plt.suptitle(plot_title,                       fontsize=17)
 
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            if seasons:
+                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
+            else:
+                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
+        
+            self.savefig(path_to_pdf, pdf_format)
+                
+    def savefig(self, path_to_pdf=None, pdf_format=True):
+        """
+        Save the current figure to a file in either PDF or PNG format.
+
+        Args:
+            path_to_pdf (str): The file path where the figure will be saved. If None, the figure will not be saved.
+            pdf_format (bool): If True, the figure will be saved in PDF format; otherwise, it will be saved in PNG format.
+
+        Returns:
+            None
+
+        Note:
+            The function first checks the `path_to_pdf` to determine the format of the saved figure. If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path. If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png' and saves the figure in PNG format.
+
+        Example:
+            savefig(path_to_pdf='example.pdf', pdf_format=True)
+            # This will save the current figure in PDF format as 'example.pdf'.
+
+        """
+        create_folder(folder=extract_directory_path(
+                    path_to_pdf), loglevel='WARNING')
+        
         if pdf_format:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                if seasons:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
-                else:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            format="pdf",
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
+            plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=1, transparent=True,
+                        facecolor="w", edgecolor='w', orientation='landscape')
         else:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                if seasons:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.png'
-                else:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.png'
+            path_to_pdf = path_to_pdf.replace('.pdf', '.png')
+            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
+                        transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
 
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
                 
     
     def map(self,     data,  titles='',    lonmin=-180, lonmax=181, latmin=-90, latmax=91,
@@ -2453,35 +2421,9 @@ class Tropical_Rainfall:
         if plot_title is not None:
             plt.suptitle(plot_title,                       fontsize=17)
 
-        if pdf_format:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            format="pdf",
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-        else:
-            if isinstance(path_to_pdf, str) and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.png'
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
+            self.savefig(path_to_pdf, pdf_format)
 
     def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable='tprate',
                             new_unit=None, weights=None,  trop_lat=None):
@@ -2822,14 +2764,8 @@ class Tropical_Rainfall:
             plt.legend(loc=loc,
                        fontsize=12,    ncol=2)
 
-        if path_to_pdf is not None:
-            plt.savefig(path_to_pdf,
-                        format="pdf",
-                        bbox_inches="tight",
-                        pad_inches=1,
-                        transparent=True,
-                        facecolor="w",
-                        edgecolor='w',
-                        orientation='landscape')
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
+            self.savefig(path_to_pdf, pdf_format)
 
         return [fig,  ax]
