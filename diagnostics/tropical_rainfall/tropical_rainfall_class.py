@@ -36,6 +36,7 @@ from aqua.logger import log_configure
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
+from matplotlib.gridspec import GridSpec
 
 from aqua import Reader
 from aqua.util import create_folder
@@ -2320,8 +2321,9 @@ class Tropical_Rainfall:
                             facecolor="w",
                             edgecolor='w',
                             orientation='landscape')
-
-    def map(self,     data,    ncols=1, nrows=1, titles='',    lonmin=-180, lonmax=181, latmin=-90, latmax=91,
+                
+    
+    def map(self,     data,  titles='',    lonmin=-180, lonmax=181, latmin=-90, latmax=91,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
             model_variable='tprate',          figsize=1, number_of_ticks=8,
             trop_lat=None,              plot_title=None,                  new_unit=None,
@@ -2371,95 +2373,15 @@ class Tropical_Rainfall:
             latmax = 15
             latmin = -15
 
-        if ncols == 1 and nrows == 1:
-
-            if new_unit is None:
-                try:
-                    unit = data[model_variable].units
-                except KeyError:
-                    unit = data.units
-            else:
-                unit = new_unit
-
-            fig, ax1 = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize*ncols, 8.5*figsize*nrows), layout='constrained')
-
-            #fig = plt.figure(figsize=(11*figsize, 10*figsize),
-            #                 layout='constrained')
-            #ax1 = plt.axes(projection=ccrs.PlateCarree())
-            if path_to_netcdf is not None:
-                data = self.open_dataset(
-                    path_to_netcdf=path_to_netcdf)
-
-            if lonmin != -180 or lonmax != 181:
-                data = data.sel(lon=slice(lonmin, lonmax))
-            if latmin != -90 or latmax != 91:
-                data = data.sel(lat=slice(latmin, latmax))
-
-            if vmin is None and vmax is None:
-                vmax = float(data.max().values)/10
-                vmin = 0
-                ticks = [
-                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-            elif isinstance(vmax, int) and isinstance(vmin, int):
-                ticks = []
-                i = 0
-                while vmin+i <= vmax:
-                    ticks.append(vmin+i)
-                    i = i + 1
-            elif isinstance(vmax, float) or isinstance(vmin, float):
-                ticks = [
-                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-            vmin, vmax = ticks[0], ticks[-1]+1
-            # del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
-            # clevs = np.arange(vmin, vmax, del_tick)
-
-            try:
-                del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-            except ZeroDivisionError:
-                del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-
-            data = data.where(data > vmin)
-            data_cycl, lons = add_cyclic_point(
-                data, coord=data['lon'])
-
-            im1 = ax1.contourf(lons, data['lat'], data_cycl, clevs,
-                               transform=ccrs.PlateCarree(),
-                               cmap='coolwarm', extend='both')
-
-            print(lonmin, lonmax) #, latmin, latmax)
-            print(lons[0], lons[-1]) #, data_cycl['lon'][0], data_cycl['lon'][-1])
-            print( data['lon'][0].values, data['lon'][-1].values) 
-            ax1.set_title(titles, fontsize=17)
-
-            ax1.coastlines()
-
-            dellon = int(lonmax-lonmin)/6
-            # Longitude labels
-            ax1.set_xticks(np.arange(lonmin, lonmax, dellon),
-                           crs=ccrs.PlateCarree())
-            
-            lon_formatter = cticker.LongitudeFormatter()
-            ax1.xaxis.set_major_formatter(lon_formatter)
-            print(np.arange(lonmin, lonmax, dellon), lon_formatter)
-            dellat = int(latmax-latmin)/6
-            # Latitude labels
-            ax1.set_yticks(np.arange(latmin, latmax, dellat),
-                           crs=ccrs.PlateCarree())
-            lat_formatter = cticker.LatitudeFormatter()
-            ax1.yaxis.set_major_formatter(lat_formatter)
-            ax1.grid(True)
-            if vmax is not None and vmin is not None:
-                cbar = fig.colorbar(
-                    im1, ticks=ticks, ax=ax1, location='bottom')
-            else:
-                cbar = fig.colorbar(
-                    im1, ax=ax1, location='bottom')
-            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-
-        else:
+        data = data if isinstance(data, list) else [data]
+        data_len = len(data)
+        if data_len == 1:
+            ncols, nrows = 1, 1
+        elif data_len % 2 == 0:
+            ncols, nrows = 2, data_len // 2
+        elif data_len % 3 == 0:
+            ncols, nrows = 3, data_len // 3
+        if ncols is not None:
             if new_unit is None:
                 try:
                     unit = data[0][model_variable].units
@@ -2468,8 +2390,10 @@ class Tropical_Rainfall:
             else:
                 unit = new_unit
 
-            fig, axes = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize*ncols, 8.5*figsize*nrows), layout='constrained')
+            fig = plt.figure(figsize=(11*figsize*ncols, 8.5*figsize*nrows)) #, layout='constrained')
+            gs = GridSpec(nrows=nrows, ncols=ncols + 1, figure=fig, wspace=0.2, hspace=0.2, width_ratios=[1] * ncols + [0.1], height_ratios=[1] * nrows) 
+            # Add subplots using the grid
+            axs =  [fig.add_subplot(gs[i, j], projection=ccrs.PlateCarree()) for i in range(nrows) for j in range(ncols)]
 
             if vmin is None and vmax is None:
                 vmax = float(data[0].max().values)/10
@@ -2491,8 +2415,7 @@ class Tropical_Rainfall:
                 clevs = np.arange(vmin, vmax, del_tick)
             except ZeroDivisionError:
                 del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-            axs = axes.flatten()
+                clevs = np.arange(vmin, vmax, del_tick)            
 
             for i in range(0, len(data)):
                 if lonmin != -180 or lonmax != 181:
@@ -2509,25 +2432,20 @@ class Tropical_Rainfall:
 
                 data_cycl, lons = add_cyclic_point(
                     data[i], coord=data[i]['lon'])
-                #print(data_cycl)
-                print(lonmin, lonmax) #, latmin, latmax)
-                print(lons[0], lons[-1]) #, data_cycl['lon'][0], data_cycl['lon'][-1])
-                print( data[i]['lon'][0].values, data[i]['lon'][-1].values) #,  data[i]['lat'][0].values, data[i]['lat'][-1].values)
                 im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs,
                                       transform=ccrs.PlateCarree(),
                                       cmap='coolwarm', extend='both')
 
                 axs[i].set_title(titles[i], fontsize=17)
-
                 axs[i].coastlines()
 
                 dellon = int(lonmax-lonmin)/6
                 # Longitude labels
-                axs[i].set_xticks(np.arange(-lonmin, lonmax, dellon),
+                axs[i].set_xticks(np.arange(lonmin, lonmax, dellon),
                                   crs=ccrs.PlateCarree())
                 lon_formatter = cticker.LongitudeFormatter()
                 axs[i].xaxis.set_major_formatter(lon_formatter)
-                print(np.arange(lonmin, lonmax, dellon), lon_formatter)
+                
                 dellat = int(latmax-latmin)/6
                 # Latitude labels
                 axs[i].set_yticks(np.arange(latmin, latmax, dellat),
@@ -2535,19 +2453,18 @@ class Tropical_Rainfall:
                 lat_formatter = cticker.LatitudeFormatter()
                 axs[i].yaxis.set_major_formatter(lat_formatter)
                 axs[i].grid(True)
-            cbar = fig.colorbar(
-                im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=axs[-1], location='bottom')
-            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-        # Draw the colorbar
 
+            # Draw the colorbar
+            cbar_ax = fig.add_subplot(gs[:, -1]) # Adjust the column index as needed
+            cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='vertical', extend='both') #, shrink=0.8, pad=0.05, aspect=30)
+            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
+        
         if plot_title is not None:
             plt.suptitle(plot_title,                       fontsize=17)
 
         if pdf_format:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
 
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -2561,10 +2478,8 @@ class Tropical_Rainfall:
                             edgecolor='w',
                             orientation='landscape')
         else:
-            if path_to_pdf is not None and name_of_file is not None:
+            if isinstance(path_to_pdf, str) and name_of_file is not None:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
 
                 create_folder(folder=extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
