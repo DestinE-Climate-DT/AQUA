@@ -1929,72 +1929,56 @@ class Tropical_Rainfall:
                                                                 time_length=time_length,                  time_grid_factor=time_grid_factor)
         return data_regrided, dummy_data_regrided
 
-    def get_seasonal_or_monthly_data(self,  data,               preprocess=True,        seasons=True,
-                                     model_variable='tprate',       trop_lat=None,          new_unit=None):
-        """ Function to select the seasonal or monthly of the data.
+    def get_seasonal_or_monthly_data(self, data, preprocess=True, seasons=True,
+                                    model_variable='tprate', trop_lat=None, new_unit=None):
+        """ 
+        Function to retrieve seasonal or monthly data.
 
         Args:
-            data (xarray.DataArray):        Data to be calculated.
-            preprocess (bool, optional):    If True, the data will be preprocessed.                 The default is True.
-            seasons (bool, optional):       If True, the data will be calculated for the seasons.   The default is True.
-            model_variable (str, optional): Name of the model variable.                             The default is 'tprate'.
-            trop_lat (float, optional):     Latitude of the tropical region.                        The default is None.
-            new_unit (str, optional):       New unit of the data.                                   The default is None.
-            coord (str, optional):          Name of the coordinate.                                 The default is None.
+            data (xarray.DataArray): Data to be processed.
+            preprocess (bool, optional): If True, the data will be preprocessed. Default is True.
+            seasons (bool, optional): If True, the data will be calculated for the seasons. Default is True.
+            model_variable (str, optional): Name of the model variable. Default is 'tprate'.
+            trop_lat (float, optional): Latitude of the tropical region. Default is None.
+            new_unit (str, optional): New unit of the data. Default is None.
 
         Returns:
-            xarray.DataArray:             Seasonal or monthly data.
-
+            xarray.DataArray: Seasonal or monthly data.
         """
-
         self.class_attributes_update(trop_lat=trop_lat)
         if seasons:
+            seasons = {
+                'DJF_1': {'s_month': 12, 'f_month': 12},
+                'DJF_2': {'s_month': 1, 'f_month': 2},
+                'MAM': {'s_month': 3, 'f_month': 5},
+                'JJA': {'s_month': 6, 'f_month': 8},
+                'SON': {'s_month': 9, 'f_month': 11}
+            }
 
-            if preprocess:
-                glob = self.preprocessing(data,                               preprocess=preprocess,
-                                          trop_lat=self.trop_lat,         model_variable=model_variable)
+            global_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, model_variable=model_variable)
 
-                DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-                                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                                           s_month=12,                       f_month=12)
-                DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-                                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                                           s_month=1,                        f_month=2)
-                DJF = xr.concat([DJF_1, DJF_2], dim='time')
-
-                MAM = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=3,                        f_month=5)
-
-                JJA = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=6,                        f_month=8)
-
-                SON = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=9,                        f_month=11)
-
-            all_season = [DJF, MAM, JJA, SON, glob]
-
-            for i in range(0, len(all_season)):
-
+            preprocessed_data = {}
+            for key, value in seasons.items():
+                preprocessed_data[key] = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat,
+                                                            model_variable=model_variable, s_month=value['s_month'],
+                                                            f_month=value['f_month'])
                 if new_unit is not None:
-                    all_season[i] = self.precipitation_rate_units_converter(
-                        all_season[i], new_unit=new_unit)
-            return all_season
+                    preprocessed_data[key] = self.precipitation_rate_units_converter(preprocessed_data[key], new_unit=new_unit)
 
+            DJF_data = xr.concat([preprocessed_data['DJF_1'], preprocessed_data['DJF_2']], dim='time')
+            all_seasonal_data = [DJF_data, preprocessed_data['MAM'], preprocessed_data['JJA'], preprocessed_data['SON'], global_data]
+            
+            return all_seasonal_data
         else:
-            all_months = []
+            all_monthly_data = []
             for i in range(1, 13):
                 if preprocess:
-                    mon = self.preprocessing(data,                               preprocess=preprocess,
-                                             trop_lat=self.trop_lat,         model_variable=model_variable,
-                                             s_month=i,                        f_month=i)
+                    monthly_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, 
+                                            model_variable=model_variable, s_month=i, f_month=i)
                     if new_unit is not None:
-                        mon = self.precipitation_rate_units_converter(
-                            mon, new_unit=new_unit)
-                all_months.append(mon)
-            return all_months
+                        monthly_data = self.precipitation_rate_units_converter(monthly_data, new_unit=new_unit)
+                all_monthly_data.append(monthly_data)
+            return all_monthly_data
 
     def seasonal_or_monthly_mean(self,  data,                      preprocess=True,            seasons=True,
                                  model_variable='tprate',          trop_lat=None,              new_unit=None,
@@ -2215,14 +2199,12 @@ class Tropical_Rainfall:
                 axs[i].coastlines()
 
                 # Longitude labels
-                axs[i].set_xticks(np.arange(-180, 181, 60),
-                                  crs=ccrs.PlateCarree())
+                axs[i].set_xticks(np.arange(-180, 181, 60), crs=ccrs.PlateCarree())
                 lon_formatter = cticker.LongitudeFormatter()
                 axs[i].xaxis.set_major_formatter(lon_formatter)
 
                 # Latitude labels
-                axs[i].set_yticks(np.arange(-90, 91, 30),
-                                  crs=ccrs.PlateCarree())
+                axs[i].set_yticks(np.arange(-90, 91, 30), crs=ccrs.PlateCarree())
                 lat_formatter = cticker.LatitudeFormatter()
                 axs[i].yaxis.set_major_formatter(lat_formatter)
                 axs[i].grid(True)
@@ -2421,8 +2403,7 @@ class Tropical_Rainfall:
             model_variable='tprate', figsize=1, number_of_ticks=6,
             trop_lat=None, plot_title=None, new_unit="mm/day",
             vmin=None, vmax=None, time_selection='01',
-            path_to_pdf=None, name_of_file=None, pdf_format=True,
-            path_to_netcdf=None):
+            path_to_pdf=None, name_of_file=None, pdf_format=True):
         """
         Create a map with specified data and various optional parameters.
 
