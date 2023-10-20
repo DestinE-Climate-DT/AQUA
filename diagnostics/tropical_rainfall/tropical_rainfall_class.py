@@ -1959,7 +1959,7 @@ class Tropical_Rainfall:
                 'SON': {'s_month': 9, 'f_month': 11}
             }
 
-            global_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, model_variable=model_variable)
+            global_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, model_variable=model_variable, new_unit=new_unit)
 
             preprocessed_data = {}
             for key, value in seasons.items():
