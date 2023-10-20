@@ -43,11 +43,8 @@ from cartopy.util import add_cyclic_point
 from aqua import Reader
 from aqua.util import create_folder
 
-from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_clock, convert_monthnumber_to_str
-from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
-from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
-
-from .tropical_rainfall_plot import PlottingClass #histogram_plot, plot_of_average, plot_seasons_or_months, map
+from .tropical_rainfall_func import ToolsClass
+from .tropical_rainfall_plot import PlottingClass 
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -94,6 +91,7 @@ class Tropical_Rainfall:
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
         self.plots = PlottingClass()
+        self.tools = ToolsClass()
         
 
     
@@ -210,25 +208,25 @@ class Tropical_Rainfall:
                 return data
 
         if isinstance(data, (float, int, np.ndarray)) and old_unit is not None:
-            from_mass_unit, from_space_unit, from_time_unit = unit_splitter(
+            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(
                 old_unit)
         else:
-            from_mass_unit, from_space_unit, from_time_unit = unit_splitter(
+            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(
                 data.units)
             old_unit = data.units
-        _,   to_space_unit,   to_time_unit = unit_splitter(new_unit)
+        _,   to_space_unit,   to_time_unit = self.tools.unit_splitter(new_unit)
 
         if old_unit == 'kg m**-2 s**-1':
             data = 0.001 * data
-            data = convert_length(data,   from_space_unit, to_space_unit)
-            data = convert_time(data,     from_time_unit,  to_time_unit)
+            data = self.tools.convert_length(data,   from_space_unit, to_space_unit)
+            data = self.tools.convert_time(data,     from_time_unit,  to_time_unit)
         elif from_mass_unit is None and new_unit == 'kg m**-2 s**-1':
-            data = convert_length(data,   from_space_unit, 'm')
-            data = convert_time(data,     from_time_unit,  's')
+            data = self.tools.convert_length(data,   from_space_unit, 'm')
+            data = self.tools.convert_time(data,     from_time_unit,  's')
             data = 1000 * data
         else:
-            data = convert_length(data,   from_space_unit, to_space_unit)
-            data = convert_time(data,     from_time_unit,  to_time_unit)
+            data = self.tools.convert_length(data,   from_space_unit, to_space_unit)
+            data = self.tools.convert_time(data,     from_time_unit,  to_time_unit)
         if 'xarray' in str(type(data)):
             data.attrs['units'] = new_unit
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -501,7 +499,7 @@ class Tropical_Rainfall:
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
 
-        size_of_the_data = data_size(data)
+        size_of_the_data = self.tools.data_size(data)
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
@@ -537,7 +535,7 @@ class Tropical_Rainfall:
             edges = edges.compute()
             self.logger.info('Histogram of the data is created')
             self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
-                              .format(data_size(data), int(sum(counts))))
+                              .format(self.tools.data_size(data), int(sum(counts))))
             if int(sum(counts)) != size_of_the_data:
                 self.logger.warning(
                     'Amount of counts in the histogram is not equal to the size of the data')
@@ -649,7 +647,7 @@ class Tropical_Rainfall:
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
-        size_of_the_data = data_size(data)
+        size_of_the_data = self.tools.data_size(data)
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
@@ -704,7 +702,7 @@ class Tropical_Rainfall:
                         seasons_or_months[i],  weights=weights, bins=self.bins)[0])
         self.logger.info('Histogram of the data is created')
         self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
-                          .format(data_size(data), int(sum(hist_fast))))
+                          .format(self.tools.data_size(data), int(sum(hist_fast))))
         if int(sum(hist_fast)) != size_of_the_data:
             self.logger.warning(
                 'Amount of counts in the histogram is not equal to the size of the data')
@@ -832,7 +830,7 @@ class Tropical_Rainfall:
         try:
             if data.time.size > 1:
                 time_band = str(
-                    data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(time_interpreter(data))
+                    data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(self.tools.time_interpreter(data))
             else:
                 try:
                     time_band = str(data.time.values[0])
@@ -1719,7 +1717,7 @@ class Tropical_Rainfall:
                                             s_year=self.s_year,                     f_year=self.f_year,
                                             s_month=self.s_month,                   f_month=self.f_month,    dask_array=False)
 
-        data_regrided,  dummy_data_regrided = mirror_dummy_grid(data=data,                                dummy_data=dummy_data,
+        data_regrided,  dummy_data_regrided = self.tools.mirror_dummy_grid(data=data,                                dummy_data=dummy_data,
                                                                 space_grid_factor=space_grid_factor,      time_freq=time_freq,
                                                                 time_length=time_length,                  time_grid_factor=time_grid_factor)
         return data_regrided, dummy_data_regrided
@@ -1968,7 +1966,7 @@ class Tropical_Rainfall:
             # This will save the current figure in PDF format as 'example.pdf'.
 
         """
-        create_folder(folder=extract_directory_path(
+        create_folder(folder=self.tools.extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
         
         if pdf_format:
@@ -2254,7 +2252,7 @@ class Tropical_Rainfall:
         """ Function to plot.
         Args:"""
 
-        data = space_regrider(data, space_grid_factor=space_grid_factor,
+        data = self.tools.space_regrider(data, space_grid_factor=space_grid_factor,
                               lat_length=lat_length, lon_length=lon_length)
 
         self.class_attributes_update(trop_lat=trop_lat)
@@ -2405,7 +2403,7 @@ class Tropical_Rainfall:
         self.logger.debug('Latitude selected and mean calculated')
         self.logger.debug("Mean value: {}".format(data.mean()))
         if space_grid_factor is not None:
-            data = space_regrider(
+            data = self.tools.space_regrider(
                 data, lon_length=space_grid_factor*data.lon.size)
             self.logger.debug('Space regrided')
         for time_ind in range(0, data.time.size):
