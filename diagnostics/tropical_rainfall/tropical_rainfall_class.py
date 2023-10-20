@@ -47,7 +47,7 @@ from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_c
 from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
 from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
 
-from .tropical_rainfall_plot import histogram_plot, plot_of_average
+from .tropical_rainfall_plot import histogram_plot, plot_of_average, plot_seasons_or_months
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -1632,12 +1632,6 @@ class Tropical_Rainfall:
                 plot_title = 'Mean values of ' + str(varname)
             elif get_median:
                 plot_title = 'Median values of '+str(varname)
-        #try:
-        #    plt.ylabel(str(varname)+', '+str(units),
-        #               fontsize=12)
-        #except KeyError:
-        #    plt.ylabel(str(varname),
-        #               fontsize=12)
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
@@ -1897,16 +1891,7 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
 
         if seasons:
-
-            fig = plt.figure(figsize=(11*figsize, 10*figsize),
-                             layout='constrained')
-            gs = fig.add_gridspec(3, 2)
-            ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
-            ax2 = fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree())
-            ax3 = fig.add_subplot(gs[1, 0], projection=ccrs.PlateCarree())
-            ax4 = fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree())
-            ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
-            axs = [ax1, ax2, ax3, ax4, ax5]
+            all_months=None
             if isinstance(path_to_netcdf, str):
                 data = self.open_dataset(
                     path_to_netcdf=path_to_netcdf)
@@ -1923,11 +1908,6 @@ class Tropical_Rainfall:
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
 
-            if vmin is None and vmax is None:
-                vmax = float(all_season[0].max().values)/10
-                vmin = 0
-            clevs = np.arange(vmin, vmax, abs(vmax - vmin)/10)
-
             if dataset_2 is not None:
                 all_season_2 = self.seasonal_or_monthly_mean(dataset_2,                     preprocess=preprocess,
                                                              seasons=seasons,            model_variable=model_variable,
@@ -1935,47 +1915,11 @@ class Tropical_Rainfall:
                 for i in range(0, len(all_season)):
                     all_season[i].values = all_season[i].values - \
                         all_season_2[i].values
-            titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
-
-            for i in range(0, len(all_season)):
-                one_season = all_season[i]
-
-                one_season = one_season.where(one_season > vmin)
-                one_season, lons = add_cyclic_point(
-                    one_season, coord=data['lon'])
-
-                im1 = axs[i].contourf(lons, data['lat'], one_season, clevs,
-                                      transform=ccrs.PlateCarree(),
-                                      cmap='coolwarm', extend='both')
-
-                axs[i].set_title(titles[i], fontsize=17)
-
-                axs[i].coastlines()
-
-                # Longitude labels
-                axs[i].set_xticks(np.arange(-180, 181, 60),
-                                  crs=ccrs.PlateCarree())
-                lon_formatter = cticker.LongitudeFormatter()
-                axs[i].xaxis.set_major_formatter(lon_formatter)
-
-                # Latitude labels
-                axs[i].set_yticks(np.arange(-90, 91, 30),
-                                  crs=ccrs.PlateCarree())
-                lat_formatter = cticker.LatitudeFormatter()
-                axs[i].yaxis.set_major_formatter(lat_formatter)
-                axs[i].grid(True)
 
         else:
-            fig, axes = plt.subplots(ncols=3, nrows=4, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize, 8.5*figsize), layout='constrained')
+            all_season = None
             all_months = self.seasonal_or_monthly_mean(data,                preprocess=preprocess,        seasons=seasons,
                                                        model_variable=model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
-
-            if vmin is None and vmax is None:
-                vmax = float(all_months[6].max().values)
-                vmin = 0
-
-            clevs = np.arange(vmin, vmax, (vmax - vmin)/10)
 
             if dataset_2 is not None:
                 all_months_2 = self.seasonal_or_monthly_mean(dataset_2,     preprocess=preprocess,         seasons=seasons,
@@ -1983,36 +1927,6 @@ class Tropical_Rainfall:
                 for i in range(0, len(all_months)):
                     all_months[i].values = all_months[i].values - \
                         all_months_2[i].values
-
-            for i in range(0, len(all_months)):
-                all_months[i] = all_months[i].where(all_months[i] > vmin)
-                all_months[i], lons = add_cyclic_point(
-                    all_months[i], coord=data['lon'])
-
-            titles = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
-                      'October', 'November', 'December']
-            axs = axes.flatten()
-
-            for i in range(0, len(all_months)):
-                im1 = axs[i].contourf(lons, data['lat'], all_months[i], clevs,
-                                      transform=ccrs.PlateCarree(),
-                                      cmap='coolwarm', extend='both')
-
-                axs[i].set_title(titles[i], fontsize=17)
-
-                axs[i].coastlines()
-
-                # Longitude labels
-                axs[i].set_xticks(np.arange(-180, 181, 60), crs=ccrs.PlateCarree())
-                lon_formatter = cticker.LongitudeFormatter()
-                axs[i].xaxis.set_major_formatter(lon_formatter)
-
-                # Latitude labels
-                axs[i].set_yticks(np.arange(-90, 91, 30), crs=ccrs.PlateCarree())
-                lat_formatter = cticker.LatitudeFormatter()
-                axs[i].yaxis.set_major_formatter(lat_formatter)
-                axs[i].grid(True)
-
         if new_unit is None:
             try:
                 unit = data[model_variable].units
@@ -2020,21 +1934,16 @@ class Tropical_Rainfall:
                 unit = data.units
         else:
             unit = new_unit
-        # Draw the colorbar
-        cbar = fig.colorbar(
-            im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=ax5, location='bottom')
-        cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-
-        if plot_title is not None:
-            plt.suptitle(plot_title,                       fontsize=17)
+        cbarlabel = model_variable+", ["+str(unit)+"]"
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             if seasons:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
             else:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
-        
-            self.savefig(path_to_pdf, pdf_format)
+        return plot_seasons_or_months(data=data, cbarlabel=cbarlabel, all_season=all_season, all_months=all_months,
+                          figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax,
+                          path_to_pdf=path_to_pdf, pdf_format=pdf_format)
                 
     def savefig(self, path_to_pdf=None, pdf_format=True):
         """
