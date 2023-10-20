@@ -47,7 +47,7 @@ from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_c
 from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
 from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
 
-from .tropical_rainfall_plot import histogram_plot, plot_of_average, plot_seasons_or_months, map
+from .tropical_rainfall_plot import PlottingClass #histogram_plot, plot_of_average, plot_seasons_or_months, map
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -93,6 +93,10 @@ class Tropical_Rainfall:
         self.bins = bins
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
+        self.plots = PlottingClass()
+        
+
+    
 
     def class_attributes_update(self,             trop_lat=None,        s_time=None,          f_time=None,
                                 s_year=None,      f_year=None,          s_month=None,         f_month=None,
@@ -1339,7 +1343,7 @@ class Tropical_Rainfall:
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
         
-        return histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel, weights=weights, smooth=smooth, 
+        return self.plots.histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel, weights=weights, smooth=smooth, 
                step=step, color_map=color_map, ls=ls, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
                figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
                pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
@@ -1636,7 +1640,7 @@ class Tropical_Rainfall:
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
 
-        return plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
+        return self.plots.plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
                     legend=legend, figsize=figsize, ls=ls, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
                     xlogscale=xlogscale, loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf, 
                     pdf_format=pdf_format)
@@ -1941,7 +1945,7 @@ class Tropical_Rainfall:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
             else:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
-        return plot_seasons_or_months(data=data, cbarlabel=cbarlabel, all_season=all_season, all_months=all_months,
+        return self.plots.plot_seasons_or_months(data=data, cbarlabel=cbarlabel, all_season=all_season, all_months=all_months,
                           figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax,
                           path_to_pdf=path_to_pdf, pdf_format=pdf_format)
                 
@@ -2073,43 +2077,6 @@ class Tropical_Rainfall:
             latmin = -self.trop_lat
         self.logger.info(f'The data was zoomed in.')
         return lonmin, lonmax, latmin, latmax
-    
-    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable='tprate', number_of_ticks=6):
-        """Compute ticks and levels for a color bar based on provided data.
-
-        Args:
-            data: The data from which to compute the color bar.
-            vmin: The minimum value of the color bar. If None, it is derived from the data.
-            vmax: The maximum value of the color bar. If None, it is derived from the data.
-            model_variable: The variable to consider for the color bar computation.
-            number_of_ticks: The number of ticks to be computed for the color bar.
-
-        Returns:
-            Tuple: A tuple containing the computed ticks and levels for the color bar.
-
-        Raises:
-            ZeroDivisionError: If a division by zero occurs during computation.
-        """
-        if vmin is None and vmax is None:
-            try:
-                vmax = float(data[model_variable].max().values) / 10
-            except KeyError:
-                vmax = float(data.max().values) / 10
-            vmin = -vmax
-            ticks = [vmin + i * (vmax - vmin) / number_of_ticks for i in range(number_of_ticks + 1)]
-        elif isinstance(vmax, int) and isinstance(vmin, int):
-            ticks = list(range(vmin, vmax + 1))
-        elif isinstance(vmax, float) or isinstance(vmin, float):
-            ticks = [vmin + i * (vmax - vmin) / number_of_ticks for i in range(number_of_ticks + 1)]
-
-        try:
-            del_tick = abs(vmax - 2 - vmin) / (number_of_ticks + 1)
-        except ZeroDivisionError:
-            del_tick = abs(vmax - 2.01 - vmin) / (number_of_ticks + 1)
-        clevs = np.arange(vmin, vmax, del_tick)
-
-        return ticks, clevs
-
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
@@ -2151,21 +2118,6 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
 
         data = data if isinstance(data, list) else [data]
-        #data_len = len(data)
-
-        #if titles is None:
-        #    titles = [""] * data_len
-        #elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
-        #    raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
-        
-        #if data_len == 1:
-        #    ncols, nrows = 1, 1
-        #elif data_len % 2 == 0:
-        #    ncols, nrows = 2, data_len // 2
-        #elif data_len % 3 == 0:
-        #    ncols, nrows = 3, data_len // 3
-        
-        # modify
         if new_unit is None:
             try:
                 unit = data[0][model_variable].units
@@ -2207,7 +2159,7 @@ class Tropical_Rainfall:
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
 
-        return map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
+        return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
                    model_variable=model_variable, figsize=figsize, number_of_ticks=number_of_ticks, cbarlabel=cbarlabel,
                    plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
