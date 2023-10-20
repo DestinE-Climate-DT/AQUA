@@ -22,6 +22,8 @@ from statistics import mean
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 # import boost_histogram as bh  # pip
+from matplotlib.gridspec import GridSpec
+import seaborn as sns
 
 import dask.array as da
 import dask_histogram as dh  # pip
@@ -36,8 +38,7 @@ from aqua.logger import log_configure
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
-from matplotlib.gridspec import GridSpec
-import seaborn as sns
+
 
 from aqua import Reader
 from aqua.util import create_folder
@@ -46,6 +47,7 @@ from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_c
 from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
 from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
 
+from .tropical_rainfall_plot import histogram_plot
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -1271,13 +1273,15 @@ class Tropical_Rainfall:
     """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
 
     def histogram_plot(self, data,        new_unit=None,        pdfP=False,
+                       positive=True, 
                        weights=None,      frequency=False,      pdf=True,
                        smooth=True,       step=False,           color_map=False,
                        ls='-',            ylogscale=True,       xlogscale=False,
                        color='tab:blue',  figsize=1,            legend='_Hidden',
                        plot_title=None,   loc='upper right',    varname='Precipitation',
                        add=None,          fig=None,             path_to_pdf=None,
-                       name_of_file=None, pdf_format=True,      xmax=None,  test=False):
+                       name_of_file=None, pdf_format=True,      xmax=None,  test=False,
+                       linewidth=3,     fontsize=14):
         """ Function to generate a histogram figure based on the provided data.
 
         Args:
@@ -1306,12 +1310,6 @@ class Tropical_Rainfall:
         Returns:
             A tuple (fig, ax) containing the figure and axes objects.
         """
-        if fig is not None:
-            fig, ax = fig
-        elif add is None and fig is None:
-            fig, ax = plt.subplots(figsize=(8*figsize, 5*figsize))
-        elif add is not None:
-            fig, ax = add
 
         if 'Dataset' in str(type(data)):
             data = data['counts']
@@ -1325,63 +1323,29 @@ class Tropical_Rainfall:
             data = self.convert_counts_to_pdfP(data,  test=test)
 
         x = data.center_of_bin.values
-        data = data.where(data > 0)
-        if smooth:
-            plt.plot(x, data,
-                     linewidth=3.0, ls=ls, color=color, label=legend)
-            plt.grid(True)
-        elif step:
-            plt.step(x, data,
-                     linewidth=3.0, ls=ls, color=color, label=legend)
-            plt.grid(True)
-        elif color_map:
-            if weights is None:
-                N, _, patches = plt.hist(
-                    x=x, bins=x, weights=data,    label=legend)
-            else:
-                N, bins, patches = plt.hist(
-                    x=x, bins=x, weights=weights, label=legend)
-
-            fracs = ((N**(1 / 5)) / N.max())
-            norm = colors.Normalize(fracs.min(), fracs.max())
-
-            for thisfrac, thispatch in zip(fracs, patches):
-                if color_map is True:
-                    color = plt.cm.get_cmap('viridis')(norm(thisfrac))
-                elif isinstance(color_map, str):
-                    color = plt.cm.get_cmap(color_map)(norm(thisfrac))
-                thispatch.set_facecolor(color)
+        
         if new_unit is None:
-            plt.xlabel(varname+", ["+str(data.attrs['units'])+"]", fontsize=14)
+            xlabel=varname+", ["+str(data.attrs['units'])+"]"
         else:
-            plt.xlabel(varname+", ["+str(new_unit)+"]", fontsize=14)
-        if ylogscale:
-            plt.yscale('log')
-        if xlogscale:
-            plt.xscale('log')
+            xlabel=varname+", ["+str(new_unit)+"]"
 
         if pdf and not frequency and not pdfP:
-            plt.ylabel('PDF',       fontsize=14)
+            ylabel = 'PDF'
         elif not pdf and frequency and not pdfP:
-            plt.ylabel('Frequency', fontsize=14)
+            ylabel = 'Frequency'
         elif not frequency and not pdfP and not pdf:
-            plt.ylabel('Counts',    fontsize=14)
+            ylabel = 'Counts'
         elif pdfP:
-            plt.ylabel('PDF * P',    fontsize=14)
-
-        plt.title(plot_title,       fontsize=16)
-
-        if legend != '_Hidden':
-            plt.legend(loc=loc,     fontsize=10)
-
-        if xmax is not None:
-            plt.xlim([0, xmax])
+            ylabel = 'PDF * P'
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
-            self.savefig(path_to_pdf, pdf_format)
-
-        return {fig, ax}
+        
+        return histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel, weights=weights, smooth=smooth, 
+               step=step, color_map=color_map, ls=ls, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
+               figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
+               pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
+        #return {fig, ax}
 
     def mean_along_coordinate(self, data,       model_variable='tprate',      preprocess=True,
                               trop_lat=None,    coord='time',                 glob=False,
