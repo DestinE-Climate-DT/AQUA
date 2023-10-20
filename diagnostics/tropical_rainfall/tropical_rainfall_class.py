@@ -37,6 +37,7 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
 from matplotlib.gridspec import GridSpec
+import seaborn as sns
 
 from aqua import Reader
 from aqua.util import create_folder
@@ -375,7 +376,7 @@ class Tropical_Rainfall:
     def preprocessing(self, data,          trop_lat=None,
                       preprocess=True,     model_variable="tprate",
                       s_time=None,         f_time=None,
-                      s_year=None,         f_year=None,
+                      s_year=None,         f_year=None,     new_unit=None,
                       s_month=None,        f_month=None,    dask_array=False):
         """ Function to preprocess the Dataset according to provided arguments and attributes of the class.
 
@@ -416,6 +417,10 @@ class Tropical_Rainfall:
             data_per_lat_band = self.latitude_band(
                 data_variable, trop_lat=self.trop_lat)
 
+            if new_unit is not None:
+                data_per_lat_band = self.precipitation_rate_units_converter(
+                    data_per_lat_band, new_unit=new_unit)
+            
             if dask_array:
                 data_1d = self.dataset_into_1d(data_per_lat_band)
                 dask_data = da.from_array(data_1d)
@@ -796,7 +801,7 @@ class Tropical_Rainfall:
                 name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
-            dataset.to_netcdf(path=path_to_netcdf)
+            dataset.to_netcdf(path=path_to_netcdf, mode='w')
             self.logger.info("NetCDF is saved in the storage.")
         else:
             self.logger.debug(
@@ -1320,11 +1325,6 @@ class Tropical_Rainfall:
             data = self.convert_counts_to_pdfP(data,  test=test)
 
         x = data.center_of_bin.values
-        # if new_unit is not None:
-        #    converter = self.precipitation_rate_units_converter(
-        #        1, old_unit=data.center_of_bin.units, new_unit=new_unit)
-        #    x = converter * x
-        #    data = data/converter
         data = data.where(data > 0)
         if smooth:
             plt.plot(x, data,
@@ -1385,8 +1385,8 @@ class Tropical_Rainfall:
 
     def mean_along_coordinate(self, data,       model_variable='tprate',      preprocess=True,
                               trop_lat=None,    coord='time',                 glob=False,
-                              s_time=None,      f_time=None,
-                              s_year=None,      f_year=None,
+                              s_time=None,      f_time=None,                  positive=True,
+                              s_year=None,      f_year=None,                  new_unit=None,
                               s_month=None,     f_month=None):
         """ Function to calculate the mean value of variable in Dataset.
 
@@ -1413,7 +1413,9 @@ class Tropical_Rainfall:
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
-                                      dask_array=False)
+                                      dask_array=False,                  new_unit=new_unit)
+        if positive:
+            data = np.maximum(data, 0.)
         coord_lat, coord_lon = self.coordinate_names(data)
         if coord in data.dims:
 
@@ -1437,8 +1439,8 @@ class Tropical_Rainfall:
 
     def median_along_coordinate(self, data,               trop_lat=None,     preprocess=True,
                                 model_variable='tprate',  coord='time',      glob=False,
-                                s_time=None,              f_time=None,
-                                s_year=None,              f_year=None,
+                                s_time=None,              f_time=None,       positive=True,
+                                s_year=None,              f_year=None,       new_unit=None,
                                 s_month=None,             f_month=None):
         """ Function to calculate the median value of variable in Dataset.
 
@@ -1465,8 +1467,10 @@ class Tropical_Rainfall:
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
-                                      dask_array=False)
+                                      dask_array=False,                 new_unit=new_unit)
 
+        if positive:
+            data = np.maximum(data, 0.)
         coord_lat, coord_lon = self.coordinate_names(data)
         if coord in data.dims:
             self.class_attributes_update(trop_lat=trop_lat,
@@ -1531,7 +1535,7 @@ class Tropical_Rainfall:
                                                       s_time=self.s_time,                f_time=self.f_time,
                                                       s_year=self.s_year,                f_year=self.f_year,
                                                       s_month=None,                      f_month=None,
-                                                      dask_array=False)
+                                                      dask_array=False,                  new_unit=new_unit)
 
         if get_mean:
             if seasons:
@@ -1541,10 +1545,8 @@ class Tropical_Rainfall:
                                                              coord=coord)
 
                 seasonal_average = data_average[0].to_dataset(name="DJF")
-                seasonal_average["MAM"] = data_average[1]
-                seasonal_average["JJA"] = data_average[2]
-                seasonal_average["SON"] = data_average[3]
-                seasonal_average["Yearly"] = data_average[4]
+                seasonal_average["MAM"], seasonal_average["JJA"] = data_average[1], data_average[2]
+                seasonal_average["SON"], seasonal_average["Yearly"] = data_average[3], data_average[4]
             else:
                 data_average = self.mean_along_coordinate(data,                           preprocess=preprocess,
                                                           glob=glob,                      model_variable=model_variable,
@@ -1581,12 +1583,13 @@ class Tropical_Rainfall:
             raise Exception('Time band is empty')
         
         if isinstance(path_to_netcdf, str) and name_of_file is not None:
-            self.dataset_to_netcdf(
+            return self.dataset_to_netcdf(
                 average_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file+'_'+str(coord))
+            #return path_to_netcdf+name_of_file+'_'+str(coord)
         else:
             return average_dataset
 
-    def plot_of_average(self,
+    def plot_of_average(self, data=None,
                         ymax=12,
                         trop_lat=None,             get_mean=True,         get_median=False,
                         legend='_Hidden',          figsize=1,             ls='-',
@@ -1631,11 +1634,12 @@ class Tropical_Rainfall:
             None.
         """
         self.class_attributes_update(trop_lat=trop_lat)
-        if path_to_netcdf is None:
-            raise Exception('The path needs to be provided')
-        else:
+        
+        if data is None and path_to_netcdf is not None:
             data = self.open_dataset(
-                path_to_netcdf=path_to_netcdf)
+                path_to_netcdf=path_to_netcdf)  
+        elif path_to_netcdf is None and data is None:
+            raise Exception('The path or dataset must be provided.')
 
         coord_lat, coord_lon = self.coordinate_names(data)
 
@@ -1982,7 +1986,7 @@ class Tropical_Rainfall:
 
     def seasonal_or_monthly_mean(self,  data,                      preprocess=True,            seasons=True,
                                  model_variable='tprate',          trop_lat=None,              new_unit=None,
-                                 coord=None):
+                                 coord=None, positive=True):
         """ Function to calculate the seasonal or monthly mean of the data.
 
         Args:
@@ -2003,11 +2007,18 @@ class Tropical_Rainfall:
         if seasons:
             [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
                                                                            model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+            if positive:
+                DJF = np.maximum(DJF, 0.)
+                MAM = np.maximum(MAM, 0.)
+                JJA = np.maximum(JJA, 0.)
+                SON = np.maximum(SON, 0.)
+                glob = np.maximum(glob, 0.)
             glob_mean = glob.mean('time')
             DJF_mean = DJF.mean('time')
             MAM_mean = MAM.mean('time')
             JJA_mean = JJA.mean('time')
             SON_mean = SON.mean('time')
+            
 
             if coord == 'lon' or coord == 'lat':
                 DJF_mean = DJF_mean.mean(coord)
@@ -2114,8 +2125,8 @@ class Tropical_Rainfall:
                     all_season = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons=seasons,
                                                                model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
-                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons, new_unit=new_unit
-                                                              model_variable=model_variable,              path_to_netcdf=path_to_netcdf,
+                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons, new_unit=new_unit,
+                                                              model_variable=model_variable,          path_to_netcdf=path_to_netcdf,
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
 
@@ -2546,7 +2557,13 @@ class Tropical_Rainfall:
             str: The unit of the threshold value.
             float: The actual percentage of data below the threshold.
 
+
         """
+
+        if new_unit is not None:
+            data = self.precipitation_rate_units_converter(
+                data, new_unit=new_unit)
+            units = new_unit
 
         value = 1 - value
         rel_error = value*rel_error
@@ -2597,10 +2614,7 @@ class Tropical_Rainfall:
 
         bin_value = bin_i + del_bin
 
-        if new_unit is not None:
-            bin_value = self.precipitation_rate_units_converter(
-                bin_value, old_unit=units, new_unit=new_unit)
-            units = new_unit
+        
 
         return bin_value, units, 1 - threshold
 
@@ -2845,6 +2859,35 @@ class Tropical_Rainfall:
                 new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return new_dataset
+    
+    def update_dict_of_loaded_analyses(self, loaded_dict=None):
+        """
+        Updates a dictionary with loaded data and assigns colors to each entry.
+
+        Args:
+            loaded_dict (dict): Dictionary with paths to datasets.
+
+        Returns:
+            dict: Updated dictionary with loaded data and colors assigned.
+        """
+        if not isinstance(loaded_dict, dict):
+            self.logger.error("The provided object must be a 'dict' type.") 
+            return None
+
+        for key, value in loaded_dict.items():
+            if 'path' not in value:
+                print(f"Error: 'path' key is missing in the entry with key {key}")
+
+        # Select a seaborn palette
+        palette = sns.color_palette("husl", len(loaded_dict))
+
+        # Loop through the dictionary and assign colors
+        for i, (key, value) in enumerate(loaded_dict.items()):
+            loaded_dict[key]["data"] = self.open_dataset(path_to_netcdf=value["path"])
+            loaded_dict[key]["color"] = palette[i]   
+
+        return loaded_dict
+
 
     def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
                             legend='_Hidden', figsize=1, ls='-', maxticknum=12, color='tab:blue',
