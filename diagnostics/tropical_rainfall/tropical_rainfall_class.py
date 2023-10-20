@@ -47,7 +47,7 @@ from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_c
 from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
 from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
 
-from .tropical_rainfall_plot import histogram_plot
+from .tropical_rainfall_plot import histogram_plot, plot_of_average
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -1270,8 +1270,6 @@ class Tropical_Rainfall:
 
         return mean_from_freq, mean_of_original_data, mean_of_modified_data
 
-    """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-
     def histogram_plot(self, data,        new_unit=None,        pdfP=False,
                        positive=True, 
                        weights=None,      frequency=False,      pdf=True,
@@ -1345,7 +1343,6 @@ class Tropical_Rainfall:
                step=step, color_map=color_map, ls=ls, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
                figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
                pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
-        #return {fig, ax}
 
     def mean_along_coordinate(self, data,       model_variable='tprate',      preprocess=True,
                               trop_lat=None,    coord='time',                 glob=False,
@@ -1554,7 +1551,7 @@ class Tropical_Rainfall:
             return average_dataset
 
     def plot_of_average(self, data=None,
-                        ymax=12,
+                        ymax=12,                    fontsize=15, pad=15,
                         trop_lat=None,             get_mean=True,         get_median=False,
                         legend='_Hidden',          figsize=1,             ls='-',
                         maxticknum=12,             color='tab:blue',      varname='tprate',
@@ -1620,206 +1617,38 @@ class Tropical_Rainfall:
             raise ValueError(
                 "The length of the coordinate should be more than 1.")
 
-        # make a plot with different y-axis using second axis object
-        labels_int = data[coord].values
-
         if new_unit is not None and 'xarray' in str(type(data)):
             data = self.precipitation_rate_units_converter(
                 data, new_unit=new_unit)
             units = new_unit
         else:
             units = data.units
-        if 'Dataset' in str(type(data)):
-            y_lim_max = self.precipitation_rate_units_converter(
+        y_lim_max = self.precipitation_rate_units_converter(
                 ymax, old_unit='mm/day', new_unit=new_unit)
-            if fig is not None:
-
-                ax1, ax2, ax3, ax4, ax5, ax_twin_5 = fig[1], fig[2], fig[3], fig[4], fig[5], fig[6]
-                fig = fig[0]
-                axs = [ax1, ax2, ax3, ax4, ax5]
-
-            elif add is None and fig is None:
-                fig = plt.figure(
-                    figsize=(11*figsize, 10*figsize), layout='constrained')
-                gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 2.5])
-                if coord == 'lon':
-                    ax1 = fig.add_subplot(
-                        gs[0, 0], projection=ccrs.PlateCarree())
-                    ax2 = fig.add_subplot(
-                        gs[0, 1], projection=ccrs.PlateCarree())
-                    ax3 = fig.add_subplot(
-                        gs[1, 0], projection=ccrs.PlateCarree())
-                    ax4 = fig.add_subplot(
-                        gs[1, 1], projection=ccrs.PlateCarree())
-                    ax5 = fig.add_subplot(
-                        gs[2, :], projection=ccrs.PlateCarree())
-                    ax_twin_5 = ax5.twinx()
-                else:
-                    ax1 = fig.add_subplot(gs[0, 0])
-                    ax2 = fig.add_subplot(gs[0, 1])
-                    ax3 = fig.add_subplot(gs[1, 0])
-                    ax4 = fig.add_subplot(gs[1, 1])
-                    ax5 = fig.add_subplot(gs[2, :])
-                    ax_twin_5 = None
-                axs = [ax1, ax2, ax3, ax4, ax5, ax_twin_5]
-            elif add is not None:
-                fig = add
-                ax1, ax2, ax3, ax4, ax5, ax_twin_5 = add
-                axs = [ax1, ax2, ax3, ax4, ax5]
-            titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
-            i = -1
-            for one_season in [data.DJF, data.MAM, data.JJA, data.SON, data.Yearly]:
-                i += 1
-
-                axs[i].set_title(titles[i], fontsize=16)
-                # Latitude labels
-                if coord == 'lon':
-                    axs[i].set_xlabel('Longitude',
-                                      fontsize=12)
-                elif coord == 'lat':
-                    axs[i].set_xlabel('Latitude',
-                                      fontsize=12)
-
-                if ylogscale:
-                    axs[i].set_yscale('log')
-                if xlogscale:
-                    axs[i].set_xscale('log')
-
-                if coord == 'lon':
-                    # twin object for two different y-axis on the sample plot
-                    ax_span = axs[i].twinx()
-                    ax_span.axhspan(-self.trop_lat, self.trop_lat,
-                                    alpha=0.05, color='tab:red')
-                    ax_span.set_ylim([-90, 90])
-                    ax_span.set_xticks([])
-                    ax_span.set_yticks([])
-                    axs[i].coastlines(alpha=0.5, color='grey')
-                    axs[i].set_xticks(np.arange(-180, 181, 60),
-                                      crs=ccrs.PlateCarree())
-                    lon_formatter = cticker.LongitudeFormatter()
-                    axs[i].xaxis.set_major_formatter(lon_formatter)
-
-                    # Latitude labels
-                    axs[i].set_yticks(np.arange(-90, 91, 30),
-                                      crs=ccrs.PlateCarree())
-                    lat_formatter = cticker.LatitudeFormatter()
-                    axs[i].yaxis.set_major_formatter(lat_formatter)
-
-                    #
-                    if i < 4:
-                        ax_twin = axs[i].twinx()
-                        ax_twin.set_frame_on(True)
-                        ax_twin.plot(one_season.lon - 180,    one_season,
-                                     color=color,  label=legend,  ls=ls)
-                        ax_twin.set_ylim([0, y_lim_max])
-                        ax_twin.set_ylabel(str(varname)+', '+str(units),
-                                           fontsize=12)
-                    else:
-                        ax_twin_5.set_frame_on(True)
-                        ax_twin_5.plot(one_season.lon - 180,    one_season,
-                                       color=color,  label=legend,  ls=ls)
-                        ax_twin_5.set_ylim([0, y_lim_max])
-                        ax_twin_5.set_ylabel(str(varname)+', '+str(units),
-                                             fontsize=12)
-
-                else:
-                    axs[i].plot(one_season.lat,    one_season,
-                                color=color,  label=legend,  ls=ls)
-                    axs[i].set_ylim([0, y_lim_max])
-                    axs[i].set_xlabel('Latitude',
-                                      fontsize=12)
-                    try:
-                        axs[i].set_ylabel(str(varname)+', '+str(units),
-                                          fontsize=12)
-                    except KeyError:
-                        axs[i].set_ylabel(str(varname),
-                                          fontsize=12)
-
-                axs[i].grid(True)
-            if coord == 'lon':
-                if legend != '_Hidden':
-                    ax_twin_5.legend(loc=loc,    fontsize=12,    ncol=2)
-                if plot_title is not None:
-                    plt.suptitle(plot_title,                       fontsize=17)
-            else:
-                if legend != '_Hidden':
-                    ax5.legend(loc=loc,    fontsize=12,    ncol=2)
-                if plot_title is not None:
-                    plt.suptitle(plot_title,                       fontsize=17)
-
-        elif 'DataArray' in str(type(data)):
-            if fig is not None:
-                fig, ax = fig
-            elif add is None and fig is None:
-                fig, ax = plt.subplots(figsize=(8*figsize, 5*figsize))
-            elif add is not None:
-                fig, ax = add
-            if data.size == 1:
-                plt.axhline(y=float(data.values),
-                            color=color,  label=legend,  ls=ls)
-            else:
-                if coord == 'time':
-                    plt.scatter(labels_int, data,
-                                color=color,  label=legend,  ls=ls)
-                else:
-                    plt.plot(labels_int,    data,
-                             color=color,  label=legend,  ls=ls)
-
-            plt.gca().xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
-            plt.gca().tick_params(axis='both',   which='major',    pad=10)
-            plt.xlim([min(labels_int),    max(labels_int)])
-
-            plt.grid(True)
-
-            if coord == 'time':
-                plt.xlabel('Timestep index',
-                           fontsize=12)
-                if data['time.year'][0].values == data['time.year'][-1].values:
-                    plt.xlabel(
-                        str(data['time.year'][0].values),    fontsize=12)
-                else:
-                    plt.xlabel(str(data['time.year'][0].values)+' - '+str(data['time.year'][-1].values),
-                               fontsize=12)
-            elif coord == coord_lat:
-                plt.xlabel('Latitude',
-                           fontsize=12)
-            elif coord == coord_lon:
-                plt.xlabel('Longitude',
-                           fontsize=12)
-            try:
-                plt.ylabel(str(varname)+', '+str(units),
-                           fontsize=12)
-            except KeyError:
-                plt.ylabel(str(varname),
-                           fontsize=12)
-
-            if plot_title is None:
-                if get_mean:
-                    plt.title('Mean values of ' + str(varname),
-                              fontsize=17,    pad=15)
-                elif get_median:
-                    plt.title('Median values of '+str(varname),
-                              fontsize=17,    pad=15)
-            else:
-                plt.title(plot_title,
-                          fontsize=17,    pad=15)
-
-            if legend != '_Hidden':
-                plt.legend(loc=loc,
-                           fontsize=12,    ncol=2)
-            if ylogscale:
-                plt.yscale('log')
-            if xlogscale:
-                plt.xscale('log')
+        
+        ylabel = str(varname)+', '+str(units)
+        if plot_title is None:
+            if get_mean:
+                plot_title = 'Mean values of ' + str(varname)
+            elif get_median:
+                plot_title = 'Median values of '+str(varname)
+        #try:
+        #    plt.ylabel(str(varname)+', '+str(units),
+        #               fontsize=12)
+        #except KeyError:
+        #    plt.ylabel(str(varname),
+        #               fontsize=12)
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
-            self.savefig(path_to_pdf, pdf_format)
 
-        if 'Dataset' in str(type(data)):
-            return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5]
-        else:
-            return [fig,  ax]
+        return plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
+                    legend=legend, figsize=figsize, ls=ls, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
+                    xlogscale=xlogscale, loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf, 
+                    pdf_format=pdf_format)
+
+
+        
 
     def twin_data_and_observations(self, data,                     dummy_data=None,                trop_lat=None,
                                    s_time=None,                    f_time=None,                    s_year=None,
