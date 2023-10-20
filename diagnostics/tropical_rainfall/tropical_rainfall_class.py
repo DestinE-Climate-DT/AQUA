@@ -2114,7 +2114,7 @@ class Tropical_Rainfall:
                     all_season = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons=seasons,
                                                                model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
-                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons,
+                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons, new_unit=new_unit
                                                               model_variable=model_variable,              path_to_netcdf=path_to_netcdf,
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
@@ -2607,7 +2607,7 @@ class Tropical_Rainfall:
     def seasonal_095level_into_netcdf(self,     data,           preprocess=True,        seasons=True,
                                       model_variable='tprate',              path_to_netcdf=None,
                                       name_of_file=None,                    trop_lat=None,
-                                      value=0.95,                           rel_error=0.1,
+                                      value=0.95,                           rel_error=0.1, new_unit=None,
                                       lon_length=None,                        lat_length=None,
                                       space_grid_factor=None,                 tqdm=True):
         """ Function to plot.
