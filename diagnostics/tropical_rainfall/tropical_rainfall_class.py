@@ -47,7 +47,7 @@ from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_c
 from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
 from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
 
-from .tropical_rainfall_plot import histogram_plot, plot_of_average, plot_seasons_or_months
+from .tropical_rainfall_plot import histogram_plot, plot_of_average, plot_seasons_or_months, map
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -2151,19 +2151,19 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
 
         data = data if isinstance(data, list) else [data]
-        data_len = len(data)
+        #data_len = len(data)
 
-        if titles is None:
-            titles = [""] * data_len
-        elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
-            raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
+        #if titles is None:
+        #    titles = [""] * data_len
+        #elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
+        #    raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
         
-        if data_len == 1:
-            ncols, nrows = 1, 1
-        elif data_len % 2 == 0:
-            ncols, nrows = 2, data_len // 2
-        elif data_len % 3 == 0:
-            ncols, nrows = 3, data_len // 3
+        #if data_len == 1:
+        #    ncols, nrows = 1, 1
+        #elif data_len % 2 == 0:
+        #    ncols, nrows = 2, data_len // 2
+        #elif data_len % 3 == 0:
+        #    ncols, nrows = 3, data_len // 3
         
         # modify
         if new_unit is None:
@@ -2172,15 +2172,7 @@ class Tropical_Rainfall:
             except KeyError:
                 unit = data[0].units
         else:
-            unit = new_unit
-
-        fig = plt.figure(figsize=(11*figsize*ncols, 8.5*figsize*nrows)) #, layout='constrained')
-        gs = GridSpec(nrows=nrows, ncols=ncols + 1, figure=fig, wspace=0.2, hspace=0.2, width_ratios=[1] * ncols + [0.1], height_ratios=[1] * nrows) 
-        # Add subplots using the grid
-        axs =  [fig.add_subplot(gs[i, j], projection=ccrs.PlateCarree()) for i in range(nrows) for j in range(ncols)]
-
-        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_ticks=number_of_ticks)
-                
+            unit = new_unit       
 
         for i in range(0, len(data)):   
             if any((pacific_ocean, atlantic_ocean, indian_ocean, tropical)):
@@ -2210,33 +2202,14 @@ class Tropical_Rainfall:
 
             if new_unit is not None:
                 data[i] = self.precipitation_rate_units_converter(data[i], model_variable=model_variable, new_unit=new_unit)
-
-            data_cycl, lons = add_cyclic_point(
-                data[i], coord=data[i]['lon'])
-            im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs,
-                                transform=ccrs.PlateCarree(),
-                                cmap='coolwarm', extend='both')
-
-            axs[i].set_title(titles[i], fontsize=17)
-            axs[i].coastlines()
-            # Longitude labels
-            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/number_of_ticks), crs=ccrs.PlateCarree())
-            axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())           
-            # Latitude labels
-            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/number_of_ticks), crs=ccrs.PlateCarree())
-            axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
-            axs[i].grid(True)
-
-        # Draw the colorbar
-        cbar_ax = fig.add_subplot(gs[:, -1]) # Adjust the column index as needed
-        cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='vertical', extend='both') #, shrink=0.8, pad=0.05, aspect=30)
-        cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-        if plot_title is not None:
-            plt.suptitle(plot_title,                       fontsize=17)
-
+        
+        cbarlabel=model_variable+", ["+str(unit)+"]"
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
-            self.savefig(path_to_pdf, pdf_format)
+
+        return map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
+                   model_variable=model_variable, figsize=figsize, number_of_ticks=number_of_ticks, cbarlabel=cbarlabel,
+                   plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
     def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable='tprate',
                             new_unit=None, weights=None,  trop_lat=None):
