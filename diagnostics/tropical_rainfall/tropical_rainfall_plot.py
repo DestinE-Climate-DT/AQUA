@@ -17,10 +17,25 @@ import xarray as xr
 
 class PlottingClass:
     """This is class to create the plots."""
-
-    #def __init__(self):
         
-    def savefig(self, path_to_pdf=None, pdf_format=True):
+    def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1,
+                 fontsize=14, pdf=True, smooth=True, step=False, color_map=False,
+                 ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_bar_ticks=6):
+        self.path_to_pdf = path_to_pdf
+        self.pdf_format = pdf_format
+        self.figsize = figsize
+        self.fontsize = fontsize
+        self.pdf = pdf
+        self.smooth = smooth
+        self.step = step
+        self.color_map = color_map
+        self.ls = ls
+        self.ylogscale = ylogscale
+        self.xlogscale = xlogscale
+        self.model_variable = model_variable
+        self.number_of_bar_ticks = number_of_bar_ticks
+    
+    def savefig(self, path_to_pdf=self.path_to_pdf, pdf_format=self.pdf_format):
             """
             Save the current figure to a file in either PDF or PNG format.
 
@@ -50,14 +65,14 @@ class PlottingClass:
                 plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
                             transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
 
-    def histogram_plot(self, x, data,      positive=True,  xlabel = '',        ylabel='',
-                        weights=None,      smooth=True,       step=False,           color_map=False,
-                        ls='-',            ylogscale=True,       xlogscale=False,
-                        color='tab:blue',  figsize=1,            legend='_Hidden',
-                        plot_title=None,   loc='upper right',    
-                        add=None,          fig=None,             path_to_pdf=None,
-                        pdf_format=True,      xmax=None,
-                        linewidth=3.0,     fontsize=14):
+    def histogram_plot(self, x, data, positive=True, xlabel='', ylabel='',
+                   weights=None, smooth=True, step=False, color_map=self.color_map,
+                   ls=self.ls, ylogscale=self.ylogscale, xlogscale=self.xlogscale,
+                   color='tab:blue', figsize=self.figsize, legend='_Hidden',
+                   plot_title=None, loc='upper right',
+                   add=None, fig=None, path_to_pdf=self.path_to_pdf,
+                   pdf_format=self.pdf_format, xmax=None,
+                   linewidth=3.0, fontsize=self.fontsize):
         """ Function to generate a histogram figure based on the provided data.
 
         Args:
@@ -126,11 +141,11 @@ class PlottingClass:
         if xlogscale:
             plt.xscale('log')
 
-        plt.ylabel(ylabel,       fontsize=fontsize)
-        plt.title(plot_title,       fontsize=16)
+        plt.ylabel(ylabel, fontsize=fontsize)
+        plt.title(plot_title, fontsize=fontsize+2)
 
         if legend != '_Hidden':
-            plt.legend(loc=loc,     fontsize=10)
+            plt.legend(loc=loc, fontsize=fontsize-4)
 
         if xmax is not None:
             plt.xlim([0, xmax])
@@ -138,44 +153,37 @@ class PlottingClass:
             self.savefig(path_to_pdf, pdf_format)
         return {fig, ax}
 
-    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=15, pad=15, y_lim_max=None,
-                        legend='_Hidden', figsize=1, ls='-', maxticknum=12, color='tab:blue', ylogscale=False, 
-                        xlogscale=False, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, 
-                        pdf_format=True):
-        """ Function to plot the mean or median value of variable in Dataset.
+    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=self.fontsize, pad=15, y_lim_max=None,
+                        legend='_Hidden', figsize=self.figsize, ls=self.ls, maxticknum=12, color='tab:blue', ylogscale=self.ylogscale, 
+                        xlogscale=self.xlogscale, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=self.path_to_pdf, 
+                        pdf_format=self.pdf_format):
+        """
+        Make a plot with different y-axes using a second axis object.
 
         Args:
-            data (xarray):                  The Dataset
-            model_variable (str, optional): The variable of the Dataset.            Defaults to 'tprate'.
-            coord (str, optional):          The coordinate of the Dataset.          Defaults to 'time'.
-            trop_lat (float, optional):     The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
-            get_mean (bool, optional):      The flag to calculate the mean of the variable.  Defaults to True.
-            get_median (bool, optional):    The flag to calculate the median of the variable.  Defaults to False.
-            s_time (str, optional):         The starting time of the Dataset.       Defaults to None.
-            f_time (str, optional):         The ending time of the Dataset.         Defaults to None.
-            s_year (str, optional):         The starting year of the Dataset.       Defaults to None.
-            f_year (str, optional):         The ending year of the Dataset.         Defaults to None.
-            s_month (str, optional):        The starting month of the Dataset.      Defaults to None.
-            f_month (str, optional):        The ending month of the Dataset.        Defaults to None.
-            legend (str, optional):         The legend of the plot.                 Defaults to '_Hidden'.
-            figsize (int, optional):        The size of the plot.                   Defaults to 1.
-            ls (str, optional):             The line style of the plot.             Defaults to '-'.
-            maxticknum (int, optional):     The maximum number of ticks on the x-axis.  Defaults to 12.
-            color (str, optional):          The color of the plot.                  Defaults to 'tab:blue'.
-            varname (str, optional):        The name of the variable.               Defaults to 'Precipitation'.
-            loc (str, optional):            The location of the legend.             Defaults to 'upper right'.
-            add (matplotlib.figure.Figure, optional): The add previously created figure to plot.  Defaults to None.
-            fig (matplotlib.figure.Figure, optional): The add previously created figure to plot.     Defaults to None.
-            plot_title (str, optional):     The title of the plot.                  Defaults to None.
-            path_to_pdf (str, optional):    The path to the pdf file.               Defaults to None.
-            new_unit (str, optional):       The unit of the model variable.         Defaults to None.
-            name_of_file (str, optional):   The name of the file.                   Defaults to None.
-            seasons (bool, optional):       The flag to calculate the seasonal mean.  Defaults to True.
-            pdf_format (bool, optional):    The flag to save the plot in pdf format. Defaults to True.
-        Example:
+            data (list or DataArray): Data to plot.
+            trop_lat (float): Tropospheric latitude. Defaults to None.
+            ylabel (str): Label for the y-axis. Defaults to ''.
+            coord (str): Coordinate for the plot. Can be 'lon', 'lat', or 'time'. Defaults to None.
+            fontsize (int): Font size for the plot. Defaults to 15.
+            pad (int): Padding value. Defaults to 15.
+            y_lim_max (float): Maximum limit for the y-axis. Defaults to None.
+            legend (str): Legend for the plot. Defaults to '_Hidden'.
+            figsize (int): Figure size. Defaults to 1.
+            ls (str): Line style for the plot. Defaults to '-'.
+            maxticknum (int): Maximum number of ticks. Defaults to 12.
+            color (str): Color for the plot. Defaults to 'tab:blue'.
+            ylogscale (bool): Use logarithmic scale for the y-axis. Defaults to False.
+            xlogscale (bool): Use logarithmic scale for the x-axis. Defaults to False.
+            loc (str): Location for the legend. Defaults to 'upper right'.
+            add (list): Additional objects to add. Defaults to None.
+            fig (list): Figure objects. Defaults to None.
+            plot_title (str): Title for the plot. Defaults to None.
+            path_to_pdf (str): Path to save the figure as a PDF. Defaults to None.
+            pdf_format (bool): Save the figure in PDF format. Defaults to True.
 
         Returns:
-            None.
+            list: List of figure and axis objects.
         """
 
 
@@ -218,10 +226,10 @@ class PlottingClass:
                 # Latitude labels
                 if coord == 'lon':
                     axs[i].set_xlabel('Longitude',
-                                        fontsize=12)
+                                        fontsize=fontsize-2)
                 elif coord == 'lat':
                     axs[i].set_xlabel('Latitude',
-                                        fontsize=12)
+                                        fontsize=fontsize-2)
 
                 if ylogscale:
                     axs[i].set_yscale('log')
@@ -334,8 +342,8 @@ class PlottingClass:
         
 
     def plot_seasons_or_months(self, data, cbarlabel=None, all_season=None, all_months=None,
-                            figsize=1, plot_title=None,  vmin=None, vmax=None,
-                            path_to_pdf=None, pdf_format=True):
+                            figsize=self.figsize, plot_title=None,  vmin=None, vmax=None,
+                            path_to_pdf=self.path_to_pdf, pdf_format=self.pdf_format):
         """ Function to plot seasonal data.
 
         Args:
@@ -380,7 +388,7 @@ class PlottingClass:
                                         transform=ccrs.PlateCarree(),
                                         cmap='coolwarm', extend='both')
 
-                axs[i].set_title(titles[i], fontsize=17)
+                axs[i].set_title(titles[i], fontsize=fontsize+3)
 
                 axs[i].coastlines()
 
@@ -422,7 +430,7 @@ class PlottingClass:
                                         transform=ccrs.PlateCarree(),
                                         cmap='coolwarm', extend='both')
 
-                axs[i].set_title(titles[i], fontsize=17)
+                axs[i].set_title(titles[i], fontsize=fontsize+3)
 
                 axs[i].coastlines()
 
@@ -439,16 +447,16 @@ class PlottingClass:
         # Draw the colorbar
         cbar = fig.colorbar(
             im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=ax5, location='bottom')
-        cbar.set_label(cbarlabel, fontsize=14)
+        cbar.set_label(cbarlabel, fontsize=fontsize)
 
         if plot_title is not None:
-            plt.suptitle(plot_title,                       fontsize=17)
+            plt.suptitle(plot_title,                       fontsize=fontsize+3)
 
         if isinstance(path_to_pdf, str):
             self.savefig(path_to_pdf, pdf_format)
 
 
-    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable='tprate', number_of_ticks=6):
+    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable=self.model_variable, number_of_bar_ticks=6):
         """Compute ticks and levels for a color bar based on provided data.
 
         Args:
@@ -456,7 +464,7 @@ class PlottingClass:
             vmin: The minimum value of the color bar. If None, it is derived from the data.
             vmax: The maximum value of the color bar. If None, it is derived from the data.
             model_variable: The variable to consider for the color bar computation.
-            number_of_ticks: The number of ticks to be computed for the color bar.
+            number_of_bar_ticks: The number of ticks to be computed for the color bar.
 
         Returns:
             Tuple: A tuple containing the computed ticks and levels for the color bar.
@@ -470,43 +478,48 @@ class PlottingClass:
             except KeyError:
                 vmax = float(data.max().values) / 10
             vmin = -vmax
-            ticks = [vmin + i * (vmax - vmin) / number_of_ticks for i in range(number_of_ticks + 1)]
+            ticks = [vmin + i * (vmax - vmin) / number_of_bar_ticks for i in range(number_of_bar_ticks + 1)]
         elif isinstance(vmax, int) and isinstance(vmin, int):
             ticks = list(range(vmin, vmax + 1))
         elif isinstance(vmax, float) or isinstance(vmin, float):
-            ticks = [vmin + i * (vmax - vmin) / number_of_ticks for i in range(number_of_ticks + 1)]
+            ticks = [vmin + i * (vmax - vmin) / number_of_bar_ticks for i in range(number_of_bar_ticks + 1)]
 
         try:
-            del_tick = abs(vmax - 2 - vmin) / (number_of_ticks + 1)
+            del_tick = abs(vmax - 2 - vmin) / (number_of_bar_ticks + 1)
         except ZeroDivisionError:
-            del_tick = abs(vmax - 2.01 - vmin) / (number_of_ticks + 1)
+            del_tick = abs(vmax - 2.01 - vmin) / (number_of_bar_ticks + 1)
         clevs = np.arange(vmin, vmax, del_tick)
 
         return ticks, clevs
 
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
-            model_variable='tprate', figsize=1, number_of_ticks=6, cbarlabel='',
-            plot_title=None, vmin=None, vmax=None, path_to_pdf=None, pdf_format=True):
+            model_variable=self.model_variable, figsize=self.figsize, number_of_bar_ticks=6, cbarlabel='',
+            plot_title=None, vmin=None, vmax=None, path_to_pdf=self.path_to_pdf, pdf_format=self.pdf_format,
+            fontsize=self.fontsize):
         """
-        Create a map with specified data and various optional parameters.
+        Generate a map with subplots for provided data.
 
         Args:
-            data (xarray): First dataset to be plotted.
-            cbarlabel (str, optional): Label for the colorbar. Defaults to None.
-            all_season (list, optional): List of seasonal datasets. Defaults to None.
-            all_season_2 (list, optional): List of secondary seasonal datasets. Defaults to None.
-            all_months (list, optional): List of monthly datasets. Defaults to None.
-            all_months_2 (list, optional): List of secondary monthly datasets. Defaults to None.
-            figsize (int, optional): Size of the figure. Defaults to 1.
-            plot_title (str, optional): Title of the plot. Defaults to None.
-            vmin (float, optional): Minimum value of the colorbar. Defaults to None.
-            vmax (float, optional): Maximum value of the colorbar. Defaults to None.
-            path_to_pdf (str, optional): Path to save the PDF file. Defaults to None.
-            pdf_format (bool, optional): If True, save the figure in PDF format. Defaults to True.
+            data (list): List of data to plot.
+            titles (list or str, optional): Titles for the subplots. If str, it will be repeated for each subplot. Defaults to None.
+            lonmin (int, optional): Minimum longitude. Defaults to -180.
+            lonmax (int, optional): Maximum longitude. Defaults to 181.
+            latmin (int, optional): Minimum latitude. Defaults to -90.
+            latmax (int, optional): Maximum latitude. Defaults to 91.
+            model_variable (str, optional): Model variable for the plot. Defaults to 'tprate'.
+            figsize (float, optional): Figure size. Defaults to 1.
+            number_of_bar_ticks (int, optional): Number of ticks. Defaults to 6.
+            cbarlabel (str, optional): Colorbar label. Defaults to ''.
+            plot_title (str, optional): Plot title. Defaults to None.
+            vmin (float, optional): Minimum value for the colorbar. Defaults to None.
+            vmax (float, optional): Maximum value for the colorbar. Defaults to None.
+            path_to_pdf (str, optional): Path to save the figure as a PDF. Defaults to None.
+            pdf_format (bool, optional): Save the figure in PDF format. Defaults to True.
+            fontsize (int, optional): Base font size for the plot. Defaults to 14.
 
         Returns:
-            The pyplot figure in the PDF format
+            The pyplot figure in the PDF format.
         """
         data_len = len(data)
 
@@ -522,12 +535,12 @@ class PlottingClass:
         elif data_len % 3 == 0:
             ncols, nrows = 3, data_len // 3
 
-        fig = plt.figure(figsize=(11*figsize*ncols, 8.5*figsize*nrows)) #, layout='constrained')
+        fig = plt.figure(figsize=(11*figsize*ncols, 8.5*figsize*nrows))
         gs = GridSpec(nrows=nrows, ncols=ncols + 1, figure=fig, wspace=0.2, hspace=0.2, width_ratios=[1] * ncols + [0.1], height_ratios=[1] * nrows) 
         # Add subplots using the grid
         axs =  [fig.add_subplot(gs[i, j], projection=ccrs.PlateCarree()) for i in range(nrows) for j in range(ncols)]
 
-        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_ticks=number_of_ticks)    
+        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)    
 
         for i in range(0, len(data)):   
             data_cycl, lons = add_cyclic_point(
@@ -536,22 +549,118 @@ class PlottingClass:
                                 transform=ccrs.PlateCarree(),
                                 cmap='coolwarm', extend='both')
 
-            axs[i].set_title(titles[i], fontsize=17)
+            axs[i].set_title(titles[i], fontsize=fontsize+3)
             axs[i].coastlines()
             # Longitude labels
-            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/number_of_ticks), crs=ccrs.PlateCarree())
+            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/number_of_bar_ticks), crs=ccrs.PlateCarree())
             axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())           
             # Latitude labels
-            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/number_of_ticks), crs=ccrs.PlateCarree())
+            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/number_of_bar_ticks), crs=ccrs.PlateCarree())
             axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
             axs[i].grid(True)
 
         # Draw the colorbar
         cbar_ax = fig.add_subplot(gs[:, -1]) # Adjust the column index as needed
         cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='vertical', extend='both') #, shrink=0.8, pad=0.05, aspect=30)
-        cbar.set_label(cbarlabel, fontsize=14)
+        cbar.set_label(cbarlabel, fontsize=fontsize)
         if plot_title is not None:
-            plt.suptitle(plot_title, fontsize=17)
+            plt.suptitle(plot_title, fontsize=fontsize+3)
 
         if isinstance(path_to_pdf, str):
             self.savefig(path_to_pdf, pdf_format)
+
+    """
+    def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
+                            legend='_Hidden', figsize=self.figsize, ls='-', maxticknum=12, color='tab:blue',
+                            varname='tprate', ylogscale=False, xlogscale=False, loc='upper right',
+                            add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit='mm/day',
+                            name_of_file=None, pdf_format=True, path_to_netcdf=None):
+
+        Plot the daily variability of the dataset.
+
+        This function generates a plot showing the daily variability of the provided dataset. It allows customization of various plot parameters such as color, scale, and legends.
+
+        Args:
+            ymax (int): The maximum y-value for the plot.
+            trop_lat (float): The tropical latitude value to be used.
+            relative (bool): A flag indicating whether the plot should be relative.
+            get_median (bool): A flag indicating whether to calculate the median.
+            legend (str): The legend for the plot.
+            figsize (int): The size of the figure.
+            ls (str): The linestyle for the plot.
+            maxticknum (int): The maximum number of ticks for the plot.
+            color (str): The color of the plot.
+            varname (str): The variable name to be used.
+            ylogscale (bool): A flag indicating whether to use a log scale for the y-axis.
+            xlogscale (bool): A flag indicating whether to use a log scale for the x-axis.
+            loc (str): The location for the legend.
+            add: Additional parameters for the plot.
+            fig: The figure to be used for the plot.
+            plot_title (str): The title for the plot.
+            path_to_pdf (str): The path to the PDF file to be saved.
+            new_unit (str): The new unit to which the data should be converted.
+            name_of_file (str): The name of the file to be saved.
+            pdf_format (bool): A flag indicating whether the file should be saved in PDF format.
+            path_to_netcdf (str): The path to the NetCDF file to be used.
+
+        Returns:
+            list: A list containing the figure and axis objects.
+
+
+
+        self.class_attributes_update(trop_lat=trop_lat)
+        if path_to_netcdf is None:
+            raise Exception('The path needs to be provided')
+        else:
+            data = self.open_dataset(
+                path_to_netcdf=path_to_netcdf)
+
+        utc_time = data['utc_time']
+        if relative:
+            tprate = data['tprate_relative']
+        else:
+            tprate = data['tprate']
+        try:
+            units = data.units
+        except AttributeError:
+            try:
+                units = data.tprate.units
+            except AttributeError:
+                units = 'mm/day'  # 'kg m**-2 s**-1'
+
+        if 'Dataset' in str(type(data)):
+            y_lim_max = self.precipitation_rate_units_converter(
+                ymax, old_unit='mm/day', new_unit=new_unit)
+            if fig is not None:
+                fig, ax = fig
+            elif add is None and fig is None:
+                fig, ax = plt.subplots(
+                    figsize=(11*figsize, 10*figsize), layout='constrained')
+            elif add is not None:
+                fig, ax = add
+        ax.plot(utc_time, tprate,
+                color=color,  label=legend,  ls=ls)
+
+        if relative:
+            ax.set_title(
+                'Relative Value of Daily Precipitation Variability', fontsize=15)
+            ax.set_xlabel('tprate variability, '+units,  fontsize=12)
+        else:
+            ax.set_title('Daily Precipitation Variability', fontsize=15)
+            ax.set_xlabel('relative tprate',  fontsize=12)
+
+        ax.set_frame_on(True)
+        ax.grid(True)
+
+        ax.set_xlabel('Local time', fontsize=12)
+
+        if legend != '_Hidden':
+            plt.legend(loc=loc,
+                       fontsize=12,    ncol=2)
+
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
+            self.savefig(path_to_pdf, pdf_format)
+
+        return [fig,  ax]
+    """
