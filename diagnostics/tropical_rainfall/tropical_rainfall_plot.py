@@ -6,7 +6,7 @@ import seaborn as sns
 
 from aqua.util import create_folder
 from aqua.logger import log_configure
-from .tropical_rainfall_func import extract_directory_path
+from .tropical_rainfall_func import ToolsClass
 
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
@@ -34,8 +34,48 @@ class PlottingClass:
         self.xlogscale = xlogscale
         self.model_variable = model_variable
         self.number_of_bar_ticks = number_of_bar_ticks
+        self.tools = ToolsClass()
     
-    def savefig(self, path_to_pdf=self.path_to_pdf, pdf_format=self.pdf_format):
+    def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None,
+                 fontsize=None, pdf=None, smooth=None, step=None, color_map=None,
+                 ls=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_bar_ticks=None):
+        """
+        Update the class attributes based on the provided arguments.
+
+        Args:
+            path_to_pdf (str): The file path for saving the figure in PDF format. If None, the previous value will be retained.
+            pdf_format (bool): A flag indicating whether the figure should be saved in PDF format. If None, the previous value will be retained.
+            figsize (float): The size of the figure. If None, the previous value will be retained.
+            fontsize (int): The font size of the text in the figure. If None, the previous value will be retained.
+            pdf (bool): A flag indicating whether to save the figure in PDF format. If None, the previous value will be retained.
+            smooth (bool): A flag indicating whether to smooth the figure. If None, the previous value will be retained.
+            step (bool): A flag indicating whether to use step plotting. If None, the previous value will be retained.
+            color_map (bool): A flag indicating whether to use a color map. If None, the previous value will be retained.
+            ls (str): The linestyle for the figure. If None, the previous value will be retained.
+            ylogscale (bool): A flag indicating whether to use a logarithmic scale for the y-axis. If None, the previous value will be retained.
+            xlogscale (bool): A flag indicating whether to use a logarithmic scale for the x-axis. If None, the previous value will be retained.
+            model_variable (str): The model variable to be used. If None, the previous value will be retained.
+            number_of_bar_ticks (int): The number of ticks for bar plots. If None, the previous value will be retained.
+
+        Returns:
+            None
+        """
+        self.path_to_pdf = self.path_to_pdf if path_to_pdf is None else path_to_pdf
+        self.pdf_format = self.pdf_format if pdf_format is None else pdf_format
+        self.figsize = self.figsize if figsize is None else figsize
+        self.fontsize = self.fontsize if fontsize is None else fontsize
+        self.pdf = self.pdf if pdf is None else pdf
+        self.smooth = self.smooth if smooth is None else smooth
+        self.step = self.step if step is None else step
+        self.color_map = self.color_map if color_map is None else color_map
+        self.ls = self.ls if ls is None else ls
+        self.ylogscale = self.ylogscale if ylogscale is None else ylogscale
+        self.xlogscale = self.xlogscale if xlogscale is None else xlogscale
+        self.model_variable = self.model_variable if model_variable is None else model_variable
+        self.number_of_bar_ticks = self.number_of_bar_ticks if number_of_bar_ticks is None else number_of_bar_ticks
+        
+
+    def savefig(self, path_to_pdf=None, pdf_format=None):
             """
             Save the current figure to a file in either PDF or PNG format.
 
@@ -54,7 +94,9 @@ class PlottingClass:
                 # This will save the current figure in PDF format as 'example.pdf'.
 
             """
-            create_folder(folder=extract_directory_path(
+            self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format)
+
+            create_folder(folder=self.tools.extract_directory_path(
                         path_to_pdf), loglevel='WARNING')
             
             if pdf_format:
@@ -66,13 +108,13 @@ class PlottingClass:
                             transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
 
     def histogram_plot(self, x, data, positive=True, xlabel='', ylabel='',
-                   weights=None, smooth=True, step=False, color_map=self.color_map,
-                   ls=self.ls, ylogscale=self.ylogscale, xlogscale=self.xlogscale,
-                   color='tab:blue', figsize=self.figsize, legend='_Hidden',
+                   weights=None, smooth=None, step=None, color_map=None,
+                   ls=None, ylogscale=None, xlogscale=None,
+                   color='tab:blue', figsize=None, legend='_Hidden',
                    plot_title=None, loc='upper right',
-                   add=None, fig=None, path_to_pdf=self.path_to_pdf,
-                   pdf_format=self.pdf_format, xmax=None,
-                   linewidth=3.0, fontsize=self.fontsize):
+                   add=None, fig=None, path_to_pdf=None,
+                   pdf_format=None, xmax=None,
+                   linewidth=3.0, fontsize=None):
         """ Function to generate a histogram figure based on the provided data.
 
         Args:
@@ -101,6 +143,8 @@ class PlottingClass:
         Returns:
             A tuple (fig, ax) containing the figure and axes objects.
         """
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
         if fig is not None:
             fig, ax = fig
         elif add is None and fig is None:
@@ -153,10 +197,10 @@ class PlottingClass:
             self.savefig(path_to_pdf, pdf_format)
         return {fig, ax}
 
-    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=self.fontsize, pad=15, y_lim_max=None,
-                        legend='_Hidden', figsize=self.figsize, ls=self.ls, maxticknum=12, color='tab:blue', ylogscale=self.ylogscale, 
-                        xlogscale=self.xlogscale, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=self.path_to_pdf, 
-                        pdf_format=self.pdf_format):
+    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None,
+                        legend='_Hidden', figsize=None, ls=None, maxticknum=12, color='tab:blue', ylogscale=None, 
+                        xlogscale=None, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, 
+                        pdf_format=None):
         """
         Make a plot with different y-axes using a second axis object.
 
@@ -185,7 +229,8 @@ class PlottingClass:
         Returns:
             list: List of figure and axis objects.
         """
-
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
 
         # make a plot with different y-axis using second axis object
         labels_int = data[coord].values
@@ -341,9 +386,9 @@ class PlottingClass:
             return [fig,  ax]
         
 
-    def plot_seasons_or_months(self, data, cbarlabel=None, all_season=None, all_months=None,
-                            figsize=self.figsize, plot_title=None,  vmin=None, vmax=None,
-                            path_to_pdf=self.path_to_pdf, pdf_format=self.pdf_format):
+    def plot_seasons_or_months(self, data, cbarlabel=None, all_season=None, all_months=None, cmap='coolwarm',
+                            figsize=None, plot_title=None,  vmin=None, vmax=None,
+                            path_to_pdf=None, pdf_format=None):
         """ Function to plot seasonal data.
 
         Args:
@@ -358,6 +403,10 @@ class PlottingClass:
             path_to_pdf (str, optional): Path to save the PDF file. Defaults to None.
             pdf_format (bool, optional): If True, save the figure in PDF format. Defaults to True.
         """
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
+
+        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
 
         if all_months is None:
             fig = plt.figure(figsize=(11*figsize, 10*figsize),
@@ -370,10 +419,10 @@ class PlottingClass:
             ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
             axs = [ax1, ax2, ax3, ax4, ax5]
 
-            if vmin is None and vmax is None:
-                vmax = float(all_season[0].max().values)/10
-                vmin = 0
-            clevs = np.arange(vmin, vmax, abs(vmax - vmin)/10)
+            #if vmin is None and vmax is None:
+            #    vmax = float(all_season[0].max().values)/10
+            #    vmin = 0
+            #clevs = np.arange(vmin, vmax, abs(vmax - vmin)/10)
 
             titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
 
@@ -410,11 +459,11 @@ class PlottingClass:
                                         figsize=(11*figsize, 8.5*figsize), layout='constrained')
             
 
-            if vmin is None and vmax is None:
-                vmax = float(all_months[6].max().values)
-                vmin = 0
+            #if vmin is None and vmax is None:
+            #    vmax = float(all_months[6].max().values)
+            #    vmin = 0
 
-            clevs = np.arange(vmin, vmax, (vmax - vmin)/10)
+            #clevs = np.arange(vmin, vmax, (vmax - vmin)/10)
 
             for i in range(0, len(all_months)):
                 all_months[i] = all_months[i].where(all_months[i] > vmin)
@@ -428,7 +477,7 @@ class PlottingClass:
             for i in range(0, len(all_months)):
                 im1 = axs[i].contourf(lons, data['lat'], all_months[i], clevs,
                                         transform=ccrs.PlateCarree(),
-                                        cmap='coolwarm', extend='both')
+                                        cmap=cmap, extend='both')
 
                 axs[i].set_title(titles[i], fontsize=fontsize+3)
 
@@ -444,9 +493,11 @@ class PlottingClass:
                 lat_formatter = cticker.LatitudeFormatter()
                 axs[i].yaxis.set_major_formatter(lat_formatter)
                 axs[i].grid(True)
+
+        
         # Draw the colorbar
         cbar = fig.colorbar(
-            im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=ax5, location='bottom')
+            im1, ticks=ticks, ax=ax5, location='bottom') #[-7, -5, -3, -1, 1, 3, 5, 7]
         cbar.set_label(cbarlabel, fontsize=fontsize)
 
         if plot_title is not None:
@@ -456,7 +507,7 @@ class PlottingClass:
             self.savefig(path_to_pdf, pdf_format)
 
 
-    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable=self.model_variable, number_of_bar_ticks=6):
+    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable=None, number_of_bar_ticks=None):
         """Compute ticks and levels for a color bar based on provided data.
 
         Args:
@@ -472,6 +523,8 @@ class PlottingClass:
         Raises:
             ZeroDivisionError: If a division by zero occurs during computation.
         """
+        self.class_attributes_update(model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
+
         if vmin is None and vmax is None:
             try:
                 vmax = float(data[model_variable].max().values) / 10
@@ -493,10 +546,10 @@ class PlottingClass:
         return ticks, clevs
 
 
-    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
-            model_variable=self.model_variable, figsize=self.figsize, number_of_bar_ticks=6, cbarlabel='',
-            plot_title=None, vmin=None, vmax=None, path_to_pdf=self.path_to_pdf, pdf_format=self.pdf_format,
-            fontsize=self.fontsize):
+    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap='coolwarm',
+            model_variable=None, figsize=None, number_of_bar_ticks=None, cbarlabel='',
+            plot_title=None, vmin=None, vmax=None, path_to_pdf=None, pdf_format=None,
+            fontsize=None):
         """
         Generate a map with subplots for provided data.
 
@@ -521,6 +574,9 @@ class PlottingClass:
         Returns:
             The pyplot figure in the PDF format.
         """
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls, 
+                                model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
         data_len = len(data)
 
         if titles is None:
@@ -545,9 +601,8 @@ class PlottingClass:
         for i in range(0, len(data)):   
             data_cycl, lons = add_cyclic_point(
                 data[i], coord=data[i]['lon'])
-            im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs,
-                                transform=ccrs.PlateCarree(),
-                                cmap='coolwarm', extend='both')
+            im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs, transform=ccrs.PlateCarree(),
+                                cmap=cmap, extend='both')
 
             axs[i].set_title(titles[i], fontsize=fontsize+3)
             axs[i].coastlines()
