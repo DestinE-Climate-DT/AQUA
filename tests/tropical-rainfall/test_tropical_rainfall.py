@@ -1,5 +1,4 @@
 """Test of tropical rainfall diagnostic"""
-from tropical_rainfall import Tropical_Rainfall
 import pytest
 import numpy as np
 import xarray
