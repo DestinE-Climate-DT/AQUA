@@ -85,12 +85,15 @@ jobs:
           environment-file: environment-common.yml 
           environment-name: aqua
           cache-downloads: true
-          cache-environment: true
+          cache-environment: false
           condarc: |
             channels:
               - conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
+      - name: List Pip packages
+        run: |
+          pip freeze
       - name: Download and set up tests
         run: |
           ./download_data_for_tests.sh

@@ -22,6 +22,8 @@ from statistics import mean
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 # import boost_histogram as bh  # pip
+from matplotlib.gridspec import GridSpec
+import seaborn as sns
 
 import dask.array as da
 import dask_histogram as dh  # pip
@@ -37,13 +39,12 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
 
+
 from aqua import Reader
 from aqua.util import create_folder
 
-from .tropical_rainfall_func import time_interpreter, convert_24hour_to_12hour_clock, convert_monthnumber_to_str
-from .tropical_rainfall_func import mirror_dummy_grid, space_regrider, new_time_coordinate
-from .tropical_rainfall_func import convert_length, convert_time, unit_splitter, extract_directory_path, data_size
-
+from .tropical_rainfall_func import ToolsClass
+from .tropical_rainfall_plot import PlottingClass 
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -89,6 +90,11 @@ class Tropical_Rainfall:
         self.bins = bins
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
+        self.plots = PlottingClass()
+        self.tools = ToolsClass()
+        
+
+    
 
     def class_attributes_update(self,             trop_lat=None,        s_time=None,          f_time=None,
                                 s_year=None,      f_year=None,          s_month=None,         f_month=None,
@@ -202,25 +208,25 @@ class Tropical_Rainfall:
                 return data
 
         if isinstance(data, (float, int, np.ndarray)) and old_unit is not None:
-            from_mass_unit, from_space_unit, from_time_unit = unit_splitter(
+            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(
                 old_unit)
         else:
-            from_mass_unit, from_space_unit, from_time_unit = unit_splitter(
+            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(
                 data.units)
             old_unit = data.units
-        _,   to_space_unit,   to_time_unit = unit_splitter(new_unit)
+        _,   to_space_unit,   to_time_unit = self.tools.unit_splitter(new_unit)
 
         if old_unit == 'kg m**-2 s**-1':
             data = 0.001 * data
-            data = convert_length(data,   from_space_unit, to_space_unit)
-            data = convert_time(data,     from_time_unit,  to_time_unit)
+            data = self.tools.convert_length(data,   from_space_unit, to_space_unit)
+            data = self.tools.convert_time(data,     from_time_unit,  to_time_unit)
         elif from_mass_unit is None and new_unit == 'kg m**-2 s**-1':
-            data = convert_length(data,   from_space_unit, 'm')
-            data = convert_time(data,     from_time_unit,  's')
+            data = self.tools.convert_length(data,   from_space_unit, 'm')
+            data = self.tools.convert_time(data,     from_time_unit,  's')
             data = 1000 * data
         else:
-            data = convert_length(data,   from_space_unit, to_space_unit)
-            data = convert_time(data,     from_time_unit,  to_time_unit)
+            data = self.tools.convert_length(data,   from_space_unit, to_space_unit)
+            data = self.tools.convert_time(data,     from_time_unit,  to_time_unit)
         if 'xarray' in str(type(data)):
             data.attrs['units'] = new_unit
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -374,7 +380,7 @@ class Tropical_Rainfall:
     def preprocessing(self, data,          trop_lat=None,
                       preprocess=True,     model_variable="tprate",
                       s_time=None,         f_time=None,
-                      s_year=None,         f_year=None,
+                      s_year=None,         f_year=None,     new_unit=None,
                       s_month=None,        f_month=None,    dask_array=False):
         """ Function to preprocess the Dataset according to provided arguments and attributes of the class.
 
@@ -415,6 +421,10 @@ class Tropical_Rainfall:
             data_per_lat_band = self.latitude_band(
                 data_variable, trop_lat=self.trop_lat)
 
+            if new_unit is not None:
+                data_per_lat_band = self.precipitation_rate_units_converter(
+                    data_per_lat_band, new_unit=new_unit)
+            
             if dask_array:
                 data_1d = self.dataset_into_1d(data_per_lat_band)
                 dask_data = da.from_array(data_1d)
@@ -489,7 +499,7 @@ class Tropical_Rainfall:
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
 
-        size_of_the_data = data_size(data)
+        size_of_the_data = self.tools.data_size(data)
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
@@ -525,7 +535,7 @@ class Tropical_Rainfall:
             edges = edges.compute()
             self.logger.info('Histogram of the data is created')
             self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
-                              .format(data_size(data), int(sum(counts))))
+                              .format(self.tools.data_size(data), int(sum(counts))))
             if int(sum(counts)) != size_of_the_data:
                 self.logger.warning(
                     'Amount of counts in the histogram is not equal to the size of the data')
@@ -637,7 +647,7 @@ class Tropical_Rainfall:
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
-        size_of_the_data = data_size(data)
+        size_of_the_data = self.tools.data_size(data)
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
@@ -692,7 +702,7 @@ class Tropical_Rainfall:
                         seasons_or_months[i],  weights=weights, bins=self.bins)[0])
         self.logger.info('Histogram of the data is created')
         self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
-                          .format(data_size(data), int(sum(hist_fast))))
+                          .format(self.tools.data_size(data), int(sum(hist_fast))))
         if int(sum(hist_fast)) != size_of_the_data:
             self.logger.warning(
                 'Amount of counts in the histogram is not equal to the size of the data')
@@ -782,7 +792,7 @@ class Tropical_Rainfall:
         Returns:
             str: The path to save the histogram.
         """
-        if path_to_netcdf is not None:
+        if isinstance(path_to_netcdf, str):
             create_folder(folder=str(path_to_netcdf), loglevel='WARNING')
             if name_of_file is None:
                 name_of_file = '_'
@@ -795,7 +805,7 @@ class Tropical_Rainfall:
                 name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
-            dataset.to_netcdf(path=path_to_netcdf)
+            dataset.to_netcdf(path=path_to_netcdf, mode='w')
             self.logger.info("NetCDF is saved in the storage.")
         else:
             self.logger.debug(
@@ -820,7 +830,7 @@ class Tropical_Rainfall:
         try:
             if data.time.size > 1:
                 time_band = str(
-                    data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(time_interpreter(data))
+                    data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(self.tools.time_interpreter(data))
             else:
                 try:
                     time_band = str(data.time.values[0])
@@ -1170,7 +1180,7 @@ class Tropical_Rainfall:
         sum_of_pdf = sum(pdf_per_bin[:]*data.width[0:])
 
         if test:
-            if sum(data[:]) == 0 or abs(sum_of_pdf-1.) < 10**(-4):  # 10**(-4)
+            if sum(data[:]) == 0 or abs(sum_of_pdf-1.) < 10**(-4):
                 pass
             else:
                 self.logger.debug('Sum of PDF: {}'
@@ -1197,7 +1207,7 @@ class Tropical_Rainfall:
         sum_of_pdfP = sum(pdfP_per_bin[:]*data.width[0:])
 
         if test:
-            if sum(data[:]) == 0 or abs(sum_of_pdfP-data.mean()) < 10**(-4):  # 10**(-4)
+            if sum(data[:]) == 0 or abs(sum_of_pdfP-data.mean()) < 10**(-4):
                 pass
             else:
                 self.logger.debug('Sum of PDF: {}'
@@ -1262,16 +1272,16 @@ class Tropical_Rainfall:
 
         return mean_from_freq, mean_of_original_data, mean_of_modified_data
 
-    """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """ """
-
     def histogram_plot(self, data,        new_unit=None,        pdfP=False,
+                       positive=True, 
                        weights=None,      frequency=False,      pdf=True,
                        smooth=True,       step=False,           color_map=False,
                        ls='-',            ylogscale=True,       xlogscale=False,
                        color='tab:blue',  figsize=1,            legend='_Hidden',
                        plot_title=None,   loc='upper right',    varname='Precipitation',
                        add=None,          fig=None,             path_to_pdf=None,
-                       name_of_file=None, pdf_format=True,      xmax=None,  test=False):
+                       name_of_file=None, pdf_format=True,      xmax=None,  test=False,
+                       linewidth=3,     fontsize=14):
         """ Function to generate a histogram figure based on the provided data.
 
         Args:
@@ -1300,12 +1310,6 @@ class Tropical_Rainfall:
         Returns:
             A tuple (fig, ax) containing the figure and axes objects.
         """
-        if fig is not None:
-            fig, ax = fig
-        elif add is None and fig is None:
-            fig, ax = plt.subplots(figsize=(8*figsize, 5*figsize))
-        elif add is not None:
-            fig, ax = add
 
         if 'Dataset' in str(type(data)):
             data = data['counts']
@@ -1319,85 +1323,33 @@ class Tropical_Rainfall:
             data = self.convert_counts_to_pdfP(data,  test=test)
 
         x = data.center_of_bin.values
-        # if new_unit is not None:
-        #    converter = self.precipitation_rate_units_converter(
-        #        1, old_unit=data.center_of_bin.units, new_unit=new_unit)
-        #    x = converter * x
-        #    data = data/converter
-        data = data.where(data > 0)
-        if smooth:
-            plt.plot(x, data,
-                     linewidth=3.0, ls=ls, color=color, label=legend)
-            plt.grid(True)
-        elif step:
-            plt.step(x, data,
-                     linewidth=3.0, ls=ls, color=color, label=legend)
-            plt.grid(True)
-        elif color_map:
-            if weights is None:
-                N, _, patches = plt.hist(
-                    x=x, bins=x, weights=data,    label=legend)
-            else:
-                N, bins, patches = plt.hist(
-                    x=x, bins=x, weights=weights, label=legend)
-
-            fracs = ((N**(1 / 5)) / N.max())
-            norm = colors.Normalize(fracs.min(), fracs.max())
-
-            for thisfrac, thispatch in zip(fracs, patches):
-                if color_map is True:
-                    color = plt.cm.get_cmap('viridis')(norm(thisfrac))
-                elif isinstance(color_map, str):
-                    color = plt.cm.get_cmap(color_map)(norm(thisfrac))
-                thispatch.set_facecolor(color)
+        
         if new_unit is None:
-            plt.xlabel(varname+", ["+str(data.attrs['units'])+"]", fontsize=14)
+            xlabel=varname+", ["+str(data.attrs['units'])+"]"
         else:
-            plt.xlabel(varname+", ["+str(new_unit)+"]", fontsize=14)
-        if ylogscale:
-            plt.yscale('log')
-        if xlogscale:
-            plt.xscale('log')
+            xlabel=varname+", ["+str(new_unit)+"]"
 
         if pdf and not frequency and not pdfP:
-            plt.ylabel('PDF',       fontsize=14)
+            ylabel = 'PDF'
         elif not pdf and frequency and not pdfP:
-            plt.ylabel('Frequency', fontsize=14)
+            ylabel = 'Frequency'
         elif not frequency and not pdfP and not pdf:
-            plt.ylabel('Counts',    fontsize=14)
+            ylabel = 'Counts'
         elif pdfP:
-            plt.ylabel('PDF * P',    fontsize=14)
+            ylabel = 'PDF * P'
 
-        plt.title(plot_title,       fontsize=16)
-
-        if legend != '_Hidden':
-            plt.legend(loc=loc,     fontsize=10)
-
-        if xmax is not None:
-            plt.xlim([0, xmax])
-
-        if pdf_format:
-            if path_to_pdf is not None and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-                plt.savefig(path_to_pdf,  format="pdf",  bbox_inches="tight")
-        else:
-            if path_to_pdf is not None and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-                plt.savefig(path_to_pdf,  bbox_inches="tight")
-        return {fig, ax}
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
+        
+        return self.plots.histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel, weights=weights, smooth=smooth, 
+               step=step, color_map=color_map, ls=ls, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
+               figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
+               pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
 
     def mean_along_coordinate(self, data,       model_variable='tprate',      preprocess=True,
                               trop_lat=None,    coord='time',                 glob=False,
-                              s_time=None,      f_time=None,
-                              s_year=None,      f_year=None,
+                              s_time=None,      f_time=None,                  positive=True,
+                              s_year=None,      f_year=None,                  new_unit=None,
                               s_month=None,     f_month=None):
         """ Function to calculate the mean value of variable in Dataset.
 
@@ -1424,7 +1376,9 @@ class Tropical_Rainfall:
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
-                                      dask_array=False)
+                                      dask_array=False,                  new_unit=new_unit)
+        if positive:
+            data = np.maximum(data, 0.)
         coord_lat, coord_lon = self.coordinate_names(data)
         if coord in data.dims:
 
@@ -1448,8 +1402,8 @@ class Tropical_Rainfall:
 
     def median_along_coordinate(self, data,               trop_lat=None,     preprocess=True,
                                 model_variable='tprate',  coord='time',      glob=False,
-                                s_time=None,              f_time=None,
-                                s_year=None,              f_year=None,
+                                s_time=None,              f_time=None,       positive=True,
+                                s_year=None,              f_year=None,       new_unit=None,
                                 s_month=None,             f_month=None):
         """ Function to calculate the median value of variable in Dataset.
 
@@ -1476,8 +1430,10 @@ class Tropical_Rainfall:
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
-                                      dask_array=False)
+                                      dask_array=False,                 new_unit=new_unit)
 
+        if positive:
+            data = np.maximum(data, 0.)
         coord_lat, coord_lon = self.coordinate_names(data)
         if coord in data.dims:
             self.class_attributes_update(trop_lat=trop_lat,
@@ -1542,7 +1498,7 @@ class Tropical_Rainfall:
                                                       s_time=self.s_time,                f_time=self.f_time,
                                                       s_year=self.s_year,                f_year=self.f_year,
                                                       s_month=None,                      f_month=None,
-                                                      dask_array=False)
+                                                      dask_array=False,                  new_unit=new_unit)
 
         if get_mean:
             if seasons:
@@ -1552,10 +1508,8 @@ class Tropical_Rainfall:
                                                              coord=coord)
 
                 seasonal_average = data_average[0].to_dataset(name="DJF")
-                seasonal_average["MAM"] = data_average[1]
-                seasonal_average["JJA"] = data_average[2]
-                seasonal_average["SON"] = data_average[3]
-                seasonal_average["Yearly"] = data_average[4]
+                seasonal_average["MAM"], seasonal_average["JJA"] = data_average[1], data_average[2]
+                seasonal_average["SON"], seasonal_average["Yearly"] = data_average[3], data_average[4]
             else:
                 data_average = self.mean_along_coordinate(data,                           preprocess=preprocess,
                                                           glob=glob,                      model_variable=model_variable,
@@ -1590,14 +1544,16 @@ class Tropical_Rainfall:
 
         if average_dataset.time_band == []:
             raise Exception('Time band is empty')
-        if path_to_netcdf is not None and name_of_file is not None:
-            self.dataset_to_netcdf(
+        
+        if isinstance(path_to_netcdf, str) and name_of_file is not None:
+            return self.dataset_to_netcdf(
                 average_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file+'_'+str(coord))
+            #return path_to_netcdf+name_of_file+'_'+str(coord)
         else:
             return average_dataset
 
-    def plot_of_average(self,
-                        ymax=12,
+    def plot_of_average(self, data=None,
+                        ymax=12,                    fontsize=15, pad=15,
                         trop_lat=None,             get_mean=True,         get_median=False,
                         legend='_Hidden',          figsize=1,             ls='-',
                         maxticknum=12,             color='tab:blue',      varname='tprate',
@@ -1641,11 +1597,12 @@ class Tropical_Rainfall:
             None.
         """
         self.class_attributes_update(trop_lat=trop_lat)
-        if path_to_netcdf is None:
-            raise Exception('The path needs to be provided')
-        else:
+        
+        if data is None and path_to_netcdf is not None:
             data = self.open_dataset(
-                path_to_netcdf=path_to_netcdf)
+                path_to_netcdf=path_to_netcdf)  
+        elif path_to_netcdf is None and data is None:
+            raise Exception('The path or dataset must be provided.')
 
         coord_lat, coord_lon = self.coordinate_names(data)
 
@@ -1662,235 +1619,32 @@ class Tropical_Rainfall:
             raise ValueError(
                 "The length of the coordinate should be more than 1.")
 
-        # make a plot with different y-axis using second axis object
-        labels_int = data[coord].values
-
         if new_unit is not None and 'xarray' in str(type(data)):
             data = self.precipitation_rate_units_converter(
                 data, new_unit=new_unit)
             units = new_unit
         else:
             units = data.units
-        if 'Dataset' in str(type(data)):
-            y_lim_max = self.precipitation_rate_units_converter(
+        y_lim_max = self.precipitation_rate_units_converter(
                 ymax, old_unit='mm/day', new_unit=new_unit)
-            if fig is not None:
+        
+        ylabel = str(varname)+', '+str(units)
+        if plot_title is None:
+            if get_mean:
+                plot_title = 'Mean values of ' + str(varname)
+            elif get_median:
+                plot_title = 'Median values of '+str(varname)
 
-                ax1, ax2, ax3, ax4, ax5, ax_twin_5 = fig[1], fig[2], fig[3], fig[4], fig[5], fig[6]
-                fig = fig[0]
-                axs = [ax1, ax2, ax3, ax4, ax5]
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
 
-            elif add is None and fig is None:
-                fig = plt.figure(
-                    figsize=(11*figsize, 10*figsize), layout='constrained')
-                gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 2.5])
-                if coord == 'lon':
-                    ax1 = fig.add_subplot(
-                        gs[0, 0], projection=ccrs.PlateCarree())
-                    ax2 = fig.add_subplot(
-                        gs[0, 1], projection=ccrs.PlateCarree())
-                    ax3 = fig.add_subplot(
-                        gs[1, 0], projection=ccrs.PlateCarree())
-                    ax4 = fig.add_subplot(
-                        gs[1, 1], projection=ccrs.PlateCarree())
-                    ax5 = fig.add_subplot(
-                        gs[2, :], projection=ccrs.PlateCarree())
-                    ax_twin_5 = ax5.twinx()
-                else:
-                    ax1 = fig.add_subplot(gs[0, 0])
-                    ax2 = fig.add_subplot(gs[0, 1])
-                    ax3 = fig.add_subplot(gs[1, 0])
-                    ax4 = fig.add_subplot(gs[1, 1])
-                    ax5 = fig.add_subplot(gs[2, :])
-                    ax_twin_5 = None
-                axs = [ax1, ax2, ax3, ax4, ax5, ax_twin_5]
-            elif add is not None:
-                fig = add
-                ax1, ax2, ax3, ax4, ax5, ax_twin_5 = add
-                axs = [ax1, ax2, ax3, ax4, ax5]
-            titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
-            i = -1
-            for one_season in [data.DJF, data.MAM, data.JJA, data.SON, data.Yearly]:
-                i += 1
+        return self.plots.plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
+                    legend=legend, figsize=figsize, ls=ls, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
+                    xlogscale=xlogscale, loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf, 
+                    pdf_format=pdf_format)
 
-                axs[i].set_title(titles[i], fontsize=16)
-                # Latitude labels
-                if coord == 'lon':
-                    axs[i].set_xlabel('Longitude',
-                                      fontsize=12)
-                elif coord == 'lat':
-                    axs[i].set_xlabel('Latitude',
-                                      fontsize=12)
 
-                if ylogscale:
-                    axs[i].set_yscale('log')
-                if xlogscale:
-                    axs[i].set_xscale('log')
-
-                if coord == 'lon':
-                    # twin object for two different y-axis on the sample plot
-                    ax_span = axs[i].twinx()
-                    ax_span.axhspan(-self.trop_lat, self.trop_lat,
-                                    alpha=0.05, color='tab:red')
-                    ax_span.set_ylim([-90, 90])
-                    ax_span.set_xticks([])
-                    ax_span.set_yticks([])
-                    axs[i].coastlines(alpha=0.5, color='grey')
-                    axs[i].set_xticks(np.arange(-180, 181, 60),
-                                      crs=ccrs.PlateCarree())
-                    lon_formatter = cticker.LongitudeFormatter()
-                    axs[i].xaxis.set_major_formatter(lon_formatter)
-
-                    # Latitude labels
-                    axs[i].set_yticks(np.arange(-90, 91, 30),
-                                      crs=ccrs.PlateCarree())
-                    lat_formatter = cticker.LatitudeFormatter()
-                    axs[i].yaxis.set_major_formatter(lat_formatter)
-
-                    #
-                    if i < 4:
-                        ax_twin = axs[i].twinx()
-                        ax_twin.set_frame_on(True)
-                        ax_twin.plot(one_season.lon - 180,    one_season,
-                                     color=color,  label=legend,  ls=ls)
-                        ax_twin.set_ylim([0, y_lim_max])
-                        ax_twin.set_ylabel(str(varname)+', '+str(units),
-                                           fontsize=12)
-                    else:
-                        ax_twin_5.set_frame_on(True)
-                        ax_twin_5.plot(one_season.lon - 180,    one_season,
-                                       color=color,  label=legend,  ls=ls)
-                        ax_twin_5.set_ylim([0, y_lim_max])
-                        ax_twin_5.set_ylabel(str(varname)+', '+str(units),
-                                             fontsize=12)
-
-                else:
-                    axs[i].plot(one_season.lat,    one_season,
-                                color=color,  label=legend,  ls=ls)
-                    axs[i].set_ylim([0, y_lim_max])
-                    axs[i].set_xlabel('Latitude',
-                                      fontsize=12)
-                    try:
-                        axs[i].set_ylabel(str(varname)+', '+str(units),
-                                          fontsize=12)
-                    except KeyError:
-                        axs[i].set_ylabel(str(varname),
-                                          fontsize=12)
-
-                axs[i].grid(True)
-            if coord == 'lon':
-                if legend != '_Hidden':
-                    ax_twin_5.legend(loc=loc,    fontsize=12,    ncol=2)
-                if plot_title is not None:
-                    plt.suptitle(plot_title,                       fontsize=17)
-            else:
-                if legend != '_Hidden':
-                    ax5.legend(loc=loc,    fontsize=12,    ncol=2)
-                if plot_title is not None:
-                    plt.suptitle(plot_title,                       fontsize=17)
-
-        elif 'DataArray' in str(type(data)):
-            if fig is not None:
-                fig, ax = fig
-            elif add is None and fig is None:
-                fig, ax = plt.subplots(figsize=(8*figsize, 5*figsize))
-            elif add is not None:
-                fig, ax = add
-            if data.size == 1:
-                plt.axhline(y=float(data.values),
-                            color=color,  label=legend,  ls=ls)
-            else:
-                if coord == 'time':
-                    plt.scatter(labels_int, data,
-                                color=color,  label=legend,  ls=ls)
-                else:
-                    plt.plot(labels_int,    data,
-                             color=color,  label=legend,  ls=ls)
-
-            plt.gca().xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
-            plt.gca().tick_params(axis='both',   which='major',    pad=10)
-            plt.xlim([min(labels_int),    max(labels_int)])
-
-            plt.grid(True)
-
-            if coord == 'time':
-                plt.xlabel('Timestep index',
-                           fontsize=12)
-                if data['time.year'][0].values == data['time.year'][-1].values:
-                    plt.xlabel(
-                        str(data['time.year'][0].values),    fontsize=12)
-                else:
-                    plt.xlabel(str(data['time.year'][0].values)+' - '+str(data['time.year'][-1].values),
-                               fontsize=12)
-            elif coord == coord_lat:
-                plt.xlabel('Latitude',
-                           fontsize=12)
-            elif coord == coord_lon:
-                plt.xlabel('Longitude',
-                           fontsize=12)
-            try:
-                plt.ylabel(str(varname)+', '+str(units),
-                           fontsize=12)
-            except KeyError:
-                plt.ylabel(str(varname),
-                           fontsize=12)
-
-            if plot_title is None:
-                if get_mean:
-                    plt.title('Mean values of ' + str(varname),
-                              fontsize=17,    pad=15)
-                elif get_median:
-                    plt.title('Median values of '+str(varname),
-                              fontsize=17,    pad=15)
-            else:
-                plt.title(plot_title,
-                          fontsize=17,    pad=15)
-
-            if legend != '_Hidden':
-                plt.legend(loc=loc,
-                           fontsize=12,    ncol=2)
-            if ylogscale:
-                plt.yscale('log')
-            if xlogscale:
-                plt.xscale('log')
-        if pdf_format:
-            # set the spacing between subplots
-            if path_to_pdf is not None and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            format="pdf",
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-        else:
-            if path_to_pdf is not None and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-        if 'Dataset' in str(type(data)):
-            return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5]
-        else:
-            return [fig,  ax]
+        
 
     def twin_data_and_observations(self, data,                     dummy_data=None,                trop_lat=None,
                                    s_time=None,                    f_time=None,                    s_year=None,
@@ -1963,81 +1717,65 @@ class Tropical_Rainfall:
                                             s_year=self.s_year,                     f_year=self.f_year,
                                             s_month=self.s_month,                   f_month=self.f_month,    dask_array=False)
 
-        data_regrided,  dummy_data_regrided = mirror_dummy_grid(data=data,                                dummy_data=dummy_data,
+        data_regrided,  dummy_data_regrided = self.tools.mirror_dummy_grid(data=data,                                dummy_data=dummy_data,
                                                                 space_grid_factor=space_grid_factor,      time_freq=time_freq,
                                                                 time_length=time_length,                  time_grid_factor=time_grid_factor)
         return data_regrided, dummy_data_regrided
 
-    def get_seasonal_or_monthly_data(self,  data,               preprocess=True,        seasons=True,
-                                     model_variable='tprate',       trop_lat=None,          new_unit=None):
-        """ Function to select the seasonal or monthly of the data.
+    def get_seasonal_or_monthly_data(self, data, preprocess=True, seasons=True,
+                                    model_variable='tprate', trop_lat=None, new_unit=None):
+        """ 
+        Function to retrieve seasonal or monthly data.
 
         Args:
-            data (xarray.DataArray):        Data to be calculated.
-            preprocess (bool, optional):    If True, the data will be preprocessed.                 The default is True.
-            seasons (bool, optional):       If True, the data will be calculated for the seasons.   The default is True.
-            model_variable (str, optional): Name of the model variable.                             The default is 'tprate'.
-            trop_lat (float, optional):     Latitude of the tropical region.                        The default is None.
-            new_unit (str, optional):       New unit of the data.                                   The default is None.
-            coord (str, optional):          Name of the coordinate.                                 The default is None.
+            data (xarray.DataArray): Data to be processed.
+            preprocess (bool, optional): If True, the data will be preprocessed. Default is True.
+            seasons (bool, optional): If True, the data will be calculated for the seasons. Default is True.
+            model_variable (str, optional): Name of the model variable. Default is 'tprate'.
+            trop_lat (float, optional): Latitude of the tropical region. Default is None.
+            new_unit (str, optional): New unit of the data. Default is None.
 
         Returns:
-            xarray.DataArray:             Seasonal or monthly data.
-
+            xarray.DataArray: Seasonal or monthly data.
         """
-
         self.class_attributes_update(trop_lat=trop_lat)
         if seasons:
+            seasons = {
+                'DJF_1': {'s_month': 12, 'f_month': 12},
+                'DJF_2': {'s_month': 1, 'f_month': 2},
+                'MAM': {'s_month': 3, 'f_month': 5},
+                'JJA': {'s_month': 6, 'f_month': 8},
+                'SON': {'s_month': 9, 'f_month': 11}
+            }
 
-            if preprocess:
-                glob = self.preprocessing(data,                               preprocess=preprocess,
-                                          trop_lat=self.trop_lat,         model_variable=model_variable)
+            global_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, model_variable=model_variable, new_unit=new_unit)
 
-                DJF_1 = self.preprocessing(data,                               preprocess=preprocess,
-                                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                                           s_month=12,                       f_month=12)
-                DJF_2 = self.preprocessing(data,                               preprocess=preprocess,
-                                           trop_lat=self.trop_lat,         model_variable=model_variable,
-                                           s_month=1,                        f_month=2)
-                DJF = xr.concat([DJF_1, DJF_2], dim='time')
-
-                MAM = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=3,                        f_month=5)
-
-                JJA = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=6,                        f_month=8)
-
-                SON = self.preprocessing(data,                               preprocess=preprocess,
-                                         trop_lat=self.trop_lat,         model_variable=model_variable,
-                                         s_month=9,                        f_month=11)
-
-            all_season = [DJF, MAM, JJA, SON, glob]
-
-            for i in range(0, len(all_season)):
-
+            preprocessed_data = {}
+            for key, value in seasons.items():
+                preprocessed_data[key] = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat,
+                                                            model_variable=model_variable, s_month=value['s_month'],
+                                                            f_month=value['f_month'])
                 if new_unit is not None:
-                    all_season[i] = self.precipitation_rate_units_converter(
-                        all_season[i], new_unit=new_unit)
-            return all_season
+                    preprocessed_data[key] = self.precipitation_rate_units_converter(preprocessed_data[key], new_unit=new_unit)
 
+            DJF_data = xr.concat([preprocessed_data['DJF_1'], preprocessed_data['DJF_2']], dim='time')
+            all_seasonal_data = [DJF_data, preprocessed_data['MAM'], preprocessed_data['JJA'], preprocessed_data['SON'], global_data]
+            
+            return all_seasonal_data
         else:
-            all_months = []
+            all_monthly_data = []
             for i in range(1, 13):
                 if preprocess:
-                    mon = self.preprocessing(data,                               preprocess=preprocess,
-                                             trop_lat=self.trop_lat,         model_variable=model_variable,
-                                             s_month=i,                        f_month=i)
+                    monthly_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, 
+                                            model_variable=model_variable, s_month=i, f_month=i)
                     if new_unit is not None:
-                        mon = self.precipitation_rate_units_converter(
-                            mon, new_unit=new_unit)
-                all_months.append(mon)
-            return all_months
+                        monthly_data = self.precipitation_rate_units_converter(monthly_data, new_unit=new_unit)
+                all_monthly_data.append(monthly_data)
+            return all_monthly_data
 
     def seasonal_or_monthly_mean(self,  data,                      preprocess=True,            seasons=True,
                                  model_variable='tprate',          trop_lat=None,              new_unit=None,
-                                 coord=None):
+                                 coord=None, positive=True):
         """ Function to calculate the seasonal or monthly mean of the data.
 
         Args:
@@ -2058,11 +1796,18 @@ class Tropical_Rainfall:
         if seasons:
             [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons=seasons,
                                                                            model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+            if positive:
+                DJF = np.maximum(DJF, 0.)
+                MAM = np.maximum(MAM, 0.)
+                JJA = np.maximum(JJA, 0.)
+                SON = np.maximum(SON, 0.)
+                glob = np.maximum(glob, 0.)
             glob_mean = glob.mean('time')
             DJF_mean = DJF.mean('time')
             MAM_mean = MAM.mean('time')
             JJA_mean = JJA.mean('time')
             SON_mean = SON.mean('time')
+            
 
             if coord == 'lon' or coord == 'lat':
                 DJF_mean = DJF_mean.mean(coord)
@@ -2148,17 +1893,8 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
 
         if seasons:
-
-            fig = plt.figure(figsize=(11*figsize, 10*figsize),
-                             layout='constrained')
-            gs = fig.add_gridspec(3, 2)
-            ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
-            ax2 = fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree())
-            ax3 = fig.add_subplot(gs[1, 0], projection=ccrs.PlateCarree())
-            ax4 = fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree())
-            ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
-            axs = [ax1, ax2, ax3, ax4, ax5]
-            if path_to_netcdf is not None:
+            all_months=None
+            if isinstance(path_to_netcdf, str):
                 data = self.open_dataset(
                     path_to_netcdf=path_to_netcdf)
             try:
@@ -2169,15 +1905,10 @@ class Tropical_Rainfall:
                     all_season = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons=seasons,
                                                                model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
-                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons,
-                                                              model_variable=model_variable,              path_to_netcdf=path_to_netcdf,
+                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons=seasons, new_unit=new_unit,
+                                                              model_variable=model_variable,          path_to_netcdf=path_to_netcdf,
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
-
-            if vmin is None and vmax is None:
-                vmax = float(all_season[0].max().values)/10
-                vmin = 0
-            clevs = np.arange(vmin, vmax, abs(vmax - vmin)/10)
 
             if dataset_2 is not None:
                 all_season_2 = self.seasonal_or_monthly_mean(dataset_2,                     preprocess=preprocess,
@@ -2186,47 +1917,11 @@ class Tropical_Rainfall:
                 for i in range(0, len(all_season)):
                     all_season[i].values = all_season[i].values - \
                         all_season_2[i].values
-            titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
-
-            for i in range(0, len(all_season)):
-                one_season = all_season[i]
-
-                one_season = one_season.where(one_season > vmin)
-                one_season, lons = add_cyclic_point(
-                    one_season, coord=data['lon'])
-
-                im1 = axs[i].contourf(lons, data['lat'], one_season, clevs,
-                                      transform=ccrs.PlateCarree(),
-                                      cmap='coolwarm', extend='both')
-
-                axs[i].set_title(titles[i], fontsize=17)
-
-                axs[i].coastlines()
-
-                # Longitude labels
-                axs[i].set_xticks(np.arange(-180, 181, 60),
-                                  crs=ccrs.PlateCarree())
-                lon_formatter = cticker.LongitudeFormatter()
-                axs[i].xaxis.set_major_formatter(lon_formatter)
-
-                # Latitude labels
-                axs[i].set_yticks(np.arange(-90, 91, 30),
-                                  crs=ccrs.PlateCarree())
-                lat_formatter = cticker.LatitudeFormatter()
-                axs[i].yaxis.set_major_formatter(lat_formatter)
-                axs[i].grid(True)
 
         else:
-            fig, axes = plt.subplots(ncols=3, nrows=4, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize, 8.5*figsize), layout='constrained')
+            all_season = None
             all_months = self.seasonal_or_monthly_mean(data,                preprocess=preprocess,        seasons=seasons,
                                                        model_variable=model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
-
-            if vmin is None and vmax is None:
-                vmax = float(all_months[6].max().values)
-                vmin = 0
-
-            clevs = np.arange(vmin, vmax, (vmax - vmin)/10)
 
             if dataset_2 is not None:
                 all_months_2 = self.seasonal_or_monthly_mean(dataset_2,     preprocess=preprocess,         seasons=seasons,
@@ -2234,38 +1929,6 @@ class Tropical_Rainfall:
                 for i in range(0, len(all_months)):
                     all_months[i].values = all_months[i].values - \
                         all_months_2[i].values
-
-            for i in range(0, len(all_months)):
-                all_months[i] = all_months[i].where(all_months[i] > vmin)
-                all_months[i], lons = add_cyclic_point(
-                    all_months[i], coord=data['lon'])
-
-            titles = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
-                      'October', 'November', 'December']
-            axs = axes.flatten()
-
-            for i in range(0, len(all_months)):
-                im1 = axs[i].contourf(lons, data['lat'], all_months[i], clevs,
-                                      transform=ccrs.PlateCarree(),
-                                      cmap='coolwarm', extend='both')
-
-                axs[i].set_title(titles[i], fontsize=17)
-
-                axs[i].coastlines()
-
-                # Longitude labels
-                axs[i].set_xticks(np.arange(-180, 181, 60),
-                                  crs=ccrs.PlateCarree())
-                lon_formatter = cticker.LongitudeFormatter()
-                axs[i].xaxis.set_major_formatter(lon_formatter)
-
-                # Latitude labels
-                axs[i].set_yticks(np.arange(-90, 91, 30),
-                                  crs=ccrs.PlateCarree())
-                lat_formatter = cticker.LatitudeFormatter()
-                axs[i].yaxis.set_major_formatter(lat_formatter)
-                axs[i].grid(True)
-
         if new_unit is None:
             try:
                 unit = data[model_variable].units
@@ -2273,82 +1936,122 @@ class Tropical_Rainfall:
                 unit = data.units
         else:
             unit = new_unit
-        # Draw the colorbar
-        cbar = fig.colorbar(
-            im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=ax5, location='bottom')
-        cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
+        cbarlabel = model_variable+", ["+str(unit)+"]"
 
-        if plot_title is not None:
-            plt.suptitle(plot_title,                       fontsize=17)
-
-        if pdf_format:
-            if path_to_pdf is not None and name_of_file is not None:
-                if seasons:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
-                else:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            format="pdf",
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-        else:
-            if path_to_pdf is not None and name_of_file is not None:
-                if seasons:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.png'
-                else:
-                    path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-
-    def map(self,     data,    ncols=1, nrows=1, titles='',    lonmin=-180, lonmax=181, latmin=-90, latmax=91,
-            pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
-            model_variable='tprate',          figsize=1, number_of_ticks=8,
-            trop_lat=None,              plot_title=None,                  new_unit=None,
-            vmin=None,                  vmax=None,
-            path_to_pdf=None,           name_of_file=None,                pdf_format=True,
-            path_to_netcdf=None):
-        """ Function to plot seasonal data.
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            if seasons:
+                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
+            else:
+                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
+        return self.plots.plot_seasons_or_months(data=data, cbarlabel=cbarlabel, all_season=all_season, all_months=all_months,
+                          figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax,
+                          path_to_pdf=path_to_pdf, pdf_format=pdf_format)
+                
+    def savefig(self, path_to_pdf=None, pdf_format=True):
+        """
+        Save the current figure to a file in either PDF or PNG format.
 
         Args:
-            data (xarray): First dataset to be plotted
-            seasons (bool, optional):       If True, data is plotted in seasons. If False, data is plotted in months. Defaults to True.
-            model_variable (str, optional): Name of the model variable.             Defaults to 'tprate'.
-            figsize (float, optional):      Size of the figure.                     Defaults to 1.
-            trop_lat (float, optional):     Latitude of the tropical region.        Defaults to None.
-            plot_title (str, optional):     Title of the plot.                      Defaults to None.
-            new_unit (str, optional):       Unit of the data.                       Defaults to None.
-            vmin (float, optional):         Minimum value of the colorbar.          Defaults to None.
-            vmax (float, optional):         Maximum value of the colorbar.          Defaults to None.
-            contour (bool, optional):       If True, contours are plotted.          Defaults to True.
-            path_to_pdf (str, optional):    Path to the pdf file.                   Defaults to None.
-            name_of_file (str, optional):   Name of the pdf file.                   Defaults to None.
-            pdf_format (bool, optional):    If True, the figure is saved in PDF format. Defaults to True.
+            path_to_pdf (str): The file path where the figure will be saved. If None, the figure will not be saved.
+            pdf_format (bool): If True, the figure will be saved in PDF format; otherwise, it will be saved in PNG format.
 
         Returns:
-            The pyplot figure in the PDF format
-        """
+            None
 
+        Note:
+            The function first checks the `path_to_pdf` to determine the format of the saved figure. If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path. If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png' and saves the figure in PNG format.
+
+        Example:
+            savefig(path_to_pdf='example.pdf', pdf_format=True)
+            # This will save the current figure in PDF format as 'example.pdf'.
+
+        """
+        create_folder(folder=self.tools.extract_directory_path(
+                    path_to_pdf), loglevel='WARNING')
+        
+        if pdf_format:
+            plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=1, transparent=True,
+                        facecolor="w", edgecolor='w', orientation='landscape')
+        else:
+            path_to_pdf = path_to_pdf.replace('.pdf', '.png')
+            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
+                        transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
+
+    def improve_time_selection(self, data=None, time_selection=None): 
+        """
+        Perform time selection based on the provided criteria.
+
+        Args:
+            data (xarray): The input data to be processed.
+            time_selection (str): The time selection criteria.
+
+        Returns:
+            str: The updated time selection value.
+
+        The function checks if the time selection criteria contains a year and a date in the format 'YYYY-MM-DD'. If the input string doesn't include a year or a date, the function appends the necessary values to the string. The processed time selection value is then returned.
+
+        Examples:
+            >>> time_selection(data=data, time_selection='2023-09-25')
+            '2023-09-25'
+        """
+        if time_selection is not None:
+            if not isinstance(time_selection, str):
+                time_selection = str(time_selection)    
+            
+            year_pattern = re.compile(r'\b\d{4}\b')
+            match_year = re.search(year_pattern, time_selection)
+            
+            if match_year:
+                self.logger.debug(f'The input time value for selection contains a year: {time_selection}')
+                try:
+                    data.sel(time=time_selection)
+                except KeyError:
+                    self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
+            else:
+                self.logger.debug(f'The input time value for selection does not contain a year: {time_selection}')
+                time_selection = str(data['time.year'][0].values) + '-' + time_selection
+                self.logger.debug(f'The new time value for selection is: {time_selection}')
+                
+                date_pattern = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+                match_date = re.search(date_pattern, time_selection)
+
+                if match_date:
+                    self.logger.debug(f'The input time value for selection contains a month and a day: {time_selection}')
+                    try:
+                        data.sel(time=time_selection)
+                    except KeyError:
+                        self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
+                else:
+                    try:
+                        time_selection = time_selection + '-' + '01'
+                        data.sel(time=time_selection)
+                    except KeyError:
+                        time_selection = time_selection + '-' + '25'
+                    self.logger.debug(f'The input time value for selection does not contain a day. The new time value for selection is: {time_selection}')
+        self.logger.info(f'The time value for selection is: {time_selection}')
+        return time_selection
+    
+    def zoom_in_data(self, trop_lat=None,
+                     pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False):
+        """
+        Zooms into specific geographical regions or the tropics in the data.
+
+        Args:
+            trop_lat (float, optional): The tropical latitude. Defaults to None.
+            pacific_ocean (bool, optional): Whether to zoom into the Pacific Ocean. Defaults to False.
+            atlantic_ocean (bool, optional): Whether to zoom into the Atlantic Ocean. Defaults to False.
+            indian_ocean (bool, optional): Whether to zoom into the Indian Ocean. Defaults to False.
+            tropical (bool, optional): Whether to zoom into the tropical region. Defaults to False.
+
+        Returns:
+            tuple: A tuple containing the longitude and latitude bounds after zooming.
+
+        Note:
+            The longitude and latitude boundaries will be adjusted based on the provided ocean or tropical settings.
+
+        Example:
+            lonmin, lonmax, latmin, latmax = zoom_in_data(trop_lat=23.5, atlantic_ocean=True)
+        """
         self.class_attributes_update(trop_lat=trop_lat)
 
         if pacific_ocean:
@@ -2368,217 +2071,124 @@ class Tropical_Rainfall:
             lonmax = 120
 
         if tropical:
-            latmax = 15
-            latmin = -15
+            latmax = self.trop_lat
+            latmin = -self.trop_lat
+        self.logger.info(f'The data was zoomed in.')
+        return lonmin, lonmax, latmin, latmax
 
-        if ncols == 1 and nrows == 1:
+    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
+            pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
+            model_variable='tprate', figsize=1, number_of_ticks=6,
+            trop_lat=None, plot_title=None, new_unit="mm/day",
+            vmin=None, vmax=None, time_selection='01',
+            path_to_pdf=None, name_of_file=None, pdf_format=True):
+        """
+        Create a map with specified data and various optional parameters.
 
-            if new_unit is None:
-                try:
-                    unit = data[model_variable].units
-                except KeyError:
-                    unit = data.units
-            else:
-                unit = new_unit
+        Args:
+            data (dtype): The data to be used for mapping.
+            titles (str): The title for the map.
+            lonmin (int): The minimum longitude for the map.
+            lonmax (int): The maximum longitude for the map.
+            latmin (int): The minimum latitude for the map.
+            latmax (int): The maximum latitude for the map.
+            pacific_ocean (bool): Whether to include the Pacific Ocean.
+            atlantic_ocean (bool): Whether to include the Atlantic Ocean.
+            indian_ocean (bool): Whether to include the Indian Ocean.
+            tropical (bool): Whether to focus on tropical regions.
+            model_variable (str): The model variable to use.
+            figsize (int): The size of the figure.
+            number_of_ticks (int): The number of ticks to display.
+            trop_lat (dtype): The latitude for tropical focus.
+            plot_title (str): The title for the plot.
+            new_unit (dtype): The new unit for the data.
+            vmin (dtype): The minimum value for the color scale.
+            vmax (dtype): The maximum value for the color scale.
+            path_to_pdf (str): The path to save the map as a PDF file.
+            name_of_file (str): The name of the file.
+            pdf_format (bool): Whether to save the map in PDF format.
+            path_to_netcdf (str): The path to the NetCDF file.
 
-            fig, ax1 = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize*ncols, 8.5*figsize*nrows), layout='constrained')
+        Returns:
+            The pyplot figure in the PDF format
+        """
 
-            #fig = plt.figure(figsize=(11*figsize, 10*figsize),
-            #                 layout='constrained')
-            #ax1 = plt.axes(projection=ccrs.PlateCarree())
-            if path_to_netcdf is not None:
-                data = self.open_dataset(
-                    path_to_netcdf=path_to_netcdf)
+        self.class_attributes_update(trop_lat=trop_lat)
 
-            if lonmin != -180 or lonmax != 181:
-                data = data.sel(lon=slice(lonmin, lonmax))
-            if latmin != -90 or latmax != 91:
-                data = data.sel(lat=slice(latmin, latmax))
-
-            if vmin is None and vmax is None:
-                vmax = float(data.max().values)/10
-                vmin = 0
-                ticks = [
-                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-            elif isinstance(vmax, int) and isinstance(vmin, int):
-                ticks = []
-                i = 0
-                while vmin+i <= vmax:
-                    ticks.append(vmin+i)
-                    i = i + 1
-            elif isinstance(vmax, float) or isinstance(vmin, float):
-                ticks = [
-                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-            vmin, vmax = ticks[0], ticks[-1]+1
-            # del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
-            # clevs = np.arange(vmin, vmax, del_tick)
-
+        data = data if isinstance(data, list) else [data]
+        if new_unit is None:
             try:
-                del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-            except ZeroDivisionError:
-                del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-
-            data = data.where(data > vmin)
-            data_cycl, lons = add_cyclic_point(
-                data, coord=data['lon'])
-
-            im1 = ax1.contourf(lons, data['lat'], data_cycl, clevs,
-                               transform=ccrs.PlateCarree(),
-                               cmap='coolwarm', extend='both')
-
-            print(lonmin, lonmax) #, latmin, latmax)
-            print(lons[0], lons[-1]) #, data_cycl['lon'][0], data_cycl['lon'][-1])
-            print( data['lon'][0].values, data['lon'][-1].values) 
-            ax1.set_title(titles, fontsize=17)
-
-            ax1.coastlines()
-
-            dellon = int(lonmax-lonmin)/6
-            # Longitude labels
-            ax1.set_xticks(np.arange(lonmin, lonmax, dellon),
-                           crs=ccrs.PlateCarree())
-            
-            lon_formatter = cticker.LongitudeFormatter()
-            ax1.xaxis.set_major_formatter(lon_formatter)
-            print(np.arange(lonmin, lonmax, dellon), lon_formatter)
-            dellat = int(latmax-latmin)/6
-            # Latitude labels
-            ax1.set_yticks(np.arange(latmin, latmax, dellat),
-                           crs=ccrs.PlateCarree())
-            lat_formatter = cticker.LatitudeFormatter()
-            ax1.yaxis.set_major_formatter(lat_formatter)
-            ax1.grid(True)
-            if vmax is not None and vmin is not None:
-                cbar = fig.colorbar(
-                    im1, ticks=ticks, ax=ax1, location='bottom')
-            else:
-                cbar = fig.colorbar(
-                    im1, ax=ax1, location='bottom')
-            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-
+                unit = data[0][model_variable].units
+            except KeyError:
+                unit = data[0].units
         else:
-            if new_unit is None:
-                try:
-                    unit = data[0][model_variable].units
-                except KeyError:
-                    unit = data[0].units
-            else:
-                unit = new_unit
+            unit = new_unit       
 
-            fig, axes = plt.subplots(ncols=ncols, nrows=nrows, subplot_kw={'projection': ccrs.PlateCarree()},
-                                     figsize=(11*figsize*ncols, 8.5*figsize*nrows), layout='constrained')
-
-            if vmin is None and vmax is None:
-                vmax = float(data[0].max().values)/10
-                vmin = 0
-                ticks = [
-                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-            elif isinstance(vmax, int) and isinstance(vmin, int):
-                ticks = []
-                i = 0
-                while vmin+i <= vmax:
-                    ticks.append(vmin+i)
-                    i = i + 1
-            elif isinstance(vmax, float) or isinstance(vmin, float):
-                ticks = [
-                    vmin + i*(vmax - vmin)/number_of_ticks for i in range(0, number_of_ticks+1)]
-            vmin, vmax = ticks[0], ticks[-1]+1
-            try:
-                del_tick = abs(vmax-2 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-            except ZeroDivisionError:
-                del_tick = abs(vmax-2.01 - vmin)/(number_of_ticks+1)
-                clevs = np.arange(vmin, vmax, del_tick)
-            axs = axes.flatten()
-
-            for i in range(0, len(data)):
-                if lonmin != -180 or lonmax != 181:
-                    data[i] = data[i].sel(lon=slice(lonmin, lonmax))
-                if latmin != -90 or latmax != 91:
-                    data[i] = data[i].sel(lat=slice(latmin, latmax))
-
+        for i in range(0, len(data)):   
+            if any((pacific_ocean, atlantic_ocean, indian_ocean, tropical)):
+                lonmin, lonmax, latmin, latmax = self.zoom_in_data(trop_lat=self.trop_lat,
+                        pacific_ocean=pacific_ocean, atlantic_ocean=atlantic_ocean, indian_ocean=indian_ocean, tropical=tropical)
                 
-                data[i] = data[i].where(data[i] > vmin)
-                if lonmin != -180 or lonmax != 181:
-                    data[i] = data[i].sel(lon=slice(lonmin, lonmax))
-                if latmin != -90 or latmax != 91:
-                    data[i] = data[i].sel(lat=slice(latmin, latmax))
+            if lonmin != -180 or lonmax not in (180, 181):
+                data[i] = data[i].sel(lon=slice(lonmin, lonmax))
+            if latmin != -90 or latmax not in (90, 91):
+                data[i] = data[i].sel(lat=slice(latmin, latmax))
 
-                data_cycl, lons = add_cyclic_point(
-                    data[i], coord=data[i]['lon'])
-                #print(data_cycl)
-                print(lonmin, lonmax) #, latmin, latmax)
-                print(lons[0], lons[-1]) #, data_cycl['lon'][0], data_cycl['lon'][-1])
-                print( data[i]['lon'][0].values, data[i]['lon'][-1].values) #,  data[i]['lat'][0].values, data[i]['lat'][-1].values)
-                im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs,
-                                      transform=ccrs.PlateCarree(),
-                                      cmap='coolwarm', extend='both')
+            
+            data[i] = data[i].where(data[i] > vmin)
 
-                axs[i].set_title(titles[i], fontsize=17)
+            if data[i].time.size==1:
+                pass
+            else:
+                time_selection = self.improve_time_selection(data[i], time_selection=time_selection)
+                data[i] = data[i].sel(time=time_selection)
+                if data[i].time.size!=1:
+                    self.logger.error(f'The time selection went wrong. Please check the value of input time.')
 
-                axs[i].coastlines()
+            try:
+                data[i] = data[i][model_variable]
+            except KeyError:
+                pass
 
-                dellon = int(lonmax-lonmin)/6
-                # Longitude labels
-                axs[i].set_xticks(np.arange(-lonmin, lonmax, dellon),
-                                  crs=ccrs.PlateCarree())
-                lon_formatter = cticker.LongitudeFormatter()
-                axs[i].xaxis.set_major_formatter(lon_formatter)
-                print(np.arange(lonmin, lonmax, dellon), lon_formatter)
-                dellat = int(latmax-latmin)/6
-                # Latitude labels
-                axs[i].set_yticks(np.arange(latmin, latmax, dellat),
-                                  crs=ccrs.PlateCarree())
-                lat_formatter = cticker.LatitudeFormatter()
-                axs[i].yaxis.set_major_formatter(lat_formatter)
-                axs[i].grid(True)
-            cbar = fig.colorbar(
-                im1, ticks=[-7, -5, -3, -1, 1, 3, 5, 7], ax=axs[-1], location='bottom')
-            cbar.set_label(model_variable+", ["+str(unit)+"]", fontsize=14)
-        # Draw the colorbar
+            if new_unit is not None:
+                data[i] = self.precipitation_rate_units_converter(data[i], model_variable=model_variable, new_unit=new_unit)
+        
+        cbarlabel=model_variable+", ["+str(unit)+"]"
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
 
-        if plot_title is not None:
-            plt.suptitle(plot_title,                       fontsize=17)
-
-        if pdf_format:
-            if path_to_pdf is not None and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            format="pdf",
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
-        else:
-            if path_to_pdf is not None and name_of_file is not None:
-                path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.png'
-
-            if path_to_pdf is not None and isinstance(path_to_pdf, str):
-
-                create_folder(folder=extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-
-                plt.savefig(path_to_pdf,
-                            bbox_inches="tight",
-                            pad_inches=1,
-                            transparent=True,
-                            facecolor="w",
-                            edgecolor='w',
-                            orientation='landscape')
+        return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
+                   model_variable=model_variable, figsize=figsize, number_of_ticks=number_of_ticks, cbarlabel=cbarlabel,
+                   plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
     def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable='tprate',
                             new_unit=None, weights=None,  trop_lat=None):
+        """
+        Calculate the precipitation rate threshold value at which a specified percentage (1 - value) of the data is below it.
+
+        Args:
+            data (xarray.Dataset): The dataset containing the data to analyze.
+            original_hist (xarray.Dataset): The original histogram of the data (optional).
+            value (float): The desired percentage (between 0 and 1) of data below the threshold.
+            preprocess (bool): Whether to preprocess the data (e.g., filtering).
+            rel_error (float): The relative error allowed when calculating the threshold.
+            model_variable (str): The model variable to use for analysis.
+            new_unit (str): The desired unit for precipitation rate conversion (optional).
+            weights (xarray.DataArray): Weights associated with the data (optional).
+            trop_lat (float): The latitude value for tropical focus (optional).
+
+        Returns:
+            float: The calculated threshold value for the specified percentage.
+            str: The unit of the threshold value.
+            float: The actual percentage of data below the threshold.
+
+
+        """
+
+        if new_unit is not None:
+            data = self.precipitation_rate_units_converter(
+                data, new_unit=new_unit)
+            units = new_unit
 
         value = 1 - value
         rel_error = value*rel_error
@@ -2629,23 +2239,20 @@ class Tropical_Rainfall:
 
         bin_value = bin_i + del_bin
 
-        if new_unit is not None:
-            bin_value = self.precipitation_rate_units_converter(
-                bin_value, old_unit=units, new_unit=new_unit)
-            units = new_unit
+        
 
         return bin_value, units, 1 - threshold
 
     def seasonal_095level_into_netcdf(self,     data,           preprocess=True,        seasons=True,
                                       model_variable='tprate',              path_to_netcdf=None,
                                       name_of_file=None,                    trop_lat=None,
-                                      value=0.95,                           rel_error=0.1,
+                                      value=0.95,                           rel_error=0.1, new_unit=None,
                                       lon_length=None,                        lat_length=None,
                                       space_grid_factor=None,                 tqdm=True):
         """ Function to plot.
         Args:"""
 
-        data = space_regrider(data, space_grid_factor=space_grid_factor,
+        data = self.tools.space_regrider(data, space_grid_factor=space_grid_factor,
                               lat_length=lat_length, lon_length=lon_length)
 
         self.class_attributes_update(trop_lat=trop_lat)
@@ -2728,13 +2335,26 @@ class Tropical_Rainfall:
 
         if seasonal_095level.time_band == []:
             raise Exception('Time band is empty')
-        if path_to_netcdf is not None and name_of_file is not None:
+        if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
                 seasonal_095level, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return seasonal_095level
 
     def _utc_to_local(self, utc_time, longitude):
+        """
+        Convert a UTC time to local time based on the longitude provided.
+
+        The function calculates the time zone offset based on the longitude, where each 15 degrees of longitude corresponds to 1 hour of time difference. It then applies the time zone offset to convert the UTC time to local time.
+
+        Args:
+            utc_time (int): The UTC time to convert to local time.
+            longitude (float): The longitude value to calculate the time zone offset.
+
+        Returns:
+            int: The local time after converting the UTC time based on the provided longitude.
+
+        """
         # Calculate the time zone offset based on longitude
         # Each 15 degrees of longitude corresponds to 1 hour of time difference
         time_zone_offset_hours = int(longitude / 15)
@@ -2744,10 +2364,28 @@ class Tropical_Rainfall:
 
         return local_time
 
-    def add_UTC_DataAaray(self, data,  model_variable='tprate', space_grid_factor=None, time_length=None,
-                          trop_lat=None, new_unit='mm/day',
-                          # freq=None,  time_grid_factor=None,
-                          path_to_netcdf=None, name_of_file=None, tqdm=True):
+    def add_UTC_DataAaray(self, data, model_variable='tprate', space_grid_factor=None, time_length=None,
+                        trop_lat=None, new_unit='mm/day', path_to_netcdf=None, name_of_file=None, tqdm=True):
+        """
+        Add a new dataset with UTC time based on the provided data.
+
+        The function processes the data by selecting specific dimensions, calculating means, and applying space regridding. It then computes the local time for each longitude value and adds it to the dataset as UTC time. It also converts the data to a new unit if specified and saves the dataset to a NetCDF file.
+
+        Args:
+            data: The input data to be processed.
+            model_variable (str): The variable from the model to be used in the process.
+            space_grid_factor (int): The factor for space regridding.
+            time_length (int): The length of the time dimension to be selected.
+            trop_lat (float): The tropical latitude value to be used.
+            new_unit (str): The new unit to which the data should be converted.
+            path_to_netcdf (str): The path to the NetCDF file to be saved.
+            name_of_file (str): The name of the file to be saved.
+            tqdm (bool): A flag indicating whether to display the progress bar.
+
+        Returns:
+            xr.Dataset: The new dataset with added UTC time.
+
+        """
         self.class_attributes_update(trop_lat=trop_lat)
         try:
             data = data[model_variable]
@@ -2765,7 +2403,7 @@ class Tropical_Rainfall:
         self.logger.debug('Latitude selected and mean calculated')
         self.logger.debug("Mean value: {}".format(data.mean()))
         if space_grid_factor is not None:
-            data = space_regrider(
+            data = self.tools.space_regrider(
                 data, lon_length=space_grid_factor*data.lon.size)
             self.logger.debug('Space regrided')
         for time_ind in range(0, data.time.size):
@@ -2841,20 +2479,78 @@ class Tropical_Rainfall:
 
         new_dataset.update({'tprate_relative': (['utc_time'], da)})
 
-        if path_to_netcdf is not None and name_of_file is not None:
+        if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
                 new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return new_dataset
+    
+    def update_dict_of_loaded_analyses(self, loaded_dict=None):
+        """
+        Updates a dictionary with loaded data and assigns colors to each entry.
 
-    def daily_variability_plot(self, ymax=12,
-                               trop_lat=None,             relative=True,         get_median=False,
-                               legend='_Hidden',          figsize=1,             ls='-',
-                               maxticknum=12,             color='tab:blue',      varname='tprate',
-                               ylogscale=False,           xlogscale=False,       loc='upper right',
-                               add=None,                  fig=None,              plot_title=None,
-                               path_to_pdf=None,          new_unit='mm/day',     name_of_file=None,
-                               pdf_format=True,       path_to_netcdf=None):
+        Args:
+            loaded_dict (dict): Dictionary with paths to datasets.
+
+        Returns:
+            dict: Updated dictionary with loaded data and colors assigned.
+        """
+        if not isinstance(loaded_dict, dict):
+            self.logger.error("The provided object must be a 'dict' type.") 
+            return None
+
+        for key, value in loaded_dict.items():
+            if 'path' not in value:
+                print(f"Error: 'path' key is missing in the entry with key {key}")
+
+        # Select a seaborn palette
+        palette = sns.color_palette("husl", len(loaded_dict))
+
+        # Loop through the dictionary and assign colors
+        for i, (key, value) in enumerate(loaded_dict.items()):
+            loaded_dict[key]["data"] = self.open_dataset(path_to_netcdf=value["path"])
+            loaded_dict[key]["color"] = palette[i]   
+
+        return loaded_dict
+
+
+    def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
+                            legend='_Hidden', figsize=1, ls='-', maxticknum=12, color='tab:blue',
+                            varname='tprate', ylogscale=False, xlogscale=False, loc='upper right',
+                            add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit='mm/day',
+                            name_of_file=None, pdf_format=True, path_to_netcdf=None):
+        """
+        Plot the daily variability of the dataset.
+
+        This function generates a plot showing the daily variability of the provided dataset. It allows customization of various plot parameters such as color, scale, and legends.
+
+        Args:
+            ymax (int): The maximum y-value for the plot.
+            trop_lat (float): The tropical latitude value to be used.
+            relative (bool): A flag indicating whether the plot should be relative.
+            get_median (bool): A flag indicating whether to calculate the median.
+            legend (str): The legend for the plot.
+            figsize (int): The size of the figure.
+            ls (str): The linestyle for the plot.
+            maxticknum (int): The maximum number of ticks for the plot.
+            color (str): The color of the plot.
+            varname (str): The variable name to be used.
+            ylogscale (bool): A flag indicating whether to use a log scale for the y-axis.
+            xlogscale (bool): A flag indicating whether to use a log scale for the x-axis.
+            loc (str): The location for the legend.
+            add: Additional parameters for the plot.
+            fig: The figure to be used for the plot.
+            plot_title (str): The title for the plot.
+            path_to_pdf (str): The path to the PDF file to be saved.
+            new_unit (str): The new unit to which the data should be converted.
+            name_of_file (str): The name of the file to be saved.
+            pdf_format (bool): A flag indicating whether the file should be saved in PDF format.
+            path_to_netcdf (str): The path to the NetCDF file to be used.
+
+        Returns:
+            list: A list containing the figure and axis objects.
+
+        """
 
         self.class_attributes_update(trop_lat=trop_lat)
         if path_to_netcdf is None:
@@ -2876,16 +2572,6 @@ class Tropical_Rainfall:
             except AttributeError:
                 units = 'mm/day'  # 'kg m**-2 s**-1'
 
-        # if new_unit is not None and 'xarray' in str(type(tprate)):
-        #    tprate = self.precipitation_rate_units_converter(tprate, new_unit=new_unit)
-        #    units = new_unit
-        # elif new_unit is not None and 'ndarray' in str(type(tprate)):
-        #    result_list = []
-        #    for element in tprate:
-        #        result_list.append(self.precipitation_rate_units_converter(float(element), old_unit=data.units, new_unit=new_unit))
-        #    tprate = np.array(result_list, dtype=np.float64)
-        # else:
-        #    units = data.units
         if 'Dataset' in str(type(data)):
             y_lim_max = self.precipitation_rate_units_converter(
                 ymax, old_unit='mm/day', new_unit=new_unit)
@@ -2916,14 +2602,8 @@ class Tropical_Rainfall:
             plt.legend(loc=loc,
                        fontsize=12,    ncol=2)
 
-        if path_to_pdf is not None:
-            plt.savefig(path_to_pdf,
-                        format="pdf",
-                        bbox_inches="tight",
-                        pad_inches=1,
-                        transparent=True,
-                        facecolor="w",
-                        edgecolor='w',
-                        orientation='landscape')
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
+            self.savefig(path_to_pdf, pdf_format)
 
         return [fig,  ax]

@@ -104,7 +104,7 @@ if __name__ == '__main__':
         diag.histogram_plot(hist_merged, figsize=figsize, new_unit=new_unit,
                             legend=legend, color=color, xmax=xmax, plot_title=plot_title, loc=loc,
                             path_to_pdf=path_to_pdf, pdf_format=pdf_format, name_of_file=name_of_pdf)
-        logger.error("The histogram is calculated, plotted, and saved in storage.")
+        logger.warning("The histogram is calculated, plotted, and saved in storage.")
     except ZeroDivisionError as zd_error:
         # Handle ZeroDivisionError
         logger.error(f"ZeroDivisionError occurred: {zd_error}")
