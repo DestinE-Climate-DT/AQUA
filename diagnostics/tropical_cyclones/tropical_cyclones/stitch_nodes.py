@@ -5,7 +5,7 @@ import pandas as pd
 from glob import glob
 from time import time
 from datetime import datetime
-from .tcs_utils import write_fullres_field
+from .tools.tcs_utils import write_fullres_field
 
 
 class StitchNodes():

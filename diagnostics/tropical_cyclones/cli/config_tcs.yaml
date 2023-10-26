@@ -5,13 +5,17 @@ dataset:
   #exp: "tco1279-orca025-cycle3"
   #exp: "control-1950-devcon"
   source2d: "2D_1h_native" #"2D_1h_native"
-  source3d: "2D_1h_native" #"3D_1h_native"
+  source3d: "3D_1h_native" #"3D_1h_native"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
-  tmpdir: '/users/pghinass/tc_output/tmpdir'
-  fulldir: '/users/pghinass/tc_output/fullres'
-  plotdir: "/users/pghinass/tc_output/Figures/"
+  tmpdir: '/home/b/b382216/work/tc/tmpdir'
+  fulldir: '/home/b/b382216/work/tc/fullres'
+  plotdir: "/home/b/b382216/work/tc/Figures/"
+
+# log level
+setup:
+  loglevel: 'WARNING'
 
 # grid on which operate
 grids:

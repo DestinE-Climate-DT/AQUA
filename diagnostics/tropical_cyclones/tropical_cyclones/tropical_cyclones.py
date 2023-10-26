@@ -8,7 +8,7 @@ from aqua import Reader
 from aqua.logger import log_configure
 from .detect_nodes import DetectNodes
 from .stitch_nodes import StitchNodes
-from .tcs_utils import lonlatbox
+from .tools.tcs_utils import lonlatbox
 from .aqua_dask import AquaDask
 
 

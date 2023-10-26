@@ -20,6 +20,7 @@ docs/sphinx/build/*
 # tests
 AQUA_tests/
 AQUA_tests.tar.gz
+*.bak
 
 # coverage and vscode
 .coverage

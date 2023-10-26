@@ -3,6 +3,63 @@ models:
           default:
               default:
                   data_model: False
+          ebaf-toa41:
+              default:
+                  data_model: False
+                  vars:
+                      mtntrf: 
+                          derived: 0.-toa_lw_all_mon
+                          grib: true
+                          attributes:
+                              valid_min: -500
+                              valid_max: 0
+                              positive: down  
+                      mtnsrf: 
+                          derived: solar_mon-toa_sw_all_mon
+                          grib: true
+                          attributes:
+                              valid_min: 0
+                              valid_max: 1400
+                              positive: down
+          
+          ebaf-toa42:
+              default:
+                  data_model: False
+                  vars:
+                      mtntrf: 
+                          derived: 0.-toa_lw_all_mon
+                          grib: true
+                          attributes:
+                              valid_min: -500
+                              valid_max: 0
+                              positive: down  
+                      mtnsrf: 
+                          derived: solar_mon-toa_sw_all_mon
+                          grib: true
+                          attributes:
+                              valid_min: 0
+                              valid_max: 1400
+                              positive: down
+          ebaf-sfc41:
+              default:
+                  data_model: False
+                  vars:
+                      mtntrf: 
+                          derived: 0.-sfc_net_lw_all_mon
+                          grib: true
+                      mtnsrf: 
+                          derived: sfc_net_sw_all_mon
+                          grib: true
+          ebaf-sfc42:
+              default:
+                  data_model: False
+                  vars:
+                      mtntrf: 
+                          derived: 0.-sfc_net_lw_all_mon
+                          grib: true
+                      mtnsrf: 
+                          derived: sfc_net_sw_all_mon
+                          grib: true              
           syn-toa41:
               default:
                   vars:

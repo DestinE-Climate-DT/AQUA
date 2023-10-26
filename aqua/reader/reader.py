@@ -182,11 +182,14 @@ class Reader(FixerMixin, RegridMixin):
                                          definitions="paths",
                                          loglevel=self.loglevel)
 
-            source_grid_id = check_catalog_source(cfg_regrid["sources"],
-                                                  self.model, self.exp,
-                                                  self.source, name='regrid')
-            source_grid = cfg_regrid['grids'][cfg_regrid['sources'][self.model][self.exp][source_grid_id]]
-            source_grid_name = cfg_regrid['sources'][self.model][self.exp][source_grid_id]
+            source_grid_name = self.esmcat.metadata.get('grid')
+            if not source_grid_name:
+                source_grid_id = check_catalog_source(cfg_regrid["sources"],
+                                                    self.model, self.exp,
+                                                    self.source, name='regrid')
+            
+                source_grid_name = cfg_regrid['sources'][self.model][self.exp][source_grid_id]
+            source_grid = cfg_regrid['grids'][source_grid_name]
 
             # Normalize vert_coord to list
             self.vert_coord = source_grid.get("vert_coord", "2d")  # If not specified we assume that this is only a 2D case

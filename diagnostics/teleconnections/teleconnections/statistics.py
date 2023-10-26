@@ -4,7 +4,9 @@ import xarray as xr
 from teleconnections.tools import _check_dim
 
 
-def reg_evaluation(indx, data, dim='time'):
+def reg_evaluation(indx: xr.DataArray,
+                   data: xr.DataArray,
+                   dim='time'):
     """
     Evaluate regression map of a teleconnection index
     and a DataArray field
@@ -25,7 +27,9 @@ def reg_evaluation(indx, data, dim='time'):
     return reg
 
 
-def cor_evaluation(indx, data, dim='time'):
+def cor_evaluation(indx: xr.DataArray,
+                   data: xr.DataArray,
+                   dim='time'):
     """
     Evaluate correlation map of a teleconnection index
     and a DataArray field

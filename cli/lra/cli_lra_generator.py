@@ -7,18 +7,14 @@ Functionality can be controlled through CLI options and
 a configuration yaml file.
 '''
 import sys
-
-# hack for jost gsv
-#sys.path.insert(0, '/projappl/project_465000454/jvonhar/gsv_interface/')
 import gsv
 print(gsv.__version__)
 
 import argparse
 from aqua import LRAgenerator
-from aqua import OPAgenerator
 from aqua.util import load_yaml, get_arg
 
-def parse_arguments(args):
+def parse_arguments(arguments):
     """
     Parse command line arguments
     """
@@ -37,7 +33,7 @@ def parse_arguments(args):
     parser.add_argument('-l', '--loglevel', type=str,
                         help='log level [default: WARNING]')
 
-    return parser.parse_args(args)
+    return parser.parse_args(arguments)
 
 
 if __name__ == '__main__':
@@ -54,11 +50,7 @@ if __name__ == '__main__':
     tmpdir = config['target']['tmpdir']
     configdir = config['configdir']
     loglevel= config['loglevel']
-    use_opa = config['opa']['use_opa']
-    opadir =  config['opa']['opadir']
-    opacheckpoint =  config['opa']['opacheckpoint']
-    opastreamstep =  config['opa']['opastreamstep']
-    
+   
     if config['target']['aggregation']:
         aggregation = config['target']['aggregation']
     else:
@@ -67,8 +59,6 @@ if __name__ == '__main__':
     definitive = get_arg(args, 'definitive', False)
     overwrite = get_arg(args, 'overwrite', False)
     fix = get_arg(args, 'fix', True)
-    if use_opa:
-        fix = False #when using OPA, this avoid double decumulation
     workers = get_arg(args, 'workers', 1)
     loglevel = get_arg(args, 'loglevel', loglevel)
 
@@ -79,19 +69,9 @@ if __name__ == '__main__':
 
                     # get the zoom level
                     zoom_level = config['catalog'][model][exp][source].get('zoom', None)
-                    # init the OPA
-                    if use_opa:
-                        opa = OPAgenerator(model=model, exp=exp, source=source, zoom=zoom_level,
-                                            var=varname, frequency=frequency, checkpoint = opacheckpoint,
-                                            stream_step=opastreamstep,
-                                            outdir=opadir, tmpdir=tmpdir, configdir=configdir,
-                                            loglevel=loglevel, definitive=definitive, nproc=workers)
-                        entry = opa.entry_name
-                    else:
-                        entry = source
-                    
+                                    
                     # init the LRA
-                    lra = LRAgenerator(model=model, exp=exp, source=entry, zoom=zoom_level,
+                    lra = LRAgenerator(model=model, exp=exp, source=source, zoom=zoom_level,
                                         var=varname, resolution=resolution,
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir, configdir=configdir,
@@ -101,15 +81,8 @@ if __name__ == '__main__':
                     # check that your LRA is not already there (it will not work in streaming mode)
                     lra.check_integrity(varname)
 
-                    # run OPA and LRA
-                    if use_opa:
-                        opa.retrieve()
-                        opa.generate_opa()
-                        opa.create_catalog_entry()
                     lra.retrieve()
                     lra.generate_lra()
                     lra.create_catalog_entry()
-                    if use_opa:
-                        opa.clean()
 
     print('LRA run completed. Have yourself a beer!')

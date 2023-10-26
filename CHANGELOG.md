@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- Tropical cyclones CLI refinements and TC module (#568)
+- Removing OPA, OPAgenerator and related tests from the AQUA (Remove OPA from AQUA #586)
+- Renaming the experiments according to the DE340 AQUA syntax (Including dev-control-1990 in the source and rename the experiment according to DE340 scheme #556)
+- Allow specifying grid in catalogue metadata (#520)
+- Teleconnections diagnostic performance improvements (#571, #574, #576)
 
 ## [v0.4]
 
