@@ -1,8 +1,8 @@
 """ The tropical rainfall module"""
 
-from .tropical_rainfall_class import Tropical_Rainfall
 from .tropical_rainfall_func import ToolsClass
 from .tropical_rainfall_plot import PlottingClass
+from .tropical_rainfall_class import Tropical_Rainfall
 
 __version__ = '0.0.1'
 
