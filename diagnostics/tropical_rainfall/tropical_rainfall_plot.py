@@ -335,8 +335,7 @@ class PlottingClass:
             elif add is not None:
                 fig, ax = add
             if data.size == 1:
-                plt.axhline(y=float(data.values),
-                            color=color,  label=legend,  ls=ls)
+                plt.axhline(y=float(data.values), color=color, label=legend, ls=ls)
             else:
                 if coord == 'time':
                     plt.scatter(labels_int, data,
@@ -367,15 +366,13 @@ class PlottingClass:
             plt.ylabel(ylabel, fontsize=fontsize-3)
 
             if plot_title is not None:
-                plt.title(plot_title, fontsize=fontsize+2,    pad=15)
+                plt.title(plot_title, fontsize=fontsize+2, pad=15)
 
             if legend != '_Hidden':
-                plt.legend(loc=loc,
-                            fontsize=12,    ncol=2)
-            if ylogscale:
-                plt.yscale('log')
-            if xlogscale:
-                plt.xscale('log')
+                plt.legend(loc=loc, fontsize=fontsize-2, ncol=2)
+
+            plt.yscale('log') if ylogscale else None
+            plt.xscale('log') if xlogscale else None
 
         if isinstance(path_to_pdf, str):
             self.savefig(path_to_pdf, pdf_format)
@@ -574,8 +571,7 @@ class PlottingClass:
         Returns:
             The pyplot figure in the PDF format.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls, 
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
                                 model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
         data_len = len(data)
 
@@ -583,6 +579,8 @@ class PlottingClass:
             titles = [""] * data_len
         elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
             raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
+        
+        print(titles)
         
         if data_len == 1:
             ncols, nrows = 1, 1
