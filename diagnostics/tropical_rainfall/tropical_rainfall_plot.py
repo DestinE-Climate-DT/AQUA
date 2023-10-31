@@ -23,7 +23,7 @@ class PlottingClass:
         
     def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1, linewidth=3,
                  fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm', #pdf=True,
-                 ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=5, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
+                 linestyle='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=5, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
         self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
@@ -33,7 +33,7 @@ class PlottingClass:
         self.step = step
         self.color_map = color_map
         self.cmap = cmap
-        self.ls = ls
+        self.linestyle = linestyle
         self.linewidth = linewidth
         self.ylogscale = ylogscale
         self.xlogscale = xlogscale
@@ -46,7 +46,7 @@ class PlottingClass:
     
     def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None, linewidth=None,
                  fontsize=None, smooth=None, step=None, color_map=None, cmap=None, #pdf=None,
-                 ls=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
+                 linestyle=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
         """
         Update the class attributes based on the provided arguments.
 
@@ -59,7 +59,7 @@ class PlottingClass:
             smooth (bool): A flag indicating whether to smooth the figure. If None, the previous value will be retained.
             step (bool): A flag indicating whether to use step plotting. If None, the previous value will be retained.
             color_map (bool): A flag indicating whether to use a color map. If None, the previous value will be retained.
-            ls (str): The linestyle for the figure. If None, the previous value will be retained.
+            linestyle (str): The linestyle for the figure. If None, the previous value will be retained.
             ylogscale (bool): A flag indicating whether to use a logarithmic scale for the y-axis. If None, the previous value will be retained.
             xlogscale (bool): A flag indicating whether to use a logarithmic scale for the x-axis. If None, the previous value will be retained.
             model_variable (str): The model variable to be used. If None, the previous value will be retained.
@@ -77,7 +77,7 @@ class PlottingClass:
         self.step = self.step if step is None else step
         self.color_map = self.color_map if color_map is None else color_map
         self.cmap = self.cmap if cmap is None else cmap
-        self.ls = self.ls if ls is None else ls
+        self.linestyle = self.linestyle if linestyle is None else linestyle
         self.linewidth = self.linewidth if linewidth is None else linewidth
         self.ylogscale = self.ylogscale if ylogscale is None else ylogscale
         self.xlogscale = self.xlogscale if xlogscale is None else xlogscale
@@ -120,7 +120,7 @@ class PlottingClass:
 
     def histogram_plot(self, x, data, positive=True, xlabel='', ylabel='',
                    weights=None, smooth=None, step=None, color_map=None,
-                   ls=None, ylogscale=None, xlogscale=None,
+                   linestyle=None, ylogscale=None, xlogscale=None,
                    color='tab:blue', figsize=None, legend='_Hidden',
                    plot_title=None, loc='upper right',
                    add=None, fig=None, path_to_pdf=None,
@@ -137,7 +137,7 @@ class PlottingClass:
             step (bool, optional):          Whether to plot a step line.            Default is False.
             color_map (bool or str, optional): Whether to apply a color map to the histogram bars.
                 If True, uses the 'viridis' color map. If a string, uses the specified color map. Default is False.
-            ls (str, optional):             The line style for the plot.            Default is '-'.
+            linestyle (str, optional):             The line style for the plot.            Default is '-'.
             ylogscale (bool, optional):     Whether to use a logarithmic scale for the y-axis. Default is True.
             xlogscale (bool, optional):     Whether to use a logarithmic scale for the x-axis. Default is False.
             color (str, optional):          The color of the plot.                  Default is 'tab:blue'.
@@ -155,8 +155,7 @@ class PlottingClass:
             A tuple (fig, ax) containing the figure and axes objects.
         """
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls, linewidth=linewidth)
-        self.logger.warning("TEST")
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle, linewidth=linewidth)
         if fig is not None:
             fig, ax = fig
         elif add is None and fig is None:
@@ -168,11 +167,11 @@ class PlottingClass:
             data = data.where(data > 0)
         if self.smooth:
             plt.plot(x, data,
-                        linewidth=self.linewidth, ls=self.ls, color=color, label=legend)
+                        linewidth=self.linewidth, linestyle=self.linestyle, color=color, label=legend)
             plt.grid(True)
         elif self.step:
             plt.step(x, data,
-                        linewidth=self.linewidth, ls=self.ls, color=color, label=legend)
+                        linewidth=self.linewidth, linestyle=self.linestyle, color=color, label=legend)
             plt.grid(True)
         elif color_map:
             if weights is None:
@@ -210,7 +209,7 @@ class PlottingClass:
         return {fig, ax}
 
     def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None,
-                        legend='_Hidden', figsize=None, ls=None, maxticknum=12, color='tab:blue', ylogscale=None, 
+                        legend='_Hidden', figsize=None, linestyle=None, maxticknum=12, color='tab:blue', ylogscale=None, 
                         xlogscale=None, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, 
                         pdf_format=None):
         """
@@ -226,7 +225,7 @@ class PlottingClass:
             y_lim_max (float): Maximum limit for the y-axis. Defaults to None.
             legend (str): Legend for the plot. Defaults to '_Hidden'.
             figsize (int): Figure size. Defaults to 1.
-            ls (str): Line style for the plot. Defaults to '-'.
+            linestyle (str): Line style for the plot. Defaults to '-'.
             maxticknum (int): Maximum number of ticks. Defaults to 12.
             color (str): Color for the plot. Defaults to 'tab:blue'.
             ylogscale (bool): Use logarithmic scale for the y-axis. Defaults to False.
@@ -242,7 +241,7 @@ class PlottingClass:
             list: List of figure and axis objects.
         """
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle)
 
         # make a plot with different y-axis using second axis object
         labels_int = data[coord].values
@@ -311,18 +310,18 @@ class PlottingClass:
                     if i < 4:
                         ax_twin = axs[i].twinx()
                         ax_twin.set_frame_on(True)
-                        ax_twin.plot(one_season.lon - 180, one_season, color=color, label=legend, ls=ls)
+                        ax_twin.plot(one_season.lon - 180, one_season, color=color, label=legend, linestyle=linestyle)
                         ax_twin.set_ylim([0, y_lim_max])
                         ax_twin.set_ylabel(ylabel, fontsize=fontsize-3)
                     else:
                         ax_twin_5.set_frame_on(True)
-                        ax_twin_5.plot(one_season.lon - 180, one_season, color=color,  label=legend, ls=ls)
+                        ax_twin_5.plot(one_season.lon - 180, one_season, color=color,  label=legend, linestyle=linestyle)
                         ax_twin_5.set_ylim([0, y_lim_max])
                         ax_twin_5.set_ylabel(ylabel, fontsize=fontsize-3)
                         axs[i].set_xlabel('Longitude', fontsize=fontsize-3)
 
                 else:
-                    axs[i].plot(one_season.lat, one_season, color=color, label=legend, ls=ls)
+                    axs[i].plot(one_season.lat, one_season, color=color, label=legend, linestyle=linestyle)
                     axs[i].set_ylim([0, y_lim_max])
                     axs[i].set_ylabel(ylabel, fontsize=fontsize-3)
                     axs[i].set_xlabel('Latitude', fontsize=fontsize-3)
@@ -347,14 +346,14 @@ class PlottingClass:
             elif add is not None:
                 fig, ax = add
             if data.size == 1:
-                plt.axhline(y=float(data.values), color=color, label=legend, ls=ls)
+                plt.axhline(y=float(data.values), color=color, label=legend, linestyle=linestyle)
             else:
                 if coord == 'time':
                     plt.scatter(labels_int, data,
-                                color=color,  label=legend,  ls=ls)
+                                color=color,  label=legend,  linestyle=linestyle)
                 else:
                     plt.plot(labels_int,    data,
-                                color=color,  label=legend,  ls=ls)
+                                color=color,  label=legend,  linestyle=linestyle)
 
             plt.gca().xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
             plt.gca().tick_params(axis='both',   which='major',    pad=10)
@@ -413,7 +412,7 @@ class PlottingClass:
             pdf_format (bool, optional): If True, save the figure in PDF format. Defaults to True.
         """
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle)
 
         clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
 
@@ -648,7 +647,7 @@ class PlottingClass:
 
     """
     def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
-                            legend='_Hidden', figsize=self.figsize, ls='-', maxticknum=12, color='tab:blue',
+                            legend='_Hidden', figsize=self.figsize, linestyle='-', maxticknum=12, color='tab:blue',
                             varname='tprate', ylogscale=False, xlogscale=False, loc='upper right',
                             add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit='mm/day',
                             name_of_file=None, pdf_format=True, path_to_netcdf=None):
@@ -664,7 +663,7 @@ class PlottingClass:
             get_median (bool): A flag indicating whether to calculate the median.
             legend (str): The legend for the plot.
             figsize (int): The size of the figure.
-            ls (str): The linestyle for the plot.
+            linestyle (str): The linestyle for the plot.
             maxticknum (int): The maximum number of ticks for the plot.
             color (str): The color of the plot.
             varname (str): The variable name to be used.
@@ -716,7 +715,7 @@ class PlottingClass:
             elif add is not None:
                 fig, ax = add
         ax.plot(utc_time, tprate,
-                color=color,  label=legend,  ls=ls)
+                color=color,  label=legend,  linestyle=linestyle)
 
         if relative:
             ax.set_title(

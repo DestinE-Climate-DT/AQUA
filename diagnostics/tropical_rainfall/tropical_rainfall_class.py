@@ -1276,7 +1276,7 @@ class Tropical_Rainfall:
                        positive=True, 
                        weights=None,      frequency=False,      pdf=True,
                        smooth=True,       step=False,           color_map=False,
-                       ls=None,           ylogscale=True,      xlogscale=False,
+                       linestyle=None,           ylogscale=True,      xlogscale=False,
                        color='tab:blue',  figsize=None,            legend='_Hidden',
                        plot_title=None,   loc='upper right',    varname='Precipitation',
                        add=None,          fig=None,             path_to_pdf=None,
@@ -1342,7 +1342,7 @@ class Tropical_Rainfall:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
         
         return self.plots.histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel, weights=weights, smooth=smooth, 
-               step=step, color_map=color_map, ls=ls, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
+               step=step, color_map=color_map, linestyle=linestyle, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
                figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
                pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
 
@@ -1555,7 +1555,7 @@ class Tropical_Rainfall:
     def plot_of_average(self, data=None,
                         ymax=12,                    fontsize=15, pad=15,
                         trop_lat=None,             get_mean=True,         get_median=False,
-                        legend='_Hidden',          figsize=1,             ls='-',
+                        legend='_Hidden',          figsize=1,             linestyle='-',
                         maxticknum=12,             color='tab:blue',      varname='tprate',
                         ylogscale=False,           xlogscale=False,       loc='upper right',
                         add=None,                  fig=None,              plot_title=None,
@@ -1639,7 +1639,7 @@ class Tropical_Rainfall:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
 
         return self.plots.plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
-                    legend=legend, figsize=figsize, ls=ls, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
+                    legend=legend, figsize=figsize, linestyle=linestyle, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
                     xlogscale=xlogscale, loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf, 
                     pdf_format=pdf_format)
 
@@ -2517,7 +2517,7 @@ class Tropical_Rainfall:
 
 
     def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
-                            legend='_Hidden', figsize=1, ls='-', maxticknum=12, color='tab:blue',
+                            legend='_Hidden', figsize=1, linestyle='-', maxticknum=12, color='tab:blue',
                             varname='tprate', ylogscale=False, xlogscale=False, loc='upper right',
                             add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit='mm/day',
                             name_of_file=None, pdf_format=True, path_to_netcdf=None):
@@ -2585,7 +2585,7 @@ class Tropical_Rainfall:
             elif add is not None:
                 fig, ax = add
         ax.plot(utc_time, tprate,
-                color=color,  label=legend,  ls=ls)
+                color=color,  label=legend,  linestyle=linestyle)
 
         if relative:
             ax.set_title(
