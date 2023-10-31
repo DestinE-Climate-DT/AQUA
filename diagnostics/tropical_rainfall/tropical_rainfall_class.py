@@ -1759,9 +1759,9 @@ class Tropical_Rainfall:
                     preprocessed_data[key] = self.precipitation_rate_units_converter(preprocessed_data[key], new_unit=new_unit)
 
             DJF_data = xr.concat([preprocessed_data['DJF_1'], preprocessed_data['DJF_2']], dim='time')
-            all_seasonal_data = [DJF_data, preprocessed_data['MAM'], preprocessed_data['JJA'], preprocessed_data['SON'], global_data]
+            seasonal_data = [DJF_data, preprocessed_data['MAM'], preprocessed_data['JJA'], preprocessed_data['SON'], global_data]
             
-            return all_seasonal_data
+            return seasonal_data
         else:
             all_monthly_data = []
             for i in range(1, 13):
@@ -1816,17 +1816,17 @@ class Tropical_Rainfall:
                 SON_mean = SON_mean.mean(coord)
                 glob_mean = glob_mean.mean(coord)
 
-            all_season = [DJF_mean, MAM_mean, JJA_mean, SON_mean, glob_mean]
-            return all_season
+            seasons = [DJF_mean, MAM_mean, JJA_mean, SON_mean, glob_mean]
+            return seasons
 
         else:
-            all_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
+            months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
                                                            model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
 
             for i in range(1, 13):
-                mon_mean = all_months[i].mean('time')
-                all_months[i] = mon_mean
-            return all_months
+                mon_mean = months[i].mean('time')
+                months[i] = mon_mean
+            return months
 
     def plot_bias(self,         data,         preprocess=True,                  seasons_bool=True,
                   dataset_2=None,             model_variable='tprate',          figsize=None,
@@ -1891,42 +1891,42 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
 
         if seasons_bool:
-            all_months=None
+            months=None
             if isinstance(path_to_netcdf, str):
                 data = self.open_dataset(
                     path_to_netcdf=path_to_netcdf)
             try:
-                all_season = [data.DJF, data.MAM,
+                seasons = [data.DJF, data.MAM,
                               data.JJA, data.SON, data.Yearly]
             except AttributeError:
                 if get_mean:
-                    all_season = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons_bool=seasons_bool,
+                    seasons = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons_bool=seasons_bool,
                                                                model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
-                    all_season = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons_bool=seasons_bool, new_unit=new_unit,
+                    seasons = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons_bool=seasons_bool, new_unit=new_unit,
                                                               model_variable=model_variable,          path_to_netcdf=path_to_netcdf,
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
 
             if dataset_2 is not None:
-                all_season_2 = self.seasonal_or_monthly_mean(dataset_2,                     preprocess=preprocess,
+                seasons_2 = self.seasonal_or_monthly_mean(dataset_2,                     preprocess=preprocess,
                                                              seasons_bool=seasons_bool,            model_variable=model_variable,
                                                              trop_lat=self.trop_lat,      new_unit=new_unit)
-                for i in range(0, len(all_season)):
-                    all_season[i].values = all_season[i].values - \
-                        all_season_2[i].values
+                for i in range(0, len(seasons)):
+                    seasons[i].values = seasons[i].values - \
+                        seasons_2[i].values
 
         else:
-            all_season = None
-            all_months = self.seasonal_or_monthly_mean(data,                preprocess=preprocess,        seasons_bool=seasons_bool,
+            seasons = None
+            months = self.seasonal_or_monthly_mean(data,                preprocess=preprocess,        seasons_bool=seasons_bool,
                                                        model_variable=model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
 
             if dataset_2 is not None:
-                all_months_2 = self.seasonal_or_monthly_mean(dataset_2,     preprocess=preprocess,         seasons_bool=seasons_bool,
+                months_2 = self.seasonal_or_monthly_mean(dataset_2,     preprocess=preprocess,         seasons_bool=seasons_bool,
                                                              model_variable=model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
-                for i in range(0, len(all_months)):
-                    all_months[i].values = all_months[i].values - \
-                        all_months_2[i].values
+                for i in range(0, len(months)):
+                    months[i].values = months[i].values - \
+                        months_2[i].values
         if new_unit is None:
             try:
                 unit = data[model_variable].units
@@ -1941,7 +1941,7 @@ class Tropical_Rainfall:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_seasons.pdf'
             else:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
-        return self.plots.plot_seasons_or_months(data=data, cbarlabel=cbarlabel, all_season=all_season, all_months=all_months,
+        return self.plots.plot_seasons_or_months(data=data, cbarlabel=cbarlabel, seasons=seasons, months=months,
                           figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax,
                           path_to_pdf=path_to_pdf, pdf_format=pdf_format)
                 
