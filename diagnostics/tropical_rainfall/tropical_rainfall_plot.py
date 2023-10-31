@@ -387,7 +387,7 @@ class PlottingClass:
             return [fig,  ax]
         
 
-    def plot_seasons_or_months(self, data, cbarlabel=None, all_season=None, all_months=None, cmap='coolwarm',
+    def plot_seasons_or_months(self, data, cbarlabel=None, seasons=None, months=None, cmap='coolwarm',
                             figsize=None, plot_title=None,  vmin=None, vmax=None, fontsize=None, linestyle=None,
                             path_to_pdf=None, pdf_format=None):
         """ Function to plot seasonal data.
@@ -395,8 +395,8 @@ class PlottingClass:
         Args:
             data (xarray): First dataset to be plotted.
             cbarlabel (str, optional): Label for the colorbar. Defaults to None.
-            all_season (list, optional): List of seasonal datasets. Defaults to None.
-            all_months (list, optional): List of monthly datasets. Defaults to None.
+            seasons (list, optional): List of seasonal datasets. Defaults to None.
+            months (list, optional): List of monthly datasets. Defaults to None.
             figsize (int, optional): Size of the figure. Defaults to 1.
             plot_title (str, optional): Title of the plot. Defaults to None.
             vmin (float, optional): Minimum value of the colorbar. Defaults to None.
@@ -409,7 +409,7 @@ class PlottingClass:
 
         clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=self.model_variable, number_of_bar_ticks=self.number_of_bar_ticks)
 
-        if all_months is None:
+        if months is None:
             fig = plt.figure(figsize=(11*self.figsize, 10*self.figsize),
                                 layout='constrained')
             gs = fig.add_gridspec(3, 2)
@@ -422,15 +422,14 @@ class PlottingClass:
 
             titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
 
-            for i in range(0, len(all_season)):
-                one_season = all_season[i]
+            for i in range(0, len(seasons)):
+                one_season = seasons[i]
 
                 one_season = one_season.where(one_season > vmin)
                 one_season, lons = add_cyclic_point(one_season, coord=data['lon'])
                 im1 = axs[i].contourf(lons, data['lat'], one_season, clevs,
                                         transform=ccrs.PlateCarree(),
                                         cmap=self.cmap, extend='both')
-
                 axs[i].set_title(titles[i], fontsize=self.fontsize+3)
                 axs[i].coastlines()
 
@@ -449,19 +448,18 @@ class PlottingClass:
             fig, axes = plt.subplots(ncols=3, nrows=4, subplot_kw={'projection': ccrs.PlateCarree()},
                                         figsize=(11*self.figsize, 8.5*self.figsize), layout='constrained')
 
-            for i in range(0, len(all_months)):
-                all_months[i] = all_months[i].where(all_months[i] > vmin)
-                all_months[i], lons = add_cyclic_point(all_months[i], coord=data['lon'])
+            for i in range(0, len(months)):
+                months[i] = months[i].where(months[i] > vmin)
+                months[i], lons = add_cyclic_point(months[i], coord=data['lon'])
 
             titles = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
                         'October', 'November', 'December']
             axs = axes.flatten()
 
-            for i in range(0, len(all_months)):
-                im1 = axs[i].contourf(lons, data['lat'], all_months[i], clevs,
+            for i in range(0, len(months)):
+                im1 = axs[i].contourf(lons, data['lat'], months[i], clevs,
                                         transform=ccrs.PlateCarree(),
                                         cmap=self.cmap, extend='both')
-
                 axs[i].set_title(titles[i], fontsize=self.fontsize+3)
                 axs[i].coastlines()
 
@@ -475,11 +473,8 @@ class PlottingClass:
                 lat_formatter = cticker.LatitudeFormatter()
                 axs[i].yaxis.set_major_formatter(lat_formatter)
                 axs[i].grid(True)
-
-        
         # Draw the colorbar
-        cbar = fig.colorbar(
-            im1, ticks=clevs, ax=ax5, location='bottom') #[-7, -5, -3, -1, 1, 3, 5, 7]
+        cbar = fig.colorbar(im1, ticks=clevs, ax=ax5, location='bottom')
         cbar.set_label(cbarlabel, fontsize=self.fontsize)
 
         if plot_title is not None:
