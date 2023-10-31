@@ -1860,13 +1860,11 @@ class Tropical_Rainfall:
                                     name_of_file=name_of_file,    pdf_format=pdf_format)
 
     def plot_seasons_or_months(self,     data,             preprocess=True,                  seasons=True,
-                               dataset_2=None,             model_variable='tprate',          figsize=1,
+                               dataset_2=None,             model_variable='tprate',          figsize=None,
                                trop_lat=None,              plot_title=None,                  new_unit=None,
-                               vmin=None,                  vmax=None,                        get_mean=True,
-                               percent95_level=False,
-                               path_to_pdf=None,           name_of_file=None,                pdf_format=True,
-                               path_to_netcdf=None,
-                               value=0.95,                           rel_error=0.1):
+                               vmin=None,                  vmax=None,                        get_mean=True, percent95_level=False,
+                               path_to_pdf=None,           name_of_file=None,                pdf_format=True, path_to_netcdf=None,
+                               value=0.95,                 rel_error=0.1):
         """ Function to plot seasonal data.
 
         Args:

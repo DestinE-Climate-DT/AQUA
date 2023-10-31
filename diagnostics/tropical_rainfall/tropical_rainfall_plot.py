@@ -353,9 +353,7 @@ class PlottingClass:
             plt.gca().xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
             plt.gca().tick_params(axis='both',   which='major',    pad=10)
             plt.xlim([min(labels_int),    max(labels_int)])
-
             plt.grid(True)
-
             if coord == 'time':
                 plt.xlabel('Timestep index',
                             fontsize=self.fontsize-3)
@@ -390,7 +388,7 @@ class PlottingClass:
         
 
     def plot_seasons_or_months(self, data, cbarlabel=None, all_season=None, all_months=None, cmap='coolwarm',
-                            figsize=None, plot_title=None,  vmin=None, vmax=None,
+                            figsize=None, plot_title=None,  vmin=None, vmax=None, fontsize=None, linestyle=None,
                             path_to_pdf=None, pdf_format=None):
         """ Function to plot seasonal data.
 
@@ -406,13 +404,13 @@ class PlottingClass:
             path_to_pdf (str, optional): Path to save the PDF file. Defaults to None.
             pdf_format (bool, optional): If True, save the figure in PDF format. Defaults to True.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle)
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, cmap=cmap,
+                                     figsize=figsize, fontsize=fontsize, linestyle=linestyle)
 
-        clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
+        clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=self.model_variable, number_of_bar_ticks=self.number_of_bar_ticks)
 
         if all_months is None:
-            fig = plt.figure(figsize=(11*figsize, 10*figsize),
+            fig = plt.figure(figsize=(11*self.figsize, 10*self.figsize),
                                 layout='constrained')
             gs = fig.add_gridspec(3, 2)
             ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
@@ -428,38 +426,32 @@ class PlottingClass:
                 one_season = all_season[i]
 
                 one_season = one_season.where(one_season > vmin)
-                one_season, lons = add_cyclic_point(
-                    one_season, coord=data['lon'])
-
+                one_season, lons = add_cyclic_point(one_season, coord=data['lon'])
                 im1 = axs[i].contourf(lons, data['lat'], one_season, clevs,
                                         transform=ccrs.PlateCarree(),
-                                        cmap='coolwarm', extend='both')
+                                        cmap=self.cmap, extend='both')
 
-                axs[i].set_title(titles[i], fontsize=fontsize+3)
-
+                axs[i].set_title(titles[i], fontsize=self.fontsize+3)
                 axs[i].coastlines()
 
                 # Longitude labels
-                axs[i].set_xticks(np.arange(-180, 181, 60),
-                                    crs=ccrs.PlateCarree())
+                axs[i].set_xticks(np.arange(-180, 181, 60), crs=ccrs.PlateCarree())
                 lon_formatter = cticker.LongitudeFormatter()
                 axs[i].xaxis.set_major_formatter(lon_formatter)
 
                 # Latitude labels
-                axs[i].set_yticks(np.arange(-90, 91, 30),
-                                    crs=ccrs.PlateCarree())
+                axs[i].set_yticks(np.arange(-90, 91, 30), crs=ccrs.PlateCarree())
                 lat_formatter = cticker.LatitudeFormatter()
                 axs[i].yaxis.set_major_formatter(lat_formatter)
                 axs[i].grid(True)
 
         else:
             fig, axes = plt.subplots(ncols=3, nrows=4, subplot_kw={'projection': ccrs.PlateCarree()},
-                                        figsize=(11*figsize, 8.5*figsize), layout='constrained')
+                                        figsize=(11*self.figsize, 8.5*self.figsize), layout='constrained')
 
             for i in range(0, len(all_months)):
                 all_months[i] = all_months[i].where(all_months[i] > vmin)
-                all_months[i], lons = add_cyclic_point(
-                    all_months[i], coord=data['lon'])
+                all_months[i], lons = add_cyclic_point(all_months[i], coord=data['lon'])
 
             titles = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
                         'October', 'November', 'December']
@@ -468,10 +460,9 @@ class PlottingClass:
             for i in range(0, len(all_months)):
                 im1 = axs[i].contourf(lons, data['lat'], all_months[i], clevs,
                                         transform=ccrs.PlateCarree(),
-                                        cmap=cmap, extend='both')
+                                        cmap=self.cmap, extend='both')
 
-                axs[i].set_title(titles[i], fontsize=fontsize+3)
-
+                axs[i].set_title(titles[i], fontsize=self.fontsize+3)
                 axs[i].coastlines()
 
                 # Longitude labels
@@ -489,13 +480,13 @@ class PlottingClass:
         # Draw the colorbar
         cbar = fig.colorbar(
             im1, ticks=clevs, ax=ax5, location='bottom') #[-7, -5, -3, -1, 1, 3, 5, 7]
-        cbar.set_label(cbarlabel, fontsize=fontsize)
+        cbar.set_label(cbarlabel, fontsize=self.fontsize)
 
         if plot_title is not None:
-            plt.suptitle(plot_title,                       fontsize=fontsize+3)
+            plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
-        if isinstance(path_to_pdf, str):
-            self.savefig(path_to_pdf, pdf_format)
+        if isinstance(self.path_to_pdf, str):
+            self.savefig(self.path_to_pdf, self.pdf_format)
 
 
     def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable=None, number_of_bar_ticks=None):
