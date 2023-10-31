@@ -23,7 +23,7 @@ class PlottingClass:
         
     def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1,
                  fontsize=14, pdf=True, smooth=True, step=False, color_map=False, cmap='coolwarm',
-                 ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_bar_ticks=6, loglevel: str = 'WARNING'):
+                 ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=5, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
         self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
@@ -37,6 +37,7 @@ class PlottingClass:
         self.ylogscale = ylogscale
         self.xlogscale = xlogscale
         self.model_variable = model_variable
+        self.number_of_axe_ticks = number_of_axe_ticks
         self.number_of_bar_ticks = number_of_bar_ticks
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Plot. Func.')
@@ -44,7 +45,7 @@ class PlottingClass:
     
     def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None,
                  fontsize=None, pdf=None, smooth=None, step=None, color_map=None, cmap=None,
-                 ls=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_bar_ticks=None):
+                 ls=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
         """
         Update the class attributes based on the provided arguments.
 
@@ -79,6 +80,7 @@ class PlottingClass:
         self.ylogscale = self.ylogscale if ylogscale is None else ylogscale
         self.xlogscale = self.xlogscale if xlogscale is None else xlogscale
         self.model_variable = self.model_variable if model_variable is None else model_variable
+        self.number_of_axe_ticks = self.number_of_axe_ticks if number_of_axe_ticks is None else number_of_axe_ticks
         self.number_of_bar_ticks = self.number_of_bar_ticks if number_of_bar_ticks is None else number_of_bar_ticks
         
 
@@ -410,7 +412,7 @@ class PlottingClass:
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
                                 ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
 
-        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
+        clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
 
         if all_months is None:
             fig = plt.figure(figsize=(11*figsize, 10*figsize),
@@ -489,7 +491,7 @@ class PlottingClass:
         
         # Draw the colorbar
         cbar = fig.colorbar(
-            im1, ticks=ticks, ax=ax5, location='bottom') #[-7, -5, -3, -1, 1, 3, 5, 7]
+            im1, ticks=clevs, ax=ax5, location='bottom') #[-7, -5, -3, -1, 1, 3, 5, 7]
         cbar.set_label(cbarlabel, fontsize=fontsize)
 
         if plot_title is not None:
@@ -519,27 +521,27 @@ class PlottingClass:
 
         if vmin is None and vmax is None:
             try:
-                vmax = float(data[model_variable].max().values) / 10
+                vmax = float(data[self.model_variable].max().values) / 10
             except KeyError:
                 vmax = float(data.max().values) / 10
             vmin = -vmax
-            ticks = [vmin + i * (vmax - vmin) / number_of_bar_ticks for i in range(number_of_bar_ticks + 1)]
+            clevs = [vmin + i * (vmax - vmin) / self.number_of_bar_ticks for i in range(self.number_of_bar_ticks + 1)]
         elif isinstance(vmax, int) and isinstance(vmin, int):
-            ticks = list(range(vmin, vmax + 1))
+            clevs = list(range(vmin, vmax + 1))
         elif isinstance(vmax, float) or isinstance(vmin, float):
-            ticks = [vmin + i * (vmax - vmin) / number_of_bar_ticks for i in range(number_of_bar_ticks + 1)]
-
-        try:
-            del_tick = abs(vmax - 2 - vmin) / (number_of_bar_ticks + 1)
-        except ZeroDivisionError:
-            del_tick = abs(vmax - 2.01 - vmin) / (number_of_bar_ticks + 1)
-        clevs = np.arange(vmin, vmax, del_tick)
-
-        return ticks, clevs
+            clevs = [vmin + i * (vmax - vmin) / self.number_of_bar_ticks for i in range(self.number_of_bar_ticks + 1)]
+        #try:
+        #    del_tick = abs(vmax - 2 - vmin) / (self.number_of_bar_ticks + 1)
+        #except ZeroDivisionError:
+        #    del_tick = abs(vmax - 2.01 - vmin) / (self.number_of_bar_ticks + 1)
+        #clevs = ticks# np.arange(vmin, vmax, del_tick)
+        #self.logger.debug('Ticks: {}'.format(ticks))
+        self.logger.debug('Clevs: {}'.format(clevs))
+        return clevs #ticks#, 
 
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
-            model_variable=None, figsize=None, number_of_bar_ticks=None, cbarlabel='',
+            model_variable=None, figsize=None,  number_of_axe_ticks=None, number_of_bar_ticks=None, cbarlabel='',
             plot_title=None, vmin=None, vmax=None, path_to_pdf=None, pdf_format=None,
             fontsize=None):
         """
@@ -567,10 +569,8 @@ class PlottingClass:
             The pyplot figure in the PDF format.
         """
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
-                                model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
-                            
+                                model_variable=model_variable, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks)                         
         data_len = len(data)
-
         if titles is None:
             titles = [""] * data_len
         elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
@@ -597,8 +597,7 @@ class PlottingClass:
         gs = GridSpec(nrows=nrows, ncols=ncols, figure=fig, wspace=0.175, hspace=0.175, width_ratios=[1] * ncols, height_ratios=[1] * nrows)  
         # Add subplots using the grid
         axs =  [fig.add_subplot(gs[i, j], projection=ccrs.PlateCarree()) for i in range(nrows) for j in range(ncols)]
-
-        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, 
+        clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, 
                                                model_variable=self.model_variable, number_of_bar_ticks=self.number_of_bar_ticks)
 
         if not isinstance(self.cmap, list):
@@ -612,7 +611,7 @@ class PlottingClass:
             axs[i].set_title(titles[i], fontsize=self.fontsize+3)
             axs[i].coastlines()
             # Longitude labels
-            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/self.number_of_bar_ticks), crs=ccrs.PlateCarree())
+            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
             axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())  
             # Longitude labels
             lon_formatter = StrMethodFormatter('{x:.1f}')  # Adjust the precision as needed
@@ -620,7 +619,7 @@ class PlottingClass:
             axs[i].tick_params(axis='x', which='major', labelsize=self.fontsize-3) 
 
             # Latitude labels
-            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/self.number_of_bar_ticks), crs=ccrs.PlateCarree())
+            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
             axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
             # Latitude labels
             lat_formatter = StrMethodFormatter('{x:.1f}')  # Adjust the precision as needed
@@ -635,10 +634,8 @@ class PlottingClass:
                          wspace=0.2, hspace=0.5) 
         cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.02])
                 
-        cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='horizontal', extend='both')
+        cbar = fig.colorbar(im1, cax=cbar_ax, ticks=clevs, orientation='horizontal', extend='both')
         cbar.set_label(cbarlabel, fontsize=self.fontsize)
-
-        #gs.tight_layout(fig)
 
         if plot_title is not None:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)

@@ -2078,7 +2078,7 @@ class Tropical_Rainfall:
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
-            model_variable='tprate', figsize=None, number_of_bar_ticks=None, fontsize=None,
+            model_variable='tprate', figsize=None, number_of_axe_ticks=None, number_of_bar_ticks=None, fontsize=None,
             trop_lat=None, plot_title=None, new_unit="mm/day",
             vmin=None, vmax=None, time_selection='01',
             path_to_pdf=None, name_of_file=None, pdf_format=None):
@@ -2098,6 +2098,10 @@ class Tropical_Rainfall:
             tropical (bool): Whether to focus on tropical regions.
             model_variable (str): The model variable to use.
             figsize (int): The size of the figure.
+            number_of_axe_ticks (int): The number of ticks to display.
+            time_selection (str): The time selection to use.
+            fontsize (int): The font size for the plot.
+            cmap (str): The color map to use.
             number_of_bar_ticks (int): The number of ticks to display.
             trop_lat (dtype): The latitude for tropical focus.
             plot_title (str): The title for the plot.
@@ -2107,7 +2111,6 @@ class Tropical_Rainfall:
             path_to_pdf (str): The path to save the map as a PDF file.
             name_of_file (str): The name of the file.
             pdf_format (bool): Whether to save the map in PDF format.
-            path_to_netcdf (str): The path to the NetCDF file.
 
         Returns:
             The pyplot figure in the PDF format
@@ -2157,7 +2160,7 @@ class Tropical_Rainfall:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
 
         return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, cmap=cmap, fontsize=fontsize,
-                   model_variable=model_variable, figsize=figsize, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
+                   model_variable=model_variable, figsize=figsize, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
                    plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
     def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable='tprate',
