@@ -1553,9 +1553,9 @@ class Tropical_Rainfall:
             return average_dataset
 
     def plot_of_average(self, data=None,
-                        ymax=12,                    fontsize=15, pad=15,
+                        ymax=12,                   fontsize=None, pad=15,
                         trop_lat=None,             get_mean=True,         get_median=False,
-                        legend='_Hidden',          figsize=1,             linestyle='-',
+                        legend='_Hidden',          figsize=None,          linestyle=None,
                         maxticknum=12,             color='tab:blue',      varname='tprate',
                         ylogscale=False,           xlogscale=False,       loc='upper right',
                         add=None,                  fig=None,              plot_title=None,

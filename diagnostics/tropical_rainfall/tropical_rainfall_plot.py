@@ -240,8 +240,8 @@ class PlottingClass:
         Returns:
             list: List of figure and axis objects.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle)
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, xlogscale=xlogscale, 
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, linestyle=linestyle)
 
         # make a plot with different y-axis using second axis object
         labels_int = data[coord].values
@@ -281,16 +281,12 @@ class PlottingClass:
                 axs[i].set_title(titles[i], fontsize=self.fontsize+1)
                 # Latitude labels
                 if coord == 'lon':
-                    axs[i].set_xlabel('Longitude',
-                                        fontsize=self.fontsize-2)
+                    axs[i].set_xlabel('Longitude', fontsize=self.fontsize-2)
                 elif coord == 'lat':
-                    axs[i].set_xlabel('Latitude',
-                                        fontsize=self.fontsize-2)
+                    axs[i].set_xlabel('Latitude', fontsize=self.fontsize-2)
 
-                if self.ylogscale:
-                    axs[i].set_yscale('log')
-                if self.xlogscale:
-                    axs[i].set_xscale('log')
+                plt.yscale('log') if self.ylogscale else None
+                plt.xscale('log') if self.xlogscale else None
 
                 if coord == 'lon':
                     # twin object for two different y-axis on the sample plot
@@ -310,50 +306,49 @@ class PlottingClass:
                     if i < 4:
                         ax_twin = axs[i].twinx()
                         ax_twin.set_frame_on(True)
-                        ax_twin.plot(one_season.lon - 180, one_season, color=color, label=legend, linestyle=linestyle)
+                        ax_twin.plot(one_season.lon - 180, one_season, color=color, label=legend, linestyle=self.linestyle)
                         ax_twin.set_ylim([0, y_lim_max])
-                        ax_twin.set_ylabel(ylabel, fontsize=fontsize-3)
+                        ax_twin.set_ylabel(ylabel, fontsize=self.fontsize-3)
                     else:
                         ax_twin_5.set_frame_on(True)
-                        ax_twin_5.plot(one_season.lon - 180, one_season, color=color,  label=legend, linestyle=linestyle)
+                        ax_twin_5.plot(one_season.lon - 180, one_season, color=color,  label=legend, linestyle=self.linestyle)
                         ax_twin_5.set_ylim([0, y_lim_max])
-                        ax_twin_5.set_ylabel(ylabel, fontsize=fontsize-3)
-                        axs[i].set_xlabel('Longitude', fontsize=fontsize-3)
+                        ax_twin_5.set_ylabel(ylabel, fontsize=self.fontsize-3)
+                        axs[i].set_xlabel('Longitude', fontsize=self.fontsize-3)
 
                 else:
-                    axs[i].plot(one_season.lat, one_season, color=color, label=legend, linestyle=linestyle)
+                    axs[i].plot(one_season.lat, one_season, color=color, label=legend, linestyle=self.linestyle)
                     axs[i].set_ylim([0, y_lim_max])
-                    axs[i].set_ylabel(ylabel, fontsize=fontsize-3)
-                    axs[i].set_xlabel('Latitude', fontsize=fontsize-3)
+                    axs[i].set_ylabel(ylabel, fontsize=self.fontsize-3)
+                    axs[i].set_xlabel('Latitude', fontsize=self.fontsize-3)
 
                 axs[i].grid(True)
             if coord == 'lon':
                 if legend != '_Hidden':
-                    ax_twin_5.legend(loc=loc, fontsize=fontsize-3, ncol=2)
+                    ax_twin_5.legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
                 if plot_title is not None:
-                    plt.suptitle(plot_title, fontsize=fontsize+2)
+                    plt.suptitle(plot_title, fontsize=self.fontsize+2)
             else:
                 if legend != '_Hidden':
-                    ax5.legend(loc=loc, fontsize=fontsize-3, ncol=2)
+                    ax5.legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
                 if plot_title is not None:
-                    plt.suptitle(plot_title, fontsize=fontsize+2)
-
+                    plt.suptitle(plot_title, fontsize=self.fontsize+2)
         elif 'DataArray' in str(type(data)):
             if fig is not None:
                 fig, ax = fig
             elif add is None and fig is None:
-                fig, ax = plt.subplots(figsize=(8*figsize, 5*figsize))
+                fig, ax = plt.subplots(figsize=(8*self.figsize, 5*self.figsize))
             elif add is not None:
                 fig, ax = add
             if data.size == 1:
-                plt.axhline(y=float(data.values), color=color, label=legend, linestyle=linestyle)
+                plt.axhline(y=float(data.values), color=color, label=legend, linestyle=self.linestyle)
             else:
                 if coord == 'time':
                     plt.scatter(labels_int, data,
-                                color=color,  label=legend,  linestyle=linestyle)
+                                color=color,  label=legend,  linestyle=self.linestyle)
                 else:
                     plt.plot(labels_int,    data,
-                                color=color,  label=legend,  linestyle=linestyle)
+                                color=color,  label=legend,  linestyle=self.linestyle)
 
             plt.gca().xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
             plt.gca().tick_params(axis='both',   which='major',    pad=10)
@@ -363,30 +358,30 @@ class PlottingClass:
 
             if coord == 'time':
                 plt.xlabel('Timestep index',
-                            fontsize=fontsize-3)
+                            fontsize=self.fontsize-3)
                 if data['time.year'][0].values == data['time.year'][-1].values:
                     plt.xlabel(
-                        str(data['time.year'][0].values),    fontsize=fontsize-3)
+                        str(data['time.year'][0].values),    fontsize=self.fontsize-3)
                 else:
                     plt.xlabel(str(data['time.year'][0].values)+' - '+str(data['time.year'][-1].values),
-                                fontsize=fontsize-3)
+                                fontsize=self.fontsize-3)
             elif coord == 'lat':
-                plt.xlabel('Latitude', fontsize=fontsize-3)
+                plt.xlabel('Latitude', fontsize=self.fontsize-3)
             elif coord == 'lon':
-                plt.xlabel('Longitude', fontsize=fontsize-3)
-            plt.ylabel(ylabel, fontsize=fontsize-3)
+                plt.xlabel('Longitude', fontsize=self.fontsize-3)
+            plt.ylabel(ylabel, fontsize=self.fontsize-3)
 
             if plot_title is not None:
-                plt.title(plot_title, fontsize=fontsize+2, pad=15)
+                plt.title(plot_title, fontsize=self.fontsize+2, pad=15)
 
             if legend != '_Hidden':
-                plt.legend(loc=loc, fontsize=fontsize-2, ncol=2)
+                plt.legend(loc=loc, fontsize=self.fontsize-2, ncol=2)
 
-            plt.yscale('log') if ylogscale else None
-            plt.xscale('log') if xlogscale else None
+            plt.yscale('log') if self.ylogscale else None
+            plt.xscale('log') if self.xlogscale else None
 
-        if isinstance(path_to_pdf, str):
-            self.savefig(path_to_pdf, pdf_format)
+        if isinstance(self.path_to_pdf, str):
+            self.savefig(self.path_to_pdf, self.pdf_format)
 
         if 'Dataset' in str(type(data)):
             return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5]
