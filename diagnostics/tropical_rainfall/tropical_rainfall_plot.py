@@ -21,19 +21,20 @@ import xarray as xr
 class PlottingClass:
     """This is class to create the plots."""
         
-    def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1,
-                 fontsize=14, pdf=True, smooth=True, step=False, color_map=False, cmap='coolwarm',
+    def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1, linewidth=3,
+                 fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm', #pdf=True,
                  ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=5, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
         self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
         self.fontsize = fontsize
-        self.pdf = pdf
+        #self.pdf = pdf
         self.smooth = smooth
         self.step = step
         self.color_map = color_map
         self.cmap = cmap
         self.ls = ls
+        self.linewidth = linewidth
         self.ylogscale = ylogscale
         self.xlogscale = xlogscale
         self.model_variable = model_variable
@@ -43,8 +44,8 @@ class PlottingClass:
         self.logger = log_configure(self.loglevel, 'Plot. Func.')
         self.tools = ToolsClass()
     
-    def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None,
-                 fontsize=None, pdf=None, smooth=None, step=None, color_map=None, cmap=None,
+    def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None, linewidth=None,
+                 fontsize=None, smooth=None, step=None, color_map=None, cmap=None, #pdf=None,
                  ls=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
         """
         Update the class attributes based on the provided arguments.
@@ -71,12 +72,13 @@ class PlottingClass:
         self.pdf_format = self.pdf_format if pdf_format is None else pdf_format
         self.figsize = self.figsize if figsize is None else figsize
         self.fontsize = self.fontsize if fontsize is None else fontsize
-        self.pdf = self.pdf if pdf is None else pdf
+        #self.pdf = self.pdf if pdf is None else pdf
         self.smooth = self.smooth if smooth is None else smooth
         self.step = self.step if step is None else step
         self.color_map = self.color_map if color_map is None else color_map
         self.cmap = self.cmap if cmap is None else cmap
         self.ls = self.ls if ls is None else ls
+        self.linewidth = self.linewidth if linewidth is None else linewidth
         self.ylogscale = self.ylogscale if ylogscale is None else ylogscale
         self.xlogscale = self.xlogscale if xlogscale is None else xlogscale
         self.model_variable = self.model_variable if model_variable is None else model_variable
@@ -123,7 +125,7 @@ class PlottingClass:
                    plot_title=None, loc='upper right',
                    add=None, fig=None, path_to_pdf=None,
                    pdf_format=None, xmax=None,
-                   linewidth=3.0, fontsize=None):
+                   linewidth=None, fontsize=None):
         """ Function to generate a histogram figure based on the provided data.
 
         Args:
@@ -153,23 +155,24 @@ class PlottingClass:
             A tuple (fig, ax) containing the figure and axes objects.
         """
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls)
+                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, ls=ls, linewidth=linewidth)
+        self.logger.warning("TEST")
         if fig is not None:
             fig, ax = fig
         elif add is None and fig is None:
-            fig, ax = plt.subplots(figsize=(8*figsize, 5*figsize))
+            fig, ax = plt.subplots(figsize=(8*self.figsize, 5*self.figsize))
         elif add is not None:
             fig, ax = add
 
         if positive:
             data = data.where(data > 0)
-        if smooth:
+        if self.smooth:
             plt.plot(x, data,
-                        linewidth=linewidth, ls=ls, color=color, label=legend)
+                        linewidth=self.linewidth, ls=self.ls, color=color, label=legend)
             plt.grid(True)
-        elif step:
+        elif self.step:
             plt.step(x, data,
-                        linewidth=3.0, ls=ls, color=color, label=legend)
+                        linewidth=self.linewidth, ls=self.ls, color=color, label=legend)
             plt.grid(True)
         elif color_map:
             if weights is None:
@@ -188,22 +191,22 @@ class PlottingClass:
                 elif isinstance(color_map, str):
                     color = plt.cm.get_cmap(color_map)(norm(thisfrac))
                 thispatch.set_facecolor(color)
-        plt.xlabel(xlabel, fontsize=fontsize)
-        if ylogscale:
+        plt.xlabel(xlabel, fontsize=self.fontsize)
+        if self.ylogscale:
             plt.yscale('log')
-        if xlogscale:
+        if self.xlogscale:
             plt.xscale('log')
 
-        plt.ylabel(ylabel, fontsize=fontsize)
-        plt.title(plot_title, fontsize=fontsize+2)
+        plt.ylabel(ylabel, fontsize=self.fontsize)
+        plt.title(plot_title, fontsize=self.fontsize+2)
 
         if legend != '_Hidden':
-            plt.legend(loc=loc, fontsize=fontsize-4)
+            plt.legend(loc=loc, fontsize=self.fontsize-4)
 
         if xmax is not None:
             plt.xlim([0, xmax])
-        if isinstance(path_to_pdf, str):
-            self.savefig(path_to_pdf, pdf_format)
+        if isinstance(self.path_to_pdf, str):
+            self.savefig(self.path_to_pdf, self.pdf_format)
         return {fig, ax}
 
     def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None,
@@ -251,7 +254,7 @@ class PlottingClass:
                 axs = [ax1, ax2, ax3, ax4, ax5]
 
             elif add is None and fig is None:
-                fig = plt.figure(figsize=(11*figsize, 10*figsize), layout='constrained')
+                fig = plt.figure(figsize=(11*self.figsize, 10*self.figsize), layout='constrained')
                 gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 2.5])
                 if coord == 'lon':
                     ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
@@ -276,18 +279,18 @@ class PlottingClass:
             i = -1
             for one_season in [data.DJF, data.MAM, data.JJA, data.SON, data.Yearly]:
                 i += 1
-                axs[i].set_title(titles[i], fontsize=fontsize+1)
+                axs[i].set_title(titles[i], fontsize=self.fontsize+1)
                 # Latitude labels
                 if coord == 'lon':
                     axs[i].set_xlabel('Longitude',
-                                        fontsize=fontsize-2)
+                                        fontsize=self.fontsize-2)
                 elif coord == 'lat':
                     axs[i].set_xlabel('Latitude',
-                                        fontsize=fontsize-2)
+                                        fontsize=self.fontsize-2)
 
-                if ylogscale:
+                if self.ylogscale:
                     axs[i].set_yscale('log')
-                if xlogscale:
+                if self.xlogscale:
                     axs[i].set_xscale('log')
 
                 if coord == 'lon':

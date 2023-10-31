@@ -1276,12 +1276,12 @@ class Tropical_Rainfall:
                        positive=True, 
                        weights=None,      frequency=False,      pdf=True,
                        smooth=True,       step=False,           color_map=False,
-                       ls='-',            ylogscale=True,       xlogscale=False,
-                       color='tab:blue',  figsize=1,            legend='_Hidden',
+                       ls=None,           ylogscale=True,      xlogscale=False,
+                       color='tab:blue',  figsize=None,            legend='_Hidden',
                        plot_title=None,   loc='upper right',    varname='Precipitation',
                        add=None,          fig=None,             path_to_pdf=None,
-                       name_of_file=None, pdf_format=True,      xmax=None,  test=False,
-                       linewidth=3,     fontsize=14):
+                       name_of_file=None, pdf_format=None,      xmax=None,  test=False,
+                       linewidth=None,     fontsize=None):
         """ Function to generate a histogram figure based on the provided data.
 
         Args:
