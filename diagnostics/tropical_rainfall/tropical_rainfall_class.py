@@ -61,6 +61,8 @@ class Tropical_Rainfall:
                  first_edge=None,
                  width_of_bin=None,
                  bins=0,
+                 units=None,
+                 model_variable='tprate',  
                  loglevel: str = 'WARNING'):
         """ The constructor of the class.
 
@@ -88,17 +90,16 @@ class Tropical_Rainfall:
         self.first_edge = first_edge
         self.width_of_bin = width_of_bin
         self.bins = bins
+        self.units = units
+        self.model_variable = model_variable
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
         self.plots = PlottingClass(loglevel=loglevel)
         self.tools = ToolsClass()
-        
-
-    
 
     def class_attributes_update(self,             trop_lat=None,        s_time=None,          f_time=None,
                                 s_year=None,      f_year=None,          s_month=None,         f_month=None,
-                                num_of_bins=None, first_edge=None,      width_of_bin=None,    bins=0):
+                                num_of_bins=None, first_edge=None,      width_of_bin=None,    bins=0, model_variable=None, units=None):
         """ Function to update the class attributes.
 
         Args:
@@ -168,6 +169,9 @@ class Tropical_Rainfall:
         elif width_of_bin is not None and not isinstance(width_of_bin, (int, float)):
             raise TypeError("width_of_bin must to be integer or float")
 
+        self.units = self.units if units is None else units
+        self.model_variable = self.model_variable if model_variable is None else model_variable
+
     def coordinate_names(self, data):
         """ Function to get the names of the coordinates."""
 
@@ -187,7 +191,7 @@ class Tropical_Rainfall:
                     coord_lon = i
         return coord_lat, coord_lon
 
-    def precipitation_rate_units_converter(self, data, model_variable='tprate', old_unit=None,  new_unit='kg m**-2 s**-1'):
+    def precipitation_rate_units_converter(self, data, model_variable=None, old_unit=None,  new_unit='kg m**-2 s**-1'):
         """
         Function to convert the units of precipitation rate.
 
@@ -199,8 +203,10 @@ class Tropical_Rainfall:
         Returns:
             xarray: The Dataset with converted units.
         """
+        self.class_attributes_update(model_variable=model_variable)
+
         try:
-            data = data[model_variable]
+            data = data[self.model_variable]
         except (TypeError, KeyError):
             pass
         if 'xarray' in str(type(data)):
@@ -350,7 +356,7 @@ class Tropical_Rainfall:
                 data = data.sel(time=slice(time))
         return data
 
-    def dataset_into_1d(self, data, model_variable='tprate', sort=False):
+    def dataset_into_1d(self, data, model_variable=None, sort=False):
         """ Function to convert Dataset into 1D array.
 
         Args:
@@ -361,11 +367,11 @@ class Tropical_Rainfall:
         Returns:
             xarray: The 1D array.
         """
-
+        self.class_attributes_update(model_variable=model_variable)
         coord_lat, coord_lon = self.coordinate_names(data)
 
         try:
-            data = data[model_variable]
+            data = data[self.model_variable]
         except KeyError:
             pass
 
@@ -378,7 +384,7 @@ class Tropical_Rainfall:
         return data_1d
 
     def preprocessing(self, data,          trop_lat=None,
-                      preprocess=True,     model_variable="tprate",
+                      preprocess=True,     model_variable=None,
                       s_time=None,         f_time=None,
                       s_year=None,         f_year=None,     new_unit=None,
                       s_month=None,        f_month=None,    dask_array=False):
@@ -401,7 +407,7 @@ class Tropical_Rainfall:
             xarray: Preprocessed Dataset according to the arguments of the function
         """
 
-        self.class_attributes_update(trop_lat=trop_lat,
+        self.class_attributes_update(trop_lat=trop_lat,   model_variable=model_variable,
                                      s_time=s_time,       f_time=f_time,        s_month=s_month,
                                      s_year=s_year,       f_year=f_year,        f_month=f_month)
         if preprocess:
@@ -414,7 +420,7 @@ class Tropical_Rainfall:
                 data_per_time_band = data
 
             try:
-                data_variable = data_per_time_band[model_variable]
+                data_variable = data_per_time_band[self.model_variable]
             except KeyError:
                 data_variable = data_per_time_band
 
@@ -435,7 +441,7 @@ class Tropical_Rainfall:
             return data
 
     def histogram_lowres(self,               data,                data_with_global_atributes=None,
-                         weights=None,       preprocess=True,     trop_lat=None,           model_variable='tprate',
+                         weights=None,       preprocess=True,     trop_lat=None,           model_variable=None,
                          s_time=None,        f_time=None,         s_year=None,
                          f_year=None,        s_month=None,        f_month=None,
                          num_of_bins=None,   first_edge=None,     width_of_bin=None,       bins=0,
@@ -467,7 +473,7 @@ class Tropical_Rainfall:
         Returns:
             xarray.Dataset or numpy.ndarray: The histogram of the Dataset.
         """
-        self.class_attributes_update(trop_lat=trop_lat,
+        self.class_attributes_update(trop_lat=trop_lat,       model_variable=model_variable,
                                      s_time=s_time,           f_time=f_time,
                                      s_year=s_year,           f_year=f_year,
                                      s_month=s_month,         f_month=f_month,
@@ -493,7 +499,7 @@ class Tropical_Rainfall:
         data_original = data
         if preprocess:
             data = self.preprocessing(data, preprocess=preprocess,
-                                      model_variable=model_variable,     trop_lat=self.trop_lat,
+                                      model_variable=self.model_variable,     trop_lat=self.trop_lat,
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
@@ -503,7 +509,7 @@ class Tropical_Rainfall:
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
-                data, model_variable=model_variable, new_unit=new_unit)
+                data, model_variable=self.model_variable, new_unit=new_unit)
         data_with_final_grid = data
         if weights is not None:
 
@@ -563,7 +569,7 @@ class Tropical_Rainfall:
                 tprate_dataset=tprate_dataset, test=test)
 
             mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
-                                                                                    model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
+                                                                                    model_variable=self.model_variable, trop_lat=self.trop_lat, positive=positive)
             relative_discrepancy = abs(
                 mean_modified - mean_from_hist)*100/mean_modified
             self.logger.debug('The difference between the mean of the data and the mean of the histogram: {}%'
@@ -604,7 +610,7 @@ class Tropical_Rainfall:
             return counts_per_bin
 
     def histogram(self,                   data,               data_with_global_atributes=None,
-                  weights=None,           preprocess=True,    trop_lat=None,              model_variable='tprate',
+                  weights=None,           preprocess=True,    trop_lat=None,              model_variable=None,
                   s_time=None,            f_time=None,        s_year=None,
                   f_year=None,            s_month=None,       f_month=None,
                   num_of_bins=None,       first_edge=None,    width_of_bin=None,       bins=0,
@@ -633,7 +639,7 @@ class Tropical_Rainfall:
         Returns:
             xarray.Dataset or numpy.ndarray: The histogram of the Dataset.
         """
-        self.class_attributes_update(trop_lat=trop_lat,
+        self.class_attributes_update(trop_lat=trop_lat,       model_variable=model_variable,
                                      s_time=s_time,           f_time=f_time,
                                      s_year=s_year,           f_year=f_year,
                                      s_month=s_month,         f_month=f_month,
@@ -642,7 +648,7 @@ class Tropical_Rainfall:
         data_original = data
         if preprocess:
             data = self.preprocessing(data, preprocess=preprocess,
-                                      model_variable=model_variable,     trop_lat=self.trop_lat,
+                                      model_variable=self.model_variable,     trop_lat=self.trop_lat,
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
@@ -651,16 +657,16 @@ class Tropical_Rainfall:
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
-                data, model_variable=model_variable, new_unit=new_unit)
+                data, model_variable=self.model_variable, new_unit=new_unit)
         data_with_final_grid = data
 
         if seasons_bool is not None:
             if seasons_bool:
                 seasons_or_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                                      model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                      model_variable=self.model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
             else:
                 seasons_or_months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                                      model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                      model_variable=self.model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
         if isinstance(self.bins, int):
             bins = [self.first_edge + i *
                     self.width_of_bin for i in range(0, self.num_of_bins+1)]
@@ -739,7 +745,7 @@ class Tropical_Rainfall:
                     tprate_dataset=tprate_dataset, test=test, label=seasonal_or_monthly_labels[i])
 
         mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
-                                                                                model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
+                                                                                model_variable=self.model_variable, trop_lat=self.trop_lat, positive=positive)
         relative_discrepancy = (
             mean_original - mean_from_hist)*100/mean_original
         self.logger.debug('The difference between the mean of the data and the mean of the histogram: {}%'
@@ -1216,7 +1222,7 @@ class Tropical_Rainfall:
         return pdfP_per_bin
 
     def mean_from_histogram(self, hist, data=None, old_unit='kg m**-2 s**-1', new_unit=None,
-                            model_variable='tprate', trop_lat=None, positive=True):
+                            model_variable=None, trop_lat=None, positive=True):
         """ Function to calculate the mean from the histogram.
 
         Args:
@@ -1233,11 +1239,11 @@ class Tropical_Rainfall:
             float: The mean from the original data.
             float: The mean from the modified data.
         """
-        self.class_attributes_update(trop_lat=trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
 
         if data is not None:
             try:
-                data = data[model_variable]
+                data = data[self.model_variable]
             except KeyError:
                 pass
             try:
@@ -1346,7 +1352,7 @@ class Tropical_Rainfall:
                figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
                pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
 
-    def mean_along_coordinate(self, data,       model_variable='tprate',      preprocess=True,
+    def mean_along_coordinate(self, data,       model_variable=None,      preprocess=True,
                               trop_lat=None,    coord='time',                 glob=False,
                               s_time=None,      f_time=None,                  positive=True,
                               s_year=None,      f_year=None,                  new_unit=None,
@@ -1370,9 +1376,11 @@ class Tropical_Rainfall:
         Returns:
             xarray:         The mean value of variable.
         """
+        self.class_attributes_update(model_variable=model_variable)
+
         if preprocess:
             data = self.preprocessing(data,                              preprocess=preprocess,
-                                      model_variable=model_variable,     trop_lat=self.trop_lat,
+                                      model_variable=self.model_variable,     trop_lat=self.trop_lat,
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
@@ -1401,7 +1409,7 @@ class Tropical_Rainfall:
             return data.median(coord)
 
     def median_along_coordinate(self, data,               trop_lat=None,     preprocess=True,
-                                model_variable='tprate',  coord='time',      glob=False,
+                                model_variable=None,  coord='time',      glob=False,
                                 s_time=None,              f_time=None,       positive=True,
                                 s_year=None,              f_year=None,       new_unit=None,
                                 s_month=None,             f_month=None):
@@ -1424,9 +1432,10 @@ class Tropical_Rainfall:
         Returns:
             xarray:         The median value of variable.
         """
+        self.class_attributes_update(model_variable=model_variable)
         if preprocess:
             data = self.preprocessing(data,                              preprocess=preprocess,
-                                      model_variable=model_variable,     trop_lat=self.trop_lat,
+                                      model_variable=self.model_variable,     trop_lat=self.trop_lat,
                                       s_time=self.s_time,                f_time=self.f_time,
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
@@ -1457,7 +1466,7 @@ class Tropical_Rainfall:
             return data.median(coord)
 
     def average_into_netcdf(self, data,         glob=False,            preprocess=True,
-                            model_variable='tprate',   coord='lat',
+                            model_variable=None,   coord='lat',
                             trop_lat=None,             get_mean=True,         get_median=False,
                             s_time=None,               f_time=None,           s_year=None,
                             f_year=None,               s_month=None,          f_month=None,
@@ -1487,14 +1496,14 @@ class Tropical_Rainfall:
         Returns:
             None.
         """
-        self.class_attributes_update(trop_lat=trop_lat,
+        self.class_attributes_update(trop_lat=trop_lat,     model_variable=model_variable,
                                      s_time=s_time,         f_time=f_time,
                                      s_year=s_year,         f_year=f_year,
                                      s_month=s_month,       f_month=f_month)
 
         if preprocess:
             data_with_final_grid = self.preprocessing(data,                              preprocess=preprocess,
-                                                      model_variable=model_variable,     trop_lat=self.trop_lat,
+                                                      model_variable=self.model_variable,     trop_lat=self.trop_lat,
                                                       s_time=self.s_time,                f_time=self.f_time,
                                                       s_year=self.s_year,                f_year=self.f_year,
                                                       s_month=None,                      f_month=None,
@@ -1503,7 +1512,7 @@ class Tropical_Rainfall:
         if get_mean:
             if seasons_bool:
                 data_average = self.seasonal_or_monthly_mean(data,                        preprocess=preprocess,
-                                                             seasons_bool=seasons_bool,             model_variable=model_variable,
+                                                             seasons_bool=seasons_bool,             model_variable=self.model_variable,
                                                              trop_lat=trop_lat,           new_unit=new_unit,
                                                              coord=coord)
 
@@ -1512,14 +1521,14 @@ class Tropical_Rainfall:
                 seasonal_average["SON"], seasonal_average["Yearly"] = data_average[3], data_average[4]
             else:
                 data_average = self.mean_along_coordinate(data,                           preprocess=preprocess,
-                                                          glob=glob,                      model_variable=model_variable,
+                                                          glob=glob,                      model_variable=self.model_variable,
                                                           trop_lat=trop_lat,              coord=coord,
                                                           s_time=self.s_time,             f_time=self.f_time,
                                                           s_year=self.s_year,             f_year=self.f_year,
                                                           s_month=self.s_month,           f_month=self.f_month)
         if get_median:
             data_average = self.median_along_coordinate(data,                           preprocess=preprocess,
-                                                        glob=glob,                      model_variable=model_variable,
+                                                        glob=glob,                      model_variable=self.model_variable,
                                                         trop_lat=trop_lat,              coord=coord,
                                                         s_time=self.s_time,             f_time=self.f_time,
                                                         s_year=self.s_year,             f_year=self.f_year,
@@ -1651,7 +1660,7 @@ class Tropical_Rainfall:
                                    f_year=None,                    s_month=None,                   f_month=None,
                                    model='era5',                   source='monthly',               plev=0,
                                    space_grid_factor=None,         time_freq=None,                 preprocess=True,
-                                   time_length=None,               time_grid_factor=None,          model_variable='tprate',):
+                                   time_length=None,               time_grid_factor=None,          model_variable=None):
         """ Function to regride the data and observations to the same grid.
 
         Args:
@@ -1675,12 +1684,12 @@ class Tropical_Rainfall:
         Returns:
         """
 
-        self.class_attributes_update(trop_lat=trop_lat,
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable,
                                      s_time=s_time,                  f_time=f_time,
                                      s_year=s_year,                  f_year=f_year,
                                      s_month=s_month,                f_month=f_month)
         try:
-            data = data[model_variable]
+            data = data[self.model_variable]
         except KeyError:
             pass
         new_unit = data.units
@@ -1689,30 +1698,30 @@ class Tropical_Rainfall:
                 reader = Reader(model="ERA5", exp="era5", source=source)
                 observations = reader.retrieve()
                 observations = self.precipitation_rate_units_converter(observations.isel(plev=plev),
-                                                                       model_variable=model_variable,
+                                                                       model_variable=self.model_variable,
                                                                        new_unit=new_unit)
 
             elif model == 'mswep':
                 reader = Reader(model="MSWEP", exp="past", source=source)
                 observations = reader.retrieve()
                 observations = self.precipitation_rate_units_converter(observations,
-                                                                       model_variable=model_variable,
+                                                                       model_variable=self.model_variable,
                                                                        new_unit=new_unit)
             dummy_data = observations
 
         else:
             dummy_data = self.precipitation_rate_units_converter(dummy_data,
-                                                                 model_variable=model_variable,
+                                                                 model_variable=self.model_variable,
                                                                  new_unit=new_unit)
 
         if preprocess:
             data = self.preprocessing(data,                                  preprocess=preprocess,
-                                      model_variable=model_variable,         trop_lat=self.trop_lat,
+                                      model_variable=self.model_variable,         trop_lat=self.trop_lat,
                                       s_time=self.s_time,                    f_time=self.f_time,
                                       s_year=self.s_year,                    f_year=self.f_year,
                                       s_month=self.s_month,                  f_month=self.f_month,       dask_array=False)
             dummy_data = self.preprocessing(dummy_data,                             preprocess=preprocess,
-                                            model_variable=model_variable,          trop_lat=self.trop_lat,
+                                            model_variable=self.model_variable,          trop_lat=self.trop_lat,
                                             s_time=self.s_time,                     f_time=self.f_time,
                                             s_year=self.s_year,                     f_year=self.f_year,
                                             s_month=self.s_month,                   f_month=self.f_month,    dask_array=False)
@@ -1723,7 +1732,7 @@ class Tropical_Rainfall:
         return data_regrided, dummy_data_regrided
 
     def get_seasonal_or_monthly_data(self, data, preprocess=True, seasons_bool=True,
-                                    model_variable='tprate', trop_lat=None, new_unit=None):
+                                    model_variable=None, trop_lat=None, new_unit=None):
         """ 
         Function to retrieve seasonal or monthly data.
 
@@ -1738,7 +1747,7 @@ class Tropical_Rainfall:
         Returns:
             xarray.DataArray: Seasonal or monthly data.
         """
-        self.class_attributes_update(trop_lat=trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
         if seasons_bool:
             seasons = {
                 'DJF_1': {'s_month': 12, 'f_month': 12},
@@ -1748,12 +1757,12 @@ class Tropical_Rainfall:
                 'SON': {'s_month': 9, 'f_month': 11}
             }
 
-            global_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, model_variable=model_variable, new_unit=new_unit)
+            global_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, model_variable=self.model_variable, new_unit=new_unit)
 
             preprocessed_data = {}
             for key, value in seasons.items():
                 preprocessed_data[key] = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat,
-                                                            model_variable=model_variable, s_month=value['s_month'],
+                                                            model_variable=self.model_variable, s_month=value['s_month'],
                                                             f_month=value['f_month'])
                 if new_unit is not None:
                     preprocessed_data[key] = self.precipitation_rate_units_converter(preprocessed_data[key], new_unit=new_unit)
@@ -1767,14 +1776,14 @@ class Tropical_Rainfall:
             for i in range(1, 13):
                 if preprocess:
                     monthly_data = self.preprocessing(data, preprocess=preprocess, trop_lat=self.trop_lat, 
-                                            model_variable=model_variable, s_month=i, f_month=i)
+                                            model_variable=self.model_variable, s_month=i, f_month=i)
                     if new_unit is not None:
                         monthly_data = self.precipitation_rate_units_converter(monthly_data, new_unit=new_unit)
                 all_monthly_data.append(monthly_data)
             return all_monthly_data
 
     def seasonal_or_monthly_mean(self,  data,                      preprocess=True,            seasons_bool=True,
-                                 model_variable='tprate',          trop_lat=None,              new_unit=None,
+                                 model_variable=None,          trop_lat=None,              new_unit=None,
                                  coord=None, positive=True):
         """ Function to calculate the seasonal or monthly mean of the data.
 
@@ -1792,10 +1801,10 @@ class Tropical_Rainfall:
 
         """
 
-        self.class_attributes_update(trop_lat=trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
         if seasons_bool:
             [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                                           model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                           model_variable=self.model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
             if positive:
                 DJF = np.maximum(DJF, 0.)
                 MAM = np.maximum(MAM, 0.)
@@ -1821,7 +1830,7 @@ class Tropical_Rainfall:
 
         else:
             months = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                           model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                           model_variable=self.model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
 
             for i in range(1, 13):
                 mon_mean = months[i].mean('time')
@@ -1829,7 +1838,7 @@ class Tropical_Rainfall:
             return months
 
     def plot_bias(self,         data,         preprocess=True,                  seasons_bool=True,
-                  dataset_2=None,             model_variable='tprate',          figsize=None,
+                  dataset_2=None,             model_variable=None,          figsize=None,
                   trop_lat=None,              plot_title=None,                  new_unit=None,
                   vmin=None,                  vmax=None,                        path_to_pdf=None,
                   name_of_file=None,          pdf_format=True):
@@ -1860,7 +1869,7 @@ class Tropical_Rainfall:
                                     name_of_file=name_of_file,    pdf_format=pdf_format)
 
     def plot_seasons_or_months(self,     data,             preprocess=True,                  seasons_bool=True,
-                               dataset_2=None,             model_variable='tprate',          figsize=None,
+                               dataset_2=None,             model_variable=None,          figsize=None,
                                trop_lat=None,              plot_title=None,                  new_unit=None,
                                vmin=None,                  vmax=None,                        get_mean=True, percent95_level=False,
                                path_to_pdf=None,           name_of_file=None,                pdf_format=True, path_to_netcdf=None,
@@ -1888,7 +1897,7 @@ class Tropical_Rainfall:
             The pyplot figure in the PDF format
         """
 
-        self.class_attributes_update(trop_lat=trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
 
         if seasons_bool:
             months=None
@@ -1901,17 +1910,17 @@ class Tropical_Rainfall:
             except AttributeError:
                 if get_mean:
                     seasons = self.seasonal_or_monthly_mean(data,               preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                               model_variable=model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
+                                                               model_variable=self.model_variable,    trop_lat=self.trop_lat,       new_unit=new_unit)
                 elif percent95_level:
                     seasons = self.seasonal_095level_into_netcdf(data, reprocess=preprocess,        seasons_bool=seasons_bool, new_unit=new_unit,
-                                                              model_variable=model_variable,          path_to_netcdf=path_to_netcdf,
+                                                              model_variable=self.model_variable,          path_to_netcdf=path_to_netcdf,
                                                               name_of_file=name_of_file,                    trop_lat=trop_lat,
                                                               value=value,                           rel_error=rel_error)
 
             if dataset_2 is not None:
                 seasons_2 = self.seasonal_or_monthly_mean(dataset_2,                     preprocess=preprocess,
-                                                             seasons_bool=seasons_bool,            model_variable=model_variable,
-                                                             trop_lat=self.trop_lat,      new_unit=new_unit)
+                                                             seasons_bool=seasons_bool,  model_variable=self.model_variable,
+                                                             trop_lat=self.trop_lat,     new_unit=new_unit)
                 for i in range(0, len(seasons)):
                     seasons[i].values = seasons[i].values - \
                         seasons_2[i].values
@@ -1919,22 +1928,22 @@ class Tropical_Rainfall:
         else:
             seasons = None
             months = self.seasonal_or_monthly_mean(data,                preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                       model_variable=model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
+                                                       model_variable=self.model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
 
             if dataset_2 is not None:
                 months_2 = self.seasonal_or_monthly_mean(dataset_2,     preprocess=preprocess,         seasons_bool=seasons_bool,
-                                                             model_variable=model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
+                                                             model_variable=self.model_variable,     trop_lat=trop_lat,            new_unit=new_unit)
                 for i in range(0, len(months)):
                     months[i].values = months[i].values - \
                         months_2[i].values
         if new_unit is None:
             try:
-                unit = data[model_variable].units
+                unit = data[self.model_variable].units
             except KeyError:
                 unit = data.units
         else:
             unit = new_unit
-        cbarlabel = model_variable+", ["+str(unit)+"]"
+        cbarlabel = self.model_variable+", ["+str(unit)+"]"
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             if seasons_bool:
@@ -2076,7 +2085,7 @@ class Tropical_Rainfall:
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
-            model_variable='tprate', figsize=None, number_of_axe_ticks=None, number_of_bar_ticks=None, fontsize=None,
+            model_variable=None, figsize=None, number_of_axe_ticks=None, number_of_bar_ticks=None, fontsize=None,
             trop_lat=None, plot_title=None, new_unit="mm/day",
             vmin=None, vmax=None, time_selection='01',
             path_to_pdf=None, name_of_file=None, pdf_format=None):
@@ -2114,12 +2123,12 @@ class Tropical_Rainfall:
             The pyplot figure in the PDF format
         """
 
-        self.class_attributes_update(trop_lat=trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
 
         data = data if isinstance(data, list) else [data]
         if new_unit is None:
             try:
-                unit = data[0][model_variable].units
+                unit = data[0][self.model_variable].units
             except KeyError:
                 unit = data[0].units
         else:
@@ -2146,22 +2155,22 @@ class Tropical_Rainfall:
                     self.logger.error(f'The time selection went wrong. Please check the value of input time.')
 
             try:
-                data[i] = data[i][model_variable]
+                data[i] = data[i][self.model_variable]
             except KeyError:
                 pass
 
             if new_unit is not None:
-                data[i] = self.precipitation_rate_units_converter(data[i], model_variable=model_variable, new_unit=new_unit)
+                data[i] = self.precipitation_rate_units_converter(data[i], model_variable=self.model_variable, new_unit=new_unit)
         
-        cbarlabel=model_variable+", ["+str(unit)+"]"
+        cbarlabel=self.model_variable+", ["+str(unit)+"]"
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
 
         return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, cmap=cmap, fontsize=fontsize,
-                   model_variable=model_variable, figsize=figsize, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
+                   model_variable=self.model_variable, figsize=figsize, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
                    plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
-    def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable='tprate',
+    def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable=None,
                             new_unit=None, weights=None,  trop_lat=None):
         """
         Calculate the precipitation rate threshold value at which a specified percentage (1 - value) of the data is below it.
@@ -2184,6 +2193,7 @@ class Tropical_Rainfall:
 
 
         """
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
 
         if new_unit is not None:
             data = self.precipitation_rate_units_converter(
@@ -2193,11 +2203,8 @@ class Tropical_Rainfall:
         value = 1 - value
         rel_error = value*rel_error
         if original_hist is None:
-
-            self.class_attributes_update(trop_lat=trop_lat)
-
             original_hist = self.histogram(data,         weights=weights,       preprocess=preprocess,
-                                           trop_lat=self.trop_lat,              model_variable=model_variable,
+                                           trop_lat=self.trop_lat,              model_variable=self.model_variable,
                                            num_of_bins=self.num_of_bins,   first_edge=self.first_edge,      width_of_bin=self.width_of_bin,       bins=self.bins)
 
         counts_sum = sum(original_hist.counts)
@@ -2233,7 +2240,7 @@ class Tropical_Rainfall:
                 del_bin = del_bin + abs(0.5*del_bin)
 
         try:
-            units = data[model_variable].units
+            units = data[self.model_variable].units
         except KeyError:
             units = data.units
 
@@ -2244,13 +2251,14 @@ class Tropical_Rainfall:
         return bin_value, units, 1 - threshold
 
     def seasonal_095level_into_netcdf(self,     data,           preprocess=True,        seasons_bool=True,
-                                      model_variable='tprate',              path_to_netcdf=None,
+                                      model_variable=None,              path_to_netcdf=None,
                                       name_of_file=None,                    trop_lat=None,
                                       value=0.95,                           rel_error=0.1, new_unit=None,
                                       lon_length=None,                        lat_length=None,
                                       space_grid_factor=None,                 tqdm=True):
         """ Function to plot.
         Args:"""
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
 
         data = self.tools.space_regrider(data, space_grid_factor=space_grid_factor,
                               lat_length=lat_length, lon_length=lon_length)
@@ -2258,7 +2266,7 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
         if seasons_bool:
             [DJF, MAM, JJA, SON, glob] = self.get_seasonal_or_monthly_data(data,        preprocess=preprocess,        seasons_bool=seasons_bool,
-                                                                           model_variable=model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
+                                                                           model_variable=self.model_variable,       trop_lat=trop_lat,          new_unit=new_unit)
 
             num_of_bins, first_edge, width_of_bin, bins = self.num_of_bins, self.first_edge, self.width_of_bin, self.bins
             self.s_month, self.f_month = None, None
@@ -2364,7 +2372,7 @@ class Tropical_Rainfall:
 
         return local_time
 
-    def add_UTC_DataAaray(self, data, model_variable='tprate', space_grid_factor=None, time_length=None,
+    def add_UTC_DataAaray(self, data, model_variable=None, space_grid_factor=None, time_length=None,
                         trop_lat=None, new_unit='mm/day', path_to_netcdf=None, name_of_file=None, tqdm=True):
         """
         Add a new dataset with UTC time based on the provided data.
@@ -2386,9 +2394,9 @@ class Tropical_Rainfall:
             xr.Dataset: The new dataset with added UTC time.
 
         """
-        self.class_attributes_update(trop_lat=trop_lat)
+        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable)
         try:
-            data = data[model_variable]
+            data = data[self.model_variable]
         except KeyError:
             pass
 
