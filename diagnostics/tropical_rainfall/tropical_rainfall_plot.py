@@ -23,7 +23,7 @@ class PlottingClass:
         
     def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1,
                  fontsize=14, pdf=True, smooth=True, step=False, color_map=False, cmap='coolwarm',
-                 ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_bar_ticks=6):
+                 ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_bar_ticks=6, loglevel: str = 'WARNING'):
         self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
@@ -38,6 +38,8 @@ class PlottingClass:
         self.xlogscale = xlogscale
         self.model_variable = model_variable
         self.number_of_bar_ticks = number_of_bar_ticks
+        self.loglevel = loglevel
+        self.logger = log_configure(self.loglevel, 'Plot. Func.')
         self.tools = ToolsClass()
     
     def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None,
@@ -588,9 +590,8 @@ class PlottingClass:
             figsize = 4 if horizontal_size < 4 or vertical_size < 2 else 2
         else:
             figsize = 1
-
-        print(horizontal_size, vertical_size)
-        print(horizontal_size*figsize, vertical_size*figsize)
+        self.logger.debug('Size of the plot before auto re-scaling: {}, {}'.format(horizontal_size, vertical_size))
+        self.logger.debug('Size of the plot after auto re-scaling: {}, {}'.format(horizontal_size*figsize, vertical_size*figsize))
 
         fig = plt.figure(figsize=(horizontal_size*figsize, vertical_size*figsize))
         gs = GridSpec(nrows=nrows, ncols=ncols, figure=fig, wspace=0.175, hspace=0.175, width_ratios=[1] * ncols, height_ratios=[1] * nrows)  

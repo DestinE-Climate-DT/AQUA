@@ -90,7 +90,7 @@ class Tropical_Rainfall:
         self.bins = bins
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
-        self.plots = PlottingClass()
+        self.plots = PlottingClass(loglevel=loglevel)
         self.tools = ToolsClass()
         
 
