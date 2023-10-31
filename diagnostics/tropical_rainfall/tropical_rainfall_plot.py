@@ -12,6 +12,9 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
 
+from matplotlib.ticker import StrMethodFormatter
+#import matplotlib.colors as mcolors
+
 import numpy as np
 import xarray as xr
 
@@ -19,7 +22,7 @@ class PlottingClass:
     """This is class to create the plots."""
         
     def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1,
-                 fontsize=14, pdf=True, smooth=True, step=False, color_map=False,
+                 fontsize=14, pdf=True, smooth=True, step=False, color_map=False, cmap='coolwarm',
                  ls='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_bar_ticks=6):
         self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
@@ -29,6 +32,7 @@ class PlottingClass:
         self.smooth = smooth
         self.step = step
         self.color_map = color_map
+        self.cmap = cmap
         self.ls = ls
         self.ylogscale = ylogscale
         self.xlogscale = xlogscale
@@ -37,7 +41,7 @@ class PlottingClass:
         self.tools = ToolsClass()
     
     def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None,
-                 fontsize=None, pdf=None, smooth=None, step=None, color_map=None,
+                 fontsize=None, pdf=None, smooth=None, step=None, color_map=None, cmap=None,
                  ls=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_bar_ticks=None):
         """
         Update the class attributes based on the provided arguments.
@@ -68,6 +72,7 @@ class PlottingClass:
         self.smooth = self.smooth if smooth is None else smooth
         self.step = self.step if step is None else step
         self.color_map = self.color_map if color_map is None else color_map
+        self.cmap = self.cmap if cmap is None else cmap
         self.ls = self.ls if ls is None else ls
         self.ylogscale = self.ylogscale if ylogscale is None else ylogscale
         self.xlogscale = self.xlogscale if xlogscale is None else xlogscale
@@ -416,11 +421,6 @@ class PlottingClass:
             ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
             axs = [ax1, ax2, ax3, ax4, ax5]
 
-            #if vmin is None and vmax is None:
-            #    vmax = float(all_season[0].max().values)/10
-            #    vmin = 0
-            #clevs = np.arange(vmin, vmax, abs(vmax - vmin)/10)
-
             titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
 
             for i in range(0, len(all_season)):
@@ -454,13 +454,6 @@ class PlottingClass:
         else:
             fig, axes = plt.subplots(ncols=3, nrows=4, subplot_kw={'projection': ccrs.PlateCarree()},
                                         figsize=(11*figsize, 8.5*figsize), layout='constrained')
-            
-
-            #if vmin is None and vmax is None:
-            #    vmax = float(all_months[6].max().values)
-            #    vmin = 0
-
-            #clevs = np.arange(vmin, vmax, (vmax - vmin)/10)
 
             for i in range(0, len(all_months)):
                 all_months[i] = all_months[i].where(all_months[i] > vmin)
@@ -543,7 +536,7 @@ class PlottingClass:
         return ticks, clevs
 
 
-    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap='coolwarm',
+    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
             model_variable=None, figsize=None, number_of_bar_ticks=None, cbarlabel='',
             plot_title=None, vmin=None, vmax=None, path_to_pdf=None, pdf_format=None,
             fontsize=None):
@@ -573,14 +566,13 @@ class PlottingClass:
         """
         self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
                                 model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)
+                            
         data_len = len(data)
 
         if titles is None:
             titles = [""] * data_len
         elif isinstance(titles, str) and data_len != 1 or len(titles) != data_len:
             raise KeyError("The length of plot titles must be the same as the number of provided data to plot.")
-        
-        print(titles)
         
         if data_len == 1:
             ncols, nrows = 1, 1
@@ -589,38 +581,69 @@ class PlottingClass:
         elif data_len % 3 == 0:
             ncols, nrows = 3, data_len // 3
 
-        fig = plt.figure(figsize=(11*figsize*ncols, 8.5*figsize*nrows))
-        gs = GridSpec(nrows=nrows, ncols=ncols + 1, figure=fig, wspace=0.2, hspace=0.2, width_ratios=[1] * ncols + [0.1], height_ratios=[1] * nrows) 
+        horizontal_size = 10*abs(lonmax-lonmin)*ncols*self.figsize/360
+        vertical_size = 8*abs(latmax-latmin)*nrows*self.figsize/180
+
+        if horizontal_size < 8 or vertical_size < 4:
+            figsize = 4 if horizontal_size < 4 or vertical_size < 2 else 2
+        else:
+            figsize = 1
+
+        print(horizontal_size, vertical_size)
+        print(horizontal_size*figsize, vertical_size*figsize)
+
+        fig = plt.figure(figsize=(horizontal_size*figsize, vertical_size*figsize))
+        gs = GridSpec(nrows=nrows, ncols=ncols, figure=fig, wspace=0.175, hspace=0.175, width_ratios=[1] * ncols, height_ratios=[1] * nrows)  
         # Add subplots using the grid
         axs =  [fig.add_subplot(gs[i, j], projection=ccrs.PlateCarree()) for i in range(nrows) for j in range(ncols)]
 
-        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=model_variable, number_of_bar_ticks=number_of_bar_ticks)    
+        ticks, clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, 
+                                               model_variable=self.model_variable, number_of_bar_ticks=self.number_of_bar_ticks)
 
-        for i in range(0, len(data)):   
-            data_cycl, lons = add_cyclic_point(
-                data[i], coord=data[i]['lon'])
+        if not isinstance(self.cmap, list):
+            self.class_attributes_update(cmap=cmap)
+            cmap = [self.cmap for _ in range(data_len)]
+
+        for i in range(0, data_len):   
+            data_cycl, lons = add_cyclic_point(data[i], coord=data[i]['lon'])
             im1 = axs[i].contourf(lons, data[i]['lat'], data_cycl, clevs, transform=ccrs.PlateCarree(),
-                                cmap=cmap, extend='both')
-
-            axs[i].set_title(titles[i], fontsize=fontsize+3)
+                                  cmap=cmap[i],  extend='both')
+            axs[i].set_title(titles[i], fontsize=self.fontsize+3)
             axs[i].coastlines()
             # Longitude labels
-            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/number_of_bar_ticks), crs=ccrs.PlateCarree())
-            axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())           
+            axs[i].set_xticks(np.arange(lonmin, lonmax, int(lonmax-lonmin)/self.number_of_bar_ticks), crs=ccrs.PlateCarree())
+            axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())  
+            # Longitude labels
+            lon_formatter = StrMethodFormatter('{x:.1f}')  # Adjust the precision as needed
+            axs[i].xaxis.set_major_formatter(lon_formatter) 
+            axs[i].tick_params(axis='x', which='major', labelsize=self.fontsize-3) 
+
             # Latitude labels
-            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/number_of_bar_ticks), crs=ccrs.PlateCarree())
+            axs[i].set_yticks(np.arange(latmin, latmax, int(latmax-latmin)/self.number_of_bar_ticks), crs=ccrs.PlateCarree())
             axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
+            # Latitude labels
+            lat_formatter = StrMethodFormatter('{x:.1f}')  # Adjust the precision as needed
+            axs[i].yaxis.set_major_formatter(lat_formatter)
+            axs[i].tick_params(axis='y', which='major', labelsize=self.fontsize-3)     
+
             axs[i].grid(True)
-
+        [axs[-1*i].set_xlabel('Longitude', fontsize=self.fontsize) for i in range(1, ncols+1)]
+        [axs[ ncols*i].set_ylabel('Latitude', fontsize=self.fontsize) for i in range(0, nrows)]
         # Draw the colorbar
-        cbar_ax = fig.add_subplot(gs[:, -1]) # Adjust the column index as needed
-        cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='vertical', extend='both') #, shrink=0.8, pad=0.05, aspect=30)
-        cbar.set_label(cbarlabel, fontsize=fontsize)
-        if plot_title is not None:
-            plt.suptitle(plot_title, fontsize=fontsize+3)
+        fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
+                         wspace=0.2, hspace=0.5) 
+        cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.02])
+                
+        cbar = fig.colorbar(im1, cax=cbar_ax, ticks=ticks, orientation='horizontal', extend='both')
+        cbar.set_label(cbarlabel, fontsize=self.fontsize)
 
-        if isinstance(path_to_pdf, str):
-            self.savefig(path_to_pdf, pdf_format)
+        #gs.tight_layout(fig)
+
+        if plot_title is not None:
+            plt.suptitle(plot_title, fontsize=self.fontsize+3)
+
+        if isinstance(self.path_to_pdf, str):
+            self.savefig(self.path_to_pdf, self.pdf_format)
 
     """
     def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,

@@ -2076,12 +2076,12 @@ class Tropical_Rainfall:
         self.logger.info(f'The data was zoomed in.')
         return lonmin, lonmax, latmin, latmax
 
-    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91,
+    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
             pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
-            model_variable='tprate', figsize=1, number_of_bar_ticks=6,
+            model_variable='tprate', figsize=None, number_of_bar_ticks=None, fontsize=None,
             trop_lat=None, plot_title=None, new_unit="mm/day",
             vmin=None, vmax=None, time_selection='01',
-            path_to_pdf=None, name_of_file=None, pdf_format=True):
+            path_to_pdf=None, name_of_file=None, pdf_format=None):
         """
         Create a map with specified data and various optional parameters.
 
@@ -2132,9 +2132,8 @@ class Tropical_Rainfall:
             if lonmin != -180 or lonmax not in (180, 181):
                 data[i] = data[i].sel(lon=slice(lonmin, lonmax))
             if latmin != -90 or latmax not in (90, 91):
-                data[i] = data[i].sel(lat=slice(latmin, latmax))
+                data[i] = data[i].sel(lat=slice(latmin-1, latmax))
 
-            
             data[i] = data[i].where(data[i] > vmin)
 
             if data[i].time.size==1:
@@ -2157,7 +2156,7 @@ class Tropical_Rainfall:
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
 
-        return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
+        return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, cmap=cmap, fontsize=fontsize,
                    model_variable=model_variable, figsize=figsize, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
                    plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
