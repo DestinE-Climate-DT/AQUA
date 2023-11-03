@@ -62,7 +62,9 @@ class Tropical_Rainfall:
                  width_of_bin=None,
                  bins=0,
                  new_unit='mm/day',
-                 model_variable='tprate',  
+                 model_variable='tprate',
+                 path_to_netcdf=None,  
+                 path_to_pdf=None,
                  loglevel: str = 'WARNING'):
         """ The constructor of the class.
 
@@ -94,11 +96,22 @@ class Tropical_Rainfall:
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
         self.plots = PlottingClass(loglevel=loglevel)
-        self.tools = ToolsClass()
+        self.tools = ToolsClass(loglevel=loglevel)
+
         if width_of_bin is None:
-            self.width_of_bin = self.precipitation_rate_units_converter(0.2, old_unit='mm/day', new_unit=new_unit)
+            self.width_of_bin = self.precipitation_rate_units_converter(0.05, old_unit='mm/day', new_unit=new_unit)
         else:
             self.width_of_bin = width_of_bin
+        
+        if path_to_netcdf is None:
+            self.path_to_netcdf = self.tools.get_netcdf_path()
+        else:
+            self.path_to_netcdf = path_to_netcdf
+
+        if path_to_pdf is None:
+            self.path_to_pdf = self.tools.get_pdf_path()
+        else:
+            self.path_to_pdf = path_to_pdf
 
     def class_attributes_update(self,             trop_lat=None,        s_time=None,          f_time=None,
                                 s_year=None,      f_year=None,          s_month=None,         f_month=None,
@@ -482,6 +495,9 @@ class Tropical_Rainfall:
                                      first_edge=first_edge,   num_of_bins=num_of_bins,
                                      width_of_bin=width_of_bin)
 
+        if path_to_histogram is None and self.path_to_netcdf is not None:
+            path_to_histogram = self.path_to_netcdf+'histograms/'
+
         coord_lat, coord_lon = self.coordinate_names(data)
 
         if isinstance(self.bins, int):
@@ -645,6 +661,10 @@ class Tropical_Rainfall:
                                      s_month=s_month,         f_month=f_month,
                                      first_edge=first_edge,   num_of_bins=num_of_bins,
                                      width_of_bin=width_of_bin)
+
+        if path_to_histogram is None and self.path_to_netcdf is not None:
+            path_to_histogram = self.path_to_netcdf+'histograms/'
+
         data_original = data
         if preprocess:
             data = self.preprocessing(data, preprocess=preprocess,
@@ -797,6 +817,9 @@ class Tropical_Rainfall:
         Returns:
             str: The path to save the histogram.
         """
+        if path_to_netcdf is None:
+            path_to_netcdf = self.path_to_netcdf
+
         if isinstance(path_to_netcdf, str):
             create_folder(folder=str(path_to_netcdf), loglevel='WARNING')
             if name_of_file is None:
@@ -901,6 +924,9 @@ class Tropical_Rainfall:
         Returns:
             xarray: The xarray.Dataset with the histogram.
         """
+        if path_to_histogram is None and self.path_to_netcdf is not None:
+            path_to_histogram = self.path_to_netcdf+'histograms/'
+
         hist_frequency = self.convert_counts_to_frequency(
             tprate_dataset.counts,  test=test)
         tprate_dataset['frequency'] = hist_frequency
@@ -1280,7 +1306,7 @@ class Tropical_Rainfall:
                        color='tab:blue',  figsize=None,            legend='_Hidden',
                        plot_title=None,   loc='upper right',    model_variable=None,
                        add=None,          fig=None,             path_to_pdf=None,
-                       name_of_file=None, pdf_format=None,      xmax=None,  test=False,
+                       name_of_file='', pdf_format=None,      xmax=None,  test=False,
                        linewidth=None,     fontsize=None):
         """ Function to generate a histogram figure based on the provided data.
 
@@ -1312,6 +1338,8 @@ class Tropical_Rainfall:
         """
         self.class_attributes_update(model_variable=model_variable, new_unit=new_unit)
 
+        if path_to_pdf is None and self.path_to_pdf is not None:
+            path_to_pdf = self.path_to_pdf
         if 'Dataset' in str(type(data)):
             data = data['counts']
         if not pdf and not frequency and not pdfP:
@@ -1496,6 +1524,9 @@ class Tropical_Rainfall:
                                      s_year=s_year,         f_year=f_year,
                                      s_month=s_month,       f_month=f_month)
 
+        if path_to_netcdf is None and self.path_to_netcdf is not None:
+            path_to_netcdf = self.path_to_netcdf+'mean/'
+            
         if preprocess:
             data_with_final_grid = self.preprocessing(data,                              preprocess=preprocess,
                                                       model_variable=self.model_variable,     trop_lat=self.trop_lat,
@@ -1562,7 +1593,7 @@ class Tropical_Rainfall:
                         maxticknum=12,             color='tab:blue',      model_variable=None,
                         ylogscale=False,           xlogscale=False,       loc='upper right',
                         add=None,                  fig=None,              plot_title=None,
-                        path_to_pdf=None,          new_unit=None,     name_of_file=None,
+                        path_to_pdf=None,          new_unit=None,     name_of_file='',
                         pdf_format=True,       path_to_netcdf=None):
         """ Function to plot the mean or median value of variable in Dataset.
 
@@ -1600,7 +1631,9 @@ class Tropical_Rainfall:
             None.
         """
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
-        
+        if path_to_pdf is None:
+            path_to_pdf = self.path_to_pdf
+
         if data is None and path_to_netcdf is not None:
             data = self.open_dataset(path_to_netcdf=path_to_netcdf)  
         elif path_to_netcdf is None and data is None:
@@ -1636,7 +1669,7 @@ class Tropical_Rainfall:
                 plot_title = 'Median values of '+ self.model_variable
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
-            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_mean.pdf'
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + 'mean'+'_along_'+str(coord)+'.pdf'
 
         return self.plots.plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
                     legend=legend, figsize=figsize, linestyle=linestyle, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
@@ -1832,7 +1865,7 @@ class Tropical_Rainfall:
                   dataset_2=None,             model_variable=None,          figsize=None,
                   trop_lat=None,              plot_title=None,                  new_unit=None,
                   vmin=None,                  vmax=None,                        path_to_pdf=None,
-                  name_of_file=None,          pdf_format=True):
+                  name_of_file='',          pdf_format=True):
         """ Function to plot the bias of model_variable between two datasets.
 
         Args:
@@ -1852,7 +1885,6 @@ class Tropical_Rainfall:
         Returns:
             The pyplot figure in the PDF format
         """
-
         self.plot_seasons_or_months(data,                         preprocess=preprocess,            seasons_bool=seasons_bool,
                                     dataset_2=dataset_2,          model_variable=model_variable,    figsize=figsize,
                                     trop_lat=trop_lat,            plot_title=plot_title,            new_unit=new_unit,
@@ -1863,7 +1895,7 @@ class Tropical_Rainfall:
                                dataset_2=None,             model_variable=None,          figsize=None,
                                trop_lat=None,              plot_title=None,                  new_unit=None,
                                vmin=None,                  vmax=None,                        get_mean=True, percent95_level=False,
-                               path_to_pdf=None,           name_of_file=None,                pdf_format=True, path_to_netcdf=None,
+                               path_to_pdf=None,           name_of_file='',                pdf_format=True, path_to_netcdf=None,
                                value=0.95,                 rel_error=0.1):
         """ Function to plot seasonal data.
 
@@ -1889,6 +1921,8 @@ class Tropical_Rainfall:
         """
 
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
+        if path_to_pdf is None:
+            path_to_pdf = self.path_to_pdf
 
         if seasons_bool:
             months=None
@@ -2079,7 +2113,7 @@ class Tropical_Rainfall:
             model_variable=None, figsize=None, number_of_axe_ticks=None, number_of_bar_ticks=None, fontsize=None,
             trop_lat=None, plot_title=None, new_unit=None,
             vmin=None, vmax=None, time_selection='01',
-            path_to_pdf=None, name_of_file=None, pdf_format=None):
+            path_to_pdf=None, name_of_file='', pdf_format=None):
         """
         Create a map with specified data and various optional parameters.
 
@@ -2115,7 +2149,8 @@ class Tropical_Rainfall:
         """
 
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
-
+        if path_to_pdf is None:
+            path_to_pdf = self.path_to_pdf
         data = data if isinstance(data, list) else [data]
         if self.new_unit is None:
             try:
@@ -2511,13 +2546,33 @@ class Tropical_Rainfall:
             loaded_dict[key]["color"] = palette[i]   
 
         return loaded_dict
+    
+    def add_colors_to_dict(self, loaded_dict=None):
+        """
+        Updates a dictionary with loaded data and assigns colors to each entry.
+
+        Args:
+            loaded_dict (dict): Dictionary with paths to datasets.
+
+        Returns:
+            dict: Updated dictionary with loaded data and colors assigned.
+        """
+        if not isinstance(loaded_dict, dict):
+            self.logger.error("The provided object must be a 'dict' type.") 
+            return None
+        # Select a seaborn palette
+        palette = sns.color_palette("husl", len(loaded_dict))
+        # Loop through the dictionary and assign colors
+        for i, (key, value) in enumerate(loaded_dict.items()):
+            loaded_dict[key]["color"] = palette[i]   
+        return loaded_dict
 
 
     def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
                             legend='_Hidden', figsize=1, linestyle='-', maxticknum=12, color='tab:blue',
                             model_variable=None, ylogscale=False, xlogscale=False, loc='upper right',
                             add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit=None,
-                            name_of_file=None, pdf_format=True, path_to_netcdf=None):
+                            name_of_file='', pdf_format=True, path_to_netcdf=None):
         """
         Plot the daily variability of the dataset.
 
@@ -2552,6 +2607,8 @@ class Tropical_Rainfall:
         """
 
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
+        if path_to_pdf is None:
+            path_to_pdf = self.path_to_pdf
         if path_to_netcdf is None:
             raise Exception('The path needs to be provided')
         else:
