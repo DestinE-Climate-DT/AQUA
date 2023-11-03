@@ -8,17 +8,19 @@ from aqua.util import ConfigPath
 from aqua.logger import log_configure
 import yaml
 
+full_path_to_config = 'tropical_rainfall/config-tropical-rainfall.yml'
+
 class ToolsClass:
     def __init__(self, loglevel: str = 'WARNING'):
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Tools Func.')
 
-    def get_netcdf_path(self, configname='tropical_rainfall/trop_rainfall_config.yml'):
+    def get_netcdf_path(self, configname=full_path_to_config):
         """
         Load paths from a YAML configuration file based on the specified configuration name.
         Args:
             self: The instance of the class.
-            configname (str): The name of the YAML configuration file. Defaults to 'trop_rainfall_config.yml'.
+            configname (str): The name of the YAML configuration file. 
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
         Raises:
@@ -41,12 +43,12 @@ class ToolsClass:
         
         return path_to_netcdf
     
-    def get_pdf_path(self, configname='tropical_rainfall/trop_rainfall_config.yml'):
+    def get_pdf_path(self, configname=full_path_to_config):
         """
         Load paths from a YAML configuration file based on the specified configuration name.
         Args:
             self: The instance of the class.
-            configname (str): The name of the YAML configuration file. Defaults to 'trop_rainfall_config.yml'.
+            configname (str): The name of the YAML configuration file.
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
         Raises:
