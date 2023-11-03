@@ -23,7 +23,7 @@ class PlottingClass:
         
     def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1, linewidth=3,
                  fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm', #pdf=True,
-                 linestyle='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=5, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
+                 linestyle='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=4, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
         self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
@@ -45,7 +45,7 @@ class PlottingClass:
         self.tools = ToolsClass()
     
     def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None, linewidth=None,
-                 fontsize=None, smooth=None, step=None, color_map=None, cmap=None, #pdf=None,
+                 fontsize=None, smooth=None, step=None, color_map=None, cmap=None,
                  linestyle=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
         """
         Update the class attributes based on the provided arguments.
@@ -208,7 +208,7 @@ class PlottingClass:
             self.savefig(self.path_to_pdf, self.pdf_format)
         return {fig, ax}
 
-    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None,
+    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None, number_of_axe_ticks=None,
                         legend='_Hidden', figsize=None, linestyle=None, maxticknum=12, color='tab:blue', ylogscale=None, 
                         xlogscale=None, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, 
                         pdf_format=None):
@@ -240,7 +240,7 @@ class PlottingClass:
         Returns:
             list: List of figure and axis objects.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, xlogscale=xlogscale, 
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, xlogscale=xlogscale, number_of_axe_ticks=number_of_axe_ticks,
                                 ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, linestyle=linestyle)
 
         # make a plot with different y-axis using second axis object
@@ -253,7 +253,7 @@ class PlottingClass:
                 axs = [ax1, ax2, ax3, ax4, ax5]
 
             elif add is None and fig is None:
-                fig = plt.figure(figsize=(11*self.figsize, 10*self.figsize), layout='constrained')
+                fig = plt.figure(figsize=(10*self.figsize, 11*self.figsize), layout='constrained')
                 gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 2.5])
                 if coord == 'lon':
                     ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
@@ -282,6 +282,7 @@ class PlottingClass:
                 # Latitude labels
                 if coord == 'lon':
                     axs[i].set_xlabel('Longitude', fontsize=self.fontsize-2)
+                    axs[i].set_ylabel('Latitude', fontsize=self.fontsize-2)
                 elif coord == 'lat':
                     axs[i].set_xlabel('Latitude', fontsize=self.fontsize-2)
 
@@ -291,16 +292,19 @@ class PlottingClass:
                 if coord == 'lon':
                     # twin object for two different y-axis on the sample plot
                     ax_span = axs[i].twinx()
-                    ax_span.axhspan(-trop_lat, trop_lat, alpha=0.05, color='tab:red')
+                    if trop_lat<90:
+                        ax_span.axhspan(-trop_lat, trop_lat, alpha=0.05, color='tab:red')
+                        axs[i].coastlines(alpha=0.5, color='grey')
+                    else:
+                        axs[i].coastlines(alpha=0.5, color='k')
                     ax_span.set_ylim([-90, 90])
                     ax_span.set_xticks([])
                     ax_span.set_yticks([])
-                    axs[i].coastlines(alpha=0.5, color='grey')
-                    axs[i].set_xticks(np.arange(-180, 181, 60), crs=ccrs.PlateCarree())
+                    axs[i].set_xticks(np.arange(-180, 181, 360/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
                     axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())
 
                     # Latitude labels
-                    axs[i].set_yticks(np.arange(-90, 91, 30), crs=ccrs.PlateCarree())
+                    axs[i].set_yticks(np.arange(-90, 91, 180/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
                     axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
 
                     if i < 4:
