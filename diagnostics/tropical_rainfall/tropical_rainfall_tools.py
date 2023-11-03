@@ -13,17 +13,14 @@ class ToolsClass:
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Tools Func.')
 
-    def path_to_output(self, configname='tropical_rainfall/trop_rainfall_config.yml'):
+    def get_netcdf_path(self, configname='tropical_rainfall/trop_rainfall_config.yml'):
         """
         Load paths from a YAML configuration file based on the specified configuration name.
-
         Args:
             self: The instance of the class.
             configname (str): The name of the YAML configuration file. Defaults to 'trop_rainfall_config.yml'.
-
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
-
         Raises:
             FileNotFoundError: If the specified configuration file does not exist.
         """
@@ -31,25 +28,72 @@ class ToolsClass:
         config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
         if not os.path.exists(config_path):
             self.logger.error(f"The configuration file '{configname}' does not exist.")
-
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
             machine = ConfigPath().machine
             path_to_netcdf = data[machine]['path_to_netcdf']
-            path_to_pdf = data[machine]['path_to_pdf']
-            path_to_mean = data[machine]['path_to_mean']
         except Exception as e:
             # Handle other exceptions
             self.logger.error(f"An unexpected error occurred: {e}")
             path_to_netcdf = None
-            path_to_pdf = None
-            path_to_mean = None
-
         self.logger.debug(f"NetCDF folder: {path_to_netcdf}")
+        
+        return path_to_netcdf
+    
+    def get_pdf_path(self, configname='tropical_rainfall/trop_rainfall_config.yml'):
+        """
+        Load paths from a YAML configuration file based on the specified configuration name.
+        Args:
+            self: The instance of the class.
+            configname (str): The name of the YAML configuration file. Defaults to 'trop_rainfall_config.yml'.
+        Returns:
+            tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
+        Raises:
+            FileNotFoundError: If the specified configuration file does not exist.
+        """
+        root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
+        config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
+        if not os.path.exists(config_path):
+            self.logger.error(f"The configuration file '{configname}' does not exist.")
+        try:
+            with open(config_path, 'r') as file:
+                data = yaml.safe_load(file)
+            machine = ConfigPath().machine
+            path_to_pdf = data[machine]['path_to_pdf']
+        except Exception as e:
+            # Handle other exceptions
+            self.logger.error(f"An unexpected error occurred: {e}")
+            path_to_pdf = None
         self.logger.debug(f"PDF folder: {path_to_pdf}")
         
         return path_to_netcdf, path_to_pdf, path_to_mean
+
+    def get_mean_path(self, configname='tropical_rainfall/trop_rainfall_config.yml'):
+        """
+        Load paths from a YAML configuration file based on the specified configuration name.
+        Args:
+            self: The instance of the class.
+            configname (str): The name of the YAML configuration file. Defaults to 'trop_rainfall_config.yml'.
+        Returns:
+            tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
+        Raises:
+            FileNotFoundError: If the specified configuration file does not exist.
+        """
+        root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
+        config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
+        if not os.path.exists(config_path):
+            self.logger.error(f"The configuration file '{configname}' does not exist.")
+        try:
+            with open(config_path, 'r') as file:
+                data = yaml.safe_load(file)
+            machine = ConfigPath().machine
+            path_to_mean = data[machine]['path_to_mean']
+        except Exception as e:
+            # Handle other exceptions
+            self.logger.error(f"An unexpected error occurred: {e}")
+            path_to_mean = None        
+        return path_to_mean
 
     def convert_length(self, value, from_unit, to_unit):
         """ Function to convert length units
