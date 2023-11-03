@@ -115,7 +115,8 @@ class Tropical_Rainfall:
 
     def class_attributes_update(self,             trop_lat=None,        s_time=None,          f_time=None,
                                 s_year=None,      f_year=None,          s_month=None,         f_month=None,
-                                num_of_bins=None, first_edge=None,      width_of_bin=None,    bins=0, model_variable=None, new_unit=None):
+                                num_of_bins=None, first_edge=None,      width_of_bin=None,    bins=0, 
+                                model_variable=None, new_unit=None):
         """ Function to update the class attributes.
 
         Args:
@@ -207,7 +208,7 @@ class Tropical_Rainfall:
                     coord_lon = i
         return coord_lat, coord_lon
 
-    def precipitation_rate_units_converter(self, data, model_variable=None, old_unit=None,  new_unit=None):
+    def precipitation_rate_units_converter(self, data, model_variable=None, old_unit=None, new_unit=None):
         """
         Function to convert the units of precipitation rate.
 
@@ -229,11 +230,9 @@ class Tropical_Rainfall:
                 return data
 
         if isinstance(data, (float, int, np.ndarray)) and old_unit is not None:
-            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(
-                old_unit)
+            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(old_unit)
         else:
-            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(
-                data.units)
+            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(data.units)
             old_unit = data.units
         _,   to_space_unit,   to_time_unit = self.tools.unit_splitter(self.new_unit)
 
@@ -457,7 +456,7 @@ class Tropical_Rainfall:
 
     def histogram_lowres(self,               data,                data_with_global_atributes=None,
                          weights=None,       preprocess=True,     trop_lat=None,           model_variable=None,
-                         s_time=None,        f_time=None,         s_year=None,
+                         s_time=None,        f_time=None,         s_year=None,      save=True,
                          f_year=None,        s_month=None,        f_month=None,
                          num_of_bins=None,   first_edge=None,     width_of_bin=None,       bins=0,
                          lazy=False,         create_xarray=True,  path_to_histogram=None,  name_of_file=None,
@@ -494,9 +493,6 @@ class Tropical_Rainfall:
                                      s_month=s_month,         f_month=f_month,
                                      first_edge=first_edge,   num_of_bins=num_of_bins,
                                      width_of_bin=width_of_bin)
-
-        if path_to_histogram is None and self.path_to_netcdf is not None:
-            path_to_histogram = self.path_to_netcdf+'histograms/'
 
         coord_lat, coord_lon = self.coordinate_names(data)
 
@@ -604,30 +600,33 @@ class Tropical_Rainfall:
             for variable in (None, 'counts', 'frequency', 'pdf'):
                 tprate_dataset = self.grid_attributes(
                     data=data_with_final_grid, tprate_dataset=tprate_dataset, variable=variable)
-
-            if path_to_histogram is not None and name_of_file is not None:
-                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins))
-                bins_info = bins_info.replace('.', '-')
-                self.dataset_to_netcdf(
-                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
+            if save:
+                if path_to_histogram is None and self.path_to_netcdf is not None:
+                    path_to_histogram = self.path_to_netcdf+'histograms/'
+                if path_to_histogram is not None and name_of_file is not None:
+                    bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins))
+                    bins_info = bins_info.replace('.', '-')
+                    self.dataset_to_netcdf(
+                        tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return tprate_dataset
         else:
             tprate_dataset = counts_per_bin.to_dataset(name="counts")
             tprate_dataset.attrs = data_with_global_atributes.attrs
-            counts_per_bin = self.grid_attributes(
-                data=data_with_final_grid, tprate_dataset=tprate_dataset, variable='counts')
-            tprate_dataset = self.grid_attributes(
-                data=data_with_final_grid, tprate_dataset=tprate_dataset)
-            if path_to_histogram is not None and name_of_file is not None:
-                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
-                bins_info = bins_info.replace('.', '-')
-                self.dataset_to_netcdf(
-                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
+            counts_per_bin = self.grid_attributes(data=data_with_final_grid, tprate_dataset=tprate_dataset, variable='counts')
+            tprate_dataset = self.grid_attributes(data=data_with_final_grid, tprate_dataset=tprate_dataset)
+
+            if save:
+                if path_to_histogram is None and self.path_to_netcdf is not None:
+                        path_to_histogram = self.path_to_netcdf+'histograms/'
+                if path_to_histogram is not None and name_of_file is not None:
+                    bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+                    bins_info = bins_info.replace('.', '-')
+                    self.dataset_to_netcdf(tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return counts_per_bin
 
     def histogram(self,                   data,               data_with_global_atributes=None,
                   weights=None,           preprocess=True,    trop_lat=None,              model_variable=None,
-                  s_time=None,            f_time=None,        s_year=None,
+                  s_time=None,            f_time=None,        s_year=None, save=True, 
                   f_year=None,            s_month=None,       f_month=None,
                   num_of_bins=None,       first_edge=None,    width_of_bin=None,       bins=0,
                   path_to_histogram=None, name_of_file=None,  positive=True, new_unit=None, threshold=2, test=False, seasons_bool=None):
@@ -662,8 +661,7 @@ class Tropical_Rainfall:
                                      first_edge=first_edge,   num_of_bins=num_of_bins,
                                      width_of_bin=width_of_bin)
 
-        if path_to_histogram is None and self.path_to_netcdf is not None:
-            path_to_histogram = self.path_to_netcdf+'histograms/'
+        
 
         data_original = data
         if preprocess:
@@ -799,11 +797,15 @@ class Tropical_Rainfall:
                     mean_from_hist)
                 tprate_dataset[variable].attrs['relative_discrepancy'] = float(
                     relative_discrepancy)
-        if path_to_histogram is not None and name_of_file is not None:
-            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
-            bins_info = bins_info.replace('.', '-')
-            self.dataset_to_netcdf(
-                tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
+        if save:
+            if path_to_histogram is None and self.path_to_netcdf is not None:
+                path_to_histogram = self.path_to_netcdf+'histograms/'
+
+            if path_to_histogram is not None and name_of_file is not None:
+                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+                bins_info = bins_info.replace('.', '-')
+                self.dataset_to_netcdf(
+                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
 
         return tprate_dataset
 
@@ -1299,7 +1301,7 @@ class Tropical_Rainfall:
         return mean_from_freq, mean_of_original_data, mean_of_modified_data
 
     def histogram_plot(self, data,        new_unit=None,        pdfP=False,
-                       positive=True, 
+                       positive=True,   save=True,
                        weights=None,      frequency=False,      pdf=True,
                        smooth=True,       step=False,           color_map=False,
                        linestyle=None,           ylogscale=True,      xlogscale=False,
@@ -1371,7 +1373,7 @@ class Tropical_Rainfall:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
         
         return self.plots.histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel, weights=weights, smooth=smooth, 
-               step=step, color_map=color_map, linestyle=linestyle, ylogscale=ylogscale, xlogscale=xlogscale, color=color, 
+               step=step, color_map=color_map, linestyle=linestyle, ylogscale=ylogscale, xlogscale=xlogscale, color=color, save=save,
                figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
                pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
 
@@ -1587,7 +1589,7 @@ class Tropical_Rainfall:
             return average_dataset
 
     def plot_of_average(self, data=None,
-                        ymax=12,                   fontsize=None, pad=15,
+                        ymax=12,                   fontsize=None, pad=15, save=True,
                         trop_lat=None,             get_mean=True,         get_median=False,
                         legend='_Hidden',          figsize=None,          linestyle=None,
                         maxticknum=12,             color='tab:blue',      model_variable=None,
@@ -1673,7 +1675,7 @@ class Tropical_Rainfall:
 
         return self.plots.plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize, pad=pad, y_lim_max=y_lim_max,
                     legend=legend, figsize=figsize, linestyle=linestyle, maxticknum=maxticknum, color=color, ylogscale=ylogscale, 
-                    xlogscale=xlogscale, loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf, 
+                    xlogscale=xlogscale, loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf, save=save,
                     pdf_format=pdf_format)
 
 
@@ -1862,7 +1864,7 @@ class Tropical_Rainfall:
             return months
 
     def plot_bias(self,         data,         preprocess=True,                  seasons_bool=True,
-                  dataset_2=None,             model_variable=None,          figsize=None,
+                  dataset_2=None,             model_variable=None,          figsize=None, save=True,
                   trop_lat=None,              plot_title=None,                  new_unit=None,
                   vmin=None,                  vmax=None,                        path_to_pdf=None,
                   name_of_file='',          pdf_format=True):
@@ -1886,13 +1888,13 @@ class Tropical_Rainfall:
             The pyplot figure in the PDF format
         """
         self.plot_seasons_or_months(data,                         preprocess=preprocess,            seasons_bool=seasons_bool,
-                                    dataset_2=dataset_2,          model_variable=model_variable,    figsize=figsize,
+                                    dataset_2=dataset_2,          model_variable=model_variable,    figsize=figsize, save=save,
                                     trop_lat=trop_lat,            plot_title=plot_title,            new_unit=new_unit,
                                     vmin=vmin,                    vmax=vmax,                        path_to_pdf=path_to_pdf,
                                     name_of_file=name_of_file,    pdf_format=pdf_format)
 
     def plot_seasons_or_months(self,     data,             preprocess=True,                  seasons_bool=True,
-                               dataset_2=None,             model_variable=None,          figsize=None,
+                               dataset_2=None,             model_variable=None,          figsize=None, save=True,
                                trop_lat=None,              plot_title=None,                  new_unit=None,
                                vmin=None,                  vmax=None,                        get_mean=True, percent95_level=False,
                                path_to_pdf=None,           name_of_file='',                pdf_format=True, path_to_netcdf=None,
@@ -1976,7 +1978,7 @@ class Tropical_Rainfall:
             else:
                 path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_months.pdf'
         return self.plots.plot_seasons_or_months(data=data, cbarlabel=cbarlabel, seasons=seasons, months=months,
-                          figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax,
+                          figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax, save=save,
                           path_to_pdf=path_to_pdf, pdf_format=pdf_format)
                 
     def savefig(self, path_to_pdf=None, pdf_format=True):
@@ -2109,7 +2111,7 @@ class Tropical_Rainfall:
         return lonmin, lonmax, latmin, latmax
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
-            pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False,
+            pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False, save=True,
             model_variable=None, figsize=None, number_of_axe_ticks=None, number_of_bar_ticks=None, fontsize=None,
             trop_lat=None, plot_title=None, new_unit=None,
             vmin=None, vmax=None, time_selection='01',
@@ -2192,7 +2194,7 @@ class Tropical_Rainfall:
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_map.pdf'
 
-        return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, cmap=cmap, fontsize=fontsize,
+        return self.plots.map(data=data, titles=titles, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, cmap=cmap, fontsize=fontsize, save=save,
                    model_variable=self.model_variable, figsize=figsize, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
                    plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 

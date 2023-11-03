@@ -120,7 +120,7 @@ class PlottingClass:
 
     def histogram_plot(self, x, data, positive=True, xlabel='', ylabel='',
                    weights=None, smooth=None, step=None, color_map=None,
-                   linestyle=None, ylogscale=None, xlogscale=None,
+                   linestyle=None, ylogscale=None, xlogscale=None, save=True,
                    color='tab:blue', figsize=None, legend='_Hidden',
                    plot_title=None, loc='upper right',
                    add=None, fig=None, path_to_pdf=None,
@@ -204,13 +204,13 @@ class PlottingClass:
 
         if xmax is not None:
             plt.xlim([0, xmax])
-        if isinstance(self.path_to_pdf, str):
+        if save and isinstance(self.path_to_pdf, str):
             self.savefig(self.path_to_pdf, self.pdf_format)
         return {fig, ax}
 
     def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None, number_of_axe_ticks=None,
                         legend='_Hidden', figsize=None, linestyle=None, maxticknum=12, color='tab:blue', ylogscale=None, 
-                        xlogscale=None, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, 
+                        xlogscale=None, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, save=True,
                         pdf_format=None):
         """
         Make a plot with different y-axes using a second axis object.
@@ -382,7 +382,7 @@ class PlottingClass:
             plt.yscale('log') if self.ylogscale else None
             plt.xscale('log') if self.xlogscale else None
 
-        if isinstance(self.path_to_pdf, str):
+        if save and isinstance(self.path_to_pdf, str):
             self.savefig(self.path_to_pdf, self.pdf_format)
 
         if 'Dataset' in str(type(data)):
@@ -391,7 +391,7 @@ class PlottingClass:
             return [fig,  ax]
         
 
-    def plot_seasons_or_months(self, data, cbarlabel=None, seasons=None, months=None, cmap='coolwarm',
+    def plot_seasons_or_months(self, data, cbarlabel=None, seasons=None, months=None, cmap='coolwarm', save=True,
                             figsize=None, plot_title=None,  vmin=None, vmax=None, fontsize=None, linestyle=None,
                             path_to_pdf=None, pdf_format=None):
         """ Function to plot seasonal data.
@@ -484,7 +484,7 @@ class PlottingClass:
         if plot_title is not None:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
-        if isinstance(self.path_to_pdf, str):
+        if save and isinstance(self.path_to_pdf, str):
             self.savefig(self.path_to_pdf, self.pdf_format)
 
 
@@ -527,7 +527,7 @@ class PlottingClass:
         return clevs #ticks#, 
 
 
-    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
+    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None, save=True,
             model_variable=None, figsize=None,  number_of_axe_ticks=None, number_of_bar_ticks=None, cbarlabel='',
             plot_title=None, vmin=None, vmax=None, path_to_pdf=None, pdf_format=None,
             fontsize=None):
@@ -627,7 +627,7 @@ class PlottingClass:
         if plot_title is not None:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
-        if isinstance(self.path_to_pdf, str):
+        if save and isinstance(self.path_to_pdf, str):
             self.savefig(self.path_to_pdf, self.pdf_format)
 
     """
