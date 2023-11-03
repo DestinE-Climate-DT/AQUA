@@ -317,7 +317,7 @@ class Tropical_Rainfall:
                 self.s_time = self.tools.split_time(self.s_time)
                 self.logger.debug("The selected time is {}".format(self.s_time))
                 data = data.sel(time=slice(self.s_time))
-                
+
         return data
 
     def dataset_into_1d(self, data, model_variable=None, sort=False):
@@ -594,9 +594,6 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit,
                                      s_time=s_time, f_time=f_time, s_year=s_year, f_year=f_year,s_month=s_month, f_month=f_month,
                                      first_edge=first_edge, num_of_bins=num_of_bins, width_of_bin=width_of_bin)
-
-        
-
         data_original = data
         if preprocess:
             data = self.preprocessing(data, preprocess=preprocess,
@@ -704,10 +701,8 @@ class Tropical_Rainfall:
             unit = data.units
         else:
             unit = self.new_unit
-        self.logger.debug('The mean of the data: {}{}'
-                          .format(mean_original, unit))
-        self.logger.debug('The mean of the histogram: {}{}'
-                          .format(mean_from_hist, unit))
+        self.logger.debug('The mean of the data: {}{}'.format(mean_original, unit))
+        self.logger.debug('The mean of the histogram: {}{}'.format(mean_from_hist, unit))
         if relative_discrepancy > threshold:
             self.logger.warning('The difference between the mean of the data and the mean of the histogram is greater than the threshold. \n \
                                 Increase the number of bins and decrease the width of the bins.')
@@ -716,20 +711,14 @@ class Tropical_Rainfall:
                 data=data_with_final_grid, tprate_dataset=tprate_dataset, variable=variable)
             if variable is None:
                 tprate_dataset.attrs['units'] = tprate_dataset.counts.units
-                tprate_dataset.attrs['mean_of_original_data'] = float(
-                    mean_original)
-                tprate_dataset.attrs['mean_of_histogram'] = float(
-                    mean_from_hist)
-                tprate_dataset.attrs['relative_discrepancy'] = float(
-                    relative_discrepancy)
+                tprate_dataset.attrs['mean_of_original_data'] = float(mean_original)
+                tprate_dataset.attrs['mean_of_histogram'] = float(mean_from_hist)
+                tprate_dataset.attrs['relative_discrepancy'] = float(relative_discrepancy)
 
             else:
-                tprate_dataset[variable].attrs['mean_of_original_data'] = float(
-                    mean_original)
-                tprate_dataset[variable].attrs['mean_of_histogram'] = float(
-                    mean_from_hist)
-                tprate_dataset[variable].attrs['relative_discrepancy'] = float(
-                    relative_discrepancy)
+                tprate_dataset[variable].attrs['mean_of_original_data'] = float(mean_original)
+                tprate_dataset[variable].attrs['mean_of_histogram'] = float(mean_from_hist)
+                tprate_dataset[variable].attrs['relative_discrepancy'] = float(relative_discrepancy)
         if save:
             if path_to_histogram is None and self.path_to_netcdf is not None:
                 path_to_histogram = self.path_to_netcdf+'histograms/'
@@ -760,7 +749,7 @@ class Tropical_Rainfall:
             if name_of_file is None:
                 name_of_file = '_'
             time_band = dataset.attrs['time_band']
-            # self.logger.debug('Time band is {}'.format(time_band))
+            self.logger.debug('Time band is {}'.format(time_band))
             try:
                 name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[
                     0] + '_' + re.split(":", re.split(", ", time_band)[1])[0] + '_' + re.split("=", re.split(", ", time_band)[2])[1]
@@ -803,11 +792,8 @@ class Tropical_Rainfall:
             time_band = 'None'
         try:
             if data[coord_lat].size > 1:
-                latitude_step = data[coord_lat][1].values - \
-                    data[coord_lat][0].values
-                lat_band = str(data[coord_lat][0].values)+', ' + \
-                    str(data[coord_lat][-1].values) + \
-                    ', freq='+str(latitude_step)
+                latitude_step = data[coord_lat][1].values - data[coord_lat][0].values
+                lat_band = str(data[coord_lat][0].values)+', ' + str(data[coord_lat][-1].values) + ', freq='+str(latitude_step)
             else:
                 lat_band = data[coord_lat].values
                 latitude_step = 'None'
@@ -816,11 +802,8 @@ class Tropical_Rainfall:
             latitude_step = 'None'
         try:
             if data[coord_lon].size > 1:
-                longitude_step = data[coord_lon][1].values - \
-                    data[coord_lon][0].values
-                lon_band = str(data[coord_lon][0].values)+', ' + \
-                    str(data[coord_lon][-1].values) + \
-                    ', freq='+str(longitude_step)
+                longitude_step = data[coord_lon][1].values - data[coord_lon][0].values
+                lon_band = str(data[coord_lon][0].values)+', ' + str(data[coord_lon][-1].values) + ', freq='+str(longitude_step)
             else:
                 longitude_step = 'None'
                 lon_band = data[coord_lon].values
@@ -862,25 +845,20 @@ class Tropical_Rainfall:
         if path_to_histogram is None and self.path_to_netcdf is not None:
             path_to_histogram = self.path_to_netcdf+'histograms/'
 
-        hist_frequency = self.convert_counts_to_frequency(
-            tprate_dataset.counts,  test=test)
+        hist_frequency = self.convert_counts_to_frequency(tprate_dataset.counts,  test=test)
         tprate_dataset['frequency'] = hist_frequency
 
-        hist_pdf = self.convert_counts_to_pdf(
-            tprate_dataset.counts,  test=test)
+        hist_pdf = self.convert_counts_to_pdf(tprate_dataset.counts,  test=test)
         tprate_dataset['pdf'] = hist_pdf
 
-        hist_pdfP = self.convert_counts_to_pdfP(
-            tprate_dataset.counts,  test=test)
+        hist_pdfP = self.convert_counts_to_pdfP(tprate_dataset.counts,  test=test)
         tprate_dataset['pdfP'] = hist_pdfP
 
         if label is not None:
-            hist_frequency = self.convert_counts_to_frequency(
-                tprate_dataset['counts'+label],  test=test)
+            hist_frequency = self.convert_counts_to_frequency(tprate_dataset['counts'+label],  test=test)
             tprate_dataset['frequency'+label] = hist_frequency
 
-            hist_pdf = self.convert_counts_to_pdf(
-                tprate_dataset['counts'+label],  test=test)
+            hist_pdf = self.convert_counts_to_pdf(tprate_dataset['counts'+label],  test=test)
             tprate_dataset['pdf'+label] = hist_pdf
         if path_to_histogram is not None and name_of_file is not None:
             if isinstance(self.bins, int):
@@ -896,16 +874,12 @@ class Tropical_Rainfall:
 
     def open_dataset(self, path_to_netcdf=None):
         """ Function to load a histogram dataset from a file using pickle.
-
         Args:
             path_to_netcdf (str):       The path to the dataset file.
-
         Returns:
             object:                     The loaded histogram dataset.
-
         Raises:
             FileNotFoundError:          If the specified dataset file is not found.
-
         """
         try:
             dataset = xr.open_dataset(path_to_netcdf)
@@ -916,25 +890,21 @@ class Tropical_Rainfall:
 
     def merge_two_datasets(self, tprate_dataset_1=None, tprate_dataset_2=None,  test=False):
         """ Function to merge two datasets.
-
         Args:
             tprate_dataset_1 (xarray, optional):    The first dataset.     Defaults to None.
             tprate_dataset_2 (xarray, optional):    The second dataset.    Defaults to None.
-
         Returns:
             xarray:     The xarray.Dataset with the merged data.
         """
 
         if isinstance(tprate_dataset_1, xr.Dataset) and isinstance(tprate_dataset_2, xr.Dataset):
             dataset_3 = tprate_dataset_1.copy(deep=True)
-            dataset_3.attrs = {**tprate_dataset_1.attrs,
-                               **tprate_dataset_2.attrs}
+            dataset_3.attrs = {**tprate_dataset_1.attrs, **tprate_dataset_2.attrs}
 
             for attribute in tprate_dataset_1.attrs:
                 try:
                     if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute] and attribute not in 'time_band':
-                        dataset_3.attrs[attribute] = str(
-                            tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                        dataset_3.attrs[attribute] = str(tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
                     elif attribute in 'time_band':
                         dataset_3.attrs['time_band_history'] = str(
                             tprate_dataset_1.attrs['time_band']) + ';\n '+str(tprate_dataset_2.attrs['time_band'])
@@ -944,63 +914,47 @@ class Tropical_Rainfall:
                                     tprate_dataset_1.attrs['time_band'])
                             else:
                                 if np.datetime64(tprate_dataset_2.time_band) > np.datetime64(tprate_dataset_1.time_band):
-                                    timedelta = np.datetime64(
-                                        tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
+                                    timedelta = np.datetime64(tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
                                     tprate_dataset_1_sm = tprate_dataset_1
                                     tprate_dataset_2_bg = tprate_dataset_2
                                 elif np.datetime64(tprate_dataset_2.time_band) < np.datetime64(tprate_dataset_1.time_band):
-                                    timedelta = np.datetime64(
-                                        tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
+                                    timedelta = np.datetime64(tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
                                     tprate_dataset_1_sm = tprate_dataset_2
                                     tprate_dataset_2_bg = tprate_dataset_1
 
                                 days = timedelta / np.timedelta64(1, 'D')
                                 if days < 1:
                                     hrs = timedelta / np.timedelta64(1, 'h')
-                                    dataset_3.attrs['time_band'] = str(
-                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
+                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
                                 elif days == 1:
-                                    dataset_3.attrs['time_band'] = str(
-                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
+                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
                                 elif days < 32 and days > 27:
-                                    dataset_3.attrs['time_band'] = str(
-                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
+                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
                                 elif days < 367 and days > 364:
-                                    dataset_3.attrs['time_band'] = str(
-                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
+                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
                                 else:
-                                    dataset_3.attrs['time_band'] = str(
-                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
+                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
                         else:
                             if tprate_dataset_1.time_band.split(',')[2] == tprate_dataset_2.time_band.split(',')[2]:
                                 if np.datetime64(tprate_dataset_1.time_band.split(',')[0]) < np.datetime64(tprate_dataset_2.time_band.split(',')[0]):
                                     if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
-                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(
-                                            ',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
                                     else:
-                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(
-                                            ',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
                                 else:
                                     if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
-                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(
-                                            ',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
                                     else:
-                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(
-                                            ',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
 
                 except ValueError:
                     if tprate_dataset_1.attrs[attribute].all != tprate_dataset_2.attrs[attribute].all:
-                        dataset_3.attrs[attribute] = str(
-                            tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                        dataset_3.attrs[attribute] = str(tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
 
-            dataset_3.counts.values = tprate_dataset_1.counts.values + \
-                tprate_dataset_2.counts.values
-            dataset_3.counts.attrs['size_of_the_data'] = tprate_dataset_1.counts.size_of_the_data + \
-                tprate_dataset_2.counts.size_of_the_data
-            dataset_3.frequency.values = self.convert_counts_to_frequency(
-                dataset_3.counts,  test=test)
-            dataset_3.pdf.values = self.convert_counts_to_pdf(
-                dataset_3.counts,  test=test)
+            dataset_3.counts.values = tprate_dataset_1.counts.values + tprate_dataset_2.counts.values
+            dataset_3.counts.attrs['size_of_the_data'] = tprate_dataset_1.counts.size_of_the_data + tprate_dataset_2.counts.size_of_the_data
+            dataset_3.frequency.values = self.convert_counts_to_frequency(dataset_3.counts,  test=test)
+            dataset_3.pdf.values = self.convert_counts_to_pdf(dataset_3.counts,  test=test)
 
             for variable in ('counts', 'frequency', 'pdf'):
                 for attribute in tprate_dataset_1.counts.attrs:
@@ -1020,12 +974,10 @@ class Tropical_Rainfall:
 
     def merge_list_of_histograms(self, path_to_histograms=None, multi=None, seasons_bool=False, all=False, test=False, tqdm=True):
         """ Function to merge list of histograms.
-
         Args:
             path_to_histograms (str, optional):     The path to the list of histograms.     Defaults to None.
             multi (int, optional):                  The number of histograms to merge.      Defaults to None.
             all (bool, optional):                   If True, all histograms in the repository will be merged. Defaults to False.
-
         Returns:
             xarray: The xarray.Dataset with the merged data.
         """
@@ -1887,11 +1839,7 @@ class Tropical_Rainfall:
                     except KeyError:
                         self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
                 else:
-                    try:
-                        time_selection = time_selection + '-' + '01'
-                        data.sel(time=time_selection)
-                    except KeyError:
-                        time_selection = time_selection + '-' + '25'
+                    time_selection = time_selection + '-' + str(data.sel(time = time_selection)['time.day'][0].values)
                     self.logger.debug(f'The input time value for selection does not contain a day. The new time value for selection is: {time_selection}')
         self.logger.info(f'The time value for selection is: {time_selection}')
         return time_selection
