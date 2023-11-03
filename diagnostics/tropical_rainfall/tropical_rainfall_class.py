@@ -87,8 +87,7 @@ class Tropical_Rainfall:
         self.s_month = s_month
         self.f_month = f_month
         self.num_of_bins = num_of_bins
-        self.first_edge = first_edge
-        self.width_of_bin = width_of_bin
+        self.first_edge = first_edge    
         self.bins = bins
         self.new_unit = new_unit
         self.model_variable = model_variable
@@ -96,6 +95,10 @@ class Tropical_Rainfall:
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
         self.plots = PlottingClass(loglevel=loglevel)
         self.tools = ToolsClass()
+        if width_of_bin is None:
+            self.width_of_bin = self.precipitation_rate_units_converter(0.2, old_unit='mm/day', new_unit=new_unit)
+        else:
+            self.width_of_bin = width_of_bin
 
     def class_attributes_update(self,             trop_lat=None,        s_time=None,          f_time=None,
                                 s_year=None,      f_year=None,          s_month=None,         f_month=None,
@@ -564,8 +567,7 @@ class Tropical_Rainfall:
         if not lazy and create_xarray:
             tprate_dataset = counts_per_bin.to_dataset(name="counts")
             tprate_dataset.attrs = data_with_global_atributes.attrs
-            tprate_dataset = self.add_frequency_and_pdf(
-                tprate_dataset=tprate_dataset, test=test)
+            tprate_dataset = self.add_frequency_and_pdf(tprate_dataset=tprate_dataset, test=test)
 
             mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
                                                                                     model_variable=self.model_variable, trop_lat=self.trop_lat, positive=positive)
