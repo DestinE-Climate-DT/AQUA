@@ -43,6 +43,7 @@ from aqua.util import create_folder
 from .tropical_rainfall_tools import ToolsClass
 from .tropical_rainfall_plots import PlottingClass 
 
+
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
 
@@ -303,61 +304,20 @@ class Tropical_Rainfall:
             data = data.where(data['time.month'] >= self.s_month, drop=True)
             data = data.where(data['time.month'] <= self.f_month, drop=True)
 
+        
         if isinstance(self.s_time, str) and isinstance(self.f_time, str):
-            if s_time is not None and f_time is not None:
-                _s = re.split(r"[^a-zA-Z0-9\s]", s_time)
-                _f = re.split(r"[^a-zA-Z0-9\s]", f_time)
-                if len(_s) == 1:
-                    s_time = _s[0]
-                elif len(_f) == 1:
-                    f_time = _f[0]
+            if self.s_time is not None and self.f_time is not None:
+                self.s_time = self.tools.split_time(self.s_time)
+                self.f_time = self.tools.split_time(self.f_time)
+            self.logger.debug("The starting and final times are {} and {}".format(self.s_time, self.f_time))
+            data = data.sel(time=slice(self.s_time, self.f_time))
 
-                elif len(_s) == 2:
-                    s_time = _s[0]+'-'+_s[1]
-                elif len(_f) == 2:
-                    f_time = _f[0]+'-'+_f[1]
-
-                elif len(_s) == 3:
-                    s_time = _s[0]+'-' + _s[1] + '-'+_s[2]
-                elif len(_f) == 3:
-                    f_time = _f[0]+'-' + _f[1] + '-' + _f[2]
-
-                elif len(_s) == 4:
-                    s_time = _s[0]+'-' + _s[1] + '-'+_s[2]+'-'+_s[3]
-                elif len(_f) == 4:
-                    f_time = _f[0]+'-' + _f[1] + '-' + _f[2] + '-' + _f[3]
-
-                elif len(_s) == 5:
-                    s_time = _s[0] + '-' + _s[1] + \
-                        '-'+_s[2]+'-'+_s[3] + '-'+_s[4]
-                elif len(_f) == 5:
-                    f_time = _f[0] + '-' + _f[1] + '-' + \
-                        _f[2] + '-' + _f[3] + '-' + _f[4]
-                else:
-                    raise ValueError(
-                        "Unknown format of time. Try one more time")
-            data = data.sel(time=slice(s_time, f_time))
         elif self.s_time is not None and self.f_time is None:
-            if isinstance(s_year, str):
-                _temp = re.split(r"[^a-zA-Z0-9\s]", s_time)
-                if len(_temp) == 1:
-                    time = _temp[0]
-                elif len(_temp) == 2:
-                    time = _temp[0]+'-'+_temp[1]
-                elif len(_temp) == 3:
-                    time = _temp[0]+'-'+_temp[1]+'-'+_temp[2]
-                elif len(_temp) == 3:
-                    time = _temp[0]+'-'+_temp[1]+'-'+_temp[2]+'-'+_temp[3]
-                elif len(_temp) == 4:
-                    time = _temp[0]+'-'+_temp[1]+'-' + \
-                        _temp[2]+'-'+_temp[3]+'-'+_temp[4]
-                elif len(_temp) == 5:
-                    time = _temp[0]+'-'+_temp[1]+'-'+_temp[2] + \
-                        '-'+_temp[3]+'-'+_temp[4]+'-'+_temp[5]
-                else:
-                    raise ValueError(
-                        "Unknown format of time. Try one more time")
-                data = data.sel(time=slice(time))
+            if isinstance(self.s_time, str):
+                self.s_time = self.tools.split_time(self.s_time)
+                self.logger.debug("The selected time is {}".format(self.s_time))
+                data = data.sel(time=slice(self.s_time))
+                
         return data
 
     def dataset_into_1d(self, data, model_variable=None, sort=False):

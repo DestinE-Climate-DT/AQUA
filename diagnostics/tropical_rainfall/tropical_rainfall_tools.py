@@ -15,6 +15,12 @@ class ToolsClass:
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Tools Func.')
 
+    def split_time(self, time_str):
+        parts = re.split(r"[^a-zA-Z0-9\s]", time_str)
+        if len(parts) <= 5:
+            time_str = '-'.join(parts[:len(parts)])
+        return time_str
+        
     def get_netcdf_path(self, configname=full_path_to_config):
         """
         Load paths from a YAML configuration file based on the specified configuration name.
