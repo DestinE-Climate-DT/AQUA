@@ -184,10 +184,8 @@ def test_hist_figure_load_to_memory(histogram_output):
 
     hist = histogram_output
     diag = Tropical_Rainfall()
-    diag.histogram_plot(hist, path_to_pdf=str(
-        path_to_pdf) + 'test_hist_fig_saving.pdf')
-    files = [f for f in listdir(path_to_pdf) if isfile(join(path_to_pdf, f))]
-    assert 'test_hist_fig_saving.pdf' in files
+    diag.histogram_plot(hist, path_to_pdf=path_to_pdf, name_of_file='test_hist_fig_saving')
+    assert 'test_hist_fig_saving' in listdir(path_to_pdf)[0]
 
 
 @pytest.mark.tropical_rainfall
