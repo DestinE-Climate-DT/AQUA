@@ -6,7 +6,7 @@ import seaborn as sns
 
 from aqua.util import create_folder
 from aqua.logger import log_configure
-from .tropical_rainfall_func import ToolsClass
+from .tropical_rainfall_tools import ToolsClass
 
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker

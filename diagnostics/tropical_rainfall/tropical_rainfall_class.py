@@ -43,8 +43,8 @@ from cartopy.util import add_cyclic_point
 from aqua import Reader
 from aqua.util import create_folder
 
-from .tropical_rainfall_func import ToolsClass
-from .tropical_rainfall_plot import PlottingClass 
+from .tropical_rainfall_tools import ToolsClass
+from .tropical_rainfall_plots import PlottingClass 
 
 class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -58,7 +58,7 @@ class Tropical_Rainfall:
                  s_month=None,
                  f_month=None,
                  num_of_bins=None,
-                 first_edge=None,
+                 first_edge=0,
                  width_of_bin=None,
                  bins=0,
                  new_unit='mm/day',
