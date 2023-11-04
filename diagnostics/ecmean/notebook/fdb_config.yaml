@@ -2,9 +2,9 @@
   ---
   type: local
   engine: toc
-  schema: /pfs/lustrep3/scratch/project_465000454/bjimenez/a08t/fdb/rd:a08t:monr:19500101:0000:g/schema
+  schema: /gpfs/projects/bsc32/bsc32655/Earth/DestinE/bundle/DE340_CY48R1_BSC_experimental/RAPS_DE340/bin/SLURM/mn4/fdb/rd:p000:monr:19900101:0000:g/schema
   spaces:
   - handler: Default
     roots:
-    - path: /pfs/lustrep3/scratch/project_465000454/bjimenez/a08t/fdb/
+    - path: /gpfs/projects/bsc32/bsc32655/Earth/DestinE/bundle/DE340_CY48R1_BSC_experimental/RAPS_DE340/bin/SLURM/mn4/fdb/
   

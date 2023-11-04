@@ -1,0 +1,901 @@
+Variable,Season,Location,Value,ensemble,machine
+psl,ALL,Global,4.483,p000,lumi
+psl,ALL,North Midlat,5.783,p000,lumi
+psl,ALL,Tropical,4.953,p000,lumi
+psl,ALL,South Midlat,2.244,p000,lumi
+psl,DJF,Global,1.437,p000,lumi
+psl,DJF,North Midlat,1.373,p000,lumi
+psl,DJF,Tropical,1.724,p000,lumi
+psl,DJF,South Midlat,0.925,p000,lumi
+psl,JJA,Global,4.803,p000,lumi
+psl,JJA,North Midlat,5.847,p000,lumi
+psl,JJA,Tropical,5.973,p000,lumi
+psl,JJA,South Midlat,1.42,p000,lumi
+tas,ALL,Global,42.904,p000,lumi
+tas,ALL,North Midlat,31.632,p000,lumi
+tas,ALL,Tropical,55.713,p000,lumi
+tas,ALL,South Midlat,19.298,p000,lumi
+tas,DJF,Global,21.887,p000,lumi
+tas,DJF,North Midlat,10.493,p000,lumi
+tas,DJF,Tropical,33.525,p000,lumi
+tas,DJF,South Midlat,14.109,p000,lumi
+tas,JJA,Global,45.425,p000,lumi
+tas,JJA,North Midlat,51.434,p000,lumi
+tas,JJA,Tropical,42.236,p000,lumi
+tas,JJA,South Midlat,13.249,p000,lumi
+pr,ALL,Global,,p000,lumi
+pr,ALL,North Midlat,,p000,lumi
+pr,ALL,Tropical,,p000,lumi
+pr,ALL,South Midlat,,p000,lumi
+pr,DJF,Global,,p000,lumi
+pr,DJF,North Midlat,,p000,lumi
+pr,DJF,Tropical,,p000,lumi
+pr,DJF,South Midlat,,p000,lumi
+pr,JJA,Global,,p000,lumi
+pr,JJA,North Midlat,,p000,lumi
+pr,JJA,Tropical,,p000,lumi
+pr,JJA,South Midlat,,p000,lumi
+ta,ALL,Global,30.091,p000,lumi
+ta,ALL,North Midlat,65.608,p000,lumi
+ta,ALL,Tropical,15.9,p000,lumi
+ta,ALL,South Midlat,22.955,p000,lumi
+ta,DJF,Global,13.582,p000,lumi
+ta,DJF,North Midlat,10.225,p000,lumi
+ta,DJF,Tropical,7.724,p000,lumi
+ta,DJF,South Midlat,28.655,p000,lumi
+ta,JJA,Global,43.251,p000,lumi
+ta,JJA,North Midlat,117.364,p000,lumi
+ta,JJA,Tropical,23.048,p000,lumi
+ta,JJA,South Midlat,9.544,p000,lumi
+ua,ALL,Global,3.728,p000,lumi
+ua,ALL,North Midlat,3.755,p000,lumi
+ua,ALL,Tropical,4.382,p000,lumi
+ua,ALL,South Midlat,2.394,p000,lumi
+ua,DJF,Global,1.786,p000,lumi
+ua,DJF,North Midlat,0.794,p000,lumi
+ua,DJF,Tropical,1.592,p000,lumi
+ua,DJF,South Midlat,3.168,p000,lumi
+ua,JJA,Global,12.107,p000,lumi
+ua,JJA,North Midlat,6.541,p000,lumi
+ua,JJA,Tropical,20.525,p000,lumi
+ua,JJA,South Midlat,0.837,p000,lumi
+va,ALL,Global,4.514,p000,lumi
+va,ALL,North Midlat,2.728,p000,lumi
+va,ALL,Tropical,3.222,p000,lumi
+va,ALL,South Midlat,8.885,p000,lumi
+va,DJF,Global,1.795,p000,lumi
+va,DJF,North Midlat,0.872,p000,lumi
+va,DJF,Tropical,1.323,p000,lumi
+va,DJF,South Midlat,3.662,p000,lumi
+va,JJA,Global,6.243,p000,lumi
+va,JJA,North Midlat,3.093,p000,lumi
+va,JJA,Tropical,8.67,p000,lumi
+va,JJA,South Midlat,4.536,p000,lumi
+hus,ALL,Global,15.418,p000,lumi
+hus,ALL,North Midlat,28.591,p000,lumi
+hus,ALL,Tropical,10.902,p000,lumi
+hus,ALL,South Midlat,11.277,p000,lumi
+hus,DJF,Global,4.655,p000,lumi
+hus,DJF,North Midlat,3.561,p000,lumi
+hus,DJF,Tropical,3.545,p000,lumi
+hus,DJF,South Midlat,7.968,p000,lumi
+hus,JJA,Global,31.24,p000,lumi
+hus,JJA,North Midlat,60.821,p000,lumi
+hus,JJA,Tropical,22.85,p000,lumi
+hus,JJA,South Midlat,18.439,p000,lumi
+sos,ALL,Global,135508001730.436,p000,lumi
+sos,ALL,North Midlat,111880968123.544,p000,lumi
+sos,ALL,Tropical,72205421501.334,p000,lumi
+sos,ALL,South Midlat,253589704658.339,p000,lumi
+sos,DJF,Global,94518550095.242,p000,lumi
+sos,DJF,North Midlat,93418536160.051,p000,lumi
+sos,DJF,Tropical,46463345043.424,p000,lumi
+sos,DJF,South Midlat,175552370834.269,p000,lumi
+sos,JJA,Global,107028154522.701,p000,lumi
+sos,JJA,North Midlat,71814921894.64,p000,lumi
+sos,JJA,Tropical,53642481213.086,p000,lumi
+sos,JJA,South Midlat,214425896941.852,p000,lumi
+siconc,ALL,Global,5.221,p000,lumi
+siconc,ALL,North Midlat,9.448,p000,lumi
+siconc,ALL,Tropical,,p000,lumi
+siconc,ALL,South Midlat,2.246,p000,lumi
+siconc,DJF,Global,5.253,p000,lumi
+siconc,DJF,North Midlat,10.012,p000,lumi
+siconc,DJF,Tropical,,p000,lumi
+siconc,DJF,South Midlat,3.18,p000,lumi
+siconc,JJA,Global,10.659,p000,lumi
+siconc,JJA,North Midlat,10.551,p000,lumi
+siconc,JJA,Tropical,,p000,lumi
+siconc,JJA,South Midlat,10.719,p000,lumi
+psl,ALL,Global,2.49,p001,lumi
+psl,ALL,North Midlat,1.763,p001,lumi
+psl,ALL,Tropical,2.99,p001,lumi
+psl,ALL,South Midlat,2.217,p001,lumi
+psl,DJF,Global,1.153,p001,lumi
+psl,DJF,North Midlat,0.607,p001,lumi
+psl,DJF,Tropical,1.4,p001,lumi
+psl,DJF,South Midlat,1.206,p001,lumi
+psl,JJA,Global,3.11,p001,lumi
+psl,JJA,North Midlat,3.371,p001,lumi
+psl,JJA,Tropical,3.946,p001,lumi
+psl,JJA,South Midlat,1.177,p001,lumi
+tas,ALL,Global,24.022,p001,lumi
+tas,ALL,North Midlat,10.918,p001,lumi
+tas,ALL,Tropical,37.203,p001,lumi
+tas,ALL,South Midlat,17.592,p001,lumi
+tas,DJF,Global,15.98,p001,lumi
+tas,DJF,North Midlat,8.276,p001,lumi
+tas,DJF,Tropical,23.569,p001,lumi
+tas,DJF,South Midlat,14.144,p001,lumi
+tas,JJA,Global,27.988,p001,lumi
+tas,JJA,North Midlat,26.047,p001,lumi
+tas,JJA,Tropical,31.295,p001,lumi
+tas,JJA,South Midlat,10.419,p001,lumi
+pr,ALL,Global,,p001,lumi
+pr,ALL,North Midlat,,p001,lumi
+pr,ALL,Tropical,,p001,lumi
+pr,ALL,South Midlat,,p001,lumi
+pr,DJF,Global,,p001,lumi
+pr,DJF,North Midlat,,p001,lumi
+pr,DJF,Tropical,,p001,lumi
+pr,DJF,South Midlat,,p001,lumi
+pr,JJA,Global,,p001,lumi
+pr,JJA,North Midlat,,p001,lumi
+pr,JJA,Tropical,,p001,lumi
+pr,JJA,South Midlat,,p001,lumi
+ta,ALL,Global,11.346,p001,lumi
+ta,ALL,North Midlat,13.675,p001,lumi
+ta,ALL,Tropical,3.644,p001,lumi
+ta,ALL,South Midlat,24.421,p001,lumi
+ta,DJF,Global,11.379,p001,lumi
+ta,DJF,North Midlat,3.317,p001,lumi
+ta,DJF,Tropical,4.949,p001,lumi
+ta,DJF,South Midlat,32.304,p001,lumi
+ta,JJA,Global,16.57,p001,lumi
+ta,JJA,North Midlat,50.224,p001,lumi
+ta,JJA,Tropical,5.48,p001,lumi
+ta,JJA,South Midlat,5.097,p001,lumi
+ua,ALL,Global,4.038,p001,lumi
+ua,ALL,North Midlat,1.94,p001,lumi
+ua,ALL,Tropical,4.43,p001,lumi
+ua,ALL,South Midlat,5.351,p001,lumi
+ua,DJF,Global,2.53,p001,lumi
+ua,DJF,North Midlat,0.406,p001,lumi
+ua,DJF,Tropical,3.057,p001,lumi
+ua,DJF,South Midlat,3.602,p001,lumi
+ua,JJA,Global,8.998,p001,lumi
+ua,JJA,North Midlat,4.27,p001,lumi
+ua,JJA,Tropical,15.184,p001,lumi
+ua,JJA,South Midlat,1.354,p001,lumi
+va,ALL,Global,3.69,p001,lumi
+va,ALL,North Midlat,2.009,p001,lumi
+va,ALL,Tropical,2.166,p001,lumi
+va,ALL,South Midlat,8.417,p001,lumi
+va,DJF,Global,2.732,p001,lumi
+va,DJF,North Midlat,0.807,p001,lumi
+va,DJF,Tropical,3.161,p001,lumi
+va,DJF,South Midlat,3.801,p001,lumi
+va,JJA,Global,4.899,p001,lumi
+va,JJA,North Midlat,2.456,p001,lumi
+va,JJA,Tropical,6.461,p001,lumi
+va,JJA,South Midlat,4.218,p001,lumi
+hus,ALL,Global,3.436,p001,lumi
+hus,ALL,North Midlat,2.528,p001,lumi
+hus,ALL,Tropical,2.711,p001,lumi
+hus,ALL,South Midlat,5.795,p001,lumi
+hus,DJF,Global,6.416,p001,lumi
+hus,DJF,North Midlat,7.682,p001,lumi
+hus,DJF,Tropical,5.047,p001,lumi
+hus,DJF,South Midlat,7.888,p001,lumi
+hus,JJA,Global,12.931,p001,lumi
+hus,JJA,North Midlat,21.031,p001,lumi
+hus,JJA,Tropical,10.447,p001,lumi
+hus,JJA,South Midlat,9.798,p001,lumi
+sos,ALL,Global,137391666851.099,p001,lumi
+sos,ALL,North Midlat,120838688047.08,p001,lumi
+sos,ALL,Tropical,73588153641.555,p001,lumi
+sos,ALL,South Midlat,252696157891.783,p001,lumi
+sos,DJF,Global,96071185042.394,p001,lumi
+sos,DJF,North Midlat,101416472775.113,p001,lumi
+sos,DJF,Tropical,47340073364.283,p001,lumi
+sos,DJF,South Midlat,174942199274.478,p001,lumi
+sos,JJA,Global,108255050656.316,p001,lumi
+sos,JJA,North Midlat,77509427672.247,p001,lumi
+sos,JJA,Tropical,54679128039.408,p001,lumi
+sos,JJA,South Midlat,213687662328.378,p001,lumi
+siconc,ALL,Global,1.119,p001,lumi
+siconc,ALL,North Midlat,1.548,p001,lumi
+siconc,ALL,Tropical,,p001,lumi
+siconc,ALL,South Midlat,0.817,p001,lumi
+siconc,DJF,Global,6.071,p001,lumi
+siconc,DJF,North Midlat,1.806,p001,lumi
+siconc,DJF,Tropical,,p001,lumi
+siconc,DJF,South Midlat,7.928,p001,lumi
+siconc,JJA,Global,3.842,p001,lumi
+siconc,JJA,North Midlat,4.407,p001,lumi
+siconc,JJA,Tropical,,p001,lumi
+siconc,JJA,South Midlat,3.528,p001,lumi
+psl,ALL,Global,2.436,p002,lumi
+psl,ALL,North Midlat,1.93,p002,lumi
+psl,ALL,Tropical,2.782,p002,lumi
+psl,ALL,South Midlat,2.25,p002,lumi
+psl,DJF,Global,1.4,p002,lumi
+psl,DJF,North Midlat,0.787,p002,lumi
+psl,DJF,Tropical,1.784,p002,lumi
+psl,DJF,South Midlat,1.245,p002,lumi
+psl,JJA,Global,2.783,p002,lumi
+psl,JJA,North Midlat,3.114,p002,lumi
+psl,JJA,Tropical,3.358,p002,lumi
+psl,JJA,South Midlat,1.3,p002,lumi
+tas,ALL,Global,23.047,p002,lumi
+tas,ALL,North Midlat,10.438,p002,lumi
+tas,ALL,Tropical,35.674,p002,lumi
+tas,ALL,South Midlat,17.54,p002,lumi
+tas,DJF,Global,15.454,p002,lumi
+tas,DJF,North Midlat,7.379,p002,lumi
+tas,DJF,Tropical,23.281,p002,lumi
+tas,DJF,South Midlat,15.115,p002,lumi
+tas,JJA,Global,28.148,p002,lumi
+tas,JJA,North Midlat,26.527,p002,lumi
+tas,JJA,Tropical,31.261,p002,lumi
+tas,JJA,South Midlat,9.177,p002,lumi
+pr,ALL,Global,,p002,lumi
+pr,ALL,North Midlat,,p002,lumi
+pr,ALL,Tropical,,p002,lumi
+pr,ALL,South Midlat,,p002,lumi
+pr,DJF,Global,,p002,lumi
+pr,DJF,North Midlat,,p002,lumi
+pr,DJF,Tropical,,p002,lumi
+pr,DJF,South Midlat,,p002,lumi
+pr,JJA,Global,,p002,lumi
+pr,JJA,North Midlat,,p002,lumi
+pr,JJA,Tropical,,p002,lumi
+pr,JJA,South Midlat,,p002,lumi
+ta,ALL,Global,11.763,p002,lumi
+ta,ALL,North Midlat,14.405,p002,lumi
+ta,ALL,Tropical,4.149,p002,lumi
+ta,ALL,South Midlat,24.35,p002,lumi
+ta,DJF,Global,11.287,p002,lumi
+ta,DJF,North Midlat,3.676,p002,lumi
+ta,DJF,Tropical,5.182,p002,lumi
+ta,DJF,South Midlat,31.108,p002,lumi
+ta,JJA,Global,18.062,p002,lumi
+ta,JJA,North Midlat,54.182,p002,lumi
+ta,JJA,Tropical,6.355,p002,lumi
+ta,JJA,South Midlat,5.357,p002,lumi
+ua,ALL,Global,3.823,p002,lumi
+ua,ALL,North Midlat,2.265,p002,lumi
+ua,ALL,Tropical,4.182,p002,lumi
+ua,ALL,South Midlat,4.662,p002,lumi
+ua,DJF,Global,2.67,p002,lumi
+ua,DJF,North Midlat,0.834,p002,lumi
+ua,DJF,Tropical,3.168,p002,lumi
+ua,DJF,South Midlat,3.509,p002,lumi
+ua,JJA,Global,9.32,p002,lumi
+ua,JJA,North Midlat,4.988,p002,lumi
+ua,JJA,Tropical,15.637,p002,lumi
+ua,JJA,South Midlat,1.016,p002,lumi
+va,ALL,Global,3.751,p002,lumi
+va,ALL,North Midlat,2.017,p002,lumi
+va,ALL,Tropical,2.225,p002,lumi
+va,ALL,South Midlat,8.536,p002,lumi
+va,DJF,Global,2.868,p002,lumi
+va,DJF,North Midlat,0.97,p002,lumi
+va,DJF,Tropical,3.325,p002,lumi
+va,DJF,South Midlat,3.852,p002,lumi
+va,JJA,Global,4.888,p002,lumi
+va,JJA,North Midlat,2.597,p002,lumi
+va,JJA,Tropical,6.313,p002,lumi
+va,JJA,South Midlat,4.331,p002,lumi
+hus,ALL,Global,3.64,p002,lumi
+hus,ALL,North Midlat,2.714,p002,lumi
+hus,ALL,Tropical,2.915,p002,lumi
+hus,ALL,South Midlat,6.014,p002,lumi
+hus,DJF,Global,6.713,p002,lumi
+hus,DJF,North Midlat,7.82,p002,lumi
+hus,DJF,Tropical,5.492,p002,lumi
+hus,DJF,South Midlat,8.047,p002,lumi
+hus,JJA,Global,13.847,p002,lumi
+hus,JJA,North Midlat,24.387,p002,lumi
+hus,JJA,Tropical,10.673,p002,lumi
+hus,JJA,South Midlat,9.652,p002,lumi
+sos,ALL,Global,137373900299.065,p002,lumi
+sos,ALL,North Midlat,120906599845.949,p002,lumi
+sos,ALL,Tropical,73558577537.114,p002,lumi
+sos,ALL,South Midlat,252654370848.591,p002,lumi
+sos,DJF,Global,96056914805.028,p002,lumi
+sos,DJF,North Midlat,101456449202.428,p002,lumi
+sos,DJF,Tropical,47320609642.204,p002,lumi
+sos,DJF,South Midlat,174908896503.122,p002,lumi
+sos,JJA,Global,108240729258.099,p002,lumi
+sos,JJA,North Midlat,77550543712.736,p002,lumi
+sos,JJA,Tropical,54657551662.844,p002,lumi
+sos,JJA,South Midlat,213657151809.626,p002,lumi
+siconc,ALL,Global,1.281,p002,lumi
+siconc,ALL,North Midlat,1.787,p002,lumi
+siconc,ALL,Tropical,,p002,lumi
+siconc,ALL,South Midlat,0.924,p002,lumi
+siconc,DJF,Global,6.537,p002,lumi
+siconc,DJF,North Midlat,2.035,p002,lumi
+siconc,DJF,Tropical,,p002,lumi
+siconc,DJF,South Midlat,8.497,p002,lumi
+siconc,JJA,Global,3.871,p002,lumi
+siconc,JJA,North Midlat,4.638,p002,lumi
+siconc,JJA,Tropical,,p002,lumi
+siconc,JJA,South Midlat,3.444,p002,lumi
+psl,ALL,Global,2.469,p003,lumi
+psl,ALL,North Midlat,2.013,p003,lumi
+psl,ALL,Tropical,2.773,p003,lumi
+psl,ALL,South Midlat,2.318,p003,lumi
+psl,DJF,Global,1.116,p003,lumi
+psl,DJF,North Midlat,0.652,p003,lumi
+psl,DJF,Tropical,1.4,p003,lumi
+psl,DJF,South Midlat,1.011,p003,lumi
+psl,JJA,Global,3.158,p003,lumi
+psl,JJA,North Midlat,4.044,p003,lumi
+psl,JJA,Tropical,3.662,p003,lumi
+psl,JJA,South Midlat,1.266,p003,lumi
+tas,ALL,Global,23.016,p003,lumi
+tas,ALL,North Midlat,10.592,p003,lumi
+tas,ALL,Tropical,35.461,p003,lumi
+tas,ALL,South Midlat,17.557,p003,lumi
+tas,DJF,Global,14.282,p003,lumi
+tas,DJF,North Midlat,6.506,p003,lumi
+tas,DJF,Tropical,21.827,p003,lumi
+tas,DJF,South Midlat,13.87,p003,lumi
+tas,JJA,Global,28.495,p003,lumi
+tas,JJA,North Midlat,27.656,p003,lumi
+tas,JJA,Tropical,30.796,p003,lumi
+tas,JJA,South Midlat,10.215,p003,lumi
+pr,ALL,Global,,p003,lumi
+pr,ALL,North Midlat,,p003,lumi
+pr,ALL,Tropical,,p003,lumi
+pr,ALL,South Midlat,,p003,lumi
+pr,DJF,Global,,p003,lumi
+pr,DJF,North Midlat,,p003,lumi
+pr,DJF,Tropical,,p003,lumi
+pr,DJF,South Midlat,,p003,lumi
+pr,JJA,Global,,p003,lumi
+pr,JJA,North Midlat,,p003,lumi
+pr,JJA,Tropical,,p003,lumi
+pr,JJA,South Midlat,,p003,lumi
+ta,ALL,Global,11.681,p003,lumi
+ta,ALL,North Midlat,16.162,p003,lumi
+ta,ALL,Tropical,3.657,p003,lumi
+ta,ALL,South Midlat,23.247,p003,lumi
+ta,DJF,Global,11.713,p003,lumi
+ta,DJF,North Midlat,3.468,p003,lumi
+ta,DJF,Tropical,5.094,p003,lumi
+ta,DJF,South Midlat,33.196,p003,lumi
+ta,JJA,Global,17.849,p003,lumi
+ta,JJA,North Midlat,54.903,p003,lumi
+ta,JJA,Tropical,5.806,p003,lumi
+ta,JJA,South Midlat,4.881,p003,lumi
+ua,ALL,Global,3.914,p003,lumi
+ua,ALL,North Midlat,3.075,p003,lumi
+ua,ALL,Tropical,4.174,p003,lumi
+ua,ALL,South Midlat,4.234,p003,lumi
+ua,DJF,Global,2.488,p003,lumi
+ua,DJF,North Midlat,0.625,p003,lumi
+ua,DJF,Tropical,2.955,p003,lumi
+ua,DJF,South Midlat,3.414,p003,lumi
+ua,JJA,Global,9.286,p003,lumi
+ua,JJA,North Midlat,5.439,p003,lumi
+ua,JJA,Tropical,15.333,p003,lumi
+ua,JJA,South Midlat,1.04,p003,lumi
+va,ALL,Global,3.706,p003,lumi
+va,ALL,North Midlat,2.079,p003,lumi
+va,ALL,Tropical,2.166,p003,lumi
+va,ALL,South Midlat,8.414,p003,lumi
+va,DJF,Global,2.684,p003,lumi
+va,DJF,North Midlat,0.736,p003,lumi
+va,DJF,Tropical,3.218,p003,lumi
+va,DJF,South Midlat,3.564,p003,lumi
+va,JJA,Global,5.215,p003,lumi
+va,JJA,North Midlat,3.471,p003,lumi
+va,JJA,Tropical,6.566,p003,lumi
+va,JJA,South Midlat,4.258,p003,lumi
+hus,ALL,Global,3.79,p003,lumi
+hus,ALL,North Midlat,3.111,p003,lumi
+hus,ALL,Tropical,3.024,p003,lumi
+hus,ALL,South Midlat,6.003,p003,lumi
+hus,DJF,Global,6.806,p003,lumi
+hus,DJF,North Midlat,7.629,p003,lumi
+hus,DJF,Tropical,5.867,p003,lumi
+hus,DJF,South Midlat,7.861,p003,lumi
+hus,JJA,Global,14.731,p003,lumi
+hus,JJA,North Midlat,25.266,p003,lumi
+hus,JJA,Tropical,10.903,p003,lumi
+hus,JJA,South Midlat,11.852,p003,lumi
+sos,ALL,Global,137391844685.454,p003,lumi
+sos,ALL,North Midlat,120746217949.864,p003,lumi
+sos,ALL,Tropical,73604641726.046,p003,lumi
+sos,ALL,South Midlat,252716382162.211,p003,lumi
+sos,DJF,Global,96050799654.823,p003,lumi
+sos,DJF,North Midlat,101286302871.213,p003,lumi
+sos,DJF,Tropical,47339798537.292,p003,lumi
+sos,DJF,South Midlat,174944256195.673,p003,lumi
+sos,JJA,Global,108266106596.562,p003,lumi
+sos,JJA,North Midlat,77463087500.435,p003,lumi
+sos,JJA,Tropical,54697152476.094,p003,lumi
+sos,JJA,South Midlat,213716388339.796,p003,lumi
+siconc,ALL,Global,1.431,p003,lumi
+siconc,ALL,North Midlat,2.353,p003,lumi
+siconc,ALL,Tropical,,p003,lumi
+siconc,ALL,South Midlat,0.782,p003,lumi
+siconc,DJF,Global,6.13,p003,lumi
+siconc,DJF,North Midlat,2.493,p003,lumi
+siconc,DJF,Tropical,,p003,lumi
+siconc,DJF,South Midlat,7.714,p003,lumi
+siconc,JJA,Global,4.272,p003,lumi
+siconc,JJA,North Midlat,5.574,p003,lumi
+siconc,JJA,Tropical,,p003,lumi
+siconc,JJA,South Midlat,3.547,p003,lumi
+psl,ALL,Global,2.389,p004,lumi
+psl,ALL,North Midlat,1.694,p004,lumi
+psl,ALL,Tropical,2.749,p004,lumi
+psl,ALL,South Midlat,2.363,p004,lumi
+psl,DJF,Global,1.218,p004,lumi
+psl,DJF,North Midlat,0.691,p004,lumi
+psl,DJF,Tropical,1.419,p004,lumi
+psl,DJF,South Midlat,1.343,p004,lumi
+psl,JJA,Global,2.943,p004,lumi
+psl,JJA,North Midlat,3.288,p004,lumi
+psl,JJA,Tropical,3.656,p004,lumi
+psl,JJA,South Midlat,1.174,p004,lumi
+tas,ALL,Global,23.366,p004,lumi
+tas,ALL,North Midlat,10.775,p004,lumi
+tas,ALL,Tropical,36.044,p004,lumi
+tas,ALL,South Midlat,17.034,p004,lumi
+tas,DJF,Global,15.12,p004,lumi
+tas,DJF,North Midlat,7.455,p004,lumi
+tas,DJF,Tropical,22.607,p004,lumi
+tas,DJF,South Midlat,14.083,p004,lumi
+tas,JJA,Global,28.171,p004,lumi
+tas,JJA,North Midlat,26.406,p004,lumi
+tas,JJA,Tropical,31.327,p004,lumi
+tas,JJA,South Midlat,10.376,p004,lumi
+pr,ALL,Global,,p004,lumi
+pr,ALL,North Midlat,,p004,lumi
+pr,ALL,Tropical,,p004,lumi
+pr,ALL,South Midlat,,p004,lumi
+pr,DJF,Global,,p004,lumi
+pr,DJF,North Midlat,,p004,lumi
+pr,DJF,Tropical,,p004,lumi
+pr,DJF,South Midlat,,p004,lumi
+pr,JJA,Global,,p004,lumi
+pr,JJA,North Midlat,,p004,lumi
+pr,JJA,Tropical,,p004,lumi
+pr,JJA,South Midlat,,p004,lumi
+ta,ALL,Global,11.574,p004,lumi
+ta,ALL,North Midlat,14.525,p004,lumi
+ta,ALL,Tropical,3.963,p004,lumi
+ta,ALL,South Midlat,23.846,p004,lumi
+ta,DJF,Global,11.317,p004,lumi
+ta,DJF,North Midlat,3.109,p004,lumi
+ta,DJF,Tropical,5.154,p004,lumi
+ta,DJF,South Midlat,31.849,p004,lumi
+ta,JJA,Global,17.541,p004,lumi
+ta,JJA,North Midlat,53.365,p004,lumi
+ta,JJA,Tropical,5.898,p004,lumi
+ta,JJA,South Midlat,5.002,p004,lumi
+ua,ALL,Global,3.814,p004,lumi
+ua,ALL,North Midlat,2.283,p004,lumi
+ua,ALL,Tropical,4.185,p004,lumi
+ua,ALL,South Midlat,4.602,p004,lumi
+ua,DJF,Global,2.573,p004,lumi
+ua,DJF,North Midlat,0.631,p004,lumi
+ua,DJF,Tropical,2.959,p004,lumi
+ua,DJF,South Midlat,3.743,p004,lumi
+ua,JJA,Global,8.951,p004,lumi
+ua,JJA,North Midlat,4.959,p004,lumi
+ua,JJA,Tropical,14.938,p004,lumi
+ua,JJA,South Midlat,0.97,p004,lumi
+va,ALL,Global,3.771,p004,lumi
+va,ALL,North Midlat,1.969,p004,lumi
+va,ALL,Tropical,2.36,p004,lumi
+va,ALL,South Midlat,8.395,p004,lumi
+va,DJF,Global,2.8,p004,lumi
+va,DJF,North Midlat,0.734,p004,lumi
+va,DJF,Tropical,3.287,p004,lumi
+va,DJF,South Midlat,3.894,p004,lumi
+va,JJA,Global,4.881,p004,lumi
+va,JJA,North Midlat,2.283,p004,lumi
+va,JJA,Tropical,6.634,p004,lumi
+va,JJA,South Midlat,3.971,p004,lumi
+hus,ALL,Global,3.657,p004,lumi
+hus,ALL,North Midlat,2.814,p004,lumi
+hus,ALL,Tropical,2.978,p004,lumi
+hus,ALL,South Midlat,5.858,p004,lumi
+hus,DJF,Global,6.404,p004,lumi
+hus,DJF,North Midlat,6.839,p004,lumi
+hus,DJF,Tropical,5.4,p004,lumi
+hus,DJF,South Midlat,7.979,p004,lumi
+hus,JJA,Global,14.288,p004,lumi
+hus,JJA,North Midlat,24.09,p004,lumi
+hus,JJA,Tropical,11.065,p004,lumi
+hus,JJA,South Midlat,10.931,p004,lumi
+sos,ALL,Global,137351407100.119,p004,lumi
+sos,ALL,North Midlat,120788840783.818,p004,lumi
+sos,ALL,Tropical,73576963883.333,p004,lumi
+sos,ALL,South Midlat,252612119436.902,p004,lumi
+sos,DJF,Global,96028895462.497,p004,lumi
+sos,DJF,North Midlat,101356118810.077,p004,lumi
+sos,DJF,Tropical,47329337832.345,p004,lumi
+sos,DJF,South Midlat,174856304417.971,p004,lumi
+sos,JJA,Global,108224133437.717,p004,lumi
+sos,JJA,North Midlat,77469978140.525,p004,lumi
+sos,JJA,Tropical,54665104405.908,p004,lumi
+sos,JJA,South Midlat,213632817194.019,p004,lumi
+siconc,ALL,Global,1.315,p004,lumi
+siconc,ALL,North Midlat,2.095,p004,lumi
+siconc,ALL,Tropical,,p004,lumi
+siconc,ALL,South Midlat,0.766,p004,lumi
+siconc,DJF,Global,6.044,p004,lumi
+siconc,DJF,North Midlat,1.947,p004,lumi
+siconc,DJF,Tropical,,p004,lumi
+siconc,DJF,South Midlat,7.828,p004,lumi
+siconc,JJA,Global,4.218,p004,lumi
+siconc,JJA,North Midlat,5.152,p004,lumi
+siconc,JJA,Tropical,,p004,lumi
+siconc,JJA,South Midlat,3.697,p004,lumi
+psl,ALL,Global,2.638,p000,mn4
+psl,ALL,North Midlat,1.7,p000,mn4
+psl,ALL,Tropical,3.316,p000,mn4
+psl,ALL,South Midlat,2.218,p000,mn4
+psl,DJF,Global,1.023,p000,mn4
+psl,DJF,North Midlat,0.572,p000,mn4
+psl,DJF,Tropical,1.236,p000,mn4
+psl,DJF,South Midlat,1.047,p000,mn4
+psl,JJA,Global,3.477,p000,mn4
+psl,JJA,North Midlat,3.529,p000,mn4
+psl,JJA,Tropical,4.61,p000,mn4
+psl,JJA,South Midlat,1.159,p000,mn4
+tas,ALL,Global,28.637,p000,mn4
+tas,ALL,North Midlat,14.596,p000,mn4
+tas,ALL,Tropical,42.809,p000,mn4
+tas,ALL,South Midlat,21.152,p000,mn4
+tas,DJF,Global,17.895,p000,mn4
+tas,DJF,North Midlat,8.947,p000,mn4
+tas,DJF,Tropical,26.776,p000,mn4
+tas,DJF,South Midlat,14.951,p000,mn4
+tas,JJA,Global,34.806,p000,mn4
+tas,JJA,North Midlat,31.979,p000,mn4
+tas,JJA,Tropical,39.457,p000,mn4
+tas,JJA,South Midlat,11.253,p000,mn4
+pr,ALL,Global,,p000,mn4
+pr,ALL,North Midlat,,p000,mn4
+pr,ALL,Tropical,,p000,mn4
+pr,ALL,South Midlat,,p000,mn4
+pr,DJF,Global,,p000,mn4
+pr,DJF,North Midlat,,p000,mn4
+pr,DJF,Tropical,,p000,mn4
+pr,DJF,South Midlat,,p000,mn4
+pr,JJA,Global,,p000,mn4
+pr,JJA,North Midlat,,p000,mn4
+pr,JJA,Tropical,,p000,mn4
+pr,JJA,South Midlat,,p000,mn4
+tos,ALL,Global,4.947,p000,mn4
+tos,ALL,North Midlat,5.601,p000,mn4
+tos,ALL,Tropical,4.465,p000,mn4
+tos,ALL,South Midlat,5.446,p000,mn4
+tos,DJF,Global,5.834,p000,mn4
+tos,DJF,North Midlat,8.997,p000,mn4
+tos,DJF,Tropical,4.796,p000,mn4
+tos,DJF,South Midlat,6.136,p000,mn4
+tos,JJA,Global,9.182,p000,mn4
+tos,JJA,North Midlat,15.536,p000,mn4
+tos,JJA,Tropical,7.222,p000,mn4
+tos,JJA,South Midlat,9.234,p000,mn4
+sos,ALL,Global,7.985,p000,mn4
+sos,ALL,North Midlat,25.489,p000,mn4
+sos,ALL,Tropical,4.358,p000,mn4
+sos,ALL,South Midlat,4.708,p000,mn4
+sos,DJF,Global,6.754,p000,mn4
+sos,DJF,North Midlat,24.004,p000,mn4
+sos,DJF,Tropical,3.593,p000,mn4
+sos,DJF,South Midlat,2.822,p000,mn4
+sos,JJA,Global,6.912,p000,mn4
+sos,JJA,North Midlat,18.029,p000,mn4
+sos,JJA,Tropical,4.392,p000,mn4
+sos,JJA,South Midlat,5.198,p000,mn4
+siconc,ALL,Global,,p000,mn4
+siconc,ALL,North Midlat,,p000,mn4
+siconc,ALL,Tropical,,p000,mn4
+siconc,ALL,South Midlat,,p000,mn4
+siconc,DJF,Global,,p000,mn4
+siconc,DJF,North Midlat,,p000,mn4
+siconc,DJF,Tropical,,p000,mn4
+siconc,DJF,South Midlat,,p000,mn4
+siconc,JJA,Global,,p000,mn4
+siconc,JJA,North Midlat,,p000,mn4
+siconc,JJA,Tropical,,p000,mn4
+siconc,JJA,South Midlat,,p000,mn4
+psl,ALL,Global,2.527,p001,mn4
+psl,ALL,North Midlat,1.846,p001,mn4
+psl,ALL,Tropical,3.39,p001,mn4
+psl,ALL,South Midlat,1.482,p001,mn4
+psl,DJF,Global,0.947,p001,mn4
+psl,DJF,North Midlat,0.581,p001,mn4
+psl,DJF,Tropical,1.175,p001,mn4
+psl,DJF,South Midlat,0.858,p001,mn4
+psl,JJA,Global,3.696,p001,mn4
+psl,JJA,North Midlat,3.755,p001,mn4
+psl,JJA,Tropical,5.007,p001,mn4
+psl,JJA,South Midlat,1.013,p001,mn4
+tas,ALL,Global,28.48,p001,mn4
+tas,ALL,North Midlat,14.136,p001,mn4
+tas,ALL,Tropical,43.103,p001,mn4
+tas,ALL,South Midlat,19.064,p001,mn4
+tas,DJF,Global,18.16,p001,mn4
+tas,DJF,North Midlat,9.432,p001,mn4
+tas,DJF,Tropical,26.982,p001,mn4
+tas,DJF,South Midlat,13.328,p001,mn4
+tas,JJA,Global,34.842,p001,mn4
+tas,JJA,North Midlat,32.797,p001,mn4
+tas,JJA,Tropical,38.867,p001,mn4
+tas,JJA,South Midlat,9.68,p001,mn4
+pr,ALL,Global,,p001,mn4
+pr,ALL,North Midlat,,p001,mn4
+pr,ALL,Tropical,,p001,mn4
+pr,ALL,South Midlat,,p001,mn4
+pr,DJF,Global,,p001,mn4
+pr,DJF,North Midlat,,p001,mn4
+pr,DJF,Tropical,,p001,mn4
+pr,DJF,South Midlat,,p001,mn4
+pr,JJA,Global,,p001,mn4
+pr,JJA,North Midlat,,p001,mn4
+pr,JJA,Tropical,,p001,mn4
+pr,JJA,South Midlat,,p001,mn4
+tos,ALL,Global,5.006,p001,mn4
+tos,ALL,North Midlat,5.223,p001,mn4
+tos,ALL,Tropical,4.336,p001,mn4
+tos,ALL,South Midlat,6.058,p001,mn4
+tos,DJF,Global,5.779,p001,mn4
+tos,DJF,North Midlat,8.828,p001,mn4
+tos,DJF,Tropical,4.585,p001,mn4
+tos,DJF,South Midlat,6.401,p001,mn4
+tos,JJA,Global,9.182,p001,mn4
+tos,JJA,North Midlat,15.159,p001,mn4
+tos,JJA,Tropical,7.343,p001,mn4
+tos,JJA,South Midlat,9.221,p001,mn4
+sos,ALL,Global,7.444,p001,mn4
+sos,ALL,North Midlat,23.144,p001,mn4
+sos,ALL,Tropical,3.978,p001,mn4
+sos,ALL,South Midlat,4.865,p001,mn4
+sos,DJF,Global,6.234,p001,mn4
+sos,DJF,North Midlat,21.373,p001,mn4
+sos,DJF,Tropical,3.395,p001,mn4
+sos,DJF,South Midlat,2.895,p001,mn4
+sos,JJA,Global,6.426,p001,mn4
+sos,JJA,North Midlat,16.172,p001,mn4
+sos,JJA,Tropical,3.961,p001,mn4
+sos,JJA,South Midlat,5.359,p001,mn4
+siconc,ALL,Global,,p001,mn4
+siconc,ALL,North Midlat,,p001,mn4
+siconc,ALL,Tropical,,p001,mn4
+siconc,ALL,South Midlat,,p001,mn4
+siconc,DJF,Global,,p001,mn4
+siconc,DJF,North Midlat,,p001,mn4
+siconc,DJF,Tropical,,p001,mn4
+siconc,DJF,South Midlat,,p001,mn4
+siconc,JJA,Global,,p001,mn4
+siconc,JJA,North Midlat,,p001,mn4
+siconc,JJA,Tropical,,p001,mn4
+siconc,JJA,South Midlat,,p001,mn4
+psl,ALL,Global,2.706,p002,mn4
+psl,ALL,North Midlat,2.171,p002,mn4
+psl,ALL,Tropical,3.173,p002,mn4
+psl,ALL,South Midlat,2.309,p002,mn4
+psl,DJF,Global,1.018,p002,mn4
+psl,DJF,North Midlat,0.603,p002,mn4
+psl,DJF,Tropical,1.195,p002,mn4
+psl,DJF,South Midlat,1.079,p002,mn4
+psl,JJA,Global,3.349,p002,mn4
+psl,JJA,North Midlat,3.761,p002,mn4
+psl,JJA,Tropical,4.216,p002,mn4
+psl,JJA,South Midlat,1.202,p002,mn4
+tas,ALL,Global,29.206,p002,mn4
+tas,ALL,North Midlat,16.037,p002,mn4
+tas,ALL,Tropical,42.646,p002,mn4
+tas,ALL,South Midlat,20.373,p002,mn4
+tas,DJF,Global,17.162,p002,mn4
+tas,DJF,North Midlat,8.684,p002,mn4
+tas,DJF,Tropical,25.647,p002,mn4
+tas,DJF,South Midlat,13.503,p002,mn4
+tas,JJA,Global,34.526,p002,mn4
+tas,JJA,North Midlat,33.717,p002,mn4
+tas,JJA,Tropical,37.257,p002,mn4
+tas,JJA,South Midlat,10.591,p002,mn4
+pr,ALL,Global,,p002,mn4
+pr,ALL,North Midlat,,p002,mn4
+pr,ALL,Tropical,,p002,mn4
+pr,ALL,South Midlat,,p002,mn4
+pr,DJF,Global,,p002,mn4
+pr,DJF,North Midlat,,p002,mn4
+pr,DJF,Tropical,,p002,mn4
+pr,DJF,South Midlat,,p002,mn4
+pr,JJA,Global,,p002,mn4
+pr,JJA,North Midlat,,p002,mn4
+pr,JJA,Tropical,,p002,mn4
+pr,JJA,South Midlat,,p002,mn4
+tos,ALL,Global,4.987,p002,mn4
+tos,ALL,North Midlat,5.698,p002,mn4
+tos,ALL,Tropical,4.388,p002,mn4
+tos,ALL,South Midlat,5.659,p002,mn4
+tos,DJF,Global,5.802,p002,mn4
+tos,DJF,North Midlat,8.891,p002,mn4
+tos,DJF,Tropical,4.786,p002,mn4
+tos,DJF,South Midlat,6.101,p002,mn4
+tos,JJA,Global,9.203,p002,mn4
+tos,JJA,North Midlat,15.885,p002,mn4
+tos,JJA,Tropical,7.079,p002,mn4
+tos,JJA,South Midlat,9.38,p002,mn4
+sos,ALL,Global,7.766,p002,mn4
+sos,ALL,North Midlat,25.817,p002,mn4
+sos,ALL,Tropical,3.863,p002,mn4
+sos,ALL,South Midlat,4.663,p002,mn4
+sos,DJF,Global,6.701,p002,mn4
+sos,DJF,North Midlat,24.276,p002,mn4
+sos,DJF,Tropical,3.38,p002,mn4
+sos,DJF,South Midlat,2.865,p002,mn4
+sos,JJA,Global,6.453,p002,mn4
+sos,JJA,North Midlat,17.986,p002,mn4
+sos,JJA,Tropical,3.607,p002,mn4
+sos,JJA,South Midlat,5.069,p002,mn4
+siconc,ALL,Global,,p002,mn4
+siconc,ALL,North Midlat,,p002,mn4
+siconc,ALL,Tropical,,p002,mn4
+siconc,ALL,South Midlat,,p002,mn4
+siconc,DJF,Global,,p002,mn4
+siconc,DJF,North Midlat,,p002,mn4
+siconc,DJF,Tropical,,p002,mn4
+siconc,DJF,South Midlat,,p002,mn4
+siconc,JJA,Global,,p002,mn4
+siconc,JJA,North Midlat,,p002,mn4
+siconc,JJA,Tropical,,p002,mn4
+siconc,JJA,South Midlat,,p002,mn4
+psl,ALL,Global,2.829,p003,mn4
+psl,ALL,North Midlat,2.081,p003,mn4
+psl,ALL,Tropical,3.402,p003,mn4
+psl,ALL,South Midlat,2.431,p003,mn4
+psl,DJF,Global,1.092,p003,mn4
+psl,DJF,North Midlat,0.616,p003,mn4
+psl,DJF,Tropical,1.203,p003,mn4
+psl,DJF,South Midlat,1.345,p003,mn4
+psl,JJA,Global,3.47,p003,mn4
+psl,JJA,North Midlat,3.669,p003,mn4
+psl,JJA,Tropical,4.449,p003,mn4
+psl,JJA,South Midlat,1.313,p003,mn4
+tas,ALL,Global,29.127,p003,mn4
+tas,ALL,North Midlat,14.345,p003,mn4
+tas,ALL,Tropical,44.231,p003,mn4
+tas,ALL,South Midlat,18.981,p003,mn4
+tas,DJF,Global,17.369,p003,mn4
+tas,DJF,North Midlat,8.083,p003,mn4
+tas,DJF,Tropical,26.734,p003,mn4
+tas,DJF,South Midlat,12.488,p003,mn4
+tas,JJA,Global,35.771,p003,mn4
+tas,JJA,North Midlat,33.892,p003,mn4
+tas,JJA,Tropical,39.514,p003,mn4
+tas,JJA,South Midlat,12.131,p003,mn4
+pr,ALL,Global,,p003,mn4
+pr,ALL,North Midlat,,p003,mn4
+pr,ALL,Tropical,,p003,mn4
+pr,ALL,South Midlat,,p003,mn4
+pr,DJF,Global,,p003,mn4
+pr,DJF,North Midlat,,p003,mn4
+pr,DJF,Tropical,,p003,mn4
+pr,DJF,South Midlat,,p003,mn4
+pr,JJA,Global,,p003,mn4
+pr,JJA,North Midlat,,p003,mn4
+pr,JJA,Tropical,,p003,mn4
+pr,JJA,South Midlat,,p003,mn4
+tos,ALL,Global,4.926,p003,mn4
+tos,ALL,North Midlat,5.164,p003,mn4
+tos,ALL,Tropical,4.596,p003,mn4
+tos,ALL,South Midlat,5.376,p003,mn4
+tos,DJF,Global,5.911,p003,mn4
+tos,DJF,North Midlat,8.43,p003,mn4
+tos,DJF,Tropical,4.888,p003,mn4
+tos,DJF,South Midlat,6.489,p003,mn4
+tos,JJA,Global,8.905,p003,mn4
+tos,JJA,North Midlat,15.649,p003,mn4
+tos,JJA,Tropical,7.087,p003,mn4
+tos,JJA,South Midlat,8.456,p003,mn4
+sos,ALL,Global,7.844,p003,mn4
+sos,ALL,North Midlat,24.632,p003,mn4
+sos,ALL,Tropical,4.393,p003,mn4
+sos,ALL,South Midlat,4.655,p003,mn4
+sos,DJF,Global,6.506,p003,mn4
+sos,DJF,North Midlat,22.434,p003,mn4
+sos,DJF,Tropical,3.605,p003,mn4
+sos,DJF,South Midlat,2.847,p003,mn4
+sos,JJA,Global,6.797,p003,mn4
+sos,JJA,North Midlat,17.314,p003,mn4
+sos,JJA,Tropical,4.447,p003,mn4
+sos,JJA,South Midlat,5.117,p003,mn4
+siconc,ALL,Global,,p003,mn4
+siconc,ALL,North Midlat,,p003,mn4
+siconc,ALL,Tropical,,p003,mn4
+siconc,ALL,South Midlat,,p003,mn4
+siconc,DJF,Global,,p003,mn4
+siconc,DJF,North Midlat,,p003,mn4
+siconc,DJF,Tropical,,p003,mn4
+siconc,DJF,South Midlat,,p003,mn4
+siconc,JJA,Global,,p003,mn4
+siconc,JJA,North Midlat,,p003,mn4
+siconc,JJA,Tropical,,p003,mn4
+siconc,JJA,South Midlat,,p003,mn4
+psl,ALL,Global,2.334,p004,mn4
+psl,ALL,North Midlat,1.69,p004,mn4
+psl,ALL,Tropical,3.056,p004,mn4
+psl,ALL,South Midlat,1.536,p004,mn4
+psl,DJF,Global,1.004,p004,mn4
+psl,DJF,North Midlat,0.618,p004,mn4
+psl,DJF,Tropical,1.219,p004,mn4
+psl,DJF,South Midlat,0.961,p004,mn4
+psl,JJA,Global,3.268,p004,mn4
+psl,JJA,North Midlat,3.264,p004,mn4
+psl,JJA,Tropical,4.455,p004,mn4
+psl,JJA,South Midlat,0.897,p004,mn4
+tas,ALL,Global,28.586,p004,mn4
+tas,ALL,North Midlat,14.291,p004,mn4
+tas,ALL,Tropical,43.168,p004,mn4
+tas,ALL,South Midlat,19.081,p004,mn4
+tas,DJF,Global,17.862,p004,mn4
+tas,DJF,North Midlat,9.207,p004,mn4
+tas,DJF,Tropical,26.595,p004,mn4
+tas,DJF,South Midlat,13.247,p004,mn4
+tas,JJA,Global,34.564,p004,mn4
+tas,JJA,North Midlat,31.508,p004,mn4
+tas,JJA,Tropical,39.403,p004,mn4
+tas,JJA,South Midlat,11.426,p004,mn4
+pr,ALL,Global,,p004,mn4
+pr,ALL,North Midlat,,p004,mn4
+pr,ALL,Tropical,,p004,mn4
+pr,ALL,South Midlat,,p004,mn4
+pr,DJF,Global,,p004,mn4
+pr,DJF,North Midlat,,p004,mn4
+pr,DJF,Tropical,,p004,mn4
+pr,DJF,South Midlat,,p004,mn4
+pr,JJA,Global,,p004,mn4
+pr,JJA,North Midlat,,p004,mn4
+pr,JJA,Tropical,,p004,mn4
+pr,JJA,South Midlat,,p004,mn4
+tos,ALL,Global,4.758,p004,mn4
+tos,ALL,North Midlat,5.3,p004,mn4
+tos,ALL,Tropical,4.086,p004,mn4
+tos,ALL,South Midlat,5.643,p004,mn4
+tos,DJF,Global,5.772,p004,mn4
+tos,DJF,North Midlat,8.974,p004,mn4
+tos,DJF,Tropical,4.693,p004,mn4
+tos,DJF,South Midlat,6.125,p004,mn4
+tos,JJA,Global,9.014,p004,mn4
+tos,JJA,North Midlat,15.876,p004,mn4
+tos,JJA,Tropical,6.738,p004,mn4
+tos,JJA,South Midlat,9.375,p004,mn4
+sos,ALL,Global,7.937,p004,mn4
+sos,ALL,North Midlat,25.141,p004,mn4
+sos,ALL,Tropical,4.199,p004,mn4
+sos,ALL,South Midlat,5.011,p004,mn4
+sos,DJF,Global,6.567,p004,mn4
+sos,DJF,North Midlat,22.726,p004,mn4
+sos,DJF,Tropical,3.545,p004,mn4
+sos,DJF,South Midlat,2.988,p004,mn4
+sos,JJA,Global,6.891,p004,mn4
+sos,JJA,North Midlat,18.225,p004,mn4
+sos,JJA,Tropical,4.018,p004,mn4
+sos,JJA,South Midlat,5.661,p004,mn4
+siconc,ALL,Global,,p004,mn4
+siconc,ALL,North Midlat,,p004,mn4
+siconc,ALL,Tropical,,p004,mn4
+siconc,ALL,South Midlat,,p004,mn4
+siconc,DJF,Global,,p004,mn4
+siconc,DJF,North Midlat,,p004,mn4
+siconc,DJF,Tropical,,p004,mn4
+siconc,DJF,South Midlat,,p004,mn4
+siconc,JJA,Global,,p004,mn4
+siconc,JJA,North Midlat,,p004,mn4
+siconc,JJA,Tropical,,p004,mn4
+siconc,JJA,South Midlat,,p004,mn4
