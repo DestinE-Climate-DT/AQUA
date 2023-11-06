@@ -6,18 +6,18 @@
 # ---------------------------------------------------
 model_atm="IFS"
 model_oce="FESOM"
-exp="tco2559-ng5-cycle3"
+exp="control-1950-devcon"
 source="lra-r100-monthly"
 
 # LUMI
-# outputdir="/scratch/project_465000454/nurissom/cli_outpturdir"
-# aqua="/users/nurissom/AQUA"
+outputdir="/scratch/project_465000454/nurissom/cli_outpturdir"
+aqua="/users/nurissom/AQUA"
 
 # LEVANTE
-outputdir="/scratch/b/b382289/cli_test"
-aqua="/home/b/b382289/AQUA"
+#outputdir="/scratch/b/b382289/cli_test"
+#aqua="/home/b/b382289/AQUA"
 
-machine="levante" # will change the aqua config file
+machine="lumi" # will change the aqua config file
 
 # When available, this will set the loglevel for the diagnostics
 loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -25,21 +25,21 @@ loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 # Set as true the diagnostics you want to run
 # -------------------------------------------
 run_dummy=true # dummy is a diagnostic that checks if the setup is correct
-run_atmglobalmean=true
-run_ecmean=true
+run_atmglobalmean=false
+run_ecmean=false
 # ---------------------------------------
 # Command line extra arguments for ecmean
 # -c --config ecmean config file
 # -i --interface custom interface file
 # ---------------------------------------
 run_global_time_series=true
-run_ocean3d=true
-run_radiation=true
+run_ocean3d=false
+run_radiation=false
 # ------------------------------------------
 # Command line extra arguments for radiation
 # --config (readiation config file)
 # ------------------------------------------
-run_seaice=true
+run_seaice=false
 # ------------------------------------------
 # Command line extra arguments for seaice
 # --all-regions (if set it will plot all regions)
@@ -47,14 +47,14 @@ run_seaice=true
 # --config (seaice config file)
 # --regrid (regrid data to a different grid)
 # ------------------------------------------
-run_teleconnections=true
+run_teleconnections=false
 # teleconnections additional flags
 # ------------------------------------------------------------------
 # --dry, -d (dry run, if set it will run without producing plots)
 # --ref (if set it will analyze also the reference data, it is set
 #        by default)
 # ------------------------------------------------------------------
-run_tropical_rainfall=true
+run_tropical_rainfall=false
 
 # End of user defined variables
 # -----------------------------
