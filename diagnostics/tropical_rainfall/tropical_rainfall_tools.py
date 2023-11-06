@@ -1,8 +1,11 @@
 import re
 import os
+import seaborn as sns
 import numpy as np
 import pandas as pd
-import xarray
+import xarray as xr
+#import xarray
+from typing import Union, Tuple, Optional, Any, List
 
 from aqua.util import ConfigPath
 from aqua.logger import log_configure
@@ -76,6 +79,26 @@ class ToolsClass:
         self.logger.info(f"PDF folder: {path_to_pdf}")
         
         return path_to_pdf
+
+    def open_dataset(self, path_to_netcdf: str) -> object:
+        """ 
+        Function to load a histogram dataset from a file using pickle.
+
+        Args:
+            path_to_netcdf (str): The path to the dataset file.
+
+        Returns:
+            object: The loaded histogram dataset.
+
+        Raises:
+            FileNotFoundError: If the specified dataset file is not found.
+        """
+        try:
+            dataset = xr.open_dataset(path_to_netcdf)
+            return dataset
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                "The specified dataset file was not found.")
 
     def convert_length(self, value, from_unit, to_unit):
         """ Function to convert length units
@@ -247,6 +270,77 @@ class ToolsClass:
                 time_unit = 'day'
         return mass_unit, space_unit, time_unit
 
+    def _utc_to_local(self, utc_time: int, longitude: float) -> int:
+        """
+        Convert a UTC time to local time based on the longitude provided.
+
+        The function calculates the time zone offset based on the longitude, where each 15 degrees of longitude corresponds to 1 hour of time difference. It then applies the time zone offset to convert the UTC time to local time.
+
+        Args:
+            utc_time (int): The UTC time to convert to local time.
+            longitude (float): The longitude value to calculate the time zone offset.
+
+        Returns:
+            int: The local time after converting the UTC time based on the provided longitude.
+        """
+        # Calculate the time zone offset based on longitude
+        # Each 15 degrees of longitude corresponds to 1 hour of time difference
+        time_zone_offset_hours = int(longitude / 15)
+
+        # Apply the time zone offset to convert UTC time to local time
+        local_time = (utc_time + time_zone_offset_hours) % 24
+
+        return local_time
+
+    def update_dict_of_loaded_analyses(self, loaded_dict: dict = None) -> Union[dict, None]:
+        """
+        Updates a dictionary with loaded data and assigns colors to each entry.
+
+        Args:
+            loaded_dict (dict): Dictionary with paths to datasets.
+
+        Returns:
+            dict: Updated dictionary with loaded data and colors assigned.
+            None: If the provided object is not of type 'dict'.
+        """
+        if not isinstance(loaded_dict, dict):
+            self.logger.error("The provided object must be a 'dict' type.") 
+            return None
+
+        for key, value in loaded_dict.items():
+            if 'path' not in value:
+                print(f"Error: 'path' key is missing in the entry with key {key}")
+
+        # Select a seaborn palette
+        palette = sns.color_palette("husl", len(loaded_dict))
+
+        # Loop through the dictionary and assign colors
+        for i, (key, value) in enumerate(loaded_dict.items()):
+            loaded_dict[key]["data"] = self.open_dataset(path_to_netcdf=value["path"])
+            loaded_dict[key]["color"] = palette[i]   
+
+        return loaded_dict
+
+    def add_colors_to_dict(self, loaded_dict: dict = None) -> Union[dict, None]:
+        """
+        Updates a dictionary with loaded data and assigns colors to each entry.
+
+        Args:
+            loaded_dict (dict): Dictionary with paths to datasets.
+
+        Returns:
+            dict: Updated dictionary with loaded data and colors assigned.
+            None: If the provided object is not of type 'dict'.
+        """
+        if not isinstance(loaded_dict, dict):
+            self.logger.error("The provided object must be a 'dict' type.") 
+            return None
+        # Select a seaborn palette
+        palette = sns.color_palette("husl", len(loaded_dict))
+        # Loop through the dictionary and assign colors
+        for i, (key, value) in enumerate(loaded_dict.items()):
+            loaded_dict[key]["color"] = palette[i]   
+        return loaded_dict
 
     def time_interpreter(self, dataset):
         """Identifying unit of timestep in the Dataset
