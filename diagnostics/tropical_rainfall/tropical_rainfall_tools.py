@@ -39,7 +39,7 @@ class ToolsClass:
             time_str = '-'.join(parts[:len(parts)])
         return time_str
         
-    def get_netcdf_path(self, configname: str) -> tuple:
+    def get_netcdf_path(self, configname: str = full_path_to_config) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
 
@@ -74,7 +74,7 @@ class ToolsClass:
         self.logger.info(f"NetCDF folder: {path_to_netcdf}")
         return path_to_netcdf
     
-    def get_pdf_path(self, configname: str) -> tuple:
+    def get_pdf_path(self, configname: str = full_path_to_config) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
 
