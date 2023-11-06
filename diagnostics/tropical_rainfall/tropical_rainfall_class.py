@@ -1840,34 +1840,6 @@ class Tropical_Rainfall:
         return self.plots.plot_seasons_or_months(data=data, cbarlabel=cbarlabel, seasons=seasons, months=months,
                           figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax, save=save,
                           path_to_pdf=path_to_pdf, pdf_format=pdf_format)
-                
-    def savefig(self, path_to_pdf: str = None, pdf_format: bool = True) -> None:
-        """
-        Save the current figure to a file in either PDF or PNG format.
-
-        Args:
-            path_to_pdf (str): The file path where the figure will be saved. If None, the figure will not be saved.
-            pdf_format (bool): If True, the figure will be saved in PDF format; otherwise, it will be saved in PNG format.
-
-        Returns:
-            None
-        Note:
-            The function first checks the `path_to_pdf` to determine the format of the saved figure. If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path. If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png' and saves the figure in PNG format.
-
-        Example:
-            savefig(path_to_pdf='example.pdf', pdf_format=True)
-            # This will save the current figure in PDF format as 'example.pdf'.
-        """
-        create_folder(folder=self.tools.extract_directory_path(
-                    path_to_pdf), loglevel='WARNING')
-        
-        if pdf_format:
-            plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=1, transparent=True,
-                        facecolor="w", edgecolor='w', orientation='landscape')
-        else:
-            path_to_pdf = path_to_pdf.replace('.pdf', '.png')
-            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
-                        transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
 
     def improve_time_selection(self, data: Union[xr.DataArray, None] = None, time_selection: Union[str, None] = None) -> str:
         """
@@ -2417,8 +2389,8 @@ class Tropical_Rainfall:
             y_lim_max = self.precipitation_rate_units_converter(ymax, old_unit=data.units, new_unit=self.new_unit)
         
 
-        if isinstance(self.path_to_pdf, str) and name_of_file is not None:
-            path_to_pdf = self.path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
+        if isinstance(path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
 
         self.plots.daily_variability_plot(data, ymax=y_lim_max, relative=relative, save=save,
                             legend=legend, figsize=figsize, linestyle=linestyle, color=color,
