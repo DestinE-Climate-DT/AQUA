@@ -37,8 +37,8 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
 
-from .tropical_rainfall_tools import ToolsClass
-from .tropical_rainfall_plots import PlottingClass 
+from .src.tropical_rainfall_tools import ToolsClass
+from .src.tropical_rainfall_plots import PlottingClass 
 
 
 class Tropical_Rainfall:
