@@ -22,9 +22,31 @@ import xarray as xr
 class PlottingClass:
     """This is class to create the plots."""
         
-    def __init__(self, pdf_format=True, figsize=1, linewidth=3,
-                 fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm',
-                 linestyle='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=4, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
+    def __init__(self, pdf_format: bool = True, figsize: int = 1, linewidth: int = 3,
+                 fontsize: int = 14, smooth: bool = True, step: bool = False, color_map: bool = False, cmap: str = 'coolwarm',
+                 linestyle: str = '-', ylogscale: bool = True, xlogscale: bool = False, model_variable: str = 'tprate', 
+                 number_of_axe_ticks: int = 4, number_of_bar_ticks: int = 6, loglevel: str = 'WARNING'):
+        """
+        Constructor for the plotting class, initializing various plotting parameters.
+
+        Args:
+            pdf_format (bool): A flag indicating whether the output format should be PDF.
+            figsize (int): The size of the figure.
+            linewidth (int): The width of the line in the plot.
+            fontsize (int): The size of the font for the plot.
+            smooth (bool): A flag indicating whether the plot should be smoothed.
+            step (bool): A flag indicating whether the plot should be stepped.
+            color_map (bool): A flag indicating whether a color map should be used.
+            cmap (str): The name of the color map to use.
+            linestyle (str): The style of the line in the plot.
+            ylogscale (bool): A flag indicating whether the y-axis should be displayed in log scale.
+            xlogscale (bool): A flag indicating whether the x-axis should be displayed in log scale.
+            model_variable (str): The variable name to be used for the plot.
+            number_of_axe_ticks (int): The number of ticks to display on the axes.
+            number_of_bar_ticks (int): The number of ticks to display on the bar.
+            loglevel (str): The level of logging to be used.
+
+        """
         self.pdf_format = pdf_format
         self.figsize = figsize
         self.fontsize = fontsize
@@ -43,24 +65,29 @@ class PlottingClass:
         self.logger = log_configure(self.loglevel, 'Plot. Func.')
         self.tools = ToolsClass()
     
-    def class_attributes_update(self, pdf_format=None, figsize=None, linewidth=None,
-                 fontsize=None, smooth=None, step=None, color_map=None, cmap=None,
-                 linestyle=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
+    def class_attributes_update(self, pdf_format: Optional[bool] = None, figsize: Optional[float] = None, 
+                    linewidth: Optional[float] = None, fontsize: Optional[int] = None, smooth: Optional[bool] = None, 
+                    step: Optional[bool] = None, color_map: Optional[bool] = None, cmap: Optional[str] = None,
+                    linestyle: Optional[str] = None, ylogscale: Optional[bool] = None, xlogscale: Optional[bool] = None, 
+                    model_variable: Optional[str] = None, number_of_axe_ticks: Optional[int] = None, 
+                    number_of_bar_ticks: Optional[int] = None):
         """
         Update the class attributes based on the provided arguments.
 
         Args:
-            pdf_format (bool): A flag indicating whether the figure should be saved in PDF format. If None, the previous value will be retained.
-            figsize (float): The size of the figure. If None, the previous value will be retained.
-            fontsize (int): The font size of the text in the figure. If None, the previous value will be retained.
-            smooth (bool): A flag indicating whether to smooth the figure. If None, the previous value will be retained.
-            step (bool): A flag indicating whether to use step plotting. If None, the previous value will be retained.
-            color_map (bool): A flag indicating whether to use a color map. If None, the previous value will be retained.
-            linestyle (str): The linestyle for the figure. If None, the previous value will be retained.
-            ylogscale (bool): A flag indicating whether to use a logarithmic scale for the y-axis. If None, the previous value will be retained.
-            xlogscale (bool): A flag indicating whether to use a logarithmic scale for the x-axis. If None, the previous value will be retained.
-            model_variable (str): The model variable to be used. If None, the previous value will be retained.
-            number_of_bar_ticks (int): The number of ticks for bar plots. If None, the previous value will be retained.
+            pdf_format (bool, optional): A flag indicating whether the figure should be saved in PDF format.
+            figsize (float, optional): The size of the figure.
+            linewidth (float, optional): The width of the lines in the plot.
+            fontsize (int, optional): The font size of the text in the figure.
+            smooth (bool, optional): A flag indicating whether to smooth the figure.
+            step (bool, optional): A flag indicating whether to use step plotting.
+            color_map (bool, optional): A flag indicating whether to use a color map.
+            cmap (str, optional): The color map to be used.
+            linestyle (str, optional): The linestyle for the figure.
+            ylogscale (bool, optional): A flag indicating whether to use a logarithmic scale for the y-axis.
+            xlogscale (bool, optional): A flag indicating whether to use a logarithmic scale for the x-axis.
+            model_variable (str, optional): The model variable to be used.
+            number_of_bar_ticks (int, optional): The number of ticks for bar plots.
 
         Returns:
             None
@@ -81,73 +108,77 @@ class PlottingClass:
         self.number_of_bar_ticks = self.number_of_bar_ticks if number_of_bar_ticks is None else number_of_bar_ticks
         
 
-    def savefig(self, path_to_pdf=None, pdf_format=None):
-            """
-            Save the current figure to a file in either PDF or PNG format.
-
-            Args:
-                path_to_pdf (str): The file path where the figure will be saved. If None, the figure will not be saved.
-                pdf_format (bool): If True, the figure will be saved in PDF format; otherwise, it will be saved in PNG format.
-
-            Returns:
-                None
-
-            Note:
-                The function first checks the `path_to_pdf` to determine the format of the saved figure. If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path. If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png' and saves the figure in PNG format.
-
-            Example:
-                savefig(path_to_pdf='example.pdf', pdf_format=True)
-                # This will save the current figure in PDF format as 'example.pdf'.
-
-            """
-            self.class_attributes_update(pdf_format=pdf_format)
-
-            create_folder(folder=self.tools.extract_directory_path(
-                        path_to_pdf), loglevel='WARNING')
-            
-            if pdf_format:
-                plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=1, transparent=True,
-                            facecolor="w", edgecolor='w', orientation='landscape')
-            else:
-                path_to_pdf = path_to_pdf.replace('.pdf', '.png')
-                plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
-                            transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
-
-    def histogram_plot(self, x, data, positive=True, xlabel='', ylabel='',
-                   weights=None, smooth=None, step=None, color_map=None,
-                   linestyle=None, ylogscale=None, xlogscale=None, save=True,
-                   color='tab:blue', figsize=None, legend='_Hidden',
-                   plot_title=None, loc='upper right',
-                   add=None, fig=None, path_to_pdf=None,
-                   pdf_format=None, xmax=None,
-                   linewidth=None, fontsize=None):
-        """ Function to generate a histogram figure based on the provided data.
+    def savefig(self, path_to_pdf: Optional[str] = None, pdf_format: Optional[bool] = None):
+        """
+        Save the current figure to a file in either PDF or PNG format.
 
         Args:
-            data:                           The data for the histogram.
-            weights (optional):             An array of weights for the data.       Default is None.
-            frequency (bool, optional):     Whether to plot frequency.              Default is False.
-            pdf (bool, optional):           Whether to plot the probability density function (PDF). Default is True.
-            smooth (bool, optional):        Whether to plot a smooth line.          Default is True.
-            step (bool, optional):          Whether to plot a step line.            Default is False.
-            color_map (bool or str, optional): Whether to apply a color map to the histogram bars.
-                If True, uses the 'viridis' color map. If a string, uses the specified color map. Default is False.
-            linestyle (str, optional):             The line style for the plot.            Default is '-'.
-            ylogscale (bool, optional):     Whether to use a logarithmic scale for the y-axis. Default is True.
-            xlogscale (bool, optional):     Whether to use a logarithmic scale for the x-axis. Default is False.
-            color (str, optional):          The color of the plot.                  Default is 'tab:blue'.
-            figsize (float, optional):      The size of the figure.                 Default is 1.
-            legend (str, optional):         The legend label for the plot.          Default is '_Hidden'.
-            varname (str, optional):        The name of the variable for the x-axis label. Default is 'Precipitation'.
-            plot_title (str, optional):     The title of the plot.                  Default is None.
-            loc(str, optional):             The location of the legend.             Default to 'upper right'.
-            add (tuple, optional):          Tuple of (fig, ax) to add the plot to an existing figure.
-            fig (object, optional):         The figure object to plot on. If provided, ignores the 'add' argument.
-            path_to_pdf (str, optional): The path to save the figure. If provided, saves the figure at the specified path.
-
+            path_to_pdf (str, optional): The file path where the figure will be saved. If None, the figure will not be saved.
+            pdf_format (bool, optional): If True, the figure will be saved in PDF format; otherwise, it will be saved in PNG format.
 
         Returns:
-            A tuple (fig, ax) containing the figure and axes objects.
+            None
+
+        Note:
+            The function first checks the `path_to_pdf` to determine the format of the saved figure. If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path. If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png' and saves the figure in PNG format.
+
+        Example:
+            savefig(path_to_pdf='example.pdf', pdf_format=True)
+            # This will save the current figure in PDF format as 'example.pdf'.
+        """
+        self.class_attributes_update(pdf_format=pdf_format)
+
+        create_folder(folder=self.tools.extract_directory_path(
+                    path_to_pdf), loglevel='WARNING')
+        
+        if pdf_format:
+            plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=1, transparent=True,
+                        facecolor="w", edgecolor='w', orientation='landscape')
+        else:
+            path_to_pdf = path_to_pdf.replace('.pdf', '.png')
+            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
+                        transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
+
+    def histogram_plot(self, x: Union[np.ndarray, List[float]], data: Union[np.ndarray, List[float]], 
+                    positive: bool = True, xlabel: str = '', ylabel: str = '', weights: Optional[Union[np.ndarray, List[float]]] = None, 
+                    smooth: Optional[bool] = None, step: Optional[bool] = None, color_map: Union[bool, str] = None,
+                    linestyle: Optional[str] = None, ylogscale: Optional[bool] = None, xlogscale: Optional[bool] = None, 
+                    save: bool = True, color: str = 'tab:blue', figsize: Optional[float] = None, legend: str = '_Hidden',
+                    plot_title: Optional[str] = None, loc: str = 'upper right', add: Optional[Tuple] = None, 
+                    fig: Optional[object] = None, path_to_pdf: Optional[str] = None, pdf_format: Optional[bool] = None, 
+                    xmax: Optional[float] = None, linewidth: Optional[float] = None, fontsize: Optional[int] = None):
+        """ 
+        Function to generate a histogram figure based on the provided data.
+
+        Args:
+            x (Union[np.ndarray, List[float]]): The data for the x-axis of the histogram.
+            data (Union[np.ndarray, List[float]]): The data for the histogram.
+            positive (bool, optional): Whether to consider only positive values. Default is True.
+            xlabel (str, optional): The label for the x-axis. Default is an empty string.
+            ylabel (str, optional): The label for the y-axis. Default is an empty string.
+            weights (Optional[Union[np.ndarray, List[float]]]): An array of weights for the data. Default is None.
+            smooth (Optional[bool]): Whether to plot a smooth line. Default is None.
+            step (Optional[bool]): Whether to plot a step line. Default is None.
+            color_map (Union[bool, str], optional): Whether to apply a color map to the histogram bars. Default is None.
+            linestyle (str, optional): The line style for the plot. Default is None.
+            ylogscale (Optional[bool]): Whether to use a logarithmic scale for the y-axis. Default is None.
+            xlogscale (Optional[bool]): Whether to use a logarithmic scale for the x-axis. Default is None.
+            save (bool, optional): Whether to save the plot. Default is True.
+            color (str, optional): The color of the plot. Default is 'tab:blue'.
+            figsize (Optional[float]): The size of the figure. Default is None.
+            legend (str, optional): The legend label for the plot. Default is '_Hidden'.
+            plot_title (str, optional): The title of the plot. Default is None.
+            loc(str, optional): The location of the legend. Default is 'upper right'.
+            add (Optional[Tuple]): Tuple of (fig, ax) to add the plot to an existing figure. Default is None.
+            fig (Optional[object]): The figure object to plot on. If provided, ignores the 'add' argument. Default is None.
+            path_to_pdf (str, optional): The path to save the figure. If provided, saves the figure at the specified path. Default is None.
+            pdf_format (Optional[bool]): Whether to save the figure in PDF format. Default is None.
+            xmax (Optional[float]): The maximum value for the x-axis. Default is None.
+            linewidth (Optional[float]): The width of the line. Default is None.
+            fontsize (Optional[int]): The font size of the labels. Default is None.
+
+        Returns:
+            A dictionary containing the figure and axes objects.
         """
         self.class_attributes_update(pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, ylogscale=ylogscale, 
                                 figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle, linewidth=linewidth)
@@ -204,34 +235,39 @@ class PlottingClass:
             self.savefig(path_to_pdf, self.pdf_format)
         return {fig, ax}
 
-    def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None, number_of_axe_ticks=None,
-                        legend='_Hidden', figsize=None, linestyle=None, maxticknum=12, color='tab:blue', ylogscale=None, 
-                        xlogscale=None, loc='upper right', add=None, fig=None, plot_title=None, path_to_pdf=None, save=True,
-                        pdf_format=None):
+    def plot_of_average(self, data: Union[list, xr.DataArray] = None, trop_lat: Optional[float] = None, ylabel: str = '', 
+                        coord: Optional[str] = None, fontsize: Optional[int] = None, pad: int = 15, 
+                        y_lim_max: Optional[float] = None, number_of_axe_ticks: Optional[int] = None,
+                        legend: str = '_Hidden', figsize: Optional[int] = None, linestyle: Optional[str] = None, 
+                        maxticknum: int = 12, color: str = 'tab:blue', ylogscale: Optional[bool] = None, 
+                        xlogscale: Optional[bool] = None, loc: str = 'upper right', add: Optional[list] = None, 
+                        fig: Optional[list] = None, plot_title: Optional[str] = None, path_to_pdf: Optional[str] = None, 
+                        save: bool = True, pdf_format: Optional[bool] = None):
         """
         Make a plot with different y-axes using a second axis object.
 
         Args:
-            data (list or DataArray): Data to plot.
-            trop_lat (float): Tropospheric latitude. Defaults to None.
-            ylabel (str): Label for the y-axis. Defaults to ''.
-            coord (str): Coordinate for the plot. Can be 'lon', 'lat', or 'time'. Defaults to None.
-            fontsize (int): Font size for the plot. Defaults to 15.
+            data (Union[list, xr.DataArray]): Data to plot.
+            trop_lat (float, optional): Tropospheric latitude. Defaults to None.
+            ylabel (str, optional): Label for the y-axis. Defaults to ''.
+            coord (str, optional): Coordinate for the plot. Can be 'lon', 'lat', or 'time'. Defaults to None.
+            fontsize (int, optional): Font size for the plot. Defaults to None.
             pad (int): Padding value. Defaults to 15.
-            y_lim_max (float): Maximum limit for the y-axis. Defaults to None.
-            legend (str): Legend for the plot. Defaults to '_Hidden'.
-            figsize (int): Figure size. Defaults to 1.
-            linestyle (str): Line style for the plot. Defaults to '-'.
-            maxticknum (int): Maximum number of ticks. Defaults to 12.
-            color (str): Color for the plot. Defaults to 'tab:blue'.
-            ylogscale (bool): Use logarithmic scale for the y-axis. Defaults to False.
-            xlogscale (bool): Use logarithmic scale for the x-axis. Defaults to False.
-            loc (str): Location for the legend. Defaults to 'upper right'.
-            add (list): Additional objects to add. Defaults to None.
-            fig (list): Figure objects. Defaults to None.
-            plot_title (str): Title for the plot. Defaults to None.
-            path_to_pdf (str): Path to save the figure as a PDF. Defaults to None.
-            pdf_format (bool): Save the figure in PDF format. Defaults to True.
+            y_lim_max (float, optional): Maximum limit for the y-axis. Defaults to None.
+            legend (str, optional): Legend for the plot. Defaults to '_Hidden'.
+            figsize (int, optional): Figure size. Defaults to None.
+            linestyle (str, optional): Line style for the plot. Defaults to None.
+            maxticknum (int, optional): Maximum number of ticks. Defaults to 12.
+            color (str, optional): Color for the plot. Defaults to 'tab:blue'.
+            ylogscale (bool, optional): Use logarithmic scale for the y-axis. Defaults to None.
+            xlogscale (bool, optional): Use logarithmic scale for the x-axis. Defaults to None.
+            loc (str, optional): Location for the legend. Defaults to 'upper right'.
+            add (list, optional): Additional objects to add. Defaults to None.
+            fig (list, optional): Figure objects. Defaults to None.
+            plot_title (str, optional): Title for the plot. Defaults to None.
+            path_to_pdf (str, optional): Path to save the figure as a PDF. Defaults to None.
+            save (bool, optional): Whether to save the figure. Defaults to True.
+            pdf_format (bool, optional): Save the figure in PDF format. Defaults to True.
 
         Returns:
             list: List of figure and axis objects.
@@ -387,20 +423,26 @@ class PlottingClass:
             return [fig,  ax]
         
 
-    def plot_seasons_or_months(self, data, cbarlabel=None, seasons=None, months=None, cmap='coolwarm', save=True,
-                            figsize=None, plot_title=None,  vmin=None, vmax=None, fontsize=None, linestyle=None,
-                            path_to_pdf=None, pdf_format=None):
+    def plot_seasons_or_months(self, data: xr.DataArray, cbarlabel: Optional[str] = None, seasons: Optional[list] = None, 
+                            months: Optional[list] = None, cmap: str = 'coolwarm', save: bool = True,
+                            figsize: Optional[int] = None, plot_title: Optional[str] = None,  vmin: Optional[float] = None, 
+                            vmax: Optional[float] = None, fontsize: Optional[int] = None, linestyle: Optional[str] = None,
+                            path_to_pdf: Optional[str] = None, pdf_format: Optional[bool] = None):
         """ Function to plot seasonal data.
 
         Args:
-            data (xarray): First dataset to be plotted.
+            data (xarray.DataArray): First dataset to be plotted.
             cbarlabel (str, optional): Label for the colorbar. Defaults to None.
             seasons (list, optional): List of seasonal datasets. Defaults to None.
             months (list, optional): List of monthly datasets. Defaults to None.
-            figsize (int, optional): Size of the figure. Defaults to 1.
+            cmap (str, optional): Colormap for the plot. Defaults to 'coolwarm'.
+            save (bool, optional): Whether to save the figure. Defaults to True.
+            figsize (int, optional): Size of the figure. Defaults to None.
             plot_title (str, optional): Title of the plot. Defaults to None.
             vmin (float, optional): Minimum value of the colorbar. Defaults to None.
             vmax (float, optional): Maximum value of the colorbar. Defaults to None.
+            fontsize (int, optional): Font size for the plot. Defaults to None.
+            linestyle (str, optional): Line style for the plot. Defaults to None.
             path_to_pdf (str, optional): Path to save the PDF file. Defaults to None.
             pdf_format (bool, optional): If True, save the figure in PDF format. Defaults to True.
         """
@@ -484,15 +526,17 @@ class PlottingClass:
             self.savefig(path_to_pdf, self.pdf_format)
 
 
-    def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable=None, number_of_bar_ticks=None):
+    def ticks_for_colorbar(self, data: Union[xr.DataArray, float, int], vmin: Optional[Union[float, int]] = None, 
+                    vmax: Optional[Union[float, int]] = None, model_variable: Optional[str] = None, 
+                    number_of_bar_ticks: Optional[int] = None):
         """Compute ticks and levels for a color bar based on provided data.
 
         Args:
-            data: The data from which to compute the color bar.
-            vmin: The minimum value of the color bar. If None, it is derived from the data.
-            vmax: The maximum value of the color bar. If None, it is derived from the data.
-            model_variable: The variable to consider for the color bar computation.
-            number_of_bar_ticks: The number of ticks to be computed for the color bar.
+            data (Union[xarray.DataArray, float, int]): The data from which to compute the color bar.
+            vmin (Union[float, int], optional): The minimum value of the color bar. If None, it is derived from the data. Defaults to None.
+            vmax (Union[float, int], optional): The maximum value of the color bar. If None, it is derived from the data. Defaults to None.
+            model_variable (str, optional): The variable to consider for the color bar computation. Defaults to None.
+            number_of_bar_ticks (int, optional): The number of ticks to be computed for the color bar. Defaults to None.
 
         Returns:
             Tuple: A tuple containing the computed ticks and levels for the color bar.
@@ -517,16 +561,17 @@ class PlottingClass:
         return clevs
 
 
-    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None, save=True,
-            model_variable=None, figsize=None,  number_of_axe_ticks=None, number_of_bar_ticks=None, cbarlabel='',
-            plot_title=None, vmin=None, vmax=None, path_to_pdf=None, pdf_format=None,
-            fontsize=None):
+    def map(self, data: List[xr.DataArray], titles: Optional[Union[List[str], str]] = None, lonmin: int = -180, lonmax: int = 181, 
+            latmin: int = -90, latmax: int = 91, cmap: Optional[str] = None, save: bool = True, model_variable: Optional[str] = None, 
+            figsize: Optional[float] = None,  number_of_axe_ticks: Optional[int] = None, number_of_bar_ticks: Optional[int] = None, 
+            cbarlabel: str = '', plot_title: Optional[str] = None, vmin: Optional[float] = None, vmax: Optional[float] = None, 
+            path_to_pdf: Optional[str] = None, pdf_format: Optional[bool] = None, fontsize: Optional[int] = None):
         """
         Generate a map with subplots for provided data.
 
         Args:
             data (list): List of data to plot.
-            titles (list or str, optional): Titles for the subplots. If str, it will be repeated for each subplot. Defaults to None.
+            titles (Union[list, str], optional): Titles for the subplots. If str, it will be repeated for each subplot. Defaults to None.
             lonmin (int, optional): Minimum longitude. Defaults to -180.
             lonmax (int, optional): Maximum longitude. Defaults to 181.
             latmin (int, optional): Minimum latitude. Defaults to -90.
@@ -620,20 +665,36 @@ class PlottingClass:
         if save and isinstance(path_to_pdf, str):
             self.savefig(path_to_pdf, self.pdf_format)
 
-    def daily_variability_plot(self, data, ymax=12, relative=True, save=True,
-                            legend='_Hidden', figsize=None, linestyle=None, color='tab:blue',
-                            model_variable=None, loc='upper right', fontsize=None,
-                            add=None, fig=None, plot_title=None, path_to_pdf=None, pdf_format=True):
+    def daily_variability_plot(self, data, ymax: float = 12, relative: bool = True, save: bool = True,
+                           legend: str = '_Hidden', figsize: float = None, linestyle: str = None, color: str = 'tab:blue',
+                           model_variable: str = None, loc: str = 'upper right', fontsize: int = None,
+                           add: list = None, fig: list = None, plot_title: str = None, path_to_pdf: str = None, 
+                           pdf_format: bool = True) -> list:
         """
         Plot the daily variability of the dataset.
 
         This function generates a plot showing the daily variability of the provided dataset. It allows customization of various plot parameters such as color, scale, and legends.
 
         Args:
+            data: The dataset to be plotted.
+            ymax (float, optional): The maximum value for the y-axis. Defaults to 12.
+            relative (bool, optional): Whether the plot is relative. Defaults to True.
+            save (bool, optional): Whether to save the plot. Defaults to True.
+            legend (str, optional): The legend for the plot. Defaults to '_Hidden'.
+            figsize (float, optional): The figure size. Defaults to None.
+            linestyle (str, optional): The line style for the plot. Defaults to None.
+            color (str, optional): The color for the plot. Defaults to 'tab:blue'.
+            model_variable (str, optional): The model variable for the plot. Defaults to None.
+            loc (str, optional): The location for the legend. Defaults to 'upper right'.
+            fontsize (int, optional): The font size for the plot. Defaults to None.
+            add (list, optional): Additional objects to add. Defaults to None.
+            fig (list, optional): The figure objects. Defaults to None.
+            plot_title (str, optional): The title for the plot. Defaults to None.
+            path_to_pdf (str, optional): The path to save the figure as a PDF. Defaults to None.
+            pdf_format (bool, optional): Whether to save the figure in PDF format. Defaults to True.
 
         Returns:
             list: A list containing the figure and axis objects.
-
         """ 
         self.class_attributes_update(pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
                                 model_variable=model_variable)
