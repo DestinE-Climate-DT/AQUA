@@ -2127,8 +2127,6 @@ class Tropical_Rainfall:
 
         bin_value = bin_i + del_bin
 
-        
-
         return bin_value, units, 1 - threshold
 
     def seasonal_095level_into_netcdf(self, data, preprocess: bool = True, seasons_bool: bool = True, model_variable: str = None, 
@@ -2323,8 +2321,7 @@ class Tropical_Rainfall:
         tprate = data['tprate'].stack(total=['time', 'lon']).values
 
         if self.new_unit is not None and 'xarray' in str(type(tprate)):
-            tprate = self.precipitation_rate_units_converter(
-                tprate, new_unit=self.new_unit)
+            tprate = self.precipitation_rate_units_converter(tprate, new_unit=self.new_unit)
             units = new_unit
         elif self.new_unit is not None and 'ndarray' in str(type(tprate)):
             result_list = []
@@ -2371,9 +2368,9 @@ class Tropical_Rainfall:
         else:
             return new_dataset
 
-    def daily_variability_plot(self, ymax: int = 12, trop_lat: float = None, relative: bool = True, get_median: bool = False,
-                            legend: str = '_Hidden', figsize: int = 1, linestyle: str = '-', maxticknum: int = 12, color: str = 'tab:blue',
-                            model_variable: str = None, ylogscale: bool = False, xlogscale: bool = False, loc: str = 'upper right',
+    def daily_variability_plot(self, ymax: int = 12, trop_lat: float = None, relative: bool = True, save: bool = True,
+                            legend: str = '_Hidden', figsize: int = None, linestyle: str = None, color: str = 'tab:blue',
+                            model_variable: str = None, loc: str = 'upper right', fontsize: int = None,
                             add: Any = None, fig: Any = None, plot_title: str = None, path_to_pdf: str = None, new_unit: str = None,
                             name_of_file: str = '', pdf_format: bool = True, path_to_netcdf: str = None) -> List[Union[plt.Figure, plt.Axes]]:
         """
@@ -2385,15 +2382,12 @@ class Tropical_Rainfall:
             ymax (int): The maximum y-value for the plot.
             trop_lat (float): The tropical latitude value to be used.
             relative (bool): A flag indicating whether the plot should be relative.
-            get_median (bool): A flag indicating whether to calculate the median.
             legend (str): The legend for the plot.
             figsize (int): The size of the figure.
             ls (str): The linestyle for the plot.
             maxticknum (int): The maximum number of ticks for the plot.
             color (str): The color of the plot.
             model_variable (str): The variable name to be used.
-            ylogscale (bool): A flag indicating whether to use a log scale for the y-axis.
-            xlogscale (bool): A flag indicating whether to use a log scale for the x-axis.
             loc (str): The location for the legend.
             add: Additional parameters for the plot.
             fig: The figure to be used for the plot.
@@ -2410,59 +2404,23 @@ class Tropical_Rainfall:
         """
 
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
+
         if path_to_pdf is None:
             path_to_pdf = self.path_to_pdf
+
         if path_to_netcdf is None:
             raise Exception('The path needs to be provided')
         else:
             data = self.tools.open_dataset(
                 path_to_netcdf=path_to_netcdf)
-
-        utc_time = data['utc_time']
-        if relative:
-            tprate = data['tprate_relative']
-        else:
-            tprate = data['tprate']
-        try:
-            units = data.units
-        except AttributeError:
-            try:
-                units = data.tprate.units
-            except AttributeError:
-                units = 'mm/day'
-
         if 'Dataset' in str(type(data)):
-            y_lim_max = self.precipitation_rate_units_converter(
-                ymax, old_unit='mm/day', new_unit=self.new_unit)
-            if fig is not None:
-                fig, ax = fig
-            elif add is None and fig is None:
-                fig, ax = plt.subplots(
-                    figsize=(11*figsize, 10*figsize), layout='constrained')
-            elif add is not None:
-                fig, ax = add
-        ax.plot(utc_time, tprate,
-                color=color,  label=legend,  linestyle=linestyle)
+            y_lim_max = self.precipitation_rate_units_converter(ymax, old_unit=data.units, new_unit=self.new_unit)
+        
 
-        if relative:
-            ax.set_title(
-                'Relative Value of Daily Precipitation Variability', fontsize=15)
-            ax.set_xlabel('tprate variability, '+units,  fontsize=12)
-        else:
-            ax.set_title('Daily Precipitation Variability', fontsize=15)
-            ax.set_xlabel('relative tprate',  fontsize=12)
+        if isinstance(self.path_to_pdf, str) and name_of_file is not None:
+            path_to_pdf = self.path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
 
-        ax.set_frame_on(True)
-        ax.grid(True)
-
-        ax.set_xlabel('Local time', fontsize=12)
-
-        if legend != '_Hidden':
-            plt.legend(loc=loc,
-                       fontsize=12,    ncol=2)
-
-        if isinstance(path_to_pdf, str) and name_of_file is not None:
-            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
-            self.savefig(path_to_pdf, pdf_format)
-
-        return [fig,  ax]
+        self.plots.daily_variability_plot(data, ymax=y_lim_max, relative=relative, save=save,
+                            legend=legend, figsize=figsize, linestyle=linestyle, color=color,
+                            model_variable=self.model_variable, loc=loc, fontsize=fontsize,
+                            add=add, fig=fig, plot_title=None, path_to_pdf=path_to_pdf, pdf_format=pdf_format)

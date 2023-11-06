@@ -3,6 +3,7 @@ import matplotlib.colors as colors
 # import boost_histogram as bh  # pip
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
+from typing import Union, Tuple, Optional, Any, List
 
 from aqua.util import create_folder
 from aqua.logger import log_configure
@@ -21,10 +22,10 @@ import xarray as xr
 class PlottingClass:
     """This is class to create the plots."""
         
-    def __init__(self, path_to_pdf=None, pdf_format=True, figsize=1, linewidth=3,
+    def __init__(self, pdf_format=True, figsize=1, linewidth=3, #path_to_pdf=None, 
                  fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm', #pdf=True,
                  linestyle='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=4, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
-        self.path_to_pdf = path_to_pdf
+        #self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
         self.fontsize = fontsize
@@ -68,7 +69,7 @@ class PlottingClass:
         Returns:
             None
         """
-        self.path_to_pdf = self.path_to_pdf if path_to_pdf is None else path_to_pdf
+        #self.path_to_pdf = self.path_to_pdf if path_to_pdf is None else path_to_pdf
         self.pdf_format = self.pdf_format if pdf_format is None else pdf_format
         self.figsize = self.figsize if figsize is None else figsize
         self.fontsize = self.fontsize if fontsize is None else fontsize
@@ -204,8 +205,9 @@ class PlottingClass:
 
         if xmax is not None:
             plt.xlim([0, xmax])
-        if save and isinstance(self.path_to_pdf, str):
-            self.savefig(self.path_to_pdf, self.pdf_format)
+
+        if save and isinstance(path_to_pdf, str):
+            self.savefig(path_to_pdf, self.pdf_format)
         return {fig, ax}
 
     def plot_of_average(self, data=None, trop_lat=None, ylabel='', coord=None, fontsize=None, pad=15, y_lim_max=None, number_of_axe_ticks=None,
@@ -382,8 +384,8 @@ class PlottingClass:
             plt.yscale('log') if self.ylogscale else None
             plt.xscale('log') if self.xlogscale else None
 
-        if save and isinstance(self.path_to_pdf, str):
-            self.savefig(self.path_to_pdf, self.pdf_format)
+        if save and isinstance(path_to_pdf, str):
+            self.savefig(path_to_pdf, self.pdf_format)
 
         if 'Dataset' in str(type(data)):
             return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5]
@@ -484,8 +486,8 @@ class PlottingClass:
         if plot_title is not None:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
-        if save and isinstance(self.path_to_pdf, str):
-            self.savefig(self.path_to_pdf, self.pdf_format)
+        if save and isinstance(path_to_pdf, str):
+            self.savefig(path_to_pdf, self.pdf_format)
 
 
     def ticks_for_colorbar(self, data, vmin=None, vmax=None, model_variable=None, number_of_bar_ticks=None):
@@ -517,14 +519,8 @@ class PlottingClass:
             clevs = list(range(vmin, vmax + 1))
         elif isinstance(vmax, float) or isinstance(vmin, float):
             clevs = [vmin + i * (vmax - vmin) / self.number_of_bar_ticks for i in range(self.number_of_bar_ticks + 1)]
-        #try:
-        #    del_tick = abs(vmax - 2 - vmin) / (self.number_of_bar_ticks + 1)
-        #except ZeroDivisionError:
-        #    del_tick = abs(vmax - 2.01 - vmin) / (self.number_of_bar_ticks + 1)
-        #clevs = ticks# np.arange(vmin, vmax, del_tick)
-        #self.logger.debug('Ticks: {}'.format(ticks))
         self.logger.debug('Clevs: {}'.format(clevs))
-        return clevs #ticks#, 
+        return clevs
 
 
     def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None, save=True,
@@ -627,101 +623,68 @@ class PlottingClass:
         if plot_title is not None:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
-        if save and isinstance(self.path_to_pdf, str):
-            self.savefig(self.path_to_pdf, self.pdf_format)
+        if save and isinstance(path_to_pdf, str):
+            self.savefig(path_to_pdf, self.pdf_format)
 
-    """
-    def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
-                            legend='_Hidden', figsize=self.figsize, linestyle='-', maxticknum=12, color='tab:blue',
-                            varname='tprate', ylogscale=False, xlogscale=False, loc='upper right',
-                            add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit='mm/day',
-                            name_of_file=None, pdf_format=True, path_to_netcdf=None):
-
+    def daily_variability_plot(self, data, ymax=12, relative=True, save=True,
+                            legend='_Hidden', figsize=None, linestyle=None, color='tab:blue',
+                            model_variable=None, loc='upper right', fontsize=None,
+                            add=None, fig=None, plot_title=None, path_to_pdf=None, pdf_format=True):
+        """
         Plot the daily variability of the dataset.
 
         This function generates a plot showing the daily variability of the provided dataset. It allows customization of various plot parameters such as color, scale, and legends.
 
         Args:
-            ymax (int): The maximum y-value for the plot.
-            trop_lat (float): The tropical latitude value to be used.
-            relative (bool): A flag indicating whether the plot should be relative.
-            get_median (bool): A flag indicating whether to calculate the median.
-            legend (str): The legend for the plot.
-            figsize (int): The size of the figure.
-            linestyle (str): The linestyle for the plot.
-            maxticknum (int): The maximum number of ticks for the plot.
-            color (str): The color of the plot.
-            varname (str): The variable name to be used.
-            ylogscale (bool): A flag indicating whether to use a log scale for the y-axis.
-            xlogscale (bool): A flag indicating whether to use a log scale for the x-axis.
-            loc (str): The location for the legend.
-            add: Additional parameters for the plot.
-            fig: The figure to be used for the plot.
-            plot_title (str): The title for the plot.
-            path_to_pdf (str): The path to the PDF file to be saved.
-            new_unit (str): The new unit to which the data should be converted.
-            name_of_file (str): The name of the file to be saved.
-            pdf_format (bool): A flag indicating whether the file should be saved in PDF format.
-            path_to_netcdf (str): The path to the NetCDF file to be used.
 
         Returns:
             list: A list containing the figure and axis objects.
 
-
-
-        self.class_attributes_update(trop_lat=trop_lat)
-        if path_to_netcdf is None:
-            raise Exception('The path needs to be provided')
-        else:
-            data = self.open_dataset(
-                path_to_netcdf=path_to_netcdf)
+        """ 
+        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
+                                model_variable=model_variable)
+        if fig is not None:
+            fig, ax = fig
+        elif add is None and fig is None:
+            fig, ax = plt.subplots(
+                figsize=(11*self.figsize, 10*self.figsize), layout='constrained')
+        elif add is not None:
+            fig, ax = add
 
         utc_time = data['utc_time']
         if relative:
             tprate = data['tprate_relative']
         else:
-            tprate = data['tprate']
+            tprate = data[self.model_variable]
         try:
             units = data.units
         except AttributeError:
-            try:
-                units = data.tprate.units
-            except AttributeError:
-                units = 'mm/day'  # 'kg m**-2 s**-1'
+            units = data.tprate.units
 
-        if 'Dataset' in str(type(data)):
-            y_lim_max = self.precipitation_rate_units_converter(
-                ymax, old_unit='mm/day', new_unit=new_unit)
-            if fig is not None:
-                fig, ax = fig
-            elif add is None and fig is None:
-                fig, ax = plt.subplots(
-                    figsize=(11*figsize, 10*figsize), layout='constrained')
-            elif add is not None:
-                fig, ax = add
         ax.plot(utc_time, tprate,
-                color=color,  label=legend,  linestyle=linestyle)
+                color=color,  label=legend,  linestyle=self.linestyle)
 
         if relative:
             ax.set_title(
-                'Relative Value of Daily Precipitation Variability', fontsize=15)
-            ax.set_xlabel('tprate variability, '+units,  fontsize=12)
+                'Relative Value of Daily Precipitation Variability', fontsize=self.fontsize+1)
+            ax.set_xlabel('tprate variability, '+units,  fontsize=self.fontsize-2)
         else:
-            ax.set_title('Daily Precipitation Variability', fontsize=15)
-            ax.set_xlabel('relative tprate',  fontsize=12)
+            ax.set_title('Daily Precipitation Variability', fontsize=self.fontsize+1)
+            ax.set_xlabel('relative tprate',  fontsize=self.fontsize-2)
 
         ax.set_frame_on(True)
         ax.grid(True)
 
-        ax.set_xlabel('Local time', fontsize=12)
+        ax.set_xlabel('Local time', fontsize=self.fontsize-2)
 
         if legend != '_Hidden':
             plt.legend(loc=loc,
-                       fontsize=12,    ncol=2)
+                       fontsize=self.fontsize-2,    ncol=2)
 
-        if isinstance(path_to_pdf, str) and name_of_file is not None:
-            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
-            self.savefig(path_to_pdf, pdf_format)
+        if plot_title is not None:
+            plt.suptitle(plot_title, fontsize=self.fontsize+3)
+
+        if save and isinstance(path_to_pdf, str):
+            self.savefig(path_to_pdf, self.pdf_format)
 
         return [fig,  ax]
-    """
