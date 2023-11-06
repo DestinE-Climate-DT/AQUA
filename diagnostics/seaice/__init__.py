@@ -1,7 +1,7 @@
-from .seaice_class import SeaIceExtent
+from .seaice_class import SeaIceExtent, SeaIceVolume
 
 # Optional but recommended
 __version__ = '0.0.1'
 
 # This specifies which methods are exported publicly, used by "from dummy import *"
-__all__ = ["SeaIceExtent"]
+__all__ = ["SeaIceExtent", "SeaIceVolume"]
