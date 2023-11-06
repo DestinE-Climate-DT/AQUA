@@ -12,15 +12,15 @@ import numpy as np
 import xarray as xr
 
 from datetime import datetime
-# from timezonefinder import TimezoneFinder
 import pytz
+from typing import Union, Tuple, Optional, Any, List
 
 from itertools import groupby
 from statistics import mean
 
 import matplotlib.pyplot as plt
+import matplotlib.figure as figure
 import matplotlib.colors as colors
-# import boost_histogram as bh  # pip
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 
@@ -37,9 +37,6 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
 
-#from aqua import Reader
-from aqua.util import create_folder
-
 from .tropical_rainfall_tools import ToolsClass
 from .tropical_rainfall_plots import PlottingClass 
 
@@ -48,36 +45,42 @@ class Tropical_Rainfall:
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
 
     def __init__(self,
-                 trop_lat=10,
-                 s_time=None,
-                 f_time=None,
-                 s_year=None,
-                 f_year=None,
-                 s_month=None,
-                 f_month=None,
-                 num_of_bins=None,
-                 first_edge=0,
-                 width_of_bin=None,
-                 bins=0,
-                 new_unit='mm/day',
-                 model_variable='tprate',
-                 path_to_netcdf=None,  
-                 path_to_pdf=None,
+                 trop_lat: float = 10,
+                 s_time: Union[str, int, None] = None,
+                 f_time: Union[str, int, None] = None,
+                 s_year: Union[int, None] = None,
+                 f_year: Union[int, None] = None,
+                 s_month: Union[int, None] = None,
+                 f_month: Union[int, None] = None,
+                 num_of_bins: Union[int, None] = None,
+                 first_edge: float = 0,
+                 width_of_bin: Union[float, None] = None,
+                 bins: list = 0,
+                 new_unit: str = 'mm/day',
+                 model_variable: str = 'tprate',
+                 path_to_netcdf: Union[str, None] = None,  
+                 path_to_pdf: Union[str, None] = None,
                  loglevel: str = 'WARNING'):
         """ The constructor of the class.
 
         Args:
-            trop_lat (int or float, optional):      The latitude of the tropical zone.      Defaults to 10.
-            s_time (int or str, optional):          The start time of the time interval.    Defaults to None.
-            f_time (int or str, optional):          The end time of the time interval.      Defaults to None.
-            s_year (int, optional):                 The start year of the time interval.    Defaults to None.
-            f_year (int, optional):                 The end year of the time interval.      Defaults to None.
-            s_month (int, optional):                The start month of the time interval.   Defaults to None.
-            f_month (int, optional):                The end month of the time interval.     Defaults to None.
-            num_of_bins (int, optional):            The number of bins.                     Defaults to None.
-            first_edge (int or float, optional):    The first edge of the bin.              Defaults to None.
-            width_of_bin (int or float, optional):  The width of the bin.                   Defaults to None.
-            bins (np.ndarray, optional):            The bins.                               Defaults to 0."""
+            trop_lat (float, optional): The latitude of the tropical zone. Defaults to 10.
+            s_time (Union[str, int, None], optional): The start time of the time interval. Defaults to None.
+            f_time (Union[str, int, None], optional): The end time of the time interval. Defaults to None.
+            s_year (Union[int, None], optional): The start year of the time interval. Defaults to None.
+            f_year (Union[int, None], optional): The end year of the time interval. Defaults to None.
+            s_month (Union[int, None], optional): The start month of the time interval. Defaults to None.
+            f_month (Union[int, None], optional): The end month of the time interval. Defaults to None.
+            num_of_bins (Union[int, None], optional): The number of bins. Defaults to None.
+            first_edge (float, optional): The first edge of the bin. Defaults to 0.
+            width_of_bin (Union[float, None], optional): The width of the bin. Defaults to None.
+            bins (list, optional): The bins. Defaults to 0.
+            new_unit (str, optional): The unit for the new data. Defaults to 'mm/day'.
+            model_variable (str, optional): The name of the model variable. Defaults to 'tprate'.
+            path_to_netcdf (Union[str, None], optional): The path to the netCDF file. Defaults to None.
+            path_to_pdf (Union[str, None], optional): The path to the PDF file. Defaults to None.
+            loglevel (str, optional): The log level for logging. Defaults to 'WARNING'.
+        """
 
         self.trop_lat = trop_lat
         self.s_time = s_time
@@ -97,7 +100,7 @@ class Tropical_Rainfall:
         self.tools = ToolsClass(loglevel=loglevel)
 
         if width_of_bin is None:
-            self.width_of_bin = self.precipitation_rate_units_converter(0.05, old_unit='mm/day', new_unit=new_unit)
+            self.width_of_bin = self.precipitation_rate_units_converter(0.05, old_unit='mm/day', new_unit=self.new_unit)
         else:
             self.width_of_bin = width_of_bin
         
@@ -111,22 +114,30 @@ class Tropical_Rainfall:
         else:
             self.path_to_pdf = path_to_pdf
 
-    def class_attributes_update(self, trop_lat=None, s_time=None, f_time=None, s_year=None, f_year=None, s_month=None, f_month=None,
-                                num_of_bins=None, first_edge=None, width_of_bin=None, bins=0, model_variable=None, new_unit=None):
-        """ Function to update the class attributes.
+    def class_attributes_update(self, trop_lat: Union[float, None] = None, s_time: Union[str, int, None] = None, 
+                            f_time: Union[str, int, None] = None, s_year: Union[int, None] = None, 
+                            f_year: Union[int, None] = None, s_month: Union[int, None] = None, 
+                            f_month: Union[int, None] = None, num_of_bins: Union[int, None] = None, 
+                            first_edge: Union[float, None] = None, width_of_bin: Union[float, None] = None, 
+                            bins: Union[list, int] = 0, model_variable: Union[str, None] = None, 
+                            new_unit: Union[str, None] = None):
+        """ Update the class attributes with new values.
 
         Args:
-            trop_lat (int or float, optional):      The latitude of the tropical zone.      Defaults to 10.
-            s_time (int or str, optional):          The start time of the time interval.    Defaults to None.
-            f_time (int or str, optional):          The end time of the time interval.      Defaults to None.
-            s_year (int, optional):                 The start year of the time interval.    Defaults to None.
-            f_year (int, optional):                 The end year of the time interval.      Defaults to None.
-            s_month (int, optional):                The start month of the time interval.   Defaults to None.
-            f_month (int, optional):                The end month of the time interval.     Defaults to None.
-            num_of_bins (int, optional):            The number of bins.                     Defaults to None.
-            first_edge (int or float, optional):    The first edge of the bin.              Defaults to None.
-            width_of_bin (int or float, optional):  The width of the bin.                   Defaults to None.
-            bins (np.ndarray, optional):            The bins.                               Defaults to 0. """
+            trop_lat (Union[float, None], optional): The latitude of the tropical zone. Defaults to None.
+            s_time (Union[str, int, None], optional): The start time of the time interval. Defaults to None.
+            f_time (Union[str, int, None], optional): The end time of the time interval. Defaults to None.
+            s_year (Union[int, None], optional): The start year of the time interval. Defaults to None.
+            f_year (Union[int, None], optional): The end year of the time interval. Defaults to None.
+            s_month (Union[int, None], optional): The start month of the time interval. Defaults to None.
+            f_month (Union[int, None], optional): The end month of the time interval. Defaults to None.
+            num_of_bins (Union[int, None], optional): The number of bins. Defaults to None.
+            first_edge (Union[float, None], optional): The first edge of the bin. Defaults to None.
+            width_of_bin (Union[float, None], optional): The width of the bin. Defaults to None.
+            bins (Union[list, int], optional): The bins. Defaults to 0.
+            model_variable (Union[str, None], optional): The name of the model variable. Defaults to None.
+            new_unit (Union[str, None], optional): The unit for the new data. Defaults to None.
+        """
         if trop_lat is not None and isinstance(trop_lat, (int, float)):
             self.trop_lat = trop_lat
         elif trop_lat is not None and not isinstance(trop_lat, (int, float)):
@@ -185,8 +196,16 @@ class Tropical_Rainfall:
         self.new_unit = self.new_unit if new_unit is None else new_unit
         self.model_variable = self.model_variable if model_variable is None else model_variable
 
-    def coordinate_names(self, data):
-        """ Function to get the names of the coordinates."""
+    def coordinate_names(self, data: Union[xr.Dataset, xr.DataArray]) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Function to get the names of the coordinates.
+
+        Args:
+            data (xarray.Dataset or xarray.DataArray): The data to extract coordinate names from.
+
+        Returns:
+            Tuple[Optional[str], Optional[str]]: A tuple containing the names of latitude and longitude coordinates, if found.
+        """
 
         coord_lat, coord_lon = None, None
 
@@ -204,17 +223,18 @@ class Tropical_Rainfall:
                     coord_lon = i
         return coord_lat, coord_lon
 
-    def precipitation_rate_units_converter(self, data, model_variable=None, old_unit=None, new_unit=None):
+    def precipitation_rate_units_converter(self, data: Union[xr.Dataset, float, int, np.ndarray], model_variable: Optional[str] = 'tprate', old_unit: Optional[str] = None, new_unit: Optional[str] = 'm s**-1') -> xr.Dataset:
         """
         Function to convert the units of precipitation rate.
 
         Args:
-            data (xarray):                  The Dataset
-            model_variable (str, optional): The name of the variable to be converted.   Defaults to 'tprate'.
-            new_unit (str, optional):       The new unit of the variable.               Defaults to 'm s**-1'.
+            data (Union[xarray.Dataset, float, int, np.ndarray]): The Dataset or data array.
+            model_variable (str, optional): The name of the variable to be converted. Defaults to 'tprate'.
+            old_unit (str, optional): The old unit of the variable. Defaults to None.
+            new_unit (str, optional): The new unit of the variable. Defaults to 'm s**-1'.
 
         Returns:
-            xarray: The Dataset with converted units.
+            xarray.Dataset: The Dataset with converted units.
         """
         self.class_attributes_update(model_variable=model_variable, new_unit=new_unit)
         try:
@@ -255,15 +275,16 @@ class Tropical_Rainfall:
                 data.attrs['history'] = history_update
         return data
 
-    def latitude_band(self, data, trop_lat=None):
-        """ Function to select the Dataset for specified latitude range
+    def latitude_band(self, data: xr.Dataset, trop_lat: Optional[Union[int, float]] = None) -> xr.Dataset:
+        """
+        Function to select the Dataset for the specified latitude range.
 
         Args:
-            data (xarray):                  The Dataset
-            trop_lat (int/float, optional): The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
+            data (xarray.Dataset): The Dataset to be filtered.
+            trop_lat (Union[int, float], optional): The maximal and minimal tropical latitude values in the Dataset. Defaults to None.
 
         Returns:
-            xarray: The Dataset only for selected latitude range.
+            xarray.Dataset: The Dataset only for the selected latitude range.
         """
 
         self.class_attributes_update(trop_lat=trop_lat)
@@ -272,20 +293,23 @@ class Tropical_Rainfall:
         self.class_attributes_update(trop_lat=trop_lat)
         return data.where(abs(data[coord_lat]) <= self.trop_lat, drop=True)
 
-    def time_band(self, data, s_time=None, f_time=None, s_year=None, f_year=None, s_month=None, f_month=None):
-        """ Function to select the Dataset for specified time range
+    def time_band(self, data: xr.Dataset, s_time: Optional[str] = None, f_time: Optional[str] = None,
+             s_year: Optional[str] = None, f_year: Optional[str] = None,
+             s_month: Optional[str] = None, f_month: Optional[str] = None) -> xr.Dataset:
+        """
+        Function to select the Dataset for the specified time range.
 
         Args:
-            data (xarray):                  The Dataset
-            s_time (str, optional):         The starting time of the Dataset.       Defaults to None.
-            f_time (str, optional):         The ending time of the Dataset.         Defaults to None.
-            s_year (str, optional):         The starting year of the Dataset.       Defaults to None.
-            f_year (str, optional):         The ending year of the Dataset.         Defaults to None.
-            s_month (str, optional):        The starting month of the Dataset.      Defaults to None.
-            f_month (str, optional):        The ending month of the Dataset.        Defaults to None.
+            data (xarray.Dataset): The Dataset to be filtered.
+            s_time (str, optional): The starting time of the Dataset. Defaults to None.
+            f_time (str, optional): The ending time of the Dataset. Defaults to None.
+            s_year (str, optional): The starting year of the Dataset. Defaults to None.
+            f_year (str, optional): The ending year of the Dataset. Defaults to None.
+            s_month (str, optional): The starting month of the Dataset. Defaults to None.
+            f_month (str, optional): The ending month of the Dataset. Defaults to None.
 
         Returns:
-            xarray: The Dataset only for selected time range.
+            xarray.Dataset: The Dataset only for the selected time range.
         """
         self.class_attributes_update(s_time=s_time, f_time=f_time, s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
 
@@ -320,16 +344,17 @@ class Tropical_Rainfall:
 
         return data
 
-    def dataset_into_1d(self, data, model_variable=None, sort=False):
-        """ Function to convert Dataset into 1D array.
+    def dataset_into_1d(self, data: xr.Dataset, model_variable: Optional[str] = None, sort: bool = False) -> xr.Dataset:
+        """
+        Function to convert Dataset into a 1D array.
 
         Args:
-            data (xarray):                      The Dataset
-            model_variable (str, optional):     The variable of the Dataset.    Defaults to 'tprate'.
-            sort (bool, optional):              The flag to sort the array.     Defaults to False.
+            data (xarray.Dataset): The input Dataset.
+            model_variable (str, optional): The variable of the Dataset. Defaults to 'tprate'.
+            sort (bool, optional): The flag to sort the array. Defaults to False.
 
         Returns:
-            xarray: The 1D array.
+            xarray.Dataset: The 1D array.
         """
         self.class_attributes_update(model_variable=model_variable)
         coord_lat, coord_lon = self.coordinate_names(data)
@@ -347,25 +372,29 @@ class Tropical_Rainfall:
             data_1d = data_1d.sortby(data_1d)
         return data_1d
 
-    def preprocessing(self, data, trop_lat=None, preprocess=True, model_variable=None,
-                      s_time=None, f_time=None, s_year=None, f_year=None, new_unit=None, s_month=None, f_month=None, dask_array=False):
-        """ Function to preprocess the Dataset according to provided arguments and attributes of the class.
+    def preprocessing(self, data: xr.Dataset, trop_lat: Optional[float] = None, preprocess: bool = True, 
+                    model_variable: Optional[str] = None, s_time: Union[str, int, None] = None, 
+                    f_time: Union[str, int, None] = None, s_year: Union[int, None] = None, f_year: Union[int, None] = None,
+                    new_unit: Union[str, None] = None, s_month: Union[int, None] = None, f_month: Union[int, None] = None,
+                    dask_array: bool = False) -> xr.Dataset:
+        """
+        Function to preprocess the Dataset according to provided arguments and attributes of the class.
 
         Args:
-            data (xarray):                  The Dataset.
-            preprocess (bool, optional):    If True, the functiom preprocess Dataset.   Defaults to True.
-            model_variable (str, optional): The variable of the Dataset.                        Defaults to 'tprate'.
-            trop_lat (float, optional):     The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
-            s_time (str/int, optional):     The starting time value/index in Dataset.           Defaults to None.
-            f_time (str/int, optional):     The final time value/index in Dataset.              Defaults to None.
-            s_year (int, optional):         The starting year in Dataset.                       Defaults to None.
-            f_year (int, optional):         The final year in Dataset.                          Defaults to None.
-            s_month (int, optional):        The starting month in Dataset.                      Defaults to None.
-            f_month (int, optional):        The final month in Dataset.                         Defaults to None.
-            dask_array (bool, optional):    If True, the function return daskarray.     Defaults to False.
+            data (xarray.Dataset): The input Dataset.
+            trop_lat (float, optional): The maximum and minimum tropical latitude values in the Dataset. Defaults to None.
+            preprocess (bool, optional): If True, the function preprocesses the Dataset. Defaults to True.
+            model_variable (str, optional): The variable of the Dataset. Defaults to 'tprate'.
+            s_time (Union[str, int, None], optional): The starting time value/index in the Dataset. Defaults to None.
+            f_time (Union[str, int, None], optional): The final time value/index in the Dataset. Defaults to None.
+            s_year (Union[int, None], optional): The starting year in the Dataset. Defaults to None.
+            f_year (Union[int, None], optional): The final year in the Dataset. Defaults to None.
+            s_month (Union[int, None], optional): The starting month in the Dataset. Defaults to None.
+            f_month (Union[int, None], optional): The final month in the Dataset. Defaults to None.
+            dask_array (bool, optional): If True, the function returns a dask array. Defaults to False.
 
         Returns:
-            xarray: Preprocessed Dataset according to the arguments of the function
+            xarray.Dataset: Preprocessed Dataset according to the arguments of the function.
         """
 
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit,
@@ -398,13 +427,18 @@ class Tropical_Rainfall:
         else:
             return data
 
-    def histogram_lowres(self, data, data_with_global_atributes=None,
-                         weights=None, preprocess=True, trop_lat=None, model_variable=None,
-                         s_time=None, f_time=None, s_year=None, save=True, f_year=None, s_month=None, f_month=None,
-                         num_of_bins=None, first_edge=None, width_of_bin=None, bins=0,
-                         lazy=False, create_xarray=True, path_to_histogram=None, name_of_file=None,
-                         positive=True, threshold=2, new_unit=None, test=False):
-        """ Function to calculate a histogram of the low-resolution Dataset.
+    def histogram_lowres(self, data: xr.Dataset, data_with_global_atributes: Optional[xr.Dataset] = None,
+                     weights: Optional[Any] = None, preprocess: bool = True, trop_lat: Optional[float] = None, 
+                     model_variable: Optional[str] = None, s_time: Optional[Union[str, int]] = None, 
+                     f_time: Optional[Union[str, int]] = None, s_year: Optional[int] = None, save: bool = True, 
+                     f_year: Optional[int] = None, s_month: Optional[int] = None, f_month: Optional[int] = None,
+                     num_of_bins: Optional[int] = None, first_edge: Optional[float] = None, 
+                     width_of_bin: Optional[float] = None, bins: Union[int, List[float]] = 0,
+                     lazy: bool = False, create_xarray: bool = True, path_to_histogram: Optional[str] = None, 
+                     name_of_file: Optional[str] = None, positive: bool = True, threshold: int = 2, 
+                     new_unit: Optional[str] = None, test: bool = False) -> Union[xr.Dataset, np.ndarray]:
+        """ 
+        Function to calculate a histogram of the low-resolution Dataset.
 
         Args:
             data (xarray.Dataset):          The input Dataset.
@@ -563,11 +597,15 @@ class Tropical_Rainfall:
                     self.dataset_to_netcdf(tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return counts_per_bin
 
-    def histogram(self, data, data_with_global_atributes=None, weights=None, preprocess=True, trop_lat=None, model_variable=None,
-                  s_time=None, f_time=None, s_year=None, save=True, f_year=None, s_month=None, f_month=None,
-                  num_of_bins=None, first_edge=None, width_of_bin=None, bins=0,
-                  path_to_histogram=None, name_of_file=None,  positive=True, new_unit=None, threshold=2, test=False, seasons_bool=None):
-        """ Function to calculate a histogram of the high-resolution Dataset.
+    def histogram(self, data: xr.Dataset, data_with_global_atributes: Optional[xr.Dataset] = None, weights: Optional[Any] = None, 
+                preprocess: bool = True, trop_lat: Optional[float] = None, model_variable: Optional[str] = None,
+                s_time: Optional[Union[str, int]] = None, f_time: Optional[Union[str, int]] = None, s_year: Optional[int] = None, 
+                save: bool = True, f_year: Optional[int] = None, s_month: Optional[int] = None, f_month: Optional[int] = None,
+                num_of_bins: Optional[int] = None, first_edge: Optional[float] = None, width_of_bin: Optional[float] = None, bins: Union[int, List[float]] = 0,
+                path_to_histogram: Optional[str] = None, name_of_file: Optional[str] = None, positive: bool = True, new_unit: Optional[str] = None, 
+                threshold: int = 2, test: bool = False, seasons_bool: Optional[bool] = None) -> Union[xr.Dataset, np.ndarray]:
+        """ 
+        Function to calculate a histogram of the high-resolution Dataset.
 
         Args:
             data (xarray.Dataset):          The input Dataset.
@@ -731,8 +769,10 @@ class Tropical_Rainfall:
 
         return tprate_dataset
 
-    def dataset_to_netcdf(self, dataset=None, path_to_netcdf=None, name_of_file=None):
-        """ Function to save the histogram.
+    def dataset_to_netcdf(self, dataset: Optional[xr.Dataset] = None, path_to_netcdf: Optional[str] = None, 
+                    name_of_file: Optional[str] = None) -> str:
+        """ 
+        Function to save the histogram.
 
         Args:
             dataset (xarray, optional):         The Dataset with the histogram.     Defaults to None.
@@ -764,8 +804,10 @@ class Tropical_Rainfall:
                 "The path to save the histogram needs to be provided.")
         return path_to_netcdf
 
-    def grid_attributes(self, data=None, tprate_dataset=None, variable=None):
-        """ Function to add the attributes with information about the space and time grid to the Dataset.
+    def grid_attributes(self, data: Optional[xr.Dataset] = None, tprate_dataset: Optional[xr.Dataset] = None, 
+                    variable: Optional[str] = None) -> xr.Dataset:
+        """ 
+        Function to add the attributes with information about the space and time grid to the Dataset.
 
         Args:
             data (xarray, optional):            The Dataset with a final time and space grif, for which calculations were performed.    Defaults to None.
@@ -832,12 +874,18 @@ class Tropical_Rainfall:
 
         return tprate_dataset
 
-    def add_frequency_and_pdf(self,  tprate_dataset=None, path_to_histogram=None, name_of_file=None,  test=False, label=None):
-        """ Function to convert the histogram to xarray.Dataset.
+    def add_frequency_and_pdf(self, tprate_dataset: Optional[xr.Dataset] = None, path_to_histogram: Optional[str] = None, 
+                        name_of_file: Optional[str] = None, test: Optional[bool] = False, 
+                        label: Optional[str] = None) -> xr.Dataset:
+        """ 
+        Function to convert the histogram to xarray.Dataset.
 
         Args:
-            hist_counts (xarray, optional):     The histogram with counts.      Defaults to None.
-            path_to_histogram (str, optional):  The path to save the histogram. Defaults to None.
+            tprate_dataset (xarray, optional):     The Dataset with the histogram. Defaults to None.
+            path_to_histogram (str, optional):     The path to save the histogram. Defaults to None.
+            name_of_file (str, optional):          The name of the file to save. Defaults to None.
+            test (bool, optional):                 If True, performs a test. Defaults to False.
+            label (str, optional):                 The label for the dataset. Defaults to None.
 
         Returns:
             xarray: The xarray.Dataset with the histogram.
@@ -872,29 +920,20 @@ class Tropical_Rainfall:
                 dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
         return tprate_dataset
 
-    def open_dataset(self, path_to_netcdf=None):
-        """ Function to load a histogram dataset from a file using pickle.
-        Args:
-            path_to_netcdf (str):       The path to the dataset file.
-        Returns:
-            object:                     The loaded histogram dataset.
-        Raises:
-            FileNotFoundError:          If the specified dataset file is not found.
-        """
-        try:
-            dataset = xr.open_dataset(path_to_netcdf)
-            return dataset
-        except FileNotFoundError:
-            raise FileNotFoundError(
-                "The specified dataset file was not found.")
+    
 
-    def merge_two_datasets(self, tprate_dataset_1=None, tprate_dataset_2=None,  test=False):
-        """ Function to merge two datasets.
+    def merge_two_datasets(self, tprate_dataset_1: xr.Dataset = None, tprate_dataset_2: xr.Dataset = None, 
+                        test: bool = False) -> xr.Dataset:
+        """ 
+        Function to merge two datasets.
+
         Args:
-            tprate_dataset_1 (xarray, optional):    The first dataset.     Defaults to None.
-            tprate_dataset_2 (xarray, optional):    The second dataset.    Defaults to None.
+            tprate_dataset_1 (xarray.Dataset, optional): The first dataset. Defaults to None.
+            tprate_dataset_2 (xarray.Dataset, optional): The second dataset. Defaults to None.
+            test (bool, optional): Whether to run the function in test mode. Defaults to False.
+
         Returns:
-            xarray:     The xarray.Dataset with the merged data.
+            xarray.Dataset: The xarray.Dataset with the merged data.
         """
 
         if isinstance(tprate_dataset_1, xr.Dataset) and isinstance(tprate_dataset_2, xr.Dataset):
@@ -972,14 +1011,21 @@ class Tropical_Rainfall:
                     tprate_dataset_2[variable].size_of_the_data
             return dataset_3
 
-    def merge_list_of_histograms(self, path_to_histograms=None, multi=None, seasons_bool=False, all=False, test=False, tqdm=True):
-        """ Function to merge list of histograms.
+    def merge_list_of_histograms(self, path_to_histograms: str = None, multi: int = None, seasons_bool: bool = False, 
+                            all: bool = False, test: bool = False, tqdm: bool = True) -> xr.Dataset:
+        """ 
+        Function to merge a list of histograms.
+
         Args:
-            path_to_histograms (str, optional):     The path to the list of histograms.     Defaults to None.
-            multi (int, optional):                  The number of histograms to merge.      Defaults to None.
-            all (bool, optional):                   If True, all histograms in the repository will be merged. Defaults to False.
+            path_to_histograms (str, optional): The path to the list of histograms. Defaults to None.
+            multi (int, optional): The number of histograms to merge. Defaults to None.
+            seasons_bool (bool, optional): If True, histograms will be merged based on seasonal categories. Defaults to False.
+            all (bool, optional): If True, all histograms in the repository will be merged. Defaults to False.
+            test (bool, optional): Whether to run the function in test mode. Defaults to False.
+            tqdm (bool, optional): If True, displays a progress bar during merging. Defaults to True.
+
         Returns:
-            xarray: The xarray.Dataset with the merged data.
+            xarray.Dataset: The xarray.Dataset with the merged data.
         """
 
         histogram_list = [f for f in listdir(
@@ -1026,11 +1072,11 @@ class Tropical_Rainfall:
                 if len(hist_seasonal) > 0:
                     for i in range(0, len(hist_seasonal)):
                         if i == 0:
-                            dataset = self.open_dataset(
+                            dataset = self.tools.open_dataset(
                                 path_to_netcdf=hist_seasonal[i])
                         else:
                             dataset = self.merge_two_datasets(tprate_dataset_1=dataset,
-                                                              tprate_dataset_2=self.open_dataset(path_to_netcdf=hist_seasonal[i]), test=test)
+                                                              tprate_dataset_2=self.tools.open_dataset(path_to_netcdf=hist_seasonal[i]), test=test)
                     four_seasons.append(dataset)
             self.logger.info("Histograms are merged for each season.")
             return four_seasons
@@ -1044,24 +1090,26 @@ class Tropical_Rainfall:
             if len(histograms_to_load) > 0:
                 for i in range(0, len(histograms_to_load)):
                     if i == 0:
-                        dataset = self.open_dataset(
+                        dataset = self.tools.open_dataset(
                             path_to_netcdf=histograms_to_load[i])
                     else:
                         dataset = self.merge_two_datasets(tprate_dataset_1=dataset,
-                                                          tprate_dataset_2=self.open_dataset(path_to_netcdf=histograms_to_load[i]), test=test)
+                                                          tprate_dataset_2=self.tools.open_dataset(path_to_netcdf=histograms_to_load[i]), test=test)
                 self.logger.info("Histograms are merged.")
                 return dataset
             else:
                 raise NameError('The specified repository is empty.')
 
-    def convert_counts_to_frequency(self, data, test=False):
-        """ Function to convert the counts to the frequency.
+    def convert_counts_to_frequency(self, data: xr.Dataset, test: bool = False) -> xr.DataArray:
+        """ 
+        Function to convert the counts to the frequency.
 
         Args:
-            data (xarray): The counts.
+            data (xarray.Dataset): The counts.
+            test (bool, optional): Whether to run the function in test mode. Defaults to False.
 
         Returns:
-            xarray: The frequency.
+            xarray.DataArray: The frequency.
         """
         frequency = data[0:]/data.size_of_the_data
         frequency_per_bin = xr.DataArray(
@@ -1080,14 +1128,16 @@ class Tropical_Rainfall:
                 raise AssertionError("Test failed.")
         return frequency_per_bin
 
-    def convert_counts_to_pdf(self, data, test=False):
-        """ Function to convert the counts to the pdf.
+    def convert_counts_to_pdf(self, data: xr.Dataset, test: bool = False) -> xr.DataArray:
+        """ 
+        Function to convert the counts to the pdf.
 
         Args:
-            data (xarray): The counts.
+            data (xarray.Dataset): The counts.
+            test (bool, optional): Whether to run the function in test mode. Defaults to False.
 
         Returns:
-            xarray: The pdf.
+            xarray.DataArray: The pdf.
         """
         pdf = data[0:]/(data.size_of_the_data*data.width[0:])
         pdf_per_bin = xr.DataArray(
@@ -1106,14 +1156,16 @@ class Tropical_Rainfall:
                 raise AssertionError("Test failed.")
         return pdf_per_bin
 
-    def convert_counts_to_pdfP(self, data, test=False):
-        """ Function to convert the counts to the pdf multiplied by center of bin.
+    def convert_counts_to_pdfP(self, data: xr.Dataset, test: bool = False) -> xr.DataArray:
+        """ 
+        Function to convert the counts to the pdf multiplied by the center of bin.
 
         Args:
-            data (xarray): The counts.
+            data (xarray.Dataset): The counts.
+            test (bool, optional): Whether to run the function in test mode. Defaults to False.
 
         Returns:
-            xarray: The pdfP.
+            xarray.DataArray: The pdfP.
         """
         pdfP = data[0:]*data.center_of_bin[0:] / \
             (data.size_of_the_data*data.width[0:])
@@ -1133,13 +1185,14 @@ class Tropical_Rainfall:
                 raise AssertionError("Test failed.")
         return pdfP_per_bin
 
-    def mean_from_histogram(self, hist, data=None, old_unit=None, new_unit=None,
-                            model_variable=None, trop_lat=None, positive=True):
-        """ Function to calculate the mean from the histogram.
+    def mean_from_histogram(self, hist: xr.Dataset, data: xr.Dataset = None, old_unit: str = None, new_unit: str = None,
+                        model_variable: str = None, trop_lat: float = None, positive: bool = True) -> (float, float, float):
+        """ 
+        Function to calculate the mean from the histogram.
 
         Args:
-            hist (xarray): The histogram.
-            data (xarray): The data.
+            hist (xarray.Dataset): The histogram.
+            data (xarray.Dataset): The data.
             old_unit (str): The old unit.
             new_unit (str): The new unit.
             model_variable (str): The model variable.
@@ -1185,35 +1238,43 @@ class Tropical_Rainfall:
 
         return mean_from_freq, mean_of_original_data, mean_of_modified_data
 
-    def histogram_plot(self, data, new_unit=None, pdfP=False, positive=True, save=True,
-                       weights=None, frequency=False, pdf=True, smooth=True, step=False, color_map=False,
-                       linestyle=None, ylogscale=True, xlogscale=False, color='tab:blue', figsize=None, legend='_Hidden',
-                       plot_title=None, loc='upper right', model_variable=None, add=None, fig=None, path_to_pdf=None,
-                       name_of_file='', pdf_format=None, xmax=None, test=False, linewidth=None, fontsize=None):
-        """ Function to generate a histogram figure based on the provided data.
+    def histogram_plot(self, data: xr.Dataset, new_unit: str = None, pdfP: bool = False, positive: bool = True, save: bool = True,
+                   weights: np.ndarray = None, frequency: bool = False, pdf: bool = True, smooth: bool = True, step: bool = False, 
+                   color_map: bool = False, linestyle: str = None, ylogscale: bool = True, xlogscale: bool = False, color: str = 'tab:blue', 
+                   figsize: float = None, legend: str = '_Hidden', plot_title: str = None, loc: str = 'upper right', model_variable: str = None, 
+                   add: tuple = None, fig: object = None, path_to_pdf: str = None, name_of_file: str = '', pdf_format: str = None, xmax: float = None, 
+                   test: bool = False, linewidth: float = None, fontsize: float = None) -> (object, object):
+        """ 
+        Function to generate a histogram figure based on the provided data.
 
         Args:
-            data:                           The data for the histogram.
-            weights (optional):             An array of weights for the data.       Default is None.
-            frequency (bool, optional):     Whether to plot frequency.              Default is False.
-            pdf (bool, optional):           Whether to plot the probability density function (PDF). Default is True.
-            smooth (bool, optional):        Whether to plot a smooth line.          Default is True.
-            step (bool, optional):          Whether to plot a step line.            Default is False.
-            color_map (bool or str, optional): Whether to apply a color map to the histogram bars.
-                If True, uses the 'viridis' color map. If a string, uses the specified color map. Default is False.
-            ls (str, optional):             The line style for the plot.            Default is '-'.
-            ylogscale (bool, optional):     Whether to use a logarithmic scale for the y-axis. Default is True.
-            xlogscale (bool, optional):     Whether to use a logarithmic scale for the x-axis. Default is False.
-            color (str, optional):          The color of the plot.                  Default is 'tab:blue'.
-            figsize (float, optional):      The size of the figure.                 Default is 1.
-            legend (str, optional):         The legend label for the plot.          Default is '_Hidden'.
-            model_variable (str, optional): The name of the variable for the x-axis label. Default is 'Precipitation'.
-            plot_title (str, optional):     The title of the plot.                  Default is None.
-            loc(str, optional):             The location of the legend.             Default to 'upper right'.
-            add (tuple, optional):          Tuple of (fig, ax) to add the plot to an existing figure.
-            fig (object, optional):         The figure object to plot on. If provided, ignores the 'add' argument.
-            path_to_pdf (str, optional): The path to save the figure. If provided, saves the figure at the specified path.
-
+            data (xarray.Dataset): The data for the histogram.
+            new_unit (str, optional): The new unit. Default is None.
+            pdfP (bool, optional): Whether to plot the PDFP. Default is False.
+            positive (bool, optional): The flag to indicate if the data should be positive. Default is True.
+            save (bool, optional): Whether to save the plot. Default is True.
+            weights (np.ndarray, optional): An array of weights for the data. Default is None.
+            frequency (bool, optional): Whether to plot frequency. Default is False.
+            pdf (bool, optional): Whether to plot the probability density function (PDF). Default is True.
+            smooth (bool, optional): Whether to plot a smooth line. Default is True.
+            step (bool, optional): Whether to plot a step line. Default is False.
+            color_map (bool or str, optional): Whether to apply a color map to the histogram bars. Default is False.
+            linestyle (str, optional): The line style for the plot. Default is None.
+            ylogscale (bool, optional): Whether to use a logarithmic scale for the y-axis. Default is True.
+            xlogscale (bool, optional): Whether to use a logarithmic scale for the x-axis. Default is False.
+            color (str, optional): The color of the plot. Default is 'tab:blue'.
+            figsize (float, optional): The size of the figure. Default is None.
+            legend (str, optional): The legend label for the plot. Default is '_Hidden'.
+            model_variable (str, optional): The name of the variable for the x-axis label. Default is None.
+            add (tuple, optional): Tuple of (fig, ax) to add the plot to an existing figure. Default is None.
+            fig (object, optional): The figure object to plot on. If provided, ignores the 'add' argument. Default is None.
+            path_to_pdf (str, optional): The path to save the figure. If provided, saves the figure at the specified path. Default is None.
+            name_of_file (str, optional): The name of the file. Default is ''.
+            pdf_format (str, optional): The format for the PDF. Default is None.
+            xmax (float, optional): The maximum value for the x-axis. Default is None.
+            test (bool, optional): Whether to run the test. Default is False.
+            linewidth (float, optional): The width of the line. Default is None.
+            fontsize (float, optional): The font size for the plot. Default is None.
 
         Returns:
             A tuple (fig, ax) containing the figure and axes objects.
@@ -1257,27 +1318,31 @@ class Tropical_Rainfall:
                figsize=figsize, legend=legend, plot_title=plot_title, loc=loc, add=add, fig=fig, path_to_pdf=path_to_pdf, 
                pdf_format=pdf_format, xmax=xmax, linewidth=linewidth, fontsize=fontsize)
 
-    def mean_along_coordinate(self, data, model_variable=None, preprocess=True,
-                              trop_lat=None, coord='time', glob=False, s_time=None, f_time=None, positive=True,
-                              s_year=None, f_year=None, new_unit=None, s_month=None, f_month=None):
-        """ Function to calculate the mean value of variable in Dataset.
+    def mean_along_coordinate(self, data: xr.Dataset, model_variable: str = None, preprocess: bool = True,
+                          trop_lat: float = None, coord: str = 'time', glob: bool = False, s_time: str = None, f_time: str = None, 
+                          positive: bool = True, s_year: str = None, f_year: str = None, new_unit: str = None, s_month: str = None, 
+                          f_month: str = None) -> xr.Dataset:
+        """ 
+        Function to calculate the mean value of variable in Dataset.
 
         Args:
-            data (xarray):                      The Dataset
-            model_variable (str, optional):     The variable of the Dataset.            Defaults to 'tprate'.
-            trop_lat (float, optional):         The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
-            coord (str, optional):              The coordinate of the Dataset.          Defaults to 'time'.
-            s_time (str, optional):             The starting time of the Dataset.       Defaults to None.
-            f_time (str, optional):             The ending time of the Dataset.         Defaults to None.
-            s_year (str, optional):             The starting year of the Dataset.       Defaults to None.
-            f_year (str, optional):             The ending year of the Dataset.         Defaults to None.
-            s_month (str, optional):            The starting month of the Dataset.      Defaults to None.
-            f_month (str, optional):            The ending month of the Dataset.        Defaults to None.
-            glob (bool, optional):              If True, the median value is calculated for all lat and lon.  Defaults to False.
-            preprocess (bool, optional):        If True, the Dataset is preprocessed.   Defaults to True.
+            data (xarray.Dataset): The Dataset.
+            model_variable (str, optional): The variable of the Dataset. Defaults to 'tprate'.
+            trop_lat (float, optional): The maximum and minimal tropical latitude values in Dataset. Defaults to None.
+            coord (str, optional): The coordinate of the Dataset. Defaults to 'time'.
+            s_time (str, optional): The starting time of the Dataset. Defaults to None.
+            f_time (str, optional): The ending time of the Dataset. Defaults to None.
+            s_year (str, optional): The starting year of the Dataset. Defaults to None.
+            f_year (str, optional): The ending year of the Dataset. Defaults to None.
+            s_month (str, optional): The starting month of the Dataset. Defaults to None.
+            f_month (str, optional): The ending month of the Dataset. Defaults to None.
+            glob (bool, optional): If True, the median value is calculated for all lat and lon. Defaults to False.
+            preprocess (bool, optional): If True, the Dataset is preprocessed. Defaults to True.
+            positive (bool, optional): The flag to indicate if the data should be positive. Defaults to True.
+            new_unit (str, optional): The new unit. Defaults to None.
 
         Returns:
-            xarray:         The mean value of variable.
+            xarray.Dataset: The mean value of the variable.
         """
         self.class_attributes_update(model_variable=model_variable, new_unit=new_unit)
 
@@ -1307,27 +1372,31 @@ class Tropical_Rainfall:
                 coord = i
             return data.median(coord)
 
-    def median_along_coordinate(self, data, trop_lat=None, preprocess=True, model_variable=None, coord='time', glob=False,
-                                s_time=None, f_time=None, positive=True, s_year=None, f_year=None, new_unit=None,
-                                s_month=None, f_month=None):
-        """ Function to calculate the median value of variable in Dataset.
+    def median_along_coordinate(self, data: xr.Dataset, trop_lat: float = None, preprocess: bool = True, 
+                            model_variable: str = None, coord: str = 'time', glob: bool = False, s_time: str = None, 
+                            f_time: str = None, positive: bool = True, s_year: str = None, f_year: str = None, 
+                            new_unit: str = None, s_month: str = None, f_month: str = None) -> xr.Dataset:
+        """ 
+        Function to calculate the median value of a variable in a Dataset.
 
         Args:
-            data (xarray):                      The Dataset
-            model_variable (str, optional):     The variable of the Dataset.            Defaults to 'tprate'.
-            trop_lat (float, optional):         The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
-            coord (str, optional):              The coordinate of the Dataset.          Defaults to 'time'.
-            s_time (str, optional):             The starting time of the Dataset.       Defaults to None.
-            f_time (str, optional):             The ending time of the Dataset.         Defaults to None.
-            s_year (str, optional):             The starting year of the Dataset.       Defaults to None.
-            f_year (str, optional):             The ending year of the Dataset.         Defaults to None.
-            s_month (str, optional):            The starting month of the Dataset.      Defaults to None.
-            f_month (str, optional):            The ending month of the Dataset.        Defaults to None.
-            glob (bool, optional):              If True, the median value is calculated for all lat and lon.  Defaults to False.
-            preprocess (bool, optional):        If True, the Dataset is preprocessed.   Defaults to True.
+            data (xarray.Dataset): The Dataset.
+            model_variable (str, optional): The variable of the Dataset. Defaults to 'tprate'.
+            trop_lat (float, optional): The maximum and minimal tropical latitude values in the Dataset. Defaults to None.
+            coord (str, optional): The coordinate of the Dataset. Defaults to 'time'.
+            s_time (str, optional): The starting time of the Dataset. Defaults to None.
+            f_time (str, optional): The ending time of the Dataset. Defaults to None.
+            s_year (str, optional): The starting year of the Dataset. Defaults to None.
+            f_year (str, optional): The ending year of the Dataset. Defaults to None.
+            s_month (str, optional): The starting month of the Dataset. Defaults to None.
+            f_month (str, optional): The ending month of the Dataset. Defaults to None.
+            glob (bool, optional): If True, the median value is calculated for all latitudes and longitudes. Defaults to False.
+            preprocess (bool, optional): If True, the Dataset is preprocessed. Defaults to True.
+            positive (bool, optional): The flag to indicate if the data should be positive. Defaults to True.
+            new_unit (str, optional): The new unit. Defaults to None.
 
         Returns:
-            xarray:         The median value of variable.
+            xarray.Dataset: The median value of the variable.
         """
         self.class_attributes_update(model_variable=model_variable, new_unit=new_unit)
         if preprocess:
@@ -1358,33 +1427,37 @@ class Tropical_Rainfall:
                 coord = i
             return data.median(coord)
 
-    def average_into_netcdf(self, data, glob=False, preprocess=True, model_variable=None, coord='lat',
-                            trop_lat=None, get_mean=True, get_median=False,
-                            s_time=None, f_time=None, s_year=None, f_year=None, s_month=None, f_month=None,
-                            new_unit=None, name_of_file=None, seasons_bool=True, path_to_netcdf=None):
-        """ Function to plot the mean or median value of variable in Dataset.
+    def average_into_netcdf(self, data: xr.Dataset, glob: bool = False, preprocess: bool = True, 
+                        model_variable: str = None, coord: str = 'lat', trop_lat: float = None, 
+                        get_mean: bool = True, get_median: bool = False, s_time: str = None, 
+                        f_time: str = None, s_year: str = None, f_year: str = None, s_month: str = None, 
+                        f_month: str = None, new_unit: str = None, name_of_file: str = None, 
+                        seasons_bool: bool = True, path_to_netcdf: str = None) -> xr.Dataset:
+        """ 
+        Function to plot the mean or median value of the variable in a Dataset.
 
         Args:
-            data (xarray):                  The Dataset
-            model_variable (str, optional): The variable of the Dataset.            Defaults to 'tprate'.
-            coord (str, optional):          The coordinate of the Dataset.          Defaults to 'time'.
-            trop_lat (float, optional):     The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
-            get_mean (bool, optional):      The flag to calculate the mean of the variable.  Defaults to True.
-            get_median (bool, optional):    The flag to calculate the median of the variable.  Defaults to False.
-            s_time (str, optional):         The starting time of the Dataset.       Defaults to None.
-            f_time (str, optional):         The ending time of the Dataset.         Defaults to None.
-            s_year (str, optional):         The starting year of the Dataset.       Defaults to None.
-            f_year (str, optional):         The ending year of the Dataset.         Defaults to None.
-            s_month (str, optional):        The starting month of the Dataset.      Defaults to None.
-            f_month (str, optional):        The ending month of the Dataset.        Defaults to None.
-            model_variable (str, optional):        The name of the variable.               Defaults to 'Precipitation'.
-            new_unit (str, optional):       The unit of the model variable.         Defaults to None.
-            name_of_file (str, optional):   The name of the file.                   Defaults to None.
-            seasons_bool (bool, optional):       The flag to calculate the seasonal mean.  Defaults to True.
-        Example:
+            data (xarray.Dataset): The Dataset.
+            glob (bool, optional): If True, the value is calculated for all latitudes and longitudes. Defaults to False.
+            preprocess (bool, optional): If True, the Dataset is preprocessed. Defaults to True.
+            model_variable (str, optional): The variable of the Dataset. Defaults to 'tprate'.
+            coord (str, optional): The coordinate of the Dataset. Defaults to 'time'.
+            trop_lat (float, optional): The maximumal and minimal tropical latitude values in the Dataset. Defaults to None.
+            get_mean (bool, optional): The flag to calculate the mean of the variable. Defaults to True.
+            get_median (bool, optional): The flag to calculate the median of the variable. Defaults to False.
+            s_time (str, optional): The starting time of the Dataset. Defaults to None.
+            f_time (str, optional): The ending time of the Dataset. Defaults to None.
+            s_year (str, optional): The starting year of the Dataset. Defaults to None.
+            f_year (str, optional): The ending year of the Dataset. Defaults to None.
+            s_month (str, optional): The starting month of the Dataset. Defaults to None.
+            f_month (str, optional): The ending month of the Dataset. Defaults to None.
+            new_unit (str, optional): The unit of the model variable. Defaults to None.
+            name_of_file (str, optional): The name of the file. Defaults to None.
+            seasons_bool (bool, optional): The flag to calculate the seasonal mean. Defaults to True.
+            path_to_netcdf (str, optional): The path to the NetCDF file. Defaults to None.
 
         Returns:
-            None.
+            xarray.Dataset: The calculated mean or median value of the variable.
         """
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit,
                                      s_time=s_time, f_time=f_time, s_year=s_year, f_year=f_year,
@@ -1443,41 +1516,42 @@ class Tropical_Rainfall:
         else:
             return average_dataset
 
-    def plot_of_average(self, data=None, ymax=12, fontsize=None, pad=15, save=True, trop_lat=None, get_mean=True, get_median=False,
-                        legend='_Hidden', figsize=None, linestyle=None, maxticknum=12, color='tab:blue', model_variable=None,
-                        ylogscale=False, xlogscale=False, loc='upper right', add=None, fig=None, plot_title=None,
-                        path_to_pdf=None, new_unit=None, name_of_file='', pdf_format=True, path_to_netcdf=None):
-        """ Function to plot the mean or median value of variable in Dataset.
+    def plot_of_average(self, data: xr.Dataset = None, ymax: int = 12, fontsize: int = None, pad: int = 15, save: bool = True, 
+                    trop_lat: float = None, get_mean: bool = True, get_median: bool = False, legend: str = '_Hidden', 
+                    figsize: int = None, linestyle: str = None, maxticknum: int = 12, color: str = 'tab:blue', 
+                    model_variable: str = None, ylogscale: bool = False, xlogscale: bool = False, loc: str = 'upper right', 
+                    add: figure.Figure = None, fig: figure.Figure = None, plot_title: str = None, 
+                    path_to_pdf: str = None, new_unit: str = None, name_of_file: str = '', pdf_format: bool = True, 
+                    path_to_netcdf: str = None) -> None:
+        """ 
+        Function to plot the mean or median value of the variable in Dataset.
 
         Args:
-            data (xarray):                  The Dataset
-            model_variable (str, optional): The variable of the Dataset.            Defaults to 'tprate'.
-            coord (str, optional):          The coordinate of the Dataset.          Defaults to 'time'.
-            trop_lat (float, optional):     The maximumal and minimal tropical latitude values in Dataset.  Defaults to None.
-            get_mean (bool, optional):      The flag to calculate the mean of the variable.  Defaults to True.
-            get_median (bool, optional):    The flag to calculate the median of the variable.  Defaults to False.
-            s_time (str, optional):         The starting time of the Dataset.       Defaults to None.
-            f_time (str, optional):         The ending time of the Dataset.         Defaults to None.
-            s_year (str, optional):         The starting year of the Dataset.       Defaults to None.
-            f_year (str, optional):         The ending year of the Dataset.         Defaults to None.
-            s_month (str, optional):        The starting month of the Dataset.      Defaults to None.
-            f_month (str, optional):        The ending month of the Dataset.        Defaults to None.
-            legend (str, optional):         The legend of the plot.                 Defaults to '_Hidden'.
-            figsize (int, optional):        The size of the plot.                   Defaults to 1.
-            ls (str, optional):             The line style of the plot.             Defaults to '-'.
-            maxticknum (int, optional):     The maximum number of ticks on the x-axis.  Defaults to 12.
-            color (str, optional):          The color of the plot.                  Defaults to 'tab:blue'.
-            model_variable (str, optional):        The name of the variable.               Defaults to 'Precipitation'.
-            loc (str, optional):            The location of the legend.             Defaults to 'upper right'.
-            add (matplotlib.figure.Figure, optional): The add previously created figure to plot.  Defaults to None.
-            fig (matplotlib.figure.Figure, optional): The add previously created figure to plot.     Defaults to None.
-            plot_title (str, optional):     The title of the plot.                  Defaults to None.
-            path_to_pdf (str, optional):    The path to the pdf file.               Defaults to None.
-            new_unit (str, optional):       The unit of the model variable.         Defaults to None.
-            name_of_file (str, optional):   The name of the file.                   Defaults to None.
-            seasons_bool (bool, optional):       The flag to calculate the seasonal mean.  Defaults to True.
-            pdf_format (bool, optional):    The flag to save the plot in pdf format. Defaults to True.
-        Example:
+            data (xarray.Dataset): The Dataset.
+            ymax (int, optional): The maximum value on the y-axis. Defaults to 12.
+            fontsize (int, optional): The font size of the plot. Defaults to None.
+            pad (int, optional): The padding value. Defaults to 15.
+            save (bool, optional): The flag to save the plot. Defaults to True.
+            trop_lat (float, optional): The maximumal and minimal tropical latitude values in the Dataset. Defaults to None.
+            get_mean (bool, optional): The flag to calculate the mean of the variable. Defaults to True.
+            get_median (bool, optional): The flag to calculate the median of the variable. Defaults to False.
+            legend (str, optional): The legend of the plot. Defaults to '_Hidden'.
+            figsize (int, optional): The size of the plot. Defaults to None.
+            linestyle (str, optional): The line style of the plot. Defaults to None.
+            maxticknum (int, optional): The maximum number of ticks on the x-axis. Defaults to 12.
+            color (str, optional): The color of the plot. Defaults to 'tab:blue'.
+            model_variable (str, optional): The name of the variable. Defaults to None.
+            ylogscale (bool, optional): The flag to use a logarithmic scale for the y-axis. Defaults to False.
+            xlogscale (bool, optional): The flag to use a logarithmic scale for the x-axis. Defaults to False.
+            loc (str, optional): The location of the legend. Defaults to 'upper right'.
+            add (matplotlib.figure.Figure, optional): The add previously created figure to plot. Defaults to None.
+            fig (matplotlib.figure.Figure, optional): The add previously created figure to plot. Defaults to None.
+            plot_title (str, optional): The title of the plot. Defaults to None.
+            path_to_pdf (str, optional): The path to the pdf file. Defaults to None.
+            new_unit (str, optional): The unit of the model variable. Defaults to None.
+            name_of_file (str, optional): The name of the file. Defaults to ''.
+            pdf_format (bool, optional): The flag to save the plot in pdf format. Defaults to True.
+            path_to_netcdf (str, optional): The path to the NetCDF file. Defaults to None.
 
         Returns:
             None.
@@ -1487,7 +1561,7 @@ class Tropical_Rainfall:
             path_to_pdf = self.path_to_pdf
 
         if data is None and path_to_netcdf is not None:
-            data = self.open_dataset(path_to_netcdf=path_to_netcdf)  
+            data = self.tools.open_dataset(path_to_netcdf=path_to_netcdf)  
         elif path_to_netcdf is None and data is None:
             raise Exception('The path or dataset must be provided.')
 
@@ -1529,8 +1603,8 @@ class Tropical_Rainfall:
                     pdf_format=pdf_format)
 
 
-    def get_seasonal_or_monthly_data(self, data, preprocess=True, seasons_bool=True,
-                                    model_variable=None, trop_lat=None, new_unit=None):
+    def get_seasonal_or_monthly_data(self, data: xr.DataArray, preprocess: bool = True, seasons_bool: bool = True,
+                                model_variable: str = None, trop_lat: float = None, new_unit: str = None) -> xr.DataArray:
         """ 
         Function to retrieve seasonal or monthly data.
 
@@ -1580,8 +1654,9 @@ class Tropical_Rainfall:
                 all_monthly_data.append(monthly_data)
             return all_monthly_data
 
-    def seasonal_or_monthly_mean(self, data, preprocess=True, seasons_bool=True, model_variable=None, trop_lat=None, new_unit=None,
-                                 coord=None, positive=True):
+    def seasonal_or_monthly_mean(self, data: xr.DataArray, preprocess: bool = True, seasons_bool: bool = True, 
+                             model_variable: str = None, trop_lat: float = None, new_unit: str = None,
+                             coord: str = None, positive: bool = True) -> xr.DataArray:
         """ Function to calculate the seasonal or monthly mean of the data.
 
         Args:
@@ -1630,8 +1705,10 @@ class Tropical_Rainfall:
                 months[i] = mon_mean
             return months
 
-    def plot_bias(self, data, dataset_2, preprocess=True, seasons_bool=True,  model_variable=None, figsize=None, save=True,
-                  trop_lat=None, plot_title=None, new_unit=None, vmin=None, vmax=None, path_to_pdf=None, name_of_file='', pdf_format=True):
+    def plot_bias(self, data: xr.DataArray, dataset_2: xr.DataArray, preprocess: bool = True, seasons_bool: bool = True,  
+              model_variable: str = None, figsize: float = None, save: bool = True, trop_lat: float = None, 
+              plot_title: str = None, new_unit: str = None, vmin: float = None, vmax: float = None, 
+              path_to_pdf: str = None, name_of_file: str = '', pdf_format: bool = True) -> None:
         """ Function to plot the bias of model_variable between two datasets.
 
         Args:
@@ -1698,12 +1775,12 @@ class Tropical_Rainfall:
                           figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax, save=save,
                           path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
-    def plot_seasons_or_months(self, data, preprocess=True, seasons_bool=True,
-                               model_variable=None, figsize=None, save=True,
-                               trop_lat=None, plot_title=None, new_unit=None,
-                               vmin=None, vmax=None, get_mean=True, percent95_level=False,
-                               path_to_pdf=None, name_of_file='', pdf_format=True,
-                               value=0.95, rel_error=0.1):
+    def plot_seasons_or_months(self, data: xr.DataArray, preprocess: bool = True, seasons_bool: bool = True,
+                           model_variable: str = None, figsize: float = None, save: bool = True,
+                           trop_lat: float = None, plot_title: str = None, new_unit: str = None,
+                           vmin: float = None, vmax: float = None, get_mean: bool = True, percent95_level: bool = False,
+                           path_to_pdf: str = None, name_of_file: str = '', pdf_format: bool = True,
+                           value: float = 0.95, rel_error: float = 0.1) -> None:
         """ Function to plot seasonal data.
 
         Args:
@@ -1764,7 +1841,7 @@ class Tropical_Rainfall:
                           figsize=figsize, plot_title=plot_title,  vmin=vmin, vmax=vmax, save=save,
                           path_to_pdf=path_to_pdf, pdf_format=pdf_format)
                 
-    def savefig(self, path_to_pdf=None, pdf_format=True):
+    def savefig(self, path_to_pdf: str = None, pdf_format: bool = True) -> None:
         """
         Save the current figure to a file in either PDF or PNG format.
 
@@ -1774,14 +1851,12 @@ class Tropical_Rainfall:
 
         Returns:
             None
-
         Note:
             The function first checks the `path_to_pdf` to determine the format of the saved figure. If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path. If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png' and saves the figure in PNG format.
 
         Example:
             savefig(path_to_pdf='example.pdf', pdf_format=True)
             # This will save the current figure in PDF format as 'example.pdf'.
-
         """
         create_folder(folder=self.tools.extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -1794,7 +1869,7 @@ class Tropical_Rainfall:
             plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
                         transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
 
-    def improve_time_selection(self, data=None, time_selection=None): 
+    def improve_time_selection(self, data: Union[xr.DataArray, None] = None, time_selection: Union[str, None] = None) -> str:
         """
         Perform time selection based on the provided criteria.
 
@@ -1844,8 +1919,8 @@ class Tropical_Rainfall:
         self.logger.info(f'The time value for selection is: {time_selection}')
         return time_selection
     
-    def zoom_in_data(self, trop_lat=None,
-                     pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False):
+    def zoom_in_data(self, trop_lat: float = None,
+                 pacific_ocean: bool = False, atlantic_ocean: bool = False, indian_ocean: bool = False, tropical: bool = False) -> tuple:
         """
         Zooms into specific geographical regions or the tropics in the data.
 
@@ -1889,12 +1964,12 @@ class Tropical_Rainfall:
         self.logger.info(f'The data was zoomed in.')
         return lonmin, lonmax, latmin, latmax
 
-    def map(self, data, titles=None, lonmin=-180, lonmax=181, latmin=-90, latmax=91, cmap=None,
-            pacific_ocean=False, atlantic_ocean=False, indian_ocean=False, tropical=False, save=True,
-            model_variable=None, figsize=None, number_of_axe_ticks=None, number_of_bar_ticks=None, fontsize=None,
-            trop_lat=None, plot_title=None, new_unit=None,
-            vmin=None, vmax=None, time_selection='01',
-            path_to_pdf=None, name_of_file='', pdf_format=None):
+    def map(self, data, titles: str = None, lonmin: int = -180, lonmax: int = 181, latmin: int = -90, latmax: int = 91, cmap: str = None,
+            pacific_ocean: bool = False, atlantic_ocean: bool = False, indian_ocean: bool = False, tropical: bool = False, save: bool = True,
+            model_variable: str = None, figsize: int = None, number_of_axe_ticks: int = None, number_of_bar_ticks: int = None, fontsize: int = None,
+            trop_lat: float = None, plot_title: str = None, new_unit: str = None,
+            vmin: float = None, vmax: float = None, time_selection: str = '01',
+            path_to_pdf: str = None, name_of_file: str = '', pdf_format: bool = None):
         """
         Create a map with specified data and various optional parameters.
 
@@ -1977,8 +2052,8 @@ class Tropical_Rainfall:
                    model_variable=self.model_variable, figsize=figsize, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks, cbarlabel=cbarlabel,
                    plot_title=plot_title, vmin=vmin, vmax=vmax, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
 
-    def get_95percent_level(self, data=None, original_hist=None, value=0.95, preprocess=True, rel_error=0.1, model_variable=None,
-                            new_unit=None, weights=None, trop_lat=None):
+    def get_95percent_level(self, data=None, original_hist=None, value: float = 0.95, preprocess: bool = True, rel_error: float = 0.1, 
+                        model_variable: str = None, new_unit: str = None, weights=None, trop_lat: float = None):
         """
         Calculate the precipitation rate threshold value at which a specified percentage (1 - value) of the data is below it.
 
@@ -1997,8 +2072,6 @@ class Tropical_Rainfall:
             float: The calculated threshold value for the specified percentage.
             str: The unit of the threshold value.
             float: The actual percentage of data below the threshold.
-
-
         """
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
 
@@ -2058,11 +2131,31 @@ class Tropical_Rainfall:
 
         return bin_value, units, 1 - threshold
 
-    def seasonal_095level_into_netcdf(self, data, preprocess=True, seasons_bool=True, model_variable=None, path_to_netcdf=None,
-                                      name_of_file=None, trop_lat=None, value=0.95, rel_error=0.1, new_unit=None,
-                                      lon_length=None, lat_length=None, space_grid_factor=None, tqdm=True):
+    def seasonal_095level_into_netcdf(self, data, preprocess: bool = True, seasons_bool: bool = True, model_variable: str = None, 
+                                 path_to_netcdf: str = None, name_of_file: str = None, trop_lat: float = None, 
+                                 value: float = 0.95, rel_error: float = 0.1, new_unit: str = None, 
+                                 lon_length: int = None, lat_length: int = None, space_grid_factor: int = None, tqdm: bool = True):
         """ Function to plot.
-        Args:"""
+
+        Args:
+            data (xarray): The data to be used for plotting.
+            preprocess (bool): Whether to preprocess the data.
+            seasons_bool (bool): Whether to use seasons for plotting.
+            model_variable (str): The model variable to use for plotting.
+            path_to_netcdf (str): The path to the netCDF file.
+            name_of_file (str): The name of the file.
+            trop_lat (float): The latitude value for the tropical region.
+            value (float): The specified value for calculation.
+            rel_error (float): The relative error allowed for the threshold.
+            new_unit (str): The new unit for the data.
+            lon_length (int): The length of the longitude.
+            lat_length (int): The length of the latitude.
+            space_grid_factor (int): The factor for the space grid.
+            tqdm (bool): Whether to show the progress bar.
+
+        Returns:
+            The calculated seasonal 95th percentile level.
+        """
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
 
         data = self.tools.space_regrider(data, space_grid_factor=space_grid_factor,
@@ -2155,31 +2248,10 @@ class Tropical_Rainfall:
         else:
             return seasonal_095level
 
-    def _utc_to_local(self, utc_time, longitude):
-        """
-        Convert a UTC time to local time based on the longitude provided.
+    
 
-        The function calculates the time zone offset based on the longitude, where each 15 degrees of longitude corresponds to 1 hour of time difference. It then applies the time zone offset to convert the UTC time to local time.
-
-        Args:
-            utc_time (int): The UTC time to convert to local time.
-            longitude (float): The longitude value to calculate the time zone offset.
-
-        Returns:
-            int: The local time after converting the UTC time based on the provided longitude.
-
-        """
-        # Calculate the time zone offset based on longitude
-        # Each 15 degrees of longitude corresponds to 1 hour of time difference
-        time_zone_offset_hours = int(longitude / 15)
-
-        # Apply the time zone offset to convert UTC time to local time
-        local_time = (utc_time + time_zone_offset_hours) % 24
-
-        return local_time
-
-    def add_UTC_DataAaray(self, data, model_variable=None, space_grid_factor=None, time_length=None,
-                        trop_lat=None, new_unit=None, path_to_netcdf=None, name_of_file=None, tqdm=True):
+    def add_UTC_DataAaray(self, data, model_variable: str = None, space_grid_factor: int = None, time_length: int = None,
+                      trop_lat: float = None, new_unit: str = None, path_to_netcdf: str = None, name_of_file: str = None, tqdm: bool = True) -> Union[xr.Dataset, None]:
         """
         Add a new dataset with UTC time based on the provided data.
 
@@ -2198,7 +2270,7 @@ class Tropical_Rainfall:
 
         Returns:
             xr.Dataset: The new dataset with added UTC time.
-
+            None: If the path_to_netcdf or name_of_file is not provided.
         """
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
         try:
@@ -2235,7 +2307,7 @@ class Tropical_Rainfall:
                 local_datetime = float(
                     local_time['time.hour'].values+local_time['time.minute'].values/60)
 
-                utc_element = self._utc_to_local(
+                utc_element = self.tools._utc_to_local(
                     longitude=longitude, utc_time=local_datetime)
                 utc_data[time_ind].append(utc_element)
 
@@ -2298,61 +2370,12 @@ class Tropical_Rainfall:
                 new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return new_dataset
-    
-    def update_dict_of_loaded_analyses(self, loaded_dict=None):
-        """
-        Updates a dictionary with loaded data and assigns colors to each entry.
 
-        Args:
-            loaded_dict (dict): Dictionary with paths to datasets.
-
-        Returns:
-            dict: Updated dictionary with loaded data and colors assigned.
-        """
-        if not isinstance(loaded_dict, dict):
-            self.logger.error("The provided object must be a 'dict' type.") 
-            return None
-
-        for key, value in loaded_dict.items():
-            if 'path' not in value:
-                print(f"Error: 'path' key is missing in the entry with key {key}")
-
-        # Select a seaborn palette
-        palette = sns.color_palette("husl", len(loaded_dict))
-
-        # Loop through the dictionary and assign colors
-        for i, (key, value) in enumerate(loaded_dict.items()):
-            loaded_dict[key]["data"] = self.open_dataset(path_to_netcdf=value["path"])
-            loaded_dict[key]["color"] = palette[i]   
-
-        return loaded_dict
-    
-    def add_colors_to_dict(self, loaded_dict=None):
-        """
-        Updates a dictionary with loaded data and assigns colors to each entry.
-
-        Args:
-            loaded_dict (dict): Dictionary with paths to datasets.
-
-        Returns:
-            dict: Updated dictionary with loaded data and colors assigned.
-        """
-        if not isinstance(loaded_dict, dict):
-            self.logger.error("The provided object must be a 'dict' type.") 
-            return None
-        # Select a seaborn palette
-        palette = sns.color_palette("husl", len(loaded_dict))
-        # Loop through the dictionary and assign colors
-        for i, (key, value) in enumerate(loaded_dict.items()):
-            loaded_dict[key]["color"] = palette[i]   
-        return loaded_dict
-
-
-    def daily_variability_plot(self, ymax=12, trop_lat=None, relative=True, get_median=False,
-                            legend='_Hidden', figsize=1, linestyle='-', maxticknum=12, color='tab:blue',
-                            model_variable=None, ylogscale=False, xlogscale=False, loc='upper right',
-                            add=None, fig=None, plot_title=None, path_to_pdf=None, new_unit=None,
-                            name_of_file='', pdf_format=True, path_to_netcdf=None):
+    def daily_variability_plot(self, ymax: int = 12, trop_lat: float = None, relative: bool = True, get_median: bool = False,
+                            legend: str = '_Hidden', figsize: int = 1, linestyle: str = '-', maxticknum: int = 12, color: str = 'tab:blue',
+                            model_variable: str = None, ylogscale: bool = False, xlogscale: bool = False, loc: str = 'upper right',
+                            add: Any = None, fig: Any = None, plot_title: str = None, path_to_pdf: str = None, new_unit: str = None,
+                            name_of_file: str = '', pdf_format: bool = True, path_to_netcdf: str = None) -> List[Union[plt.Figure, plt.Axes]]:
         """
         Plot the daily variability of the dataset.
 
@@ -2392,7 +2415,7 @@ class Tropical_Rainfall:
         if path_to_netcdf is None:
             raise Exception('The path needs to be provided')
         else:
-            data = self.open_dataset(
+            data = self.tools.open_dataset(
                 path_to_netcdf=path_to_netcdf)
 
         utc_time = data['utc_time']
@@ -2406,7 +2429,7 @@ class Tropical_Rainfall:
             try:
                 units = data.tprate.units
             except AttributeError:
-                units = 'mm/day'  # 'kg m**-2 s**-1'
+                units = 'mm/day'
 
         if 'Dataset' in str(type(data)):
             y_lim_max = self.precipitation_rate_units_converter(
