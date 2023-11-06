@@ -22,14 +22,12 @@ import xarray as xr
 class PlottingClass:
     """This is class to create the plots."""
         
-    def __init__(self, pdf_format=True, figsize=1, linewidth=3, #path_to_pdf=None, 
-                 fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm', #pdf=True,
+    def __init__(self, pdf_format=True, figsize=1, linewidth=3,
+                 fontsize=14, smooth=True, step=False, color_map=False, cmap='coolwarm',
                  linestyle='-', ylogscale=True, xlogscale=False, model_variable='tprate', number_of_axe_ticks=4, number_of_bar_ticks=6, loglevel: str = 'WARNING'):
-        #self.path_to_pdf = path_to_pdf
         self.pdf_format = pdf_format
         self.figsize = figsize
         self.fontsize = fontsize
-        #self.pdf = pdf
         self.smooth = smooth
         self.step = step
         self.color_map = color_map
@@ -45,18 +43,16 @@ class PlottingClass:
         self.logger = log_configure(self.loglevel, 'Plot. Func.')
         self.tools = ToolsClass()
     
-    def class_attributes_update(self, path_to_pdf=None, pdf_format=None, figsize=None, linewidth=None,
+    def class_attributes_update(self, pdf_format=None, figsize=None, linewidth=None,
                  fontsize=None, smooth=None, step=None, color_map=None, cmap=None,
                  linestyle=None, ylogscale=None, xlogscale=None, model_variable=None, number_of_axe_ticks=None, number_of_bar_ticks=None):
         """
         Update the class attributes based on the provided arguments.
 
         Args:
-            path_to_pdf (str): The file path for saving the figure in PDF format. If None, the previous value will be retained.
             pdf_format (bool): A flag indicating whether the figure should be saved in PDF format. If None, the previous value will be retained.
             figsize (float): The size of the figure. If None, the previous value will be retained.
             fontsize (int): The font size of the text in the figure. If None, the previous value will be retained.
-            pdf (bool): A flag indicating whether to save the figure in PDF format. If None, the previous value will be retained.
             smooth (bool): A flag indicating whether to smooth the figure. If None, the previous value will be retained.
             step (bool): A flag indicating whether to use step plotting. If None, the previous value will be retained.
             color_map (bool): A flag indicating whether to use a color map. If None, the previous value will be retained.
@@ -69,11 +65,9 @@ class PlottingClass:
         Returns:
             None
         """
-        #self.path_to_pdf = self.path_to_pdf if path_to_pdf is None else path_to_pdf
         self.pdf_format = self.pdf_format if pdf_format is None else pdf_format
         self.figsize = self.figsize if figsize is None else figsize
         self.fontsize = self.fontsize if fontsize is None else fontsize
-        #self.pdf = self.pdf if pdf is None else pdf
         self.smooth = self.smooth if smooth is None else smooth
         self.step = self.step if step is None else step
         self.color_map = self.color_map if color_map is None else color_map
@@ -106,7 +100,7 @@ class PlottingClass:
                 # This will save the current figure in PDF format as 'example.pdf'.
 
             """
-            self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format)
+            self.class_attributes_update(pdf_format=pdf_format)
 
             create_folder(folder=self.tools.extract_directory_path(
                         path_to_pdf), loglevel='WARNING')
@@ -155,8 +149,8 @@ class PlottingClass:
         Returns:
             A tuple (fig, ax) containing the figure and axes objects.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, 
-                                ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle, linewidth=linewidth)
+        self.class_attributes_update(pdf_format=pdf_format, color_map=color_map, xlogscale=xlogscale, ylogscale=ylogscale, 
+                                figsize=figsize, fontsize=fontsize, smooth=smooth, step=step, linestyle=linestyle, linewidth=linewidth)
         if fig is not None:
             fig, ax = fig
         elif add is None and fig is None:
@@ -242,7 +236,7 @@ class PlottingClass:
         Returns:
             list: List of figure and axis objects.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, xlogscale=xlogscale, number_of_axe_ticks=number_of_axe_ticks,
+        self.class_attributes_update(pdf_format=pdf_format, xlogscale=xlogscale, number_of_axe_ticks=number_of_axe_ticks,
                                 ylogscale=ylogscale, figsize=figsize, fontsize=fontsize, linestyle=linestyle)
 
         # make a plot with different y-axis using second axis object
@@ -410,7 +404,7 @@ class PlottingClass:
             path_to_pdf (str, optional): Path to save the PDF file. Defaults to None.
             pdf_format (bool, optional): If True, save the figure in PDF format. Defaults to True.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, cmap=cmap,
+        self.class_attributes_update(pdf_format=pdf_format, cmap=cmap,
                                      figsize=figsize, fontsize=fontsize, linestyle=linestyle)
 
         clevs = self.ticks_for_colorbar(data, vmin=vmin, vmax=vmax, model_variable=self.model_variable, number_of_bar_ticks=self.number_of_bar_ticks)
@@ -551,7 +545,7 @@ class PlottingClass:
         Returns:
             The pyplot figure in the PDF format.
         """
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
+        self.class_attributes_update(pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
                                 model_variable=model_variable, number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks)                         
         data_len = len(data)
         if titles is None:
@@ -641,7 +635,7 @@ class PlottingClass:
             list: A list containing the figure and axis objects.
 
         """ 
-        self.class_attributes_update(path_to_pdf=path_to_pdf, pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
+        self.class_attributes_update(pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
                                 model_variable=model_variable)
         if fig is not None:
             fig, ax = fig
