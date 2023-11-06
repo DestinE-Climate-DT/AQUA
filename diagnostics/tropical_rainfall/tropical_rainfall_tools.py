@@ -15,23 +15,41 @@ full_path_to_config = 'tropical_rainfall/config-tropical-rainfall.yml'
 
 class ToolsClass:
     def __init__(self, loglevel: str = 'WARNING'):
+        """
+        Initialize the class.
+
+        Args:
+            loglevel (str, optional): The log level to be set. Defaults to 'WARNING'.
+        """
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Tools Func.')
 
-    def split_time(self, time_str):
+    def split_time(self, time_str: str) -> str:
+        """
+        Split the time string into parts and recombine them using hyphens.
+
+        Args:
+            time_str (str): The input time string.
+
+        Returns:
+            str: The time string with parts recombined using hyphens.
+        """
         parts = re.split(r"[^a-zA-Z0-9\s]", time_str)
         if len(parts) <= 5:
             time_str = '-'.join(parts[:len(parts)])
         return time_str
         
-    def get_netcdf_path(self, configname=full_path_to_config):
+    def get_netcdf_path(self, configname: str) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
+
         Args:
             self: The instance of the class.
-            configname (str): The name of the YAML configuration file. 
+            configname (str): The name of the YAML configuration file.
+
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
+
         Raises:
             FileNotFoundError: If the specified configuration file does not exist.
         """
@@ -39,27 +57,34 @@ class ToolsClass:
         config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
         if not os.path.exists(config_path):
             self.logger.error(f"The configuration file '{configname}' does not exist.")
+            raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
             machine = ConfigPath().machine
             path_to_netcdf = data[machine]['path_to_netcdf']
+        except FileNotFoundError as e:
+            # Handle FileNotFoundError exception
+            self.logger.error(f"An unexpected error occurred: {e}")
+            raise e
         except Exception as e:
             # Handle other exceptions
             self.logger.error(f"An unexpected error occurred: {e}")
             path_to_netcdf = None
         self.logger.info(f"NetCDF folder: {path_to_netcdf}")
-        
         return path_to_netcdf
     
-    def get_pdf_path(self, configname=full_path_to_config):
+    def get_pdf_path(self, configname: str) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
+
         Args:
             self: The instance of the class.
             configname (str): The name of the YAML configuration file.
+
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
+
         Raises:
             FileNotFoundError: If the specified configuration file does not exist.
         """
@@ -67,17 +92,21 @@ class ToolsClass:
         config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
         if not os.path.exists(config_path):
             self.logger.error(f"The configuration file '{configname}' does not exist.")
+            raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
             machine = ConfigPath().machine
             path_to_pdf = data[machine]['path_to_pdf']
+        except FileNotFoundError as e:
+            # Handle FileNotFoundError exception
+            self.logger.error(f"An unexpected error occurred: {e}")
+            raise e
         except Exception as e:
             # Handle other exceptions
             self.logger.error(f"An unexpected error occurred: {e}")
             path_to_pdf = None
         self.logger.info(f"PDF folder: {path_to_pdf}")
-        
         return path_to_pdf
 
     def open_dataset(self, path_to_netcdf: str) -> object:
