@@ -49,7 +49,6 @@ dependencies:
     - gribscan
     - smmregrid
     # get OPA
-    - git+https://oauth2:-nnxqtXxyrs3LrJubtH1@earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@v0.3.3
     - git+https://github.com/ecmwf/pyfdb.git@master
     - git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git
     # pip install -e of AQUA itself

@@ -7,7 +7,7 @@ sources:
         class: ea
         type: an
         expver: "0001"
-        param: 130
+        param: t
         levtype: pl
         levelist: [1000]
         date: "20080101"

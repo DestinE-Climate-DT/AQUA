@@ -5,15 +5,12 @@ This module contains miscellaneous tools for the teleconnections diagnostic.
 import os
 import xarray as xr
 
-from aqua.util import load_yaml, ConfigPath
+from aqua.util import load_yaml
 
 
-class TeleconnectionsConfig(ConfigPath):
+class TeleconnectionsConfig():
     """
     Class to handle the configuration of the teleconnections diagnostic.
-
-    Inherited from ConfigPath, which is a class to handle the configuration
-    of the AQUA framework.
     """
     def __init__(self, configdir=None, diagname='teleconnections'):
         """
@@ -26,10 +23,44 @@ class TeleconnectionsConfig(ConfigPath):
         self.filename = diagname + '.yaml'
 
         if not configdir:
-            self.configdir = super().get_config_dir()
+            self.configdir = self.get_config_dir()
         else:
             self.configdir = configdir
         self.config_file = os.path.join(self.configdir, self.filename)
+
+    def get_config_dir(self):
+        """
+        Return the path to the configuration directory,
+        searching in a list of pre-defined directories.
+
+        Returns:
+            configdir (str): the dir of the teleconnections file and other config files
+
+        Raises:
+            FileNotFoundError: if no config file is found in the predefined folders
+        """
+
+        configdirs = []
+
+        # if AQUA is defined
+        aquadir = os.environ.get('AQUA')
+        if aquadir:
+            configdirs.append(os.path.join(aquadir, 'diagnostics',
+                                           'teleconnections', 'config'))
+
+        # set of predefined folders to browse
+        configdirs.extend(['./config', '../config', '../../config',
+                           '../../../config'])
+        configdirs.extend(['./diagnostics/teleconnections/config',
+                           '../diagnostics/teleconnections/config',
+                           '../../diagnostics/teleconnections/config',
+                           '../../../diagnostics/teleconnections/config'])
+
+        for configdir in configdirs:
+            if os.path.exists(os.path.join(configdir, self.filename)):
+                return configdir
+
+        raise FileNotFoundError(f"No config file {self.filename} found in {configdirs}")
 
     def load_namelist(self):
         """

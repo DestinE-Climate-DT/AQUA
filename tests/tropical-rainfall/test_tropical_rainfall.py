@@ -16,6 +16,10 @@ import os
 import sys
 path_to_diagnostic = './diagnostics/'
 sys.path.insert(1, path_to_diagnostic)
+try:
+    from tropical_rainfall import Tropical_Rainfall
+except ModuleNotFoundError:
+    print("The module tropical_rainfall.py is not found.")
 
 approx_rel = 1e-4
 
@@ -62,7 +66,6 @@ def test_module_import():
     except ModuleNotFoundError:
         assert False, "Diagnostic could not be imported"
 
-from tropical_rainfall import Tropical_Rainfall
 
 @pytest.fixture
 def data_size(reader):
@@ -163,7 +166,7 @@ def test_histogram_load_to_memory(histogram_output):
         re_time_band = re.split(":", re.split(", ", time_band)[0])[
             0]+'_' + re.split(":", re.split(", ", time_band)[1])[0] in files[0]
     except IndexError:
-        re_time_band = re.split("'", re.split(":", time_band)[0])[1]
+        re_time_band = re.split(":", time_band)[0]
     assert re_time_band in time_band
 
 

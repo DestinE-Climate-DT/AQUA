@@ -37,7 +37,7 @@ def get_arg(args, arg, default):
     return res
 
 
-def create_folder(folder, loglevel=None):
+def create_folder(folder, loglevel="WARNING"):
     """
     Create a folder if it does not exist
 
@@ -51,10 +51,10 @@ def create_folder(folder, loglevel=None):
     logger = log_configure(loglevel, 'create_folder')
 
     if not os.path.exists(folder):
-        logger.warning('Creating folder %s', folder)
+        logger.info('Creating folder %s', folder)
         os.makedirs(folder)
     else:
-        logger.warning('Folder %s already exists', folder)
+        logger.info('Folder %s already exists', folder)
 
 
 def file_is_complete(filename, logger=logging.getLogger()):
@@ -89,3 +89,12 @@ def file_is_complete(filename, logger=logging.getLogger()):
         check = False
 
     return check
+
+
+def find_vert_coord(ds):
+    """
+    Identify the vertical coordinate name(s) based on coordinate units. Returns always a list.
+    The list will be empty if none found.
+    """
+    vert_coord = [x for x in ds.coords if ds.coords[x].attrs.get("units") in ["Pa", "hPa", "m", "km", "Km", "cm", ""] ]
+    return vert_coord

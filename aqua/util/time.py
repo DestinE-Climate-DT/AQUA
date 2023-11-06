@@ -13,7 +13,7 @@ from aqua.logger import log_configure
 def frequency_string_to_pandas(freq):
 
     """
-    Convert a string from the OPA/AQUA convention to 
+    Convert a string from the AQUA convention to 
     the usual pandas frequency standard
     """
 

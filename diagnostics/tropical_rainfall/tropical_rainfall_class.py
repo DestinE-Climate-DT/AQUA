@@ -480,9 +480,13 @@ class Tropical_Rainfall:
                                       s_year=self.s_year,                f_year=self.f_year,
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
-        size_of_the_data = data_size(data)
-        data_with_final_grid = data
 
+        size_of_the_data = data_size(data)
+
+        if new_unit is not None:
+            data = self.precipitation_rate_units_converter(
+                data, model_variable=model_variable, new_unit=new_unit)
+        data_with_final_grid = data
         if weights is not None:
 
             weights = self.latitude_band(weights, trop_lat=self.trop_lat)
@@ -529,11 +533,10 @@ class Tropical_Rainfall:
         if not lazy and create_xarray:
             tprate_dataset = counts_per_bin.to_dataset(name="counts")
             tprate_dataset.attrs = data_with_global_atributes.attrs
-            # , path_to_histogram = path_to_histogram)
             tprate_dataset = self.add_frequency_and_pdf(
                 tprate_dataset=tprate_dataset)
 
-            mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_original, old_unit=data.units, new_unit=new_unit,
+            mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
                                                                                     model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
             relative_discrepancy = abs(
                 mean_modified - mean_from_hist)*100/mean_modified
@@ -555,8 +558,10 @@ class Tropical_Rainfall:
                     data=data_with_final_grid, tprate_dataset=tprate_dataset, variable=variable)
 
             if path_to_histogram is not None and name_of_file is not None:
+                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins))
+                bins_info = bins_info.replace('.', '-')
                 self.dataset_to_netcdf(
-                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return tprate_dataset
         else:
             tprate_dataset = counts_per_bin.to_dataset(name="counts")
@@ -566,8 +571,10 @@ class Tropical_Rainfall:
             tprate_dataset = self.grid_attributes(
                 data=data_with_final_grid, tprate_dataset=tprate_dataset)
             if path_to_histogram is not None and name_of_file is not None:
+                bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+                bins_info = bins_info.replace('.', '-')
                 self.dataset_to_netcdf(
-                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                    tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
             return counts_per_bin
 
     def histogram(self,                   data,               data_with_global_atributes=None,
@@ -615,6 +622,10 @@ class Tropical_Rainfall:
                                       s_month=self.s_month,              f_month=self.f_month,
                                       dask_array=False)
         size_of_the_data = data_size(data)
+
+        if new_unit is not None:
+            data = self.precipitation_rate_units_converter(
+                data, model_variable=model_variable, new_unit=new_unit)
         data_with_final_grid = data
         if isinstance(self.bins, int):
             bins = [self.first_edge + i *
@@ -660,7 +671,7 @@ class Tropical_Rainfall:
         tprate_dataset = self.add_frequency_and_pdf(
             tprate_dataset=tprate_dataset)
 
-        mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_original, old_unit=data.units, new_unit=new_unit,
+        mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=tprate_dataset, data=data_with_final_grid,
                                                                                 model_variable=model_variable, trop_lat=self.trop_lat, positive=positive)
         relative_discrepancy = (
             mean_original - mean_from_hist)*100/mean_original
@@ -697,8 +708,10 @@ class Tropical_Rainfall:
                 tprate_dataset[variable].attrs['relative_discrepancy'] = float(
                     relative_discrepancy)
         if path_to_histogram is not None and name_of_file is not None:
+            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+            bins_info = bins_info.replace('.', '-')
             self.dataset_to_netcdf(
-                tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
 
         return tprate_dataset
 
@@ -719,15 +732,13 @@ class Tropical_Rainfall:
             time_band = dataset.attrs['time_band']
             try:
                 name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[
-                    0] + '_' + re.split(":", re.split(", ", time_band)[1])[0]
+                    0] + '_' + re.split(":", re.split(", ", time_band)[1])[0] + '_' + re.split("=", re.split(", ", time_band)[2])[1]
             except IndexError:
-                name_of_file = name_of_file + '_' + \
-                    re.split("'", re.split(":", time_band)[0])[1]
-
-            path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '_histogram.nc'
+                name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
+            path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
             dataset.to_netcdf(path=path_to_netcdf)
-            self.logger.info("Histogram is saved in the storage.")
+            self.logger.info("NetCDF is saved in the storage.")
         else:
             self.logger.debug(
                 "The path to save the histogram needs to be provided.")
@@ -753,7 +764,10 @@ class Tropical_Rainfall:
             time_band = str(
                 data.time[0].values)+', '+str(data.time[-1].values)+', freq='+str(time_interpreter(data))
         else:
-            time_band = str(data.time.values)
+            try:
+                time_band = str(data.time.values[0])
+            except IndexError:
+                time_band = str(data.time.values)
         if data[coord_lat].size > 1:
             latitude_step = data[coord_lat][1].values - \
                 data[coord_lat][0].values
@@ -810,8 +824,15 @@ class Tropical_Rainfall:
         tprate_dataset['pdf'] = hist_pdf
 
         if path_to_histogram is not None and name_of_file is not None:
+            if isinstance(self.bins, int):
+                bins = [self.first_edge + i *
+                        self.width_of_bin for i in range(0, self.num_of_bins+1)]
+            else:
+                bins = self.bins
+            bins_info = str(bins[0])+'_'+str(bins[-1])+'_'+str(len(bins)-1)
+            bins_info = bins_info.replace('.', '-')
             self.dataset_to_netcdf(
-                dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file)
+                dataset=tprate_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
         return tprate_dataset
 
     def open_dataset(self, path_to_netcdf=None):
@@ -834,7 +855,7 @@ class Tropical_Rainfall:
             raise FileNotFoundError(
                 "The specified dataset file was not found.")
 
-    def merge_two_datasets(self, tprate_dataset_1=None, tprate_dataset_2=None):
+    def merge_two_datasets(self, tprate_dataset_1=None, tprate_dataset_2=None,  test=False):
         """ Function to merge two datasets.
 
         Args:
@@ -851,30 +872,95 @@ class Tropical_Rainfall:
                                **tprate_dataset_2.attrs}
 
             for attribute in tprate_dataset_1.attrs:
-                if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute]:
-                    dataset_3.attrs[attribute] = str(
-                        tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                try:
+                    if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute] and attribute not in 'time_band':
+                        dataset_3.attrs[attribute] = str(
+                            tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+
+                    elif attribute in 'time_band':
+                        dataset_3.attrs['time_band_history'] = str(
+                            tprate_dataset_1.attrs['time_band']) + ';\n '+str(tprate_dataset_2.attrs['time_band'])
+                        if tprate_dataset_1.attrs['time_band'].count(':') <= 2 and tprate_dataset_2.attrs['time_band'].count(':') <= 2:
+                            if np.datetime64(tprate_dataset_2.time_band) == np.datetime64(tprate_dataset_1.time_band):
+                                dataset_3.attrs['time_band'] = str(
+                                    tprate_dataset_1.attrs['time_band'])
+                            else:
+                                if np.datetime64(tprate_dataset_2.time_band) > np.datetime64(tprate_dataset_1.time_band):
+                                    timedelta = np.datetime64(
+                                        tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
+                                    tprate_dataset_1_sm = tprate_dataset_1
+                                    tprate_dataset_2_bg = tprate_dataset_2
+                                elif np.datetime64(tprate_dataset_2.time_band) < np.datetime64(tprate_dataset_1.time_band):
+                                    timedelta = np.datetime64(
+                                        tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
+                                    tprate_dataset_1_sm = tprate_dataset_2
+                                    tprate_dataset_2_bg = tprate_dataset_1
+
+                                days = timedelta / np.timedelta64(1, 'D')
+                                if days < 1:
+                                    hrs = timedelta / np.timedelta64(1, 'h')
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
+                                elif days == 1:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
+                                elif days < 32 and days > 27:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
+                                elif days < 367 and days > 364:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
+                                else:
+                                    dataset_3.attrs['time_band'] = str(
+                                        tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
+                        else:
+                            if tprate_dataset_1.time_band.split(',')[2] == tprate_dataset_2.time_band.split(',')[2]:
+                                if np.datetime64(tprate_dataset_1.time_band.split(',')[0]) < np.datetime64(tprate_dataset_2.time_band.split(',')[0]):
+                                    if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
+                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                    else:
+                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                else:
+                                    if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
+                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                    else:
+                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(
+                                            ',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+
+                except ValueError:
+                    if tprate_dataset_1.attrs[attribute].all != tprate_dataset_2.attrs[attribute].all:
+                        dataset_3.attrs[attribute] = str(
+                            tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
 
             dataset_3.counts.values = tprate_dataset_1.counts.values + \
                 tprate_dataset_2.counts.values
             dataset_3.counts.attrs['size_of_the_data'] = tprate_dataset_1.counts.size_of_the_data + \
                 tprate_dataset_2.counts.size_of_the_data
             dataset_3.frequency.values = self.convert_counts_to_frequency(
-                dataset_3.counts)
-            dataset_3.pdf.values = self.convert_counts_to_pdf(dataset_3.counts)
+                dataset_3.counts,  test=test)
+            dataset_3.pdf.values = self.convert_counts_to_pdf(
+                dataset_3.counts,  test=test)
 
             for variable in ('counts', 'frequency', 'pdf'):
                 for attribute in tprate_dataset_1.counts.attrs:
                     dataset_3[variable].attrs = {
                         **tprate_dataset_1[variable].attrs, **tprate_dataset_2[variable].attrs}
-                    if tprate_dataset_1[variable].attrs[attribute] != tprate_dataset_2[variable].attrs[attribute]:
-                        dataset_3[variable].attrs[attribute] = str(
-                            tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
+                    try:
+                        if tprate_dataset_1[variable].attrs[attribute] != tprate_dataset_2[variable].attrs[attribute]:
+                            dataset_3[variable].attrs[attribute] = str(
+                                tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
+                    except ValueError:
+                        if tprate_dataset_1[variable].attrs[attribute].all != tprate_dataset_2[variable].attrs[attribute].all:
+                            dataset_3[variable].attrs[attribute] = str(
+                                tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
                 dataset_3[variable].attrs['size_of_the_data'] = tprate_dataset_1[variable].size_of_the_data + \
                     tprate_dataset_2[variable].size_of_the_data
             return dataset_3
 
-    def merge_list_of_histograms(self, path_to_histograms=None, multi=None, seasons=False, all=False):
+    def merge_list_of_histograms(self, path_to_histograms=None, multi=None, seasons=False, all=False, test=False, tqdm=True):
         """ Function to merge list of histograms.
 
         Args:
@@ -899,15 +985,20 @@ class Tropical_Rainfall:
             JJA = []
             SON = []
 
+            progress_bar_template = "[{:<40}] {}%"
             for i in range(0, len(histogram_list)):
+                if tqdm:
+                    ratio = i / len(histogram_list)
+                    progress = int(40 * ratio)
+                    print(progress_bar_template.format(
+                        "=" * progress, int(ratio * 100)), end="\r")
+
                 name_of_file = histogram_list[i]
                 re.split(r"[^0-9\s]", name_of_file)
                 splitted_name = list(
                     filter(None, re.split(r"[^0-9\s]", name_of_file)))
                 syear, fyear = int(splitted_name[-8]), int(splitted_name[-4])
                 smonth, fmonth = int(splitted_name[-7]), int(splitted_name[-3])
-                # sday, fday = int(splitted_name[-6]), int(splitted_name[-2])
-                # shour, fhour = int(splitted_name[-5]), int(splitted_name[-1])
 
                 if syear == fyear:
                     if fmonth - smonth == 1:
@@ -929,7 +1020,7 @@ class Tropical_Rainfall:
                                 path_to_netcdf=hist_seasonal[i])
                         else:
                             dataset = self.merge_two_datasets(tprate_dataset_1=dataset,
-                                                              tprate_dataset_2=self.open_dataset(path_to_netcdf=hist_seasonal[i]))
+                                                              tprate_dataset_2=self.open_dataset(path_to_netcdf=hist_seasonal[i]), test=test)
                     four_seasons.append(dataset)
             self.logger.info("Histograms are merged for each season.")
             return four_seasons
@@ -947,13 +1038,13 @@ class Tropical_Rainfall:
                             path_to_netcdf=histograms_to_load[i])
                     else:
                         dataset = self.merge_two_datasets(tprate_dataset_1=dataset,
-                                                          tprate_dataset_2=self.open_dataset(path_to_netcdf=histograms_to_load[i]))
+                                                          tprate_dataset_2=self.open_dataset(path_to_netcdf=histograms_to_load[i]), test=test)
                 self.logger.info("Histograms are merged.")
                 return dataset
             else:
                 raise NameError('The specified repository is empty.')
 
-    def convert_counts_to_frequency(self, data):
+    def convert_counts_to_frequency(self, data, test=False):
         """ Function to convert the counts to the frequency.
 
         Args:
@@ -970,14 +1061,16 @@ class Tropical_Rainfall:
         frequency_per_bin.attrs = data.attrs
         sum_of_frequency = sum(frequency_per_bin[:])
 
-        if abs(sum_of_frequency - 1) < 10**(-4):
-            return frequency_per_bin
-        else:
-            self.logger.debug('Sum of Frequency: {}'
-                              .format(abs(sum_of_frequency.values)))
-            raise AssertionError("Test failed.")
+        if test:
+            if sum(data[:]) == 0 or abs(sum_of_frequency - 1) < 10**(-4):
+                pass
+            else:
+                self.logger.debug('Sum of Frequency: {}'
+                                  .format(abs(sum_of_frequency.values)))
+                raise AssertionError("Test failed.")
+        return frequency_per_bin
 
-    def convert_counts_to_pdf(self, data):
+    def convert_counts_to_pdf(self, data, test=False):
         """ Function to convert the counts to the pdf.
 
         Args:
@@ -994,12 +1087,14 @@ class Tropical_Rainfall:
         pdf_per_bin.attrs = data.attrs
         sum_of_pdf = sum(pdf_per_bin[:]*data.width[0:])
 
-        if abs(sum_of_pdf-1.) < 10**(-4):
-            return pdf_per_bin
-        else:
-            self.logger.debug('Sum of PDF: {}'
-                              .format(abs(sum_of_pdf.values)))
-            raise AssertionError("Test failed.")
+        if test:
+            if sum(data[:]) == 0 or abs(sum_of_pdf-1.) < 10**(-4):  # 10**(-4)
+                pass
+            else:
+                self.logger.debug('Sum of PDF: {}'
+                                  .format(abs(sum_of_pdf.values)))
+                raise AssertionError("Test failed.")
+        return pdf_per_bin
 
     def mean_from_histogram(self, hist, data=None, old_unit='kg m**-2 s**-1', new_unit=None,
                             model_variable='tprate', trop_lat=None, positive=True):

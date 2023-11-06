@@ -45,15 +45,6 @@ sources:
         
     tco1279-orca025-cycle3:
       default: lon-lat
-      2D_1h_native: tco1279
-      3D_1h_native: tco1279
-      2D_monthly_native: tco1279
-      3D_monthly_native: tco1279
-      #WAM_1h_native: tco1279
-      2D_monthly_0.25deg: multio-r025
-      3D_monthly_0.25deg: multio-r025
-      2D_1h_0.25deg: multio-r025
-      3D_1h_0.25deg: multio-r025
     
     tco1279-orca025:
       default: lon-lat

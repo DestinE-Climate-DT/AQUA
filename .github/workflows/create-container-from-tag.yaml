@@ -17,7 +17,7 @@ jobs:
        contents: read
     steps:
       - name: "Check out code"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: "build container"
         run: docker build --file dockerfiles/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}" .
       - name: "Log in to registry"

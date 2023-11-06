@@ -33,10 +33,10 @@ The source code is organized in the following way:
 A configuration file is available in the `config` folder.
 It can be customized to add new teleconnections or to change the default parameters of the diagnostic.
 
-An environment file is available as `env-teleconnections.yaml` in the main diagnostic folder.
-A `pyproject.toml` file is also available to install the diagnostic as a package.
+A `pyproject.toml` file is available to install the diagnostic as a package.
 Please refer to the README file in the main diagnostic folder for more details.
-Notice as well that a common environment for all the diagnostics is available in the main `AQUA` folder.
+The standard way to install the diagnostic is to exploit the common environment for all the diagnostics
+that is available in the main `AQUA` folder.
 
 Data with timeseries of teleconnection indices are available in the `data` folder as txt files.
 
@@ -45,13 +45,23 @@ They are organized in the following way:
 
 - `NAO.ipynb` contains an example of the usage of the diagnostic for the NAO index with ERA5 reanalysis.
 - `ENSO.ipynb` contains an example of the usage of the diagnostic for the ENSO index with ERA5 reanalysis.
-- `NAO_cycle3.ipynb` contains notebook used to generate images for the nextGEMS cycle3 analysis.
+- `NAO_cycle3.ipynb` is the notebook used to generate images for the nextGEMS cycle3 analysis.
+- `NAO_control.ipynb` and `ENSO_control_2t.ipynb` are notebook used to analyze the control run of DestinE.
 
 A command line interface is available in the `cli` folder.
-Two scripts are available:
+`cli_teleconnections.py` is used to run the diagnostic from the command line.
+It can analyze multiple model/exp/source and reference datasets at the same time.
+It provides a configuration file (one for the atmospheric and one for the oceanic teleconnections) to customize the diagnostic.
+Detailed description of the command line interface is available in the `README.md`
+file in the `cli` folder and in the configuration files.
 
-- `/single_analysis/cli_teleconnections.py` is used to run the diagnostic for a single experiment and a single teleconnection.
-- `/comparison_analysis/cli_teleconnections.py` is used to run the diagnostic for multiple experiments, but only a single teleconnection.
+Minimal usage of the CLI is:
+
+.. code-block:: bash
+
+    python cli_teleconnections.py -model <model> -exp <experiment> -source <source> --ref
+
+where `<model>`, `<experiment>`, `<source>` are the model, experiment, source and `--ref` is to activate the reference run.
 
 Tests are available in the `tests/teleconnections` folder, from the main `AQUA` folder.
 They make use of the `pytest` library and of the functions available in the `cdo_testing.py` file.

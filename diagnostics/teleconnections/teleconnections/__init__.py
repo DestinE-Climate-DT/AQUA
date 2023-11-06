@@ -2,23 +2,28 @@
 from .index import station_based_index, regional_mean_index
 from .index import regional_mean_anomalies
 from .plots import index_plot, maps_plot
-from .plots import single_map_plot, maps_diffs_plot
+from .plots import maps_diffs_plot, plot_single_map
 from .statistics import reg_evaluation, cor_evaluation
 from .tc_class import Teleconnection
 from .tools import TeleconnectionsConfig
 from .tools import area_selection, wgt_area_mean
 
-__version__ = '0.1.2'
+__version__ = '0.2.2'
 
 __all__ = ['station_based_index', 'regional_mean_index',
            'regional_mean_anomalies',
            'index_plot', 'maps_plot',
-           'single_map_plot', 'maps_diffs_plot',
+           'maps_diffs_plot', 'plot_single_map',
            'reg_evaluation', 'cor_evaluation',
            'Teleconnection', 'TeleconnectionsConfig',
            'area_selection', 'wgt_area_mean']
 
 # Changelog
+# 0.2.2: Added season selection to index_plot
+# 0.2.1: Performance improvements
+#        Refactory of single map plot function
+#        CLI refinement and code linting
+# 0.2.0: CLI working with the AQUA wrapper
 # 0.1.2: symmetric colorbar on/off for maps_plot
 # 0.1.1: bugfix of single_maps, ENSO available with 2t and skt
 # 0.1.0: release for version v0.2 of aqua
