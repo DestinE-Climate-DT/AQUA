@@ -11,7 +11,7 @@ from aqua.util import ConfigPath
 from aqua.logger import log_configure
 import yaml
 
-full_path_to_config = 'tropical_rainfall/config-tropical-rainfall.yml'
+full_path_to_config = '../tropical_rainfall/config-tropical-rainfall.yml'
 
 class ToolsClass:
     def __init__(self, loglevel: str = 'WARNING'):
