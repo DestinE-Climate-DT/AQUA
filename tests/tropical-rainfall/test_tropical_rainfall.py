@@ -88,6 +88,24 @@ def test_update_default_attribute():
     new_trop_lat_value = diag.trop_lat
     assert old_trop_lat_value != new_trop_lat_value
 
+@pytest.mark.tropical_rainfall
+def test_attribute_type():
+    """ Testing the type of attributes
+    """
+    try:
+        diag = Tropical_Rainfall(trop_lat='str')
+    except TypeError:
+        print(diag.trop_lat)
+        assert True,       "supposed to be the wrong type"
+    try:
+        Tropical_Rainfall(s_year=0.5)
+    except TypeError:
+        assert True,       "supposed to be the wrong type"
+    try:
+        Tropical_Rainfall(model_variable=0)
+    except TypeError:
+        assert True,       "supposed to be the wrong type"
+        
 
 @pytest.fixture
 def histogram_output(reader):
@@ -100,7 +118,6 @@ def histogram_output(reader):
     elif '2t' in data.shortName:
         diag = Tropical_Rainfall(
             num_of_bins=1000, first_edge=0, width_of_bin=0.5, loglevel='debug')
-        # Tropical_Rainfall(num_of_bins = 20, first_edge = 200, width_of_bin = (320-200)/20, loglevel='debug')
     hist = diag.histogram(data, trop_lat=90)
     return hist
 
