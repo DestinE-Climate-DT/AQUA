@@ -169,7 +169,7 @@ def test_histogram_load_to_memory(histogram_output):
         remove(histograms_list_full_path[i])
     hist = histogram_output
     diag = Tropical_Rainfall()
-    diag.dataset_to_netcdf(
+    diag.main.dataset_to_netcdf(
         dataset=hist, path_to_netcdf=path_to_histogram, name_of_file='test_hist_saving')
     files = [f for f in listdir(path_to_histogram)
              if isfile(join(path_to_histogram, f))]
@@ -276,7 +276,7 @@ def test_latitude_band(reader):
     data = reader
     max_lat_value = max(data.lat.values[0], data.lat.values[-1])
     diag = Tropical_Rainfall(trop_lat=10)
-    data_trop = diag.latitude_band(data)
+    data_trop = diag.main.latitude_band(data)
     assert max_lat_value > max(
         data_trop.lat.values[0], data_trop.lat.values[-1])
     assert 10 > data_trop.lat.values[-1]
@@ -295,7 +295,7 @@ def test_histogram_merge(histogram_output):
     diag = Tropical_Rainfall()
 
     path_to_histogram = str(path_to_diagnostic)+"/test_output/histograms/"
-    diag.dataset_to_netcdf(
+    diag.main.dataset_to_netcdf(
         dataset=hist_2, path_to_netcdf=path_to_histogram, name_of_file='test_merge')
 
     hist_merged = diag.merge_two_datasets(
