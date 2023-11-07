@@ -3,7 +3,7 @@
 .. moduleauthor:: AQUA team <natalia.nazarova@polito.it>
 
 """
-from typing import Union, Tuple, Optional, Any, List
+from typing import Union, Tuple, Optional, Any, List#, get_type_hints
 from aqua.logger import log_configure
 
 
@@ -109,85 +109,18 @@ class Tropical_Rainfall:
         self.latitude_band = self.main.latitude_band
 
 
-    def class_attributes_update(self, trop_lat: Union[float, None] = None, s_time: Union[str, int, None] = None, 
-                            f_time: Union[str, int, None] = None, s_year: Union[int, None] = None, 
-                            f_year: Union[int, None] = None, s_month: Union[int, None] = None, 
-                            f_month: Union[int, None] = None, num_of_bins: Union[int, None] = None, 
-                            first_edge: Union[float, None] = None, width_of_bin: Union[float, None] = None, 
-                            bins: Union[list, int] = 0, model_variable: Union[str, None] = None, 
-                            new_unit: Union[str, None] = None):
-        
-        #self.class_attributes_update.__doc__ = self.main.class_attributes_update.__doc__
-
-        if trop_lat is not None and isinstance(trop_lat, (int, float)):
-            self.trop_lat = trop_lat
-            self.main.trop_lat = trop_lat
-            print(trop_lat, self.trop_lat, self.main.trop_lat)
-        elif trop_lat is not None and not isinstance(trop_lat, (int, float)):
-            raise TypeError("trop_lat must to be integer or float")
-
-        if s_time is not None and isinstance(s_time, (int, str)):
-            self.s_time = s_time
-            self.main.s_time = s_time
-        elif s_time is not None and not isinstance(s_time, (int, str)):
-            raise TypeError("s_time must to be integer or string")
-
-        if f_time is not None and isinstance(f_time, (int, str)):
-            self.f_time = f_time
-            self.main.f_time = f_time
-        elif f_time is not None and not isinstance(f_time, (int, str)):
-            raise TypeError("f_time must to be integer or string")
-
-        if s_year is not None and isinstance(s_year, int):
-            self.s_year = s_year
-            self.main.s_year = s_year
-        elif s_year is not None and not isinstance(s_year, int):
-            raise TypeError("s_year must to be integer")
-
-        if f_year is not None and isinstance(f_year, int):
-            self.f_year = f_year
-            self.main.f_year = f_year
-        elif f_year is not None and not isinstance(f_year, int):
-            raise TypeError("f_year must to be integer")
-
-        if s_month is not None and isinstance(s_month, int):
-            self.s_month = s_month
-            self.main.s_month = s_month
-        elif s_month is not None and not isinstance(s_month, int):
-            raise TypeError("s_month must to be integer")
-
-        if f_month is not None and isinstance(f_month, int):
-            self.f_month = f_month
-            self.main.f_month = f_month
-        elif f_month is not None and not isinstance(f_month, int):
-            raise TypeError("f_month must to be integer")
-
-        if bins != 0 and isinstance(bins, np.ndarray):
-            self.bins = bins
-            self.main.bins = bins
-        elif bins != 0 and not isinstance(bins, (np.ndarray, list)):
-            raise TypeError("bins must to be array")
-
-        if num_of_bins is not None and isinstance(num_of_bins, int):
-            self.num_of_bins = num_of_bins
-            self.main.num_of_bins = num_of_bins
-        elif num_of_bins is not None and not isinstance(num_of_bins, int):
-            raise TypeError("num_of_bins must to be integer")
-
-        if first_edge is not None and isinstance(first_edge, (int, float)):
-            self.first_edge = first_edge
-            self.main.first_edge = first_edge
-        elif first_edge is not None and not isinstance(first_edge, (int, float)):
-            raise TypeError("first_edge must to be integer or float")
-
-        if width_of_bin is not None and isinstance(width_of_bin, (int, float)):
-            self.width_of_bin = width_of_bin
-            self.main.width_of_bin = width_of_bin
-        elif width_of_bin is not None and not isinstance(width_of_bin, (int, float)):
-            raise TypeError("width_of_bin must to be integer or float")
-
-        self.new_unit = self.new_unit if new_unit is None else new_unit
-        self.main.new_unit = self.new_unit if new_unit is None else new_unit
-        
-        self.model_variable = self.model_variable if model_variable is None else model_variable
-        self.main.model_variable = self.model_variable if model_variable is None else model_variable
+    def class_attributes_update(self, **kwargs): 
+        """
+        Update the class attributes with new values.
+        """
+        attribute_names = ['trop_lat', 's_time', 'f_time', 's_year', 'f_year', 's_month', 
+                       'f_month', 'num_of_bins', 'first_edge', 'width_of_bin', 'bins', 
+                       'model_variable', 'new_unit']
+        for attr_name in attribute_names:
+            if attr_name in kwargs and isinstance(kwargs[attr_name], type(getattr(self, attr_name))):
+                setattr(self, attr_name, kwargs[attr_name])
+                setattr(self.main, attr_name, kwargs[attr_name])
+                #self.main.class_attributes_update(getattr(attr_name)=getattr(attr_name)) #need to test the types 
+            elif attr_name in kwargs and not isinstance(kwargs[attr_name], type(getattr(self, attr_name))):
+                raise TypeError(f"{attr_name} must be {type(getattr(self, attr_name))}")
+Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__
