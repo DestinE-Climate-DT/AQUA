@@ -20,43 +20,62 @@ print('Reading configuration yaml file..')
 config = ToolsClass().get_config()
 machine = ToolsClass().get_machine()
 
-def get_arg(config_value, default_value):
-    if config_value is not None:
-        return config_value
-    else:
-        return default_value
+def get_config_value(config, key, *keys, default=None):
+    """
+    Retrieve the value from the configuration dictionary based on the provided key(s).
+
+    Args:
+        config (dict): The configuration dictionary to retrieve the value from.
+        key (str): The first key to access the nested dictionary.
+        *keys (str): Additional keys to access further nested dictionaries.
+        default: The default value to return if the key(s) are not found in the configuration dictionary.
+
+    Returns:
+        The value corresponding to the provided key(s) if found, otherwise the default value.
+
+    Examples:
+        loglevel = get_config_value(config, 'loglevel', default='WARNING')
+        trop_lat = get_config_value(config, 'class_attributes', 'trop_lat', default=10)
+    """
+    try:
+        value = config[key]
+        for k in keys:
+            value = value[k]
+        return value
+    except (KeyError, TypeError):
+        return default
         
-loglevel = get_arg(config['loglevel'], 'WARNING')
-trop_lat = get_arg(config['class_attributes']['trop_lat'], 10)
-num_of_bins = get_arg(config['class_attributes']['num_of_bins'], 1000)
-first_edge = get_arg(config['class_attributes']['first_edge'], 0)
-bins = get_arg(config['class_attributes']['bins'], 0)
-width_of_bin = get_arg(config['class_attributes']['width_of_bin'], 0.05) # in [mm/day]
-model_variable = get_arg(config['class_attributes']['model_variable'], 'tprate')
-new_unit = get_arg(config['class_attributes']['new_unit'], 'mm/day')
-path_to_netcdf = get_arg(config[machine]['path_to_netcdf'], './')
-path_to_pdf = get_arg(config[machine]['path_to_pdf'], './')
+loglevel = get_config_value(config, 'loglevel', default='WARNING')
+trop_lat = get_config_value(config, 'class_attributes', 'trop_lat', default=10)
+num_of_bins = get_config_value(config, 'class_attributes', 'num_of_bins', default=1000)
+first_edge = get_config_value(config, 'class_attributes', 'first_edge', default=0)
+bins = get_config_value(config, 'class_attributes', 'bins', default=0)
+width_of_bin = get_config_value(config, 'class_attributes', 'width_of_bin', default=0.05) # in [mm/day]
+model_variable = get_config_value(config, 'class_attributes', 'model_variable', default='tprate')
+new_unit = get_config_value(config, 'class_attributes', 'new_unit', default='mm/day')
+path_to_netcdf = get_config_value(config, machine, 'path_to_netcdf', default='./')
+path_to_pdf = get_config_value(config, machine, 'path_to_pdf', default='./')
 #time_frame
-s_time = get_arg(config['time_frame']['s_time'], None)
-f_time = get_arg(config['time_frame']['f_time'], None)
-s_year = get_arg(config['time_frame']['s_year'], None)
-f_year = get_arg(config['time_frame']['f_year'], None)
-s_month = get_arg(config['time_frame']['s_month'], None)
-f_month = get_arg(config['time_frame']['f_month'], None) 
+s_time = get_config_value(config, 'time_frame', 's_time', default=None)
+f_time = get_config_value(config, 'time_frame', 'f_time', default=None)
+s_year = get_config_value(config, 'time_frame', 's_year', default=None)
+f_year = get_config_value(config, 'time_frame', 'f_year', default=None)
+s_month = get_config_value(config, 'time_frame', 's_month', default=None)
+f_month = get_config_value(config, 'time_frame', 'f_month', default=None) 
 #plot_attributes
-pdf_format = get_arg(config['plot_attributes']['pdf_format'], True)
-figsize = get_arg(config['plot_attributes']['figsize'], 1)
-linewidth = get_arg(config['plot_attributes']['linewidth'], 3)
-fontsize = get_arg(config['plot_attributes']['fontsize'], 14)
-smooth = get_arg(config['plot_attributes']['smooth'], True) 
-step = get_arg(config['plot_attributes']['step'], False)  
-color_map = get_arg(config['plot_attributes']['color_map'], False)
-cmap = get_arg(config['plot_attributes']['cmap'], 'coolwarm')
-linestyle = get_arg(config['plot_attributes']['linestyle'], '-')
-ylogscale = get_arg(config['plot_attributes']['ylogscale'], True) 
-xlogscale = get_arg(config['plot_attributes']['xlogscale'], False)
-number_of_axe_ticks = get_arg(config['plot_attributes']['number_of_axe_ticks'], 4)
-number_of_bar_ticks = get_arg(config['plot_attributes']['number_of_bar_ticks'], 6) 
+pdf_format = get_config_value(config, 'plot_attributes', 'pdf_format', default=True)
+figsize = get_config_value(config, 'plot_attributes', 'figsize', default=1)
+linewidth = get_config_value(config, 'plot_attributes', 'linewidth', default=3)
+fontsize = get_config_value(config, 'plot_attributes', 'fontsize', default=14)
+smooth = get_config_value(config, 'plot_attributes', 'smooth', default=True) 
+step = get_config_value(config, 'plot_attributes', 'step', default=False)  
+color_map = get_config_value(config, 'plot_attributes', 'color_map', default=False)
+cmap = get_config_value(config, 'plot_attributes', 'cmap', default='coolwarm')
+linestyle = get_config_value(config, 'plot_attributes', 'linestyle', default='-')
+ylogscale = get_config_value(config, 'plot_attributes', 'ylogscale', default=True) 
+xlogscale = get_config_value(config, 'plot_attributes', 'xlogscale', default=False)
+number_of_axe_ticks = get_config_value(config, 'plot_attributes', 'number_of_axe_ticks', default=4)
+number_of_bar_ticks = get_config_value(config, 'plot_attributes', 'number_of_bar_ticks', default=6) 
 
 class Tropical_Rainfall(metaclass=MetaClass):
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
