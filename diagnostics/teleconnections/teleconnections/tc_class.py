@@ -124,8 +124,6 @@ class Teleconnection():
         # Data empty at the beginning
         self.data = None
         self.index = None
-        self.regression = None
-        self.correlation = None
 
         # Initialize the Reader class
         # Notice that reader is a private method
@@ -135,33 +133,6 @@ class Teleconnection():
             self._reader(zoom=self.zoom)
         else:
             self._reader()
-
-    def run(self, **kwargs):
-        """Run teleconnection analysis.
-
-        The analysis consists of:
-
-        - Retrieving the data
-        - Evaluating the teleconnection index
-        - Evaluating the regression
-        - Evaluating the correlation
-
-        These methods can be also run separately.
-
-        Keyword arguments:
-            - rebuild (bool): If True, the index, regression and correlation
-                              are recalculated. Default is False.
-        """
-
-        self.logger.debug('Running teleconnection analysis for data: %s/%s/%s',
-                          self.model, self.exp, self.source)
-
-        self.retrieve()
-        self.evaluate_index(**kwargs)
-        self.evaluate_regression(**kwargs)
-        self.evaluate_correlation(**kwargs)
-
-        self.logger.info('Teleconnection analysis completed')
 
     def retrieve(self, var=None, **kwargs):
         """Retrieve teleconnection data with the AQUA reader.
@@ -265,15 +236,16 @@ class Teleconnection():
             self.index.to_netcdf(file)
             self.logger.info('Index saved to %s', file)
 
-    def evaluate_regression(self, data=None, var=None, dim='time',
-                            rebuild=False):
-        """Evaluate teleconnection regression.
+    def evaluate_regression(self, data=None, var=None,
+                            dim: str = 'time',
+                            season=None):
+        """
+        Evaluate teleconnection regression.
         If var is None, the regression is calculated between the teleconnection
-        index and the teleconnection variable. The regression is saved as
-        teleconnection attribute and can be accessed with self.regression.
+        index and the teleconnection variable.
         If var is not None, the regression is calculated between the teleconnection
-        index and the specified variable. The regression is not saved as
-        teleconnection attribute and can be accessed with the returned value.
+        index and the specified variable.
+        The regression is returned as xarray.DataArray.
 
         Args:
             data (xarray.DataArray, optional): Data to be used for regression.
@@ -282,65 +254,54 @@ class Teleconnection():
                                                If None, the variable used for the index is used.
             dim (str, optional):               Dimension to be used for regression.
                                                Default is 'time'.
-            rebuild (bool, optional):          If True, the regression is recalculated.
-                                               Default is False.
+            season (str, optional):            Season to be selected. Default is None.
 
         Returns:
-            xarray.DataArray: Regression map if var is not None.
+            xarray.DataArray: Regression map
         """
-        if self.regression is not None and var is None and not rebuild:
-            self.logger.warning('Regression already calculated, skipping')
-            return
-
-        if rebuild and self.regression is not None:
-            self.logger.info('Rebuilding regression')
-
+        # We prepare the data for the regression, season selection is done
+        # inside the function reg_evaluation, because it can be used
+        # also as a standalone function
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 
-        if var is None:
-            self.regression = reg_evaluation(indx=self.index, data=data,
-                                             dim=dim)
-            # HACK: ICON has a depth_full dimension that is not used
-            #       but it is not removed by the regression evaluation
-            if self.model == 'ICON':
-                try:
-                    self.logger.warning("ICON data, trying to remove depth_full dimension")
-                    self.regression = self.regression.isel(depth_full=0)
-                except ValueError:
-                    self.logger.warning("Depth_full dimension not found, skipping")
-        else:
-            reg = reg_evaluation(indx=self.index, data=data, dim=dim)
-            # HACK: ICON has a depth_full dimension that is not used
-            #       but it is not removed by the regression evaluation
-            if self.model == 'ICON':
-                try:
-                    self.logger.warning("ICON data, trying to remove depth_full dimension")
-                    reg = reg.isel(depth_full=0)
-                except ValueError:
-                    self.logger.warning("Depth_full dimension not found, skipping")
+        reg = reg_evaluation(indx=self.index, data=data, dim=dim, season=season)
+        # HACK: ICON has a depth_full dimension that is not used
+        #       but it is not removed by the regression evaluation
+        if self.model == 'ICON':
+            try:
+                self.logger.warning("ICON data, trying to remove depth_full dimension")
+                reg = reg.isel(depth_full=0)
+            except ValueError:
+                self.logger.warning("Depth_full dimension not found, skipping")
 
         if self.savefile:
             if var:
-                file = self.outputdir + '/' + self.filename + '_regression_{}.nc'.format(var)
-                reg.to_netcdf(file)
+                file = self.outputdir + '/' + self.filename
+                file += '_regression_'
+                if season:
+                    file += season + '_'
+                file += var + '.nc'
             else:
-                file = self.outputdir + '/' + self.filename + '_regression.nc'
-                self.regression.to_netcdf(file)
-            self.logger.info("Regression saved to %s", file)            
+                file = self.outputdir + '/' + self.filename
+                file += '_regression_'
+                if season:
+                    file += season
+                file += '.nc'
+            reg.to_netcdf(file)
+            self.logger.info("Regression saved to %s", file)
 
-        if var:
-            self.logger.info("Returning regression as xarray.DataArray")
-            return reg
+        return reg
 
-    def evaluate_correlation(self, data=None, var=None, dim='time',
-                             rebuild=False):
-        """Evaluate teleconnection correlation.
+    def evaluate_correlation(self, data=None, var=None,
+                             dim: str = 'time',
+                             season=None):
+        """
+        Evaluate teleconnection correlation.
         If var is None, the correlation is calculated between the teleconnection
-        index and the teleconnection variable. The correlation is saved as
-        teleconnection attribute and can be accessed with self.correlation.
+        index and the teleconnection variable.
         If var is not None, the correlation is calculated between the teleconnection
-        index and the specified variable. The correlation is not saved as
-        teleconnection attribute and can be accessed with the returned value.
+        index and the specified variable. 
+        The correlation is returned as xarray.DataArray.
 
         Args:
             data (xarray.DataArray, optional): Data to be used for correlation.
@@ -349,39 +310,35 @@ class Teleconnection():
                                                If None, the variable used for the index is used.
             dim (str, optional):               Dimension to be used for correlation.
                                                Default is 'time'.
-            rebuild (bool, optional):          If True, the correlation is recalculated.
-                                               Default is False.
+            season (str, optional):            Season to be selected. Default is None.
 
         Returns:
-            xarray.DataArray: Correlation map if var is not None.
+            xarray.DataArray: Correlation map
         """
-        if self.correlation is not None and var is None and not rebuild:
-            self.logger.warning('Correlation already calculated, skipping')
-            return
-
-        if rebuild and self.correlation is not None:
-            self.logger.info('Rebuilding correlation')
-
+        # We prepare the data for the regression, season selection is done
+        # inside the function reg_evaluation, because it can be used
+        # also as a standalone function
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 
-        if var is None:
-            self.correlation = cor_evaluation(indx=self.index, data=data,
-                                              dim=dim)
-        else:
-            cor = cor_evaluation(indx=self.index, data=data, dim=dim)
+        cor = cor_evaluation(indx=self.index, data=data, dim=dim, season=season)
 
         if self.savefile:
             if var:
-                file = self.outputdir + '/' + self.filename + '_correlation_{}.nc'.format(var)
-                cor.to_netcdf(file)
+                file = self.outputdir + '/' + self.filename
+                file += '_correlation_'
+                if season:
+                    file += season + '_'
+                file += var + '.nc'
             else:
-                file = self.outputdir + '/' + self.filename + '_correlation.nc'
-                self.correlation.to_netcdf(file)
-            self.logger.info('Correlation saved to %s', file)
+                file = self.outputdir + '/' + self.filename
+                file += '_correlation_'
+                if season:
+                    file += season
+                file += '.nc'
+            cor.to_netcdf(file)
+            self.logger.info("Correlation saved to %s", file)
 
-        if var:
-            self.logger.info("Returning correlation as xarray.DataArray")
-            return cor
+        return cor
 
     def plot_index(self, step=False, **kwargs):
         """

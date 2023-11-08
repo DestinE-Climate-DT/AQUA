@@ -44,3 +44,5 @@ configdir: null
 # List of teleconnections specific configuration parameters
 ENSO:
   months_window: 3
+  full_year: true
+  seasons: null # to analyse additionally to the full data

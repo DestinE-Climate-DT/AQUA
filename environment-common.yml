@@ -19,6 +19,7 @@ dependencies:
   - xesmf # for ECmean
   - intake-esm
   - pip:
+    - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
     - -e ./diagnostics/teleconnections/ # pip install -e of teleconnections
     - -e ./diagnostics/tropical_cyclones/ # pip install -e of tropical cyclones
     # pip install -e of AQUA itself

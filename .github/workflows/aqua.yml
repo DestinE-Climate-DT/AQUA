@@ -29,7 +29,7 @@ jobs:
   aqua_test:
     # NOTE: this option can be uncommented to run the job only when
     #       a pull request contains a label with the name "Ready to merge".
-    # if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
     env:
       # You can disable coverage by changing this to false. You can
       # also add other Python versions to the matrix, pinning the
@@ -59,7 +59,7 @@ jobs:
         python-version: ["3.11"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # The FDB docker image does not have git and other dependencies
       - name: Install GH Actions dependencies
         run: |

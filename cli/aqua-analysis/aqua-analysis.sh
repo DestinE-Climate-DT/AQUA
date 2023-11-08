@@ -34,7 +34,11 @@ run_ecmean=true
 # ---------------------------------------
 run_global_time_series=true
 run_ocean3d=true
-run_radiation=false # not implemented yet
+run_radiation=true
+# ------------------------------------------
+# Command line extra arguments for radiation
+# --config (readiation config file)
+# ------------------------------------------
 run_seaice=true
 # ------------------------------------------
 # Command line extra arguments for seaice
@@ -145,7 +149,7 @@ fi
 
 if [ "$run_radiation" = true ] ; then
   colored_echo $GREEN "Running radiation"
-  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation
+  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation -l $loglevel
   colored_echo $GREEN "Finished radiation"
 fi
 
