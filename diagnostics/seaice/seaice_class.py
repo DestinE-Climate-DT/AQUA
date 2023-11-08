@@ -215,8 +215,7 @@ class SeaIceExtent:
                         ci_mask.notnull()).sum(dim=[dim1Name, dim2Name]) / 1e12
                 else:
                     myExtent = areacello.where(regionMask).where(
-                        ci_mask.notnull()).sum(dim=[dim1Name, dim2Name]) / 1e12
-
+                        ci_mask.notnull()).sum(dim="value") / 1e12
                 myExtent.attrs["units"] = "million km^2"
                 myExtent.attrs["long_name"] = "Sea ice extent"
                 self.regionExtents.append(myExtent)
@@ -456,7 +455,7 @@ class SeaIceVolume:
                     )
                 except KeyError:
                     self.logger.info("Error: region not defined")
-                    print("Region " + region + " does not exist in regions_definition.yml")
+                    self.logger.warning("Region " + region + " does not exist in regions_definition.yml")
                     raise KeyError("Region not defined")
 
                 # Dealing with regions straddling the 180° meridian
@@ -478,8 +477,7 @@ class SeaIceVolume:
                     sivol_mask = data.sivol.where((data.sivol > 0) &
                                         (data.sivol < 99.0))
                 except AttributeError:
-                    print("WARNING")
-                    print("VARIABLE sivol NOT FOUND, loading sithick instead")
+                    self.logger.warning("WARNING! Variable sivol NOT FOUND, loading sithick instead")
                     data = data.rename({"sithick": "sivol"})
                     sivol_mask = data.sivol.where((data.sivol > 0) &
                                         (data.sivol < 99.0))
