@@ -5,12 +5,8 @@
 """
 from typing import Union, Tuple, Optional, Any, List
 from aqua.logger import log_configure
-#from aqua.util import ConfigPath, load_yaml
 
-import types
-#import sys 
-#import yaml
-#import os
+#import types
 
 from .src.tropical_rainfall_tools import ToolsClass
 from .src.tropical_rainfall_plots import PlottingClass 
@@ -35,7 +31,7 @@ trop_lat = get_arg(config['class_attributes']['trop_lat'], 10)
 num_of_bins = get_arg(config['class_attributes']['num_of_bins'], 1000)
 first_edge = get_arg(config['class_attributes']['first_edge'], 0)
 bins = get_arg(config['class_attributes']['bins'], 0)
-width_of_bin = None
+width_of_bin = get_arg(config['class_attributes']['width_of_bin'], 0.05) # in [mm/day]
 model_variable = get_arg(config['class_attributes']['model_variable'], 'tprate')
 new_unit = get_arg(config['class_attributes']['new_unit'], 'mm/day')
 path_to_netcdf = get_arg(config[machine]['path_to_netcdf'], './')
@@ -128,11 +124,8 @@ class Tropical_Rainfall(metaclass=MetaClass):
                         width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
                         path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
 
-        if width_of_bin is None:
-            self.precipitation_rate_units_converter = self.main.precipitation_rate_units_converter
-            self.width_of_bin = self.precipitation_rate_units_converter(0.05, old_unit='mm/day', new_unit=self.new_unit)
-        else:
-            self.width_of_bin = width_of_bin
+        self.precipitation_rate_units_converter = self.main.precipitation_rate_units_converter
+        self.width_of_bin = self.precipitation_rate_units_converter(width_of_bin, old_unit='mm/day', new_unit=self.new_unit)
         self.main.width_of_bin = self.width_of_bin  
         
         self.plots = PlottingClass(pdf_format = pdf_format, figsize = figsize, linewidth = linewidth,

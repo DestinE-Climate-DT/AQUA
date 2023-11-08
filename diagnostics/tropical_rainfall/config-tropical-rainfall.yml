@@ -12,6 +12,7 @@ class_attributes:
   num_of_bins: 1000
   first_edge:   0 #default value
   bins: 0
+  width_of_bin: 0.05 # in [mm/day]
   model_variable: 'tprate' #default value
   new_unit:       'mm/day' #default value
   loglevel:       'WARNING' #default value
