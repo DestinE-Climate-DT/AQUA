@@ -22,10 +22,12 @@ import xarray as xr
 class PlottingClass:
     """This is class to create the plots."""
         
-    def __init__(self, pdf_format: bool = True, figsize: int = 1, linewidth: int = 3,
-                 fontsize: int = 14, smooth: bool = True, step: bool = False, color_map: bool = False, cmap: str = 'coolwarm',
-                 linestyle: str = '-', ylogscale: bool = True, xlogscale: bool = False, model_variable: str = 'tprate', 
-                 number_of_axe_ticks: int = 4, number_of_bar_ticks: int = 6, loglevel: str = 'WARNING'):
+    def __init__(self, pdf_format: bool = None, figsize: float = None, 
+                    linewidth: float = None, fontsize: int = None, smooth: bool = None, 
+                    step: bool = None, color_map: bool = None, cmap: str = None,
+                    linestyle: str = None, ylogscale: bool = None, xlogscale: bool = None, 
+                    model_variable: str = None, number_of_axe_ticks: int = None, 
+                    number_of_bar_ticks: int = None, loglevel: str = 'WARNING'):
         """
         Constructor for the plotting class, initializing various plotting parameters.
 
