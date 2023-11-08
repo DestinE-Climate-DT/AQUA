@@ -38,6 +38,18 @@ class ToolsClass:
         if len(parts) <= 5:
             time_str = '-'.join(parts[:len(parts)])
         return time_str
+    
+    def get_machine(self):
+        """
+        Retrieves the machine information from the ConfigPath instance.
+
+        Returns:
+        str: The machine information retrieved from the ConfigPath object.
+
+        Raises:
+        SomeException: If the ConfigPath object is not properly initialized or if there is an issue with retrieving the machine information.
+        """
+        return ConfigPath().machine
         
     def get_netcdf_path(self, configname: str = full_path_to_config) -> tuple:
         """
@@ -108,6 +120,39 @@ class ToolsClass:
             path_to_pdf = None
         self.logger.info(f"PDF folder: {path_to_pdf}")
         return path_to_pdf
+    
+    def get_config(self, configname: str = full_path_to_config):
+        """
+        Load an entire configuration file based on the specified configuration name.
+
+        Args:
+            self: The instance of the class.
+            configname (str): The name of the YAML configuration file.
+
+        Returns:
+            dict or None: The configuration data loaded from the specified YAML file, or None if an error occurs during the loading process.
+
+        Raises:
+            FileNotFoundError: If the specified configuration file does not exist.
+            Exception: If an unexpected error occurs during the loading process.
+        """
+        root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
+        config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
+        if not os.path.exists(config_path):
+            self.logger.error(f"The configuration file '{configname}' does not exist.")
+            raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+        except FileNotFoundError as e:
+            # Handle FileNotFoundError exception
+            self.logger.error(f"An unexpected error occurred: {e}")
+            raise e
+        except Exception as e:
+            # Handle other exceptions
+            self.logger.error(f"An unexpected error occurred: {e}")
+            config = None
+        return config
 
     def open_dataset(self, path_to_netcdf: str) -> object:
         """ 

@@ -5,51 +5,31 @@
 """
 from typing import Union, Tuple, Optional, Any, List
 from aqua.logger import log_configure
-from aqua.util import ConfigPath, load_yaml
+#from aqua.util import ConfigPath, load_yaml
 
 import types
-import sys 
-import yaml
-import os
+#import sys 
+#import yaml
+#import os
 
 from .src.tropical_rainfall_tools import ToolsClass
 from .src.tropical_rainfall_plots import PlottingClass 
 from .src.tropical_rainfall_main import MainClass 
 from .src.tropical_rainfall_meta import MetaClass 
 
+
 print('Running tropical rainfall diagnostic...')
 
 print('Reading configuration yaml file..')
-
-configname = './tropical_rainfall/config-tropical-rainfall.yml'
-root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
-config_path = os.path.join(root_folder, configname) 
-if not os.path.exists(config_path):
-    print(f"The configuration file '{configname}' does not exist.")
-    raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
-try:
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-except FileNotFoundError as e:
-    # Handle FileNotFoundError exception
-    print(f"An unexpected error occurred: {e}")
-    raise e
-except Exception as e:
-    # Handle other exceptions
-    print(f"An unexpected error occurred: {e}")
-            
-#try:
-    # caution: path[0] is reserved for script path (or '' in REPL)
-    #config = load_yaml('config-tropical-rainfall.yml')
-#except ValueError:
-#    config = load_yaml('diagnostics/tropical_rainfall/config-tropical-rainfall.yml')
+config = ToolsClass().get_config()
+machine = ToolsClass().get_machine()
 
 def get_arg(config_value, default_value):
     if config_value is not None:
         return config_value
     else:
         return default_value
-    
+        
 loglevel = get_arg(config['loglevel'], 'WARNING')
 trop_lat = get_arg(config['class_attributes']['trop_lat'], 10)
 num_of_bins = get_arg(config['class_attributes']['num_of_bins'], 1000)
@@ -58,8 +38,8 @@ bins = get_arg(config['class_attributes']['bins'], 0)
 width_of_bin = None
 model_variable = get_arg(config['class_attributes']['model_variable'], 'tprate')
 new_unit = get_arg(config['class_attributes']['new_unit'], 'mm/day')
-path_to_netcdf = get_arg(config[ConfigPath().machine]['path_to_netcdf'], './')
-path_to_pdf = get_arg(config[ConfigPath().machine]['path_to_pdf'], './')
+path_to_netcdf = get_arg(config[machine]['path_to_netcdf'], './')
+path_to_pdf = get_arg(config[machine]['path_to_pdf'], './')
 #time_frame
 s_time = get_arg(config['time_frame']['s_time'], None)
 f_time = get_arg(config['time_frame']['f_time'], None)
