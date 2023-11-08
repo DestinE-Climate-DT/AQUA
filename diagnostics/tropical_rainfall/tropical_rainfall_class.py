@@ -3,15 +3,13 @@
 .. moduleauthor:: AQUA team <natalia.nazarova@polito.it>
 
 """
-from typing import Union, Tuple, Optional, Any, List
+from typing import Union, Optional
 from aqua.logger import log_configure
 
-#import types
-
 from .src.tropical_rainfall_tools import ToolsClass
-from .src.tropical_rainfall_plots import PlottingClass 
-from .src.tropical_rainfall_main import MainClass 
-from .src.tropical_rainfall_meta import MetaClass 
+from .src.tropical_rainfall_plots import PlottingClass
+from .src.tropical_rainfall_main import MainClass
+from .src.tropical_rainfall_meta import MetaClass
 
 
 print('Running tropical rainfall diagnostic...')
@@ -20,62 +18,38 @@ print('Reading configuration yaml file..')
 config = ToolsClass().get_config()
 machine = ToolsClass().get_machine()
 
-def get_config_value(config, key, *keys, default=None):
-    """
-    Retrieve the value from the configuration dictionary based on the provided key(s).
+loglevel = ToolsClass().get_config_value(config, 'loglevel', default='WARNING')
+trop_lat = ToolsClass().get_config_value(config, 'class_attributes', 'trop_lat', default=10)
+num_of_bins = ToolsClass().get_config_value(config, 'class_attributes', 'num_of_bins', default=1000)
+first_edge = ToolsClass().get_config_value(config, 'class_attributes', 'first_edge', default=0)
+bins = ToolsClass().get_config_value(config, 'class_attributes', 'bins', default=0)
+width_of_bin = ToolsClass().get_config_value(config, 'class_attributes', 'width_of_bin', default=0.05)  # in [mm/day]
+model_variable = ToolsClass().get_config_value(config, 'class_attributes', 'model_variable', default='tprate')
+new_unit = ToolsClass().get_config_value(config, 'class_attributes', 'new_unit', default='mm/day')
+path_to_netcdf = ToolsClass().get_config_value(config, machine, 'path_to_netcdf', default='./')
+path_to_pdf = ToolsClass().get_config_value(config, machine, 'path_to_pdf', default='./')
+# time_frame
+s_time = ToolsClass().get_config_value(config, 'time_frame', 's_time', default=None)
+f_time = ToolsClass().get_config_value(config, 'time_frame', 'f_time', default=None)
+s_year = ToolsClass().get_config_value(config, 'time_frame', 's_year', default=None)
+f_year = ToolsClass().get_config_value(config, 'time_frame', 'f_year', default=None)
+s_month = ToolsClass().get_config_value(config, 'time_frame', 's_month', default=None)
+f_month = ToolsClass().get_config_value(config, 'time_frame', 'f_month', default=None)
+# plot_attributes
+pdf_format = ToolsClass().get_config_value(config, 'plot_attributes', 'pdf_format', default=True)
+figsize = ToolsClass().get_config_value(config, 'plot_attributes', 'figsize', default=1)
+linewidth = ToolsClass().get_config_value(config, 'plot_attributes', 'linewidth', default=3)
+fontsize = ToolsClass().get_config_value(config, 'plot_attributes', 'fontsize', default=14)
+smooth = ToolsClass().get_config_value(config, 'plot_attributes', 'smooth', default=True)
+step = ToolsClass().get_config_value(config, 'plot_attributes', 'step', default=False)
+color_map = ToolsClass().get_config_value(config, 'plot_attributes', 'color_map', default=False)
+cmap = ToolsClass().get_config_value(config, 'plot_attributes', 'cmap', default='coolwarm')
+linestyle = ToolsClass().get_config_value(config, 'plot_attributes', 'linestyle', default='-')
+ylogscale = ToolsClass().get_config_value(config, 'plot_attributes', 'ylogscale', default=True)
+xlogscale = ToolsClass().get_config_value(config, 'plot_attributes', 'xlogscale', default=False)
+number_of_axe_ticks = ToolsClass().get_config_value(config, 'plot_attributes', 'number_of_axe_ticks', default=4)
+number_of_bar_ticks = ToolsClass().get_config_value(config, 'plot_attributes', 'number_of_bar_ticks', default=6)
 
-    Args:
-        config (dict): The configuration dictionary to retrieve the value from.
-        key (str): The first key to access the nested dictionary.
-        *keys (str): Additional keys to access further nested dictionaries.
-        default: The default value to return if the key(s) are not found in the configuration dictionary.
-
-    Returns:
-        The value corresponding to the provided key(s) if found, otherwise the default value.
-
-    Examples:
-        loglevel = get_config_value(config, 'loglevel', default='WARNING')
-        trop_lat = get_config_value(config, 'class_attributes', 'trop_lat', default=10)
-    """
-    try:
-        value = config[key]
-        for k in keys:
-            value = value[k]
-        return value
-    except (KeyError, TypeError):
-        return default
-        
-loglevel = get_config_value(config, 'loglevel', default='WARNING')
-trop_lat = get_config_value(config, 'class_attributes', 'trop_lat', default=10)
-num_of_bins = get_config_value(config, 'class_attributes', 'num_of_bins', default=1000)
-first_edge = get_config_value(config, 'class_attributes', 'first_edge', default=0)
-bins = get_config_value(config, 'class_attributes', 'bins', default=0)
-width_of_bin = get_config_value(config, 'class_attributes', 'width_of_bin', default=0.05) # in [mm/day]
-model_variable = get_config_value(config, 'class_attributes', 'model_variable', default='tprate')
-new_unit = get_config_value(config, 'class_attributes', 'new_unit', default='mm/day')
-path_to_netcdf = get_config_value(config, machine, 'path_to_netcdf', default='./')
-path_to_pdf = get_config_value(config, machine, 'path_to_pdf', default='./')
-#time_frame
-s_time = get_config_value(config, 'time_frame', 's_time', default=None)
-f_time = get_config_value(config, 'time_frame', 'f_time', default=None)
-s_year = get_config_value(config, 'time_frame', 's_year', default=None)
-f_year = get_config_value(config, 'time_frame', 'f_year', default=None)
-s_month = get_config_value(config, 'time_frame', 's_month', default=None)
-f_month = get_config_value(config, 'time_frame', 'f_month', default=None) 
-#plot_attributes
-pdf_format = get_config_value(config, 'plot_attributes', 'pdf_format', default=True)
-figsize = get_config_value(config, 'plot_attributes', 'figsize', default=1)
-linewidth = get_config_value(config, 'plot_attributes', 'linewidth', default=3)
-fontsize = get_config_value(config, 'plot_attributes', 'fontsize', default=14)
-smooth = get_config_value(config, 'plot_attributes', 'smooth', default=True) 
-step = get_config_value(config, 'plot_attributes', 'step', default=False)  
-color_map = get_config_value(config, 'plot_attributes', 'color_map', default=False)
-cmap = get_config_value(config, 'plot_attributes', 'cmap', default='coolwarm')
-linestyle = get_config_value(config, 'plot_attributes', 'linestyle', default='-')
-ylogscale = get_config_value(config, 'plot_attributes', 'ylogscale', default=True) 
-xlogscale = get_config_value(config, 'plot_attributes', 'xlogscale', default=False)
-number_of_axe_ticks = get_config_value(config, 'plot_attributes', 'number_of_axe_ticks', default=4)
-number_of_bar_ticks = get_config_value(config, 'plot_attributes', 'number_of_bar_ticks', default=6) 
 
 class Tropical_Rainfall(metaclass=MetaClass):
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
@@ -94,7 +68,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
                  bins: Optional[list] = bins,
                  new_unit: Optional[str] = new_unit,
                  model_variable: Optional[str] = model_variable,
-                 path_to_netcdf: Optional[str] = path_to_netcdf,  
+                 path_to_netcdf: Optional[str] = path_to_netcdf,
                  path_to_pdf: Optional[str] = path_to_pdf,
                  loglevel: str = loglevel):
         """ The constructor of the class.
@@ -126,7 +100,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
         self.s_month = s_month
         self.f_month = f_month
         self.num_of_bins = num_of_bins
-        self.first_edge = first_edge    
+        self.first_edge = first_edge
         self.bins = bins
         self.new_unit = new_unit
         self.model_variable = model_variable
@@ -145,7 +119,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
 
         self.precipitation_rate_units_converter = self.main.precipitation_rate_units_converter
         self.width_of_bin = self.precipitation_rate_units_converter(width_of_bin, old_unit='mm/day', new_unit=self.new_unit)
-        self.main.width_of_bin = self.width_of_bin  
+        self.main.width_of_bin = self.width_of_bin
         
         self.plots = PlottingClass(pdf_format = pdf_format, figsize = figsize, linewidth = linewidth,
                             fontsize = fontsize, smooth = smooth, step = step, color_map = color_map, cmap = cmap,
@@ -156,7 +130,4 @@ class Tropical_Rainfall(metaclass=MetaClass):
                      
     def import_methods(self):
         pass
-        #for method_name in methods_to_import:
-        #    setattr(self, method_name, getattr(self.main, method_name))
-        #    setattr(self, method_name, types.MethodType(getattr(self, method_name), self))
 Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__

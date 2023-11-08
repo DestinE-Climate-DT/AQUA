@@ -14,10 +14,11 @@ import cartopy.mpl.ticker as cticker
 from cartopy.util import add_cyclic_point
 
 from matplotlib.ticker import StrMethodFormatter
-#import matplotlib.colors as mcolors
+# import matplotlib.colors as mcolors
 
 import numpy as np
 import xarray as xr
+
 
 class PlottingClass:
     """This is class to create the plots."""

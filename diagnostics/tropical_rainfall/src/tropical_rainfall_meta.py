@@ -5,7 +5,7 @@ methods_to_import = [method for method in dir(MainClass) if callable(getattr(Mai
 methods_to_import.remove('class_attributes_update')
 
 # Reduced import will shorten the documentation.
-#methods_to_import = ['histogram', 'merge_list_of_histograms', 'histogram_plot', 'average_into_netcdf',
+# methods_to_import = ['histogram', 'merge_list_of_histograms', 'histogram_plot', 'average_into_netcdf',
 #                    'plot_of_average', 'plot_bias', 'plot_seasons_or_months', 'seasonal_or_monthly_mean',
 #                    'map', 'get_95percent_level', 'seasonal_095level_into_netcdf', 'add_UTC_DataAaray',
 #                    'daily_variability_plot']
@@ -28,7 +28,7 @@ class MetaClass(type):
                         setattr(self, attr_name, kwargs[attr_name])
                         setattr(self.main, attr_name, kwargs[attr_name])
                     # Check the types of the attributes. The commented lines below don't work correctly.
-                    #elif attr_name in kwargs and not isinstance(kwargs[attr_name], type(getattr(self, attr_name))):
+                    # elif attr_name in kwargs and not isinstance(kwargs[attr_name], type(getattr(self, attr_name))):
                     #    raise TypeError(f"{attr_name} must be {type(getattr(self, attr_name))}")
                     else:
                         pass

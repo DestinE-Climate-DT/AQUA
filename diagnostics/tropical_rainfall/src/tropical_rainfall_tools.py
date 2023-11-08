@@ -4,14 +4,13 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import xarray as xr
-#import xarray
-from typing import Union, Tuple, Optional, Any, List
-
+from typing import Union
 from aqua.util import ConfigPath
 from aqua.logger import log_configure
 import yaml
 
 full_path_to_config = '../tropical_rainfall/config-tropical-rainfall.yml'
+
 
 class ToolsClass:
     def __init__(self, loglevel: str = 'WARNING'):
@@ -153,9 +152,34 @@ class ToolsClass:
             self.logger.error(f"An unexpected error occurred: {e}")
             config = None
         return config
+    
+    def get_config_value(self, config, key, *keys, default=None):
+        """
+        Retrieve the value from the configuration dictionary based on the provided key(s).
+
+        Args:
+            config (dict): The configuration dictionary to retrieve the value from.
+            key (str): The first key to access the nested dictionary.
+            *keys (str): Additional keys to access further nested dictionaries.
+            default: The default value to return if the key(s) are not found in the configuration dictionary.
+
+        Returns:
+            The value corresponding to the provided key(s) if found, otherwise the default value.
+
+        Examples:
+            loglevel = get_config_value(config, 'loglevel', default='WARNING')
+            trop_lat = get_config_value(config, 'class_attributes', 'trop_lat', default=10)
+        """
+        try:
+            value = config[key]
+            for k in keys:
+                value = value[k]
+            return value
+        except (KeyError, TypeError):
+            return default
 
     def open_dataset(self, path_to_netcdf: str) -> object:
-        """ 
+        """
         Function to load a histogram dataset from a file using pickle.
 
         Args:
@@ -187,39 +211,39 @@ class ToolsClass:
         """
         conversion_factors = {
             'm': {
-                'm':    1,
-                'cm':   100,
-                'mm':   1000,
-                'in':   39.3701,
-                'ft':   3.28084
+                'm':  1,
+                'cm': 100,
+                'mm': 1000,
+                'in': 39.3701,
+                'ft': 3.28084
             },
             'cm': {
-                'm':    0.01,
-                'cm':   1,
-                'mm':   10,
-                'in':   0.393701,
-                'ft':   0.0328084
+                'm':  0.01,
+                'cm': 1,
+                'mm': 10,
+                'in': 0.393701,
+                'ft': 0.0328084
             },
             'mm': {
-                'm':    0.001,
-                'cm':   0.1,
-                'mm':   1,
-                'in':   0.0393701,
-                'ft':   0.00328084
+                'm':  0.001,
+                'cm': 0.1,
+                'mm': 1,
+                'in': 0.0393701,
+                'ft': 0.00328084
             },
             'in': {
-                'm':    0.0254,
-                'cm':   2.54,
-                'mm':   25.4,
-                'in':   1,
-                'ft':   0.0833333
+                'm':  0.0254,
+                'cm': 2.54,
+                'mm': 25.4,
+                'in': 1,
+                'ft': 0.0833333
             },
             'ft': {
-                'm':    0.3048,
-                'cm':   30.48,
-                'mm':   304.8,
-                'in':   12,
-                'ft':   1
+                'm':  0.3048,
+                'cm': 30.48,
+                'mm': 304.8,
+                'in': 12,
+                'ft': 1
             }
         }
 
@@ -246,67 +270,67 @@ class ToolsClass:
         """
         conversion_factors = {
             'year': {
-                'year':     1,
-                'month':    12,
-                'day':      365,
-                'hr':       8760,
-                'min':      525600,
-                's':        31536000,
-                'ms':       3.1536e+10
+                'year':  1,
+                'month': 12,
+                'day':   365,
+                'hr':    8760,
+                'min':   525600,
+                's':     31536000,
+                'ms':    3.1536e+10
             },
             'month': {
-                'year':     0.0833333,
-                'month':    1,
-                'day':      30.4167,
-                'hr':       730.001,
-                'min':      43800,
-                's':        2.628e+6,
-                'ms':       2.628e+9
+                'year':  0.0833333,
+                'month': 1,
+                'day':   30.4167,
+                'hr':    730.001,
+                'min':   43800,
+                's':     2.628e+6,
+                'ms':    2.628e+9
             },
             'day': {
-                'year':     0.00273973,
-                'month':    0.0328549,
-                'day':      1,
-                'hr':       24,
-                'min':      1440,
-                's':        86400,
-                'ms':       8.64e+7
+                'year':  0.00273973,
+                'month': 0.0328549,
+                'day':   1,
+                'hr':    24,
+                'min':   1440,
+                's':     86400,
+                'ms':    8.64e+7
             },
             'hr': {
-                'year':     0.000114155,
-                'month':    0.00136986,
-                'day':      0.0416667,
-                'hr':       1,
-                'min':      60,
-                's':        3600,
-                'ms':       3.6e+6
+                'year':  0.000114155,
+                'month': 0.00136986,
+                'day':   0.0416667,
+                'hr':    1,
+                'min':   60,
+                's':     3600,
+                'ms':    3.6e+6
             },
             'min': {
-                'year':     1.90132e-6,
-                'month':    2.28311e-5,
-                'day':      0.000694444,
-                'hr':       0.0166667,
-                'min':      1,
-                's':        60,
-                'ms':       60000
+                'year':  1.90132e-6,
+                'month': 2.28311e-5,
+                'day':   0.000694444,
+                'hr':    0.0166667,
+                'min':   1,
+                's':     60,
+                'ms':    60000
             },
             's': {
-                'year':     3.17098e-8,
-                'month':    3.80517e-7,
-                'day':      1.15741e-5,
-                'hr':       0.000277778,
-                'min':      0.0166667,
-                's':        1,
-                'ms':       1000
+                'year':  3.17098e-8,
+                'month': 3.80517e-7,
+                'day':   1.15741e-5,
+                'hr':    0.000277778,
+                'min':   0.0166667,
+                's':     1,
+                'ms':    1000
             },
             'ms': {
-                'year':     3.16888e-11,
-                'month':    3.80266e-10,
-                'day':      1.15741e-8,
-                'hr':       2.77778e-7,
-                'min':      1.66667e-5,
-                's':        0.001,
-                'ms':       1
+                'year':  3.16888e-11,
+                'month': 3.80266e-10,
+                'day':   1.15741e-8,
+                'hr':    2.77778e-7,
+                'min':   1.66667e-5,
+                's':     0.001,
+                'ms':    1
             }
         }
 
@@ -639,7 +663,7 @@ class ToolsClass:
         return new_dataset
 
 
-    def mirror_dummy_grid(self, data,  dummy_data, space_grid_factor=None, time_freq=None, time_length=None, time_grid_factor=None):
+    def mirror_dummy_grid(self, data, dummy_data, space_grid_factor=None, time_freq=None, time_length=None, time_grid_factor=None):
         """ Function to mirror the dummy grid
 
         Args:
