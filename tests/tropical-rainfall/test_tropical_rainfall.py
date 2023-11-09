@@ -302,7 +302,7 @@ def test_histogram_merge(histogram_output):
         dataset=hist_2, path_to_netcdf=path_to_histogram, name_of_file='test_merge')
 
     hist_merged = diag.merge_two_datasets(
-        tprate_dataset_1=hist_1, tprate_dataset_2=hist_2)
+        dataset_1=hist_1, dataset_2=hist_2)
     counts_merged = sum(hist_merged.counts.values)
     assert counts_merged == (counts_1 + counts_2)
 
