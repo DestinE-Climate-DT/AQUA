@@ -21,7 +21,8 @@ Variables that can be analyzed within this tool are the following:
 * Temperature (t)
 * Specific humidity (q)
 
-The data we retrieve through the provided functions have monthly timesteps and a 1x1 deg resolution. A higher resolution is not necessary for this diagnostic.
+The data we retrieve through the provided functions have monthly timesteps and a 1x1 deg resolution.
+A higher resolution is not necessary for this diagnostic.
 
 
 Output
@@ -31,7 +32,7 @@ The output files generated in this diagnostic are figures, that are saved in a P
 Run the diagnostic
 -------------------
 
-Import the necessary functions from the `AQUA` framework and import the AGM_diag-class
+Import the necessary functions from the ``AQUA`` framework and import the ``AGM_diag-class``.
 
 .. code-block:: python
 
@@ -41,18 +42,16 @@ Import the necessary functions from the `AQUA` framework and import the AGM_diag
 
 Functions used
 --------------
-Following methods are used in the AGM_diag class (inside the atm_global_mean.py file):
+Following methods are used in the AGM_diag class (inside the ``atm_global_mean.py`` file):
 
-* seasonal_bias: Plot the seasonal bias maps between two datasets for a specific variable and year.
-* compare_datasets_plev:  Compare two datasets and plot the zonal bias for a selected model time range with respect to the ERA5 climatology from 2000-2020.
-* plot_map_with_stats: Plot a map of a chosen variable from a dataset with colorbar and statistics.
-* README.md : a readme file which contains some basic information about this tool.
+* ``seasonal_bias``: Plot the seasonal bias maps between two datasets for a specific variable and year.
+* ``compare_datasets_plev``:  Compare two datasets and plot the zonal bias for a selected model time range with respect to the ERA5 climatology from 2000-2020.
+* ``plot_map_with_stats``: Plot a map of a chosen variable from a dataset with colorbar and statistics.
+* ``README.md`` : a readme file which contains some basic information about this tool.
 
 Observations
 ------------
 Data will be compared to ERA5 data
-
-
 
 Example plots
 -------------

@@ -1,7 +1,54 @@
 AQUA Container
 ==============
 
-Using a Singularity container, you can quickly load the AQUA environment on platforms like LUMI, Marenostrum, or Levante. This guide explains how to use the AQUA environment using the container, with a focus on LUMI. However, the same instructions apply to Marenostrum 4 and Levante.
+Using a Singularity container, you can quickly load the AQUA environment on platforms like LUMI, Marenostrum, or Levante. 
+
+This guide explains how to use the AQUA environment using the container, with a focus on LUMI.
+However, the same instructions apply to Marenostrum 4 and Levante.
+
+
+Generate a Personal Access Token (PAT)
+--------------------------------------
+
+You need to generate a Personal Access Token from GitHub to authenticate your access to the GitHub Container Registry.
+Follow these steps:
+
+1. Go to your GitHub account settings.
+2. Click on "Developer settings" in the left sidebar at the bottom of the list.
+3. Under "Personal access tokens," click on the "Token (classic)" tab and then "Generate new token" on the top right.
+4. Give the token a name, and make sure to select the appropriate scopes. You'll need at least ``read:packages`` and ``write:packages`` for the GitHub Container Registry.
+5. Click "Generate token" at the bottom of the page.
+
+Download the docker image
+--------------------------
+
+Pull the docker image from the docker hub:
+
+.. code-block:: bash
+
+   singularity pull docker://ghcr.io/oloapinivad/aqua:0.3-container
+
+if you have a token, you can use it to pull the image:
+
+.. code-block:: bash
+
+   singularity pull --docker-login docker://ghcr.io/oloapinivad/aqua:0.3-container
+
+This will require you to enter your username and token generated above.
+The above command will create a file called ``aqua_0.3-container.sif`` in the current directory.
+
+Store the token
+---------------
+
+You can store the token as an environment variable:
+
+.. code-block:: bash
+
+   export SINGULARITY_DOCKER_USERNAME=mygithubusername
+   export SINGULARITY_DOCKER_PASSWORD=generatedtoken
+
+This will allow you to pull the image without having to enter your username and token every time.
+It can be particularly useful if you want to use the image in a batch job.
 
 Load AQUA Environment into the Shell
 -------------------------------------
@@ -20,6 +67,9 @@ Load AQUA Environment into the Shell
    ./config/machines/lumi/container/load_aqua_lumi.sh
 
 In this way, you will have your AQUA environment activated on the shell.
+
+.. warning::
+   When running the script, be sure to modify the paths in the script with your own paths.
 
 Running Jupyter Notebook
 ------------------------
@@ -46,9 +96,11 @@ To run a Jupyter Notebook using the AQUA environment, follow these steps.
 
 4. Open the Jupyter Lab URL in your browser. It will launch Jupyter Lab. Choose the "Python 3 (ipykernel)" kernel for the AQUA environment.
 
+.. warning::
+   When running the script, be sure to modify the paths in the script with your own paths.
+
 Running Jupyter Notebook within VSCode
 --------------------------------------
-
 
 If you want to open notebooks in VSCode, follow the same steps as above, but then: 
 
@@ -58,12 +110,16 @@ If you want to open notebooks in VSCode, follow the same steps as above, but the
 
 7. Select "Python 3 (ipykernel)" as the kernel for the AQUA environment.
 
-That's it! You can now work within the AQUA environment using Jupyter Notebook also within VSCode
+.. warning::
+   When running the script, be sure to modify the paths in the script with your own paths.
 
 Temporary Upgrade of Any Package
 ---------------------------------
 
-If you want to upgrade any Python package in the container environment, it is possible by using pip install. If it is a Git repo, then clone it. Note that this upgrade will be temporary. Every time you open the container, it will start from its base environment.
+If you want to upgrade any Python package in the container environment, it is possible by using pip install.
+If it is a Git repository, then clone it.
+Note that this upgrade will be temporary.
+Every time you open the container, it will start from its base environment.
 
 .. code-block:: bash
 
@@ -79,9 +135,13 @@ Pointing to a Specific FDB
 
    export FDB5_CONFIG_FILE=/path/to/config.yaml
 
+.. note::
+   If you want to access different FDB sources with the AQUA reader, the reader itself can take care of
+   different FDB configuration files.
+
 Points for AQUA Developers or Advanced Users 
 -----------------------------------------------
-If you check the details of the path in Python, you may see this :
+If you check the details of the path in Python, you may see this:
 
 .. code-block:: bash
 
@@ -91,15 +151,15 @@ If you check the details of the path in Python, you may see this :
       >>> import sys
       >>> sys.path
       ['', '/opt/conda/lib/python3.10/site-packages', '/opt/conda/lib/python310.zip', '/opt/conda/lib/python3.10',
-      '/opt/conda/lib/python3.10/lib-dynload', '__editable__.aqua-0.2.finder.__path_hook__',
+      '/opt/conda/lib/python3.10/lib-dynload', '__editable__.aqua-0.3.finder.__path_hook__',
       '__editable__.teleconnections-0.0.9.finder.__path_hook__']
       >>> import aqua
       >>> aqua.__file__
       '/app/AQUA/aqua/__init__.py'
 
-This directory, '/app/AQUA/' is in the container, and aqua is installed as an editable project.
+This directory, ``/app/AQUA/`` is in the container, and AQUA is installed as an editable project.
 
-In case you are developing an AQUA project, you want to update the '/app/AQUA/' path with your repository location.
+In case you are developing an AQUA project, you want to update the ``/app/AQUA/`` path with your repository location.
 Add the path of AQUA in Python like this:
 
 .. code-block:: bash
@@ -131,7 +191,7 @@ You can customize it according to your needs.
    #SBATCH --error=aqua_slurm.err
    #SBATCH -p dev-g    # Change the partition
 
-   AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.2.sif
+   AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.3.sif # Change it to your container
    FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml  # Change it to your simulation
    GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
    GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
@@ -145,7 +205,7 @@ You can customize it according to your needs.
        --env ESMFMKFILE=/opt/conda/lib/esmf.mk  \
        --bind /pfs/lustrep3/scratch/project_465000454  \
        --bind /scratch/project_465000454  \
-       /project/project_465000454/containers/aqua/aqua-v0.2.sif \
+       /project/project_465000454/containers/aqua/aqua-v0.3.sif \
        bash -c \
        ' 
        # You can edit the code below for your required script.

@@ -3,6 +3,7 @@
 import pytest
 from aqua import Reader
 
+loglevel = "DEBUG"
 
 @pytest.fixture(
     params=[
@@ -28,8 +29,9 @@ class TestRegridder():
         fraction of land (i.e. any missing points)
         """
         model, exp, source, variable, ratio = reader_arguments
+
         reader = Reader(model=model, exp=exp, source=source, regrid="r200",
-                        fix=True)
+                        fix=True, loglevel=loglevel)
         data = reader.retrieve()
         rgd = reader.regrid(data[variable])
         assert len(rgd.lon) == 180
@@ -43,8 +45,9 @@ class TestRegridder():
         (i.e. any missing points)
         """
         reader = Reader(model='FESOM', exp='test-pi', source='original_2d',
-                        regrid='r100', rebuild=True, fix=False)
+                        regrid='r100', rebuild=True, fix=False, loglevel=loglevel)
         rgd = reader.retrieve(vars='sst', regrid=True)
+
         ratio = rgd['sst'].isnull().sum()/rgd['sst'].size  # land fraction
 
         assert len(rgd.lon) == 360
@@ -56,8 +59,9 @@ class TestRegridder():
         """Test the case where no source grid path is specified in the regrid.yaml file
         and areas/weights are reconstructed from the file itself"""
         reader = Reader(model='IFS', exp='test-tco79', source='long',
-                        regrid='r100', rebuild=True)
+                        regrid='r100', rebuild=True, loglevel=loglevel)
         rgd = reader.retrieve(vars='ttr', regrid=True)
+
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
         assert len(rgd.time) == 4728
@@ -79,8 +83,9 @@ class TestRegridder():
         (i.e. any missing points)
         """
         reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
-                        regrid='r100', rebuild=True, fix=False)
+                        regrid='r100', rebuild=True, fix=False, loglevel=loglevel)
         rgd = reader.retrieve(vars='temp', regrid=True)
+
         ratio1 = rgd.temp.isel(nz1=0).isnull().sum()/rgd.temp.isel(nz1=0).size  # land fraction
         ratio2 = rgd.temp.isel(nz1=40).isnull().sum()/rgd.temp.isel(nz1=40).size  # land fraction
         assert len(rgd.lon) == 360

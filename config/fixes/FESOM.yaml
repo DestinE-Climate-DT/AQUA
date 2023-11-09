@@ -35,9 +35,11 @@ models:
                     uo:
                         source: u
                         grib: true
+                        src_units: m/s
                     vo:
                         source: v
                         grib: true
+                        src_units: m/s
                     wo:
                         source: w
                         grib: true
@@ -60,6 +62,7 @@ models:
                         grib: true
                     mlotst125:
                         source: MLD2
+                        src_units: m
                         grib: true
 
             interpolated_global_TS:

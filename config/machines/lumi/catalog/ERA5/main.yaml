@@ -4,3 +4,8 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/era5.yaml"
+  fdb:
+    description: FDB version of ERA5 data
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/fdb.yaml"

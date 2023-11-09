@@ -22,6 +22,7 @@ models:
                     tcc: 
                         grib: true 
                         source: TCC
+                        units: frac
                     sst:
                         grib: true
                         source: SSTK

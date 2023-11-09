@@ -2,7 +2,7 @@
 import os
 import eccodes
 from ruamel.yaml import YAML
-
+from aqua.logger import log_configure
 
 # Currently not used
 def read_eccodes_dic(filename):
@@ -69,21 +69,30 @@ def _init_get_eccodes_attr():
     cfvarname = read_eccodes_def("cfVarName.def")
     units = read_eccodes_def("units.def")
 
-    def _get_eccodes_attr(sn):
+    def _get_eccodes_attr(sn, loglevel='warning'):
         """
         Recover eccodes attributes for a given short name
 
         Args:
             shortname(str): the shortname to search
+            loglevel (str): the loggin level
         Returns:
             A dictionary containing param, long_name, units, short_name
         """
+        logger = log_configure(log_level=loglevel, log_name='eccodes')
         nonlocal shortname, paramid, name, cfname, cfvarname, units
         try:
             if sn.startswith("var"):
                 i = paramid.index(sn[3:])
+                #indices = [i for i, x in enumerate(paramid) if x == sn[3:]]
             else:
-                i = shortname.index(sn)
+                #i = shortname.index(sn)
+                indices = [i for i, x in enumerate(shortname) if x == sn]
+                if len(indices)>1:
+                    logger.warning('ShortName %s have multiple grib codes associated: %s', sn, [paramid[i] for i in indices])
+                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right',
+                                   sn, paramid[indices[0]])
+                i = indices[0]
 
             dic = {"paramId": paramid[i],
                    "long_name": name[i],
@@ -91,7 +100,10 @@ def _init_get_eccodes_attr():
                    "cfVarName": cfvarname[i],
                    "shortName": shortname[i]}
             return dic
-        except ValueError:
+        
+        except (ValueError, IndexError) as error:
+            logger.debug('ERROR: %s', error)
+            logger.warning('Cannot find any grib codes for ShortName %s, returning empty dictionary', sn)
             return None
 
     return _get_eccodes_attr

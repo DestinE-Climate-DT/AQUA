@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   teleconnections_test:
-    #if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,7 +30,7 @@ jobs:
         shell: bash -l {0}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Micromamba with teleconnections environment
         uses: mamba-org/setup-micromamba@v1
