@@ -1,29 +1,22 @@
 data:
-  model:  "ICON"
-  exp:    "ngc3028" 
+  model:  "IFS"
+  exp:    "tco2559-ng5-cycle3"
   source: "lra-r100-monthly"
 
-  model2:  "ERA5"
-  exp2:    "era5"
-  source2: "monthly"
+  model_obs:  "ERA5"
+  exp_obs:    "era5"
+  source_obs: "monthly"
 
 diagnostic_attributes:
-  var_name: null
-  variables: ['2t', 'msl', 'tprate', 't', 'u', 'v', 'q', 'mtntrf']
+  variables_no_plev: ['2t', 'msl', 'tprate', 'mtntrf']
+  variables_with_plev: ['t', 'u', 'v', 'q']
   plev: null
   statistic: "mean"
   seasonal_bias: True
   compare_datasets_plev: True
   plot_map_with_stats: True
 
-time_frame:
-  start_date1: '2022-01-01'
-  end_date1: '2023-12-31'
-  start_date2: '2000-01-01'
-  end_date2: '2020-12-31'
-
-plot:
-  model_label2: 'ERA5'
+loglevel: 'warning'
 
 path:
-  path_to_output: "/work/bb1153/b382267/AQUA/diagnostics/atmglobalmean/cli/config/"
+  path_to_output: "/scratch/b/b382267/cli_test/atmglobalmean/"

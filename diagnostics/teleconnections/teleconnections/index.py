@@ -48,8 +48,8 @@ def station_based_index(field: xr.DataArray,
     lat1 = namelist[telecname]['lat1']
     lat2 = namelist[telecname]['lat2']
 
-    logger.info('Station 1: lon = %s, lat = %s', lon1, lat1)
-    logger.info('Station 2: lon = %s, lat = %s', lon2, lat2)
+    logger.debug('Station 1: lon = %s, lat = %s', lon1, lat1)
+    logger.debug('Station 2: lon = %s, lat = %s', lon2, lat2)
 
     # We select first the field data at the two stations
     field1 = field.sel(lon=lon1, lat=lat1, method='nearest')
@@ -79,12 +79,11 @@ def station_based_index(field: xr.DataArray,
     indx = (diff_ma-mean_ma)/std_ma
     indx = indx.rename('index')
 
-    # 7. Drop NaNs
+    # Drop NaNs
     logger.debug('Dropping NaNs')
     indx = indx.dropna(dim='time')
 
-    logger.info('Index evaluated')
-
+    logger.debug('Index evaluated')
     return indx
 
 
@@ -121,7 +120,7 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
     latN = namelist[telecname]['latN']
     latS = namelist[telecname]['latS']
 
-    logger.info('Region: lon = %s; %s, lat = %s; %s', lonW, lonE, latS, latN)
+    logger.debug('Region: lon = %s; %s, lat = %s; %s', lonW, lonE, latS, latN)
 
     # 2. -- Evaluate mean value of the field and then the rolling mean --
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE)
@@ -132,8 +131,7 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
     logger.debug('Dropping NaNs')
     field_mean = field_mean.dropna(dim='time')
 
-    logger.info('Index evaluated')
-
+    logger.debug('Index evaluated')
     return field_mean
 
 
@@ -153,11 +151,10 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
     Returns:
         (xarray.DataArray): regional field mean anomalies
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'regional mean anomalies')
     logger.info('Evaluating regional mean anomalies for %s', telecname)
 
-    # 1. -- Acquire coordinates --
+    # Acquire coordinates
     if field.lon.min() < 0:
         logger.debug('Data longitudes are -180-180, not converting')
         lonW = namelist[telecname]['lonW']
@@ -172,7 +169,7 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
 
     logger.debug('Region: lon = %s; %s, lat = %s; %s', lonW, lonE, latS, latN)
 
-    # 2. -- Evaluate mean value of the field and then the rolling mean --
+    # Evaluate mean value of the field and then the rolling mean
     field_mean = wgt_area_mean(field, latN, latS, lonW, lonE,
                                loglevel=loglevel)
 
@@ -185,6 +182,5 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
     field_mean_an = field_mean_an.rolling(time=months_window,
                                           center=True).mean(skipna=True)
 
-    logger.info('Index evaluated')
-
+    logger.debug('Index evaluated')
     return field_mean_an

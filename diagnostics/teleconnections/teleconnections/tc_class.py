@@ -17,7 +17,7 @@ import os
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
 from aqua.reader import Reader, inspect_catalogue
-from aqua.util import ConfigPath
+from aqua.util import ConfigPath, create_folder
 from teleconnections.index import station_based_index, regional_mean_anomalies
 from teleconnections.plots import index_plot
 from teleconnections.statistics import reg_evaluation, cor_evaluation
@@ -80,42 +80,42 @@ class Teleconnection():
 
         self.regrid = regrid
         if self.regrid is None:
-            self.logger.warning('No regridding will be performed')
-            self.logger.info('Be sure that the data is already regridded')
-        self.logger.debug('Regridding resolution: {}'.format(self.regrid))
+            self.logger.warning('No regrid will be performed, be sure that the data is '
+                                'already at low resolution')
+        self.logger.debug("Regrid resolution: %s", self.regrid)
 
         self.freq = freq
         if self.freq is None:
-            self.logger.warning('No time aggregation will be performed')
-            self.logger.info('Be sure that the data is already monthly aggregated')
-        self.logger.debug('Frequency: {}'.format(self.freq))
+            self.logger.warning('No time aggregation will be performed, be sure that the data is '
+                                'already at the desired frequency')
+        self.logger.debug("Frequency: %s", self.freq)
 
         self.zoom = zoom
-        if self.zoom is not None:
-            self.logger.debug('Zoom: {}'.format(self.zoom))
+        self.logger.debug("Zoom: %s", self.zoom)
 
         # Teleconnection variables
+        self.telecname = telecname
         avail_telec = ['NAO', 'ENSO', 'ENSO_test', 'ENSO_2t']
-        if telecname in avail_telec:
-            self.telecname = telecname
-        else:
-            raise ValueError('telecname must be one of {}'.format(avail_telec))
+        if self.telecname not in avail_telec:
+            raise ValueError("telecname must be one of {}".format(avail_telec))
 
         self._load_namelist(configdir=configdir)
 
         # Variable to be used for teleconnection
         self.var = self.namelist[self.telecname]['field']
-        self.logger.debug('Teleconnection variable: {}'.format(self.var))
+        self.logger.debug("Teleconnection variable: %s", self.var)
 
         # The teleconnection type is used to select the correct function
         self.telec_type = self.namelist[self.telecname]['telec_type']
-        self.logger.debug('Teleconnection type: {}'.format(self.telec_type))
 
         # At the moment it is used by all teleconnections
-        if self.telecname == 'NAO' or self.telecname == 'ENSO' or self.telecname == 'ENSO_test' or self.telecname == 'ENSO_2t':
-            self.months_window = months_window
+        #if self.telecname == 'NAO' or self.telecname == 'ENSO' or self.telecname == 'ENSO_test' or self.telecname == 'ENSO_2t':
+        self.months_window = months_window
 
         # Output variables
+        self.outputfig = None
+        self.outputdir = None
+        self.logger.info("Saving figure to %s/%s", outputdir, filename)
         self._load_figs_options(savefig, outputfig)
         self._load_data_options(savefile, outputdir)
         if self.savefile or self.savefig:
@@ -124,48 +124,15 @@ class Teleconnection():
         # Data empty at the beginning
         self.data = None
         self.index = None
-        self.regression = None
-        self.correlation = None
 
         # Initialize the Reader class
         # Notice that reader is a private method
         # but **kwargs are passed to it so that it can be used to pass
         # arguments to the reader if needed
-
         if self.zoom:
             self._reader(zoom=self.zoom)
         else:
             self._reader()
-
-    def run(self, **kwargs):
-        """Run teleconnection analysis.
-
-        The analysis consists of:
-
-        - Retrieving the data
-
-        - Evaluating the teleconnection index
-
-        - Evaluating the regression
-
-        - Evaluating the correlation
-
-        These methods can be also run separately.
-
-        Keyword arguments:
-            - rebuild (bool): If True, the index, regression and correlation
-                              are recalculated. Default is False.
-        """
-
-        self.logger.debug('Running teleconnection analysis for data: {}/{}/{}'
-                          .format(self.model, self.exp, self.source))
-
-        self.retrieve()
-        self.evaluate_index(**kwargs)
-        self.evaluate_regression(**kwargs)
-        self.evaluate_correlation(**kwargs)
-
-        self.logger.info('Teleconnection analysis completed')
 
     def retrieve(self, var=None, **kwargs):
         """Retrieve teleconnection data with the AQUA reader.
@@ -188,34 +155,26 @@ class Teleconnection():
         if var is None:
             try:
                 self.data = self.reader.retrieve(var=self.var, **kwargs)
-            except (ValueError, KeyError):
-                raise NoDataError('Variable {} not found'.format(self.var))
-            self.logger.info('Data retrieved')
-
-            if self.regrid:
-                self.data = self.reader.regrid(self.data)
-                self.logger.info('Data regridded')
-
-            if self.freq:
-                if self.freq == 'monthly':
-                    self.data = self.reader.timmean(self.data)
-                    self.logger.info('Time aggregated to {}'.format(self.freq))
+            except (ValueError, KeyError) as e:
+                raise NoDataError("Variable {} not found".format(self.var)) from e
         else:
             try:
                 data = self.reader.retrieve(var=var, **kwargs)
-            except (ValueError, KeyError):
-                raise NoDataError('Variable {} not found'.format(var))
-            self.logger.info('Data retrieved')
+            except (ValueError, KeyError) as e:
+                raise NoDataError('Variable {} not found'.format(var)) from e
+        self.logger.info('Data retrieved')
 
-            if self.regrid:
-                data = self.reader.regrid(data)
-                self.logger.info('Data regridded')
+        if self.regrid:
+            self.data = self.reader.regrid(self.data)
+            self.logger.info('Data regridded to %s', self.regrid)
 
-            if self.freq:
-                if self.freq == 'monthly':
-                    data = self.reader.timmean(data)
-                    self.logger.info('Time aggregated to {}'.format(self.freq))
+        if self.freq:
+            if self.freq == 'monthly':
+                self.data = self.reader.timmean(self.data)
+                self.logger.info('Time aggregated to %s', self.freq)
 
+        if var:
+            self.logger.info("Returning data as xarray.DataArray")
             return data
 
     def evaluate_index(self, rebuild=False, **kwargs):
@@ -248,14 +207,12 @@ class Teleconnection():
             raise NotEnoughDataError('Data have less than 24 months')
 
         if self.telec_type == 'station':
-            self.logger.debug('Calculating {} index'.format(self.telecname))
             self.index = station_based_index(field=self.data[self.var],
                                              namelist=self.namelist,
                                              telecname=self.telecname,
                                              months_window=self.months_window,
                                              loglevel=self.loglevel, **kwargs)
         elif self.telec_type == 'region':
-            self.logger.debug('Calculating {} index'.format(self.telecname))
             self.index = regional_mean_anomalies(field=self.data[self.var],
                                                  namelist=self.namelist,
                                                  telecname=self.telecname,
@@ -270,24 +227,25 @@ class Teleconnection():
             except ValueError:
                 self.index = self.index
 
-        self.logger.debug(self.telecname + ' index calculated')
+        self.logger.info('Index evaluated')
         if self.index is None:
-            raise ValueError('Index not calculated')
+            raise ValueError('It was not possible to calculate the index')
 
         if self.savefile:
             file = self.outputdir + '/' + self.filename + '_index.nc'
             self.index.to_netcdf(file)
-            self.logger.info('Index saved to {}'.format(file))
+            self.logger.info('Index saved to %s', file)
 
-    def evaluate_regression(self, data=None, var=None, dim='time',
-                            rebuild=False):
-        """Evaluate teleconnection regression.
+    def evaluate_regression(self, data=None, var=None,
+                            dim: str = 'time',
+                            season=None):
+        """
+        Evaluate teleconnection regression.
         If var is None, the regression is calculated between the teleconnection
-        index and the teleconnection variable. The regression is saved as
-        teleconnection attribute and can be accessed with self.regression.
+        index and the teleconnection variable.
         If var is not None, the regression is calculated between the teleconnection
-        index and the specified variable. The regression is not saved as
-        teleconnection attribute and can be accessed with the returned value.
+        index and the specified variable.
+        The regression is returned as xarray.DataArray.
 
         Args:
             data (xarray.DataArray, optional): Data to be used for regression.
@@ -296,64 +254,54 @@ class Teleconnection():
                                                If None, the variable used for the index is used.
             dim (str, optional):               Dimension to be used for regression.
                                                Default is 'time'.
-            rebuild (bool, optional):          If True, the regression is recalculated.
-                                               Default is False.
+            season (str, optional):            Season to be selected. Default is None.
 
         Returns:
-            xarray.DataArray: Regression map if var is not None.
+            xarray.DataArray: Regression map
         """
-        if self.regression is not None and var is None and not rebuild:
-            self.logger.warning('Regression already calculated, skipping')
-            return
-
-        if rebuild and self.regression is not None:
-            self.logger.info('Rebuilding regression')
-
+        # We prepare the data for the regression, season selection is done
+        # inside the function reg_evaluation, because it can be used
+        # also as a standalone function
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 
-        if var is None:
-            self.regression = reg_evaluation(indx=self.index, data=data,
-                                             dim=dim)
-            # HACK: ICON has a depth_full dimension that is not used
-            #       but it is not removed by the regression evaluation
-            if self.model == 'ICON':
-                try:
-                    self.regression = self.regression.isel(depth_full=0)
-                except ValueError:
-                    self.regression = self.regression
-        else:
-            reg = reg_evaluation(indx=self.index, data=data, dim=dim)
-            # HACK: ICON has a depth_full dimension that is not used
-            #       but it is not removed by the regression evaluation
-            if self.model == 'ICON':
-                try:
-                    reg = reg.isel(depth_full=0)
-                except ValueError:
-                    reg = reg
+        reg = reg_evaluation(indx=self.index, data=data, dim=dim, season=season)
+        # HACK: ICON has a depth_full dimension that is not used
+        #       but it is not removed by the regression evaluation
+        if self.model == 'ICON':
+            try:
+                self.logger.warning("ICON data, trying to remove depth_full dimension")
+                reg = reg.isel(depth_full=0)
+            except ValueError:
+                self.logger.warning("Depth_full dimension not found, skipping")
 
-        if self.savefile and var is None:
-            file = self.outputdir + '/' + self.filename + '_regression.nc'
-            self.regression.to_netcdf(file)
-            self.logger.info('Regression saved to {}'.format(file))
-        elif self.savefile and var is not None:
-            file = self.outputdir + '/' + self.filename + '_regression_{}.nc'.format(var)
+        if self.savefile:
+            if var:
+                file = self.outputdir + '/' + self.filename
+                file += '_regression_'
+                if season:
+                    file += season + '_'
+                file += var + '.nc'
+            else:
+                file = self.outputdir + '/' + self.filename
+                file += '_regression_'
+                if season:
+                    file += season
+                file += '.nc'
             reg.to_netcdf(file)
-            self.logger.info('Regression saved to {}'.format(file))
+            self.logger.info("Regression saved to %s", file)
 
-        if var is None:
-            return
-        else:
-            return reg
+        return reg
 
-    def evaluate_correlation(self, data=None, var=None, dim='time',
-                             rebuild=False):
-        """Evaluate teleconnection correlation.
+    def evaluate_correlation(self, data=None, var=None,
+                             dim: str = 'time',
+                             season=None):
+        """
+        Evaluate teleconnection correlation.
         If var is None, the correlation is calculated between the teleconnection
-        index and the teleconnection variable. The correlation is saved as
-        teleconnection attribute and can be accessed with self.correlation.
+        index and the teleconnection variable.
         If var is not None, the correlation is calculated between the teleconnection
-        index and the specified variable. The correlation is not saved as
-        teleconnection attribute and can be accessed with the returned value.
+        index and the specified variable. 
+        The correlation is returned as xarray.DataArray.
 
         Args:
             data (xarray.DataArray, optional): Data to be used for correlation.
@@ -362,43 +310,39 @@ class Teleconnection():
                                                If None, the variable used for the index is used.
             dim (str, optional):               Dimension to be used for correlation.
                                                Default is 'time'.
-            rebuild (bool, optional):          If True, the correlation is recalculated.
-                                               Default is False.
+            season (str, optional):            Season to be selected. Default is None.
 
         Returns:
-            xarray.DataArray: Correlation map if var is not None.
+            xarray.DataArray: Correlation map
         """
-        if self.correlation is not None and var is None and not rebuild:
-            self.logger.warning('Correlation already calculated, skipping')
-            return
-
-        if rebuild and self.correlation is not None:
-            self.logger.info('Rebuilding correlation')
-
+        # We prepare the data for the regression, season selection is done
+        # inside the function reg_evaluation, because it can be used
+        # also as a standalone function
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 
-        if var is None:
-            self.correlation = cor_evaluation(indx=self.index, data=data,
-                                              dim=dim)
-        else:
-            cor = cor_evaluation(indx=self.index, data=data, dim=dim)
+        cor = cor_evaluation(indx=self.index, data=data, dim=dim, season=season)
 
-        if self.savefile and var is None:
-            file = self.outputdir + '/' + self.filename + '_correlation.nc'
-            self.correlation.to_netcdf(file)
-            self.logger.info('Correlation saved to {}'.format(file))
-        elif self.savefile and var is not None:
-            file = self.outputdir + '/' + self.filename + '_correlation_{}.nc'.format(var)
+        if self.savefile:
+            if var:
+                file = self.outputdir + '/' + self.filename
+                file += '_correlation_'
+                if season:
+                    file += season + '_'
+                file += var + '.nc'
+            else:
+                file = self.outputdir + '/' + self.filename
+                file += '_correlation_'
+                if season:
+                    file += season
+                file += '.nc'
             cor.to_netcdf(file)
-            self.logger.info('Correlation saved to {}'.format(file))
+            self.logger.info("Correlation saved to %s", file)
 
-        if var is None:
-            return
-        else:
-            return cor
+        return cor
 
     def plot_index(self, step=False, **kwargs):
-        """Plot teleconnection index.
+        """
+        Plot teleconnection index.
 
         Args:
             step (bool, optional): If True, plot the index with a step function (experimental)
@@ -416,14 +360,13 @@ class Teleconnection():
         ylabel = self.telecname + ' index'
 
         if self.savefig:
-            # Set the filename
             filename = self.filename + '_index.pdf'
-            self.logger.info('Index plot saved to {}/{}'.format(self.outputfig,
-                                                                filename))
+
             index_plot(indx=self.index, save=self.savefig,
                        outputdir=self.outputfig, filename=filename,
                        loglevel=self.loglevel, step=step, title=title,
                        ylabel=ylabel, **kwargs)
+            self.logger.info("Index plot saved to %s/%s", self.outputfig, filename)
         else:
             index_plot(indx=self.index, save=self.savefig,
                        loglevel=self.loglevel, step=step, title=title,
@@ -449,7 +392,7 @@ class Teleconnection():
         """
         aqua_config = ConfigPath(configdir=self.aquaconfigdir)
         self.machine = aqua_config.machine
-        self.logger.debug('Machine: {}'.format(self.machine))
+        self.logger.debug("Nachine: %s", self.machine)
 
         # Check that the data is available in the catalogue
         if inspect_catalogue(model=self.model, exp=self.exp,
@@ -469,7 +412,7 @@ class Teleconnection():
         self.savefig = savefig
 
         if self.savefig:
-            self.logger.info('Figures will be saved')
+            self.logger.debug('Figures will be saved')
             self._load_folder_info(outputfig, 'figure')
 
     def _load_data_options(self, savefile=False, outputdir=None):
@@ -484,7 +427,7 @@ class Teleconnection():
         self.savefile = savefile
 
         if self.savefile:
-            self.logger.info('Data will be saved')
+            self.logger.debug('Data will be saved')
             self._load_folder_info(outputdir, 'data')
 
     def _filename(self, filename=None):
@@ -495,9 +438,10 @@ class Teleconnection():
         """
         if filename is None:
             self.logger.info('No filename specified, using the default name')
-            filename = 'teleconnections_' + self.model + '_' + self.exp + '_' + self.source + '_' + self.telecname
+            filename = 'teleconnections_' + self.model + '_' + self.exp + '_'\
+                       + self.source + '_' + self.telecname
         self.filename = filename
-        self.logger.debug('Output filename: {}'.format(self.filename))
+        self.logger.debug("Output filename: %s", self.filename)
 
     def _load_folder_info(self, folder=None, folder_type=None):
         """Load the folder information.
@@ -515,22 +459,20 @@ class Teleconnection():
             raise KeyError('The folder_type must be either figure or data')
 
         if not folder:
-            self.logger.warning('No {} folder specified, using the current directory'.format(folder_type))
+            self.logger.warning("No %s folder specified, using the current directory", folder_type)
             folder = os.getcwd()
         else:
             if not isinstance(folder, str):
                 raise TypeError('The folder must be a string')
-            if not os.path.isdir(folder):
-                self.logger.warning('The folder {} does not exist, creating it'.format(folder))
-                os.makedirs(folder)
+            create_folder(folder, self.loglevel)
 
         # Store the folder in the class
         if folder_type == 'figure':
             self.outputfig = folder
-            self.logger.debug('Figure output folder: {}'.format(self.outputfig))
+            self.logger.debug("Figure output folder: %s", self.outputfig)
         elif folder_type == 'data':
             self.outputdir = folder
-            self.logger.debug('Data output folder: {}'.format(self.outputdir))
+            self.logger.debug("Data output folder: %s", self.outputdir)
 
     def _reader(self, **kwargs):
         """Initialize AQUA reader.
@@ -569,7 +511,6 @@ class Teleconnection():
         if var is None:  # Use the teleconnection variable
             self.logger.debug('No variable specified, using teleconnection variable')
             var = self.var
-            self.logger.debug('Variable: {}'.format(var))
 
         if data is None and var == self.var:  # Use the teleconnection data
             self.logger.debug('No data specified, using teleconnection data')
@@ -582,8 +523,9 @@ class Teleconnection():
             return data, dim
 
         if var != self.var:
-            self.logger.debug('Variable {} is different from teleconnection variable {}'.format(var, self.var))
-            self.logger.warning("The result won't be saved as teleconnection attribute")
+            self.logger.debug("Variable %s is different from teleconnection variable %s",
+                              var, self.var)
+            self.logger.info("The result won't be saved as teleconnection attribute, but returned")
 
             if data is not None:
                 try:

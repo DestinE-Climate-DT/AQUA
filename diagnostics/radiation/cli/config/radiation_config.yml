@@ -1,0 +1,21 @@
+data:
+  model:  "IFS"
+  exp:    "tco2559-ng5-cycle3" 
+  source: "lra-r100-monthly"
+  
+  exp_ceres:   "ebaf-toa41"
+  source_ceres: "monthly"
+  
+  exp_era5:    "era5"
+  source_era5: "monthly"
+
+diagnostic_attributes:
+  bar_plot: True
+  bias_maps: True
+  gregory: True
+  time_series: True
+
+loglevel: 'warning'
+
+path:
+  path_to_output: "/work/bb1153/b382267/AQUA/diagnostics/radiation/cli/config/"

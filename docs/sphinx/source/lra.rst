@@ -45,9 +45,7 @@ interface (CLI) which is available in ``cli/lra/cli_lra_generator.py``
 
 The configuration of the CLI is done via a YAML file that can be build from the ``lra_config.tmpl`` template, which include the target resolution, the target frequency,
 the temporary directory and the directory where you want to store the obtained LRA.
-A template for the file is included in the folder.
-
-Other options includes the logging level and the usage of the One Pass Algorithm to produce the temporal aggregation.
+A template for the file is included in the folder. Other options includes the logging level.
 
 Most importantly, you have to edit the entries of the ``catalog`` dictionary, which follows the model-exp-source hierarchy.
 On top of that you must specify the variables you want to produce under the ``vars`` key.
@@ -114,8 +112,4 @@ Due to integration with workflow, two other CLI tools are available to generate 
 - ``cli_lra_workflow.py`` is the LRA generator used within the DE340 workflow. It is made to work from OPA output and then process them to fix and standardize it.
   Please refer to workflow developers to get more information on how to use this tool. A template configuration file ``workflow_lra.tmpl`` is included in the folder.
   The usage is the same as the main LRA generator script discussed above. 
-
-- ``cli_lra_streaming.py`` is used to generate a LRA starting from an access to the GSV, plus calling the OPA and the LRA generator. 
-  Currently this script is extremely sperimental and its usage is not recommended. 
-
     

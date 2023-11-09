@@ -16,7 +16,10 @@ import os
 import sys
 path_to_diagnostic = './diagnostics/'
 sys.path.insert(1, path_to_diagnostic)
-from tropical_rainfall import Tropical_Rainfall
+try:
+    from tropical_rainfall import Tropical_Rainfall
+except ModuleNotFoundError:
+    print("The module tropical_rainfall.py is not found.")
 
 approx_rel = 1e-4
 

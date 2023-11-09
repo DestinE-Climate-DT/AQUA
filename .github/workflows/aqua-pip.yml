@@ -2,8 +2,8 @@ name: AQUA tests with pip
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
+  # schedule:
+  #   - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
 
 jobs:
   aqua_test:
@@ -23,7 +23,7 @@ jobs:
         python-version: ["3.11"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # The FDB docker image does not have git and other dependencies
       - name: Install GH Actions dependencies
         run: |

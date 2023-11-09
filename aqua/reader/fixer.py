@@ -533,11 +533,25 @@ class FixerMixin():
 
                 # get the ones from the equation of the derived ones
                 if 'derived' in variables[vvv]:
+                    # filter operations
                     required = [s for s in re.split(r'[-+*/]', variables[vvv]['derived']) if s]
-                    loadvar = loadvar + required
+                    # filter constants
+                    required_strings = [x for x in required if not x.replace('.', '').isnumeric()]
+                    if bool(set(required_strings) & set(variables.keys())):
+                        self.logger.error("Recursive fixer definition: %s are variables defined in the fixer!", 
+                                            required_strings)
+                        raise KeyError((
+                                    "Recursive fixer definition are not supported when selecting variables or working with FDB sources."
+                                    "Please change the fixes or call the retrieve() without the var arguments")
+                                    )
+                        
+                        
+
+                    loadvar = loadvar + required_strings
             else:
                 loadvar.append(vvv)
 
+        self.logger.debug("Variables to be loaded: %s", loadvar)
         return loadvar
 
     def simple_decumulate(self, data, jump=None, keep_first=True, keep_memory=None):

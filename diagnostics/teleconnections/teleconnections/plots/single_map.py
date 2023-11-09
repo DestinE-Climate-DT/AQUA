@@ -132,8 +132,8 @@ def plot_single_map(data: xr.DataArray,
         logger.debug("Saving figure to %s", outputdir)
         create_folder(outputdir, loglevel=loglevel)
         filename = kwargs.get('filename', 'map')
-        format = kwargs.get('format', 'pdf')
-        filename = f"{filename}.{format}"
+        plot_format = kwargs.get('format', 'pdf')
+        filename = f"{filename}.{plot_format}"
         logger.debug("Setting filename to %s", filename)
 
         logger.info("Saving figure as %s/%s", outputdir, filename)

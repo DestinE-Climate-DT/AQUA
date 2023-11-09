@@ -34,7 +34,11 @@ run_ecmean=true
 # ---------------------------------------
 run_global_time_series=true
 run_ocean3d=true
-run_radiation=false # not implemented yet
+run_radiation=true
+# ------------------------------------------
+# Command line extra arguments for radiation
+# --config (readiation config file)
+# ------------------------------------------
 run_seaice=true
 # ------------------------------------------
 # Command line extra arguments for seaice
@@ -45,10 +49,11 @@ run_seaice=true
 # ------------------------------------------
 run_teleconnections=true
 # teleconnections additional flags
-# ---------------------------------------------------------------
+# ------------------------------------------------------------------
 # --dry, -d (dry run, if set it will run without producing plots)
-# --obs (if set it will run the teleconnections also for ERA5)
-# ---------------------------------------------------------------
+# --ref (if set it will analyze also the reference data, it is set
+#        by default)
+# ------------------------------------------------------------------
 run_tropical_rainfall=true
 
 # End of user defined variables
@@ -144,7 +149,7 @@ fi
 
 if [ "$run_radiation" = true ] ; then
   colored_echo $GREEN "Running radiation"
-  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation
+  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation -l $loglevel
   colored_echo $GREEN "Finished radiation"
 fi
 
@@ -156,15 +161,10 @@ fi
 
 if [ "$run_teleconnections" = true ] ; then
   colored_echo $GREEN "Running teleconnections"
-  # Move to the teleconnection CLI directory
-  cd $aqua/diagnostics/teleconnections/cli/single_analysis
+  scriptpy="$aqua/diagnostics/teleconnections/cli/cli_teleconnections.py"
 
-  python cli_teleconnections.py $args_atm --outputdir $outputdir/teleconnections --config cli_config_atm.yaml -l $loglevel
-  python cli_teleconnections.py $args_oce --outputdir $outputdir/teleconnections --config cli_config_oce.yaml -l $loglevel
-
-  # Move back to the aqua-analysis directory
-  cd $aqua/cli/aqua-analysis
-
+  python $scriptpy $args_atm --outputdir $outputdir/teleconnections --config cli_config_atm.yaml -l $loglevel --ref
+  python $scriptpy $args_oce --outputdir $outputdir/teleconnections --config cli_config_oce.yaml -l $loglevel --ref
   colored_echo $GREEN "Finished teleconnections"
 fi
 

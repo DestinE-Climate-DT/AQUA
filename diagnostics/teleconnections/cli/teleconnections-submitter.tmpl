@@ -44,20 +44,13 @@ if [ $machine == "lumi" ]; then
     export PATH="/users/$username/mambaforge/aqua_common/bin:$PATH"
 fi
 
-# run the Python script
+# run the Python script, both for the atmosphere and the ocean
+# See README.md for more information on how to run the diagnostics and the options available
 
-# You can run 2 different scripts:
-# - single_dataset: to compute the teleconnections for a single dataset
-# - dataset_comparison: to compare the teleconnections for different datasets
-#                       and an observational dataset
-# Uncomment the script you want to run
+scriptpy="$AQUA/diagnostics/teleconnections/cli/cli_teleconnections.py"
+oce_config="$AQUA/diagnostics/teleconnections/cli/cli_config_oce.yaml"
+atm_config="$AQUA/diagnostics/teleconnections/cli/cli_config_atm.yaml"
 
-# -c to specify the configuration file (--config)
-# -d to run a definitive run (default is False, but the flag is activated in the template)
-# -l to set the log level (default is WARNING)
-
-# $AQUA/diagnostics/teleconnections/cli/comparison_analysis/cli_teleconnections.py \
-# --config $AQUA/diagnostics/teleconnections/cli/comparison_analysis/teleconnections_config.yaml -d
-
-# $AQUA/diagnostics/teleconnections/cli/single_analysis/cli_teleconnections.py \
-# --config $AQUA/diagnostics/teleconnections/cli/single_analysis/teleconnections_config.yaml -d
+# run the diagnostics
+python $scriptpy --config $oce_config --ref
+python $scriptpy --config $atm_config --ref

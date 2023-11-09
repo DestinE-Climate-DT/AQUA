@@ -1,4 +1,14 @@
-model: 'FESOM' 
-exp: 'tco2559-ng5-cycle3'
-source: "lra-r100-monthly"
-outputdir: './output'
+model: FESOM 
+exp: tco2559-ng5-cycle3
+source: lra-r100-monthly
+outputdir: ./output
+# "--model FESOM --exp tco2559-ng5-cycle3 --source $source"
+
+predefined_regions:
+  - Indian Ocean
+  # - Pacific Ocean
+
+custom_region:
+  - [latS: -30, latN: 30, lonW: 100, lonE: 300]
+  # - [latS: 0, latN: 30, lonW: 100, lonE: 150]
+

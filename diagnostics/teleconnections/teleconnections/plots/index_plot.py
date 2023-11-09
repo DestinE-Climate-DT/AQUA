@@ -37,10 +37,8 @@ def index_plot(indx, save=False, outputdir='./', filename='index.png',
         fig (Figure):           Figure object
         ax (Axes):              Axes object
     """
-    # Configure the logger
     logger = log_configure(loglevel, 'Index plot')
 
-    # Load the data in memory
     logger.debug('Loading data in memory')
     indx = indx.load()
 
@@ -72,13 +70,13 @@ def index_plot(indx, save=False, outputdir='./', filename='index.png',
 
     if title is not None:
         ax.set_title(title)
-        logger.debug('Title set to ' + title)
+        logger.debug("Title set to %s", title)
 
     # Set the ylabel
     ylabel = kwargs.get('ylabel')
     if ylabel is not None:
         ax.set_ylabel(ylabel)
-        logger.debug('ylabel set to ' + ylabel)
+        logger.debug("ylabel set to %s", ylabel)
     else:
         ax.set_ylabel('Index')
 
@@ -86,6 +84,6 @@ def index_plot(indx, save=False, outputdir='./', filename='index.png',
     if save:
         filepath = os.path.join(outputdir, filename)
         fig.savefig(filepath)
-        logger.info('Figure saved in ' + filepath)
+        logger.debug("Fig saved in %s", filepath)
 
     return fig, ax

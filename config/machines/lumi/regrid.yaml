@@ -13,7 +13,7 @@ paths:
 sources:
 # extra is an extra special cdo command to be applied before generating the weights
   FESOM:
-    historical-1990-fesom:
+    historical-1990-fesom-dev:
       monthly-original-2d: ng5-nodes-2d
       daily-original-2d: ng5-nodes-2d
       monthly-original-3d: ng5-nodes-3d
@@ -25,7 +25,14 @@ sources:
       default: tco79
     fdb-tco399:
       default: tco399
-    control-1950-devcon:
+    control-1950-nemo-dev:
+      default: tco1279
+      hourly-1deg: lon-lat
+      6hourly-1deg: lon-lat
+      monthly-1deg-2d: lon-lat
+      monthly-1deg-3d: lon-lat
+      lra-r100-monthly: lon-lat
+    control-1990-nemo-dev:
       default: tco1279
       hourly-1deg: lon-lat
       6hourly-1deg: lon-lat
@@ -33,7 +40,7 @@ sources:
       monthly-1deg-3d: lon-lat
       lra-r100-monthly: lon-lat
       opa: lon-lat
-    historical-1990-devcon:
+    historical-1990-nemo-dev:
       default: tco1279
       hourly-1deg: lon-lat
       6hourly-1deg: lon-lat
@@ -41,7 +48,7 @@ sources:
       monthly-1deg-3d: lon-lat
       lra-r100-monthly: lon-lat
       opa: lon-lat
-    historical-1990-fesom:
+    historical-1990-fesom-dev:
       default: tco1279
       hourly-1deg: lon-lat
       6hourly-1deg: lon-lat

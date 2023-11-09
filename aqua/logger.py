@@ -117,7 +117,7 @@ class CustomLogColors(logging.Formatter):
     """small class for setting up personalized colors for logging"""
 
     GREY = "\x1b[38;20m"
-    LGREY = "\x1b[37m;1m"
+    LGREY = "\x1b[37m"
     DGREY = "\x1b[90m"
     GREEN = "\x1b[32m"
     ORANGE = "\x1b[33m"
