@@ -2273,6 +2273,7 @@ class MainClass:
             data = self.tools.space_regrider(
                 data, lon_length=space_grid_factor*data.lon.size)
             self.logger.debug('Space regrided')
+            
         for time_ind in range(0, data.time.size):
             utc_data.append([])
             for lon_ind in range(0, data.lon.size):
@@ -2292,18 +2293,21 @@ class MainClass:
                     longitude=longitude, utc_time=local_datetime)
                 utc_data[time_ind].append(utc_element)
 
+        print('preparing data for saving')
+        print('1 to dataset')
         _dataset = data.to_dataset(name="tprate")
         _dataset.attrs = data.attrs
         _dataset.update({'utc_time': (['time', 'lon'], utc_data)})
-
+        print('2 grid attributes')
         self.grid_attributes(data=_dataset, tprate_dataset=_dataset)
-
-        data = _dataset.dropna(dim='time')
+        print('3')
+        data = _dataset
+        #data = _dataset.dropna(dim='time')
         #data = _dataset.where(~np.isnan(_dataset.tprate), 0)
-
+        print('4')
         utc_time = data['utc_time'].stack(total=['time', 'lon']).values
         tprate = data['tprate'].stack(total=['time', 'lon']).values
-
+        print('5')
         if self.new_unit is not None and 'xarray' in str(type(tprate)):
             tprate = self.precipitation_rate_units_converter(tprate, new_unit=self.new_unit)
             units = new_unit
@@ -2315,11 +2319,11 @@ class MainClass:
             tprate = np.array(result_list, dtype=np.float64)
         else:
             units = tprate.units
-
+        print('6')
         new_data = []
         for i in range(0, len(utc_time)):
             new_data.append([utc_time[i], tprate[i]])
-
+        print('start sorting')
         # Sorted list with corresponding values
         sorted_list = sorted(new_data, key=lambda x: x[0])
 
@@ -2346,7 +2350,7 @@ class MainClass:
 
         new_dataset.update({'tprate_relative': (['utc_time'], da)})
         new_dataset['tprate_relative'].attrs = new_dataset.attrs
-
+        print('saving')
         if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
                 new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
@@ -2399,9 +2403,6 @@ class MainClass:
             data = self.tools.open_dataset(path_to_netcdf=path_to_netcdf)
         if 'Dataset' in str(type(data)):
             y_lim_max = self.precipitation_rate_units_converter(ymax, old_unit=data.units, new_unit=self.new_unit)
-            data['tprate_relative'] = self.precipitation_rate_units_converter(data['tprate_relative'], 
-                                                                              old_unit=data.units,
-                                                                              new_unit=self.new_unit)
             data[self.model_variable] = self.precipitation_rate_units_converter(data[self.model_variable], 
                                                                                 old_unit=data.units,
                                                                                 new_unit=self.new_unit)
