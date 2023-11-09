@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# This script is tentative way to incorporate the ECmean4 package 
-# within AQUA: it is incomplete and only based on mamba, but has been tested 
+# This script can be used to install ECmean in AQUA using pip or github version
+# However, it is deprecated if ECmean is installed via aqua itself.
 
 # flag to clean environ,ent
 do_clean=true

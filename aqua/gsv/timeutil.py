@@ -1,195 +1,50 @@
 """Utilities for calendar and timestep calculations"""
 
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-import numpy as np
+import pandas as pd
+from datetime import datetime
 
-
-step_units = {
-    '10M': ('minutes', 10),
-    '15M': ('minutes', 15),
-    '30M': ('minutes', 30),
-    'H': ('hours', 1),
-    '1H': ('hours', 1),
-    '3H': ('hours', 3),
-    '6H': ('hours', 6),
-    'D': ('days', 1),
-    '1D': ('days', 1),
-    '5D': ('days', 5),
-    'W': ('days', 7),
-    'M': ('months', 1),
-    'Y': ('years', 1)
-}
-
-
-def dateobj(startdate, starttime):
+    
+def date2str(dateobj):
     """
-    Converts to a date object
+    Converts a date object to a date, time string representation
 
     Args:
-        startdate (str): Start date in format YYYYMMDD
-        starttime (str): Start time in format HHMM
+        dateobj (datetime): datetime object
 
     Returns:
-        datetime: Date and time as a datetime object
+        date, time (str): Date and time as a strings
     """
 
-    return datetime.strptime(str(startdate) + ':' + str(starttime), '%Y%m%d:%H%M')
+    return dateobj.strftime('%Y%m%d'), dateobj.strftime('%H%M')
+
     
-
-def compute_date(startdate, starttime, step, n, npartitions):
+def add_offset(data_start_date, startdate, offset, timestep):
     """
-    Computes date at n-th aggegation step
+    Sets initial date based on an offset in steps (special for DE 6h case)
 
     Args:
-        startdate (str): Start date in format YYYYMMDD
-        starttime (str): Start time in format HHMM
-        step (str): Aggregation step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y
-        n (int): Step number
-        npartitions (int): Total number of partitions
+        data_start_date (datetime.datetime): Data start date
+        startdate (datetime.datetime): User-defined starting date
+        offset (int): Offset to add to data start date
+        timestep (int): Timestep to use (only H and D implemented)
 
     Returns:
-        formatted_date, formatted_time, newdate
-    """
-    # compute date at n-th aggregation step
-
-    # Convert step string to timedelta unit and date format
-    step_unit, nsteps = step_units.get(step.upper())
-
-    if step_unit in ["days", "months", "years"] and n > 0:  # align at beginning of day for later days
-        starttime = "0000"
-
-    # Parse startdate into a datetime object
-    tstart = datetime.strptime(str(startdate) + ':' + str(starttime), '%Y%m%d:%H%M')
-
-    # Reset to beginning of month if needed
-    if step == "M" and n > 0:
-        tstart = tstart.replace(day=1)
-    elif step == "Y" and n > 0:
-        tstart = tstart.replace(day=1).replace(month=1)
-
-    # Calculate the n-th following date
-    newdate = tstart + relativedelta(**{step_unit: n * nsteps})
-
-    # Format the date and time
-    formatted_date = newdate.strftime('%Y%m%d')
-    formatted_time = newdate.strftime('%H%M')
-
-    return formatted_date, formatted_time, newdate
-
-
-def compute_date_steps(startdate, enddate, step, starttime="0000", endtime="0000"):
-    """
-    Compute number of steps between two dates
-
-    Args:
-        startdate (str): Start date in format YYYYMMDD
-        starttime (str): Start time in format HHMM
-        step (str): Aggregation step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y
-        starttime (str, optional): Start time in format HHMM. Defaults to "0000".
-        endtime (str, optional): End time in format HHMM. Defaults to "0000".
-
-    Returns:
-        int: Number of steps
+        New starting date (str)
     """
 
-    step_unit, nsteps = step_units.get(step.upper())
-    
-    startdate = datetime.strptime(str(startdate) + ':' + str(starttime), '%Y%m%d:%H%M')
-    enddate = datetime.strptime(str(enddate) + ':' + str(endtime), '%Y%m%d:%H%M')
-    
-    if step_unit == "months":
-        numsteps = (enddate.year - startdate.year) * 12 + enddate.month - startdate.month
-    elif step_unit == "years":
-        numsteps = enddate.year - startdate.year
-    else:
-        delta = timedelta(**{step_unit: nsteps})
-        numsteps = (enddate - startdate) // delta
-    
-    return int(numsteps) + 1
-
-
-def compute_mars_timerange(startdate, starttime, aggregation, timestep):
-    """
-    Computes date and time ranges in MARS format
-
-    Args:
-        startdate (str): Start date in format YYYYMMDD
-        starttime (str): Start time in format HHMM
-        aggregation (str): Aggregation step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y
-        timestep (str): Timestep. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y
-
-    Returns:
-        dform, tform (str): Date and time range in MARS format
-    """
-
-    dform = startdate
-    tform = starttime
-
-    if aggregation != timestep:
-        # Convert step string to timedelta unit and date format
-        ag_unit, ag_nsteps = step_units.get(aggregation.upper())
-        ts_unit, ts_nsteps = step_units.get(timestep.upper())
-
-        ts = relativedelta(**{ts_unit: ts_nsteps})
-        agg = relativedelta(**{ag_unit: ag_nsteps})
-
-        tstart = datetime.strptime(str(startdate) + ':' + str(starttime), '%Y%m%d:%H%M')
-
-        if (((tstart + agg) - (tstart + ts) ).total_seconds()) < 0:
-            raise ValueError(f"Aggregation {aggregation} is shorter than timestep {timestep}!")
-
-        if ag_unit == "minutes" or ag_unit == "hours":
-            # Aggregation smaller than one day
-            tstart = datetime.strptime(str(startdate) + ':' + str(starttime), '%Y%m%d:%H%M') 
-            tend = tstart + agg - ts
-            tform = tstart.strftime('%H%M') + '/to/' + tend.strftime('%H%M') + '/by/' + f"{ts.hours:02d}{ts.minutes:02d}"
+    if int(offset) != 0:
+        if timestep.upper() in ["H", "D"] :
+            base_date = pd.Timestamp(str(data_start_date)) + pd.Timedelta(int(offset), unit=timestep)
         else:
-            if ts_unit == "minutes" or ts_unit == "hours":
-                # Timestep is shorter than one day
-                tend = datetime.strptime(str(startdate) + ':0000', '%Y%m%d:%H%M') + relativedelta(days=1) - ts
-                tform = '0000/to/' + tend.strftime('%H%M') + '/by/' + f"{ts.hours:02d}{ts.minutes:02d}"
-            else:
-                tform = starttime
+            raise ValueError("Timestep not supported")
 
-            if ((tstart + agg) - tstart).days > 1:  # more than one day
-                tstart0 = tstart
-                # If month or year reset to beginning of period
-                if aggregation == "M":
-                    tstart0 = datetime.strptime(tstart.strftime('%Y%m01:0000'), '%Y%m%d:%H%M')
-                elif aggregation == "Y":
-                    tstart0 = datetime.strptime(tstart.strftime('%Y0101:0000'), '%Y%m%d:%H%M')
+        startdate_obj = pd.Timestamp(str(startdate))
+        if startdate_obj > base_date:
+            base_date = startdate_obj
 
-                tend = tstart0 + agg - relativedelta(days=1)
-                dform = tstart.strftime('%Y%m%d') + '/to/' + tend.strftime('%Y%m%d')
-
-    return dform, tform
-
-
-def compute_steprange(startdate_obj, newdate_obj, timestep):
-    """
-    Compute number of steps between two dates
-
-    Args:
-        startdate_obj (datetime.datetime): Start date
-        newdate_obj (datetime.datetime): End date
-        timestep (str): Timestep. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y
-
-    Returns:
-        int: Number of steps
-    """
-
-    ts_unit, ts_nsteps = step_units.get(timestep.upper())
-
-    if ts_unit == "months":
-        delta = relativedelta(newdate_obj, startdate_obj)
-        return delta.years * 12 + delta.months
-    elif ts_unit == "years":
-        delta = relativedelta(newdate_obj, startdate_obj)
-        return delta.years
+        return base_date.strftime('%Y%m%dT%H%M')
     else:
-        ts = timedelta(**{ts_unit: ts_nsteps})
-        return (newdate_obj - startdate_obj) // ts
+        return startdate
 
 
 def check_dates(startdate, start_date, enddate, end_date):
@@ -206,10 +61,10 @@ def check_dates(startdate, start_date, enddate, end_date):
         ValueError: If the given date is not within the data range
     """
 
-    startdate_fmt = "%Y%m%d:%H%M" if ':' in str(startdate) else "%Y%m%d"
-    start_date_fmt = "%Y%m%d:%H%M" if ':' in str(start_date) else "%Y%m%d"
-    enddate_fmt = "%Y%m%d:%H%M" if ':' in str(enddate) else "%Y%m%d"
-    end_date_fmt = "%Y%m%d:%H%M" if ':' in str(end_date) else "%Y%m%d"
+    startdate_fmt = "%Y%m%dT%H%M" if 'T' in str(startdate) else "%Y%m%d"
+    start_date_fmt = "%Y%m%dT%H%M" if 'T' in str(start_date) else "%Y%m%d"
+    enddate_fmt = "%Y%m%dT%H%M" if 'T' in str(enddate) else "%Y%m%d"
+    end_date_fmt = "%Y%m%dT%H%M" if 'T' in str(end_date) else "%Y%m%d"
 
     if datetime.strptime(str(startdate), startdate_fmt) < datetime.strptime(str(start_date), start_date_fmt):
         raise ValueError(f"Starting date {str(startdate)} is earlier than the data start at {str(start_date)}.")
@@ -223,70 +78,18 @@ def check_dates(startdate, start_date, enddate, end_date):
     if datetime.strptime(str(start_date), start_date_fmt) > datetime.strptime(str(end_date), end_date_fmt):
         raise ValueError(f"Data start date {str(start_date)} is later than the data end at {str(end_date)}.")
 
-def set_stepmin(tgtdate, tgttime, startdate, starttime, stepmin, step):
-    """
-    Make sure that we start at the earliest available date
-    Args:
-        tgtdate (str): Desired date
-        tgttime (str): Desired time
-        startdate (str): Data starting date
-        starttime (str): Data starting time
-        stepmin (int): Earliest step
-        step (str): Timestep. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y
-    Returns:
-        A revised date and time (str)
-    """
 
-    ts_unit, ts_nsteps = step_units.get(step.upper())
-    ts = timedelta(**{ts_unit: ts_nsteps * stepmin})
-    
-    date0 = dateobj(startdate, starttime) + ts
-    date1 = dateobj(tgtdate, tgttime)
-    newdate = max(date0, date1)
-    
-    return datetime.strftime(newdate, '%Y%m%d'), datetime.strftime(newdate, '%H%M')
-
-
-def shift_time_dataset(data, timeshift):
+def shift_time_dataset(data):
     """
-    Shift time of a dataset by a given amount
+    Shift time of a dataset back one month
     Args:
         data (xarray.DataSet): The dataset to shift
-        timeshift (str): Time shift. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y. Can be negative.
     Returns:
         A revised xarray.DataSet
     """
 
-    if '-' in timeshift:
-        timeshift = timeshift[1:]
-        sign = -1
-    else:
-        sign = 1
-    
-    units, nsteps = step_units.get(timeshift.upper())
-    ts = relativedelta(**{units: nsteps * sign})
-    newtime= [np.datetime64(d + ts).astype('datetime64[ns]') for d in data.time.data.astype('datetime64[us]').tolist()]
+    newtime = [d + pd.DateOffset(months=-1) for d in data.time.data]
     return data.assign_coords(time=newtime)
-
-
-def shift_time_datetime(dateobj, timeshift, sign=1):
-    """
-    Shift time of a datetime object by a given amount
-    Args:
-        dateobj (datetime.datetimet): The date to shift
-        timeshift (str): Time shift. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y. Can be negative.
-    Returns:
-        A shifted date (datetime.datetime)
-    """
-
-    if '-' in timeshift:
-        timeshift = timeshift[1:]
-        sign = -sign
-    
-    units, nsteps = step_units.get(timeshift.upper())
-    ts = relativedelta(**{units: nsteps * sign})
- 
-    return dateobj + ts
 
 
 def split_date(datestr, timedefault="0000"):
@@ -299,6 +102,80 @@ def split_date(datestr, timedefault="0000"):
         date and time as str
     """
 
-    dd = str(datestr).split(':')
-    timestr = dd[1] if ":" in str(datestr) else timedefault
+    dd = str(datestr).split('T')
+    timestr = dd[1] if "T" in str(datestr) else timedefault
     return dd[0], timestr
+
+
+def make_timeaxis(data_startdate, startdate, enddate, timestep=None, savefreq=None, chunkfreq=None, shiftmonth=False):
+    """
+    Compute timeaxis and chunk start and end dates and indices.
+
+    Args:
+        data_startdate (datetime.datetime): Starting date of the dataset
+        startdate (datetime.datetime): Starting date of the time axis
+        enddate (datetime.datetime): Ending date of the time axis
+        offset (int): An initial offset for steps (to be used e.g. for 6H data saved starting from step=6)
+        timestep (str): Timestep. Can be one of H, D, M
+        savefreq (str): Frequency at which the data are saved. Can be one of H, 6H, D, M
+        chunkfreq (str): Frequency at which the data are to be chunked. Can be one of D, M, Y
+        shiftmonth (bool): If True, fixes data accumulated at the end of the month. Default is False.
+
+    Returns:
+        A tuple containing:
+            - timeaxis (pd.Series): The time axis
+            - chunkstart_idx (int): The starting index of each chunk
+            - chunkstart (pd.Timestamp): The start date of the first chunk
+            - chunkend_idx (int): The last index of each chunk
+            - chunkend (pd.Timestamp): The end date of each chunk
+            - chunksize (int): The number of data points in each chunk
+    """
+
+    # these are equivalent, unless specified different
+    if savefreq is None:
+        savefreq = timestep
+    if timestep is None:
+        timestep = savefreq
+    if chunkfreq is None:
+        chunkfreq = timestep
+
+    if shiftmonth and savefreq != "M":
+        raise ValueError("shiftmonth option requested but data are not saved at monthly frequency!")
+    
+    # compute offset
+    offset = len(pd.date_range(str(data_startdate), str(startdate), freq=timestep)) - 1
+
+    sdate = pd.Timestamp(str(startdate))
+    edate = pd.Timestamp(str(enddate))
+
+    if shiftmonth:  # We will need one month more
+        edate = edate + pd.offsets.MonthBegin()
+    
+    dates = pd.date_range(sdate, edate, freq=timestep)
+    idx = range(len(dates))
+    ts = pd.Series(idx, index=dates)
+
+    if timestep != savefreq:
+        # the data are saved at a frequency different from the original timestep (eg. monthly) 
+        # do a preliminary resampling
+        if shiftmonth:
+            idx = ts.resample(savefreq).min().values
+            ts = pd.Series(idx[1:], index=dates[idx[0:-1]])  # index of the next month but date of previous one
+            idx = idx[0:-1]
+        else:
+            idx = ts.resample(savefreq).min().values
+            ts = pd.Series(idx, index=dates[idx])
+
+    tsr = ts.resample(chunkfreq)
+    sidx = tsr.min().values  
+    eidx = tsr.max().values
+    chunksize = tsr.count().values
+
+    if shiftmonth:  # special case, data is accumulated at end of month
+        sdate = dates[sidx] - pd.offsets.MonthBegin()
+        edate = dates[eidx] - pd.offsets.MonthBegin()
+    else:
+        sdate = dates[sidx]
+        edate = dates[eidx]
+
+    return dates[idx], sidx + offset, sdate, eidx + offset,  edate, chunksize

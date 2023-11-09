@@ -54,3 +54,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/catalog/EN4/main.yaml"
+  GPM:
+    description: Global Precipitation Measurement
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/GPM/main.yaml"

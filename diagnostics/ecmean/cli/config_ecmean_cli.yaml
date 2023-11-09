@@ -1,15 +1,16 @@
 dataset:
-  model_atm: ICON
-  model_oce: ICON
-  exp: ngc2009
-  year1: 2020
-  year2: 2020
+  model_atm: IFS
+  model_oce: False
+  exp: control-1950-devcon
+  atm_vars: ['2t', 'tprate', 'msl', 'iews', 'inss', 'u', 'v', 't', 'q']
+  oce_vars: ['sst', 'ci', 'sos']
 
 compute:
   numproc: 1
 
 setup:
-  loglevel: 'INFO'
+  loglevel: 'WARNING'
   interface_file: '../config/interface_AQUA.yml'
   config_file: '../config/ecmean_config.yml'
+  outputdir: '../output'
   

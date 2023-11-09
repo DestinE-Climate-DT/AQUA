@@ -37,6 +37,8 @@ def area_selection(data=None, lat=None, lon=None, box_brd=True,
     if lat is None and lon is None:
         raise ValueError('lat and lon cannot be both None')
 
+    # TODO: check behaviour if lat or lon are None
+
     lon, lat = check_coordinates(lon=lon, lat=lat, **kwargs)
 
     # Selection based on box_brd

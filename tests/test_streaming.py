@@ -6,13 +6,12 @@ from aqua import Reader
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
-
+loglevel = "DEBUG"
 
 @pytest.fixture(scope="function")
 def reader_instance():
     return Reader(model="IFS", exp="test-tco79", source="long",
-                  fix=False)
-
+                  fix=False, loglevel=loglevel)
 
 # streaming class for tests
 @pytest.mark.aqua

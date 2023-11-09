@@ -11,7 +11,9 @@ For this reason, whatever object accessed by AQUA is delivered as a `xarray <htt
 The package is built around a few core concepts:
 
 - Data reading and preprocessing: Data are exposed through `intake <https://intake.readthedocs.io/en/stable/>`_ catalogues 
-  and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects. This allows us to easily read and preprocess data from various sources, including local files, remote servers, and cloud storage, from climate models and observational datasets.
+  and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects. 
+  This allows us to easily read and preprocess data from various sources, including local files, remote servers, 
+  and cloud storage, from climate models and observational datasets.
 - Data fixing: AQUA provides capabilities to change metadata (e.g., variable names) and data themselves
   (e.g., convert to different units) so that model data reach the users with a common data format.
 - Regridding and interpolation: AQUA offers robust regridding and interpolation functionalities 
@@ -34,15 +36,16 @@ temperature data to 1°x1° grid and calculate the mean global temperature time 
 
    # Instantiate a Reader object specifying the type of data which we want to read from the catalogue. 
    # We also specify that we would like to regrid to a 1°x1° grid.
-   reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09", regrid='r100')
+   # The fix=True will convert variable names to GRIB standard. 
+   reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09", regrid='r100', fix=True)
 
-   # Retrieve the data. The fix=True will convert variable names to GRIB standard. 
-   data = reader.retrieve(fix=True)
+   # Retrieve the data. This will return an xarray.Dataset object.
+   data = reader.retrieve()
 
    # Perform temperal averaging of the first 10 time steps, using standard xarray syntax.:
    tasr_mean = data['2t'][:10].mean(dim='time')
    
-   # Regrid the data to a 1°x1° grid
+   # Regrid the data to a 1°x1° grid using the Reader method regrid:
    tasr_mean_regrided = reader.regrid(tasr_mean)
 
    # Do weighted average of the data on original grid:

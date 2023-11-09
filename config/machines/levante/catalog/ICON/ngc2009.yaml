@@ -29,13 +29,12 @@ sources:
   #   args:
   #     consolidated: True
   #     urlpath: /work/bb1153/m300827/ngc2009/R02B09/oce_0-200m_3h_inst_1.zarr
-
-  oce_200m_atmgrid_R02B09:
-    driver: zarr
-    description: original ocean 3d output on R02B09 grid (5 km)
-    args:
-      consolidated: false
-      urlpath: /work/bb1153/m300827/ngc2009/R02B09/oce_0-200m_3h_inst_1.zarr
+  # oce_200m_atmgrid_R02B09:
+  #   driver: zarr
+  #   description: original ocean 3d output on R02B09 grid (5 km)
+  #   args:
+  #     consolidated: false
+  #     urlpath: /work/bb1153/m300827/ngc2009/R02B09/oce_0-200m_3h_inst_1.zarr
 
   intake-esm-test:
       driver: intake_esm.esm_datastore
@@ -47,6 +46,7 @@ sources:
           simulation_id: ngc2009
           frequency: 30minute
           time_reduction: inst
+
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100

@@ -28,7 +28,6 @@ def station_based_cdo(infile, namelist, telecname, months_window=3,
     Returns:
         indx (DataArray): standardized station based index
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'cdo station based index')
 
     logger.info('Evaluating station based index for %s with cdo bindings',
@@ -40,15 +39,15 @@ def station_based_cdo(infile, namelist, telecname, months_window=3,
     logger.debug('Opening cdo class instance')
     cdo = Cdo()
 
-    # 1. -- Monthly field average and anomalies--
+    # Monthly field average and anomalies
     field_ma = cdo.monmean(input=infile)
     field_ma_av = cdo.ymonmean(input=field_ma)
     field_an = cdo.sub(input=[field_ma, field_ma_av])
 
-    # 2. -- Acquiring latitude and longitude of stations --
+    # Acquiring latitude and longitude of stations
     data = xr.open_dataset(infile)
     if data.lon.min() < 0:
-        logger.info('Data longitudes are -180-180, not converting')
+        logger.debug('Data longitudes are -180-180, not converting')
         lon1 = namelist[telecname]['lon1']
         lon2 = namelist[telecname]['lon2']
     else:
@@ -60,31 +59,31 @@ def station_based_cdo(infile, namelist, telecname, months_window=3,
     lat1 = namelist[telecname]['lat1']
     lat2 = namelist[telecname]['lat2']
 
-    logger.info('Station 1: lon = %s, lat = %s', lon1, lat1)
-    logger.info('Station 2: lon = %s, lat = %s', lon2, lat2)
+    logger.debug('Station 1: lon = %s, lat = %s', lon1, lat1)
+    logger.debug('Station 2: lon = %s, lat = %s', lon2, lat2)
 
-    # 3. -- Extracting field data at the acquired coordinates --
+    # Extracting field data at the acquired coordinates
     field_an1 = cdo.remapnn("lon={0}_lat={1}".format(lon1, lat1),
                             input=field_an)
     field_an2 = cdo.remapnn("lon={0}_lat={1}".format(lon2, lat2),
                             input=field_an)
 
-    # 4. -- Rolling average over months = months_window --
+    # Rolling average over months = months_window
     field_an1_ma = cdo.runmean("{0}".format(months_window), input=field_an1)
     field_an2_ma = cdo.runmean("{0}".format(months_window), input=field_an2)
 
-    # 5. -- Evaluate average and std for the station based difference --
+    # Evaluate average and std for the station based difference
     diff_ma = cdo.sub(input=[field_an1_ma, field_an2_ma])
     mean_ma = cdo.timmean(input=diff_ma)
     std_ma = cdo.timstd(input=diff_ma)
 
-    # 6. -- Evaluate the index --
+    # Evaluate the index
     sub_indx = cdo.sub(input=[diff_ma, mean_ma])
     indx = cdo.div(input=[sub_indx, std_ma], returnXDataset=True)
 
     logger.info('Index evaluation completed')
 
-    # 7. -- Cleaning the temporary directory --
+    # Cleaning the temporary directory
     logger.debug('Cleaning temporary directory')
     cdo.cleanTempDir()
 
@@ -107,7 +106,6 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3,
     Returns:
         indx (DataArray): standardized station based index
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'cdo regional mean index')
     logger.info('Evaluating regional mean index for %s with cdo bindings',
                 telecname)
@@ -118,10 +116,10 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3,
     logger.debug('Opening cdo class instance')
     cdo = Cdo()
 
-    # 1. -- Evaluate box coordinates --
+    # Evaluate box coordinates
     data = xr.open_dataset(infile)
     if data.lon.min() < 0:
-        logger.info('Data longitudes are -180-180, not converting')
+        logger.debug('Data longitudes are -180-180, not converting')
         lonW = namelist[telecname]['lonW']
         lonE = namelist[telecname]['lonE']
     else:
@@ -133,8 +131,8 @@ def regional_mean_cdo(infile, namelist, telecname, months_window=3,
     latN = namelist[telecname]['latN']
     latS = namelist[telecname]['latS']
 
-    logger.info('Box coordinates: lonW = %s, lonE = %s, latN = %s, latS = %s',
-                lonW, lonE, latN, latS)
+    logger.debug('Box coordinates: lonW = %s, lonE = %s, latN = %s, latS = %s',
+                 lonW, lonE, latN, latS)
 
     # 2. -- Select field in the box and evaluate the average
     field_sel = cdo.sellonlatbox('{},{},{},{}'.format(lonW, lonE, latS, latN),
@@ -170,7 +168,6 @@ def regional_anomalies_cdo(infile, namelist, telecname, months_window=3,
     Returns:
         indx (DataArray): standardized station based index
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'cdo regional anomalies')
     logger.info('Evaluating regional anomalies for %s with cdo bindings',
                 telecname)
@@ -181,10 +178,10 @@ def regional_anomalies_cdo(infile, namelist, telecname, months_window=3,
     logger.debug('Opening cdo class instance')
     cdo = Cdo()
 
-    # 1. -- Evaluate box coordinates --
+    # Evaluate box coordinates
     data = xr.open_dataset(infile)
     if data.lon.min() < 0:
-        logger.info('Data longitudes are -180-180, not converting')
+        logger.debug('Data longitudes are -180-180, not converting')
         lonW = namelist[telecname]['lonW']
         lonE = namelist[telecname]['lonE']
     else:
@@ -199,20 +196,20 @@ def regional_anomalies_cdo(infile, namelist, telecname, months_window=3,
     logger.info('Box coordinates: lonW = %s, lonE = %s, latN = %s, latS = %s',
                 lonW, lonE, latN, latS)
 
-    # 2. -- Select field in the box and evaluate the average
+    # Select field in the box and evaluate the average
     field_sel = cdo.sellonlatbox('{},{},{},{}'.format(lonW, lonE, latS, latN),
                                  input=infile)
     field_mean = cdo.fldmean(input=field_sel)
 
-    # 3. -- Evaluate the value with the months window --
+    # Evaluate the value with the months window --
     indx = cdo.runmean("{0}".format(months_window), input=field_mean,
                        returnXDataset=True)
 
-    # 4. -- Evaluate the anomalies --
+    # Evaluate the anomalies
 
     # TO DO
 
-    # 5. -- Cleaning the temporary directory --
+    # Cleaning the temporary directory
     logger.debug('Cleaning temporary directory')
     cdo.cleanTempDir()
 
@@ -233,11 +230,7 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
         rtol (float, opt):        relative tolerance, default is 1.e-5
         atol (float, opt):        absolute tolerance, default is 1.e-8
         loglevel (str, opt):      log level, default is WARNING
-
-    Returns:
-        None                      returns None and perform assert_allclose().
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'cdo station based comparison')
     logger.info('Comparing station based index for %s with cdo bindings',
                 telecname)
@@ -245,30 +238,25 @@ def cdo_station_based_comparison(infile, namelist, telecname, months_window=3,
     fieldname = namelist[telecname]['field']
     logger.debug('Field name: %s', fieldname)
 
-    # 1. -- cdo index evaluation --
-    logger.debug('Evaluating index with cdo bindings')
+    logger.info('Evaluating index with cdo bindings')
     index_cdo = station_based_cdo(infile, namelist, telecname,
                                   months_window=months_window,
                                   loglevel=loglevel)
 
-    # 2. -- library index evaluation --
-    logger.debug('Evaluating index with library')
+    logger.info('Evaluating index with AQUA library')
     field = xr.open_mfdataset(infile)[fieldname]
     index_lib = station_based_index(field, namelist, telecname,
                                     months_window=months_window,
                                     loglevel=loglevel)
 
-    # 3. -- adapt index for comparison --
     logger.debug('Adapting index for comparison')
     index_cdo = index_cdo.squeeze(['lat', 'lon'], drop=True)
 
-    # 4. -- perform the asser_allclose() test
     logger.debug('Performing assert_allclose() test')
     np.testing.assert_allclose(index_lib.values,
                                index_cdo[namelist[telecname]['field']].values,
                                rtol=rtol, atol=atol)
     logger.info('Test passed')
-    return
 
 
 def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
@@ -289,7 +277,6 @@ def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
     Returns:
         None                      returns None and perform assert_allclose().
     """
-    # 0. -- Logging --
     logger = log_configure(loglevel, 'cdo regional mean comparison')
     logger.info('Comparing regional mean for %s with cdo bindings',
                 telecname)
@@ -297,27 +284,21 @@ def cdo_regional_mean_comparison(infile, namelist, telecname, months_window=3,
     fieldname = namelist[telecname]['field']
     logger.debug('Field name: %s', fieldname)
 
-    # 1. -- cdo average evaluation --
-    logger.debug('Evaluating average with cdo bindings')
+    logger.info('Evaluating average with cdo bindings')
     avg_cdo = regional_mean_cdo(infile, namelist, telecname,
                                 months_window=months_window,
                                 loglevel=loglevel)
 
-    # 2. -- library average evaluation --
-    logger.debug('Evaluating average with library')
+    logger.info('Evaluating average with library')
     field = xr.open_mfdataset(infile)[fieldname]
     avg_lib = regional_mean_index(field, namelist, telecname,
                                   months_window=months_window,
                                   loglevel=loglevel)
 
-    # 3. -- adapt index for comparison --
     logger.debug('Adapting index for comparison')
     avg_cdo = avg_cdo.squeeze(['lat', 'lon'], drop=True)
 
-    # 4. -- perform the asser_allclose() test
     logger.debug('Performing assert_allclose() test')
     np.testing.assert_allclose(avg_lib.values,
                                avg_cdo[namelist[telecname]['field']].values,
                                rtol=rtol, atol=atol)
-
-    return

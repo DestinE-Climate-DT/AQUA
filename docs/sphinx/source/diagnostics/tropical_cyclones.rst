@@ -15,17 +15,18 @@ Structure
 The tropical cyclones diagnostic follows a class structure and consists of the files:
 
 * `notebooks/tropical_cyclones.ipynb`: a python notebook which provides an example use of the TCs diagnostic, including the TCs class initialisation, a wrapper function which calls the DetectNodes and StitchNodes functions from tempest-extremes (which now are implemented as methods of the TCs class) and saves the data in the vicinity of the detected TCs at each time step and for the TCs tracks in a considered time interval. Finally some plotting functions are included to plot some selected variables at a few time steps and the TCs tracks in a particular period;
-* `tropical_cyclones.py`: a python file in which the TCs class constructor and the other class methods are included; it contains the wrapper function which retrieves data from the reader and prepares them for DetectNodes and StitchNodes, it runs DetectNodes and StitchNodes and finally saves the variables in the vicinity of TCs tracks in a netcdf file;
-* `detect_nodes.py`: class with all methods related to DetectNodes;
-* `stitch_nodes.py`: class with all methods related to StitchNodes;
-* `tempest_utils.py`: a python file which contains some functions (external to the tropical cyclones class) to analyse the output text files produced by running the tempest-extremes methods DetectNodes and StitchNodes;
-* `tcs_utils.py`: contains some functions external to the TCs class but called by the TCs class methods;
-* `plotting.py`: a python file which contains the plotting functions;
-* `aqua_dask.py`: python file which contains a class to initialise Dask and its methods to set and close Dask when it is needed;
-* `tropical_cyclones_slurm.py`: a python file with the tropical cyclones diagnostic as in the notebook, but to be executed as script;
-* `run_TCs_slurm.sh`: bash script to run tropical_cyclones_slurm.py with sbatch;
-* `env-TCs.yml`: a yaml file with the required dependencies to creat the environment for the TCs diagnostic;
-* `config/config_tcs.yml`: a yaml file in which all parameters are configured (including variables to save) and paths are specified. Version for Levante;
+* `tropical_cyclones/tropical_cyclones.py`: a python file in which the TCs class constructor and the other class methods are included; it contains the wrapper function which retrieves data from the reader and prepares them for DetectNodes and StitchNodes, it runs DetectNodes and StitchNodes and finally saves the variables in the vicinity of TCs tracks in a netcdf file;
+* `tropical_cyclones/detect_nodes.py`: class with all methods related to DetectNodes;
+* `tropical_cyclones/stitch_nodes.py`: class with all methods related to StitchNodes;
+* `tropical_cyclones/tools/tempest_utils.py`: a python file which contains some functions (external to the tropical cyclones class) to analyse the output text files produced by running the tempest-extremes methods DetectNodes and StitchNodes;
+* `tropical_cyclones/tools/tcs_utils.py`: contains some functions external to the TCs class but called by the TCs class methods;
+* `tropical_cyclones/plots/plotting_TCs.py`: a python file which contains the plotting functions;
+* `tropical_cyclones/aqua_dask.py`: python file which contains a class to initialise Dask and its methods to set and close Dask when it is needed;
+* `cli/tropical_cyclones_cli.py`: a python file with the command line interface for tropical cyclones diagnostic; can be executed as python script or as slurm job;
+* `cli/run_TCs_LEVANTE.job`: script to run tropical_cyclones_cli.py as slurm job on LEVANTE. See dedicated README file in the cli folder;
+* `cli/run_TCs_LUMI.job`: script to run tropical_cyclones_cli.py as slurm job on LUMI;
+* `cli/config_tcs.yml`: a yaml file in which all parameters are configured (including variables to save) and paths are specified. Version for Levante;
+* `pyproject.toml` : file to build pyproject of the tropical cyclones diagnostic;
 * `README.md` : a readme file which contains some tecnical information on how to install the tropical cyclones diagnostic and its environment. 
 
 Input variables

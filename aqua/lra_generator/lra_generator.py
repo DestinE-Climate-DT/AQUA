@@ -284,12 +284,12 @@ class LRAgenerator():
     def _concat_var(self, var, year):
         """
         To reduce the amount of files concatenate together all the files
-        from the same year: do it only if there are 12 files (assuming monthly based data)
+        from the same year
         """
 
         infiles =  os.path.join(self.outdir,
                     f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??.nc')
-        if len(glob.glob(infiles))==12:
+        if len(glob.glob(infiles))>1:
             xfield = xr.open_mfdataset(infiles)
             self.logger.warning('Creating a single file for %s, year %s...',  var, str(year))
             outfile = os.path.join(self.outdir,
