@@ -484,7 +484,7 @@ class MainClass:
                                       model_variable=self.model_variable, trop_lat=self.trop_lat,
                                       s_time=self.s_time, f_time=self.f_time, s_year=self.s_year, f_year=self.f_year,
                                       s_month=None, f_month=None, dask_array=False, new_unit=self.new_unit)
-
+        data = data.dropna(dim='time')
         size_of_the_data = self.tools.data_size(data)
 
         if self.new_unit is not None:
@@ -626,12 +626,13 @@ class MainClass:
                                      s_time=s_time, f_time=f_time, s_year=s_year, f_year=f_year,s_month=s_month, f_month=f_month,
                                      first_edge=first_edge, num_of_bins=num_of_bins, width_of_bin=width_of_bin)
         data_original = data
+        
         if preprocess:
             data = self.preprocessing(data, preprocess=preprocess,
                                       model_variable=self.model_variable, trop_lat=self.trop_lat,
                                       s_time=self.s_time, f_time=self.f_time, s_year=self.s_year, f_year=self.f_year,
                                       s_month=None, f_month=None, dask_array=False, new_unit=self.new_unit)
-
+        data = data.dropna(dim='time')
         size_of_the_data = self.tools.data_size(data)
 
         if self.new_unit is not None:
@@ -659,13 +660,14 @@ class MainClass:
                            for i in range(0, len(self.bins)-1)]
             center_of_bin = [self.bins[i] + 0.5*width_table[i]
                              for i in range(0, len(self.bins)-1)]
+        
         if positive:
             data = np.maximum(data, 0.)
             if seasons_bool is not None:
                 for i in range(0, len(seasons_or_months)):
                     seasons_or_months[i] = np.maximum(seasons_or_months[i], 0.)
         if isinstance(self.bins, int):
-            hist_fast = fast_histogram.histogram1d(data,
+            hist_fast = fast_histogram.histogram1d(data.values,
                                                    range=[
                                                        self.first_edge, self.first_edge + (self.num_of_bins)*self.width_of_bin],
                                                    bins=self.num_of_bins)
@@ -917,93 +919,104 @@ class MainClass:
 
     
 
-    def merge_two_datasets(self, tprate_dataset_1: xr.Dataset = None, tprate_dataset_2: xr.Dataset = None, 
+    def merge_two_datasets(self, dataset_1: xr.Dataset = None, dataset_2: xr.Dataset = None, 
                         test: bool = False) -> xr.Dataset:
         """ 
         Function to merge two datasets.
 
         Args:
-            tprate_dataset_1 (xarray.Dataset, optional): The first dataset. Defaults to None.
-            tprate_dataset_2 (xarray.Dataset, optional): The second dataset. Defaults to None.
+            dataset_1 (xarray.Dataset, optional): The first dataset. Defaults to None.
+            dataset_2 (xarray.Dataset, optional): The second dataset. Defaults to None.
             test (bool, optional): Whether to run the function in test mode. Defaults to False.
 
         Returns:
             xarray.Dataset: The xarray.Dataset with the merged data.
         """
 
-        if isinstance(tprate_dataset_1, xr.Dataset) and isinstance(tprate_dataset_2, xr.Dataset):
-            dataset_3 = tprate_dataset_1.copy(deep=True)
-            dataset_3.attrs = {**tprate_dataset_1.attrs, **tprate_dataset_2.attrs}
+        if isinstance(dataset_1, xr.Dataset) and isinstance(dataset_2, xr.Dataset):
+            dataset_3 = dataset_1.copy(deep=True)
+            dataset_3.attrs = {**dataset_1.attrs, **dataset_2.attrs}
 
-            for attribute in tprate_dataset_1.attrs:
+            for attribute in dataset_1.attrs:
                 try:
-                    if tprate_dataset_1.attrs[attribute] != tprate_dataset_2.attrs[attribute] and attribute not in 'time_band':
-                        dataset_3.attrs[attribute] = str(tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                    if dataset_1.attrs[attribute] != dataset_2.attrs[attribute] and attribute not in 'time_band':
+                        dataset_3.attrs[attribute] = str(dataset_1.attrs[attribute])+'; '+str(dataset_2.attrs[attribute])
                     elif attribute in 'time_band':
-                        dataset_3.attrs['time_band_history'] = str(
-                            tprate_dataset_1.attrs['time_band']) + ';\n '+str(tprate_dataset_2.attrs['time_band'])
-                        if tprate_dataset_1.attrs['time_band'].count(':') <= 2 and tprate_dataset_2.attrs['time_band'].count(':') <= 2:
-                            if np.datetime64(tprate_dataset_2.time_band) == np.datetime64(tprate_dataset_1.time_band):
+                        dataset_3.attrs['time_band_history'] = str(dataset_1.attrs['time_band']) + ';\n '+str(dataset_2.attrs['time_band'])
+                        if dataset_1.attrs['time_band'].count(':') <= 2 and dataset_2.attrs['time_band'].count(':') <= 2:
+                            if np.datetime64(dataset_2.time_band) == np.datetime64(dataset_1.time_band):
                                 dataset_3.attrs['time_band'] = str(
-                                    tprate_dataset_1.attrs['time_band'])
+                                    dataset_1.attrs['time_band'])
                             else:
-                                if np.datetime64(tprate_dataset_2.time_band) > np.datetime64(tprate_dataset_1.time_band):
-                                    timedelta = np.datetime64(tprate_dataset_2.time_band) - np.datetime64(tprate_dataset_1.time_band)
-                                    tprate_dataset_1_sm = tprate_dataset_1
-                                    tprate_dataset_2_bg = tprate_dataset_2
-                                elif np.datetime64(tprate_dataset_2.time_band) < np.datetime64(tprate_dataset_1.time_band):
-                                    timedelta = np.datetime64(tprate_dataset_1.time_band) - np.datetime64(tprate_dataset_2.time_band)
-                                    tprate_dataset_1_sm = tprate_dataset_2
-                                    tprate_dataset_2_bg = tprate_dataset_1
+                                datetime_1 = np.datetime64(dataset_1.time_band)
+                                datetime_2 = np.datetime64(dataset_2.time_band)
 
+                                if datetime_2 > datetime_1:
+                                    timedelta = datetime_2 - datetime_1
+                                    dataset_1_sm = dataset_1
+                                    dataset_2_bg = dataset_2
+                                else:
+                                    timedelta = datetime_1 - datetime_2
+                                    dataset_1_sm = dataset_2
+                                    dataset_2_bg = dataset_1
+    
                                 days = timedelta / np.timedelta64(1, 'D')
                                 if days < 1:
-                                    hrs = timedelta / np.timedelta64(1, 'h')
-                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(timedelta / np.timedelta64(1, 'h'))+'H'
+                                    freq = timedelta / np.timedelta64(1, 'h')
+                                    freq_str = f"{freq}H"
                                 elif days == 1:
-                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1H'
-                                elif days < 32 and days > 27:
-                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1M'
-                                elif days < 367 and days > 364:
-                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+'1Y'
+                                    freq_str = "1D"
+                                elif 27 < days < 32:
+                                    freq_str = "1M"
+                                elif 364 < days < 367:
+                                    freq_str = "1Y"
                                 else:
-                                    dataset_3.attrs['time_band'] = str(tprate_dataset_1_sm.attrs['time_band'])+', '+str(tprate_dataset_2_bg.attrs['time_band']) + ', freq='+str(days)+'D'
+                                    freq_str = f"{days}D"
+                                time_band_str = f"{dataset_1_sm.attrs['time_band']}, {dataset_2_bg.attrs['time_band']}, freq={freq_str}"
+                                dataset_3.attrs['time_band'] = time_band_str
                         else:
-                            if tprate_dataset_1.time_band.split(',')[2] == tprate_dataset_2.time_band.split(',')[2]:
-                                if np.datetime64(tprate_dataset_1.time_band.split(',')[0]) < np.datetime64(tprate_dataset_2.time_band.split(',')[0]):
-                                    if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
-                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
-                                    else:
-                                        dataset_3.attrs['time_band'] = tprate_dataset_1.time_band.split(',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                            split_1 = dataset_1.time_band.split(',')
+                            split_2 = dataset_2.time_band.split(',')
+                            if split_1[2] == split_2[2]:
+                                date_1 = np.datetime64(split_1[0])
+                                date_2 = np.datetime64(split_2[0])
+                                time_1 = np.datetime64(split_1[1])
+                                time_2 = np.datetime64(split_2[1])
+
+                                if date_1 < date_2:
+                                    first_part = split_1[0]
                                 else:
-                                    if np.datetime64(tprate_dataset_1.time_band.split(',')[1]) < np.datetime64(tprate_dataset_2.time_band.split(',')[1]):
-                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(',')[0] + ','+tprate_dataset_2.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
-                                    else:
-                                        dataset_3.attrs['time_band'] = tprate_dataset_2.time_band.split(',')[0] + ','+tprate_dataset_1.time_band.split(',')[1]+','+tprate_dataset_2.time_band.split(',')[2]
+                                    first_part = split_2[0]
 
+                                if time_1 < time_2:
+                                    second_part = split_2[1]
+                                else:
+                                    second_part = split_1[1]
+
+                                dataset_3.attrs['time_band'] = f"{first_part},{second_part},{split_1[2]}"
                 except ValueError:
-                    if tprate_dataset_1.attrs[attribute].all != tprate_dataset_2.attrs[attribute].all:
-                        dataset_3.attrs[attribute] = str(tprate_dataset_1.attrs[attribute])+';\n '+str(tprate_dataset_2.attrs[attribute])
+                    if dataset_1.attrs[attribute].all != dataset_2.attrs[attribute].all:
+                        dataset_3.attrs[attribute] = str(dataset_1.attrs[attribute])+';\n '+str(dataset_2.attrs[attribute])
 
-            dataset_3.counts.values = tprate_dataset_1.counts.values + tprate_dataset_2.counts.values
-            dataset_3.counts.attrs['size_of_the_data'] = tprate_dataset_1.counts.size_of_the_data + tprate_dataset_2.counts.size_of_the_data
+            dataset_3.counts.values = dataset_1.counts.values + dataset_2.counts.values
+            dataset_3.counts.attrs['size_of_the_data'] = dataset_1.counts.size_of_the_data + dataset_2.counts.size_of_the_data
             dataset_3.frequency.values = self.convert_counts_to_frequency(dataset_3.counts,  test=test)
             dataset_3.pdf.values = self.convert_counts_to_pdf(dataset_3.counts,  test=test)
 
             for variable in ('counts', 'frequency', 'pdf'):
-                for attribute in tprate_dataset_1.counts.attrs:
+                for attribute in dataset_1.counts.attrs:
                     dataset_3[variable].attrs = {
-                        **tprate_dataset_1[variable].attrs, **tprate_dataset_2[variable].attrs}
+                        **dataset_1[variable].attrs, **dataset_2[variable].attrs}
                     try:
-                        if tprate_dataset_1[variable].attrs[attribute] != tprate_dataset_2[variable].attrs[attribute]:
+                        if dataset_1[variable].attrs[attribute] != dataset_2[variable].attrs[attribute]:
                             dataset_3[variable].attrs[attribute] = str(
-                                tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
+                                dataset_1[variable].attrs[attribute])+';\n ' + str(dataset_2[variable].attrs[attribute])
                     except ValueError:
-                        if tprate_dataset_1[variable].attrs[attribute].all != tprate_dataset_2[variable].attrs[attribute].all:
+                        if dataset_1[variable].attrs[attribute].all != dataset_2[variable].attrs[attribute].all:
                             dataset_3[variable].attrs[attribute] = str(
-                                tprate_dataset_1[variable].attrs[attribute])+';\n ' + str(tprate_dataset_2[variable].attrs[attribute])
-                dataset_3[variable].attrs['size_of_the_data'] = tprate_dataset_1[variable].size_of_the_data + \
-                    tprate_dataset_2[variable].size_of_the_data
+                                dataset_1[variable].attrs[attribute])+';\n ' + str(dataset_2[variable].attrs[attribute])
+                dataset_3[variable].attrs['size_of_the_data'] = dataset_1[variable].size_of_the_data + \
+                    dataset_2[variable].size_of_the_data
             return dataset_3
 
     def merge_list_of_histograms(self, path_to_histograms: str = None, multi: int = None, seasons_bool: bool = False, 
@@ -1070,8 +1083,8 @@ class MainClass:
                             dataset = self.tools.open_dataset(
                                 path_to_netcdf=hist_seasonal[i])
                         else:
-                            dataset = self.merge_two_datasets(tprate_dataset_1=dataset,
-                                                              tprate_dataset_2=self.tools.open_dataset(path_to_netcdf=hist_seasonal[i]), test=test)
+                            dataset = self.merge_two_datasets(dataset_1=dataset,
+                                                              dataset_2=self.tools.open_dataset(path_to_netcdf=hist_seasonal[i]), test=test)
                     four_seasons.append(dataset)
             self.logger.info("Histograms are merged for each season.")
             return four_seasons
@@ -1088,8 +1101,8 @@ class MainClass:
                         dataset = self.tools.open_dataset(
                             path_to_netcdf=histograms_to_load[i])
                     else:
-                        dataset = self.merge_two_datasets(tprate_dataset_1=dataset,
-                                                          tprate_dataset_2=self.tools.open_dataset(path_to_netcdf=histograms_to_load[i]), test=test)
+                        dataset = self.merge_two_datasets(dataset_1=dataset,
+                                                          dataset_2=self.tools.open_dataset(path_to_netcdf=histograms_to_load[i]), test=test)
                 self.logger.info("Histograms are merged.")
                 return dataset
             else:
@@ -1206,16 +1219,18 @@ class MainClass:
                 data = data[self.model_variable]
             except KeyError:
                 pass
-            try:
-                mean_of_original_data = data.sel(lat=slice(-self.trop_lat, self.trop_lat)).mean().values
-            except KeyError:
-                mean_of_original_data = data.mean().values
+            #try:
+            #    mean_of_original_data = data.sel(lat=slice(-self.trop_lat, self.trop_lat)).mean().values
+            #except KeyError:
+            #    mean_of_original_data = data.mean().values
+            mean_of_original_data = data.mean().values
             if positive:
                 _data = np.maximum(data, 0.)
-                try:
-                    mean_of_modified_data = _data.sel(lat=slice(-self.trop_lat, self.trop_lat)).mean().values
-                except KeyError:
-                    mean_of_modified_data = _data.mean().values
+                #try:
+                #    mean_of_modified_data = _data.sel(lat=slice(-self.trop_lat, self.trop_lat)).mean().values
+                #except KeyError:
+                #    mean_of_modified_data = _data.mean().values
+                mean_of_modified_data = _data.mean().values
             mean_of_original_data, mean_of_modified_data = float(mean_of_original_data), float(mean_of_modified_data)
         else:
             mean_of_original_data, mean_of_modified_data = None, None
@@ -2282,7 +2297,8 @@ class MainClass:
 
         self.grid_attributes(data=_dataset, tprate_dataset=_dataset)
 
-        data = _dataset.where(~np.isnan(_dataset.tprate), 0)
+        data = _dataset.dropna(dim='time')
+        #data = _dataset.where(~np.isnan(_dataset.tprate), 0)
 
         utc_time = data['utc_time'].stack(total=['time', 'lon']).values
         tprate = data['tprate'].stack(total=['time', 'lon']).values
