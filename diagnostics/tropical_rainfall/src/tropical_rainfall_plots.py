@@ -671,8 +671,8 @@ class PlottingClass:
     def daily_variability_plot(self, data, ymax: float = 12, relative: bool = True, save: bool = True,
                            legend: str = '_Hidden', figsize: float = None, linestyle: str = None, color: str = 'tab:blue',
                            model_variable: str = None, loc: str = 'upper right', fontsize: int = None,
-                           add: list = None, fig: list = None, plot_title: str = None, path_to_pdf: str = None, 
-                           pdf_format: bool = True) -> list:
+                           add: Optional[Tuple] = None, fig: Optional[object] = None, plot_title: str = None, path_to_pdf: str = None, 
+                           pdf_format: bool = True):
         """
         Plot the daily variability of the dataset.
 
@@ -701,11 +701,11 @@ class PlottingClass:
         """ 
         self.class_attributes_update(pdf_format=pdf_format, figsize=figsize, fontsize=fontsize, 
                                 model_variable=model_variable)
+        
         if fig is not None:
             fig, ax = fig
         elif add is None and fig is None:
-            fig, ax = plt.subplots(
-                figsize=(11*self.figsize, 10*self.figsize), layout='constrained')
+            fig, ax = plt.subplots(figsize=(8*self.figsize, 5*self.figsize))
         elif add is not None:
             fig, ax = add
 
@@ -719,30 +719,29 @@ class PlottingClass:
         except AttributeError:
             units = data.tprate.units
 
-        ax.plot(utc_time, tprate,
+        plt.plot(utc_time, tprate,
                 color=color,  label=legend,  linestyle=self.linestyle)
-
-        if relative:
-            ax.set_title(
-                'Relative Value of Daily Precipitation Variability', fontsize=self.fontsize+1)
-            ax.set_xlabel('tprate variability, '+units,  fontsize=self.fontsize-2)
+        if plot_title is None:
+            if relative:
+                plt.suptitle(
+                    'Relative Value of Daily Precipitation Variability', fontsize=self.fontsize+1)
+                plt.ylabel('tprate variability, '+units,  fontsize=self.fontsize-2)
+            else:
+                plt.suptitle('Daily Precipitation Variability', fontsize=self.fontsize+1)
+                plt.ylabel('relative tprate',  fontsize=self.fontsize-2)
         else:
-            ax.set_title('Daily Precipitation Variability', fontsize=self.fontsize+1)
-            ax.set_xlabel('relative tprate',  fontsize=self.fontsize-2)
+            plt.suptitle(plot_title, fontsize=self.fontsize+3)
+            
+        #plt.frame_on(True)
+        plt.grid(True)
 
-        ax.set_frame_on(True)
-        ax.grid(True)
-
-        ax.set_xlabel('Local time', fontsize=self.fontsize-2)
+        plt.xlabel('Local time', fontsize=self.fontsize-2)
 
         if legend != '_Hidden':
             plt.legend(loc=loc,
                        fontsize=self.fontsize-2,    ncol=2)
 
-        if plot_title is not None:
-            plt.suptitle(plot_title, fontsize=self.fontsize+3)
-
         if save and isinstance(path_to_pdf, str):
             self.savefig(path_to_pdf, self.pdf_format)
 
-        return [fig,  ax]
+        return {fig, ax}

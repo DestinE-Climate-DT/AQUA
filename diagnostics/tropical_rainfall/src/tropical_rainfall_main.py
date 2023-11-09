@@ -216,7 +216,9 @@ class MainClass:
                     coord_lon = i
         return coord_lat, coord_lon
 
-    def precipitation_rate_units_converter(self, data: Union[xr.Dataset, float, int, np.ndarray], model_variable: Optional[str] = 'tprate', old_unit: Optional[str] = None, new_unit: Optional[str] = 'm s**-1') -> xr.Dataset:
+    def precipitation_rate_units_converter(self, data: Union[xr.Dataset, float, int, np.ndarray], 
+                                           model_variable: Optional[str] = 'tprate', old_unit: Optional[str] = None, 
+                                           new_unit: Optional[str] = 'm s**-1') -> xr.Dataset:
         """
         Function to convert the units of precipitation rate.
 
@@ -234,13 +236,13 @@ class MainClass:
             data = data[self.model_variable]
         except (TypeError, KeyError):
             pass
-        if 'xarray' in str(type(data)):
+        if 'xarray' in str(type(data)) and 'units' in data.attrs:
             if data.units == self.new_unit:
                 return data
 
-        if isinstance(data, (float, int, np.ndarray)) and old_unit is not None:
+        if old_unit is not None:
             from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(old_unit)
-        else:
+        elif  not isinstance(data, (float, int, np.ndarray)) and old_unit is None:
             from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(data.units)
             old_unit = data.units
         _,   to_space_unit,   to_time_unit = self.tools.unit_splitter(self.new_unit)
@@ -261,11 +263,10 @@ class MainClass:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             history_update = str(current_time)+' the units of precipitation are converted from ' + \
                 str(data.units) + ' to ' + str(self.new_unit) + ';\n '
-            try:
-                history_attr = data.attrs['history'] + history_update
-                data.attrs['history'] = history_attr
-            except AttributeError or KeyError:
-                data.attrs['history'] = history_update
+            if 'history' not in data.attrs:
+                data.attrs['history'] = ' '
+            history_attr = data.attrs['history'] + history_update
+            data.attrs['history'] = history_attr
         return data
 
     def latitude_band(self, data: xr.Dataset, trop_lat: Optional[Union[int, float]] = None) -> xr.Dataset:
@@ -2344,6 +2345,7 @@ class MainClass:
         da = [(new_data[i] - mean_val)/mean_val for i in range(0, len(new_data))]
 
         new_dataset.update({'tprate_relative': (['utc_time'], da)})
+        new_dataset['tprate_relative'].attrs = new_dataset.attrs
 
         if isinstance(path_to_netcdf, str) and name_of_file is not None:
             self.dataset_to_netcdf(
@@ -2394,16 +2396,21 @@ class MainClass:
         if path_to_netcdf is None:
             raise Exception('The path needs to be provided')
         else:
-            data = self.tools.open_dataset(
-                path_to_netcdf=path_to_netcdf)
+            data = self.tools.open_dataset(path_to_netcdf=path_to_netcdf)
         if 'Dataset' in str(type(data)):
             y_lim_max = self.precipitation_rate_units_converter(ymax, old_unit=data.units, new_unit=self.new_unit)
-        
-
+            data['tprate_relative'] = self.precipitation_rate_units_converter(data['tprate_relative'], 
+                                                                              old_unit=data.units,
+                                                                              new_unit=self.new_unit)
+            data[self.model_variable] = self.precipitation_rate_units_converter(data[self.model_variable], 
+                                                                                old_unit=data.units,
+                                                                                new_unit=self.new_unit)
+            data.attrs['units'] = self.new_unit
+            
         if isinstance(path_to_pdf, str) and name_of_file is not None:
             path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
 
-        self.plots.daily_variability_plot(data, ymax=y_lim_max, relative=relative, save=save,
+        return self.plots.daily_variability_plot(data, ymax=y_lim_max, relative=relative, save=save,
                             legend=legend, figsize=figsize, linestyle=linestyle, color=color,
                             model_variable=self.model_variable, loc=loc, fontsize=fontsize,
                             add=add, fig=fig, plot_title=None, path_to_pdf=path_to_pdf, pdf_format=pdf_format)
