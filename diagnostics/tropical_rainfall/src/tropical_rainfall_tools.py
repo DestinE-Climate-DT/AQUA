@@ -197,6 +197,100 @@ class ToolsClass:
         except FileNotFoundError:
             raise FileNotFoundError(
                 "The specified dataset file was not found.")
+            
+    def zoom_in_data(self, trop_lat: float = None,
+                 pacific_ocean: bool = False, atlantic_ocean: bool = False, indian_ocean: bool = False, 
+                 tropical: bool = False) -> tuple:
+        """
+        Zooms into specific geographical regions or the tropics in the data.
+
+        Args:
+            trop_lat (float, optional): The tropical latitude. Defaults to None.
+            pacific_ocean (bool, optional): Whether to zoom into the Pacific Ocean. Defaults to False.
+            atlantic_ocean (bool, optional): Whether to zoom into the Atlantic Ocean. Defaults to False.
+            indian_ocean (bool, optional): Whether to zoom into the Indian Ocean. Defaults to False.
+            tropical (bool, optional): Whether to zoom into the tropical region. Defaults to False.
+
+        Returns:
+            tuple: A tuple containing the longitude and latitude bounds after zooming.
+
+        Note:
+            The longitude and latitude boundaries will be adjusted based on the provided ocean or tropical settings.
+
+        Example:
+            lonmin, lonmax, latmin, latmax = zoom_in_data(trop_lat=23.5, atlantic_ocean=True)
+        """
+        if pacific_ocean:
+            latmax = 65
+            latmin = -70
+            lonmin = -120
+            lonmax = 120
+        elif atlantic_ocean:
+            latmax = 70
+            latmin = -60
+            lonmin = -70
+            lonmax = 20
+        elif indian_ocean:
+            latmax = 30
+            latmin = -60
+            lonmin = 20
+            lonmax = 120
+
+        if tropical and trop_lat is not None:
+            latmax = trop_lat
+            latmin = trop_lat
+        self.logger.info(f'The data was zoomed in.')
+        return lonmin, lonmax, latmin, latmax
+    
+    def improve_time_selection(self, data: Union[xr.DataArray, None] = None, time_selection: Union[str, None] = None) -> str:
+        """
+        Perform time selection based on the provided criteria.
+
+        Args:
+            data (xarray): The input data to be processed.
+            time_selection (str): The time selection criteria.
+
+        Returns:
+            str: The updated time selection value.
+
+        The function checks if the time selection criteria contains a year and a date in the format 'YYYY-MM-DD'. If the input string doesn't include a year or a date, the function appends the necessary values to the string. The processed time selection value is then returned.
+
+        Examples:
+            >>> time_selection(data=data, time_selection='2023-09-25')
+            '2023-09-25'
+        """
+        if time_selection is not None:
+            if not isinstance(time_selection, str):
+                time_selection = str(time_selection)    
+            
+            year_pattern = re.compile(r'\b\d{4}\b')
+            match_year = re.search(year_pattern, time_selection)
+            
+            if match_year:
+                self.logger.debug(f'The input time value for selection contains a year: {time_selection}')
+                try:
+                    data.sel(time=time_selection)
+                except KeyError:
+                    self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
+            else:
+                self.logger.debug(f'The input time value for selection does not contain a year: {time_selection}')
+                time_selection = str(data['time.year'][0].values) + '-' + time_selection
+                self.logger.debug(f'The new time value for selection is: {time_selection}')
+                
+                date_pattern = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+                match_date = re.search(date_pattern, time_selection)
+
+                if match_date:
+                    self.logger.debug(f'The input time value for selection contains a month and a day: {time_selection}')
+                    try:
+                        data.sel(time=time_selection)
+                    except KeyError:
+                        self.logger.error(f'The dataset does not contain the input time value. Choose a different time value.')
+                else:
+                    time_selection = time_selection + '-' + str(data.sel(time = time_selection)['time.day'][0].values)
+                    self.logger.debug(f'The input time value for selection does not contain a day. The new time value for selection is: {time_selection}')
+        self.logger.info(f'The time value for selection is: {time_selection}')
+        return time_selection
 
     def convert_length(self, value, from_unit, to_unit):
         """ Function to convert length units
