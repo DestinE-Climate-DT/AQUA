@@ -35,7 +35,7 @@ run_radiation=true
 # Command line extra arguments for radiation
 # --config (readiation config file)
 # ------------------------------------------
-run_seaice=false
+run_seaice=true
 # ------------------------------------------
 # Command line extra arguments for seaice
 # --all-regions (if set it will plot all regions)
