@@ -217,7 +217,7 @@ class OPAgenerator():
             if not gsv: 
                 self.logger.warning('Initializing the streaming generator...')
                 self.reader.reset_stream()
-                data_gen = self.reader.retrieve(streaming_generator=True,
+                data_gen = self.reader.retrieve(stream_generator=True,
                                                 stream_step=self.stream_step,
                                                 stream_unit='days',
                                                 var=self.var)

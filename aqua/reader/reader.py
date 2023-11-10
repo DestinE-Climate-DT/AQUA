@@ -46,8 +46,10 @@ class Reader(FixerMixin, RegridMixin):
     def __init__(self, model=None, exp=None, source=None, freq=None, fix=True,
                  regrid=None, method="ycon", zoom=None, configdir=None,
                  areas=True,  # pylint: disable=W0622
-                 datamodel=None, streaming=False, stream_step=1, stream_unit='steps',
-                 stream_startdate=None, rebuild=False, loglevel=None, nproc=4, aggregation=None,
+                 datamodel=None, 
+                 streaming=False, stream_generator=False,
+                 startdate=None, enddate=None,
+                 rebuild=False, loglevel=None, nproc=4, aggregation=None,
                  verbose=False, exclude_incomplete=False,
                  buffer=None):
         """
@@ -68,9 +70,9 @@ class Reader(FixerMixin, RegridMixin):
             datamodel (str, optional): Destination data model for coordinates, overrides the one in fixes.yaml. Defaults to None.
             freq (str, optional): Frequency of the time averaging. Valid values are monthly, daily, yearly. Defaults to None.
             streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
-            stream_step (int, optional): The number of time steps to stream the data by. Defaults to 1.
-            stream_unit (str, optional): The unit of time to stream the data by (e.g. 'hours', 'days', 'months', 'years'). Defaults to 'steps'.
-            stream_startdate (str, optional): The starting date for streaming the data (e.g. '2020-02-25'). Defaults to None.
+            stream_generator (bool, optional): if to return a generator object for data streaming. Defaults to False
+            startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
+            enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
             loglevel (str, optional): Level of logging according to logging module. Defaults to log_level_default of loglevel().
             nproc (int,optional): Number of processes to use for weights generation. Defaults to 16.
@@ -103,16 +105,23 @@ class Reader(FixerMixin, RegridMixin):
         self.src_grid_area = None
         self.dst_grid_area = None
 
-        self.streaming = streaming
-        self.streamer = Streaming(stream_step=stream_step,
-                                  stream_unit=stream_unit,
-                                  stream_startdate=stream_startdate,
-                                  loglevel=self.loglevel)
+        if stream_generator:  # Stream generator also implies streaming
+            streaming = True
 
-        # Export streaming methods TO DO: probably useless
-        self.reset_stream = self.streamer.reset_stream
-        self.stream = self.streamer.stream
-        self.stream_generator = self.streamer.stream_generator
+        if streaming:
+            self.streamer = Streaming(startdate=startdate, 
+                                      enddate=enddate,
+                                      aggregation=aggregation,
+                                      loglevel=self.loglevel)
+            # Export streaming methods TO DO: probably useless
+            self.reset_stream = self.streamer.reset
+            self.stream = self.streamer.stream
+
+        self.stream_generator = stream_generator
+        self.streaming = streaming
+
+        self.startdate = startdate
+        self.enddate = enddate
 
         self.previous_data = None  # used for FDB iterator fixing
 
@@ -340,44 +349,30 @@ class Reader(FixerMixin, RegridMixin):
 
     def retrieve(self, regrid=False, timmean=False,
                  apply_unit_fix=True, var=None, vars=None,
-                 streaming=False, stream_step=None, stream_unit=None,
-                 stream_startdate=None, streaming_generator=False,
                  startdate=None, enddate=None):
         """
         Perform a data retrieve.
 
         Arguments:
-            regrid (bool):              if to regrid the retrieved data
-                                        Defaults to False
-            timmean (bool):             if to average the retrieved data
-                                        Defaults to False
-            apply_unit_fix (bool):      if to already adjust units by
-                                        multiplying by a factor or adding
-                                        an offset (this can also be done later
-                                        with the `apply_unit_fix` method).
-                                        Defaults to True
-            var (str, list):            the variable(s) to retrieve.
-                                        Defaults to None
-                                        vars is a synonym.
-                                        if None, all variables are retrieved
-            streaming (bool):           if to retreive data in a streaming
-                                        mode. Defaults to False
-            streaming_generator (bool): if to return a generator object for
-                                        data streaming. Defaults to False
-            stream_step (int):          the number of time steps to stream the
-                                        data by. Defaults to None
-            stream_unit (str):          the unit of time to stream the data
-                                        by (e.g. 'hours', 'days', 'months',
-                                        'years'). Defaults to None
-            stream_startdate (str):     the starting date for streaming the
-                                        data (e.g. '2020-02-25').
-                                        Defaults to None
+            regrid (bool): if to regrid the retrieved data. Defaults to False
+            timmean (bool): if to average the retrieved data. Defaults to False
+            apply_unit_fix (bool): if to already adjust units by multiplying by a factor or adding an offset (this can also be done later
+                                   with the `apply_unit_fix` method). Defaults to True
+            var (str, list): the variable(s) to retrieve.Defaults to None. vars is a synonym. If None, all variables are retrieved
+            startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
+            enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None. 
+            
         Returns:
             A xarray.Dataset containing the required data.
         """
 
-        if stream_startdate:  # In case the streaming startdate is used also for FDB copy it
-            startdate = stream_startdate
+        if (self.streaming and not self.stream_generator) and (startdate or enddate):  # Streaming emulator require these to be defined in __init__
+            raise KeyError("In case of streaming=true the arguments startdate/enddate have to be specified when initializing the class.")
+
+        if not startdate:  # In case the streaming startdate is used also for FDB copy it
+            startdate = self.startdate
+        if not enddate:  # In case the streaming startdate is used also for FDB copy it
+            enddate = self.enddate
 
         if vars:
             var = vars
@@ -398,13 +393,15 @@ class Reader(FixerMixin, RegridMixin):
                 loadvar = None
 
         fiter = False
+        ffdb = False
         # If this is an ESM-intake catalogue use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
             data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
         elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
-            data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate, dask=(not streaming_generator))
-            fiter = streaming_generator  # this returs an iterator unless dask is set
+            data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate, dask=(not self.stream_generator))
+            fiter = self.stream_generator  # this returs an iterator unless dask is set
+            ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)  # Returns a generator object
 
@@ -442,19 +439,13 @@ class Reader(FixerMixin, RegridMixin):
 
         if not fiter:
             # This is not needed if we already have an iterator
-            if streaming or self.streaming or streaming_generator:
-                if streaming_generator:
-                    data = self.streamer.stream_generator(data, stream_step=stream_step,
-                                                          stream_unit=stream_unit,
-                                                          stream_startdate=stream_startdate)
+            if self.streaming:
+                if self.stream_generator:
+                    data = self.streamer.generator(data, startdate=startdate, enddate=enddate)
                 else:
-                    data = self.streamer.stream(data, stream_step=stream_step,
-                                                stream_unit=stream_unit,
-                                                stream_startdate=stream_startdate)
-
-        # safe check that we provide only what exactly asked by var
-        # if var:
-        #    data = data[var]
+                    data = self.streamer.stream(data)
+            elif startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+                data = data.sel(time=slice(startdate, enddate))
 
         return data
 
@@ -894,3 +885,37 @@ class Reader(FixerMixin, RegridMixin):
             pass  # The iterator has finished, we are done
 
         return ds
+
+    def stream(self, data, startdate=None, enddate=None, aggregation=None,
+               timechunks=None, reset=False):       
+        """
+        Stream a dataset chunk using the startdate, enddate, and aggregation parameters defined in the constructor. 
+        This operation utilizes the 'stream' method from the Streaming class. 
+        It first checks if the Streaming class has been initialized; if not, it initializes the class.
+
+        Arguments:
+            data (xr.Dataset):      the input xarray.Dataset
+            startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
+            enddate (str): the ending date for streaming the data (e.g. '2021-01-01') (None)
+            aggregation (str): the streaming frequency in pandas style (1M, 7D etc.)
+            timechunks (DataArrayResample, optional): a precomputed chunked time axis
+            reset (bool, optional): reset the streaming 
+
+        Returns:
+            A xarray.Dataset containing the subset of the input data that has been streamed.
+        """
+        if not hasattr(self, 'streamer'):
+            self.streamer = Streaming(startdate=startdate, 
+                                      enddate=enddate,
+                                      aggregation=aggregation)
+            self.stream = self.streamer.stream
+                  
+        stream_data = self.stream(data, 
+                        startdate=startdate,
+                        enddate=enddate, 
+                        aggregation=aggregation,
+                        timechunks=timechunks,
+                        reset=reset) 
+        return stream_data
+
+

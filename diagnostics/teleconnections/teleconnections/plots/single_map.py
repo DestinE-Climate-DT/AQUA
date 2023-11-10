@@ -41,6 +41,8 @@ def plot_single_map(data: xr.DataArray,
         exp (str, optional):        Experiment name. Defaults to None.
         filename (str, optional):   Filename. Defaults to 'map'.
         format (str, optional):     Format of the figure. Defaults to 'pdf'.
+        vmin (float, optional):     Minimum value for the colorbar.
+        vmax (float, optional):     Maximum value for the colorbar.
 
     Raises:
         ValueError: If data is not a DataArray.
@@ -60,7 +62,15 @@ def plot_single_map(data: xr.DataArray,
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111, projection=proj)
 
-    vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
+    # Evaluate vmin and vmax
+    vmin = kwargs.get('vmin', None)
+    vmax = kwargs.get('vmax', None)
+    if vmin is None or vmax is None:
+        vmin_f, vmax_f = evaluate_colorbar_limits(maps=[data], sym=sym)
+        if vmin is None:
+            vmin = vmin_f
+        if vmax is None:
+            vmax = vmax_f
     logger.debug("Setting vmin to %s", vmin)
     logger.debug("Setting vmax to %s", vmax)
     if contour:

@@ -221,33 +221,41 @@ three different fixing strategies:
 Streaming simulation
 --------------------
 The reader includes the ability to simulate data streaming to retrieve chunks of data of a specific time length.
-The user can specify the length of the chunk, the data units (days, weeks, months, years), and the starting date.
+To activate the streaming mode the user should specify the argument `streaming=True` in the Reader initialization.
+The user can also choose the length of the data chunk with the ``aggregation`` keyword (in pandas notation "D", "M", "Y", or "daily", "monthly" etc. or "days", "months" etc.).
+The default is ``S`` (step), i.e. single saved timesteps are read at each iteration.
+The user can also specify the desired initial and final dates with the keywords `startdate` and `enddate`.
 If, for example, we want to stream the data every three days from '2020-05-01', we need to call:
 
 .. code-block:: python
 
-    reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
-    data = reader.retrieve(streaming=True, stream_step=3, stream_unit='days',
-                           stream_startdate = '2020-05-01')
+    reader = Reader(model="IFS", exp= "tco2559-ng5", source="ICMGG_atm2d", streaming=True, aggregation = '3D', startdate = '2020-05-01')    
+    data = reader.retrieve()
 
-If the unit parameter is not specified, the data is streamed, keeping the original time resolution of input data. 
-If the starting date parameter is not specified, the data stream will start from the first date of the input file.
-
-If the ``retrieve`` method in streaming mode is called multiple times with the same parameters, 
+If the ``retrieve`` method in streaming mode is called multiple times, 
 it will return the data in chunks until all of the data has been streamed.
 The function will automatically determine the appropriate start and end points for each chunk based on
 the internal state of the streaming process.
 If we want to reset the state of the streaming process, we can call the ``reset_stream`` method.
 
-Another possibility to deal with data streaming is to call the ``stream_generator`` method of the class ``Reader``. 
-This can be done from the retrieve method through the argument ``streaming_generator = True``:
+Another possibility to deal with data streaming (which we actually recommend)
+is to use the argument ``stream_generator=True`` in the Reader initialization:
 
 .. code-block:: python
 
-    data_gen = reader.retrieve(streaming_generator=True, stream_step=3, stream_unit = 'months')
+    reader = Reader(model="IFS", exp= "tco2559-ng5", source="ICMGG_atm2d", stream_generator = 'True', aggregation = 'monthly')
+    data_gen = reader.retrieve()
+    
+`data_gen` is now a generator object that yields the requested one-month-long chunks of data.
+We can do operations with them by iterating on the generator object like
 
-``data_gen`` is now a generator object that yields the requested three month-chunks of data. 
-We can do operations with them by iterating on the generator object.
+.. code-block:: python
+
+    for data in data_gen:
+        # Do something with the data
+
+Please notice that when accessing FDB sources and streaming mode is desired (instead of direct xarrayay dask access), we recommend to set ``stream_generator=True``,
+since the FDB interface can provide directly a generator if desired.
 
 Parallel Processing
 -------------------
@@ -304,7 +312,7 @@ For example you could create a ``LocalCluster`` and its client with:
 
 This will enormously accelerate any computation on the xarray.
 
-An optional keyword, which in general we do **not** recommend to specify for dask access, is ``aggregatio``,
+An optional keyword, which in general we do **not** recommend to specify for dask access, is ``aggregation``,
 which specifies the chunk size for dask access.
 Values could be "D", "M", "Y" etc. (in pandas notation) to specify daily, monthly and yearly aggregation.
 It is best to use the default, which is already specified in the catalogue for each data source.
@@ -316,7 +324,7 @@ the aggregation (i.e. chunk size).
 Iterator access
 ~~~~~~~~~~~~~~~
 
-In alternative it is also possible to ask the reader to return an *iterator/generator* object passing the ``streaming_generator=True`` 
+In alternative it is also possible to ask the reader to return an *iterator/generator* object passing the ``stream_generator=True`` 
 keyword to the ``retrieve()`` method.
 In that case the next block of data can be read from the iterator with ``next()`` as follows:
 
@@ -325,7 +333,7 @@ In that case the next block of data can be read from the iterator with ``next()`
     reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D",
                     regrid="r025")
     data = reader.retrieve(startdate='20200120', enddate='20200413', var='ci',
-                           streaming_generator=True)
+                           stream_generator=True)
     dd = next(data)
 
 or with a loop iterating over ``data``. The result of these operations is in turn a regular xarray.Dataset containg the data.

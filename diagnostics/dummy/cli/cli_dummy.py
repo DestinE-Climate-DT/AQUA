@@ -33,7 +33,7 @@ def parse_arguments(args):
 
 if __name__ == '__main__':
 
-    print('Running check setup CLI..')
+    print('Running check setup CLI')
     args = parse_arguments(sys.argv[1:])
 
     # change the current directory to the one of the CLI so that relative path works
@@ -49,7 +49,6 @@ if __name__ == '__main__':
         from aqua import Reader
         from aqua.logger import log_configure
         from aqua.util import get_arg, load_yaml
-        from teleconnections.__init__ import __version__ as telec_version
     except ImportError:
         print('Failed to import aqua. Check that you have installed aqua.')
         print('If you have installed aqua, check that you have activated the conda environment.')
@@ -59,8 +58,8 @@ if __name__ == '__main__':
         sys.exit(1)
     else:
         loglevel = get_arg(args, 'loglevel', 'WARNING')
-        logger = log_configure(log_name='Setup check', log_level='WARNING')
-        logger.warning('Running aqua version {}'.format(aqua_version))
+        logger = log_configure(log_name='Setup check', log_level=loglevel)
+        logger.info('Running aqua version {}'.format(aqua_version))
 
     file = get_arg(args, 'config', 'dummy_config.yaml')
     logger.info('Reading configuration from {}'.format(file))
@@ -78,7 +77,7 @@ if __name__ == '__main__':
         reader_atm.retrieve()
     except Exception as e:
         logger.error('Failed to retrieve atm data: {}'.format(e))
-        logger.warning('Check that the atm model is available in the Reader catalogue.')
+        logger.critical('Check that the atmospheric model is available in the Reader catalogue.')
         reader_atm = None
 
     try:
@@ -87,7 +86,7 @@ if __name__ == '__main__':
         reader_oce.retrieve()
     except Exception as e:
         logger.error('Failed to retrieve oce data: {}'.format(e))
-        logger.warning('Check that the oce model is available in the Reader catalogue.')
+        logger.critical('Check that the oceanic model is available in the Reader catalogue.')
         reader_oce = None
 
     if reader_atm is None and reader_oce is None:
@@ -95,8 +94,10 @@ if __name__ == '__main__':
         sys.exit(1)
     else:
         if reader_atm is None:
-            logger.error('Only oceanic data is available. Check that the atmospheric model name is correct.')
+            logger.critical('Only oceanic data is available. Check that the atmospheric model name is correct.')
+            sys.exit(2)
         if reader_oce is None:
-            logger.error('Only atmospheric data is available. Check that the oceanic model name is correct.')
+            logger.critical('Only atmospheric data is available. Check that the oceanic model name is correct.')
+            sys.exit(3)
 
-    logger.warning('Check complete, diagnostics can run!')
+    logger.info('Check complete, diagnostics can run!')
