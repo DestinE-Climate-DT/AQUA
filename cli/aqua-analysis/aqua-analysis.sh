@@ -8,7 +8,7 @@
 # ---------------------------------------------------
 model_atm="IFS"
 model_oce="FESOM"
-exp="control-1950-devcon"
+exp="tco2559-ng5-cycle3"
 source="lra-r100-monthly"
 outputdir="/scratch/b/b382289/cli_test"
 loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -21,16 +21,16 @@ aqua="/home/b/b382289/AQUA"
 # Set as true the diagnostics you want to run
 # -------------------------------------------
 run_dummy=true # dummy is a diagnostic that checks if the setup is correct
-run_atmglobalmean=false
-run_ecmean=false
+run_atmglobalmean=true
+run_ecmean=true
 # ---------------------------------------
 # Command line extra arguments for ecmean
 # -c --config ecmean config file
 # -i --interface custom interface file
 # ---------------------------------------
 run_global_time_series=true
-run_ocean3d=false
-run_radiation=false
+run_ocean3d=true
+run_radiation=true
 # ------------------------------------------
 # Command line extra arguments for radiation
 # --config (readiation config file)
@@ -43,14 +43,14 @@ run_seaice=false
 # --config (seaice config file)
 # --regrid (regrid data to a different grid)
 # ------------------------------------------
-run_teleconnections=false
+run_teleconnections=true
 # teleconnections additional flags
 # ------------------------------------------------------------------
 # --dry, -d (dry run, if set it will run without producing plots)
 # --ref (if set it will analyze also the reference data, it is set
 #        by default)
 # ------------------------------------------------------------------
-run_tropical_rainfall=false
+run_tropical_rainfall=true
 
 # End of user defined variables
 # -----------------------------
