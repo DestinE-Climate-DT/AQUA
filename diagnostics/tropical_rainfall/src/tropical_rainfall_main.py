@@ -2229,14 +2229,16 @@ class MainClass:
         else:
             return seasonal_095level
 
-    
-
-    def add_UTC_DataAaray(self, data, model_variable: str = None, space_grid_factor: int = None, time_length: int = None,
-                      trop_lat: float = None, new_unit: str = None, path_to_netcdf: str = None, name_of_file: str = None, tqdm: bool = True) -> Union[xr.Dataset, None]:
+    def add_localtime_DataAaray(self, data, model_variable: str = None, space_grid_factor: int = None, 
+                          time_length: int = None, trop_lat: float = None, new_unit: str = None, 
+                          path_to_netcdf: str = None, name_of_file: str = None, 
+                          tqdm_enabled: bool = True) -> Union[xr.Dataset, None]:
         """
-        Add a new dataset with UTC time based on the provided data.
+        Add a new dataset with local time based on the provided data.
 
-        The function processes the data by selecting specific dimensions, calculating means, and applying space regridding. It then computes the local time for each longitude value and adds it to the dataset as UTC time. It also converts the data to a new unit if specified and saves the dataset to a NetCDF file.
+        The function processes the data by selecting specific dimensions, calculating means, and applying space regridding. 
+        It then computes the local time for each longitude value and adds it to the dataset. 
+        It also converts the data to a new unit if specified and saves the dataset to a NetCDF file.
 
         Args:
             data: The input data to be processed.
@@ -2247,113 +2249,65 @@ class MainClass:
             new_unit (str): The new unit to which the data should be converted.
             path_to_netcdf (str): The path to the NetCDF file to be saved.
             name_of_file (str): The name of the file to be saved.
-            tqdm (bool): A flag indicating whether to display the progress bar.
+            tqdm_enabled (bool): A flag indicating whether to display the progress bar.
 
         Returns:
-            xr.Dataset: The new dataset with added UTC time.
+            xr.Dataset: The new dataset with added local time.
             None: If the path_to_netcdf or name_of_file is not provided.
         """
         self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit)
+
         try:
-            data = data[self.model_variable]
+            data = data[model_variable]
         except KeyError:
             pass
 
-        utc_data = []
-        progress_bar_template = "[{:<40}] {}%"
+        # Extract latitude range and calculate mean
+        data = data.sel(lat=slice(-self.trop_lat, self.trop_lat)).mean('lat')
+
+        # Slice time dimension if specified
         if time_length is not None:
             data = data.isel(time=slice(0, time_length))
-            self.logger.debug('Time selected')
 
-        _data = data.sel(lat=slice(-self.trop_lat, self.trop_lat))
-        data = _data.mean('lat')
-        self.logger.debug('Latitude selected and mean calculated')
-        self.logger.debug("Mean value: {}".format(data.mean()))
+        # Perform space regridding if space_grid_factor is specified
         if space_grid_factor is not None:
-            data = self.tools.space_regrider(
-                data, lon_length=space_grid_factor*data.lon.size)
-            self.logger.debug('Space regrided')
-            
-        for time_ind in range(0, data.time.size):
-            utc_data.append([])
-            for lon_ind in range(0, data.lon.size):
-                total_ind = time_ind*data.lon.size + lon_ind
-                ratio = total_ind / (data.lon.size*data.time.size)
+            data = self.tools.space_regrider(data, lon_length=space_grid_factor * data.lon.size)
+
+        local_data = []
+
+        # Display progress bar if tqdm_enabled
+        progress_bar_template = "[{:<40}] {}%"
+
+        for time_ind in range(data.time.size):
+            local_data.append([])
+            for lon_ind in range(data.lon.size):
+                total_ind = time_ind * data.lon.size + lon_ind
+                ratio = total_ind / (data.lon.size * data.time.size)
                 progress = int(40 * ratio)
-                print(progress_bar_template.format(
-                    "=" * progress, int(ratio * 100)), end="\r")
+                if tqdm_enabled:
+                    print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
 
-                local_time = data.time[time_ind]
+                utc_time = data.time[time_ind]
                 longitude = data.lon[lon_ind].values - 180
+                utc_datetime = float(utc_time['time.hour'].values + utc_time['time.minute'].values / 60)
+                local_element = self.tools._utc_to_local(longitude=longitude, utc_time=utc_datetime)
+                local_data[time_ind].append(local_element)
 
-                local_datetime = float(
-                    local_time['time.hour'].values+local_time['time.minute'].values/60)
+        # Create an xarray DataArray for utc_data
+        local_data_array = xr.DataArray(local_data, dims=('time', 'lon'), coords={'time': data.time, 'lon': data.lon})
 
-                utc_element = self.tools._utc_to_local(
-                    longitude=longitude, utc_time=local_datetime)
-                utc_data[time_ind].append(utc_element)
+        # Create a new dataset with tprate and utc_time
+        new_dataset = xr.Dataset({'tprate': data, 'local_time': local_data_array})
+        new_dataset.attrs = data.attrs
 
-        print('preparing data for saving')
-        print('1 to dataset')
-        _dataset = data.to_dataset(name="tprate")
-        _dataset.attrs = data.attrs
-        _dataset.update({'utc_time': (['time', 'lon'], utc_data)})
-        print('2 grid attributes')
-        self.grid_attributes(data=_dataset, tprate_dataset=_dataset)
-        print('3')
-        data = _dataset
-        #data = _dataset.dropna(dim='time')
-        #data = _dataset.where(~np.isnan(_dataset.tprate), 0)
-        print('4')
-        utc_time = data['utc_time'].stack(total=['time', 'lon']).values
-        tprate = data['tprate'].stack(total=['time', 'lon']).values
-        print('5')
-        if self.new_unit is not None and 'xarray' in str(type(tprate)):
-            tprate = self.precipitation_rate_units_converter(tprate, new_unit=self.new_unit)
-            units = new_unit
-        elif self.new_unit is not None and 'ndarray' in str(type(tprate)):
-            result_list = []
-            for element in tprate:
-                result_list.append(self.precipitation_rate_units_converter(
-                    float(element), old_unit=data.units, new_unit=self.new_unit))
-            tprate = np.array(result_list, dtype=np.float64)
-        else:
-            units = tprate.units
-        print('6')
-        new_data = []
-        for i in range(0, len(utc_time)):
-            new_data.append([utc_time[i], tprate[i]])
-        print('start sorting')
-        # Sorted list with corresponding values
-        sorted_list = sorted(new_data, key=lambda x: x[0])
-
-        # Group elements by the first value in each element
-        grouped_data = {key: [value for _, value in group]
-                        for key, group in groupby(sorted_list, key=lambda x: x[0])}
-
-        # Calculate the mean for each group and create the result list
-        result = [[key, mean(values)] for key, values in grouped_data.items()]
-
-        new_data = [result[i][1] for i in range(0, len(result))]
-        new_coord = [result[i][0] for i in range(0, len(result))]
-
-        da = xr.DataArray(new_data,
-                          dims=('utc_time'),
-                          coords={'utc_time': new_coord})
-
-        new_dataset = da.to_dataset(name="tprate")
-        new_dataset.attrs = _dataset.attrs
-
-        mean_val = da.mean()
-
-        da = [(new_data[i] - mean_val)/mean_val for i in range(0, len(new_data))]
-
-        new_dataset.update({'tprate_relative': (['utc_time'], da)})
+        # Calculate relative tprate and add to the dataset
+        mean_val = new_dataset['tprate'].mean()
+        new_dataset['tprate_relative'] = (new_dataset['tprate'] - mean_val) / mean_val
         new_dataset['tprate_relative'].attrs = new_dataset.attrs
-        print('saving')
-        if isinstance(path_to_netcdf, str) and name_of_file is not None:
-            self.dataset_to_netcdf(
-                new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
+
+        # Save the dataset to NetCDF if paths are provided
+        if path_to_netcdf and name_of_file:
+            self.dataset_to_netcdf(new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
         else:
             return new_dataset
 
