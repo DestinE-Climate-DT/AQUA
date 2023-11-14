@@ -14,6 +14,7 @@ singularity shell \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --bind /pfs/lustrep3/ \
     --bind /scratch/ \
+    --bind /projappl/ \
     $AQUA_container
 # Run this script in LUMI in VSCode 
 

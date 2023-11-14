@@ -7,7 +7,7 @@
 #SBATCH -J aqua_jupyter
 #SBATCH --output=aqua_slurm.out
 #SBATCH --error=aqua_slurm.err
-#SBATCH -p debug    #change the partition
+#SBATCH -p dev-g    #change the partition
 
 AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.4.sif
 FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml #Change it to your simulation
@@ -23,9 +23,9 @@ singularity exec  \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk  \
     --bind /pfs/lustrep3/ \
     --bind /scratch/ \
+    --bind /projappl/ \
     $AQUA_container \
     bash -c \
-    
     ' 
     #You can edit below code for your required script.
     
