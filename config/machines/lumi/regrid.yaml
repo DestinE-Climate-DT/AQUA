@@ -67,6 +67,12 @@ sources:
     #   monthly-1deg-3d: lon-lat
     #   lra-r100-monthly: lon-lat
 
+    spinup-1990-nemo-dev:
+      hourly-native: eORCA12
+      hourly-1deg: lon-lat
+      6hourly-1deg: lon-lat
+      monthly-1deg-2d: lon-lat
+      monthly-1deg-3d: lon-lat
   ERA5:
     fdb:
       default: lon-lat
@@ -76,7 +82,7 @@ sources:
   MSWEP:
     past:
       default: lon-lat
-  
+
   CERES:
     ebaf-toa42:
       default: lon-lat
