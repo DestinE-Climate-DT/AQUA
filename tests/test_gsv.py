@@ -20,6 +20,7 @@ DEFAULT_GSV_PARAMS = {'request': {
     'levelist': '300'
 }, 'data_start_date': '20080101T1200', 'data_end_date': '20080101T1200', 'timestep': 'H', 'timestyle': 'date'}
 
+loglevel = 'DEBUG'
 
 @pytest.fixture()
 def gsv(request) -> GSVSource:
@@ -68,7 +69,8 @@ class TestGsv():
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", aggregation="D", stream_generator=True)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", aggregation="D",
+                        stream_generator=True, loglevel=loglevel)
         data = reader.retrieve(startdate='20080101T1200', enddate='20080101T1200', var='t')
         assert isinstance(data, types.GeneratorType), 'Reader does not return iterator'
         dd = next(data)
@@ -77,7 +79,8 @@ class TestGsv():
     def test_reader_novar(self) -> None:
         """Simple test, to check that catalog access works and reads correctly, no var"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", stream_generator=True)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb",
+                        stream_generator=True, loglevel=loglevel)
         data = reader.retrieve()
         dd = next(data)
         assert dd.t.param == '130.128', 'Wrong GRIB param in data'
@@ -85,7 +88,7 @@ class TestGsv():
     def test_reader_xarray(self) -> None:
         """Reading directly into xarray"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb")
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"

@@ -3,12 +3,13 @@ from aqua import Reader
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
+loglevel = "DEBUG"
 
 
 @pytest.fixture
 def reader_instance():
     return Reader(model="IFS", exp="test-tco79", source="intake-esm-test",
-                  areas=False, fix=False)
+                  areas=False, fix=False, loglevel=loglevel)
 
 
 # aqua class for tests
