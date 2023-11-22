@@ -10,7 +10,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_native/json.dir/atm2d.json
     metadata:
-      grid: tco1279
+      source_grid_name: tco1279
   3D_1h_native:
     driver: zarr
     args:
@@ -18,7 +18,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_native/json.dir/atm3d.json
     metadata:
-      grid: tco1279
+      source_grid_name: tco1279
   2D_monthly_native:
     driver: zarr
     args:
@@ -26,7 +26,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_native/json.dir/atm2d.json
     metadata:
-      grid: tco1279
+      source_grid_name: tco1279
   3D_monthly_native:
     driver: zarr
     args:
@@ -34,7 +34,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_native/json.dir/atm3d.json
     metadata:
-      grid: tco1279
+      source_grid_name: tco1279
   2D_1h_0.25deg:
     driver: zarr
     args:
@@ -42,7 +42,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_0.25deg/json.dir/atm2d.json
     metadata:
-      grid: multio-r025
+      source_grid_name: multio-r025
   3D_1h_0.25deg:
     driver: zarr
     args:
@@ -50,7 +50,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_1h6h_0.25deg/json.dir/atm3d.json
     metadata:
-      grid: multio-r025
+      source_grid_name: multio-r025
   2D_monthly_0.25deg:
     driver: zarr
     args:
@@ -58,7 +58,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_0.25deg/json.dir/atm2d.json
     metadata:
-      grid: multio-r025
+      source_grid_name: multio-r025
   3D_monthly_0.25deg:
     driver: zarr
     args:
@@ -66,7 +66,7 @@ sources:
       urlpath: 
         reference::/work/bm1235/b381679/IFS_cycle3/9km_nemo/gribscan_monthly_0.25deg/json.dir/atm3d.json
     metadata:
-      grid: multio-r025
+      source_grid_name: multio-r025
   # 2D_1h_1deg:
   #   driver: zarr
   #   args:
@@ -102,9 +102,10 @@ sources:
     description: LRA data monthly at r100
     args:
       urlpath: 
-        /work/bb1153/b382076/LRAv3/IFS/tco1279-orca025-cycle3/r100/monthly/*tco1279-orca025-cycle3_r100_monthly_????.nc
+        /work/bb1153/b382076/LRA-cycle3/IFS/tco1279-orca025-cycle3/r100/monthly/*tco1279-orca025-cycle3_r100_monthly_????.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
     metadata:
-      grid: multio-r025
+      #grid: multio-r025
+      source_grid_name: lon-lat

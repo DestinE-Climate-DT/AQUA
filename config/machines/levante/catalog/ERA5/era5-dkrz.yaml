@@ -39,6 +39,7 @@ sources:
           engine: cfgrib
           backend_kwargs: 
             indexpath: ''
+        source_grid_name: era5-n320
   monthly_acc:
       driver: intake_esm.esm_datastore
       args:
@@ -75,6 +76,7 @@ sources:
           engine: cfgrib
           backend_kwargs: 
             indexpath: ''
+        source_grid_name: era5-n320
   daily_inst:
       driver: intake_esm.esm_datastore
       args:
@@ -108,6 +110,7 @@ sources:
           engine: cfgrib
           backend_kwargs: 
             indexpath: ''
+        source_grid_name: era5-n320
   daily_acc:
       driver: intake_esm.esm_datastore
       args:
@@ -157,3 +160,4 @@ sources:
           engine: cfgrib
           backend_kwargs: 
             indexpath: ''
+        source_grid_name: era5-n320

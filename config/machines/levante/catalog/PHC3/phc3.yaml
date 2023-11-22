@@ -6,6 +6,8 @@ sources:
   annual:
     description: PHC3    
     driver: netcdf
+    metadata:
+      source_grid_name: lon-lat
     args:
       chunks:
         time: 1
@@ -14,6 +16,8 @@ sources:
   seasonal:
     description: PHC3    
     driver: netcdf
+    metadata:
+      source_grid_name: lon-lat
     args:
       chunks:
         time: 1

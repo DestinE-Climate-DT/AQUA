@@ -5,20 +5,26 @@ plugins:
 sources:
   2D_1h_native:
     driver: zarr
+    metadata:
+      source_grid_name: tco2559
     args:
       consolidated: false
-      urlpath: 
-        - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native/json.dir/atm2d.json
-        - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native_p2/json.dir/atm2d.json
+      urlpath:
+      - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native/json.dir/atm2d.json
+      - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native_p2/json.dir/atm2d.json
   3D_1h_native:
     driver: zarr
+    metadata:
+      source_grid_name: tco2559
     args:
       consolidated: false
-      urlpath: 
-        - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native/json.dir/atm3d.json
-        - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native_p2/json.dir/atm3d.json
+      urlpath:
+      - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native/json.dir/atm3d.json
+      - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_1h6h_native_p2/json.dir/atm3d.json
   2D_monthly_0.25deg:
     driver: zarr
+    metadata:
+      source_grid_name: multio-r025
     args:
       consolidated: false
       urlpath:
@@ -26,6 +32,8 @@ sources:
       - reference::/work/bm1235/a270046/cycle3/multio_cycle3/gribscan_monthly_0.25deg_p2/json.dir.job/atm2d.json
   3D_monthly_0.25deg:
     driver: zarr
+    metadata:
+      source_grid_name: multio-r025
     args:
       consolidated: false
       urlpath:
@@ -56,7 +64,9 @@ sources:
     description: LRA data monthly at r100
     args:
       urlpath: 
-        /work/bb1153/b382076/LRAv3/IFS/tco2559-ng5-cycle3/r100/monthly/*tco2559-ng5-cycle3_r100_monthly_????.nc
+        /work/bb1153/b382076/LRA-cycle3/IFS/tco2559-ng5-cycle3/r100/monthly/*tco2559-ng5-cycle3_r100_monthly_????.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat

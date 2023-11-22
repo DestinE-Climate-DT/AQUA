@@ -6,6 +6,8 @@ sources:
   nh-daily:
     description: Daily Northern Hemisphere OSI-450 sea-ice data
     driver: netcdf
+    metadata:
+      source_grid_name: osi-saf-nh
     #cache:
     #  - argkey: urlpath
     #    regex: ''
@@ -18,6 +20,8 @@ sources:
   nh-monthly:
     description: Monthly averages of Northern Hemisphere OSI-450 sea-ice data
     driver: netcdf
+    metadata:
+      source_grid_name: osi-saf-nh
     args:
       urlpath: '{{DATA_PATH}}/OSI-SAF/OSI-450/monthly/ice_conc_nh_ease2-250_cdr_v2p0_monthly_1979-2015.nc' 
       chunks:
@@ -27,6 +31,8 @@ sources:
   sh-daily:
     description: Southern hemisphere OSI-450 sea-ice data
     driver: netcdf
+    metadata:
+      source_grid_name: osi-saf-sh
     #cache:
     #  - argkey: urlpath
     #    regex: ''
@@ -39,6 +45,8 @@ sources:
   sh-monthly:
     description: Monthly averages of Southern Hemisphere OSI-450 sea-ice data
     driver: netcdf
+    metadata:
+      source_grid_name: osi-saf-sh
     args:
       urlpath: '{{DATA_PATH}}/OSI-SAF/OSI-450/monthly/ice_conc_sh_ease2-250_cdr_v2p0_monthly_1979-2015.nc' 
       chunks:

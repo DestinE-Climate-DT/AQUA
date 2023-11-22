@@ -30,6 +30,7 @@ sources:
                   'stl3', 'lgws', 'mgws', 'tisr', 'tp', 'skt', 'stl4','so', 'ocu', 'ocv',
                   'zos', 't20d', 'tav300', 'sav300', 'sithick', 'fdir', 'i10fg', 'tcrw',
                   'tcsw', 'ssrdc', '100u', '100v']
+      source_grid_name: tco399
   fdb-long-3d:
     args:
       request:
@@ -57,3 +58,4 @@ sources:
     metadata:
       fdb_path: /scratch/project_465000454/igonzalez/fdb-long/config.yaml
       variables: ['z', 't', 'u', 'v', 'w']
+      source_grid_name: tco399

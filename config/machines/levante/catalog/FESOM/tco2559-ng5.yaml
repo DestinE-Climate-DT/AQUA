@@ -13,6 +13,8 @@ sources:
   #   driver: netcdf
   interpolated_global2d:
     driver: zarr
+    metadata:
+      source_grid_name: fesom-interpolated-2d
     args:
       consolidated: false
       compat: override
@@ -21,6 +23,8 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/MLD2/MLD2.fesom.json
   interpolated_global_TS:
     driver: zarr
+    metadata:
+      source_grid_name: fesom-interpolated-3d
     args:
       consolidated: false
       compat: override
@@ -30,6 +34,8 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/temp/temp.fesom.json
   interpolated_global_UV:
     driver: zarr
+    metadata:
+      source_grid_name: fesom-interpolated-3d
     args:
       consolidated: false
       compat: override
@@ -55,6 +61,8 @@ sources:
   #     - reference::/work/ab0995/a270088/NextGems_public/FESOM_interpolated/tco2559-ng5/m_ice_sp/m_ice.fesom.json
 
   original_2d:
+    metadata:
+      source_grid_name: ng5-nodes-2d
     args:
       chunks:
         time: 1
@@ -309,6 +317,8 @@ sources:
     description: original 2d output
     driver: netcdf
   original_3d:
+    metadata:
+      source_grid_name: ng5-nodes-3d
     args:
       chunks:
         nz: 1
@@ -357,6 +367,8 @@ sources:
     description: original 3d output for variables depending on nod2
     driver: netcdf
   original_3d_elem:
+    metadata:
+      source_grid_name: ng5-elems-3d
     args:
       chunks:
         nz: 1
@@ -399,3 +411,5 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat

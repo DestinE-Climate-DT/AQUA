@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.logger import log_configure
-from .plot_utils import plot_box, add_cyclic_lon, evaluate_colorbar_limits
+from aqua.util import plot_box, add_cyclic_lon, evaluate_colorbar_limits
 
 
 def maps_plot(maps=None, models=None, exps=None,
@@ -82,9 +82,9 @@ def maps_plot(maps=None, models=None, exps=None,
 
         # Contour plot
         cs = data_map.plot.contourf(ax=axs[i], transform=ccrs.PlateCarree(),
-                               cmap='RdBu_r', levels=nlevels,
-                               add_colorbar=False, add_labels=False,
-                               extend='both', vmin=vmin, vmax=vmax)
+                                    cmap='RdBu_r', levels=nlevels,
+                                    add_colorbar=False, add_labels=False,
+                                    extend='both', vmin=vmin, vmax=vmax)
 
         # Title
         if titles is not None:

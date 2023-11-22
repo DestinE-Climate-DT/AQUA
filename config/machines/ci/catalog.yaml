@@ -1,3 +1,8 @@
+paths:
+  grids: ./AQUA_tests/grids
+  weights: ./AQUA_tests/weights
+  areas: ./AQUA_tests/weights
+
 sources:
   FESOM:
     description: FESOM ocean model
@@ -14,3 +19,27 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/ICON/main.yaml"
+
+# available grids, not worth to become machine independent
+# extra is an extra special cdo command to be applied before generating the weights
+grids:
+  # IFS
+  test-tco79: {path: $grids/tco79_grid.nc} #space_coord: [cell]
+  # FESOM
+  test-pi-2d:
+    path: $grids/pi_griddes_nodes_IFS.nc
+    #space_coord: [nod2]
+    extra:
+    - -setgrid,$grids/pi_griddes_nodes_IFS.nc
+    - -selname,cell_area
+  test-pi-3d:
+    path:
+      nz1: $grids/pi_fesom_mask_nz1.nc
+      nz: $grids/pi_fesom_mask_nz.nc
+    space_coord: [nod2]
+    vert_coord: [nz1, nz]
+    extra:
+    - -setgrid,$grids/pi_griddes_nodes_IFS.nc
+  # ICON
+  test-healpix: {path: $grids/icon_healpix0.nc} #space_coord: [x]
+  test-r2b0: {path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc} #space_coord: [cell]

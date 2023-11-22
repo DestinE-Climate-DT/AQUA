@@ -185,7 +185,7 @@ class Gribber():
         """
         self.reader = Reader(model=self.model, exp=self.exp,
                              source=self.source, configdir=self.configdir,
-                             loglevel=self.logger.level,fix=False)
+                             loglevel=self.logger.level, fix=False)
 
         data = self.reader.retrieve()
         assert len(data) > 0

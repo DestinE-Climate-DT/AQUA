@@ -11,6 +11,7 @@ Unreleased is the current development version.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - AQUA new common environment installation tool for LUMI added (#413)
 =======
 - Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
@@ -18,14 +19,27 @@ Unreleased is the current development version.
 =======
 =======
 =======
+=======
+- Fldmean fix if only one dimension is present for area selection (#640)
+- Adding higher frequency ERA5 data on Levante and Lumi (#628)
+- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#622)
+- Load all available variables in FDB xarray/dask access (#619)
+- Lint standard and enforced in CI (#616)
+- Reader init split with methods (#523)
+- Single map plot utility (#594)
+- Script for automatic generation of Fdb catalog entries (#572)
+- Fix loading of singularity mounting /projappl (#612)
+- CLI wrapper parser (#599)
+- Refactoring of streaming emulator (#593)
+>>>>>>> main
 - Radiation CLI and diagnostic refinement (#537)
 - Ocean3D CLI and diagnostic refinement (#578)
 - AtmGlobalMean CLI and diagnostic refinement (#587)
 - Tropical cyclones CLI refinements and TC module (#568)
 - Removing OPA, OPAgenerator and related tests from the AQUA (Remove OPA from AQUA #586)
-- Renaming the experiments according to the DE340 AQUA syntax (Including dev-control-1990 in the source and rename the experiment according to DE340 scheme #556)
+- Renaming the experiments according to the DE340 AQUA syntax (Including dev-control-1990 in the source and rename the experiment according to DE340 scheme #556, #614, #618)
 - Allow specifying grid in catalogue metadata (#520)
-- Teleconnections diagnostic improvements (#571, #574, #576, #581)
+- Teleconnections diagnostic improvements (#571, #574, #576, #581, #592, #623)
 
 ## [v0.4]
 

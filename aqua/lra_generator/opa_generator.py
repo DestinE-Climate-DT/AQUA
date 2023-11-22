@@ -55,7 +55,7 @@ class OPAgenerator():
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
-            configdir (string):      Configuration directory where the catalog 
+            configdir (string):      Configuration directory where the catalog
                                      are found
             loglevel (string, opt):  Logging level
             overwrite (bool, opt):   True to overwrite existing files in LRA,
@@ -149,7 +149,7 @@ class OPAgenerator():
 
         # Initialize the reader
         self.reader = Reader(model=self.model, exp=self.exp,
-                             source=self.source, zoom=self.zoom, 
+                             source=self.source, zoom=self.zoom,
                              configdir=self.configdir,
                              loglevel=self.loglevel)
 
@@ -164,7 +164,7 @@ class OPAgenerator():
         data = self.reader.retrieve(var=self.var)
         if not isinstance(data, xr.Dataset):
             data = next(data)
-        
+
         time_diff = np.diff(data.time.values).astype('timedelta64[m]')
         self.timedelta = time_diff[0].astype(int)
         self.logger.info('Timedelta is %s minutes', str(self.timedelta))
@@ -176,8 +176,8 @@ class OPAgenerator():
 
         self.opa_dict = {
                          "stat": "mean",
-                         #"percentile_list": None,
-                         #"thresh_exceed" : None,
+                         # "percentile_list": None,
+                         # "thresh_exceed" : None,
                          "stat_freq": self.frequency,
                          "output_freq": "monthly",
                          "time_step": self.timedelta,
@@ -204,33 +204,34 @@ class OPAgenerator():
             self.logger.warning('Initializing the OPA')
             opa_mean = self._configure_opa(variable)
 
-             # get info on the checkpoint file
+            # get info on the checkpoint file
             if self.checkpoint:
                 self.checkpoint_file = opa_mean.checkpoint_file
-                # HACK: solve the problem with one-pass @ git+https://earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@3b90576652a8510171225af2de8d86fde3b315ff
+                # HACK: solve the problem with one-pass @
+                # git+https://earth.bsc.es/gitlab/digital-twins/de_340/one_pass.git@3b90576652a8510171225af2de8d86fde3b315ff
                 opa_mean.checkpoint_file_zarr = opa_mean.checkpoint_file + ".zarr"
 
             # self.checkpoint_file = opa_mean.checkpoint_file
             # self.remove_checkpoint()
             print(vars(opa_mean))
 
-            if not gsv: 
+            if not gsv:
                 self.logger.warning('Initializing the streaming generator...')
                 self.reader.reset_stream()
-                data_gen = self.reader.retrieve(streaming_generator=True,
+                data_gen = self.reader.retrieve(stream_generator=True,
                                                 stream_step=self.stream_step,
                                                 stream_unit='days',
                                                 var=self.var)
-            else: 
+            else:
                 self.logger.warning('Initializing the FDB access...')
                 data_gen = self.reader.retrieve(startdate=start, enddate=end, var=self.var)
-            
+
             for data in data_gen:
                 self.logger.info(f"start_date: {data.time[0].values} stop_date: {data.time[-1].values}")
-                               
+
                 if self.definitive:
-                    mydata = data[variable]#.load()
-                    #print(mydata)
+                    mydata = data[variable]  # .load()
+                    # print(mydata)
                     opa_mean.compute(mydata)
                     if os.path.exists(self.checkpoint_file):
                         file_size = os.path.getsize(self.checkpoint_file)

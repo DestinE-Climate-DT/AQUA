@@ -3,6 +3,8 @@ plugins:
   - module: intake_xarray
 sources:
   short:
+    metadata:
+      source_grid_name: test-tco79
     args:
       chunks:
         time: 1
@@ -11,6 +13,8 @@ sources:
     description: original 2d output
     driver: netcdf
   long:
+    metadata:
+      source_grid_name: lon-lat
     args:
       chunks:
         time: 1
@@ -24,10 +28,13 @@ sources:
     args:
       obj: ./config/machines/ci/catalog/IFS/test-esm.json
     metadata:
+      source_grid_name: lon-lat
       query:
         experiment: historical
         frequency: hourly
   teleconnections:
+    metadata:
+      source_grid_name: lon-lat
     args:
       chunks:
         time: 1

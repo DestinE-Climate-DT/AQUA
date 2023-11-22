@@ -6,6 +6,8 @@ sources:
   daily:
     description: AVISO ssh vDT2021    
     driver: zarr
+    metadata:
+      source_grid_name: aviso
     args:
       consolidated: False
       compat: override

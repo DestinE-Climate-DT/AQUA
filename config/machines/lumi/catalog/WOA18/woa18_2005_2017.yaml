@@ -7,6 +7,8 @@ sources:
   annual:
     description: WOA18 2005-2017    
     driver: netcdf
+    metadata:
+      source_grid_name: woa
     args:
       chunks:
         time: 1
@@ -18,6 +20,8 @@ sources:
   seasonal:
     description: WOA18 2005-2017    
     driver: netcdf
+    metadata:
+      source_grid_name: woa
     args:
       chunks:
         time: 1

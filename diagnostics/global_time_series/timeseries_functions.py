@@ -46,7 +46,7 @@ def get_reference_data(varname, model='ERA5', exp='era5', source='monthly',
 
     try:
         return reader.fldmean(data[varname])
-    except KeyError:
+    except KeyError as e:
         raise NoObservationError(f"Could not retrieve {varname} from ERA5. No plot will be drawn.") from e
 
 
@@ -100,7 +100,7 @@ def plot_timeseries(
 
     try:
         data = reader.fldmean(data[variable])
-    except KeyError:
+    except KeyError as e:
         raise NoDataError(f"Could not retrieve {variable} from {model}-{exp}. No plot will be drawn.") from e
 
     if resample is not None:
@@ -162,7 +162,7 @@ def plot_gregory(model, exp, reader_kw={}, plot_kw={}, ax=None, freq='M',
         ts = reader.timmean(data=reader.fldmean(data["2t"]), freq=freq).values - 273.15
         toa = reader.timmean(data=reader.fldmean(data["mtnsrf"] + data["mtntrf"]),
                              freq=freq).values
-    except KeyError:
+    except KeyError as e:
         raise NoDataError(f"Could not retrieve data for {model}-{exp}. No plot will be drawn.") from e
 
     ax.axhline(0, color="k", lw=0.8)

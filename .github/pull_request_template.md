@@ -14,4 +14,4 @@ Make sure to complete the checkboxes before applying the "ready to merge" label.
  - [ ] Documentation is included if a new feature is included.
  - [ ] Docstrings are updated if needed.
  - [ ] Changelog is updated
- - [ ] environment.yml and pyproject.toml are updated if needed.
+ - [ ] environment.yml and pyproject.toml are updated if needed, together with the lumi installation tool. 

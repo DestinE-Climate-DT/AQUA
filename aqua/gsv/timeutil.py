@@ -3,7 +3,7 @@
 import pandas as pd
 from datetime import datetime
 
-    
+
 def date2str(dateobj):
     """
     Converts a date object to a date, time string representation
@@ -17,7 +17,7 @@ def date2str(dateobj):
 
     return dateobj.strftime('%Y%m%d'), dateobj.strftime('%H%M')
 
-    
+
 def add_offset(data_start_date, startdate, offset, timestep):
     """
     Sets initial date based on an offset in steps (special for DE 6h case)
@@ -33,7 +33,7 @@ def add_offset(data_start_date, startdate, offset, timestep):
     """
 
     if int(offset) != 0:
-        if timestep.upper() in ["H", "D"] :
+        if timestep.upper() in ["H", "D"]:
             base_date = pd.Timestamp(str(data_start_date)) + pd.Timedelta(int(offset), unit=timestep)
         else:
             raise ValueError("Timestep not supported")
@@ -74,7 +74,7 @@ def check_dates(startdate, start_date, enddate, end_date):
 
     if datetime.strptime(str(startdate), startdate_fmt) > datetime.strptime(str(enddate), enddate_fmt):
         raise ValueError(f"Start date {str(startdate)} is later than the end date at {str(enddate)}.")
-    
+
     if datetime.strptime(str(start_date), start_date_fmt) > datetime.strptime(str(end_date), end_date_fmt):
         raise ValueError(f"Data start date {str(start_date)} is later than the data end at {str(end_date)}.")
 
@@ -141,7 +141,7 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None, savefreq=No
 
     if shiftmonth and savefreq != "M":
         raise ValueError("shiftmonth option requested but data are not saved at monthly frequency!")
-    
+
     # compute offset
     offset = len(pd.date_range(str(data_startdate), str(startdate), freq=timestep)) - 1
 
@@ -150,13 +150,13 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None, savefreq=No
 
     if shiftmonth:  # We will need one month more
         edate = edate + pd.offsets.MonthBegin()
-    
+
     dates = pd.date_range(sdate, edate, freq=timestep)
     idx = range(len(dates))
     ts = pd.Series(idx, index=dates)
 
     if timestep != savefreq:
-        # the data are saved at a frequency different from the original timestep (eg. monthly) 
+        # the data are saved at a frequency different from the original timestep (eg. monthly)
         # do a preliminary resampling
         if shiftmonth:
             idx = ts.resample(savefreq).min().values
@@ -167,7 +167,7 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None, savefreq=No
             ts = pd.Series(idx, index=dates[idx])
 
     tsr = ts.resample(chunkfreq)
-    sidx = tsr.min().values  
+    sidx = tsr.min().values
     eidx = tsr.max().values
     chunksize = tsr.count().values
 

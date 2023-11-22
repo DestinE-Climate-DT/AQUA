@@ -62,6 +62,6 @@ def test_fixer_ifs_short():
 
     """Check alternative fix with replace method"""
 
-    reader = Reader(model="IFS", exp="test-tco79", source="short")
+    reader = Reader(model="IFS", exp="test-tco79", source="short", loglevel=loglevel)
     data = reader.retrieve()
     assert data['2t'].attrs['mickey'] == 'mouse'

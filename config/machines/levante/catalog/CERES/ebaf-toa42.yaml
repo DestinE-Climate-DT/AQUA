@@ -6,6 +6,8 @@ sources:
   monthly:
     description: CERES EBAF TOA Ed4.2 from 2000 to 2023
     driver: netcdf
+    metadata:
+      source_grid_name: lon-lat
     args:
       urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Edition4.2_MONTHLY_200003-202301.nc'
       chunks: {}

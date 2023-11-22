@@ -2,11 +2,11 @@
 
 import os
 import docker
-from jinja2 import Template, FileSystemLoader, Environment
+from jinja2 import FileSystemLoader, Environment
 from aqua.util import load_yaml
-from ruamel.yaml import YAML
 
-def rundiag(cmd = None, config = '.',
+
+def rundiag(cmd=None, config='.',
             machine_file=r'machine.yaml',
             diagnostic_file=r'diagnostic.yaml'):
     """
@@ -66,7 +66,7 @@ def rundiag(cmd = None, config = '.',
 
     client = docker.from_env()
     output = client.containers.run(image=machinecfg['image'],
-                        command=cmd_value, 
-                        volumes=volume_list, 
-                        environment=machinecfg['environment'])
+                                   command=cmd_value,
+                                   volumes=volume_list,
+                                   environment=machinecfg['environment'])
     return output

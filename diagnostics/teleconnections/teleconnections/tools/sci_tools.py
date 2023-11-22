@@ -8,80 +8,7 @@ This module contains scientific tools for the teleconnections diagnostic.
 import numpy as np
 import xarray as xr
 from aqua.logger import log_configure
-
-
-def area_selection(indat, lat=None, lon=None, box_brd=True,
-                   loglevel='WARNING'):
-    """
-        Extract a custom area from a DataArray.
-
-        Args:
-            indat (xarray.DataArray): input data to be selected
-            lat (list, opt):          latitude coordinates
-            lon (list, opt):          longitude coordinates
-            box_brd (bool,opt):       choose if coordinates are
-                                      comprised or not.
-                                      Default is True
-            loglevel (str, opt):      log level, default is WARNING
-
-        Returns:
-            (xarray.DataArray):  data on a custom surface
-
-        Raises:
-            ValueError: if lat and lon are both None
-            ValueError: if lat or lon are not in ascending order
-            AttributeError: if lat or lon are not found in input data
-    """
-    logger = log_configure(loglevel, 'area selection')
-    logger.debug("Selecting area: lat = %s, lon = %s", lat, lon)
-
-    # Extract coordinates from indat
-    if lat is None and lon is None:
-        raise ValueError('lat and lon cannot be both None')
-    if lat:
-        if lat[0] > lat[1]:
-            raise ValueError('lat must be specified in ascending order')
-        try:
-            lat_coord = indat.lat
-        except AttributeError as err:
-            raise AttributeError('lat not found in input data') from err
-    if lon:
-        if lon[0] > lon[1]:
-            raise ValueError('lon must be specified in ascending order')
-        try:
-            lon_coord = indat.lon
-        except AttributeError as err:
-            raise AttributeError('lon not found in input data') from err
-
-    # Select area
-    if box_brd:
-        logger.debug('Selecting area with box boundaries')
-        if lat:
-            iplat = lat_coord.where((lat_coord >= lat[0]) &
-                                    (lat_coord <= lat[1]), drop=True)
-        if lon:
-            iplon = lon_coord.where((lon_coord >= lon[0]) &
-                                    (lon_coord <= lon[1]), drop=True)
-    else:
-        logger.debug('Selecting area without box boundaries')
-        if lat:
-            iplat = lat_coord.where((lat_coord > lat[0]) &
-                                    (lat_coord < lat[1]), drop=True)
-        if lon:
-            iplon = lon_coord.where((lon_coord > lon[0]) &
-                                    (lon_coord < lon[1]), drop=True)
-
-    # Area selection
-    odat = indat
-    if lat:
-        logger.debug('Selecting latitudes')
-        odat = odat.sel(lat=iplat)
-    if lon:
-        logger.debug('Selecting longitudes')
-        odat = odat.sel(lon=iplon)
-
-    logger.debug('Area selected')
-    return odat
+from aqua.util import area_selection
 
 
 def lon_180_to_360(lon: float):
@@ -140,7 +67,7 @@ def wgt_area_mean(indat, latN: float, latS: float,
     lat = indat.lat
 
     # 2. -- Select area --
-    indat = area_selection(indat, lat=[latS, latN],
+    indat = area_selection(data=indat, lat=[latS, latN],
                            lon=[lonW, lonE], box_brd=box_brd,
                            loglevel=loglevel)
 

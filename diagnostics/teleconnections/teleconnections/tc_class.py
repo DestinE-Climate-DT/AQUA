@@ -109,17 +109,20 @@ class Teleconnection():
         self.telec_type = self.namelist[self.telecname]['telec_type']
 
         # At the moment it is used by all teleconnections
-        #if self.telecname == 'NAO' or self.telecname == 'ENSO' or self.telecname == 'ENSO_test' or self.telecname == 'ENSO_2t':
         self.months_window = months_window
 
         # Output variables
         self.outputfig = None
         self.outputdir = None
-        self.logger.info("Saving figure to %s/%s", outputdir, filename)
+
         self._load_figs_options(savefig, outputfig)
         self._load_data_options(savefile, outputdir)
         if self.savefile or self.savefig:
             self._filename(filename)
+            if self.savefile:
+                self.logger.info("Saving file to %s/%s", outputdir, filename)
+            if self.savefig:
+                self.logger.info("Saving figures to %s/%s", outputfig, filename)
 
         # Data empty at the beginning
         self.data = None
@@ -300,7 +303,7 @@ class Teleconnection():
         If var is None, the correlation is calculated between the teleconnection
         index and the teleconnection variable.
         If var is not None, the correlation is calculated between the teleconnection
-        index and the specified variable. 
+        index and the specified variable.
         The correlation is returned as xarray.DataArray.
 
         Args:
@@ -483,7 +486,7 @@ class Teleconnection():
 
         self.reader = Reader(model=self.model, exp=self.exp, source=self.source,
                              regrid=self.regrid, freq=self.freq,
-                             loglevel=self.loglevel, 
+                             loglevel=self.loglevel,
                              configdir=self.aquaconfigdir,
                              **kwargs)
         self.logger.info('Reader initialized')

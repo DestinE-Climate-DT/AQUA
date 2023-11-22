@@ -47,7 +47,7 @@ def ocean3d_diags(data, region=None,
                   lonE: float = None,
                   output_dir: str = None,
                   loglevel: str = 'WARNING'):
-    
+
     logger = log_configure(log_name='Ocean3D Diagnostic', log_level=loglevel)
 
     logger.debug("Evaluating Hovmoller plots")
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     dname = os.path.dirname(abspath)
     if os.getcwd() != dname:
         os.chdir(dname)
-        logger.warning(f'Moving from current directory to {dname} to run!')
+        logger.info(f'Moving from current directory to {dname} to run!')
 
     logger.info("Running ocean3d diagnostic...")
 
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     try:
         if custom_regions:
-            logger.debug("Analysing custom regions")
+            logger.info("Analysing custom regions")
             custom_regions = ocean3d_config["custom_region"] ### add fix if not present
             custom_region_dict = {}
             for custom_region in custom_regions:
@@ -201,23 +201,23 @@ if __name__ == '__main__':
                               output_dir=outputdir, loglevel=loglevel)
     except AttributeError:
         logger.error("NoDataError: so or ocpt not found in the Dataset.")
-        logger.error("Not producting ocean diagnostics for custom regions.")
+        logger.critical("Not producting ocean diagnostics for custom regions.")
     except Exception as e:
         logger.error(f"Error: {e}, not producting ocean diagnostics for custom regions.")
-        logger.error("This could a bug, please report it to the developers.")
+        logger.critical("This could a bug, please report it to the developers.")
 
     try:
         if predefined_regions:
             predefined_regions = ocean3d_config["predefined_regions"] ### add fix if not present
             for predefined_region in predefined_regions:
-                logger.debug("Analysing predefined regions")
+                logger.info("Analysing predefined regions")
                 logger.debug("predefined_region: %s", predefined_region)
                 ocean3d_diags(data,
                               region=predefined_region,
                               output_dir=outputdir, loglevel=loglevel)
     except AttributeError:
         logger.error("NoDataError: so or ocpt not found in the Dataset.")
-        logger.error("Not producting ocean diagnostics for predefined regions.")
+        logger.critical("Not producting ocean diagnostics for predefined regions.")
     except Exception as e:
         logger.error(f"Error: {e}, not producting ocean diagnostics for predefined regions.")
-        logger.error("This could a bug, please report it to the developers.")
+        logger.critical("This could a bug, please report it to the developers.")

@@ -43,7 +43,7 @@ def log_configure(log_level=None, log_name=None):
     # create console handler which logs
     terminal = logging.StreamHandler()
     # ch.setLevel(log_level)
-    terminal.setFormatter(CustomLogColors()) # use the custom formatter
+    terminal.setFormatter(CustomLogColors())  # use the custom formatter
     logger.addHandler(terminal)
 
     # this can be used in future to log to file
@@ -57,8 +57,19 @@ def log_configure(log_level=None, log_name=None):
 
 def _check_loglevel(log_level=None):
 
-    """Basic function to check the log level so that it can be used
-    in other logging functions"""
+    """
+    Basic function to check the log level so that it can be used
+    in other logging functions
+
+    Args:
+        log_level: a string or an integer according to the logging module
+
+    Returns:
+        the log level as a string
+
+    Raises:
+        ValueError: if the log level is not a string or an integer
+    """
 
     log_level_default = 'WARNING'
 
@@ -68,7 +79,7 @@ def _check_loglevel(log_level=None):
     # convert to a string if is an integer
     elif isinstance(log_level, int):
         log_level = logging.getLevelName(log_level)
-    # if nobody assigned, set it to none
+    # if nobody assigned, set it to default=WARNING
     elif log_level is None:
         log_level = log_level_default
     # error!
@@ -87,7 +98,16 @@ def _check_loglevel(log_level=None):
 
 
 def log_history_iter(data, msg):
-    """Elementary provenance logger in the history attribute also for iterators."""
+    """
+    Elementary provenance logger in the history attribute also for iterators.
+
+    Args:
+        data: a dataset or a iterator
+        msg: a string with the message to be logged
+
+    Returns:
+        The dataset or the iterator with the history attribute updated
+    """
     if isinstance(data, types.GeneratorType):
         data = _log_history_iter(data, msg)
         return data
@@ -97,14 +117,26 @@ def log_history_iter(data, msg):
 
 
 def _log_history_iter(data, msg):
-    """Iterator loop convenience function for log_history_iter"""
+    """
+    Iterator loop convenience function for log_history_iter
+
+    Args:
+        data: an iterator
+        msg: a string with the message to be logged
+    """
     for ds in data:
         log_history(ds, msg)
         yield ds
 
 
 def log_history(data, msg):
-    """Elementary provenance logger in the history attribute"""
+    """
+    Elementary provenance logger in the history attribute
+
+    Args:
+        data: a dataset or a dataarray
+        msg: a string with the message to be logged
+    """
 
     if isinstance(data, (xr.DataArray, xr.Dataset)):
         now = datetime.datetime.now()
@@ -114,28 +146,42 @@ def log_history(data, msg):
 
 
 class CustomLogColors(logging.Formatter):
-    """small class for setting up personalized colors for logging"""
+    """Class for setting up personalized colors for logging"""
 
-    GREY = "\x1b[38;20m"
+    # ANSI escape sequences for colors
+    # GREY = "\x1b[38;20m"  # Unnecessary
     LGREY = "\x1b[37m"
-    DGREY = "\x1b[90m"
-    GREEN = "\x1b[32m"
-    ORANGE = "\x1b[33m"
-    RED = "\x1b[31;20m"
+    # DGREY = "\x1b[90m"
+    # LBLUE = "\x1b[38;2;64;183;197m"
+    # GREEN = "\x1b[32m"  # Less vibrant green
+    # ORANGE = "\x1b[33m" # Less vibrant orange
+    # RED = "\x1b[31;20m"  # Less vibrant red
+    GREEN = "\x1b[38;2;64;184;50m"  # Vibrant green
+    ORANGE = "\x1b[38;2;255;165;0m"  # Vibrant orange
+    RED = "\x1b[38;2;255;0;0m"  # Vibrant red
     BOLD_RED = "\x1b[31;1m"
     RESET = "\x1b[0m"
 
     FORMATS = {
         logging.DEBUG: f"{LGREY}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
-        logging.INFO: f"{GREY}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
+        logging.INFO: f"{GREEN}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
         logging.WARNING: f"{ORANGE}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
         logging.ERROR: f"{RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
         logging.CRITICAL: f"{BOLD_RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}"
     }
 
     def format(self, record):
+        """
+        Format the message from the record object
+
+        Args:
+            record: the logging record object
+
+        Returns:
+            the formatted message
+        """
         log_fmt = self.FORMATS.get(record.levelno)
         datefmt = '%Y-%m-%d %H:%M:%S'
         formatter = logging.Formatter(fmt=log_fmt, datefmt=datefmt)
-        return formatter.format(record)
 
+        return formatter.format(record)

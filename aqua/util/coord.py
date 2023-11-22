@@ -85,9 +85,9 @@ def flip_lat_dir(dataset):
     # in that case, reverse it back
     new_dataset = dataset
     if latitude_coord is not None:
-        if dataset.coords[latitude_coord].attrs.get("flipped"): 
+        if dataset.coords[latitude_coord].attrs.get("flipped"):
             new_dataset = dataset.copy()
             new_dataset = new_dataset.isel({latitude_coord: slice(None, None, -1)})
             new_dataset.coords[latitude_coord].attrs.pop("flipped")  # remove the flipped attribute
-        
+
     return new_dataset

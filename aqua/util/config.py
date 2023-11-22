@@ -89,13 +89,9 @@ class ConfigPath():
                                                             configdir=self.configdir)
             if not os.path.exists(catalog_file):
                 raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}')
-            regrid_file = base['reader']['regrid'].format(machine=self.machine,
-                                                          configdir=self.configdir)
-            if not os.path.exists(regrid_file):
-                raise FileNotFoundError(f'Cannot find catalog file in {regrid_file}')
             fixer_folder = base['reader']['fixer'].format(machine=self.machine,
                                                           configdir=self.configdir)
             if not os.path.exists(fixer_folder):
                 raise FileNotFoundError(f'Cannot find catalog file in {fixer_folder}')
 
-        return catalog_file, regrid_file, fixer_folder, self.config_file
+        return catalog_file, fixer_folder, self.config_file

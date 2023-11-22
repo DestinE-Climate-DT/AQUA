@@ -6,6 +6,8 @@ sources:
   monthly:
     description: CERES EBAF SFC Ed4.1 from 2000 to 2022
     driver: netcdf
+    metadata:
+      source_grid_name: lon-lat
     args:
       urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA_OLD/CERES_EBAF-Surface_Ed4.1_Subset_200003-202203.nc'
       chunks: {}

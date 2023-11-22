@@ -1,22 +1,10 @@
 import sys
-try:
-    # All nesessarry import for a cli diagnostic
-    from aqua.util import load_yaml, get_arg
-    import os
-    import argparse
-    from aqua import Reader
-    from aqua.logger import log_configure
-    sys.path.insert(0, '../../')
-    from tropical_rainfall import Tropical_Rainfall
-except ImportError as import_error:
-    # Handle ImportError
-    print(f"ImportError occurred: {import_error}")
-    sys.exit(0)
-except Exception as custom_error:
-    print(f"CustomError occurred: {custom_error}")
-    sys.exit(0)
-else:
-    print("Modules imported successfully.")
+import os
+import argparse
+
+from aqua.util import load_yaml, get_arg
+from aqua import Reader
+from aqua.logger import log_configure
 
 
 def parse_arguments(args):
@@ -45,6 +33,25 @@ if __name__ == '__main__':
 
     print('Running tropical rainfall diagnostic...')
     args = parse_arguments(sys.argv[1:])
+
+    # change the current directory to the one of the CLI so that relative path works
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    if os.getcwd() != dname:
+        os.chdir(dname)
+        print(f'Moving from current directory to {dname} to run!')
+
+    try:
+        sys.path.insert(0, '../../')
+        from tropical_rainfall import Tropical_Rainfall
+    except ImportError as import_error:
+        print(f"ImportError occurred: {import_error}")
+        sys.exit(0)
+    except Exception as custom_error:
+        print(f"CustomError occurred: {custom_error}")
+        sys.exit(0)
+    else:
+        print("Modules imported successfully.")
 
     file = get_arg(args, 'config', 'config/trop_rainfall_config.yml')
     print('Reading configuration yaml file..')

@@ -8,126 +8,79 @@ from aqua import Reader
 approx_rel = 1e-4
 loglevel = "DEBUG"
 
-@pytest.fixture(scope="function")
-def reader_instance():
-    return Reader(model="IFS", exp="test-tco79", source="long",
-                  fix=False, loglevel=loglevel)
-
 # streaming class for tests
 @pytest.mark.aqua
 class TestAquaStreaming:
-    """The streamin testing class"""
-
-    @pytest.fixture(params=["hours", "days", "months"])
-    def stream_units(self, request):
-        return request.param
-
-    @pytest.fixture(params=["2020-01-20", "2020-03-05"])
-    def stream_date(self, request):
-        return request.param
+    """The streaming testing class"""
 
     @pytest.fixture(scope="function",
-                    params=[{"stream_step": 3},
-                            {"stream_step": 3, "stream_unit": "days"},
-                            {"stream_step": 3, "stream_unit": "days", "stream_startdate": "2020-01-20"},
-                            {"stream_step": 3}])
-    def stream_args(self, request, stream_date, stream_units):
-        req = request.param
-        req.update({"streaming": True})
-        req["stream_startdate"] = stream_date
-        req["stream_unit"] = stream_units
-        return req
-
-    def test_stream_retrieve(self, reader_instance, stream_units, stream_date,
-                             stream_args):
-        """
-        Test if the retrieve method returns streamed data with streaming=true
-        changing start date
-        """
-
-        reader = reader_instance
-        start_date = pd.to_datetime(stream_date)
-        if stream_units == "steps":
-            offset = pd.DateOffset(**{"hours": 3})
-        else:
-            offset = pd.DateOffset(**{stream_units: 3})
-        step = pd.DateOffset(hours=1)
-
-        dates = pd.date_range(start=start_date, end=start_date+offset,
-                              freq='1H')
-        num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
-
-        data = reader.retrieve(**stream_args)
-        # Test if it has the right size
-        assert data['2t'].shape == (num_hours, 9, 18)
-        # Test if starting date is ok
-        assert data.time.values[0] == start_date
-        # Test if end date is ok
-        assert data.time.values[-1] == start_date + offset - step
-
-        # Test if we can go to the next date
-        data = reader.retrieve(**stream_args)
-        assert data.time.values[0] == start_date + offset
-
-        # Test if reset_stream works
-        reader.reset_stream()
-        data = reader.retrieve(**stream_args)
-        assert data.time.values[0] == start_date
-
-        # test generator
-        reader.reset_stream()
-        stream_args_copy = stream_args.copy()
-        stream_args_copy.update({"streaming_generator": True})
-        data_gen = reader.retrieve(**stream_args_copy)
-        # Test if at beginning
-        assert next(data_gen).time.values[0] == start_date
-        # Test if at next date
-        assert next(data_gen).time.values[0] == start_date + offset
-
-    @pytest.fixture(scope="function",
-                    params=[{"stream_step": 3, "stream_unit": "days"},
-                            {"stream_step": 3, "stream_unit": "days", "stream_startdate": "2020-01-20"},
-                            {"stream_step": 3}])
-    def reader_instance_with_args(self, request, stream_date, stream_units):
+                    params=[{"aggregation": '3S', "startdate": "2020-01-20"},
+                            {"aggregation": 'daily', "startdate": "2020-05-01"},
+                            {"aggregation": '3D', "startdate": "2020-05-01", "enddate": "2020-05-02"}
+                            ])
+    def reader_instance_with_args(self, request):
         req = request.param
         req.update({"streaming": True, "model": "IFS", "exp": "test-tco79",
-                    "source": "long", "fix": False})
-        req["stream_unit"] = stream_units
-        req["stream_startdate"] = stream_date
+                    "source": "long", "fix": False, "regrid":False})
         return Reader(**req)
 
-    def test_stream_reader(self, reader_instance_with_args, stream_units,
-                           stream_date):
+    def test_stream(self, reader_instance_with_args):
         """
         Test if the retrieve method returns streamed data with streaming=true
-        changing start date
+        changing start date and end date
         """
 
         reader = reader_instance_with_args
-        start_date = pd.to_datetime(stream_date)
-        if stream_units == "steps":
+
+        if 'S' in reader.aggregation:
             offset = pd.DateOffset(**{"hours": 3})
-        else:
-            offset = pd.DateOffset(**{stream_units: 3})
+        if 'D' in reader.aggregation:
+            offset = pd.DateOffset(**{"days": 3})
+        if 'daily' in reader.aggregation:
+            offset = pd.DateOffset(**{"days": 1})
+
         step = pd.DateOffset(hours=1)
+        
+        start_date = pd.to_datetime(reader.startdate)
+        if reader.enddate:
+            end_date = pd.to_datetime(reader.enddate) + pd.Timedelta(days=1)
+        else:
+            end_date = start_date + offset
 
-        dates = pd.date_range(start=start_date, end=start_date+offset,
-                              freq='1H')
+        dates = pd.date_range(start=start_date, end=end_date, freq='1H')          
+            
         num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
-
+        
         data = reader.retrieve()
-        # Test if it has the right size
+
+         # Test if it has the right size
         assert data['2t'].shape == (num_hours, 9, 18)
+
         # Test if starting date is ok
-        assert data.time.values[0] == start_date
+        assert data.time.values[0] == pd.to_datetime(start_date)
+        
         # Test if end date is ok
-        assert data.time.values[-1] == start_date + offset - step
+        assert data.time.values[-1] == pd.to_datetime(end_date - step)
 
         # Test if we can go to the next date
         data = reader.retrieve()
-        assert data.time.values[0] == start_date + offset
+        if not reader.enddate:
+            assert data.time.values[0] == start_date + offset
 
         # Test if reset_stream works
         reader.reset_stream()
         data = reader.retrieve()
         assert data.time.values[0] == start_date
+
+
+    def test_generator(self):
+        """
+        Test generator option of streaming mode
+        """
+        reader = Reader(model='IFS', exp='test-tco79', source='long', fix = False, stream_generator = True, startdate = '2020-05-01', aggregation = 'monthly')
+        data_gen = reader.retrieve()
+        start_dates = ["2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01"]
+        i = 0
+        for data in data_gen:
+            assert data.time[0].values == pd.to_datetime(start_dates[i])
+            i+=1

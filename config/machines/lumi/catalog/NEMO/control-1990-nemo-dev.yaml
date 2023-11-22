@@ -22,8 +22,9 @@ sources:
     driver: gsv
     metadata: 
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['sst']
+      source_grid_name: lon-lat
   hourly-native-3d:
     args:
       request:
@@ -47,5 +48,6 @@ sources:
     driver: gsv
     metadata: 
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['avg_thetao']
+      source_grid_name: lon-lat

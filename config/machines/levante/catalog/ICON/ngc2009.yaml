@@ -11,6 +11,8 @@ sources:
     args:
       consolidated: true
       urlpath: /work/bb1153/m300827/ngc2009/R02B09/2d_ml.zarr
+    metadata:
+      source_grid_name: R02B09
 
   atm_2d_ml_R02B08:
     driver: zarr
@@ -18,6 +20,8 @@ sources:
     args:
       consolidated: True
       urlpath: /work/bb1153/m300827/ngc2009/R02B08/2d_ml.zarr
+    metadata:
+      source_grid_name: R02B08
   
   # atm_2d_ml_R02B06:
   #   driver: zarr
@@ -46,6 +50,7 @@ sources:
           simulation_id: ngc2009
           frequency: 30minute
           time_reduction: inst
+        source_grid_name: icon-R02B09-intaketest
 
   lra-r100-monthly:
     driver: netcdf
@@ -55,3 +60,5 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat

@@ -2,6 +2,7 @@ sources:
   PT30M:
     metadata:
       grid: HealPIX
+      source_grid_name: icon-healpix
     args:
       #chunks: null
       consolidated: true
@@ -29,6 +30,7 @@ sources:
   PT3H:
     metadata:
       grid: HealPIX
+      source_grid_name: icon-healpix
     args:
       #chunks: null
       consolidated: true
@@ -79,6 +81,7 @@ sources:
         type: int
     metadata:
       grid: HealPIX
+      source_grid_name: icon-healpix
     driver: zarr
   lra-r100-monthly:
     driver: netcdf
@@ -89,3 +92,5 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat

@@ -2,23 +2,24 @@
 from .index import station_based_index, regional_mean_index
 from .index import regional_mean_anomalies
 from .plots import index_plot, maps_plot
-from .plots import maps_diffs_plot, plot_single_map
+from .plots import maps_diffs_plot
 from .statistics import reg_evaluation, cor_evaluation
 from .tc_class import Teleconnection
 from .tools import TeleconnectionsConfig
-from .tools import area_selection, wgt_area_mean
+from .tools import wgt_area_mean
 
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 __all__ = ['station_based_index', 'regional_mean_index',
            'regional_mean_anomalies',
            'index_plot', 'maps_plot',
-           'maps_diffs_plot', 'plot_single_map',
+           'maps_diffs_plot',
            'reg_evaluation', 'cor_evaluation',
            'Teleconnection', 'TeleconnectionsConfig',
-           'area_selection', 'wgt_area_mean']
+           'wgt_area_mean']
 
 # Changelog
+# 0.2.3: Single map plot function is now in AQUA framework
 # 0.2.2: Added season selection to index_plot
 # 0.2.1: Performance improvements
 #        Refactory of single map plot function

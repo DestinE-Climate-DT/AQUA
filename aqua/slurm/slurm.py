@@ -2,7 +2,7 @@ import os
 import re
 
 from dask_jobqueue import SLURMCluster  # pip
-from dask.distributed import Client, progress
+from dask.distributed import Client
 from aqua.logger import log_configure
 from aqua.util import create_folder, ConfigPath
 
@@ -129,7 +129,7 @@ def max_resources_per_node(queue="compute"):
         raise Exception("The function can not extract information about the queue correctly. \n \
                         Please, select the amount of memory, cores, threads, and walltime manually.")
 
-    return max_memory, max_walltime, max_cpus, max_sockets,\
+    return max_memory, max_walltime, max_cpus, max_sockets, \
         max_cores, max_threads
 
 
@@ -230,6 +230,7 @@ def job(exclusive=False, max_resources=False, cores=1, memory="10 GB",
     )
 
     client = Client(cluster)
+    logger.degug(f"Client: {client}")
     logger.info("Submitting the job to the SLURM queue")
     logger.warning(cluster.job_script())
 

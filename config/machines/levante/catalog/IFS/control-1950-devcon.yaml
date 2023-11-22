@@ -7,3 +7,5 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat

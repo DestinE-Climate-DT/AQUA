@@ -20,4 +20,6 @@ sources:
       timestyle: step
     description: FDB data tco399 grid
     driver: gsv
-    metadata: {fdb_path: /data/users/jost/fdb/fdb-long-mini/config.yaml}
+    metadata: 
+      fdb_path: /data/users/jost/fdb/fdb-long-mini/config.yaml
+      source_grid_name: tco399

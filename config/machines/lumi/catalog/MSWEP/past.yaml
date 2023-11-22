@@ -6,6 +6,8 @@ sources:
   monthly:
     description: monthly MSWEP_V280 data
     driver: zarr
+    metadata:
+      source_grid_name: lon-lat
     args:
       consolidated: False
       urlpath: 
@@ -14,6 +16,8 @@ sources:
   daily:
     description: daily MSWEP_V280 data
     driver: zarr
+    metadata:
+      source_grid_name: lon-lat
     args:
       consolidated: False
       urlpath: 
@@ -63,6 +67,8 @@ sources:
   3hourly:
     description: 3 hourly MSWEP_V280 data
     driver: zarr
+    metadata:
+      source_grid_name: lon-lat
     args:
       consolidated: False
       urlpath: 

@@ -34,7 +34,7 @@ def station_based_index(field: xr.DataArray,
         (xarray.DataArray): standardized station based index
     """
     logger = log_configure(loglevel, 'station based index')
-    logger.info('Evaluating station based index for %s', telecname)
+    logger.debug('Evaluating station based index for %s', telecname)
 
     if field.lon.min() < 0:
         logger.debug('Data longitudes are -180-180, not converting')
@@ -105,7 +105,7 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
     """
     # 0. -- Logging --
     logger = log_configure(loglevel, 'regional mean index')
-    logger.info('Evaluating regional mean index for %s', telecname)
+    logger.debug('Evaluating regional mean index for %s', telecname)
 
     # 1. -- Acquire coordinates --
     if field.lon.min() < 0:
@@ -152,7 +152,7 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
         (xarray.DataArray): regional field mean anomalies
     """
     logger = log_configure(loglevel, 'regional mean anomalies')
-    logger.info('Evaluating regional mean anomalies for %s', telecname)
+    logger.debug('Evaluating regional mean anomalies for %s', telecname)
 
     # Acquire coordinates
     if field.lon.min() < 0:

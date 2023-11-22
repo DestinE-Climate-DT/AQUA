@@ -13,21 +13,34 @@ from aqua.logger import log_configure
 def frequency_string_to_pandas(freq):
 
     """
-    Convert a string from the AQUA convention to 
+    Convert a string from the AQUA convention to
     the usual pandas frequency standard
     """
 
-    # translate frequency in pandas-style time
-    if freq == 'monthly':
-        resample_freq = '1M'
-    elif freq == 'daily':
-        resample_freq = '1D'
-    elif freq == 'yearly':
-        resample_freq = '1Y'
-    else:
-        resample_freq = freq
+    trans = {
+        'hourly': '1H',
+        'daily': '1D',
+        'weekly': '1W',
+        'monthly': '1M',
+        'yearly': '1Y',
+        'hour': '1H',
+        'day': '1D',
+        'pentad': '5D',
+        'week': '1W',
+        'month': '1M',
+        'year': '1Y',
+        'hours': '1H',
+        'days': '1D',
+        'pentads': '5D',
+        'weeks': '1W',
+        'months': '1M',
+        'years': '1Y',
+    }
 
-    return resample_freq
+    new_freq = trans.get(freq, freq)
+
+    return new_freq
+
 
 def _xarray_timedelta_string(xdataset):
 
@@ -44,17 +57,18 @@ def _xarray_timedelta_string(xdataset):
     months = math.floor(days / 28)  # Minimum month has around 28 days
     years = math.floor(days / 365)  # Assuming an average year has around 365 days
 
-    #print([hours, days, months, years])
-    
+    # print([hours, days, months, years])
+
     if years >= 1:
         return f"{years}Y"
     elif months >= 1:
         return f"{months}M"
     elif days >= 1:
         return f"{days}D"
-    else :
+    else:
         return f"{hours}H"
-    
+
+
 def _find_end_date(start_date, offset):
 
     """Given a date and an offset in the form of pandas frequency
@@ -67,35 +81,37 @@ def _find_end_date(start_date, offset):
         end_date = end_date + pd.DateOffset(days=1)
     return end_date
 
+
 def _generate_expected_time_series(start_date, frequency, time_period):
 
-    """Given a start date, a pandas frequency and the data_frequency generate 
+    """Given a start date, a pandas frequency and the data_frequency generate
     an expected time series"""
- 
+
     end_date = _find_end_date(start_date, time_period)
     time_series = pd.date_range(start=start_date, end=end_date, freq=frequency, inclusive='left')
 
     return time_series
 
-def check_chunk_completeness(xdataset, resample_frequency = '1D', loglevel='WARNING'):
 
-    """Support function for timmean(). 
-    Verify that all the chunks available in a dataset are complete given a 
+def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNING'):
+
+    """Support function for timmean().
+    Verify that all the chunks available in a dataset are complete given a
     fixed resample_frequency.
-    
+
     Args:
         xdataset: An xarray dataset
         resample_frequency: the frequency on which we are planning to resample, based on pandas frequency
-        
+
     Raise:
         ValueError if the there no available chunks
-        
+
     Returns:
         A Xarray DataArray binary, 1 for complete chunks and 0 for incomplete ones, to be used by timmean()
         """
-    
+
     logger = log_configure(loglevel, 'timmean_chunk_completeness')
-    
+
     # get frequency of the dataset. Expected to be regular!
     data_frequency = _xarray_timedelta_string(xdataset)
 
@@ -133,29 +149,29 @@ def check_chunk_completeness(xdataset, resample_frequency = '1D', loglevel='WARN
             check_completeness.append(True)
         else:
             logger.warning('Chunk %s->%s for has %s elements instead of expected %s, timmean() will exclude this',
-                                expected_timeseries[0], expected_timeseries[-1], effective_len, expected_len)
+                           expected_timeseries[0], expected_timeseries[-1], effective_len, expected_len)
             check_completeness.append(False)
 
-        #except KeyError as exc:
+        # except KeyError as exc:
         #    effective_len = len(xdataset.time.sel(time=slice(chunk, end_date)))
         #    logger.warning('Chunk %s->%s for has %s elements instead of expected %s, timmean() will exclude this',
         #                        chunk, end_date, effective_len, expected_len)
         #    check_completeness.append(False)
-        #try: 
+        # try:
         #    effective_len = len(xdataset.time.sel(time=expected_timeseries))
         #    check_completeness.append(True)
-        #except KeyError as exc:
+        # except KeyError as exc:
         #    effective_len = len(xdataset.time.sel(time=slice(chunk, end_date)))
         #    logger.warning('Chunk %s->%s for has %s elements instead of expected %s, timmean() will exclude this',
         #                        chunk, end_date, effective_len, expected_len)
         #    check_completeness.append(False)
-    
+
     # build the binary mask
     taxis = xdataset.time.resample(time=pandas_frequency).mean()
     if sum(check_completeness) == 0:
         logger.warning('Not enough data to compute any average on %s period, returning empty array', resample_frequency)
-    
-    #print(taxis)
+
+    # print(taxis)
     boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': taxis.time})
 
     return boolean_mask

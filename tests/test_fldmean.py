@@ -32,7 +32,8 @@ class TestFldmean():
 
     def test_fldmean_fesom_selection(self):
         """Fldmean test for FESOM"""
-        reader = Reader(model="FESOM", exp="test-pi", source='original_2d', regrid='r100')
+        reader = Reader(model="FESOM", exp="test-pi", source='original_2d',
+                        regrid='r100', loglevel=loglevel)
         data = reader.retrieve()
         data = reader.regrid(data)
         avg = reader.fldmean(data['sst'], lon_limits=[50,90], lat_limits=[10, 40]).values
@@ -42,25 +43,35 @@ class TestFldmean():
 
     def test_fldmean_healpix(self):
         """Fldmean test for FESOM"""
-        reader = Reader(model="ICON", exp="test-healpix", source='short')
+        reader = Reader(model="ICON", exp="test-healpix", source='short', loglevel=loglevel)
         data = reader.retrieve()
         avg = reader.fldmean(data['2t']).values
         assert avg.shape == (2,)
         assert avg[1] == pytest.approx(286.1479)
 
     def test_fldmean_healpix_selection(self):
-        """Fldmean test for FESOM"""
-        reader = Reader(model="ICON", exp="test-healpix", source='short', regrid='r200')
+        """Fldmean test for FESOM with area selection"""
+        reader = Reader(model="ICON", exp="test-healpix", source='short',
+                        regrid='r200', loglevel=loglevel)
         data = reader.retrieve()
         data = reader.regrid(data)
         avg = reader.fldmean(data['2t'],  lon_limits=[-30,50], lat_limits=[-30, -90]).values
         assert avg.shape == (2,)
         assert avg[0] == pytest.approx(285.131484)
-
+    
+    def test_fldmean_healpix_selection_lat_only(self):
+        """Fldmean test for FESOM with area selection, only lat"""
+        reader = Reader(model="ICON", exp="test-healpix", source='short',
+                        regrid='r200', loglevel=loglevel)
+        data = reader.retrieve()
+        data = reader.regrid(data)
+        avg = reader.fldmean(data['2t'], lat_limits=[-30, 30]).values
+        assert avg.shape == (2,)
+        assert avg[0] == pytest.approx(292.6823)
 
     def test_fldmean_icon(self):
         """Fldmean test for FESOM"""
-        reader = Reader(model="ICON", exp="test-r2b0", source='short')
+        reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=loglevel)
         data = reader.retrieve()
         avg = reader.fldmean(data['t']).values
         assert avg.shape == (2,90)

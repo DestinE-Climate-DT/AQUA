@@ -3,7 +3,6 @@
 import operator
 import os
 import re
-import sys
 from string import Template
 import xarray as xr
 from collections import defaultdict
@@ -32,7 +31,7 @@ def load_multi_yaml(folder_path=None, filenames=None,
     Returns:
         A dictionary containing the merged contents of all the yaml files.
     """
-    yaml = YAML()  # default, if not specified, is 'rt' (round-trip)
+    yaml = YAML()  # default, if not specified, is 'rt' (round-trip) # noqa F841
 
     if isinstance(definitions, str):  # if definitions is a string we need to read twice
         yaml_dict = _load_merge(folder_path=folder_path, definitions=None,
@@ -202,7 +201,7 @@ def _load_merge(folder_path=None, filenames=None,
     if filenames and folder_path is not None or filenames is None and folder_path is None:
         raise ValueError('ERROR: either folder_path or filenames must be provided')
 
-    if filenames:  #  Merging a list of files
+    if filenames:  # Merging a list of files
         logger.debug(f'Files to be merged: {filenames}')
         for filename in filenames:
             yaml_dict = load_yaml(filename, definitions)

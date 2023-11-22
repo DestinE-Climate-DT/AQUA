@@ -141,13 +141,12 @@ if [ -f "$load_aqua_file" ]; then
   fi
 fi
 
-#if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C'  "~/load_aqua.sh" ; then
-if [ ! -f $load_aqua_file ] ; then
-  echo 'module use /project/project_465000454/devaraju/modules/LUMI/22.08/C' >> $load_aqua_file
+if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/C'  "~/load_aqua.sh" ; then
+#if [ ! -f $load_aqua_file ] ; then
+  echo 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/C' >> $load_aqua_file
   echo 'module purge' >> $load_aqua_file
-  echo 'module load pyfdb/0.0.2-cpeCray-22.08' >> $load_aqua_file
-  echo 'module load ecCodes/2.30.0-cpeCray-22.08' >> $load_aqua_file
-  echo 'module load python-climatedt/3.11.3-cpeCray-22.08.lua' >> $load_aqua_file
+  echo 'module load pyfdb/0.0.2-cpeCray-23.03' >> $load_aqua_file
+  echo 'module load ecCodes/2.32.0-cpeCray-23.03' >> $load_aqua_file
     
   # Config FDB: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
   echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >>  $load_aqua_file

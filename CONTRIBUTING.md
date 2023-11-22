@@ -69,3 +69,12 @@ When describing the bug, please include as much information as possible. This in
 
 Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository. Please use the `improvements` label for existing features and the `enhancement` label for new features.
 
+### Coding style
+
+Please follow the [PEP8](https://www.python.org/dev/peps/pep-0008/) coding style.
+We use Flake8 to check the coding style, with a length limit of 127 characters per line.
+We run the Flake8 check with the following command:
+
+```bash
+flake8 . --count --select=E9,F63,F7,F82
+```

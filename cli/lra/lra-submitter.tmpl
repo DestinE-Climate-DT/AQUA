@@ -15,7 +15,7 @@ whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
 source $whereconda/etc/profile.d/conda.sh
 
 # activate conda environment
-conda activate aqua
+conda activate aqua_common
 
 # set the number of dask workers
 # should be equal to the number of the total tasks available
@@ -27,4 +27,4 @@ workers=8
 # -d to perform a dry run (to check generated lra)
 # -o to overwrite existing lra
 # -l to set the log level (default is WARNING)
-./cli_lra_generator.py --config config_lra.yml -w ${workers} -d -v
+./cli_lra_generator.py --config config_lra.yml -w ${workers} -d -l INFO

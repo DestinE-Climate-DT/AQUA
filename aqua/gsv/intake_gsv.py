@@ -43,27 +43,32 @@ class GSVSource(base.DataSource):
                  startdate=None, enddate=None, var=None, metadata=None, verbose=False,
                  logging=False, **kwargs):
         """
-        Initializes the GSVSource class. These are typically specified in the catalogue entry, but can also be specified upon accessing the catalogue.
+        Initializes the GSVSource class. These are typically specified in the catalogue entry,
+        but can also be specified upon accessing the catalogue.
 
         Args:
             request (dict): Request dictionary
             data_start_date (str): Start date of the available data.
             data_end_date (str): End date of the available data.
             timestyle (str, optional): Time style. Defaults to "date".
-            aggregation (str, optional): Time aggregation level. Can be one of S (step), 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y. Defaults to "S". 
-            timestep (str, optional): Time step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y. Defaults to "H". 
+            aggregation (str, optional): Time aggregation level.
+                                         Can be one of S (step), 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y.
+                                         Defaults to "S".
+            timestep (str, optional): Time step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y.
+                                      Defaults to "H".
             startdate (str, optional): Start date for request. Defaults to None.
             enddate (str, optional): End date for request. Defaults to None.
             var (str, optional): Variable ID. Defaults to those in the catalogue.
             metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
-            verbose (bool, optional): Whether to print additional info to screen. Used only for FDB access. Defaults to False.
+            verbose (bool, optional): Whether to print additional info to screen.
+                                      Used only for FDB access. Defaults to False.
             logging (bool, optional): Whether to print to screen. Used only for FDB access. Defaults to False.
             kwargs: other keyword arguments.
         """
 
         if not gsv_available:
             raise ImportError(gsv_error_cause)
-        
+
         if metadata:
             self.fdbpath = metadata.get('fdb_path', None)
             self.eccodes_path = metadata.get('eccodes_path', None)
@@ -78,8 +83,9 @@ class GSVSource(base.DataSource):
 
         offset = int(request["step"])  # optional initial offset for steps (in timesteps)
 
-        startdate = add_offset(data_start_date, startdate, offset, timestep)  # special for 6h: set offset startdate if needed
-        
+        # special for 6h: set offset startdate if needed
+        startdate = add_offset(data_start_date, startdate, offset, timestep)
+
         self.timestyle = timestyle
 
         if aggregation.upper() == "S":  # special case: 'aggegation at single saved level
@@ -107,7 +113,7 @@ class GSVSource(base.DataSource):
         self.data_end_date = data_end_date
         self.startdate = startdate
         self.enddate = enddate
-        
+
         (self.timeaxis, self.chk_start_idx,
          self.chk_start_date, self.chk_end_idx,
          self.chk_end_date, self.chk_size) = make_timeaxis(self.data_start_date, self.startdate, self.enddate,
@@ -127,7 +133,7 @@ class GSVSource(base.DataSource):
         if self.dask_access:  # We need a better schema for dask access
             if not self._ds:  # we still have to retrieve a sample dataset
                 self._ds = self._get_partition(0, var=self._var[0], first=True)
-            
+
             var = list(self._ds.data_vars)[0]
             da = self._ds[var]  # get first variable dataarray
 
@@ -142,7 +148,7 @@ class GSVSource(base.DataSource):
                 name=var,
                 npartitions=self._npartitions,
                 extra_metadata=metadata)
-        else:            
+        else:
             schema = base.Schema(
                 datashape=None,
                 dtype=str(xr.Dataset),
@@ -195,7 +201,8 @@ class GSVSource(base.DataSource):
             os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
 
         if self.eccodes_path:  # if needed switch eccodes path
-            if self.eccodes_path and (self.eccodes_path != eccodes.codes_definition_path()):  # unless we have already switched
+            # unless we have already switched
+            if self.eccodes_path and (self.eccodes_path != eccodes.codes_definition_path()):
                 eccodes.codes_context_delete()  # flush old definitions in cache
                 eccodes.codes_set_definitions_path(self.eccodes_path)
 
@@ -207,7 +214,7 @@ class GSVSource(base.DataSource):
         else:
             with NoPrinting():
                 dataset = gsv.request_data(request)
-    
+
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)
 
@@ -217,13 +224,11 @@ class GSVSource(base.DataSource):
 
         return dataset
 
-
     def read(self):
         """Return a in-memory dask dataset"""
         ds = [self._get_partition(i) for i in range(self._npartitions)]
         ds = xr.concat(ds, dim='time')
         return ds
-
 
     def get_part_delayed(self, i, var, shape, dtype):
         """
@@ -234,7 +239,6 @@ class GSVSource(base.DataSource):
         newshape = list(shape)
         newshape[self.itime] = self.chk_size[i]
         return dask.array.from_delayed(ds, newshape, dtype)
-
 
     def to_dask(self):
         """Return a dask xarray dataset for this data source"""
@@ -259,10 +263,10 @@ class GSVSource(base.DataSource):
             darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
 
             da = xr.DataArray(darr,
-                    name = da0.name,
-                    attrs = da0.attrs,
-                    dims = da0.dims,
-                    coords = coords)
+                              name=da0.name,
+                              attrs=da0.attrs,
+                              dims=da0.dims,
+                              coords=coords)
 
             ds[var] = da
 
@@ -279,14 +283,14 @@ class NoPrinting:
     def __enter__(self):
         sys._gsv_work_counter += 1
         if sys._gsv_work_counter == 1 and not isinstance(sys.stdout, io.StringIO):  # We are really the first
-             sys._org_stdout = sys.stdout  # Record the original in sys
-             self._trap = io.StringIO()
-             sys.stdout = self._trap
+            sys._org_stdout = sys.stdout  # Record the original in sys
+            self._trap = io.StringIO()
+            sys.stdout = self._trap
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys._gsv_work_counter -= 1
         if sys._gsv_work_counter == 0:  # We are really the last one
-             sys.stdout = sys._org_stdout  # Restore the original
+            sys.stdout = sys._org_stdout  # Restore the original
 
 
 # This function is repeated here in order not to create a cross dependency between GSVSource and AQUA

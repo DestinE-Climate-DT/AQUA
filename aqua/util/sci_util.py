@@ -1,8 +1,13 @@
 """Module for scientific utility functions."""
+import xarray as xr
 from aqua.logger import log_configure
 
+# set default options for xarray
+xr.set_options(keep_attrs=True)
 
-def area_selection(data=None, lat=None, lon=None, box_brd=True,
+
+def area_selection(data=None, lat=None, lon=None,
+                   box_brd=True, drop=False,
                    **kwargs):
     """
         Extract a custom area from a DataArray.
@@ -15,6 +20,8 @@ def area_selection(data=None, lat=None, lon=None, box_brd=True,
             lon (list, opt):          longitude coordinates
             box_brd (bool,opt):       choose if coordinates are comprised or not.
                                       Default is True
+            drop (bool, opt):         drop coordinates not in the selected area.
+                                      Default is False
 
         Keyword Args:
             - loglevel (str, opt): logging level (default: 'warning')
@@ -36,8 +43,6 @@ def area_selection(data=None, lat=None, lon=None, box_brd=True,
 
     if lat is None and lon is None:
         raise ValueError('lat and lon cannot be both None')
-
-    # TODO: check behaviour if lat or lon are None
 
     lon, lat = check_coordinates(lon=lon, lat=lat, **kwargs)
 
@@ -66,6 +71,10 @@ def area_selection(data=None, lat=None, lon=None, box_brd=True,
             lon_condition = (data.lon > lon[0]) & (data.lon < lon[1])
 
     data = data.where(lat_condition & lon_condition)
+
+    if drop:
+        data = data.dropna(dim='lon', how='all')
+        data = data.dropna(dim='lat', how='all')
 
     return data
 
@@ -121,26 +130,36 @@ def check_coordinates(lon=None, lat=None,
 
         logger.debug('lon_min=%s, lon_max=%s', lon_min, lon_max)
 
-        if default["lon_min"] == 0 and default["lon_max"] == 360:
-            logger.debug('Convert to [0,360] range')
-            lon_min = _lon_180_to_360(lon_min)
-            lon_max = _lon_180_to_360(lon_max)
-            logger.debug('lon_min=%s, lon_max=%s', lon_min, lon_max)
-        elif default["lon_min"] == -180 and default["lon_max"] == 180:
-            logger.debug('Convert to [-180,180] range')
-            lon_min = _lon_360_to_180(lon_min)
-            lon_max = _lon_360_to_180(lon_max)
+        if lon_min == 0 and lon_max == 360:
+            logger.debug('Convert manually since conversion will give the same values twice')
+            lon_min = default["lon_min"]
+            lon_max = default["lon_max"]
         else:
-            raise ValueError('Invalid default coordinates system')
+            if default["lon_min"] == 0 and default["lon_max"] == 360:
+                logger.debug('Convert to [0,360] range')
+                lon_min = _lon_180_to_360(lon_min)
+                lon_max = _lon_180_to_360(lon_max)
+                logger.debug('lon_min=%s, lon_max=%s', lon_min, lon_max)
+            elif default["lon_min"] == -180 and default["lon_max"] == 180:
+                logger.debug('Convert to [-180,180] range')
+                lon_min = _lon_360_to_180(lon_min)
+                lon_max = _lon_360_to_180(lon_max)
+            else:
+                raise ValueError('Invalid default coordinates system')
 
-        if lon_min < default["lon_min"]:
-            raise ValueError(f'lon_min cannot be lower than {default["lon_min"]}')
-        if lon_max > default["lon_max"]:
-            raise ValueError(f'lon_max cannot be higher than {default["lon_max"]}')
+            if lon_min < default["lon_min"]:
+                raise ValueError(f'lon_min cannot be lower than {default["lon_min"]}')
+            if lon_max > default["lon_max"]:
+                raise ValueError(f'lon_max cannot be higher than {default["lon_max"]}')
 
         lon = [lon_min, lon_max]
+    
+    if lat is None:
+        lat = [default["lat_min"], default["lat_max"]]
+    if lon is None:
+        lon = [default["lon_min"], default["lon_max"]]
 
-    logger.debug('Output coordinates: lat=%s, lon=%s', lon, lat)
+    logger.debug('Output coordinates: lat=%s, lon=%s', lat, lon)
 
     return lon, lat
 

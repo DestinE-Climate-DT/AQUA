@@ -20,4 +20,6 @@ sources:
       timestyle: date
     description: test FDB archive
     driver: gsv
-    metadata: {fdb_path: /app/config.yaml}
+    metadata: 
+      fdb_path: /app/config.yaml
+      source_grid_name: lon-lat

@@ -14,4 +14,6 @@ sources:
             timestyle: date
         description: 'Test FDB data'
         driver: gsv
-        metadata: {fdb_path: /data/users/jost/fdb/fdb-test/config.yaml}
+        metadata: 
+          fdb_path: /data/users/jost/fdb/fdb-test/config.yaml
+          source_grid_name: lon-lat

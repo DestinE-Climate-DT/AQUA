@@ -16,9 +16,9 @@ except ImportError as import_error:
     # Handle ImportError
     print(f"ImportError occurred: {import_error}")
     sys.exit(0)
-except OtherCustomError as custom_error:
+except Exception as e:
     # Handle other custom exceptions if needed
-    print(f"CustomError occurred: {custom_error}")
+    print(f"CustomError occurred: {e}")
     sys.exit(0)
 else:
     # Code to run if the import was successful (optional)

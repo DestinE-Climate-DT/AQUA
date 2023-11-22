@@ -6,15 +6,20 @@ import xarray as xr
 
 from aqua.logger import log_configure
 from aqua.util import create_folder
-from .plot_utils import add_cyclic_lon, evaluate_colorbar_limits
-from .plot_utils import cbar_get_label, set_map_title
+from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
+from aqua.util import cbar_get_label, set_map_title
+from aqua.util import check_coordinates
 
 
 def plot_single_map(data: xr.DataArray,
                     save=False,
-                    contour=True, sym=True,
+                    contour=True, sym=False,
                     figsize=(11, 8.5),
                     nlevels=11, outputdir=".",
+                    vmin=None, vmax=None,
+                    cmap='RdBu_r',
+                    gridlines=False,
+                    display=True,
                     loglevel='WARNING',
                     **kwargs):
     """
@@ -30,6 +35,13 @@ def plot_single_map(data: xr.DataArray,
         nlevels (int, optional):   Number of levels for the contour map.
                                    Defaults to 11.
         outputdir (str, optional): Output directory. Defaults to ".".
+        vmin (float, optional):    Minimum value for the colorbar.
+                                   Defaults to None.
+        vmax (float, optional):    Maximum value for the colorbar.
+                                   Defaults to None.
+        cmap (str, optional):      Colormap. Defaults to 'RdBu_r'.
+        gridlines (bool, optional): If True, plot gridlines. Defaults to False.
+        display (bool, optional):  If True, display the figure. Defaults to True.
         loglevel (str, optional):  Log level. Defaults to 'WARNING'.
 
     Keyword Args:
@@ -41,6 +53,8 @@ def plot_single_map(data: xr.DataArray,
         exp (str, optional):        Experiment name. Defaults to None.
         filename (str, optional):   Filename. Defaults to 'map'.
         format (str, optional):     Format of the figure. Defaults to 'pdf'.
+        nxticks (int, optional):    Number of x ticks. Defaults to 7.
+        nyticks (int, optional):    Number of y ticks. Defaults to 7.
 
     Raises:
         ValueError: If data is not a DataArray.
@@ -48,10 +62,10 @@ def plot_single_map(data: xr.DataArray,
     logger = log_configure(loglevel, 'plot_single_map')
 
     # We load in memory the data, to avoid problems with dask
-    logger.debug("Loading data in memory")
+    logger.info("Loading data in memory")
     data = data.load(keep_attrs=True)
 
-    logger.debug("Adding cyclic longitude")
+    logger.info("Adding cyclic longitude")
     data = add_cyclic_lon(data)
 
     proj = ccrs.PlateCarree()
@@ -60,9 +74,14 @@ def plot_single_map(data: xr.DataArray,
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111, projection=proj)
 
-    vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
-    logger.debug("Setting vmin to %s", vmin)
-    logger.debug("Setting vmax to %s", vmax)
+    # Evaluate vmin and vmax if not given
+    if vmin is None or vmax is None:
+        vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
+    else:
+        if sym:
+            logger.warning("sym=True, vmin and vmax given will be ignored")
+            vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
+    logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
         levels = np.linspace(vmin, vmax, nlevels+1)
 
@@ -72,24 +91,64 @@ def plot_single_map(data: xr.DataArray,
         lon, lat = np.meshgrid(data['lon'], data['lat'])
 
         transform_first = kwargs.get('transform_first', False)
-        cs = ax.contourf(lon, lat, data, cmap='RdBu_r',
+        cs = ax.contourf(lon, lat, data, cmap=cmap,
                          transform=proj, levels=levels,
                          extend='both',
                          transform_first=transform_first)
     else:
-        cs = ax.pcolormesh(data['lon'], data['lat'], data, cmap='RdBu_r',
+        cs = ax.pcolormesh(data['lon'], data['lat'], data, cmap=cmap,
                            transform=proj, vmin=vmin, vmax=vmax)
 
     logger.debug("Adding coastlines")
     ax.coastlines()
 
+    if gridlines:
+        logger.debug("Adding gridlines")
+        ax.gridlines()
+
     # Longitude labels
-    ax.set_xticks(np.arange(-180, 181, 60), crs=ccrs.PlateCarree())
+    # Evaluate the longitude ticks
+    nxticks = kwargs.get('nxticks', 7)
+    try:
+        lon_min = data['lon'].values.min()
+        lon_max = data['lon'].values.max()
+        logger.debug("Setting longitude ticks from %s to %s", lon_min, lon_max)
+        (lon_min, lon_max), _ = check_coordinates(lon=(lon_min, lon_max),
+                                                  default={"lon_min": -180,
+                                                           "lon_max": 180,
+                                                           "lat_min": -90,
+                                                           "lat_max": 90},)
+    except KeyError:
+        logger.critical("No longitude coordinate found, setting default values")
+        lon_min = -180
+        lon_max = 180
+    step = (lon_max - lon_min)/(nxticks-1)
+    logger.debug("Setting longitude ticks from %s to %s", lon_min, lon_max)
+    xticks = np.arange(lon_min, lon_max+1, step)
+    logger.debug("Setting longitude ticks to %s", xticks)
+    ax.set_xticks(xticks, crs=proj)
     lon_formatter = cticker.LongitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
 
     # Latitude labels
-    ax.set_yticks(np.arange(-90, 91, 30), crs=ccrs.PlateCarree())
+    # Evaluate the latitude ticks
+    nyticks = kwargs.get('nyticks', 7)
+    try:
+        lat_min = data['lat'].values.min()
+        lat_max = data['lat'].values.max()
+        _, (lat_min, lat_max) = check_coordinates(lat=(lat_min, lat_max),
+                                                  default={"lon_min": -180,
+                                                           "lon_max": 180,
+                                                           "lat_min": -90,
+                                                           "lat_max": 90},)
+    except KeyError:
+        logger.critical("No latitude coordinate found, setting default values")
+        lat_min = -90
+        lat_max = 90
+    step = (lat_max - lat_min)/(nyticks-1)
+    logger.debug("Setting latitude ticks from %s to %s", lat_min, lat_max)
+    yticks = np.arange(lat_min, lat_max+1, step)
+    ax.set_yticks(yticks, crs=proj)
     lat_formatter = cticker.LatitudeFormatter()
     ax.yaxis.set_major_formatter(lat_formatter)
 
@@ -142,7 +201,11 @@ def plot_single_map(data: xr.DataArray,
         else:
             dpi = kwargs.get('dpi', 100)
             if dpi == 100:
-                logger.warning("Setting dpi to 100 by default, use dpi kwarg to change it")
+                logger.info("Setting dpi to 100 by default, use dpi kwarg to change it")
 
         fig.savefig('{}/{}'.format(outputdir, filename),
                     dpi=dpi, bbox_inches='tight')
+    
+    if display is False:
+        logger.debug("Display is set to False, closing figure")
+        plt.close(fig)

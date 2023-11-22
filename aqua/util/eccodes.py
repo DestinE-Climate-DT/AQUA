@@ -4,6 +4,7 @@ import eccodes
 from ruamel.yaml import YAML
 from aqua.logger import log_configure
 
+
 # Currently not used
 def read_eccodes_dic(filename):
     """
@@ -84,13 +85,13 @@ def _init_get_eccodes_attr():
         try:
             if sn.startswith("var"):
                 i = paramid.index(sn[3:])
-                #indices = [i for i, x in enumerate(paramid) if x == sn[3:]]
+                # indices = [i for i, x in enumerate(paramid) if x == sn[3:]]
             else:
-                #i = shortname.index(sn)
+                # i = shortname.index(sn)
                 indices = [i for i, x in enumerate(shortname) if x == sn]
-                if len(indices)>1:
+                if len(indices) > 1:
                     logger.warning('ShortName %s have multiple grib codes associated: %s', sn, [paramid[i] for i in indices])
-                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right',
+                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right', # noqa E501
                                    sn, paramid[indices[0]])
                 i = indices[0]
 
@@ -100,7 +101,7 @@ def _init_get_eccodes_attr():
                    "cfVarName": cfvarname[i],
                    "shortName": shortname[i]}
             return dic
-        
+
         except (ValueError, IndexError) as error:
             logger.debug('ERROR: %s', error)
             logger.warning('Cannot find any grib codes for ShortName %s, returning empty dictionary', sn)

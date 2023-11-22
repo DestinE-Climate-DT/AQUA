@@ -84,7 +84,7 @@ class LRAgenerator():
                 raise KeyError('Please specify tmpdir for dask.distributed.')
 
             self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
-                                        generate_random_string(10))
+                                       generate_random_string(10))
 
         # # Data settings
         # self._assign_key('model', model)
@@ -180,7 +180,6 @@ class LRAgenerator():
                              configdir=self.configdir, loglevel=self.loglevel,
                              fix=self.fix, aggregation=self.aggregation)
 
-
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
         if self.frequency:
@@ -191,7 +190,7 @@ class LRAgenerator():
                              self.resolution)
 
         self.logger.warning('Retrieving data...')
-        self.data = self.reader.retrieve(var = self.var)
+        self.data = self.reader.retrieve(var=self.var)
         self.logger.debug(self.data)
 
     def generate_lra(self):
@@ -212,7 +211,7 @@ class LRAgenerator():
         # Cleaning
         self.data.close()
         self._close_dask()
-        #self._remove_tmpdir()
+        # self._remove_tmpdir()
 
         self.logger.warning('Finished generating LRA data.')
 
@@ -223,6 +222,7 @@ class LRAgenerator():
         """
 
         entry_name = f'lra-{self.resolution}-{self.frequency}'
+        urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_????.nc')
         self.logger.warning('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
 
         # define the block to be uploaded into the catalog
@@ -230,7 +230,7 @@ class LRAgenerator():
             'driver': 'netcdf',
             'description': f'LRA data {self.frequency} at {self.resolution}',
             'args': {
-                'urlpath': os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_????.nc'),
+                'urlpath': urlpath,
                 'chunks': {},
                 'xarray_kwargs': {
                     'decode_times': True
@@ -244,9 +244,12 @@ class LRAgenerator():
 
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
+        if entry_name in cat_file['sources']:
+            self.logger.info('Catalog entry for %s %s %s exists, updating the urlpath only...', 
+                             self.model, self.exp, entry_name)
+            cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
         cat_file['sources'][entry_name] = block_cat
         dump_yaml(outfile=catalogfile, cfg=cat_file)
-
 
     def _set_dask(self):
         """
@@ -280,20 +283,19 @@ class LRAgenerator():
             self.logger.warning('Removing temporary directory %s', self.tmpdir)
             os.removedirs(self.tmpdir)
 
-
     def _concat_var(self, var, year):
         """
         To reduce the amount of files concatenate together all the files
         from the same year
         """
 
-        infiles =  os.path.join(self.outdir,
-                    f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??.nc')
-        if len(glob.glob(infiles))>1:
+        infiles = os.path.join(self.outdir,
+                               f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??.nc')
+        if len(glob.glob(infiles)) > 1:
             xfield = xr.open_mfdataset(infiles)
             self.logger.warning('Creating a single file for %s, year %s...',  var, str(year))
             outfile = os.path.join(self.outdir,
-                        f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
+                                   f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
             # clean older file
             if os.path.exists(outfile):
                 os.remove(outfile)
@@ -309,7 +311,7 @@ class LRAgenerator():
         """Create output filenames"""
 
         filename = os.path.join(self.outdir,
-                f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc')
+                                f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc')
         if (year is not None) and (month is None):
             filename = filename.replace("*", str(year))
         if (year is not None) and (month is not None):
@@ -324,7 +326,7 @@ class LRAgenerator():
         yearfiles = self.get_filename(varname)
         yearfiles = glob.glob(yearfiles)
         checks = [file_is_complete(yearfile) for yearfile in yearfiles]
-        all_checks_true = all(checks) and len(checks)>0
+        all_checks_true = all(checks) and len(checks) > 0
         if all_checks_true and not self.overwrite:
             self.logger.warning('All the data produced seems complete for var %s...', varname)
             last_record = xr.open_mfdataset(self.get_filename(varname)).time[-1].values
@@ -334,7 +336,7 @@ class LRAgenerator():
         else:
             self.check = False
             self.logger.warning('Still need to run for var %s...', varname)
-        
+
     def _write_var(self, var):
 
         """Call write var for generator or catalog access"""
@@ -350,7 +352,7 @@ class LRAgenerator():
         self.logger.info('Process took {:.4f} seconds'.format(t_end-t_beg))
 
     def _remove_regridded(self, data):
-        
+
         # remove regridded attribute to avoid issues with Reader
         # https://github.com/oloapinivad/AQUA/issues/147
         if 'regridded' in data.attrs:
@@ -365,11 +367,11 @@ class LRAgenerator():
         """
 
         # supplementary retrieve tu use the generator
-        self.data = self.reader.retrieve(var = var, startdate = self.last_record)
+        self.data = self.reader.retrieve(var=var, startdate=self.last_record)
         self.logger.warning('Looping on generator data...')
         t_beg = time()
         for data in self.data:
-            
+
             temp_data = data[var]
             self.logger.info('Generator returned data from %s to %s', temp_data.time[0].values, temp_data.time[-1].values)
 
@@ -390,7 +392,7 @@ class LRAgenerator():
 
             self.logger.info('Processing year %s month %s...', str(year), str(month))
             outfile = self.get_filename(var, year, month)
-            
+
             # checking if file is there and is complete
             filecheck = file_is_complete(outfile, self.logger)
             if filecheck and not self.overwrite:
@@ -407,12 +409,12 @@ class LRAgenerator():
                 if not filecheck:
                     self.logger.error('Something has gone wrong in %s!', outfile)
 
-            if self.definitive and month==12:
+            if self.definitive and month == 12:
                 self._concat_var(var, year)
-            
+
             self.logger.info('Processing this chunk took {:.4f} seconds'.format(time()-t_beg))
             t_beg = time()
-        
+
     def _write_var_catalog(self, var):
         """
         Write variable to file
@@ -468,7 +470,7 @@ class LRAgenerator():
             if self.definitive:
                 self._concat_var(var, year)
         del temp_data
-       
+
     def write_chunk(self, data, outfile):
         """Write a single chunk of data - Xarray Dataset - to a specific file
         using dask if required and monitoring the progress"""
@@ -482,8 +484,8 @@ class LRAgenerator():
 
         # Write data to file, lazy evaluation
         write_job = data.to_netcdf(outfile,
-                                encoding={'time': self.time_encoding},
-                                compute=False)
+                                   encoding={'time': self.time_encoding},
+                                   compute=False)
 
         if self.dask:
             w_job = write_job.persist()

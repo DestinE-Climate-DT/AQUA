@@ -13,7 +13,7 @@ def opa_catalog_entry(datadir, model, exp, source, frequency='monthly'):
     to be used by the LRA generator in both source and regrid yaml
     """
 
-    entry_name=f'opa'
+    entry_name = 'opa'
     logging.warning('Creating catalog entry %s %s %s', model, exp, entry_name)
 
     # define the block to be uploaded into the catalog
@@ -47,7 +47,7 @@ def opa_catalog_entry(datadir, model, exp, source, frequency='monthly'):
 
     # find the catalog of my experiment
     catalogfile = os.path.join(configdir, 'machines', machine,
-                                'catalog', model, exp+'.yaml')
+                               'catalog', model, exp+'.yaml')
 
     # load, add the block and close
     cat_file = load_yaml(catalogfile)
@@ -56,7 +56,7 @@ def opa_catalog_entry(datadir, model, exp, source, frequency='monthly'):
 
     # find the regrid of my experiment
     regridfile = os.path.join(configdir, 'machines', machine,
-                                'regrid.yaml')
+                              'regrid.yaml')
     cat_file = load_yaml(regridfile)
     dictexp = cat_file['sources'][model][exp]
     if source in dictexp:

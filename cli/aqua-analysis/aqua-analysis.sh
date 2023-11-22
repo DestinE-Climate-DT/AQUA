@@ -1,26 +1,22 @@
 #!/bin/bash
 
 # User defined variables
-# ----------------------
+# ---------------------------------------------------
 # The following variables can be changed by the user.
+# They can be overwritten by using the command line
+# arguments.
 # ---------------------------------------------------
 model_atm="IFS"
 model_oce="FESOM"
 exp="tco2559-ng5-cycle3"
 source="lra-r100-monthly"
-
-# LUMI
-# outputdir="/scratch/project_465000454/nurissom/cli_outpturdir"
-# aqua="/users/nurissom/AQUA"
-
-# LEVANTE
 outputdir="/scratch/b/b382289/cli_test"
-aqua="/home/b/b382289/AQUA"
-
+loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 machine="levante" # will change the aqua config file
 
-# When available, this will set the loglevel for the diagnostics
-loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
+# AQUA path, can be defined as $AQUA env variable
+# if not defined it will use the aqua path in the script
+aqua="/home/b/b382289/AQUA"
 
 # Set as true the diagnostics you want to run
 # -------------------------------------------
@@ -70,6 +66,64 @@ colored_echo() {
   echo -e "${color}$@${NC}"
 }
 
+# Command line arguments
+
+# Define accepted log levels
+accepted_loglevels=("info" "debug" "error" "warning" "critical" "INFO" "DEBUG" "ERROR" "WARNING" "CRITICAL")
+
+# Parse command-line options
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -a|--model_atm)
+      model_atm="$2"
+      shift 2
+      ;;
+    -o|--model_oce)
+      model_oce="$2"
+      shift 2
+      ;;
+    -e|--exp)
+      exp="$2"
+      shift 2
+      ;;
+    -s|--source)
+      source="$2"
+      shift 2
+      ;;
+    -d|--outputdir)
+      outputdir="$2"
+      shift 2
+      ;;
+    -m|--machine)
+      machine="$2"
+      shift 2
+      ;;
+    -l|--loglevel)
+      # Check if the specified log level is in the accepted list
+      if [[ " ${accepted_loglevels[@]} " =~ " $2 " ]]; then
+        loglevel="$2"
+      else
+        colored_echo $RED "Invalid log level. Accepted values are: ${accepted_loglevels[@]}"
+        # Setting loglevel to WARNING
+        loglevel="WARNING"
+      fi
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
+colored_echo $GREEN "Setting loglevel to $loglevel"
+colored_echo $GREEN "Atmospheric model: $model_atm"
+colored_echo $GREEN "Oceanic model: $model_oce"
+colored_echo $GREEN "Experiment: $exp"
+colored_echo $GREEN "Source: $source"
+colored_echo $GREEN "Machine: $machine"
+colored_echo $GREEN "Output directory: $outputdir"
+
 # Define the arguments for the diagnostics
 args_atm="--model $model_atm --exp $exp --source $source"
 args_oce="--model $model_oce --exp $exp --source $source"
@@ -92,27 +146,38 @@ else
   # Linux
   sed -i "/^machine:/c\\machine: $machine" "$aqua/config/config-aqua.yaml"
 fi
-
-# print the output directory
-colored_echo $GREEN "Output directory: $outputdir"
+colored_echo $GREEN "Machine set to $machine in the config file"
 
 if [ "$run_dummy" = true ] ; then
   colored_echo $GREEN "Running setup checker"
-  python $aqua/diagnostics/dummy/cli/cli_dummy.py $args -l $loglevel
+  scriptpy="$aqua/diagnostics/dummy/cli/cli_dummy.py"
+  python $scriptpy $args -l $loglevel
+  
+  # Store the error code of the dummy script
+  dummy_error=$?
 
-  # exit if dummy fails
-  if [ $? -ne 0 ]; then
-    colored_echo $RED "Setup checker failed, exiting"
-    exit 1
+  # exit if dummy fails in finding both atmospheric and oceanic model
+  if [ $dummy_error -ne 0 ]; then
+    if [ $dummy_error -eq 1 ]; then # if error code is 1, then the setup checker failed
+      colored_echo $RED "Setup checker failed, exiting"
+      exit 1
+    fi
+    # if error code is 2 or 3, then the setup checker
+    # passed but there are some warnings
+    if [ $dummy_error -eq 2 ]; then
+      colored_echo $RED "Atmospheric model is not found, it will be skipped"
+    fi
+    if [ $dummy_error -eq 3 ]; then
+      colored_echo $RED "Oceanic model is not found, it will be skipped"
+    fi
   fi
   colored_echo $GREEN "Finished setup checker"
 fi
 
 if [ "$run_atmglobalmean" = true ] ; then
   colored_echo $GREEN "Running atmglobalmean"
-  cd $aqua/diagnostics/atmglobalmean/cli
-  python cli_atm_mean_bias.py $args_atm --outputdir $outputdir/atmglobalmean -l $loglevel
-  cd $aqua/cli/aqua-analysis
+  scriptpy="$aqua/diagnostics/atmglobalmean/cli/cli_atm_mean_bias.py"
+  python $scriptpy $args_atm --outputdir $outputdir/atmglobalmean -l $loglevel
   colored_echo $GREEN "Finished atmglobalmean"
 fi
 
@@ -126,36 +191,33 @@ fi
 if [ "$run_global_time_series" = true ] ; then
   colored_echo $GREEN "Running global_time_series"
 
-  filepy="$aqua/diagnostics/global_time_series/cli/single_analysis/cli_global_time_series.py"
+  scriptpy="$aqua/diagnostics/global_time_series/cli/single_analysis/cli_global_time_series.py"
   conf_atm="$aqua/diagnostics/global_time_series/cli/single_analysis/config_time_series_atm.yaml"
   conf_oce="$aqua/diagnostics/global_time_series/cli/single_analysis/config_time_series_oce.yaml"
 
-  python $filepy $args_atm --outputdir $outputdir/global_time_series --config $conf_atm -l $loglevel
-  python $filepy $args_oce --outputdir $outputdir/global_time_series --config $conf_oce -l $loglevel
+  python $scriptpy $args_atm --outputdir $outputdir/global_time_series --config $conf_atm -l $loglevel
+  python $scriptpy $args_oce --outputdir $outputdir/global_time_series --config $conf_oce -l $loglevel
   colored_echo $GREEN "Finished global_time_series"
 fi
 
 if [ "$run_ocean3d" = true ] ; then
   colored_echo $GREEN "Running ocean3d"
-  # Moving to ocean3d directory to run the ocean3d_cli.py script
-  cd $aqua/diagnostics/ocean3d/cli
-  python $aqua/diagnostics/ocean3d/cli/ocean3d_cli.py $args_oce --outputdir $outputdir/ocean3d
-
-  # Moving back to aqua-analysis directory
-  cd $aqua/cli/aqua-analysis
-
+  scriptpy="$aqua/diagnostics/ocean3d/cli/ocean3d_cli.py"
+  python $scriptpy $args_oce --outputdir $outputdir/ocean3d -l $loglevel
   colored_echo $GREEN "Finished ocean3d"
 fi
 
 if [ "$run_radiation" = true ] ; then
   colored_echo $GREEN "Running radiation"
-  python $aqua/diagnostics/radiation/cli/cli_radiation.py $args_atm --outputdir $outputdir/radiation -l $loglevel
+  scriptpy="$aqua/diagnostics/radiation/cli/cli_radiation.py"
+  python $scriptpy $args_atm --outputdir $outputdir/radiation -l $loglevel
   colored_echo $GREEN "Finished radiation"
 fi
 
 if [ "$run_seaice" = true ] ; then
   colored_echo $GREEN "Running seaice"
-  python $aqua/diagnostics/seaice/cli/seaice_cli.py $args_oce --outputdir $outputdir/seaice -l $loglevel
+  scriptpy="$aqua/diagnostics/seaice/cli/seaice_cli.py"
+  python $scriptpy $args_oce --outputdir $outputdir/seaice -l $loglevel
   colored_echo $GREEN "Finished seaice"
 fi
 
@@ -170,9 +232,8 @@ fi
 
 if [ "$run_tropical_rainfall" = true ] ; then
   colored_echo $GREEN "Running tropical rainfall"
-  cd $aqua/diagnostics/tropical_rainfall/cli
-  python $aqua/diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py $args_atm --outputdir $outputdir/tropical_rainfall -l $loglevel
-  cd $aqua/cli/aqua-analysis
+  scriptpy="$aqua/diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py"
+  python $scriptpy $args_atm --outputdir $outputdir/tropical_rainfall -l $loglevel
   colored_echo $GREEN "Finished tropical rainfall"
 fi
 

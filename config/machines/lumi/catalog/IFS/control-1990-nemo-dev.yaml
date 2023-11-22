@@ -24,8 +24,9 @@ sources:
     driver: gsv
     metadata: 
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['tprate', 'sp', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'chnk', 'fsr']
+      source_grid_name: tco1279
   hourly-1deg:
     args:
       request:
@@ -52,8 +53,9 @@ sources:
     driver: gsv
     metadata: 
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['tprate', 'sf', '2t', '10u', 'blh', 'sshf', 'slhf', 'ssrd', 'ssr', 'strd', 'str', 'ttr', 'e', 'tsr', 'ewss', 'nsss', 'chnk', 'sro', 'ssro']
+      source_grid_name: lon-lat
   6hourly-1deg:
     args:
       request:
@@ -79,8 +81,9 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['z']
+      source_grid_name: lon-lat
   monthly-1deg-2d:
     args:
       request:
@@ -105,8 +108,9 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['tcc', 'sd', 'tciw', 'tclw', 'msl', 'tcwv', 'lcc', 'mcc', 'hcc']
+      source_grid_name: lon-lat
   monthly-1deg-3d:
     args:
       request:
@@ -133,5 +137,6 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/iwagner/a0c7/config.yaml
-      eccodes_path: /scratch/project_465000454/maxness/Bundle_Healpix_Test/feature/healpix-interpolation-2/source/eccodes/definitions
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.0/definitions
       variables: ['u', 'v', 't', 'r', 'q']
+      source_grid_name: lon-lat

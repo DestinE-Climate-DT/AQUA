@@ -22,6 +22,7 @@ singularity exec  \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk  \
     --bind /pfs/lustrep3/ \
+    --bind /projappl/ \
     --bind /scratch/ \
     $AQUA_container \
     bash -c \

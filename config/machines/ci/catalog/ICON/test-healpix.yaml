@@ -3,6 +3,8 @@ plugins:
   - module: intake_xarray
 sources:
   short:
+    metadata:
+      source_grid_name: test-healpix
     args:
       chunks:
         time: 1

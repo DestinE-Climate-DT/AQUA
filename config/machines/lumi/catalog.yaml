@@ -1,3 +1,8 @@
+paths:
+  grids: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids
+  weights: /pfs/lustrep3/projappl/project_465000454/data/AQUA/weights
+  areas: /pfs/lustrep3/projappl/project_465000454/data/AQUA/areas
+
 metadata:
   parameters:
     DATA_PATH:

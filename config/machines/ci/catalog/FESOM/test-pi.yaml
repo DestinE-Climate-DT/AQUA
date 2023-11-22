@@ -11,6 +11,8 @@ sources:
   #     urlpath: ./AQUA_tests/grids/pi_griddes_nodes_IFS.nc
   #   driver: netcdf
   original_2d:
+    metadata:
+      source_grid_name: test-pi-2d
     args:
       chunks:
         time: 1
@@ -24,6 +26,8 @@ sources:
     description: original 2d output
     driver: netcdf
   original_3d:
+    metadata:
+      source_grid_name: test-pi-3d
     args:
       chunks:
         nz: 1

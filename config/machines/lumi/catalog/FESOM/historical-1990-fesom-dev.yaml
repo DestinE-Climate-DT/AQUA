@@ -5,6 +5,8 @@
     daily-original-2d:
       description: 2d test data
       driver: netcdf
+      metadata:
+        source_grid_name: ng5-nodes-2d
       args:
         urlpath: 
           - /scratch/project_465000454/sbeyer/rundir_vulcano/tco1279l137/i2hm/hres/cray.craympich/lum.cce.sp/h744.N144.T4096xt4xh1+ioT512xt4.nextgems_6h.i16r0w24.htco1279-1990-4460719/ssh.fesom.1990.nc
@@ -16,6 +18,8 @@
     monthly-original-2d:
       description: 2d test data
       driver: netcdf
+      metadata:
+        source_grid_name: ng5-nodes-2d
       args:
         urlpath: 
           - /scratch/project_465000454/sbeyer/rundir_vulcano/tco1279l137/i2hm/hres/cray.craympich/lum.cce.sp/h744.N144.T4096xt4xh1+ioT512xt4.nextgems_6h.i16r0w24.htco1279-1990-4460719/sss.fesom.1990.nc
@@ -27,6 +31,8 @@
     monthly-original-3d:
       description: 3d test data
       driver: netcdf
+      metadata:
+        source_grid_name: ng5-nodes-3d
       args:
         urlpath: 
           - /scratch/project_465000454/sbeyer/rundir_vulcano/tco1279l137/i2hm/hres/cray.craympich/lum.cce.sp/h744.N144.T4096xt4xh1+ioT512xt4.nextgems_6h.i16r0w24.htco1279-1990-4460719/salt.fesom.1990.nc

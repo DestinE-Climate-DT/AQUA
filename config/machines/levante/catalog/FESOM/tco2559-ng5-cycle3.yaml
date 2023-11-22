@@ -311,6 +311,7 @@ sources:
     driver: netcdf
     metadata:
       source: 2D_1h_native
+      source_grid_name: ng5-nodes-2d
   2D_daily_native:
     args:
       chunks:
@@ -1100,6 +1101,7 @@ sources:
     driver: netcdf
     metadata:
       source: 2D_daily_native
+      source_grid_name: ng5-nodes-2d
   2D_monthly_native:
     args:
       chunks:
@@ -1169,6 +1171,7 @@ sources:
     driver: netcdf
     metadata:
       source: 2D_monthly_native
+      source_grid_name: ng5-nodes-2d
   2D_monthly_native_elem:
     args:
       chunks:
@@ -1298,6 +1301,7 @@ sources:
     driver: netcdf
     metadata:
       source: 2D_monthly_native_elem
+      source_grid_name: ng5-elems-2d
   3D_daily_native:
     args:
       chunks:
@@ -1549,6 +1553,7 @@ sources:
     driver: netcdf
     metadata:
       source: 3D_daily_native
+      source_grid_name: ng5-nodes-3d
   3D_daily_native_elem:
     args:
       chunks:
@@ -1679,6 +1684,7 @@ sources:
     driver: netcdf
     metadata:
       source: 3D_daily_native_elem
+      source_grid_name: ng5-elems-3d
   3D_daily_native_zarr:
     args:
       consolidated: true
@@ -1704,6 +1710,8 @@ sources:
       - /work/bm1344/AWI/Cycle3/test/u_2024.zarr
       - /work/bm1344/AWI/Cycle3/test/v_2024.zarr
     driver: zarr
+    metadata:
+      source_grid_name: ng5-nodes-3d
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100
@@ -1712,3 +1720,5 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat
