@@ -11,7 +11,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: o2d
+        levtype: sfc
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -21,12 +21,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['avg_thetao']
+      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p000-monthly-1deg-3d:
     args:
@@ -51,7 +51,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -81,7 +81,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -111,7 +111,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -141,7 +141,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -171,7 +171,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -201,7 +201,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -231,7 +231,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -261,7 +261,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -291,7 +291,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -321,7 +321,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -351,7 +351,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -381,7 +381,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -411,7 +411,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -441,7 +441,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -471,7 +471,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -501,7 +501,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -531,7 +531,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -561,7 +561,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
@@ -591,7 +591,7 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid.
+    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml

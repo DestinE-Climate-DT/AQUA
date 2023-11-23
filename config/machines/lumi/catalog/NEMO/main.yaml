@@ -9,3 +9,10 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/control-1990-nemo-dev.yaml'
+
+  a0eo-LUMI-G-IFS-NEMO-10ensembles:
+    description: FDB IFS/NEMO tco1279-orca025 control 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0eo-LUMI-G-IFS-NEMO-10ensembles.yaml'
+
