@@ -4,13 +4,6 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/tco79-eORCA1.yaml'
-<<<<<<< HEAD
-  tco79-eORCA2:
-    description: tco79-eORCA2 data
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/tco79-eORCA2.yaml'
-=======
   fdb-tco399:  #  https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/wikis/Specifications-of-fdb-long
     description: fdb-long data tco399 grid 
     driver: yaml_file_cat
@@ -25,10 +18,6 @@ sources:
     description: FDB IFS/FESOM tco1279-ng5 historical 1990 run
     driver: yaml_file_cat
     args:
-<<<<<<< HEAD
-      path: '{{CATALOG_DIR}}/historical-1990-devcon.yaml'
->>>>>>> main
-=======
       path: '{{CATALOG_DIR}}/historical-1990-fesom-dev.yaml'
   historical-1990-nemo-dev:
     description: FDB IFS/NEMO tco1279-orca025 historical 1990 run
@@ -40,4 +29,9 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/control-1990-nemo-dev.yaml'
->>>>>>> main
+  a0eo-IFS-NEMO-10ensembles:
+    description: FDB IFS/NEMO tco1279-orca025 control 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0eo-IFS-NEMO-10ensembles.yaml'
+
