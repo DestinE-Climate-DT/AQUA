@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- configdir is not searched based on util file position in the repo (#636)
+- Cleaner mask treatment (Revision of mask structure in the reader #617)
 - Fldmean fix if only one dimension is present for area selection (#640)
 - Adding higher frequency ERA5 data on Levante and Lumi (#628)
 - regrid.yaml files are removed, grid infos are now in the catalogue metadata (#622)

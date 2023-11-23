@@ -28,6 +28,7 @@ from .streaming import Streaming
 from .fixer import FixerMixin
 from .regrid import RegridMixin
 from .reader_utils import check_catalog_source, group_shared_dims, set_attrs
+from .reader_utils import configure_masked_fields
 
 
 # default spatial dimensions and vertical coordinates
@@ -206,8 +207,8 @@ class Reader(FixerMixin, RegridMixin):
             if not isinstance(self.vert_coord, list):
                 self.vert_coord = [self.vert_coord]
 
-            self.masked_att = source_grid.get("masked", None)  # Optional selection of masked variables
-            self.masked_vars = source_grid.get("masked_vars", None)  # Optional selection of masked variables
+            # define which variables has to be masked
+            self.masked_attr, self.masked_vars = configure_masked_fields(source_grid)
 
             # Expose grid information for the source as a dictionary of
             # open xarrays
@@ -477,11 +478,11 @@ class Reader(FixerMixin, RegridMixin):
         else:
             self.logger.debug("Grouping variables that share the same dimension")
             self.logger.debug("Vert coord: %s", self.vert_coord)
-            self.logger.debug("masked_att: %s", self.masked_att)
+            self.logger.debug("masked_att: %s", self.masked_attr)
             self.logger.debug("masked_vars: %s", self.masked_vars)
 
             datadic = group_shared_dims(data, self.vert_coord, others="2d",
-                                        masked="2dm", masked_att=self.masked_att,
+                                        masked="2dm", masked_att=self.masked_attr,
                                         masked_vars=self.masked_vars)
 
         # Iterate over list of groups of variables, regridding them separately
@@ -810,6 +811,8 @@ class Reader(FixerMixin, RegridMixin):
                               logging=True, verbose=self.verbose).read_chunked()
 
         return data
+    
+            
 
     def reader_intake(self, esmcat, var, loadvar, keep="first"):
         """
