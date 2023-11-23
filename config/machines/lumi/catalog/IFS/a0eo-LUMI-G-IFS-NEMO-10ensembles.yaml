@@ -85,7 +85,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p001-monthly-1deg-3d:
@@ -115,7 +115,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -145,7 +145,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p002-monthly-1deg-3d:
@@ -175,7 +175,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -205,7 +205,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p003-monthly-1deg-3d:
@@ -235,7 +235,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -265,7 +265,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p004-monthly-1deg-3d:
@@ -295,7 +295,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -325,7 +325,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p005-monthly-1deg-3d:
@@ -355,7 +355,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -385,7 +385,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p006-monthly-1deg-3d:
@@ -415,7 +415,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -445,7 +445,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p007-monthly-1deg-3d:
@@ -475,7 +475,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -505,7 +505,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p008-monthly-1deg-3d:
@@ -535,7 +535,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
@@ -565,7 +565,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p009-monthly-1deg-3d:
@@ -595,7 +595,7 @@ sources:
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+      eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
 
