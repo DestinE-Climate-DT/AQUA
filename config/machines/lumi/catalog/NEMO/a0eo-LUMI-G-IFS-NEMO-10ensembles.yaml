@@ -11,7 +11,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -21,12 +21,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p000-monthly-1deg-3d:
     args:
@@ -40,7 +40,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -51,12 +51,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p001 ensemble
@@ -71,7 +71,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -81,12 +81,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p001-monthly-1deg-3d:
     args:
@@ -100,7 +100,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -111,12 +111,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p002 ensemble
@@ -131,7 +131,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -141,12 +141,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p002-monthly-1deg-3d:
     args:
@@ -160,7 +160,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -171,12 +171,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p003 ensemble
@@ -191,7 +191,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -201,12 +201,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p003-monthly-1deg-3d:
     args:
@@ -220,7 +220,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -231,12 +231,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p004 ensemble
@@ -251,7 +251,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -261,12 +261,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p004-monthly-1deg-3d:
     args:
@@ -280,7 +280,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -291,12 +291,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p005 ensemble
@@ -311,7 +311,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -321,12 +321,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p005-monthly-1deg-3d:
     args:
@@ -340,7 +340,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -351,12 +351,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p006 ensemble
@@ -371,7 +371,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -381,12 +381,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p006-monthly-1deg-3d:
     args:
@@ -400,7 +400,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -411,12 +411,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p007 ensemble
@@ -431,7 +431,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -441,12 +441,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p007-monthly-1deg-3d:
     args:
@@ -460,7 +460,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -471,12 +471,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p008 ensemble
@@ -491,7 +491,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -501,12 +501,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p008-monthly-1deg-3d:
     args:
@@ -520,7 +520,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -531,12 +531,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 
 # p009 ensemble
@@ -551,7 +551,7 @@ sources:
         date: 19900101
         time: '0000'
         param: sd
-        levtype: sfc
+        levtype: o2d
         grid: "1/1"
         step: 0
       data_start_date: '19900101'
@@ -561,12 +561,12 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains tcc(164), sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
+      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p009-monthly-1deg-3d:
     args:
@@ -580,7 +580,7 @@ sources:
         time: '0000'
         grid: "1/1"
         param: t
-        levtype: pl
+        levtype: o3d
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 0
@@ -591,11 +591,11 @@ sources:
       savefreq: M
       timestyle: step
       timeshift: Yes    # shift time of resulting xarray by this amount
-    description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
+    description: monthly data on r100 grid. 
     driver: gsv
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['u', 'v', 't', 'r', 'q']
+      variables: ['avg_so', 'avg_thetao', 'avg_wo', 'avg_uoe', 'avg_von']
       source_grid_name: lon-lat
 

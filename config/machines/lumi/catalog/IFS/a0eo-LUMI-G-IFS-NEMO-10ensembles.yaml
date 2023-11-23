@@ -26,7 +26,7 @@ sources:
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['avg_thetao']
+      variables: ['lcc', 'mcc', 'hcc', 'sd', 'tclw', 'tciw', '2t', 'tcwv', 'msl', 'tprate']
       source_grid_name: lon-lat
   p000-monthly-1deg-3d:
     args:
