@@ -129,9 +129,7 @@ def output_dir(path_to_output='.', loglevel='WARNING'):
     return logs_path, output_path
 
 def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memory=None, queue=None,
-                     walltime=None, nodes=None, tasks_per_node=None, loglevel='WARNING'):
-    # Get the Python script path by calling the provided function
-    python_script_path = script_path_func()
+                     walltime=None, nodes=None, cores=None, account=None, loglevel='WARNING'):
 
     # Creating the directory for logs and output
     logs_path, output_path = output_dir(path_to_output=path_to_output,
@@ -144,15 +142,16 @@ def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memor
         "--time", walltime,
         "--nodes", str(nodes),
         "--ntasks-per-node", str(cores),
-        "--mem", memory,  # Specify the amount of memory (adjust the value accordingly)
+        "--mem", memory.replace(" ", ""),  # Specify the amount of memory (adjust the value accordingly)
         "--partition", queue,  # Specify the name of the queue
-        python_script_path
+        "--account", account,  # Specify the account
+        script_path_func
     ]
 
     subprocess.run(slurm_command)
 
-def job(source_path, function_name=None, job_name='slurm', path_to_output='.', queue=None,
-        configdir=None, walltime="2:30:00", nodes=1, cores=1, memory="10 GB", machine=None):
+def job(source_path, function_name=None, job_name='slurm', path_to_output='.', queue=None, account=None,
+        configdir=None, walltime="2:30:00", nodes=1, cores=1, memory="10 GB", machine=None, loglevel='WARNING'):
     
     logger = log_configure(log_level=loglevel, log_name='slurm')
     
@@ -169,6 +168,13 @@ def job(source_path, function_name=None, job_name='slurm', path_to_output='.', q
             queue = "small"
         else:
             raise Exception("The queue is not defined. Please, define the queue manually.")
+    if account is None:
+        if machine_name == "levante":
+            account = "bb1153"
+        elif machine_name == "lumi":
+            account = "project_465000454"
+        else:
+            raise Exception("The account is not defined. Please, define the account manually.")
         
     if function_name is not None:
         destination_path = extract_and_write_function(source_path=source_path, function_name=function_name) 
@@ -176,8 +182,8 @@ def job(source_path, function_name=None, job_name='slurm', path_to_output='.', q
     
     make_executable(source_path)
         
-    submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output,
+    submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output, account=account,
                      memory=memory, queue=queue, walltime=walltime, nodes=nodes, cores=cores, loglevel=loglevel)
     
-    if function_name is not None
-        remove_file(file_path=destination_path)
+    #if function_name is not None
+    #    remove_file(file_path=destination_path)
