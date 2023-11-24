@@ -1,6 +1,8 @@
 import ast
 import os
 import subprocess
+from aqua.logger import log_configure
+from aqua.util import create_folder, ConfigPath
 
 def get_script_info(file_path=__file__):
     """
@@ -100,31 +102,82 @@ def remove_file(file_path=None):
     except Exception as e:
         print(f"Error removing the file '{file_path}': {e}")
         return False
-    
-def submit_slurm_job(script_path_func, job_name=None, output_file=None, error_file=None, 
-                     time=None, nodes=None, tasks_per_node=None):
+
+def output_dir(path_to_output='.', loglevel='WARNING'):
+    """
+    Creating the directory for output if it does not exist
+
+    Args:
+        path_to_output (str, optional): The path to the directory,
+                                        which will contain logs/errors and
+                                        output of Slurm Jobs. Defaults is '.'
+        loglevel (str, optional):       The level of logging.
+                                        Defaults to 'WARNING'.
+
+    Returns:
+        logs_path (str):    The path to the directory for logs/errors
+        output_path (str):  The path to the directory for output
+    """
+    logs_path = str(path_to_output)+"/slurm/logs"
+    output_path = str(path_to_output)+"/slurm/output"
+
+    # Creating the directory for logs and output
+    create_folder(folder=str(path_to_output)+"/slurm", loglevel=loglevel)
+    create_folder(folder=logs_path, loglevel=loglevel)
+    create_folder(folder=output_path, loglevel=loglevel)
+
+    return logs_path, output_path
+
+def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memory=None, queue=None,
+                     walltime=None, nodes=None, tasks_per_node=None, loglevel='WARNING'):
     # Get the Python script path by calling the provided function
     python_script_path = script_path_func()
 
+    # Creating the directory for logs and output
+    logs_path, output_path = output_dir(path_to_output=path_to_output,
+                                        loglevel=loglevel)
     slurm_command = [
         "sbatch",
         "--job-name", job_name,
-        "--output", output_file,
-        "--error", error_file,
-        "--time", time,
+        "--output", output_path,
+        "--error", logs_path,
+        "--time", walltime,
         "--nodes", str(nodes),
-        "--ntasks-per-node", str(tasks_per_node),
+        "--ntasks-per-node", str(cores),
+        "--mem", memory,  # Specify the amount of memory (adjust the value accordingly)
+        "--partition", queue,  # Specify the name of the queue
         python_script_path
     ]
 
     subprocess.run(slurm_command)
 
-def job(source_path=__file__, function_name=None, job_name=None, output_file=None, 
-        error_file="my_job.err", time="24:00:00", nodes=1, tasks_per_node=1):
-
-    destination_path = extract_and_write_function(source_path=source_path, function_name=function_name) 
+def job(source_path, function_name=None, job_name='slurm', path_to_output='.', queue=None,
+        configdir=None, walltime="2:30:00", nodes=1, cores=1, memory="10 GB", machine=None):
     
+    logger = log_configure(log_level=loglevel, log_name='slurm')
     
+    if machine is None:
+        Configurer = ConfigPath(configdir=configdir)
+        machine_name = Configurer.machine
+    else:
+        machine_name = machine
+        
+    if queue is None:
+        if machine_name == "levante":
+            queue = "compute"
+        elif machine_name == "lumi":
+            queue = "small"
+        else:
+            raise Exception("The queue is not defined. Please, define the queue manually.")
+        
+    if function_name is not None:
+        destination_path = extract_and_write_function(source_path=source_path, function_name=function_name) 
+        source_path = destination_path
     
+    make_executable(source_path)
+        
+    submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output,
+                     memory=memory, queue=queue, walltime=walltime, nodes=nodes, cores=cores, loglevel=loglevel)
     
-    remove_file(file_path=destination_path)
+    if function_name is not None
+        remove_file(file_path=destination_path)
