@@ -9,10 +9,14 @@ logger = log_configure(log_level=log_level, log_name='slurm')
 
 def get_script_info(file_path=__file__, log_level='WARNING'):
     """
-    Get the name and path of the current Python script.
+    Get information about the current Python script.
+
+    Args:
+        file_path (str, optional): The path to the Python script. Defaults to the current script (__file__).
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
 
     Returns:
-        tuple: A tuple containing the script name and script path.
+        tuple: A tuple containing the script name and directory path.
     """
     logger = log_configure(log_level=log_level, log_name='slurm')
     
@@ -27,6 +31,18 @@ def get_script_info(file_path=__file__, log_level='WARNING'):
     return script_name, script_directory
 
 def extract_function_and_imports(source_code, function_name, log_level='WARNING'):
+    """
+    Extracts the specified function and associated imports from the given source code.
+
+    Args:
+        source_code (str): The source code containing the target function and imports.
+        function_name (str): The name of the function to extract.
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
+
+    Returns:
+        tuple: A tuple containing a set of imports and the extracted code of the specified function.
+
+    """
     tree = ast.parse(source_code)
     extracted_code = []
     imports = set()
@@ -48,7 +64,18 @@ def extract_function_and_imports(source_code, function_name, log_level='WARNING'
     return imports, '\n'.join(extracted_code)
 
 def extract_and_write_function(source_path=__file__, function_name=None, log_level='WARNING'):
-    
+    """
+    Extracts the specified function and its dependencies from a source code file,
+    writes them to a new script, and returns the path of the new script.
+
+    Args:
+        source_path (str, optional): The path to the source code file. Defaults to the current script (__file__).
+        function_name (str, optional): The name of the function to extract. Defaults to None.
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
+
+    Returns:
+        str: The path of the newly created script containing the extracted function and imports.
+    """
     script_name, script_directory = get_script_info(log_level=log_level)
     destination_path = script_directory+'/tmp_'+script_name
     logger.debug(f"Destination Path: {destination_path}")
@@ -74,6 +101,7 @@ def make_executable(file_path, log_level='WARNING'):
 
     Args:
         file_path (str): Path to the Python file.
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
 
     Returns:
         None
@@ -98,6 +126,7 @@ def remove_file(file_path=None, log_level='WARNING'):
 
     Args:
         file_path (str): Path to the file to be removed.
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
 
     Returns:
         bool: True if the file was successfully removed, False otherwise.
@@ -112,18 +141,15 @@ def remove_file(file_path=None, log_level='WARNING'):
 
 def output_dir(path_to_output='.', log_level='WARNING'):
     """
-    Creating the directory for output if it does not exist
+    Create directories for logs and output if they do not exist.
 
     Args:
-        path_to_output (str, optional): The path to the directory,
-                                        which will contain logs/errors and
-                                        output of Slurm Jobs. Defaults is '.'
-        log_level (str, optional):       The level of logging.
-                                        Defaults to 'WARNING'.
+        path_to_output (str, optional): The path to the directory that will contain logs/errors and
+                                        output of Slurm Jobs. Defaults to '.'.
+        log_level (str, optional): The logging level. Defaults to 'WARNING'.
 
     Returns:
-        logs_path (str):    The path to the directory for logs/errors
-        output_path (str):  The path to the directory for output
+        tuple: A tuple containing the paths to the directory for logs/errors and the directory for output.
     """
     logs_path = str(path_to_output)+"/slurm/logs"
     output_path = str(path_to_output)+"/slurm/output"
@@ -137,7 +163,23 @@ def output_dir(path_to_output='.', log_level='WARNING'):
 
 def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memory=None, queue=None,
                      walltime=None, nodes=None, cores=None, account=None, log_level='WARNING'):
+    """Submit a job to SLURM (Simple Linux Utility for Resource Management).
 
+    Args:
+        script_path_func (str): Path to the Python script to be executed.
+        job_name (str, optional): Name of the SLURM job. Defaults to None.
+        path_to_output (str, optional): Path to the directory for logs and output. Defaults to None.
+        memory (str, optional): Amount of memory required for the job. Defaults to None.
+        queue (str, optional): Name of the SLURM queue. Defaults to None.
+        walltime (str, optional): Maximum execution time for the job (HH:MM:SS). Defaults to None.
+        nodes (int, optional): Number of nodes for the job. Defaults to None.
+        cores (int, optional): Number of CPU cores per node for the job. Defaults to None.
+        account (str, optional): Account associated with the job. Defaults to None.
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
+
+    Returns:
+        None
+    """
     # Creating the directory for logs and output
     logs_path, output_path = output_dir(path_to_output=path_to_output,
                                         log_level=log_level)
@@ -159,7 +201,27 @@ def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memor
 
 def job(source_path, function_name=None, job_name='slurm', path_to_output='.', queue=None, account=None,
         configdir=None, walltime="2:30:00", nodes=1, cores=1, memory="10 GB", machine=None, log_level='WARNING'):
+    """
+    Submit a job to SLURM (Simple Linux Utility for Resource Management).
 
+    Args:
+        source_path (str): Path to the Python script to be executed or the source file containing the specified function.
+        function_name (str, optional): Name of the function to extract and submit as a separate job. Defaults to None.
+        job_name (str, optional): Name of the SLURM job. Defaults to 'slurm'.
+        path_to_output (str, optional): Path to the directory for logs and output. Defaults to '.'.
+        queue (str, optional): Name of the SLURM queue. Defaults to None.
+        account (str, optional): Account associated with the job. Defaults to None.
+        configdir (str, optional): Path to the directory containing configurations. Defaults to None.
+        walltime (str, optional): Maximum execution time for the job (HH:MM:SS). Defaults to "2:30:00".
+        nodes (int, optional): Number of nodes for the job. Defaults to 1.
+        cores (int, optional): Number of CPU cores per node for the job. Defaults to 1.
+        memory (str, optional): Amount of memory required for the job. Defaults to "10 GB".
+        machine (str, optional): Name of the machine where the job will be executed. Defaults to None.
+        log_level (str, optional): The logging level for configuring the logger. Defaults to 'WARNING'.
+
+    Returns:
+        None
+    """
     if machine is None:
         Configurer = ConfigPath(configdir=configdir)
         machine_name = Configurer.machine
@@ -193,5 +255,5 @@ def job(source_path, function_name=None, job_name='slurm', path_to_output='.', q
     submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output, account=account,
                      memory=memory, queue=queue, walltime=walltime, nodes=nodes, cores=cores, log_level=log_level)
     
-    #if function_name is not None
-    #    remove_file(file_path=destination_path)
+    if function_name is not None:
+        remove_file(file_path=destination_path)
