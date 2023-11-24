@@ -1,5 +1,23 @@
 import ast
 import os
+import subprocess
+
+def get_script_info(file_path=__file__):
+    """
+    Get the name and path of the current Python script.
+
+    Returns:
+        tuple: A tuple containing the script name and script path.
+    """
+    script_name = os.path.basename(file_path)
+    script_path = os.path.abspath(file_path)
+    
+    print("Script Name (external):", script_name)
+    print("Script Path (external):", script_path)
+    
+    return script_name, script_path
+# Example usage
+#script_name, script_path = get_script_info()
 
 def extract_function_and_imports(source_code, function_name):
     tree = ast.parse(source_code)
@@ -22,7 +40,12 @@ def extract_function_and_imports(source_code, function_name):
 
     return imports, '\n'.join(extracted_code)
 
-def extract_and_write_function(source_path, function_name, destination_path):
+def extract_and_write_function(source_path=__file__, function_name=None, destination_path=None):
+    
+    script_name, script_path = get_script_info()
+    destination_path = script_path+'tmp_'+script_name
+    print("Destination Path:", destination_path)
+    
     with open(source_path, 'r') as source_file:
         source_code = source_file.read()
 
@@ -65,18 +88,21 @@ def make_executable(file_path):
 # Example usage
 # make_executable("/work/bb1153/b382267/AQUA/aqua/slurm/new_script.py")
 
-def get_script_info():
-    """
-    Get the name and path of the current Python script.
+def submit_slurm_job(script_path_func, job_name="my_job", output_file="my_job.out", error_file="my_job.err", time="24:00:00", nodes=1, tasks_per_node=1):
+    # Get the Python script path by calling the provided function
+    python_script_path = script_path_func()
 
-    Returns:
-        tuple: A tuple containing the script name and script path.
-    """
-    script_name = os.path.basename(__file__)
-    script_path = os.path.abspath(__file__)
-    return script_name, script_path
+    slurm_command = [
+        "sbatch",
+        "--job-name", job_name,
+        "--output", output_file,
+        "--error", error_file,
+        "--time", time,
+        "--nodes", str(nodes),
+        "--ntasks-per-node", str(tasks_per_node),
+        python_script_path
+    ]
 
-# Example usage
-# script_name, script_path = get_script_info()
-# print("Script Name:", script_name)
-# print("Script Path:", script_path)
+    subprocess.run(slurm_command)
+
+# extract_and_write_function(source_path=__file__, function_name=None, destination_path=None)
