@@ -10,7 +10,7 @@ sources:
         stream: monr
         date: 19900101
         time: '0000'
-        param: sd
+        param: avg_tos
         levtype: o2d
         grid: "1/1"
         step: 0
@@ -26,7 +26,7 @@ sources:
     metadata:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/kaikeller/a0eo/config.yaml
       eccodes_path: /pfs/lustrep3/projappl/project_465000454/models/ifs-nemo/DE_CY48R1.0_climateDT_develop/source/eccodes/definitions/
-      variables: ['avg_sos', 'avg_tos', 'avg_hc300m']
+      variables: ['avg_tos', 'avg_hc300m']
       source_grid_name: lon-lat
   p000-monthly-1deg-3d:
     args:
