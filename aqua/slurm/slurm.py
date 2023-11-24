@@ -62,13 +62,21 @@ def make_executable(file_path):
         print(f"File '{file_path}' is now executable.")
     except Exception as e:
         print(f"Error making the file executable: {e}")
-
 # Example usage
 # make_executable("/work/bb1153/b382267/AQUA/aqua/slurm/new_script.py")
 
-# Get the name and path of the current Python script
-# script_name = os.path.basename(__file__)
-# script_path = os.path.abspath(__file__)
+def get_script_info():
+    """
+    Get the name and path of the current Python script.
 
+    Returns:
+        tuple: A tuple containing the script name and script path.
+    """
+    script_name = os.path.basename(__file__)
+    script_path = os.path.abspath(__file__)
+    return script_name, script_path
+
+# Example usage
+# script_name, script_path = get_script_info()
 # print("Script Name:", script_name)
 # print("Script Path:", script_path)
