@@ -36,13 +36,39 @@ def extract_and_write_function(source_path, function_name, destination_path):
             for imp in imports:
                 destination_file.write(f"{imp}\n")
             destination_file.write(f"{extracted_code}")
-
 # Example usage
 #extract_and_write_function("/work/bb1153/b382267/AQUA/cli/weights/generate_weights_for_catalog.py", "generate_catalogue_weights_on_slurm", "new_script.py")
 
-# Get the name and path of the current Python script
-script_name = os.path.basename(__file__)
-script_path = os.path.abspath(__file__)
+def make_executable(file_path):
+    """
+    Make a Python file executable by adding the execute permission.
 
-print("Script Name:", script_name)
-print("Script Path:", script_path)
+    Args:
+        file_path (str): Path to the Python file.
+
+    Returns:
+        None
+    """
+    try:
+        # Get the current file permissions
+        current_permissions = os.stat(file_path).st_mode
+
+        # Add the execute permission for the owner
+        new_permissions = current_permissions | 0o100
+
+        # Set the new file permissions
+        os.chmod(file_path, new_permissions)
+
+        print(f"File '{file_path}' is now executable.")
+    except Exception as e:
+        print(f"Error making the file executable: {e}")
+
+# Example usage
+# make_executable("/work/bb1153/b382267/AQUA/aqua/slurm/new_script.py")
+
+# Get the name and path of the current Python script
+# script_name = os.path.basename(__file__)
+# script_path = os.path.abspath(__file__)
+
+# print("Script Name:", script_name)
+# print("Script Path:", script_path)
