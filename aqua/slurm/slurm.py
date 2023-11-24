@@ -4,22 +4,29 @@ import subprocess
 from aqua.logger import log_configure
 from aqua.util import create_folder, ConfigPath
 
-def get_script_info(file_path=__file__):
+log_level = 'WARNING'
+logger = log_configure(log_level=log_level, log_name='slurm')
+
+def get_script_info(file_path=__file__, log_level='WARNING'):
     """
     Get the name and path of the current Python script.
 
     Returns:
         tuple: A tuple containing the script name and script path.
     """
+    logger = log_configure(log_level=log_level, log_name='slurm')
+    
     script_name = os.path.basename(file_path)
     script_path = os.path.abspath(file_path)
+    script_directory = os.path.dirname(script_path)
     
-    print("Script Name (external):", script_name)
-    print("Script Path (external):", script_path)
+    logger.debug(f"Script Name (external): {script_name}")
+    logger.debug(f"Script Path (external): {script_path}")
+    logger.debug(f"Script Directory (external): {script_directory}")
     
-    return script_name, script_path
+    return script_name, script_directory
 
-def extract_function_and_imports(source_code, function_name):
+def extract_function_and_imports(source_code, function_name, log_level='WARNING'):
     tree = ast.parse(source_code)
     extracted_code = []
     imports = set()
@@ -40,17 +47,17 @@ def extract_function_and_imports(source_code, function_name):
 
     return imports, '\n'.join(extracted_code)
 
-def extract_and_write_function(source_path=__file__, function_name=None):
+def extract_and_write_function(source_path=__file__, function_name=None, log_level='WARNING'):
     
-    script_name, script_path = get_script_info()
-    destination_path = script_path+'tmp_'+script_name
-    print("Destination Path:", destination_path)
+    script_name, script_directory = get_script_info(log_level=log_level)
+    destination_path = script_directory+'/tmp_'+script_name
+    logger.debug(f"Destination Path: {destination_path}")
     
     with open(source_path, 'r') as source_file:
         source_code = source_file.read()
 
         # Extract the specified function, its dependencies, and imports
-        imports, extracted_code = extract_function_and_imports(source_code, function_name)
+        imports, extracted_code = extract_function_and_imports(source_code=source_code, function_name=function_name, log_level=log_level)
 
         # Write the extracted code to a new script
         with open(destination_path, 'w') as destination_file:
@@ -61,7 +68,7 @@ def extract_and_write_function(source_path=__file__, function_name=None):
             destination_file.write(f"{extracted_code}")
     return destination_path
             
-def make_executable(file_path):
+def make_executable(file_path, log_level='WARNING'):
     """
     Make a Python file executable by adding the execute permission.
 
@@ -81,11 +88,11 @@ def make_executable(file_path):
         # Set the new file permissions
         os.chmod(file_path, new_permissions)
 
-        print(f"File '{file_path}' is now executable.")
+        logger.debug(f"File '{file_path}' is now executable.")
     except Exception as e:
-        print(f"Error making the file executable: {e}")
+        logger.debug(f"Error making the file executable: {e}")
 
-def remove_file(file_path=None):
+def remove_file(file_path=None, log_level='WARNING'):
     """
     Remove a file.
 
@@ -97,13 +104,13 @@ def remove_file(file_path=None):
     """
     try:
         os.remove(file_path)
-        print(f"File '{file_path}' removed successfully.")
+        logger.debug(f"File '{file_path}' removed successfully.")
         return True
     except Exception as e:
-        print(f"Error removing the file '{file_path}': {e}")
+        logger.debug(f"Error removing the file '{file_path}': {e}")
         return False
 
-def output_dir(path_to_output='.', loglevel='WARNING'):
+def output_dir(path_to_output='.', log_level='WARNING'):
     """
     Creating the directory for output if it does not exist
 
@@ -111,7 +118,7 @@ def output_dir(path_to_output='.', loglevel='WARNING'):
         path_to_output (str, optional): The path to the directory,
                                         which will contain logs/errors and
                                         output of Slurm Jobs. Defaults is '.'
-        loglevel (str, optional):       The level of logging.
+        log_level (str, optional):       The level of logging.
                                         Defaults to 'WARNING'.
 
     Returns:
@@ -122,18 +129,18 @@ def output_dir(path_to_output='.', loglevel='WARNING'):
     output_path = str(path_to_output)+"/slurm/output"
 
     # Creating the directory for logs and output
-    create_folder(folder=str(path_to_output)+"/slurm", loglevel=loglevel)
-    create_folder(folder=logs_path, loglevel=loglevel)
-    create_folder(folder=output_path, loglevel=loglevel)
+    create_folder(folder=str(path_to_output)+"/slurm", loglevel=log_level)
+    create_folder(folder=logs_path, loglevel=log_level)
+    create_folder(folder=output_path, loglevel=log_level)
 
     return logs_path, output_path
 
 def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memory=None, queue=None,
-                     walltime=None, nodes=None, cores=None, account=None, loglevel='WARNING'):
+                     walltime=None, nodes=None, cores=None, account=None, log_level='WARNING'):
 
     # Creating the directory for logs and output
     logs_path, output_path = output_dir(path_to_output=path_to_output,
-                                        loglevel=loglevel)
+                                        log_level=log_level)
     slurm_command = [
         "sbatch",
         "--job-name", job_name,
@@ -151,16 +158,16 @@ def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memor
     subprocess.run(slurm_command)
 
 def job(source_path, function_name=None, job_name='slurm', path_to_output='.', queue=None, account=None,
-        configdir=None, walltime="2:30:00", nodes=1, cores=1, memory="10 GB", machine=None, loglevel='WARNING'):
-    
-    logger = log_configure(log_level=loglevel, log_name='slurm')
-    
+        configdir=None, walltime="2:30:00", nodes=1, cores=1, memory="10 GB", machine=None, log_level='WARNING'):
+
     if machine is None:
         Configurer = ConfigPath(configdir=configdir)
         machine_name = Configurer.machine
     else:
         machine_name = machine
         
+    logger.debug(f"Machine Name: {machine_name}")
+    
     if queue is None:
         if machine_name == "levante":
             queue = "compute"
@@ -175,15 +182,16 @@ def job(source_path, function_name=None, job_name='slurm', path_to_output='.', q
             account = "project_465000454"
         else:
             raise Exception("The account is not defined. Please, define the account manually.")
-        
+    logger.debug(f"Queue: {queue}")
+    logger.debug(f"Account: {account}")
     if function_name is not None:
-        destination_path = extract_and_write_function(source_path=source_path, function_name=function_name) 
+        destination_path = extract_and_write_function(source_path=source_path, function_name=function_name, log_level=log_level) 
         source_path = destination_path
     
-    make_executable(source_path)
+    make_executable(source_path, log_level=log_level)
         
     submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output, account=account,
-                     memory=memory, queue=queue, walltime=walltime, nodes=nodes, cores=cores, loglevel=loglevel)
+                     memory=memory, queue=queue, walltime=walltime, nodes=nodes, cores=cores, log_level=log_level)
     
     #if function_name is not None
     #    remove_file(file_path=destination_path)
