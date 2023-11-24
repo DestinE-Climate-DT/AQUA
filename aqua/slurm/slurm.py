@@ -7,7 +7,8 @@ from aqua.util import create_folder, ConfigPath
 log_level = 'WARNING'
 logger = log_configure(log_level=log_level, log_name='slurm')
 
-def get_script_info(file_path=__file__, log_level='WARNING'):
+
+def _get_script_info(file_path=__file__, log_level='WARNING'):
     """
     Get information about the current Python script.
 
@@ -30,7 +31,7 @@ def get_script_info(file_path=__file__, log_level='WARNING'):
     
     return script_name, script_directory
 
-def extract_function_and_imports(source_code, function_name, log_level='WARNING'):
+def _extract_function_and_imports(source_code, function_name, log_level='WARNING'):
     """
     Extracts the specified function and associated imports from the given source code.
 
@@ -63,7 +64,7 @@ def extract_function_and_imports(source_code, function_name, log_level='WARNING'
 
     return imports, '\n'.join(extracted_code)
 
-def extract_and_write_function(source_path=__file__, function_name=None, log_level='WARNING'):
+def _extract_and_write_function(source_path=__file__, function_name=None, log_level='WARNING'):
     """
     Extracts the specified function and its dependencies from a source code file,
     writes them to a new script, and returns the path of the new script.
@@ -76,7 +77,7 @@ def extract_and_write_function(source_path=__file__, function_name=None, log_lev
     Returns:
         str: The path of the newly created script containing the extracted function and imports.
     """
-    script_name, script_directory = get_script_info(log_level=log_level)
+    script_name, script_directory = _get_script_info(log_level=log_level)
     destination_path = script_directory+'/tmp_'+script_name
     logger.debug(f"Destination Path: {destination_path}")
     
@@ -84,7 +85,7 @@ def extract_and_write_function(source_path=__file__, function_name=None, log_lev
         source_code = source_file.read()
 
         # Extract the specified function, its dependencies, and imports
-        imports, extracted_code = extract_function_and_imports(source_code=source_code, function_name=function_name, log_level=log_level)
+        imports, extracted_code = _extract_function_and_imports(source_code=source_code, function_name=function_name, log_level=log_level)
 
         # Write the extracted code to a new script
         with open(destination_path, 'w') as destination_file:
@@ -95,7 +96,7 @@ def extract_and_write_function(source_path=__file__, function_name=None, log_lev
             destination_file.write(f"{extracted_code}")
     return destination_path
             
-def make_executable(file_path, log_level='WARNING'):
+def _make_executable(file_path, log_level='WARNING'):
     """
     Make a Python file executable by adding the execute permission.
 
@@ -120,7 +121,7 @@ def make_executable(file_path, log_level='WARNING'):
     except Exception as e:
         logger.debug(f"Error making the file executable: {e}")
 
-def remove_file(file_path=None, log_level='WARNING'):
+def _remove_file(file_path=None, log_level='WARNING'):
     """
     Remove a file.
 
@@ -139,7 +140,7 @@ def remove_file(file_path=None, log_level='WARNING'):
         logger.debug(f"Error removing the file '{file_path}': {e}")
         return False
 
-def output_dir(path_to_output='.', log_level='WARNING'):
+def _output_dir(path_to_output='.', log_level='WARNING'):
     """
     Create directories for logs and output if they do not exist.
 
@@ -161,7 +162,7 @@ def output_dir(path_to_output='.', log_level='WARNING'):
 
     return logs_path, output_path
 
-def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memory=None, queue=None,
+def _submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memory=None, queue=None,
                      walltime=None, nodes=None, cores=None, account=None, log_level='WARNING'):
     """Submit a job to SLURM (Simple Linux Utility for Resource Management).
 
@@ -181,7 +182,7 @@ def submit_slurm_job(script_path_func, job_name=None, path_to_output=None, memor
         None
     """
     # Creating the directory for logs and output
-    logs_path, output_path = output_dir(path_to_output=path_to_output,
+    logs_path, output_path = _output_dir(path_to_output=path_to_output,
                                         log_level=log_level)
     slurm_command = [
         "sbatch",
@@ -247,13 +248,12 @@ def job(source_path, function_name=None, job_name='slurm', path_to_output='.', q
     logger.debug(f"Queue: {queue}")
     logger.debug(f"Account: {account}")
     if function_name is not None:
-        destination_path = extract_and_write_function(source_path=source_path, function_name=function_name, log_level=log_level) 
+        destination_path = _extract_and_write_function(source_path=source_path, function_name=function_name, log_level=log_level) 
         source_path = destination_path
     
-    make_executable(source_path, log_level=log_level)
+    _make_executable(source_path, log_level=log_level)
         
-    submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output, account=account,
+    _submit_slurm_job(script_path_func=source_path, job_name=job_name, path_to_output=path_to_output, account=account,
                      memory=memory, queue=queue, walltime=walltime, nodes=nodes, cores=cores, log_level=log_level)
-    
     if function_name is not None:
-        remove_file(file_path=destination_path)
+        _remove_file(file_path=destination_path)
