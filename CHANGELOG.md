@@ -7,11 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- Tropical cyclons improvements (#645)
 - configdir is not searched based on util file position in the repo (#636)
 - Cleaner mask treatment (Revision of mask structure in the reader #617)
 - Fldmean fix if only one dimension is present for area selection (#640)
 - Adding higher frequency ERA5 data on Levante and Lumi (#628)
-- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#622)
+- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#622, #643)
 - Load all available variables in FDB xarray/dask access (#619)
 - Lint standard and enforced in CI (#616)
 - Reader init split with methods (#523)
