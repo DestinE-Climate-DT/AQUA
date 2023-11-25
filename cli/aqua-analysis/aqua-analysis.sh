@@ -8,29 +8,29 @@
 # ---------------------------------------------------
 model_atm="IFS"
 model_oce="FESOM"
-exp="tco2559-ng5-cycle3"
-source="lra-r100-monthly"
-outputdir="/scratch/b/b382289/cli_test"
-loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
-machine="levante" # will change the aqua config file
+exp="a0eo-LUMI-G-IFS-NEMO-10ensembles"
+source="p001-monthly-1deg-2d"
+outputdir="/pfs/lustrep3/scratch/project_465000454/sughosh/AQUA/cli/aqua-analysis/aqua_out"
+loglevel="DEBUG" # DEBUG, INFO, WARNING, ERROR, CRITICAL
+machine="lumi" # will change the aqua config file
 
 # AQUA path, can be defined as $AQUA env variable
 # if not defined it will use the aqua path in the script
-aqua="/home/b/b382289/AQUA"
+aqua="/scratch/project_465000454/sughosh/AQUA"
 
 # Set as true the diagnostics you want to run
 # -------------------------------------------
-run_dummy=true # dummy is a diagnostic that checks if the setup is correct
-run_atmglobalmean=true
+run_dummy=false # dummy is a diagnostic that checks if the setup is correct
+run_atmglobalmean=false
 run_ecmean=true
 # ---------------------------------------
 # Command line extra arguments for ecmean
 # -c --config ecmean config file
 # -i --interface custom interface file
 # ---------------------------------------
-run_global_time_series=true
-run_ocean3d=true
-run_radiation=true
+run_global_time_series=false
+run_ocean3d=false
+run_radiation=false
 # ------------------------------------------
 # Command line extra arguments for radiation
 # --config (readiation config file)
@@ -43,14 +43,14 @@ run_seaice=true
 # --config (seaice config file)
 # --regrid (regrid data to a different grid)
 # ------------------------------------------
-run_teleconnections=true
+run_teleconnections=false
 # teleconnections additional flags
 # ------------------------------------------------------------------
 # --dry, -d (dry run, if set it will run without producing plots)
 # --ref (if set it will analyze also the reference data, it is set
 #        by default)
 # ------------------------------------------------------------------
-run_tropical_rainfall=true
+run_tropical_rainfall=false
 
 # End of user defined variables
 # -----------------------------
