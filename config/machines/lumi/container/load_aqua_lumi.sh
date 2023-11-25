@@ -1,5 +1,9 @@
 #!/bin/bash
 
+script_dir=$(cd "$(dirname "$0")" && pwd)
+AQUA_path=$(echo "$script_dir" | grep -oP '.*?AQUA' | head -n 1)
+# Note this path of AQUA repo is important when you want to use aqua of the repo.
+
 AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.4.sif"
 FDB5_CONFIG_FILE="/scratch/project_465000454/igonzalez/fdb-long/config.yaml"
 GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
@@ -12,6 +16,8 @@ singularity shell \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
+    --env PYTHONPATH=$AQUA_path \
+    --env AQUA=$AQUA_path \
     --bind /pfs/lustrep3/ \
     --bind /projappl/ \
     --bind /scratch/ \
