@@ -259,15 +259,15 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 - **space_coord**: The space coordinate how coordinates are defined and used for interpolation. Since AQUA v0.4 there is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 
-- **masked**: Keys to define variables which are masked. When using this is used, the code will search for an attribute to make the distinction (``component: ocean`` in this case). It is an alternative specification to ``masked_vars``
-
-- **masked_vars**: A list of variables subject to land-sea masking according to `2dm` grid. It is an alternative specification to ``masked``
+- **masked** (if applicable): Keys to define variables which are masked. When using this, the code will search for an attribute to make the distinction (``component: ocean`` in this case). In alternative, if you want to apply masking only on a group of variables, you can defined ``vars: [var1, var2]``. In all the cases, the `2dm` grid will be applied to the data.
 
 - **vert_coords** (if applicable): Vertical coordinate options for the grid. Specific for oceanic models where interpolation is changing at each depth level.
 
 - **extra** (if applicable): Additional CDO command-line options to be used to process the files defined in `path`.
 
-Other simpler grids can be defined using the CDO syntax, so for example we have ``r100: r360x180``. Other CDO compatible grids can be of course defined in this way. 
+- **cellareas**, **cellarea_var** (if applicable): Optional path and variable name where to specify a file to retrieve the grid area cells when the grid shape is too complex for being automatically computed by CDO.
+
+Other simpler grids can be defined using the CDO syntax, so for example we have ``r100: r360x180``. Further CDO compatible grids can be of course defined in this way. 
 
 A standard `lon-lat` grid is defined for basic interpolation and can be used for most of the regular cases, as long as the ``space_coord`` are ``lon`` and ``lat``.
 

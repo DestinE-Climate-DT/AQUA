@@ -234,9 +234,12 @@ class LRAgenerator():
                 'chunks': {},
                 'xarray_kwargs': {
                     'decode_times': True
+                    },
+                },
+            'metadata': {
+                'source_grid_name': 'lon-lat'
                 }
             }
-        }
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
@@ -245,7 +248,7 @@ class LRAgenerator():
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
         if entry_name in cat_file['sources']:
-            self.logger.info('Catalog entry for %s %s %s exists, updating the urlpath only...', 
+            self.logger.info('Catalog entry for %s %s %s exists, updating the urlpath only...',
                              self.model, self.exp, entry_name)
             cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
         cat_file['sources'][entry_name] = block_cat

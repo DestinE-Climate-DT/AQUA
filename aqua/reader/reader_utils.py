@@ -44,15 +44,18 @@ def check_att(da, att):
 
     Arguments:
         da (xarray.DataArray): DataArray to check
-        att (str): Attribute to check for
+        att (dict or str): Attribute to check for
 
     Returns:
         Boolean
     """
     if att:
-        key = list(att.keys())[0]
-        if key in da.attrs:
-            return da.attrs[key] == list(att.values())[0]
+        if isinstance(att, str):
+            return att in da.attrs
+        elif isinstance(att, dict):
+            key = list(att.keys())[0]
+            if key in da.attrs:
+                return da.attrs[key] == list(att.values())[0]
         else:
             return False
     else:
@@ -130,3 +133,29 @@ def set_attrs(ds, attrs):
     else:
         ds.attrs.update(attrs)
     return ds
+
+
+def configure_masked_fields(source_grid):
+    """
+    Help function to define where to apply masks: 
+    if the grids has the 'masked' option, this can be based on
+    generic attribute or alternatively of a series of specific variables using the 'vars' key
+
+    Args:
+        source_grid (dict): Dictionary containing the grid information
+
+    Returns:
+        masked_attr (str): Name of the attribute to use for masking
+        masked_vars (list): List of variables to mask
+    """
+    masked_vars = None
+    masked_attr = None
+    masked_info = source_grid.get("masked", None)
+    if masked_info is not None:
+        for attr, value in masked_info.items():
+            if attr == 'vars':
+                masked_vars = value
+            else:
+                masked_attr = value
+
+    return masked_attr, masked_vars

@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     # Read configuration file
 
-    file = get_arg(args, 'config', 'config_tcs.yaml')
+    file = get_arg(args, 'config', 'config_tcs_cli.yaml')
     print('Reading tcs configuration yaml file %s', file)
     config = load_yaml(file)
 
@@ -63,7 +63,6 @@ if __name__ == '__main__':
     tropical = TCs(tdict=config, streaming=True,
                    model=model, exp=exp, source2d=source2d, source3d=source3d,
                    stream_step=config['stream']['streamstep'],
-                   stream_unit="days",
                    stream_startdate=config['time']['startdate'],
                    paths=paths,
                    loglevel=loglevel,

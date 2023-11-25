@@ -43,8 +43,8 @@ class ConfigPath():
         if aquadir:
             configdirs.append(os.path.join(aquadir, 'config'))
 
-        # set of predefined folders to browse
-        configdirs.extend(['./../../AQUA/config', './config', '../config', '../../config', '../../../config'])
+        # the predefined configdirs is in the main folder of the AQUA repository
+        configdirs.extend([os.path.dirname(__file__) + "/../../config"])
 
         # if the home is defined
         homedir = os.environ.get('HOME')
