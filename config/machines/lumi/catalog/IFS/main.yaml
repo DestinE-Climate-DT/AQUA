@@ -29,3 +29,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/control-1990-nemo-dev.yaml'
+  a0er-IFS-LUMI-C:
+    description: a0er-IFS-LUMI-C
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0er-IFS-LUMI-C.yaml'
