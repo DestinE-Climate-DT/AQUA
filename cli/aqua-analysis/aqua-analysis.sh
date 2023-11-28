@@ -7,8 +7,8 @@
 # arguments.
 # ---------------------------------------------------
 model_atm="IFS"
-model_oce="FESOM"
-exp="a0er-IFS-LUMI-C"
+model_oce="NEMO"
+exp="a0er-LUMI-C"
 source="fc9-lra-r100-monthly"
 outputdir="$AQUA/../aqua_output"
 mkdir $outputdir
