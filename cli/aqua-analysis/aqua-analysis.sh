@@ -10,7 +10,8 @@ model_atm="IFS"
 model_oce="FESOM"
 exp="a0er-IFS-LUMI-C"
 source="fc9-lra-r100-monthly"
-outputdir="$AQUA/cli/aqua-analysis/aqua_out"
+outputdir="$AQUA/../aqua_output"
+mkdir $outputdir
 loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 machine="lumi" # will change the aqua config file
 
