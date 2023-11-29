@@ -3,6 +3,7 @@ import os
 import eccodes
 from ruamel.yaml import YAML
 from aqua.logger import log_configure
+from aqua.exceptions import NoEcCodesShortNameError
 
 
 # Currently not used
@@ -111,3 +112,34 @@ def _init_get_eccodes_attr():
 
 
 get_eccodes_attr = _init_get_eccodes_attr()
+
+
+# Define this as a closure to avoid reading twice the same file
+def init_get_eccodes_shortname():
+    """
+    Recover eccodes shorthname from a given paramid
+
+    Args:
+        var(str, int): the variable name (a short_name or a paramid)
+
+    Returns:
+        A string containing the short_name
+    """
+    shortname = read_eccodes_def("shortName.def")
+    paramid = read_eccodes_def("paramId.def")
+
+    def _get_eccodes_shortname(var):
+        """
+        """
+        nonlocal shortname, paramid
+
+        if str(var).isdigit():
+            try:
+                i = paramid.index(str(var))
+                return shortname[i]
+            except (ValueError, IndexError) as error:
+                raise NoEcCodesShortNameError('Cannot find any grib codes for paramId %s' % var) from error
+        else:
+            return var
+
+    return _get_eccodes_shortname

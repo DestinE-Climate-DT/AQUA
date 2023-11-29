@@ -70,7 +70,7 @@ class TestFldmean():
         assert avg[0] == pytest.approx(292.6823)
 
     def test_fldmean_icon(self):
-        """Fldmean test for FESOM"""
+        """Fldmean test for ICON"""
         reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=loglevel)
         data = reader.retrieve()
         avg = reader.fldmean(data['t']).values
@@ -85,3 +85,11 @@ class TestFldmean():
         avg = reader.fldmean(data['sst']).values
         assert avg.shape == (2,)
         assert avg[1] == pytest.approx(291.1306)
+
+    def test_fldmean_nemo(self):
+        """Fldmean test for NEMO"""
+        reader = Reader(model="NEMO", exp="test-eORCA1", source='long-2d', loglevel=loglevel)
+        data = reader.retrieve()
+        avg = reader.fldmean(data['sst']).values
+        assert avg.shape == (6,)
+        assert avg[5] == pytest.approx(290.5516)

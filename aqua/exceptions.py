@@ -8,6 +8,13 @@ class NoDataError(Exception):
         super().__init__(self.message)
 
 
+class NoEcCodesShortNameError(Exception):
+    """Exception raised when there is no ecCodes shortName available"""
+    def __init__(self, message="No ecCodes shortName available"):
+        self.message = message
+        super().__init__(self.message)
+
+
 class NotEnoughDataError(Exception):
     """Exception raised when there is not enough data available"""
     def __init__(self, message="Not enough data available"):

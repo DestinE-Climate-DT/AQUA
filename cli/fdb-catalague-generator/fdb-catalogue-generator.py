@@ -34,6 +34,7 @@ common_dict = {
     'metadata': {
         'fdb_path': config['fdb_path'],
         'eccodes_path': config['eccodes_path'],
+        'source_grid_name': config['grid'],
         'variables': ''
         }
 }            
@@ -114,7 +115,7 @@ sources = {
 }
 
 configurer = ConfigPath()
-catalog_path, regrid_yaml_path, fixer_folder, config_file = configurer.get_reader_filenames()
+catalog_path, fixer_folder, config_file = configurer.get_reader_filenames()
 
 #create output file in model folder
 output_filename = f"{config['exp']}.yaml"
@@ -146,17 +147,3 @@ with open(main_yaml_path, 'w') as main_file:
     yaml.dump(main_yaml, main_file)
 
 print(f"'exp' entry in 'main.yaml' has been updated in '{folder_path}'.")
-
-#update regrid.yaml
-
-with open(regrid_yaml_path, 'r') as regrid_file:
-    regrid_yaml = yaml.load(regrid_file)
-
-regrid_yaml['sources'][config['model']][config['exp']] = {
-    **{source: 'lon-lat' if '1deg' in source else config['grid'] for source in list(sources.keys())}
-}
-
-with open(regrid_yaml_path, 'w') as regrid_file:
-    yaml.dump(regrid_yaml, regrid_file)
-
-print(f"'exp' entry in 'regrid.yaml' has been updated.")

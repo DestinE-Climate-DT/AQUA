@@ -1,0 +1,6 @@
+sources:
+  test-eORCA1:
+    description: test data for eORCA1
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/test-eORCA1.yaml"

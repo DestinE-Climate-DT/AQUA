@@ -143,14 +143,11 @@ grids:
     vert_coord: depth
 
   # NEMO
-  eORCA1-2d:
+  ORCA1-2d:
     path: $grids/NEMO/ORCA1_mesh_sfc_grid_T.nc
-    #space_coord: ["cell"]
-    # path: /pfs/lustrep3/scratch/project_465000454/pool/data/IFS/inputs_de_48r1/nemo/V40/eORCA1_Z75/common/mesh_mask.nc
-    # extra:
-    #   - selname,tmask          
-    # space_coord: ["nav_lon", "nav_lat"]
-  eORCA1-3d:
+  eORCA1-2d:
+    path: $grids/NEMO/eORCA1_mesh_sfc_grid_T.nc
+  eORCA1-3d: 
     path: $grids/NEMO/eORCA1_mesh_3d_grid_T.nc
     #space_coord: ["ncells"]
     vert_coord: ["height"]

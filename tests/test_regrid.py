@@ -4,6 +4,7 @@ import pytest
 from aqua import Reader
 
 loglevel = "DEBUG"
+approx_rel = 1e-4
 
 @pytest.fixture(
     params=[
@@ -12,6 +13,7 @@ loglevel = "DEBUG"
         ("ICON", "test-r2b0", "short", "2t", 0),
         ("ICON", "test-healpix", "short", "2t", 0),
         ("FESOM", "test-pi", "original_2d", "sst", 0.33925926),
+        ("NEMO", "test-eORCA1", "long-2d", "sst", 0.28716)
     ]
 )
 def reader_arguments(request):
@@ -36,7 +38,7 @@ class TestRegridder():
         rgd = reader.regrid(data[variable])
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
-        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values)  # land fraction
+        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=approx_rel)  # land fraction
 
     def test_recompute_weights_fesom2D(self):
         """
@@ -93,5 +95,24 @@ class TestRegridder():
         assert len(rgd.time) == 2
         assert 0.33 <= ratio1 <= 0.36
         assert 0.75 <= ratio2 <= 0.79
+
+    def test_recompute_weights_nemo3D(self):
+        """
+        Test interpolation on NEMO, at different grid rebuilding weights,
+        checking output grid dimension and fraction of land
+        (i.e. any missing points)
+        """
+        reader = Reader(model='NEMO', exp='test-eORCA1', source='short-3d',
+                        regrid='r200', rebuild=True, fix=False, loglevel=loglevel)
+        data = reader.retrieve(var='avg_so')
+        rgd = reader.regrid(data)
+
+        ratio1 = rgd.avg_so.isel(level=0).isnull().sum()/rgd.avg_so.isel(level=0).size  # land fraction
+        ratio2 = rgd.avg_so.isel(level=40).isnull().sum()/rgd.avg_so.isel(level=40).size  # land fraction
+        assert len(rgd.lon) == 180
+        assert len(rgd.lat) == 90
+        assert 0.27 <= ratio1 <= 0.30
+        assert 0.35 <= ratio2 <= 0.39
+    
 
 # missing test for ICON-Healpix

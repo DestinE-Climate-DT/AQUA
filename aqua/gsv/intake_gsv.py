@@ -6,6 +6,7 @@ import io
 import eccodes
 import xarray as xr
 import dask
+from aqua.util.eccodes import init_get_eccodes_shortname
 from intake.source import base
 from .timeutil import check_dates, shift_time_dataset
 from .timeutil import split_date, make_timeaxis, date2str, add_offset
@@ -108,6 +109,8 @@ class GSVSource(base.DataSource):
         self._kwargs = kwargs
 
         sys._gsv_work_counter = 0  # used to suppress printing
+
+        self.get_eccodes_shortname = init_get_eccodes_shortname()
 
         self.data_start_date = data_start_date
         self.data_end_date = data_end_date
@@ -234,8 +237,17 @@ class GSVSource(base.DataSource):
         """
         Function to read a delayed partition.
         Returns a dask.array
+
+        Args:
+            i (int): partition number
+            var (string): variable name
+            shape: shape of the schema
+            dtype: data type of the schema
         """
-        ds = dask.delayed(self._get_partition)(i, var=var, dask=True)[var].data
+        ds = dask.delayed(self._get_partition)(i, var=var, dask=True)
+
+        # get the data from the first (and only) data array
+        ds = ds.to_array()[0].data
         newshape = list(shape)
         newshape[self.itime] = self.chk_size[i]
         return dask.array.from_delayed(ds, newshape, dtype)
@@ -268,7 +280,8 @@ class GSVSource(base.DataSource):
                               dims=da0.dims,
                               coords=coords)
 
-            ds[var] = da
+            shortname = self.get_eccodes_shortname(var)
+            ds[shortname] = da
 
         ds.attrs.update(self._ds.attrs)
 

@@ -7,16 +7,17 @@
 # arguments.
 # ---------------------------------------------------
 model_atm="IFS"
-model_oce="FESOM"
-exp="tco2559-ng5-cycle3"
-source="lra-r100-monthly"
-outputdir="/scratch/b/b382289/cli_test"
+model_oce="NEMO"
+exp="a0er-LUMI-C"
+source="fc9-lra-r100-monthly"
+outputdir="$AQUA/../aqua_output"
+mkdir $outputdir
 loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
-machine="levante" # will change the aqua config file
+machine="lumi" # will change the aqua config file
 
 # AQUA path, can be defined as $AQUA env variable
 # if not defined it will use the aqua path in the script
-aqua="/home/b/b382289/AQUA"
+aqua=$AQUA
 
 # Set as true the diagnostics you want to run
 # -------------------------------------------
