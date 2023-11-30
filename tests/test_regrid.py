@@ -48,7 +48,8 @@ class TestRegridder():
         """
         reader = Reader(model='FESOM', exp='test-pi', source='original_2d',
                         regrid='r100', rebuild=True, fix=False, loglevel=loglevel)
-        rgd = reader.retrieve(vars='sst', regrid=True)
+        data = reader.retrieve(var='sst')
+        rgd = reader.regrid(data)
 
         ratio = rgd['sst'].isnull().sum()/rgd['sst'].size  # land fraction
 
@@ -62,7 +63,8 @@ class TestRegridder():
         and areas/weights are reconstructed from the file itself"""
         reader = Reader(model='IFS', exp='test-tco79', source='long',
                         regrid='r100', rebuild=True, loglevel=loglevel)
-        rgd = reader.retrieve(vars='ttr', regrid=True)
+        data = reader.retrieve(var='ttr')
+        rgd = reader.regrid(data)
 
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
@@ -72,7 +74,9 @@ class TestRegridder():
         """Test Healpix and areas/weights are reconstructed from the file itself"""
         reader = Reader(model='ICON', exp='test-healpix', source='short',
                         regrid='r100', rebuild=True)
-        rgd = reader.retrieve(vars='t', regrid=True)
+        data = reader.retrieve(var='t')
+        rgd = reader.regrid(data)
+
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
         assert len(rgd.level_full) == 90
@@ -86,7 +90,8 @@ class TestRegridder():
         """
         reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
                         regrid='r100', rebuild=True, fix=False, loglevel=loglevel)
-        rgd = reader.retrieve(vars='temp', regrid=True)
+        data = reader.retrieve(var='temp')
+        rgd = reader.regrid(data)
 
         ratio1 = rgd.temp.isel(nz1=0).isnull().sum()/rgd.temp.isel(nz1=0).size  # land fraction
         ratio2 = rgd.temp.isel(nz1=40).isnull().sum()/rgd.temp.isel(nz1=40).size  # land fraction

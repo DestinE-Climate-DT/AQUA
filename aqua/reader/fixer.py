@@ -156,7 +156,7 @@ class FixerMixin():
         for ds in data:
             yield self._fixer(ds, var, keep_memory=True, **kwargs)
 
-    def _fixer(self, data, destvar, apply_unit_fix=False, keep_memory=False):
+    def _fixer(self, data, destvar, apply_unit_fix=True, keep_memory=False):
         """
         Perform fixes (var name, units, coord name adjustments) of the input dataset.
 
@@ -165,7 +165,7 @@ class FixerMixin():
             destvar (list of str):  the name of the desired variables to be fixed, if None all available variables are fixed
             apply_unit_fix (bool):  if to perform immediately unit conversions (which requite a product or an addition).
                                     The fixer sets anyway an offset or a multiplicative factor in the data attributes.
-                                    These can be applied also later with the method `apply_unit_fix`. (false)
+                                    These can be applied also later with the method `apply_unit_fix`. (true)
             keep_memory (bool):     if to keep memory of the previous fields (used for decumulation of iterators)
 
         Returns:
