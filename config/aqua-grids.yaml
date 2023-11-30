@@ -143,16 +143,30 @@ grids:
     vert_coord: depth
 
   # NEMO
-  ORCA1-2d:
-    path: $grids/NEMO/ORCA1_mesh_sfc_grid_T.nc
   eORCA1-2d:
     path: $grids/NEMO/eORCA1_mesh_sfc_grid_T.nc
-  eORCA1-3d: 
-    path: $grids/NEMO/eORCA1_mesh_3d_grid_T.nc
-    #space_coord: ["ncells"]
+  eORCA1-3d-level: 
+    path: 
+      level: $grids/NEMO/eORCA1_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  eORCA1-3d-height: 
+    path: 
+      height: $grids/NEMO/eORCA1_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
     vert_coord: ["height"]
-    extra:
-      - -selname,dummy  
+  eORCA12-2d:
+    path: $grids/NEMO/eORCA12_mesh_sfc_grid_T.nc
+  eORCA12-3d-level: 
+    path: 
+      level: $grids/NEMO/eORCA12_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  eORCA12-3d-height: 
+    path: 
+      height: $grids/NEMO/eORCA12_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["height"]
 
   # OBSERVATIONS
   aviso:

@@ -104,8 +104,7 @@ As mentioned, if the weights file does not exist in our collection, it will be c
     reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09", regrid="r100")
     data = reader.retrieve()
 
-Notice that these data still need to be regridded. You could ask to regrid them directly by specifying
-the argument ``regrid=True`` to the ``retrieve`` method. 
+Notice that these data still need to be regridded. You could ask to regrid it to the destination grid which we chose when we instantiated the reader.
 Please be warned that this will take longer without a selection.
 It is usually more efficient to load the data, select it, and then regrid it.
 
@@ -158,13 +157,13 @@ It is also possible to apply a regional section to the domain before performing 
     It can work also on unstructured grids, but information on coordinate must be available. 
 
 Input data may not be available at the desired time frequency. It is possible to perform time averaging at a given
-frequency by specifying a frequency in the reader definition and then using the ``timmean`` method. 
+frequency by using the ``timmean`` method. 
 
 .. code-block:: python
 
-    reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d", freq='daily')
+    reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
     data = reader.retrieve()
-    daily = reader.timmean(data)
+    daily = reader.timmean(data, freq='daily')
 
 Data have now been averaged at the desired daily timescale.
 If you want to avoid to have incomplete average over your time period (for example, be sure that all the months are complete before doing the time mean)
@@ -182,7 +181,7 @@ fixing variable or coordinate names and performing unit conversions.
 The general idea is to convert data from different models to a uniform file format
 with the same variable names and units. The default format is GRIB2.
 
-The fixing is done by default (``apply_unit_fix=False`` to switch it off) when we initialize the reader, 
+The fixing is done by default when we initialize the reader, 
 using the instructions in the ``config/fixes`` folder. Each model has its own YAML file that specify the fixes, and a ``default.yaml``
 file is used for common unit corrections.
 
@@ -344,21 +343,3 @@ The default is ``S`` (step), i.e. single saved timesteps are read at each iterat
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
 Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
-
-Buffer access
-~~~~~~~~~~~~~
-
-A final option is 'buffering' (*this is actually superseded by the dask access and may be entirely be removed in future releases*).
-In this case it is possible to store the results of the iterator access into a temporary directory (i.e. to buffer them).
-Of course, you will pay the price of additional disk traffic and disk storage.
-The ``buffer`` keyword should specify the location of a directory with enough space to create large temporary directories.
-
-.. code-block:: python
-
-    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D", regrid="r025",
-                    buffer="/scratch/jost/aqua/buffer", loglevel="INFO")
-    data = reader.retrieve(startdate='20200201', enddate='20200301', var='ci')
-
-The result will now be a regular dask xarray Dataset, not an iterator.
-In theory the temporary directory will be erased automatically if the program terminates in an orderly fashion. This is not always the case with jupyter notebooks, 
-so you should monitor your buffer directory and do manual housekeeping.

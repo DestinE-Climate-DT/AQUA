@@ -32,7 +32,8 @@ class RegridMixin():
         grid_area = self.cdo_generate_areas(source=dst_extra)
 
         # Make sure that grid areas contain exactly the same coordinates
-        data = self._retrieve_plain(regrid=True)
+        data = self._retrieve_plain()
+        data = self.regrid(data)
 
         grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
 
@@ -266,20 +267,17 @@ class RegridMixin():
 
     def _retrieve_plain(self, *args, **kwargs):
         """
-        Retrieves making sure that no buffering, fixer and agregation are used
+        Retrieves making sure that no fixer and agregation are used
         and converts iterator to data
         """
 
-        buffer = self.buffer
         aggregation = self.aggregation
         fix = self.fix
         streaming = self.streaming
         self.fix = False
-        self.buffer = None
         self.aggregation = None
         self.streaming = False
         data = self.retrieve(*args, **kwargs)
-        self.buffer = buffer
         self.aggregation = aggregation
         self.fix = fix
         self.streaming = streaming
@@ -295,8 +293,8 @@ class RegridMixin():
         Given a set of default space dimensions, find the one present in the data
         and return them
         """
-
-        data = self._retrieve_plain(startdate=None, regrid=False)
+    
+        data = self._retrieve_plain(startdate=None)
         guessed = [x for x in data.dims if x in default_dims]
         if guessed is None:
             self.logger.info('Default dims that are screened are %s', default_dims)

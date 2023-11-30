@@ -4,7 +4,6 @@ import os
 import re
 
 import types
-import tempfile
 import shutil
 import intake
 import intake_esm
@@ -42,15 +41,14 @@ xr.set_options(keep_attrs=True)
 class Reader(FixerMixin, RegridMixin):
     """General reader for NextGEMS data."""
 
-    def __init__(self, model=None, exp=None, source=None, freq=None, fix=True,
-                 regrid=None, method="ycon", zoom=None, configdir=None,
+    def __init__(self, model=None, exp=None, source=None, fix=True,
+                 regrid=None, method="ycon", zoom=None,
                  areas=True,  # pylint: disable=W0622
                  datamodel=None,
                  streaming=False, stream_generator=False,
                  startdate=None, enddate=None,
-                 rebuild=False, loglevel=None, nproc=4, aggregation=None,
-                 verbose=False, exclude_incomplete=False,
-                 buffer=None):
+                 rebuild=False, loglevel=None, nproc=4, aggregation=None):
+
         """
         Initializes the Reader class, which uses the catalog
         `config/config.yaml` to identify the required data.
@@ -63,12 +61,9 @@ class Reader(FixerMixin, RegridMixin):
             method (str, optional): Regridding method. Defaults to "ycon".
             fix (bool, optional): Activate data fixing
             zoom (int): healpix zoom level. (Default: None)
-            configdir (str, optional): Folder where the config/catalog files are located. Defaults to None.
             areas (bool, optional): Compute pixel areas if needed. Defaults to True.
-            var (str or list, optional): Variable(s) to extract; "vars" is a synonym. Defaults to None.
             datamodel (str, optional): Destination data model for coordinates, overrides the one in fixes.yaml.
                                        Defaults to None.
-            freq (str, optional): Frequency of the time averaging. Valid values are monthly, daily, yearly. Defaults to None.
             streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
             stream_generator (bool, optional): if to return a generator object for data streaming. Defaults to False
             startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
@@ -79,12 +74,6 @@ class Reader(FixerMixin, RegridMixin):
             nproc (int,optional): Number of processes to use for weights generation. Defaults to 16.
             aggregation (str, optional): aggregation/chunking to be used for GSV access (e.g. D, M, Y).
                                          Defaults to None (using default from catalogue, recommended).
-            verbose (bool, optional): if to print to screen additional info (used only for FDB access at the moment)
-            exclude_incomplete (bool, optional): when using timmean() method, remove incomplete chunk from averaging.
-                                                 Default to False.
-            buffer (str or bool, optional): buffering of FDB/GSV streams in a temporary directory specified by the keyword.
-                                            The result will be a dask array and not an iterator.
-                                            Can be simply a boolean True for memory buffering.
 
         Returns:
             Reader: A `Reader` class object.
@@ -98,12 +87,9 @@ class Reader(FixerMixin, RegridMixin):
         self.model = model
         self.targetgrid = regrid
         self.nproc = nproc
-        self.freq = freq
         self.vert_coord = None
         self.deltat = 1
         self.aggregation = aggregation
-        self.verbose = verbose
-        self.exclude_incomplete = exclude_incomplete
         extra = []
 
         self.grid_area = None
@@ -130,11 +116,8 @@ class Reader(FixerMixin, RegridMixin):
 
         self.previous_data = None  # used for FDB iterator fixing
 
-        # define buffering option in case of FDB
-        self.buffer = self._define_buffer(buffer)
-
         # define configuration file and paths
-        Configurer = ConfigPath(configdir=configdir)
+        Configurer = ConfigPath()
         self.configdir = Configurer.configdir
         self.machine = Configurer.machine
 
@@ -330,25 +313,6 @@ class Reader(FixerMixin, RegridMixin):
             if self.fix:
                 self.grid_area = self._fix_area(self.grid_area)
 
-    def _define_buffer(self, buffer):
-        """Define the FDB optional buffering
-
-        Arguments:
-            buffer (str or bool): the buffer path or True for memory buffering
-
-        Returns:
-            The buffer path or True for memory buffering or None if no buffering is required
-        """
-
-        if buffer and buffer is not True:  # optional FDB buffering
-            if not os.path.isdir(buffer):
-                raise ValueError("The directory specified by buffer must exist.")
-            return tempfile.TemporaryDirectory(dir=buffer)
-        elif buffer is True:
-            return True
-        else:
-            return None
-
     def _set_cdo(self, cfg_base):
         """Check information on CDO to set the correct version
 
@@ -371,19 +335,13 @@ class Reader(FixerMixin, RegridMixin):
 
         return cdo
 
-    def retrieve(self, regrid=False, timmean=False,
-                 apply_unit_fix=True, var=None, vars=None,
+    def retrieve(self, var=None,
                  startdate=None, enddate=None):
         """
         Perform a data retrieve.
 
         Arguments:
-            regrid (bool): if to regrid the retrieved data. Defaults to False
-            timmean (bool): if to average the retrieved data. Defaults to False
-            apply_unit_fix (bool): if to already adjust units by multiplying by a factor or adding an offset
-                                   (this can also be done later with the `apply_unit_fix` method). Defaults to True
-            var (str, list): the variable(s) to retrieve.Defaults to None. vars is a synonym.
-                             If None, all variables are retrieved
+            var (str, list): the variable(s) to retrieve.Defaults to None. If None, all variables are retrieved
             startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
 
@@ -400,9 +358,6 @@ class Reader(FixerMixin, RegridMixin):
         if not enddate:  # In case the streaming startdate is used also for FDB copy it
             enddate = self.enddate
 
-        if vars:
-            var = vars
-
         # get loadvar
         if var:
             if isinstance(var, str):  # conversion to list guarantees that a Dataset is produced
@@ -413,7 +368,7 @@ class Reader(FixerMixin, RegridMixin):
             if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):  # If we are retrieving from fdb we have to specify the var
                 metadata = self.esmcat.metadata
                 if metadata:
-                    var = metadata.get('variables')       
+                    var = metadata.get('variables')
                 if not var:
                     var = [self.esmcat._request['param']]  # retrieve var from catalogue
 
@@ -450,22 +405,15 @@ class Reader(FixerMixin, RegridMixin):
 
         # sequence which should be more efficient: decumulate - averaging - regridding - fixing
 
-        if self.targetgrid and regrid:
-            data = self.regrid(data)
-            self.grid_area = self.dst_grid_area
-
         if self.fix:   # Do not change easily this order. The fixer assumes to be after regridding
-            data = self.fixer(data, var, apply_unit_fix=apply_unit_fix)
+            data = self.fixer(data, var)
 
-        if self.freq and timmean:
-            data = self.timmean(data, exclude_incomplete=self.exclude_incomplete)
+        # log an error if some variables have no units
+        if isinstance(data, xr.Dataset):
+            for var in data.data_vars:
+                if not hasattr(data[var], 'units'):
+                    self.logger.error('Variable %s has no units!', var)
 
-        if fiter and self.buffer:  # We prefer an xarray, let's buffer everything
-            if self.buffer is True:  # we did not provide a buffer path, use an xarray in memory
-                data = self.buffer_mem(data)
-            else:
-                data = self.buffer_iter(data)
-            fiter = False
 
         if not fiter:
             # This is not needed if we already have an iterator
@@ -548,7 +496,8 @@ class Reader(FixerMixin, RegridMixin):
         for ds in data:
             yield self._timmean(ds, freq, exclude_incomplete, time_bounds)
 
-    def _timmean(self, data, freq=None, exclude_incomplete=None, time_bounds=False):
+
+    def _timmean(self, data, freq=None, exclude_incomplete=False, time_bounds=False):
         """
         Perform daily and monthly averaging
 
@@ -557,17 +506,11 @@ class Reader(FixerMixin, RegridMixin):
             freq (str):         the frequency of the time averaging.
                                 Valid values are monthly, daily, yearly. Defaults to None.
             exclude_incomplete (bool):  Check if averages is done on complete chunks, and remove from the output
-                                        chunks which have not all the expected records. If None, using from Reader
+                                        chunks which have not all the expected records.
             time_bound (bool):  option to create the time bounds
         Returns:
             A xarray.Dataset containing the time averaged data.
         """
-
-        if freq is None:
-            freq = self.freq
-
-        if exclude_incomplete is None:
-            exclude_incomplete = self.exclude_incomplete
 
         resample_freq = frequency_string_to_pandas(freq)
 
@@ -824,22 +767,20 @@ class Reader(FixerMixin, RegridMixin):
             if self.aggregation:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var,
                               aggregation=self.aggregation,
-                              logging=True, verbose=self.verbose).to_dask()
+                              logging=True, loglevel=self.loglevel).to_dask()
             else:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var,
-                              logging=True, verbose=self.verbose).to_dask()
+                              logging=True, loglevel=self.loglevel).to_dask()
         else:
             if self.aggregation:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var,
                               aggregation=self.aggregation,
-                              logging=True, verbose=self.verbose).read_chunked()
+                              logging=True, loglevel=self.loglevel).read_chunked()
             else:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var,
-                              logging=True, verbose=self.verbose).read_chunked()
+                              logging=True, loglevel=self.loglevel).read_chunked()
 
         return data
-    
-            
 
     def reader_intake(self, esmcat, var, loadvar, keep="first"):
         """
@@ -878,43 +819,6 @@ class Reader(FixerMixin, RegridMixin):
 
         return data
 
-    def buffer_iter(self, data):
-        """
-        Buffers an iterator object into a temporary directory
-        Args:
-            data (iterator over xarray.Dataset): the data to be buffered
-
-        Returns:
-            A xarray.Dataset pointing to the buffered data
-        """
-
-        self.logger.info("Buffering iterator to: %s", self.buffer.name)
-        niter = 0
-        for dd in data:
-            dd.to_netcdf(f"{self.buffer.name}/iter{niter}.nc")
-            niter = niter + 1
-
-        return xr.open_mfdataset(f"{self.buffer.name}/iter*.nc")
-
-    def buffer_mem(self, data):
-        """
-        Buffers (reads) an iterator object directly into a dataset
-        Args:
-            data (iterator over xarray.Dataset): the data to be buffered
-
-        Returns:
-            A xarray.Dataset
-        """
-
-        self.logger.info("Buffering iterator to memory")
-        ds = next(data)  # get the first one
-        try:
-            for dd in data:
-                ds = xr.concat([ds, dd], dim="time")
-        except StopIteration:
-            pass  # The iterator has finished, we are done
-
-        return ds
 
     def stream(self, data, startdate=None, enddate=None, aggregation=None,
                timechunks=None, reset=False):

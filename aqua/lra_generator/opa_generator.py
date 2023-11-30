@@ -33,7 +33,7 @@ class OPAgenerator():
 
     def __init__(self,
                  model=None, exp=None, source=None, zoom=None,
-                 var=None, vars=None, frequency=None,
+                 var=None, frequency=None,
                  checkpoint=True, stream_step=5,
                  outdir=None, tmpdir=None, configdir=None,
                  loglevel=None, overwrite=False, definitive=False,
@@ -47,7 +47,7 @@ class OPAgenerator():
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
             zoom (int):              Healpix level of zoom
-            var (str, list):         Variable(s) to be processed,vars in a synonim
+            var (str, list):         Variable(s) to be processed
             frequency (string):      The target frequency for averaging the OPA
             checkpoint (bool, opt):  Whether OPA should use or not checkpointing
             stream_step (int, opt):  How many days OPA should load at once
@@ -103,11 +103,8 @@ class OPAgenerator():
         self.machine = Configurer.machine
 
         # Initialize variable(s)
-        self.var = None
-        if vars:
-            self.var = vars
-        else:
-            self.var = var
+        self.var = var
+
         if not self.var:
             raise KeyError('Please specify variable string or list.')
         self.logger.warning('Variable(s) to be processed: %s', self.var)

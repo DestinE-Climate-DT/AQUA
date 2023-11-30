@@ -14,6 +14,7 @@ Unreleased is the current development version.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - AQUA new common environment installation tool for LUMI added (#413)
 =======
 - Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
@@ -29,6 +30,14 @@ Unreleased is the current development version.
 - tprate not derived from tp for GSV sources (#653)
 - var='paramid' can be used to select variables in the retrieve method (#648)
 >>>>>>> cat_a0er_a0eo
+=======
+- Controlling the loglevel of the GSV interface (#665)
+- Fix wrong fdb source (#657)
+- Adding tests for NEMO 2D and 3D (#652)
+- tprate not derived from tp for GSV sources (#653)
+- Simplify reader init and retrieve (#620)
+- var='paramid' can be used to select variables in the retriee method (#648)
+>>>>>>> main
 - Tropical cyclons improvements (#645)
 - configdir is not searched based on util file position in the repo (#636)
 - Cleaner mask treatment (Revision of mask structure in the reader #617)
