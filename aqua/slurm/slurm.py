@@ -233,7 +233,7 @@ def job(exclusive=False, max_resources=False, cores=1, memory="10 GB",
     )
 
     client = Client(cluster)
-    logger.degug(f"Client: {client}")
+    logger.debug(f"Client: {client}")
     logger.info("Submitting the job to the SLURM queue")
     logger.warning(cluster.job_script())
 
