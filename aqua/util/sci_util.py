@@ -46,9 +46,9 @@ def area_selection(data=None, lat=None, lon=None, box_brd=True,
         if lon[0] > lon[1]:
             lon_condition = (
                 (data.lon >= lon[0]) & (data.lon <= 360)
-                ) | (
+            ) | (
                 (data.lon >= 0) & (data.lon <= lon[1])
-                )
+            )
         else:
             lon_condition = (data.lon >= lon[0]) & (data.lon <= lon[1])
     else:
@@ -57,9 +57,9 @@ def area_selection(data=None, lat=None, lon=None, box_brd=True,
         if lon[0] > lon[1]:
             lon_condition = (
                 (data.lon > lon[0]) & (data.lon < 360)
-                ) | (
+            ) | (
                 (data.lon > 0) & (data.lon < lon[1])
-                )
+            )
         else:
             lon_condition = (data.lon > lon[0]) & (data.lon < lon[1])
 
@@ -137,11 +137,21 @@ def check_coordinates(lon=None, lat=None,
             raise ValueError(f'lon_max cannot be higher than {default["lon_max"]}')
 
         lon = [lon_min, lon_max]
-    
+
+    # If lat or lon are None, set them to default values
     if lat is None:
         lat = [default["lat_min"], default["lat_max"]]
     if lon is None:
         lon = [default["lon_min"], default["lon_max"]]
+
+    # If lat min and max are the same, set them to default values
+    # same for lon
+    if lat[0] == lat[1]:
+        lat = [default["lat_min"], default["lat_max"]]
+        logger.warning('lat_min and lat_max are the same, setting them to default values')
+    if lon[0] == lon[1]:
+        lon = [default["lon_min"], default["lon_max"]]
+        logger.warning('lon_min and lon_max are the same, setting them to default values')
 
     logger.debug('Output coordinates: lat=%s, lon=%s', lat, lon)
 

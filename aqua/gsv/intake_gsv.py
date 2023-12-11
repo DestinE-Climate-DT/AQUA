@@ -2,13 +2,14 @@
 import os
 import datetime
 import sys
-import io
 import eccodes
 import xarray as xr
 import dask
+from aqua.util.eccodes import init_get_eccodes_shortname
 from intake.source import base
 from .timeutil import check_dates, shift_time_dataset
 from .timeutil import split_date, make_timeaxis, date2str, add_offset
+from aqua.logger import log_configure, _check_loglevel
 
 # Test if FDB5 binary library is available
 try:
@@ -40,8 +41,8 @@ class GSVSource(base.DataSource):
 
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
                  aggregation="S", savefreq="H", timestep="H", timeshift=None,
-                 startdate=None, enddate=None, var=None, metadata=None, verbose=False,
-                 logging=False, **kwargs):
+                 startdate=None, enddate=None, var=None, metadata=None,
+                 log_history=False, loglevel='WARNING', **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalogue entry, but can also be specified upon accessing the catalogue.
 
@@ -56,10 +57,13 @@ class GSVSource(base.DataSource):
             enddate (str, optional): End date for request. Defaults to None.
             var (str, optional): Variable ID. Defaults to those in the catalogue.
             metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
-            verbose (bool, optional): Whether to print additional info to screen. Used only for FDB access. Defaults to False.
+            loglevel (string) : The loglevel for the GSVSource
             logging (bool, optional): Whether to print to screen. Used only for FDB access. Defaults to False.
             kwargs: other keyword arguments.
         """
+
+        self.log_history = log_history
+        self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
 
         if not gsv_available:
             raise ImportError(gsv_error_cause)
@@ -95,13 +99,12 @@ class GSVSource(base.DataSource):
         else:
             self._var = var
 
-        self.verbose = verbose
-        self.logging = logging
-
         self._request = request.copy()
         self._kwargs = kwargs
 
         sys._gsv_work_counter = 0  # used to suppress printing
+
+        self.get_eccodes_shortname = init_get_eccodes_shortname()
 
         self.data_start_date = data_start_date
         self.data_end_date = data_end_date
@@ -132,8 +135,8 @@ class GSVSource(base.DataSource):
             da = self._ds[var]  # get first variable dataarray
 
             metadata = {
-                 'dims': da.dims,
-                 'attrs': self._ds.attrs
+                'dims': da.dims,
+                'attrs': self._ds.attrs
             }
             schema = base.Schema(
                 datashape=None,
@@ -199,20 +202,27 @@ class GSVSource(base.DataSource):
                 eccodes.codes_context_delete()  # flush old definitions in cache
                 eccodes.codes_set_definitions_path(self.eccodes_path)
 
-        gsv = GSVRetriever()  # for some reason this is needed here and not in init
+        # for some reason this is needed here and not in init
+        gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
+        gsv = GSVRetriever(logging_level=gsv_log_level)
 
-        if self.verbose:
-            print("Request: ", i, self._var, s0, s1, request)
-            dataset = gsv.request_data(request)
-        else:
-            with NoPrinting():
-                dataset = gsv.request_data(request)
-    
+        # if self.verbose:
+        #     print("Request: ", i, self._var, s0, s1, request)
+        #     dataset = gsv.request_data(request)
+        # else:
+        #     with NoPrinting():
+        #         dataset = gsv.request_data(request)
+
+        # to silence the logging from the GSV retriever, we increase its level by one
+        # in this way the 'info' is printed only in 'debug' mode
+        # gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel() + 10)
+        dataset = gsv.request_data(request)
+
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)
 
         # Log history
-        if self.logging:
+        if self.log_history:
             log_history(dataset, "Dataset retrieved by GSV interface")
 
         return dataset
@@ -229,8 +239,17 @@ class GSVSource(base.DataSource):
         """
         Function to read a delayed partition.
         Returns a dask.array
+
+        Args:
+            i (int): partition number
+            var (string): variable name
+            shape: shape of the schema
+            dtype: data type of the schema
         """
-        ds = dask.delayed(self._get_partition)(i, var=var, dask=True)[var].data
+        ds = dask.delayed(self._get_partition)(i, var=var, dask=True)
+
+        # get the data from the first (and only) data array
+        ds = ds.to_array()[0].data
         newshape = list(shape)
         newshape[self.itime] = self.chk_size[i]
         return dask.array.from_delayed(ds, newshape, dtype)
@@ -264,29 +283,30 @@ class GSVSource(base.DataSource):
                     dims = da0.dims,
                     coords = coords)
 
-            ds[var] = da
+            shortname = self.get_eccodes_shortname(var)
+            ds[shortname] = da
 
         ds.attrs.update(self._ds.attrs)
 
         return ds
 
 
-class NoPrinting:
-    """
-    Context manager to suppress printing
-    """
+# class NoPrinting:
+#     """
+#     Context manager to suppress printing
+#     """
 
-    def __enter__(self):
-        sys._gsv_work_counter += 1
-        if sys._gsv_work_counter == 1 and not isinstance(sys.stdout, io.StringIO):  # We are really the first
-             sys._org_stdout = sys.stdout  # Record the original in sys
-             self._trap = io.StringIO()
-             sys.stdout = self._trap
+#     def __enter__(self):
+#         sys._gsv_work_counter += 1
+#         if sys._gsv_work_counter == 1 and not isinstance(sys.stdout, io.StringIO):  # We are really the first
+#             sys._org_stdout = sys.stdout  # Record the original in sys
+#             self._trap = io.StringIO()
+#             sys.stdout = self._trap
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys._gsv_work_counter -= 1
-        if sys._gsv_work_counter == 0:  # We are really the last one
-             sys.stdout = sys._org_stdout  # Restore the original
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         sys._gsv_work_counter -= 1
+#         if sys._gsv_work_counter == 0:  # We are really the last one
+#             sys.stdout = sys._org_stdout  # Restore the original
 
 
 # This function is repeated here in order not to create a cross dependency between GSVSource and AQUA

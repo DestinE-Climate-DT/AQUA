@@ -122,6 +122,17 @@ class TCs(DetectNodes, StitchNodes):
         Returns:
             None
         """
+        
+        
+        
+        # do this to remove the last letter from streamstep! e.g. tdict['stream']['streamstep'] is defined as "10D" but we want only the value 10!
+        numbers = [int(i) for i in tdict['stream']['streamstep'] if i.isdigit()]
+        streamstep_n=int(''.join(map(str, numbers)))
+        
+        # Check if the character after the number is 'D'
+        # if not expressed as "D", raise value error, since we need days for the time loop!
+        if tdict['stream']['streamstep'][len(numbers)] != 'D':
+            raise ValueError("Critical error! Stream step must be specified in days as 'D' in the config file!")
 
         # retrieve the data and call detect nodes on the first chunk of data
         self.data_retrieve()
@@ -132,8 +143,10 @@ class TCs(DetectNodes, StitchNodes):
             2*tdict['stitch']['n_days_ext']
         last_run_stitch = pd.Timestamp(self.startdate)
 
+
         # loop to simulate streaming
-        while len(np.unique(self.data2d.time.dt.day)) == tdict['stream']['streamstep']:
+        while len(np.unique(self.data2d.time.dt.day)) == streamstep_n:
+            print("entered the loop")
             self.data_retrieve()
             self.logger.warning(
                 "New streaming from %s to %s", pd.Timestamp(self.stream_startdate).strftime('%Y%m%dT%H'), pd.Timestamp(self.stream_enddate).strftime('%Y%m%dT%H'))
@@ -194,20 +207,18 @@ class TCs(DetectNodes, StitchNodes):
         if self.model in 'IFS':
             self.varlist2d = ['msl', '10u', '10v', 'z']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
-                                   regrid=self.lowgrid, streaming=self.streaming,
-                                   stream_step=self.stream_step,
-                                   stream_unit=self.stream_units, stream_startdate=self.stream_startdate,
-                                   loglevel=self.loglevel)
+                                         regrid=self.highgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
             self.varlist3d = ['z']
             self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d,
-                                   regrid=self.lowgrid, streaming=self.streaming,
-                                   stream_step=self.stream_step, stream_unit=self.stream_units,
-                                   stream_startdate=self.stream_startdate,
-                                   loglevel=self.loglevel,)
+                                         regrid=self.highgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
             self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
                                          regrid=self.highgrid,
-                                         streaming=self.streaming, stream_step=self.stream_step, loglevel=self.loglevel,
-                                         stream_unit=self.stream_units, stream_startdate=self.stream_startdate)
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
         else:
             raise ValueError(f'Model {self.model} not supported')
 

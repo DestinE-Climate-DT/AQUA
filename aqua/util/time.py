@@ -11,7 +11,6 @@ from aqua.logger import log_configure
 
 
 def frequency_string_to_pandas(freq):
-
     """
     Convert a string from the AQUA convention to 
     the usual pandas frequency standard
@@ -43,7 +42,6 @@ def frequency_string_to_pandas(freq):
 
 
 def _xarray_timedelta_string(xdataset):
-
     """
     Given a Xarray Dataset, estimate the time frequency and convert
     it as a Pandas frequency string
@@ -69,7 +67,6 @@ def _xarray_timedelta_string(xdataset):
         return f"{hours}H"
     
 def _find_end_date(start_date, offset):
-
     """Given a date and an offset in the form of pandas frequency
     return the expected end date of that period"""
 
@@ -81,8 +78,7 @@ def _find_end_date(start_date, offset):
     return end_date
 
 def _generate_expected_time_series(start_date, frequency, time_period):
-
-    """Given a start date, a pandas frequency and the data_frequency generate 
+    """Given a start date, a pandas frequency and the data_frequency generate
     an expected time series"""
  
     end_date = _find_end_date(start_date, time_period)
@@ -90,10 +86,10 @@ def _generate_expected_time_series(start_date, frequency, time_period):
 
     return time_series
 
-def check_chunk_completeness(xdataset, resample_frequency = '1D', loglevel='WARNING'):
 
-    """Support function for timmean(). 
-    Verify that all the chunks available in a dataset are complete given a 
+def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNING'):
+    """Support function for timmean().
+    Verify that all the chunks available in a dataset are complete given a
     fixed resample_frequency.
     
     Args:

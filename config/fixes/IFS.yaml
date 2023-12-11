@@ -260,15 +260,58 @@ models:
                 vars:
                     tprate:
                         source: tprate
+            monthly-1deg-2d:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
 
-        # this should be exactly the same but we have tprate without decumulation already in the fdb 
-        historical-1990-devcon:
+        control-1950-nemo-dev:
             hourly-1deg:
                 method: merge
                 vars:
                     tprate:
                         source: tprate
             hourly-native:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+            monthly-1deg-2d:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+
+        historical-1990-fesom-dev:
+            hourly-1deg:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+            hourly-native:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+            monthly-1deg-2d:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+
+        historical-1990-nemo-dev:
+            hourly-1deg:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+            hourly-native:
+                method: merge
+                vars:
+                    tprate:
+                        source: tprate
+            monthly-1deg-2d:
                 method: merge
                 vars:
                     tprate:

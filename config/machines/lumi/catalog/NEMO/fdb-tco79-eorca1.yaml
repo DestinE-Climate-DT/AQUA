@@ -26,5 +26,8 @@
         timeshift: -M    # shift time of resulting xarray by this amount
       description: monthly data on native resolution. Contains avg_thetao (263501) and avg_so (263500)
       driver: gsv
-      metadata: {fdb_path: 
-          /scratch/project_465000454/bjimenez/gsv_interface/config.yaml}
+      metadata: 
+        fdb_path: /scratch/project_465000454/bjimenez/gsv_interface/config.yaml
+        eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.28.0/definitions
+        variables: [263501, 263500]
+        source_grid_name: eORCA1-3d-level

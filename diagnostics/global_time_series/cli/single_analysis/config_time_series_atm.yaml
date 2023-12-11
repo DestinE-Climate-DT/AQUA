@@ -7,7 +7,7 @@ outputdir: "./"
 
 # This is the list of variables that will be plotted as timeseries
 timeseries: ['2t', 'tprate', 'erate', 'ci', 'msl', 'mslhfl', 'msnsrf',
-             'msntrf', 'msshfl', 'mtnsrf', 'mtntrf', 'tcc']
+             'msntrf', 'msshfl', 'mtnsrf', 'mtntrf', 'mtnsrf+mtntrf', 'tcc']
 
 gregory:
   resample: "M"

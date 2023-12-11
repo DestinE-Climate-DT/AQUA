@@ -56,9 +56,19 @@ def log_configure(log_level=None, log_name=None):
 
 
 def _check_loglevel(log_level=None):
+    """
+    Basic function to check the log level so that it can be used
+    in other logging functions
 
-    """Basic function to check the log level so that it can be used
-    in other logging functions"""
+    Args:
+        log_level: a string or an integer according to the logging module
+
+    Returns:
+        the log level as a string
+
+    Raises:
+        ValueError: if the log level is not a string or an integer
+    """
 
     log_level_default = 'WARNING'
 
@@ -118,10 +128,14 @@ class CustomLogColors(logging.Formatter):
 
     GREY = "\x1b[38;20m"
     LGREY = "\x1b[37m"
-    DGREY = "\x1b[90m"
-    GREEN = "\x1b[32m"
-    ORANGE = "\x1b[33m"
-    RED = "\x1b[31;20m"
+    # DGREY = "\x1b[90m"
+    #  LBLUE = "\x1b[38;2;64;183;197m"
+    # GREEN = "\x1b[32m"  # Less vibrant green
+    # ORANGE = "\x1b[33m" # Less vibrant orange
+    # RED = "\x1b[31;20m"  # Less vibrant red
+    GREEN = "\x1b[38;2;64;184;50m"  # Vibrant green
+    ORANGE = "\x1b[38;2;255;165;0m"  # Vibrant orange
+    RED = "\x1b[38;2;255;0;0m"  # Vibrant red
     BOLD_RED = "\x1b[31;1m"
     RESET = "\x1b[0m"
 

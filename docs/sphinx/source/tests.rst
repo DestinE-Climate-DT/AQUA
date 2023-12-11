@@ -56,7 +56,7 @@ Continuous Integration (CI)
 ---------------------------
 
 We use GitHub Actions for Continuous Integration. 
-GitHub Actions automatically runs our test suite on Python 3.10 whenever a change is pushed to the repository.
+GitHub Actions automatically runs our test suite on Python 3.11 whenever a change is pushed to the repository.
 
 The configuration for GitHub Actions is located in the ``.github/workflows`` directory. 
 

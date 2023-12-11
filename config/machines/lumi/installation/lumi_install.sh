@@ -170,17 +170,26 @@ fi
 # ask if you want to add this to the bash profile
 read -p "Would you like to source $load_aqua_file in your .bash_profile? (y/n) " -n 1 -r
 echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  if ! grep -q "source  $load_aqua_file" ~/.bash_profile; then
-    echo "source  $load_aqua_file" >> ~/.bash_profile
-    echo 'load_aqua.sh added to your .bash_profile.'
-  else
-    echo 'load_aqua.sh is already in your bash profile, not adding it again!'
-  fi
-elif [[ $REPLY =~ ^[Nn]$ ]]; then
-  echo "source load_aqua.sh not added to .bash_profile"
-else
-  echo "Invalid response. Please enter 'y' or 'n'."
-fi
-
- 
+# ask if you want to add this to the bash profile
+while true; do
+  read -p "Would you like to source $load_aqua_file in your .bash_profile? (y/n) " -n 1 -r
+  echo
+  case $REPLY in
+    [Yy])
+      if ! grep -q "source  $load_aqua_file" ~/.bash_profile; then
+        echo "source  $load_aqua_file" >> ~/.bash_profile
+        echo 'load_aqua.sh added to your .bash_profile.'
+      else
+        echo 'load_aqua.sh is already in your bash profile, not adding it again!'
+      fi
+      break
+      ;;
+    [Nn])
+      echo "source load_aqua.sh not added to .bash_profile"
+      break
+      ;;
+    *)
+      echo "Invalid response. Please enter 'y' or 'n'."
+      ;;
+  esac
+done

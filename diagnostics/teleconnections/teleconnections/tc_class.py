@@ -170,8 +170,10 @@ class Teleconnection():
 
         if self.freq:
             if self.freq == 'monthly':
-                self.data = self.reader.timmean(self.data)
+                self.data = self.reader.timmean(data=self.data, freq=self.freq)
                 self.logger.info('Time aggregated to %s', self.freq)
+            else:
+                self.logger.warning('Time aggregation %s not implemented for teleconnections', self.freq)
 
         if var:
             self.logger.info("Returning data as xarray.DataArray")
@@ -482,10 +484,7 @@ class Teleconnection():
         """
 
         self.reader = Reader(model=self.model, exp=self.exp, source=self.source,
-                             regrid=self.regrid, freq=self.freq,
-                             loglevel=self.loglevel, 
-                             configdir=self.aquaconfigdir,
-                             **kwargs)
+                             regrid=self.regrid, loglevel=self.loglevel, **kwargs)
         self.logger.info('Reader initialized')
 
     def _prepare_corr_reg(self, data=None, var=None,

@@ -3,6 +3,8 @@ import os
 import eccodes
 from ruamel.yaml import YAML
 from aqua.logger import log_configure
+from aqua.exceptions import NoEcCodesShortNameError
+
 
 # Currently not used
 def read_eccodes_dic(filename):
@@ -49,7 +51,7 @@ def read_eccodes_def(filename):
 
     # ECMWF lists
     fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
-    fn = os.path.join(fn, 'grib2',  'localConcepts', 'ecmf', filename)
+    fn = os.path.join(fn, 'grib2', 'localConcepts', 'ecmf', filename)
     with open(fn, "r", encoding='utf-8') as f:
         for line in f:
             line = line.replace(" =", "").replace('{', '').replace('}', '').replace(';', '').replace('\t', '#    ')
@@ -90,7 +92,7 @@ def _init_get_eccodes_attr():
                 indices = [i for i, x in enumerate(shortname) if x == sn]
                 if len(indices)>1:
                     logger.warning('ShortName %s have multiple grib codes associated: %s', sn, [paramid[i] for i in indices])
-                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right',
+                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right',  # noqa E501
                                    sn, paramid[indices[0]])
                 i = indices[0]
 
@@ -110,3 +112,34 @@ def _init_get_eccodes_attr():
 
 
 get_eccodes_attr = _init_get_eccodes_attr()
+
+
+# Define this as a closure to avoid reading twice the same file
+def init_get_eccodes_shortname():
+    """
+    Recover eccodes shorthname from a given paramid
+
+    Args:
+        var(str, int): the variable name (a short_name or a paramid)
+
+    Returns:
+        A string containing the short_name
+    """
+    shortname = read_eccodes_def("shortName.def")
+    paramid = read_eccodes_def("paramId.def")
+
+    def _get_eccodes_shortname(var):
+        """
+        """
+        nonlocal shortname, paramid
+
+        if str(var).isdigit():
+            try:
+                i = paramid.index(str(var))
+                return shortname[i]
+            except (ValueError, IndexError) as error:
+                raise NoEcCodesShortNameError('Cannot find any grib codes for paramId %s' % var) from error
+        else:
+            return var
+
+    return _get_eccodes_shortname

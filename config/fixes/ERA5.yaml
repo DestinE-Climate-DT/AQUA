@@ -70,6 +70,65 @@ models:
                     t:
                         source: T
                         grib: true         
+        era5:
+            # daily data are done as an average from hourly data, need to multiply by 24 for fluxes
+            daily:
+                delete:
+                    - SLHF
+                    - SSHF
+                    - SSR
+                    - SSRD
+                    - STR
+                    - STRD
+                    - TSR
+                    - TTR
+                method: merge
+                vars:
+                    mslhfl:
+                        src_units: J m**-2 day**-1
+                        derived: SLHF*24
+                        grib: true
+                    msshfl:
+                        src_units: J m**-2 day**-1
+                        derived: SSHF*24
+                        grib: true
+                    msnsrf:
+                        src_units: J m**-2 day**-1
+                        derived: SSR*24
+                        grib: true
+                    msdsrf:
+                        src_units: J m**-2 day**-1
+                        derived: SSRD*24
+                        grib: true
+                    msntrf:
+                        src_units: J m**-2 day**-1
+                        derived: STR*24
+                        grib: true
+                    msdtrf:
+                        src_units: J m**-2 day**-1
+                        derived: STRD*24
+                        grib: true
+                    mtnsrf:
+                        src_units: J m**-2 day**-1
+                        derived: TSR*24
+                        grib: true
+                    mtntrf:
+                        src_units: J m**-2 day**-1
+                        derived: TTR*24
+                        grib: true 
+                    erate:
+                        grib: true
+                        derived: E*24
+                        src_units: m/day
+                        units: kg m**-2 s**-1
+                    tprate: 
+                        grib: true
+                        derived: TP*24
+                        src_units: m/day
+        fdb:
+            fdb-test:
+                method: replace
+            
         # default:
         #     default:
         #         deltat: 86400

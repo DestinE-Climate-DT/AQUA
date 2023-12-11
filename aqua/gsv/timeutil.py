@@ -178,4 +178,4 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None, savefreq=No
         sdate = dates[sidx]
         edate = dates[eidx]
 
-    return dates[idx], sidx + offset, sdate, eidx + offset,  edate, chunksize
+    return dates[idx], sidx + offset, sdate, eidx + offset, edate, chunksize

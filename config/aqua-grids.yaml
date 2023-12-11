@@ -144,18 +144,29 @@ grids:
 
   # NEMO
   eORCA1-2d:
-    path: $grids/NEMO/ORCA1_mesh_sfc_grid_T.nc
-    #space_coord: ["cell"]
-    # path: /pfs/lustrep3/scratch/project_465000454/pool/data/IFS/inputs_de_48r1/nemo/V40/eORCA1_Z75/common/mesh_mask.nc
-    # extra:
-    #   - selname,tmask          
-    # space_coord: ["nav_lon", "nav_lat"]
-  eORCA1-3d:
-    path: $grids/NEMO/eORCA1_mesh_3d_grid_T.nc
-    #space_coord: ["ncells"]
+    path: $grids/NEMO/eORCA1_mesh_sfc_grid_T.nc
+  eORCA1-3d-level: 
+    path: 
+      level: $grids/NEMO/eORCA1_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  eORCA1-3d-height: 
+    path: 
+      height: $grids/NEMO/eORCA1_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
     vert_coord: ["height"]
-    extra:
-      - -selname,dummy  
+  eORCA12-2d:
+    path: $grids/NEMO/eORCA12_mesh_sfc_grid_T.nc
+  eORCA12-3d-level: 
+    path: 
+      level: $grids/NEMO/eORCA12_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  eORCA12-3d-height: 
+    path: 
+      height: $grids/NEMO/eORCA12_mesh_3d_grid_T_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["height"]
 
   # OBSERVATIONS
   aviso:
@@ -197,8 +208,23 @@ grids:
       depth: $grids/WOA18/grid-woa18.nc
     vert_coord: depth
     space_coord: ["lon", "lat"]
-
   
+  psc-piomas:
+    space_coord: ["x", "y"]
+    cellareas: $grids/PSC/grid_piomas.nc
+    cellarea_var: areacello
+    mask: $grids/PSC/grid_piomas.nc
+    mask_var: sftof
+    regrid_method: 'bil'
+
+  psc-giomas:
+    space_coord: ["x", "y"]
+    cellareas: $grids/PSC/grid_giomas.nc
+    cellarea_var: areacello
+    mask: $grids/PSC/grid_giomas.nc
+    mask_var: sftof
+    regrid_method: 'bil'
+
 
   
 

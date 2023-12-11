@@ -23,7 +23,7 @@ sources:
       2d(168), skt(235), sp(134). See fix yaml for derived vars.
     driver: gsv
     metadata:
-      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-CONTROL_1950_DEVCON.yaml
+      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'sp']
   hourly-1deg:

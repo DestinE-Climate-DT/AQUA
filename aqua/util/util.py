@@ -58,7 +58,6 @@ def create_folder(folder, loglevel="WARNING"):
 
 
 def file_is_complete(filename, logger=logging.getLogger()):
-
     """Basic check to see if file exists and that includes values which are not NaN
     Return a boolean that can be used as a flag for further operation
     True means that we have to re-do the computation

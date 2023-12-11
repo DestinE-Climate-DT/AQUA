@@ -14,6 +14,11 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/ICON/main.yaml"
+  NEMO:
+    description: NEMO oceanic model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/NEMO/main.yaml"
 
 # available grids, not worth to become machine independent
 # extra is an extra special cdo command to be applied before generating the weights
@@ -26,6 +31,9 @@ grids:
     vert_coord: ["2d", "2dm"]
     masked: 
       vars: ["2t"] # for testing purposes
+  tco79-nn:
+      path: $grids/IFS/tco79_grid.nc
+      regrid_method: 'nn'
   # FESOM
   test-pi-2d:
     path: $grids/pi_griddes_nodes_IFS.nc
@@ -44,3 +52,9 @@ grids:
   # ICON
   test-healpix: {path: $grids/icon_healpix0.nc} #space_coord: [x]
   test-r2b0: {path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc} #space_coord: [cell]
+  test-eORCA1-3d:
+    path: 
+      level: $grids/NEMO/test-eorca1_3D.nc
+    #vert_coord: ["level"]
+    extra: 
+      - -selname,dummy

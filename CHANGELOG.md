@@ -7,27 +7,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased is the current development version.
 
+- Reader.info() method to print the catalogue information (#683)
+- Simpler reader init() by reorganizing the calls to areas and regrid weights configurition and loading (#682)
+- Optional autosearch for vert_coord (#682)
+- plot_single_map adapted to different coordinate names and bugfixes (#680)
+- Sea ice volume datasets for the Northern Hemisphere (PIOMAS) and the Southern Hemisphere (GIOMAS) (#598)
+- Possibility of defining the regrid method frome the grid definition (#678)
+- Grids stored online and tool to deploy them on cli folder (#675)
+- Global time series diagnostic improvements (#637)
+- Teleconnections diagnostic improvements (#672)
+
+## [v0.5]
+
+Main changes are:
+1. Refactor of the Reader() interface with less options at the init() level
+2. Grids are now defined with the source metadata and not in a machine-dependent file
+3. CLI wrapper is available to run all diagnostics in a single call
+4. Refactoring of the streaming emulator with equal treatment for FDB or file sources
+
+Complete list
+- Controlling the loglevel of the GSV interface (#665)
+- Fix wrong fdb source (#657)
+- Adding sample files and tests for NEMO 2D and 3D grids (#652)
+- tprate not derived from tp for GSV sources (#653)
+- Simplify reader init and retrieve providing less argument in initialization (#620)
+- var='paramid' can be used to select variables in the retrieve method (#648)
 - configdir is not searched based on util file position in the repo (#636)
 - Cleaner mask treatment (Revision of mask structure in the reader #617)
 - Fldmean fix if only one dimension is present for area selection (#640)
 - Adding higher frequency ERA5 data on Levante and Lumi (#628)
-- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#622)
+- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#520, #622, #643)
 - Load all available variables in FDB xarray/dask access (#619)
 - Lint standard and enforced in CI (#616)
 - Reader init split with methods (#523)
-- Single map plot utility (#594)
-- Script for automatic generation of Fdb catalog entries (#572)
+- Single map plot utility to be used by all diagnostics (#594)
+- Script for automatic generation of Fdb catalog entries (IFS only) (#572)
 - Fix loading of singularity mounting /projappl (#612)
 - CLI wrapper parser (#599)
 - Refactoring of streaming emulator (#593)
 - Radiation CLI and diagnostic refinement (#537)
 - Ocean3D CLI and diagnostic refinement (#578)
 - AtmGlobalMean CLI and diagnostic refinement (#587)
-- Tropical cyclones CLI refinements and TC module (#568)
+- Tropical cyclones CLI refinements and TC module (#568, #645)
 - Removing OPA, OPAgenerator and related tests from the AQUA (Remove OPA from AQUA #586)
-- Renaming the experiments according to the DE340 AQUA syntax (Including dev-control-1990 in the source and rename the experiment according to DE340 scheme #556)
-- Allow specifying grid in catalogue metadata (#520)
-- Teleconnections diagnostic improvements (#571, #574, #576, #581, #592)
+- Renaming the experiments according to the DE340 AQUA syntax (Including dev-control-1990 in the source and rename the experiment according to DE340 scheme #556, #614, #618)
+- Teleconnections diagnostic improvements (#571, #574, #576, #581, #592, #623)
 
 ## [v0.4]
 
@@ -175,7 +199,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.4...HEAD
+[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.5...HEAD
+[v0.5]: https://github.com/oloapinivad/AQUA/compare/v0.4...v0.5
 [v0.4]: https://github.com/oloapinivad/AQUA/compare/v0.3...v0.4
 [v0.3]: https://github.com/oloapinivad/AQUA/compare/v0.2.1...v0.3
 [v0.2.1]: https://github.com/oloapinivad/AQUA/compare/v0.2...v0.2.1

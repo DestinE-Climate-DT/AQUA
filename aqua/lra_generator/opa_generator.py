@@ -33,12 +33,11 @@ class OPAgenerator():
 
     def __init__(self,
                  model=None, exp=None, source=None, zoom=None,
-                 var=None, vars=None, frequency=None,
+                 var=None, frequency=None,
                  checkpoint=True, stream_step=5,
                  outdir=None, tmpdir=None, configdir=None,
                  loglevel=None, overwrite=False, definitive=False,
                  nproc=1):
-
         """
         Initialize the LRA_Generator class
 
@@ -47,7 +46,7 @@ class OPAgenerator():
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
             zoom (int):              Healpix level of zoom
-            var (str, list):         Variable(s) to be processed,vars in a synonim
+            var (str, list):         Variable(s) to be processed
             frequency (string):      The target frequency for averaging the OPA
             checkpoint (bool, opt):  Whether OPA should use or not checkpointing
             stream_step (int, opt):  How many days OPA should load at once
@@ -103,11 +102,8 @@ class OPAgenerator():
         self.machine = Configurer.machine
 
         # Initialize variable(s)
-        self.var = None
-        if vars:
-            self.var = vars
-        else:
-            self.var = var
+        self.var = var
+
         if not self.var:
             raise KeyError('Please specify variable string or list.')
         self.logger.warning('Variable(s) to be processed: %s', self.var)
@@ -175,17 +171,17 @@ class OPAgenerator():
         """
 
         self.opa_dict = {
-                         "stat": "mean",
-                         #"percentile_list": None,
-                         #"thresh_exceed" : None,
-                         "stat_freq": self.frequency,
-                         "output_freq": "monthly",
-                         "time_step": self.timedelta,
-                         "variable": var,
-                         "save": True,
-                         "checkpoint": self.checkpoint,
-                         "save_filepath": self.outdir,
-                         "checkpoint_filepath": self.tmpdir
+            "stat": "mean",
+            # "percentile_list": None,
+            # "thresh_exceed" : None,
+            "stat_freq": self.frequency,
+            "output_freq": "monthly",
+            "time_step": self.timedelta,
+            "variable": var,
+            "save": True,
+            "checkpoint": self.checkpoint,
+            "save_filepath": self.outdir,
+            "checkpoint_filepath": self.tmpdir
         }
 
         return Opa(self.opa_dict)
@@ -275,7 +271,7 @@ class OPAgenerator():
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
-                                   'catalog', self.model, self.exp+'.yaml')
+                                   'catalog', self.model, self.exp + '.yaml')
 
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
@@ -307,7 +303,7 @@ class OPAgenerator():
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
-                                   'catalog', self.model, self.exp+'.yaml')
+                                   'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
         if self.entry_name in cat_file['sources']:
             del cat_file['sources'][self.entry_name]
@@ -373,7 +369,6 @@ class OPAgenerator():
 
 
 def format_size(size):
-
     """Trivial function for formatting file size"""
     power = 2**10
     n = 0
