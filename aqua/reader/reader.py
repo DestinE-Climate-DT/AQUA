@@ -470,8 +470,8 @@ class Reader(FixerMixin, RegridMixin):
 
         # get loadvar
         if var:
-            if isinstance(var, str):  # conversion to list guarantees that a Dataset is produced
-                var = var.split()
+            if isinstance(var, str) or isinstance(var, int) or isinstance(var, float):  # conversion to list guarantees that a Dataset is produced
+                var = str(var).split()
             self.logger.info("Retrieving variables: %s", var)
             loadvar = self.get_fixer_varname(var) if self.fix else var
         else:
