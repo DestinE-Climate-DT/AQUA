@@ -1,7 +1,7 @@
 models:  
     ERA5:
-        era5:
-            monthly:
+        default: 
+            default:
                 data_model: cf
                 vars:
                     2t: 
@@ -160,4 +160,3 @@ models:
         #                 source: 2t
         #                 src_units: K
         #                 grib: true
-            
