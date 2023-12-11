@@ -226,7 +226,7 @@ class LRAgenerator():
             'driver': 'netcdf',
             'description': f'LRA data {self.frequency} at {self.resolution}',
             'args': {
-                'urlpath': os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_????.nc'),
+                'urlpath': os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_??????.nc'),
                 'chunks': {},
                 'xarray_kwargs': {
                     'decode_times': True
