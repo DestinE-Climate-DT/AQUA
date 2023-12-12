@@ -26,6 +26,7 @@ sources:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'sp']
+      source_grid_name: lon-lat
   hourly-1deg:
     args:
       request:
@@ -54,6 +55,7 @@ sources:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tprate', 'sf', '2t', '10u', '10v', 'blh', 'sshf', 'slhf', 'ssrd', 'ssr', 'strd', 'str', 'ttr', 'e', 'tsr', 'ewss', 'nsss', 'sro']
+      source_grid_name: lon-lat
   6hourly-1deg:
     args:
       request:
@@ -81,6 +83,8 @@ sources:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['z']
+      source_grid_name: lon-lat
+
   monthly-1deg-2d:
     args:
       request:
@@ -108,6 +112,8 @@ sources:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tprate', '2t', 'tcc', 'sd', 'tciw', 'tclw', 'msl', 'tcwv', 'lcc', 'mcc', 'hcc']
+      source_grid_name: lon-lat
+
   monthly-1deg-3d:
     args:
       request:
@@ -136,6 +142,7 @@ sources:
       fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['u', 'v', 't', 'r', 'q']
+      source_grid_name: lon-lat
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100
@@ -145,3 +152,5 @@ sources:
       chunks: {}
       xarray_kwargs:
         decode_times: true
+    metadata:
+      source_grid_name: lon-lat
