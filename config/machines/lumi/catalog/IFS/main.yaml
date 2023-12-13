@@ -24,3 +24,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/historical-1990-nemo-dev.yaml'
+  historical-1990-nemo-30years:
+    description: FDB IFS/NEMO tco79-eOrca1 historical 1990 run (30 years)
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990-nemo-30years.yaml'
