@@ -22,6 +22,17 @@ sources:
       - ./AQUA_tests/models/IFS/short/IFS2d.tco79.nc
     description: original 2d output
     driver: netcdf
+  short_nn:
+    metadata:
+      source_grid_name: tco79-nn
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ./AQUA_tests/models/IFS/short/IFS2d.tco79.nc
+    description: original 2d output
+    driver: netcdf
+  
   long:
     metadata:
       source_grid_name: lon-lat

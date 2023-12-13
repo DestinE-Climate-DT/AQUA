@@ -33,9 +33,12 @@ def squeue(username="$USER", verbose=True):
                              in a SLURM queue
     """
     if verbose:
-        squeue_user = os.system("squeue --user="+str(username)+" --format=\"%10i %5C %5D %10t %20j %10M %20S %20E %20P %20m\"")
+        squeue_user = os.system(
+            "squeue --user=" +
+            str(username) +
+            " --format=\"%10i %5C %5D %10t %20j %10M %20S %20E %20P %20m\"")
     else:
-        squeue_user = os.system("squeue --user="+str(username))
+        squeue_user = os.system("squeue --user=" + str(username))
     return squeue_user
 
 
@@ -54,11 +57,11 @@ def output_dir(path_to_output='.', loglevel='WARNING'):
         logs_path (str):    The path to the directory for logs/errors
         output_path (str):  The path to the directory for output
     """
-    logs_path = str(path_to_output)+"/slurm/logs"
-    output_path = str(path_to_output)+"/slurm/output"
+    logs_path = str(path_to_output) + "/slurm/logs"
+    output_path = str(path_to_output) + "/slurm/output"
 
     # Creating the directory for logs and output
-    create_folder(folder=str(path_to_output)+"/slurm", loglevel=loglevel)
+    create_folder(folder=str(path_to_output) + "/slurm", loglevel=loglevel)
     create_folder(folder=logs_path, loglevel=loglevel)
     create_folder(folder=output_path, loglevel=loglevel)
 
@@ -112,19 +115,19 @@ def max_resources_per_node(queue="compute"):
         max_threads (str):      The maximum number of threads available on the
                                 node for the queue
     """
-    max_resources = exctract_sinfo("sinfo  --partition="+str(queue)+" -lNe")
+    max_resources = exctract_sinfo("sinfo  --partition=" + str(queue) + " -lNe")
 
     if max_resources[2] == queue:
         max_cpus = max_resources[4]
-        max_memory = str(float(max_resources[6])/1024)+" GB"
+        max_memory = str(float(max_resources[6]) / 1024) + " GB"
         max_sockets, max_cores, max_threads = re.split(r'[:]',
                                                        max_resources[5])
     else:
         raise Exception("The function can not extract information about the queue correctly. \n \
                         Please, select the amount of memory, cores, threads, and walltime manually.")
 
-    if queue == exctract_sinfo("sinfo  --partition="+str(queue)+" -le")[0]:
-        max_walltime = exctract_sinfo("sinfo  --partition="+str(queue)+" -le")[2]
+    if queue == exctract_sinfo("sinfo  --partition=" + str(queue) + " -le")[0]:
+        max_walltime = exctract_sinfo("sinfo  --partition=" + str(queue) + " -le")[2]
     else:
         raise Exception("The function can not extract information about the queue correctly. \n \
                         Please, select the amount of memory, cores, threads, and walltime manually.")
@@ -204,15 +207,15 @@ def job(exclusive=False, max_resources=False, cores=1, memory="10 GB",
     # Creating the extra arguments for the job submission
     if exclusive:
         extra_args = [
-            "--error="+str(logs_path)+"/dask-worker-%j.err",
-            "--output="+str(output_path)+"/dask-worker-%j.out",
+            "--error=" + str(logs_path) + "/dask-worker-%j.err",
+            "--output=" + str(output_path) + "/dask-worker-%j.out",
             "--get-user-env",
             "--exclusive"
         ]
     else:
         extra_args = [
-            "--error="+str(logs_path)+"/dask-worker-%j.err",
-            "--output="+str(output_path)+"/dask-worker-%j.out"
+            "--error=" + str(logs_path) + "/dask-worker-%j.err",
+            "--output=" + str(output_path) + "/dask-worker-%j.out"
         ]
 
     if max_resources:

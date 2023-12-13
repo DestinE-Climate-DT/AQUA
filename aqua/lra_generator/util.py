@@ -47,7 +47,7 @@ def opa_catalog_entry(datadir, model, exp, source, frequency='monthly'):
 
     # find the catalog of my experiment
     catalogfile = os.path.join(configdir, 'machines', machine,
-                               'catalog', model, exp+'.yaml')
+                               'catalog', model, exp + '.yaml')
 
     # load, add the block and close
     cat_file = load_yaml(catalogfile)

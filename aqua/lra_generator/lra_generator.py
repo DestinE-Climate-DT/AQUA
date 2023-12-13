@@ -132,7 +132,7 @@ class LRAgenerator():
             'units': 'days since 1970-01-01',
             'calendar': 'standard',
             'dtype': 'float64'
-            }
+        }
 
         self.fix = fix
         self.logger.info('Fixing data: %s', self.fix)
@@ -213,7 +213,6 @@ class LRAgenerator():
         self.logger.warning('Finished generating LRA data.')
 
     def create_catalog_entry(self):
-
         """
         Create an entry in the catalog for the LRA
         """
@@ -231,16 +230,16 @@ class LRAgenerator():
                 'chunks': {},
                 'xarray_kwargs': {
                     'decode_times': True
-                    },
                 },
+            },
             'metadata': {
                 'source_grid_name': 'lon-lat'
-                }
             }
+        }
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
-                                   'catalog', self.model, self.exp+'.yaml')
+                                   'catalog', self.model, self.exp + '.yaml')
 
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
@@ -293,7 +292,7 @@ class LRAgenerator():
                                f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??.nc')
         if len(glob.glob(infiles)) > 1:
             xfield = xr.open_mfdataset(infiles)
-            self.logger.warning('Creating a single file for %s, year %s...',  var, str(year))
+            self.logger.warning('Creating a single file for %s, year %s...', var, str(year))
             outfile = os.path.join(self.outdir,
                                    f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
             # clean older file
@@ -303,11 +302,10 @@ class LRAgenerator():
 
             # clean of monthly files
             for infile in glob.glob(infiles):
-                self.logger.info('Cleaning %s...',  infile)
+                self.logger.info('Cleaning %s...', infile)
                 os.remove(infile)
 
     def get_filename(self, var, year=None, month=None):
-
         """Create output filenames"""
 
         filename = os.path.join(self.outdir,
@@ -320,7 +318,6 @@ class LRAgenerator():
         return filename
 
     def check_integrity(self, varname):
-
         """To check if the LRA entry is fine before running"""
 
         yearfiles = self.get_filename(varname)
@@ -338,7 +335,6 @@ class LRAgenerator():
             self.logger.warning('Still need to run for var %s...', varname)
 
     def _write_var(self, var):
-
         """Call write var for generator or catalog access"""
         t_beg = time()
 
@@ -349,7 +345,7 @@ class LRAgenerator():
                 self._write_var_catalog(var)
 
         t_end = time()
-        self.logger.info('Process took {:.4f} seconds'.format(t_end-t_beg))
+        self.logger.info('Process took {:.4f} seconds'.format(t_end - t_beg))
 
     def _remove_regridded(self, data):
 
@@ -361,7 +357,6 @@ class LRAgenerator():
         return data
 
     def _write_var_generator(self, var):
-
         """
         Write a variable to file using the GSV generator
         """
@@ -412,7 +407,7 @@ class LRAgenerator():
             if self.definitive and month == 12:
                 self._concat_var(var, year)
 
-            self.logger.info('Processing this chunk took {:.4f} seconds'.format(time()-t_beg))
+            self.logger.info('Processing this chunk took {:.4f} seconds'.format(time() - t_beg))
             t_beg = time()
 
     def _write_var_catalog(self, var):

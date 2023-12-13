@@ -105,3 +105,5 @@ class TestGsv():
         data = reader.retrieve(var='130')
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
+        data = reader.retrieve(var=130)  # test numeric argument
+        assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"

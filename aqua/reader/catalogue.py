@@ -105,6 +105,23 @@ def inspect_catalogue(cat=None, model=None, exp=None, source=None, verbose=True)
 
     if verbose:
         print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalogue.")
+        if model:
+            if is_in_cat(cat, model, None, None):
+                if exp:
+                    if is_in_cat(cat, model, exp, None):
+                        print(f"Available sources for model {model} and exp {exp}:")
+                        return list(cat[model][exp].keys())
+                    else:
+                        print(f"Experiment {exp} is not available for model {model}.")
+                        print(f"Available experiments for model {model}:")
+                        return list(cat[model].keys())
+                else:
+                    print(f"Available experiments for model {model}:")
+                    return list(cat[model].keys())
+            else:
+                print(f"Model {model} is not available.")
+                print("Available models:")
+                return list(cat.keys())
 
     return False
 
@@ -114,8 +131,17 @@ def is_in_cat(cat, model, exp, source):
     Check if the model, experiment and source are in the catalog.
     """
     if source:
-        return source in list(cat[model][exp].keys())
+        try:
+            return source in cat[model][exp].keys()
+        except KeyError:
+            return False
     elif exp:
-        return exp in cat[model].keys()
+        try:
+            return exp in cat[model].keys()
+        except KeyError:
+            return False
     else:
-        return model in cat.keys()
+        try:
+            return model in cat.keys()
+        except KeyError:
+            return False

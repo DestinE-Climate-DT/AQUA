@@ -51,7 +51,7 @@ def read_eccodes_def(filename):
 
     # ECMWF lists
     fn = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
-    fn = os.path.join(fn, 'grib2',  'localConcepts', 'ecmf', filename)
+    fn = os.path.join(fn, 'grib2', 'localConcepts', 'ecmf', filename)
     with open(fn, "r", encoding='utf-8') as f:
         for line in f:
             line = line.replace(" =", "").replace('{', '').replace('}', '').replace(';', '').replace('\t', '#    ')
@@ -92,7 +92,7 @@ def _init_get_eccodes_attr():
                 indices = [i for i, x in enumerate(shortname) if x == sn]
                 if len(indices) > 1:
                     logger.warning('ShortName %s have multiple grib codes associated: %s', sn, [paramid[i] for i in indices])
-                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right', # noqa E501
+                    logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right',  # noqa E501
                                    sn, paramid[indices[0]])
                 i = indices[0]
 

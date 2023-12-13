@@ -38,7 +38,6 @@ class OPAgenerator():
                  outdir=None, tmpdir=None, configdir=None,
                  loglevel=None, overwrite=False, definitive=False,
                  nproc=1):
-
         """
         Initialize the LRA_Generator class
 
@@ -172,17 +171,17 @@ class OPAgenerator():
         """
 
         self.opa_dict = {
-                         "stat": "mean",
-                         # "percentile_list": None,
-                         # "thresh_exceed" : None,
-                         "stat_freq": self.frequency,
-                         "output_freq": "monthly",
-                         "time_step": self.timedelta,
-                         "variable": var,
-                         "save": True,
-                         "checkpoint": self.checkpoint,
-                         "save_filepath": self.outdir,
-                         "checkpoint_filepath": self.tmpdir
+            "stat": "mean",
+            # "percentile_list": None,
+            # "thresh_exceed" : None,
+            "stat_freq": self.frequency,
+            "output_freq": "monthly",
+            "time_step": self.timedelta,
+            "variable": var,
+            "save": True,
+            "checkpoint": self.checkpoint,
+            "save_filepath": self.outdir,
+            "checkpoint_filepath": self.tmpdir
         }
 
         return Opa(self.opa_dict)
@@ -273,7 +272,7 @@ class OPAgenerator():
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
-                                   'catalog', self.model, self.exp+'.yaml')
+                                   'catalog', self.model, self.exp + '.yaml')
 
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
@@ -305,7 +304,7 @@ class OPAgenerator():
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
-                                   'catalog', self.model, self.exp+'.yaml')
+                                   'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
         if self.entry_name in cat_file['sources']:
             del cat_file['sources'][self.entry_name]
@@ -371,7 +370,6 @@ class OPAgenerator():
 
 
 def format_size(size):
-
     """Trivial function for formatting file size"""
     power = 2**10
     n = 0

@@ -25,14 +25,15 @@ def add_cyclic_lon(da: xr.DataArray):
     if not isinstance(da, xr.DataArray) or da is None:
         raise ValueError("Input must be an xarray.DataArray object.")
 
-    lon = da.lon
+    # Support both lon and longitude names
+    lon_name, lat_name = coord_names(da)
 
-    cyclic_da, cyclic_lon = cutil.add_cyclic_point(da, coord=lon)
+    cyclic_da, cyclic_lon = cutil.add_cyclic_point(da, coord=da[lon_name])
 
     # update the longitude coordinate with cyclic longitude
     new_da = xr.DataArray(cyclic_da, dims=da.dims)
     new_da = new_da.assign_coords(lon=cyclic_lon)
-    new_da = new_da.assign_coords(lat=da.lat)
+    new_da = new_da.assign_coords(lat=da[lat_name])
 
     # Add old attributes to the new DataArray
     new_da.attrs = da.attrs
@@ -185,3 +186,30 @@ def set_map_title(data: xr.DataArray, title: str = None,
                 logger.debug("Using model and exp as map title")
 
     return title
+
+
+def coord_names(data: xr.DataArray):
+    """
+    Get the names of the longitude and latitude coordinates.
+
+    Args:
+        data (xarray.DataArray): Input data array.
+
+    Returns:
+        lon_name (str): Name of the longitude coordinate.
+        lat_name (str): Name of the latitude coordinate.
+    """
+    try:
+        lon_name = 'lon'
+        data.lon
+    except AttributeError:
+        lon_name = 'longitude'
+        data.longitude
+    try:
+        lat_name = 'lat'
+        data.lat
+    except AttributeError:
+        lat_name = 'latitude'
+        data.latitude
+
+    return lon_name, lat_name

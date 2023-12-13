@@ -79,6 +79,7 @@ class TestAqua:
         params=[
             ("IFS", "test-tco79", "short", "r200", "tas"),
             ("FESOM", "test-pi", "original_2d", "r200", "sst"),
+            ("NEMO", "test-eORCA1", "long-2d", "r200", "sst")
         ]
     )
     def reader_arguments(self, request):

@@ -36,6 +36,9 @@ grids:
     vert_coord: ["2d", "2dm"]
     masked: 
       vars: ["2t"] # for testing purposes
+  tco79-nn:
+      path: $grids/IFS/tco79_grid.nc
+      regrid_method: 'nn'
   # FESOM
   test-pi-2d:
     path: $grids/pi_griddes_nodes_IFS.nc
@@ -57,6 +60,6 @@ grids:
   test-eORCA1-3d:
     path: 
       level: $grids/NEMO/test-eorca1_3D.nc
-    vert_coord: ["level"]
+    #vert_coord: ["level"]
     extra: 
       - -selname,dummy

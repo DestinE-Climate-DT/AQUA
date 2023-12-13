@@ -19,7 +19,6 @@ class FixerMixin():
     """Fixer mixin for the Reader class"""
 
     def find_fixes(self):
-
         """
         Get the fixes for the model/exp/source hierarchy.
 
@@ -80,7 +79,6 @@ class FixerMixin():
         return final_fixes
 
     def _combine_fixes(self, default_fixes, fixes):
-
         """Combine fixes from the default or the source/model specific"""
 
         if fixes is None:
@@ -96,7 +94,6 @@ class FixerMixin():
             return fixes
 
     def _load_source_fixes(self, fix_model):
-
         """Browse for source/model specific fixes, return None if not found"""
 
         # look for exp fix, if not found, set default fixes
@@ -253,7 +250,11 @@ class FixerMixin():
                         log_history(data[source], "variable derived by AQUA fixer")
                     except KeyError:
                         # The variable could not be computed, let's skip it
-                        self.logger.error('Derived variable %s cannot be computed, is it available?', shortname)
+                        if destvar is not None: 
+                            # issue an error if you are asking that specific variable!
+                            self.logger.error('Requested derived variable %s cannot be computed, is it available?', shortname)
+                        else: 
+                            self.logger.warning('%s is defined in the fixes but cannot be computed, is it available?', shortname)
                         continue
 
                 # safe check debugging
@@ -320,7 +321,6 @@ class FixerMixin():
         return data
 
     def _delete_variables(self, data):
-
         """
         Remove variables which are set to be deleted in the fixer
         """
@@ -333,7 +333,6 @@ class FixerMixin():
         return data
 
     def _wrapper_decumulate(self, data, variables, varlist, keep_memory, jump):
-
         """
         Wrapper function for decumulation, which takes into account the requirement of
         keeping into memory the last step for streaming/fdb purposes
@@ -380,7 +379,6 @@ class FixerMixin():
         return data
 
     def _override_tgt_units(self, tgt_units, varfix, var):
-
         """
         Override destination units for the single variable
         """
@@ -395,7 +393,6 @@ class FixerMixin():
             return tgt_units
 
     def _override_src_units(self, data, varfix, var, source):
-
         """
         Override source units for the single variable
         """
@@ -444,7 +441,6 @@ class FixerMixin():
         return attributes, var
 
     def _check_which_variables_to_fix(self, var2fix, destvar):
-
         """
         Check on which variables fixes should be applied
 
@@ -460,10 +456,10 @@ class FixerMixin():
             newkeys = list(set(var2fix.keys()) & set(destvar))
             if newkeys:
                 var2fix = {key: value for key, value in var2fix.items() if key in newkeys}
-                self.logger.debug("Variables to be fixed: %s", var2fix)
+                self.logger.info("Variables to be fixed: %s", var2fix)
             else:
                 var2fix = None
-                self.logger.debug("No variables to be fixed")
+                self.logger.info("No variables to be fixed")
 
         return var2fix
 
@@ -491,7 +487,6 @@ class FixerMixin():
             return area
 
     def get_fixer_varname(self, var):
-
         """
         Load the fixes and check if the variable requested is there
 

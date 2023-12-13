@@ -5,12 +5,14 @@ from aqua import Reader
 
 loglevel = "DEBUG"
 
+
 @pytest.mark.aqua
 class TestFldmean():
     """Test class for fldmean"""
 
     @pytest.mark.parametrize(('source,value,shape'),
-                            [('short', 285.75920, 2),
+                             [('short', 285.75920, 2),
+                             ('short_nn', 285.75920, 2),
                              ('long', 285.86724, 4728)])
     def test_fldmean_ifs(self, source, value, shape):
         """Fldmean test for IFS"""
@@ -36,9 +38,9 @@ class TestFldmean():
                         regrid='r100', loglevel=loglevel)
         data = reader.retrieve()
         data = reader.regrid(data)
-        avg = reader.fldmean(data['sst'], lon_limits=[50,90], lat_limits=[10, 40]).values
+        avg = reader.fldmean(data['sst'], lon_limits=[50, 90], lat_limits=[10, 40]).values
         assert avg.shape == (2,)
-        #assert avg[1] == pytest.approx(17.9806)
+        # assert avg[1] == pytest.approx(17.9806)
         assert avg[1] == pytest.approx(300.1865)
 
     def test_fldmean_healpix(self):
@@ -55,10 +57,10 @@ class TestFldmean():
                         regrid='r200', loglevel=loglevel)
         data = reader.retrieve()
         data = reader.regrid(data)
-        avg = reader.fldmean(data['2t'],  lon_limits=[-30,50], lat_limits=[-30, -90]).values
+        avg = reader.fldmean(data['2t'],  lon_limits=[-30, 50], lat_limits=[-30, -90]).values
         assert avg.shape == (2,)
         assert avg[0] == pytest.approx(285.131484)
-    
+
     def test_fldmean_healpix_selection_lat_only(self):
         """Fldmean test for FESOM with area selection, only lat"""
         reader = Reader(model="ICON", exp="test-healpix", source='short',
@@ -74,8 +76,8 @@ class TestFldmean():
         reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=loglevel)
         data = reader.retrieve()
         avg = reader.fldmean(data['t']).values
-        assert avg.shape == (2,90)
-        assert avg[1,1] == pytest.approx(214.4841)
+        assert avg.shape == (2, 90)
+        assert avg[1, 1] == pytest.approx(214.4841)
 
     def test_fldmean_regridded(self):
         """Fldmean test for regridded data"""
@@ -93,3 +95,11 @@ class TestFldmean():
         avg = reader.fldmean(data['sst']).values
         assert avg.shape == (6,)
         assert avg[5] == pytest.approx(290.5516)
+
+    def test_fldmean_nemo_3d(self):
+        """Fldmean test for NEMO-3D"""
+        reader = Reader(model="NEMO", exp="test-eORCA1", source='short-3d', loglevel=loglevel)
+        data = reader.retrieve()
+        avg = reader.fldmean(data['avg_so']).values
+        assert avg.shape == (75,)
+        assert avg[11] == pytest.approx(34.06011)

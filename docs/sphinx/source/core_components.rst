@@ -73,6 +73,14 @@ Now we can read the actual data with the ``retrieve`` method.
 
 The reader returns an xarray.Dataset with raw ICON data on the original grid.
 
+If some information about the data is needed, it is possible to use the ``info`` method of the ``Reader`` class.
+
+.. code-block:: python
+
+    reader.info()
+
+This will print to screen some information about the data, including the grid, fixes, regrid setup and FDB details if available.
+
 
 Interpolation and Regridding
 ----------------------------
@@ -83,18 +91,21 @@ operates sparse matrix computation based on externally-computed weights.
 
 The idea of the regridder is first to generate the weights for the interpolation and then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already existent and stored
-in a directory specified in the ``config/machine/<machine-name>/regrid.yaml`` file.
+in a directory specified in the ``config/machine/<machine-name>/catalog.yaml`` file.
 A list of predefined target grids (only regular lon-lat for now) is available in the ``config/aqua-grids.yaml`` file.
 For example, "r100" is a regular grid at 1° resolution.
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
+
 Such an approach has two main advantages:
+
 1. All operations are done in memory so that no I/O is required, and the operations are faster than with CDO
-2. Operations can be easily parallelized with Dask, bringing further speedup. 
+2. Operations can be easily parallelized with Dask, bringing further speedup.
 
 In the long term, it will be possible to support also other interpolation software,
-such as `ESMF <https://earthsystemmodeling.org/>`_ or `MIR <https://github.com/ecmwf/mir>`_. 
+such as `ESMF <https://earthsystemmodeling.org/>`_ or `MIR <https://github.com/ecmwf/mir>`_.
+
 Let's see a practical example.
 We instantiate a reader for ICON data specifying that we will want to interpolate to a 1° grid. 
 As mentioned, if the weights file does not exist in our collection, it will be created automatically.
@@ -104,9 +115,10 @@ As mentioned, if the weights file does not exist in our collection, it will be c
     reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09", regrid="r100")
     data = reader.retrieve()
 
-Notice that these data still need to be regridded. You could ask to regrid it to the destination grid which we chose when we instantiated the reader.
-Please be warned that this will take longer without a selection.
-It is usually more efficient to load the data, select it, and then regrid it.
+.. note::
+    Notice that these data still need to be regridded. You could ask to regrid it to the destination grid which we chose when we instantiated the reader.
+    Please be warned that this will take longer without a selection.
+    It is usually more efficient to load the data, select it, and then regrid it.
 
 Now we regrid part of the data (the temperature of the first 100 frames):
 
@@ -299,8 +311,9 @@ The magic behind this is performed by an intake driver for FDB which has been sp
 Please notice that in the case of FDB access specifying the variable is compulsory, but a list can be provided. 
 If not specified, the default variable defined in the catalogue is used.
 
-**In general we recommend to use the default xarray (dask) dataset output**, since this also supports ``dask.distributed`` multiprocessing.
-For example you could create a ``LocalCluster`` and its client with:
+.. warning::
+    In general we recommend to use the default xarray (dask) dataset output, since this also supports ``dask.distributed`` multiprocessing.
+    For example you could create a ``LocalCluster`` and its client with:
 
 .. code-block:: python
 

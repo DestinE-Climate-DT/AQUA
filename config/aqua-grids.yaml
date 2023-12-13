@@ -208,8 +208,23 @@ grids:
       depth: $grids/WOA18/grid-woa18.nc
     vert_coord: depth
     space_coord: ["lon", "lat"]
-
   
+  psc-piomas:
+    space_coord: ["x", "y"]
+    cellareas: $grids/PSC/grid_piomas.nc
+    cellarea_var: areacello
+    mask: $grids/PSC/grid_piomas.nc
+    mask_var: sftof
+    regrid_method: 'bil'
+
+  psc-giomas:
+    space_coord: ["x", "y"]
+    cellareas: $grids/PSC/grid_giomas.nc
+    cellarea_var: areacello
+    mask: $grids/PSC/grid_giomas.nc
+    mask_var: sftof
+    regrid_method: 'bil'
+
 
   
 
