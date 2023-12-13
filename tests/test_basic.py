@@ -38,11 +38,10 @@ class TestAqua:
         Test the initialization of the Reader class
         """
         reader = Reader(model="FESOM", exp="test-pi", source="original_2d",
-                        configdir="config", fix=False, loglevel=loglevel)
+                        fix=False, loglevel=loglevel)
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
-        assert reader.configdir == "config"
 
     def test_retrieve_data(self, reader_instance):
         """
@@ -80,6 +79,7 @@ class TestAqua:
         params=[
             ("IFS", "test-tco79", "short", "r200", "tas"),
             ("FESOM", "test-pi", "original_2d", "r200", "sst"),
+            ("NEMO", "test-eORCA1", "long-2d", "r200", "sst")
         ]
     )
     def reader_arguments(self, request):

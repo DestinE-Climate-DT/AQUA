@@ -3,6 +3,7 @@ sources:
     metadata:
       grid: HealPIX
       source_grid_name: icon-healpix
+      fix_names: icon-cycle3
     args:
       #chunks: null
       consolidated: true
@@ -31,6 +32,7 @@ sources:
     metadata:
       grid: HealPIX
       source_grid_name: icon-healpix
+      fix_names: icon-cycle3
     args:
       #chunks: null
       consolidated: true
@@ -82,6 +84,7 @@ sources:
     metadata:
       grid: HealPIX
       source_grid_name: icon-healpix
+      fix_names: icon-cycle3
     driver: zarr
   lra-r100-monthly:
     driver: netcdf

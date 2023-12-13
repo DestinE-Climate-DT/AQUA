@@ -200,6 +200,8 @@ Some of the parameters are here described:
     - ``fdb_path``: the path of the FDB configuration file (mandatory)
     - ``eccodes_path``: the path of the eccodes version used for the encoding/decoding of the FDB
     - ``variables``: a list of variables available in the fdb.
+    - ``source_grid_name``: the grid name defined in aqua-grids.yaml to be used for areas and regridding
+    - ``fix_family``: the fix family definition defined in the fixes folder
 
 
 Regridding capabilities
@@ -266,6 +268,8 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 - **extra** (if applicable): Additional CDO command-line options to be used to process the files defined in `path`.
 
 - **cellareas**, **cellarea_var** (if applicable): Optional path and variable name where to specify a file to retrieve the grid area cells when the grid shape is too complex for being automatically computed by CDO.
+
+- **regrid_method** (if applicable): Alternative CDO regridding method which is not the `ycon` default. To be used when grid corners are not available. Alterntives might be `bil`, `bic` or `nn`.
 
 Other simpler grids can be defined using the CDO syntax, so for example we have ``r100: r360x180``. Further CDO compatible grids can be of course defined in this way. 
 

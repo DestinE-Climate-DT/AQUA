@@ -1,0 +1,18 @@
+plugins:
+  source:
+    - module: intake_xarray
+
+sources:
+  monthly:
+    description: sea ice thickness monthly data
+    driver: netcdf
+    metadata:
+      source_grid_name: psc-piomas
+    args:
+      chunks:
+        time: 1
+        use_cftime: True
+      xarray_kwargs:
+        decode_times: True
+      urlpath:
+      - /work/bb1153/b382075/datasets/PSC/PIOMAS/raw/sivol_r1i1p1_mon_197901-202212_GCCS360x120.new.nc

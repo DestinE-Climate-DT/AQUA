@@ -125,6 +125,9 @@ models:
                         grib: true
                         derived: TP*24
                         src_units: m/day
+        fdb:
+            fdb-test:
+                method: replace
             
         # default:
         #     default:

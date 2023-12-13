@@ -56,7 +56,6 @@ def log_configure(log_level=None, log_name=None):
 
 
 def _check_loglevel(log_level=None):
-
     """
     Basic function to check the log level so that it can be used
     in other logging functions
@@ -152,7 +151,7 @@ class CustomLogColors(logging.Formatter):
     # GREY = "\x1b[38;20m"  # Unnecessary
     LGREY = "\x1b[37m"
     # DGREY = "\x1b[90m"
-    # LBLUE = "\x1b[38;2;64;183;197m"
+    #  LBLUE = "\x1b[38;2;64;183;197m"
     # GREEN = "\x1b[32m"  # Less vibrant green
     # ORANGE = "\x1b[33m" # Less vibrant orange
     # RED = "\x1b[31;20m"  # Less vibrant red

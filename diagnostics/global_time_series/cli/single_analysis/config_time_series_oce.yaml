@@ -6,7 +6,7 @@ source: "lra-r100-monthly"
 outputdir: "./"
 
 # This is the list of variables that will be plotted as timeseries
-timeseries: ['ci', 'sos', 'sst']
+timeseries: ['sst']
 
 timeseries_plot_params:
 # These are options that specify how the data is plotted

@@ -22,6 +22,7 @@ DEFAULT_GSV_PARAMS = {'request': {
 
 loglevel = 'DEBUG'
 
+
 @pytest.fixture()
 def gsv(request) -> GSVSource:
     """A fixture to create an instance of ``GSVSource``."""
@@ -30,6 +31,7 @@ def gsv(request) -> GSVSource:
     else:
         request = request.param
     return GSVSource(**request)
+
 
 @pytest.mark.gsv
 class TestGsv():
@@ -40,7 +42,8 @@ class TestGsv():
     def test_gsv_constructor(self) -> None:
         """Simplest test, to check that we can create it correctly."""
         print(DEFAULT_GSV_PARAMS['request'])
-        source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="H", aggregation="S", var='167', metadata=None)
+        source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="H",
+                           aggregation="S", var='167', metadata=None)
         assert source is not None
 
     @pytest.mark.parametrize('gsv', [{'request': {
@@ -57,7 +60,7 @@ class TestGsv():
         'step': '0'
         },
         'data_start_date': '20080101T1200', 'data_end_date': '20080101T1200',
-        'timestep': 'H', 'timestyle': 'date', 'var': 130, 'verbose': True}], indirect=True)
+        'timestep': 'H', 'timestyle': 'date', 'var': 130}], indirect=True)
     def test_gsv_read_chunked(self, gsv: GSVSource) -> None:
         """Test that the ``GSVSource`` is able to read data from FDB."""
         data = gsv.read_chunked()
@@ -91,4 +94,16 @@ class TestGsv():
         reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
+        assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
+
+    def test_reader_paramid(self) -> None:
+        """
+        Reading with the variable paramid, we use '130' instead of 't'
+        """
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
+        data = reader.retrieve(var='130')
+        assert isinstance(data, xr.Dataset), "Does not return a Dataset"
+        assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
+        data = reader.retrieve(var=130)  # test numeric argument
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"

@@ -30,7 +30,7 @@ class LRAgenerator():
 
     def __init__(self,
                  model=None, exp=None, source=None, zoom=None,
-                 var=None, vars=None, configdir=None,
+                 var=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
                  outdir=None, tmpdir=None, nproc=1, aggregation=None,
                  loglevel=None, overwrite=False, definitive=False):
@@ -42,7 +42,7 @@ class LRAgenerator():
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
             var (str, list):         Variable(s) to be processed and archived
-                                     in LRA,vars in a synonim
+                                     in LRA.
             zoom (int):              Healpix level of zoom
             resolution (string):     The target resolution for the LRA
             frequency (string,opt):  The target frequency for averaging the
@@ -113,11 +113,8 @@ class LRAgenerator():
         self.machine = Configurer.machine
 
         # Initialize variable(s)
-        self.var = None
-        if vars:
-            self.var = vars
-        else:
-            self.var = var
+        self.var = var
+
         if not self.var:
             raise KeyError('Please specify variable string or list.')
         self.logger.info('Variable(s) to be processed: %s', self.var)
@@ -135,7 +132,7 @@ class LRAgenerator():
             'units': 'days since 1970-01-01',
             'calendar': 'standard',
             'dtype': 'float64'
-            }
+        }
 
         self.fix = fix
         self.logger.info('Fixing data: %s', self.fix)
@@ -176,8 +173,8 @@ class LRAgenerator():
         # Initialize the reader
         self.reader = Reader(model=self.model, exp=self.exp,
                              source=self.source, zoom=self.zoom,
-                             regrid=self.resolution, freq=self.frequency,
-                             configdir=self.configdir, loglevel=self.loglevel,
+                             regrid=self.resolution,
+                             loglevel=self.loglevel,
                              fix=self.fix, aggregation=self.aggregation)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
@@ -216,7 +213,6 @@ class LRAgenerator():
         self.logger.warning('Finished generating LRA data.')
 
     def create_catalog_entry(self):
-
         """
         Create an entry in the catalog for the LRA
         """
@@ -234,16 +230,16 @@ class LRAgenerator():
                 'chunks': {},
                 'xarray_kwargs': {
                     'decode_times': True
-                    },
                 },
+            },
             'metadata': {
                 'source_grid_name': 'lon-lat'
-                }
             }
+        }
 
         # find the catalog of my experiment
         catalogfile = os.path.join(self.configdir, 'machines', self.machine,
-                                   'catalog', self.model, self.exp+'.yaml')
+                                   'catalog', self.model, self.exp + '.yaml')
 
         # load, add the block and close
         cat_file = load_yaml(catalogfile)
@@ -296,7 +292,7 @@ class LRAgenerator():
                                f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??.nc')
         if len(glob.glob(infiles)) > 1:
             xfield = xr.open_mfdataset(infiles)
-            self.logger.warning('Creating a single file for %s, year %s...',  var, str(year))
+            self.logger.warning('Creating a single file for %s, year %s...', var, str(year))
             outfile = os.path.join(self.outdir,
                                    f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
             # clean older file
@@ -306,11 +302,10 @@ class LRAgenerator():
 
             # clean of monthly files
             for infile in glob.glob(infiles):
-                self.logger.info('Cleaning %s...',  infile)
+                self.logger.info('Cleaning %s...', infile)
                 os.remove(infile)
 
     def get_filename(self, var, year=None, month=None):
-
         """Create output filenames"""
 
         filename = os.path.join(self.outdir,
@@ -323,7 +318,6 @@ class LRAgenerator():
         return filename
 
     def check_integrity(self, varname):
-
         """To check if the LRA entry is fine before running"""
 
         yearfiles = self.get_filename(varname)
@@ -341,7 +335,6 @@ class LRAgenerator():
             self.logger.warning('Still need to run for var %s...', varname)
 
     def _write_var(self, var):
-
         """Call write var for generator or catalog access"""
         t_beg = time()
 
@@ -352,7 +345,7 @@ class LRAgenerator():
                 self._write_var_catalog(var)
 
         t_end = time()
-        self.logger.info('Process took {:.4f} seconds'.format(t_end-t_beg))
+        self.logger.info('Process took {:.4f} seconds'.format(t_end - t_beg))
 
     def _remove_regridded(self, data):
 
@@ -364,7 +357,6 @@ class LRAgenerator():
         return data
 
     def _write_var_generator(self, var):
-
         """
         Write a variable to file using the GSV generator
         """
@@ -415,7 +407,7 @@ class LRAgenerator():
             if self.definitive and month == 12:
                 self._concat_var(var, year)
 
-            self.logger.info('Processing this chunk took {:.4f} seconds'.format(time()-t_beg))
+            self.logger.info('Processing this chunk took {:.4f} seconds'.format(time() - t_beg))
             t_beg = time()
 
     def _write_var_catalog(self, var):
@@ -429,7 +421,7 @@ class LRAgenerator():
         self.logger.warning('Processing variable %s...', var)
         temp_data = self.data[var]
         if self.frequency:
-            temp_data = self.reader.timmean(temp_data)
+            temp_data = self.reader.timmean(temp_data, freq=self.frequency)
         temp_data = self.reader.regrid(temp_data)
 
         temp_data = self._remove_regridded(temp_data)

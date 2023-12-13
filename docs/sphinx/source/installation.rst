@@ -27,7 +27,7 @@ Clone the AQUA repository from GitHub:
 
 .. code-block:: bash
    
-   git clone https://github.com/oloapinivad/AQUA.git
+   git clone https://github.com/DestinE-Climate-DT/AQUA.git
 
 Change to the AQUA directory:
 

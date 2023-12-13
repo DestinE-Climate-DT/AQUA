@@ -4,6 +4,7 @@ sources:
       metadata:
         grid: HealPIX
         source_grid_name: icon-healpix
+        fix_names: icon-cycle3
       consolidated: true
       urlpath: 
         /work/bm1235/k203123/NextGEMS_Cycle3.git/experiments/ngc3028/outdata/ngc3028_PT30M_{{
@@ -31,6 +32,7 @@ sources:
       metadata:
         grid: HealPIX
         source_grid_name: icon-healpix
+        fix_names: icon-cycle3
       consolidated: true
       urlpath: 
         /work/bm1235/k203123/NextGEMS_Cycle3.git/experiments/ngc3028/outdata/ngc3028_PT3H_{{
@@ -58,6 +60,7 @@ sources:
       metadata:
         grid: HealPIX
         source_grid_name: icon-healpix
+        fix_names: icon-cycle3
       consolidated: true
       urlpath: 
         /work/bm1235/k203123/NextGEMS_Cycle3.git/experiments/ngc3028/outdata/ngc3028_P1D_{{

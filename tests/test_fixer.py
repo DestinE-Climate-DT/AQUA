@@ -5,13 +5,13 @@ from aqua import Reader
 
 loglevel = 'DEBUG'
 
+
 @pytest.mark.aqua
-# @pytest.mark.skip(reason="excluded from GH actions")
 def test_fixer_ifs_long():
     """Test basic fixing"""
 
     ntime = [10, 20, 1000]  # points in time to be checked (includes 1 month jump)
-    reader = Reader(model="IFS", exp="test-tco79", source="long", 
+    reader = Reader(model="IFS", exp="test-tco79", source="long",
                     fix=False, loglevel=loglevel)
     data0 = reader.retrieve(var=['2t', 'ttr'])  # Retrieve not fixed data
     ttr0 = data0.ttr[ntime, 0, 0]
@@ -58,10 +58,29 @@ def test_fixer_ifs_long():
     assert mtntrf2.attrs['units'] == 'W m-2'  # these were coded by hand
     assert mtntrf2.attrs['long_name'] == 'Mean top net thermal radiation flux doubled'
 
-def test_fixer_ifs_short():
 
+@pytest.mark.aqua
+def test_fixer_ifs_short():
     """Check alternative fix with replace method"""
 
     reader = Reader(model="IFS", exp="test-tco79", source="short", loglevel=loglevel)
     data = reader.retrieve()
     assert data['2t'].attrs['mickey'] == 'mouse'
+
+
+@pytest.mark.aqua
+def test_fixer_ifs_names():
+    """Check with fix_names method"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="short_masked", loglevel=loglevel)
+    data = reader.retrieve()
+    assert data['2t'].attrs['donald'] == 'duck'
+
+
+@pytest.mark.aqua
+def test_fixer_fesom_names():
+    """Check with fixer parent from fix_names method"""
+
+    reader = Reader(model="FESOM", exp="test-pi", source="original_2d_fix", loglevel=loglevel)
+    data = reader.retrieve()
+    assert data['mlotst125'].attrs['uncle'] == 'scrooge'
