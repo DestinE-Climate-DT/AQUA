@@ -1,0 +1,201 @@
+# Configuration yaml file for AQUA model and variables
+# 
+# Possible filetype attributes for variables are defined in the model section
+# The full path is $basedir/$dir/$filename
+# 
+# basedir can be formatted with: expname
+# dir can be formatted with: expname
+# filename can be formatted with: expname, year1, year2, var
+#
+# The key 'component' is used to determine the specific type of grid fixes to apply
+# (defined in cdopipe for now)
+# 
+# We also have the concept of 'domain' (atm or oce) later used to choose which fix to apply
+# Each component belongs to one and only one domain
+
+# Definition of model name and components belonging to it
+model:
+  basedir: '{expname}'
+  component:
+    atm: cmoratm
+    oce: cmoroce
+
+# Definition of filetypes (specific for each component)
+# Each variable belongs to a filetype
+filetype: 
+  atmbase:
+    filename: '*.nc'
+    dir: ''
+    component: cmoratm
+  ocebase:
+    filename: '*.nc'
+    dir: ''
+    component: cmoroce
+
+# Specify additional inifiles  of each component
+# maskfile: where the land-sea mask is, fundamental for atmospheric component 
+# gridfile: where the properties of the grid can be extracted, can be a standard file
+# areafile: where the grid cell area is
+# please not that for both grid area computation and itnerpolation weight computation
+# the code will look in priority from areafile to gridfile to maskfile. 
+# inifile can be formatted with all the possible keywords listed above
+# If a relative path is used this is attached to $ECEDIR/$basedir
+component:
+  cmoratm:
+    maskfile: '/pfs/lustrep3/projappl/project_465000454/data/AQUA/diagnostics/ecmean/atm_mask_r100.nc'
+    gridfile: ''
+    areafile: '/pfs/lustrep3/projappl/project_465000454/data/AQUA/diagnostics/ecmean/cell_area_r100.nc'
+  cmoroce:
+    maskfile: '/pfs/lustrep3/projappl/project_465000454/data/AQUA/diagnostics/ecmean/oce_mask_r100.nc'
+    gridfile: ''
+    areafile: '/pfs/lustrep3/projappl/project_465000454/data/AQUA/diagnostics/ecmean/cell_area_r100.nc'
+
+# Definition of individual variables
+variables:
+  tas:
+    derived: '2t'
+    varname: '2m Temperature'
+    filetype: atmbase 
+  pr:
+    derived: 'tprate'
+    varname: 'Total precipitation'
+    filetype: atmbase 
+  evspsbl:
+    varname: Evaporation
+    derived: 'erate'
+    filetype: atmbase
+  pme:
+    varname: 'Precip. minus evap.'
+    derived: 'tprate+erate'
+    filetype: atmbase
+  ta: 
+    varname: 'Air Temperature'
+    derived: t
+    filetype: atmbase
+  ua:
+    varname: 'Zonal Wind'
+    derived: u
+    filetype: atmbase
+  va:
+    varname: 'Meridional Wind'
+    derived: v
+    filetype: atmbase
+  hus:
+    varname: 'Specific Humidity'
+    derived: q
+    filetype: atmbase
+  psl: 
+    varname: msl
+    filetype: atmbase
+    derived: msl
+  tauu: 
+    varname: 'Zonal Wind Stress'
+    derived: iews
+    filetype: atmbase
+  tauv:
+    varname: 'Meridional Wind Stress'
+    derived: inss
+    filetype: atmbase
+  cll:
+    derived: lcc
+    varname: 'Low cloud cover'
+    filetype: atmbase
+  clm:
+    derived: mcc
+    varname: 'Medium cloud cover'
+    filetype: atmbase
+  clh:
+    derived: hcc
+    varname: 'High cloud cover'
+    filetype: atmbase
+  siconc:
+    varname: 'Sea-ice Concentration'
+    derived: ci
+    filetype: ocebase
+  rlnt:
+    varname: 'TOA net LW'
+    derived: mtntrf
+    filetype: atmbase
+  # rlntcs:
+  #   varname: 'TOA net LW'
+  #   derived: ttrc
+  #   filetype: atmbase
+  rsnt:
+    varname: 'TOA net SW'
+    derived: mtnsrf
+    filetype: atmbase
+  # rsntcs:
+  #   varname: 'TOA net SW, CS'
+  #   derived: tsrc
+  #   filetype: atmbase
+  net_toa:
+    varname: 'Net TOA'
+    units: W/m2
+    derived: 'mtnsrf+mtntrf'
+    filetype: atmbase
+  # swcf:
+  #   varname: 'SW CRE'
+  #   derived: 'tsr-tsrc'
+  #   filetype: atmbase
+  # lwcf:
+  #   varname: 'LW CRE'
+  #   derived: 'ttr-ttrc'
+  #   filetype: atmbase
+  tos:
+    varname: SST
+    derived: avg_tos
+    filetype: ocebase
+  sos:
+    varname: SSS
+    derived: avg_sos
+    filetype: ocebase
+  pr_land:
+    varname: 'Precipitation (land)'
+    derived: tprate
+    filetype: atmbase
+  pr_oce:
+    varname: 'Precipitation (ocean)'
+    derived: tprate
+    filetype: atmbase
+  pme_land:
+    varname: 'Precip. minus evap. (land)'
+    derived: 'tprate+erate'
+    filetype: atmbase
+  pme_oce:
+    varname: 'Precip. minus evap. (ocean)'
+    derived: 'tprate+erate'
+    filetype: atmbase
+  rlns:
+    varname: 'Surface net LW'
+    filetype: atmbase
+    derived: msntrf
+  rsns:
+    varname: 'Surface net SW'
+    filetype: atmbase
+    derived: msnsrf
+  hfss:
+    varname: 'Surface SH'
+    filetype: atmbase
+    derived: msshfl
+  hfls:
+    varname: 'Surface LH'
+    filetype: atmbase
+    derived: mslhfl
+  net_sfc_nosn:
+    varname: 'Net Surface (no snowfall)'
+    filetype: atmbase
+    derived: 'msshfl+mslhfl+msnsrf+msntrf'
+  # net_sfc:
+  #   varname: 'Net Surface'
+  #   units: W/m2
+  #   filetype: atmbase
+  #   derived: 'str+ssr+slhf+sshf-sf*334000000'
+  # toamsfc:
+  #   varname: 'TOA-Sfc net radiation'
+  #   units: W/m2
+  #   filetype: atmbase
+  #   derived: 'tsr+ttr-str-ssr-slhf-sshf+sf*334000000'
+  # toamsfc_nosn:
+  #   varname: 'TOA-Sfc net rad. (no snowfall)'
+  #   filetype: atmbase
+  #   derived: 'tsr+ttr-str-ssr-slhf-sshf'
