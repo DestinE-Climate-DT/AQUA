@@ -1,0 +1,15 @@
+Copy code
+#!/bin/bash
+
+while read oldrev newrev refname; do
+    # Check if changes are being pushed to a branch other than 'main'
+    if [[ "$refname" != "refs/heads/main" && "$refname" == refs/heads/* ]]; then
+        # Check if 'config.yml' is modified
+        if git diff --name-only $oldrev $newrev | grep -q '^config/config-aqua.yaml$'; then
+            echo "Error: Changes to 'config.yml' are only allowed on the 'main' branch."
+            exit 1
+        fi
+    fi
+done
+
+exit 0
