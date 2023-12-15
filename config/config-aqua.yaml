@@ -1,6 +1,6 @@
 # machine dependent configuration file for AQUA
 # so far nothing is really strict
-machine: Test4
+machine: Test6
 
 reader: 
   catalog: '{configdir}/machines/{machine}/catalog.yaml'
