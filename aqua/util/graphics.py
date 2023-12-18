@@ -3,6 +3,7 @@ import math
 
 import xarray as xr
 import cartopy.util as cutil
+import numpy as np
 
 from aqua.logger import log_configure
 
@@ -213,3 +214,27 @@ def coord_names(data: xr.DataArray):
         data.latitude
 
     return lon_name, lat_name
+
+
+def ticks_round(ticks: list, round_to: int = None):
+    """
+    Round a tick to the nearest round_to value.
+
+    Args:
+        tick (list):          Tick value.
+        round_to (int, opt):  Round to value.
+
+    Returns:
+        tick (list):  Rounded tick value.
+    """
+    if round_to is None:
+        # define round_to
+        tick_span = ticks[1] - ticks[0]
+        if tick_span <= 1:
+            round_to = 2
+        elif tick_span > 1 and tick_span <= 10:
+            round_to = 1
+        else:
+            round_to = 0
+
+    return np.round(ticks, round_to)

@@ -1,3 +1,130 @@
+fixer_name:
+    icon-destine:
+        data_model: false
+    icon-default:
+        data_model: false  # Do not attempt to correct coordinates
+        delete:  # variables to drop at the end
+            - hfls
+            - hfss
+            - rlus
+            - rlut
+            - rsus
+            - rsdt
+            - rsut
+        vars:
+            iews:
+                source: tauu
+                grib: true
+            inss:
+                source: tauv
+                grib: true
+            skt:
+                source: ts
+                grib: true
+            sp:
+                source: ps
+                grib: true
+            msl:
+                source: psl
+                grib: true
+            10si:
+                source: sfcwind
+                grib: true
+            ci:
+                source: sic
+                src_units: "1"
+                grib: true
+                units: "1"
+            sithick:
+                source: sit
+                grib: true
+            2t:
+                source: tas
+                grib: true
+            10u:
+                source: uas
+                grib: true
+            10v:
+                source: vas
+                grib: true
+            tciw:
+                source: clivi
+                grib: true
+            tclw:
+                source: cllvi
+                grib: true
+            mslhfl:
+                source: hfls
+                grib: true
+            msshfl:
+                source: hfss
+                grib: true
+            tprate:
+                source: pr
+                grib: true
+                src_units: kg m**-2 s**-1
+                units: kg m**-2 s**-1
+            mlsprt:
+                source: prlr
+                grib: true
+                src_units: kg m**-2 s**-1
+                units: kg m**-2 s**-1
+            tcwv:
+                source: prw
+                grib: true
+            msdtrf:
+                source: rlds
+                grib: true
+            msntrf:
+                derived: rlds-rlus
+                grib: true
+            mtntrf:
+                derived: -rlut
+                grib: true
+            msdsrf:
+                source: rsds
+                grib: true
+            msnsrf:
+                derived: rsds-rsus
+                grib: true
+            mtnsrf:
+                derived: rsdt-rsut
+                grib: true
+            ocpt:
+                source: to
+                grib: true
+                units: degC
+            t:
+                source: ta
+                grib: true
+            q:
+                src_units: kg/kg
+                source: hus
+                grib: true
+            u:
+                source: ua
+                grib: true
+            uo:
+                source: u
+                grib: true
+            v:
+                source: va
+                grib: true
+            vo:
+                source: v
+                grib: true
+    icon-cycle3:
+        parent: icon-default
+        vars:
+            msl: # from here different from default
+                source: pres_msl
+                src_units: Pa
+                grib: true
+            sst:
+                source: ts
+                grib: false
+                src_units: K
+
 models:
     ICON:
         default:

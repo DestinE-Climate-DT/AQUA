@@ -1,3 +1,78 @@
+fixer_name:
+    fesom-default: 
+        data_model: false
+        delete:  # variables to drop at the end
+            - a_ice
+            - m_ice
+            - sss
+            - ssh
+        vars:
+            ci:
+                source: a_ice
+                src_units: frac
+                grib: true
+                units: '%'
+            sst: 
+                source: sst
+                grib: true
+            sos:
+                source: sss
+                grib: true
+                units: psu
+            sithick:
+                source: m_ice
+                grib: true
+            zos:
+                source: ssh
+                grib: true
+            ocpt:
+                source: temp 
+                src_units: degC
+                grib: true
+                units: degC 
+            uo:
+                source: u
+                grib: true
+                src_units: m/s
+            vo:
+                source: v
+                grib: true
+                src_units: m/s
+            wo:
+                source: w
+                grib: true
+            so:
+                src_units: psu
+                source: salt
+                grib: true
+                units: psu
+            sivn:
+                source: vice
+                grib: true
+            siue:
+                source: uice
+                grib: true
+            vdf: 
+                source: Kv
+                grib: true
+            tprate:
+                source: prec
+                grib: true
+            mlotst125:
+                source: MLD2
+                src_units: m
+                grib: true
+    fesom-test:
+        parent: fesom-default
+        data_model: false
+        vars:
+            mlotst125:
+                source: MLD2
+                src_units: m
+                grib: true
+                attributes:
+                    uncle: "scrooge"
+
 models:
     FESOM:
         default:

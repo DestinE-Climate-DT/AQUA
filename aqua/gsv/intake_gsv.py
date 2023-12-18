@@ -42,7 +42,7 @@ class GSVSource(base.DataSource):
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
                  aggregation="S", savefreq="H", timestep="H", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None,
-                 log_history=False, loglevel='WARNING', **kwargs):
+                 loglevel='WARNING', **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalogue entry,
         but can also be specified upon accessing the catalogue.
@@ -62,11 +62,9 @@ class GSVSource(base.DataSource):
             var (str, optional): Variable ID. Defaults to those in the catalogue.
             metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
             loglevel (string) : The loglevel for the GSVSource
-            logging (bool, optional): Whether to print to screen. Used only for FDB access. Defaults to False.
             kwargs: other keyword arguments.
         """
 
-        self.log_history = log_history
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
 
         if not gsv_available:
@@ -225,14 +223,14 @@ class GSVSource(base.DataSource):
         # to silence the logging from the GSV retriever, we increase its level by one
         # in this way the 'info' is printed only in 'debug' mode
         # gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel() + 10)
+        self.logger.debug('Request %s', request)
         dataset = gsv.request_data(request)
 
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)
 
         # Log history
-        if self.log_history:
-            log_history(dataset, "Dataset retrieved by GSV interface")
+        log_history(dataset, "Dataset retrieved by GSV interface")
 
         return dataset
 

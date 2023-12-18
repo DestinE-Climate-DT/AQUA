@@ -148,7 +148,7 @@ class RegridMixin():
             # there is no source grid path at all defined in the regrid.yaml file:
             # let's reconstruct it from the file itself
 
-            self.logger.info('Grid file is not defined, retrieving the source itself...')
+            self.logger.warning('Grid file is not defined, retrieving the source itself...')
             data = self._retrieve_plain()
 
             # use slicing to copy the object and not create a pointer
@@ -258,7 +258,6 @@ class RegridMixin():
 
         except subprocess.CalledProcessError as err:
             # Print the CDO error message
-            # self.logger.critical(err.output.decode('utf-8'))
             self.logger.critical(err.stderr.decode('utf-8'))
             raise
 
@@ -280,7 +279,7 @@ class RegridMixin():
         self.fix = False
         self.aggregation = None
         self.streaming = False
-        data = self.retrieve(sample=True, *args, **kwargs)
+        data = self.retrieve(sample=True, history=False, *args, **kwargs)
         self.aggregation = aggregation
         self.fix = fix
         self.streaming = streaming
@@ -313,7 +312,7 @@ class RegridMixin():
                 data = self._retrieve_plain(startdate=None)
             space_coord = [x for x in data.dims if x in default_horizontal_dims]
             if not space_coord:
-                self.logger.info('Default dims that are screened are %s', default_horizontal_dims)
+                self.logger.debug('Default dims that are screened are %s', default_horizontal_dims)
                 raise KeyError('Cannot identify any space_coord, you will will need to define it regrid.yaml')
             self.logger.info('Space_coords deduced from the source are %s', space_coord)
 
@@ -324,8 +323,8 @@ class RegridMixin():
                 data = self._retrieve_plain(startdate=None)
             vert_coord = [x for x in data.dims if x in default_vertical_dims]
             if not vert_coord:
-                self.logger.info('Default dims that are screened are %s', default_vertical_dims)
-                self.logger.info('Assuming this is a 2d file, i.e. vert_coord=2d')
+                self.logger.debug('Default dims that are screened are %s', default_vertical_dims)
+                self.logger.debug('Assuming this is a 2d file, i.e. vert_coord=2d')
                 # If not specified we assume that this is only a 2D case
                 vert_coord = '2d'
             

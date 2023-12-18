@@ -213,10 +213,14 @@ else
 fi
 colored_echo $GREEN "Machine set to $machine in the config file"
 
+# Create output directory if it does not exist
+colored_echo $GREEN "Creating output directory $outputdir"
+mkdir -p "$outputdir"
+
 if [ "$run_dummy" = true ] ; then
   colored_echo $GREEN "Running setup checker"
   scriptpy="$aqua/diagnostics/dummy/cli/cli_dummy.py"
-  python $scriptpy $args -l $loglevel
+  python $scriptpy $args -l $loglevel > "$outputdir/setup_checker.log" 2>&1
   
   # Store the error code of the dummy script
   dummy_error=$?
@@ -246,13 +250,13 @@ for diagnostic in "${all_diagnostics[@]}"; do
 
   if [[ "${atm_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args_atm ${atm_extra_args[$diagnostic]} \
-    -l $loglevel --outputdir $outputdir/$diagnostic >> "$outputdir/$diagnostic.log" 2>&1 &
+    -l $loglevel --outputdir $outputdir/$diagnostic > "$outputdir/$diagnostic.log" 2>&1 &
   elif [[ "${oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args_oce ${oce_extra_args[$diagnostic]} \
-    -l $loglevel --outputdir $outputdir/$diagnostic >> "$outputdir/$diagnostic.log" 2>&1 &
+    -l $loglevel --outputdir $outputdir/$diagnostic > "$outputdir/$diagnostic.log" 2>&1 &
   elif [[ "${atm_oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args ${atm_oce_extra_args[$diagnostic]} \
-    -l $loglevel --outputdir $outputdir/$diagnostic >> "$outputdir/$diagnostic.log" 2>&1 &
+    -l $loglevel --outputdir $outputdir/$diagnostic > "$outputdir/$diagnostic.log" 2>&1 &
   fi
   if [ $max_threads -gt 0 ]; then
     ((thread_count++))

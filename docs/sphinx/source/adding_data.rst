@@ -200,6 +200,8 @@ Some of the parameters are here described:
     - ``fdb_path``: the path of the FDB configuration file (mandatory)
     - ``eccodes_path``: the path of the eccodes version used for the encoding/decoding of the FDB
     - ``variables``: a list of variables available in the fdb.
+    - ``source_grid_name``: the grid name defined in aqua-grids.yaml to be used for areas and regridding
+    - ``fix_family``: the fix family definition defined in the fixes folder
 
 
 Regridding capabilities
