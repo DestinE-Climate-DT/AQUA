@@ -104,13 +104,6 @@ def km_test_score_df(df):
 
 
 
-
-pi_score_dict = combine_PI_dict(machines)
-pi_score_dataframe = pi_score_df(pi_score_dict)
-km_test_df = km_test_score_df(pi_score_dataframe)
-
-
-
 pi_score_dict = combine_PI_dict(machines)
 pi_score_dataframe = pi_score_df(pi_score_dict)
 km_test_df = km_test_score_df(pi_score_dataframe)
@@ -118,11 +111,9 @@ km_test_df = km_test_score_df(pi_score_dataframe)
 
 p_values = km_test_df.pivot_table(index="variable", columns="season",
                                   values="p_value", aggfunc='mean')
-catagory = km_test_df.pivot_table(index="variable", columns="season",
-                                  values="p_value", aggfunc=lambda x: x.iloc[0])
 
 fig, ax = plt.subplots(figsize=(15,10)) 
-sns.heatmap(catagory, cbar= False, annot=False, linewidths=15.5)
+sns.heatmap(p_values, cbar= False, annot=False, linewidths=15.5)
 
 
 for i, row in enumerate(p_values.index):
@@ -130,10 +121,15 @@ for i, row in enumerate(p_values.index):
         color = km_test_df[(km_test_df['variable'] == row) & (km_test_df['season'] == col)]['color_category'].values[0]
         ax.add_patch(plt.Rectangle((j, i), 0.9, 0.9, fill=True, color=color, edgecolor='white'))
         text = "{:.2f}".format(p_values.iloc[i, j])
-        ax.text(j + 0.5, i + 0.5, text, ha='center', va='center', color='black')
+        ax.text(j + 0.5, i + 0.5, text, ha='center', va='center', color='black',fontsize=14)
 
-plt.title("P values of Kolmogorov-Smirnov test (LUMI C vs LUMI G)", fontsize=17, fontweight='bold')
+plt.title("P values of Kolmogorov-Smirnov test (LUMI C vs LUMI G)", fontsize=19, fontweight='bold', y=1.02)
+plt.xticks(fontsize=15,rotation=45)  # Adjust fontsize for x-axis ticks (columns)
+plt.yticks(fontsize=15) 
+
+ax.set_ylabel('')  # Set x-axis label with bold font
+ax.set_xlabel('') 
 
 plt.savefig("./lumi_C_G_KS_test_p_value.png", bbox_inches='tight')
-plt.show()
+
 
