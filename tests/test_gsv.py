@@ -77,7 +77,7 @@ class TestGsv():
         data = reader.retrieve(startdate='20080101T1200', enddate='20080101T1200', var='t')
         assert isinstance(data, types.GeneratorType), 'Reader does not return iterator'
         dd = next(data)
-        assert dd.t.param == '130.128', 'Wrong GRIB param in data'
+        assert dd.t.GRIB_param == '130.128', 'Wrong GRIB param in data'
 
     def test_reader_novar(self) -> None:
         """Simple test, to check that catalog access works and reads correctly, no var"""
@@ -86,7 +86,7 @@ class TestGsv():
                         stream_generator=True, loglevel=loglevel)
         data = reader.retrieve()
         dd = next(data)
-        assert dd.t.param == '130.128', 'Wrong GRIB param in data'
+        assert dd.t.GRIB_param == '130.128', 'Wrong GRIB param in data'
 
     def test_reader_xarray(self) -> None:
         """Reading directly into xarray"""
@@ -104,4 +104,6 @@ class TestGsv():
         reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
         data = reader.retrieve(var='130')
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
+        assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
+        data = reader.retrieve(var=130)  # test numeric argument
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"

@@ -1,0 +1,6 @@
+sources:
+  control-1950-icon-dev:
+    description: FDB ICON control 1950 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/control-1950-icon-dev.yaml'

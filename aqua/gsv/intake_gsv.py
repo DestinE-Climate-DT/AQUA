@@ -42,7 +42,7 @@ class GSVSource(base.DataSource):
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
                  aggregation="S", savefreq="H", timestep="H", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None,
-                 log_history=False, loglevel='WARNING', **kwargs):
+                 loglevel='WARNING', **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalogue entry,
         but can also be specified upon accessing the catalogue.
@@ -62,11 +62,9 @@ class GSVSource(base.DataSource):
             var (str, optional): Variable ID. Defaults to those in the catalogue.
             metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
             loglevel (string) : The loglevel for the GSVSource
-            logging (bool, optional): Whether to print to screen. Used only for FDB access. Defaults to False.
             kwargs: other keyword arguments.
         """
 
-        self.log_history = log_history
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
 
         if not gsv_available:
@@ -127,14 +125,17 @@ class GSVSource(base.DataSource):
         super(GSVSource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
-        """Standard method providing data schema"""
+        """
+        Standard method providing data schema.
+        For dask access it is assumed that all dataarrays read share the same shape and data type.
+        """
 
         # check if dates are within acceptable range
         check_dates(self.startdate, self.data_start_date, self.enddate, self.data_end_date)
 
         if self.dask_access:  # We need a better schema for dask access
             if not self._ds:  # we still have to retrieve a sample dataset
-                self._ds = self._get_partition(0, var=self._var[0], first=True)
+                self._ds = self._get_partition(0, var=self._var, first=True)
 
             var = list(self._ds.data_vars)[0]
             da = self._ds[var]  # get first variable dataarray
@@ -147,7 +148,7 @@ class GSVSource(base.DataSource):
                 datashape=None,
                 dtype=str(da.dtype),
                 shape=da.shape,
-                name=var,
+                name=None,
                 npartitions=self._npartitions,
                 extra_metadata=metadata)
         else:
@@ -222,14 +223,14 @@ class GSVSource(base.DataSource):
         # to silence the logging from the GSV retriever, we increase its level by one
         # in this way the 'info' is printed only in 'debug' mode
         # gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel() + 10)
+        self.logger.debug('Request %s', request)
         dataset = gsv.request_data(request)
 
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)
 
         # Log history
-        if self.log_history:
-            log_history(dataset, "Dataset retrieved by GSV interface")
+        log_history(dataset, "Dataset retrieved by GSV interface")
 
         return dataset
 
@@ -267,7 +268,8 @@ class GSVSource(base.DataSource):
         shape = self._schema.shape
         dtype = self._schema.dtype
 
-        da0 = self._ds[self._schema.name]  # sample dataarray
+        var = list(self._ds.data_vars)[0]
+        da0 = self._ds[var]  # sample dataarray
 
         self.itime = da0.dims.index("time")
         coords = da0.coords.copy()
@@ -280,13 +282,15 @@ class GSVSource(base.DataSource):
             dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
             darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
 
+            shortname = self.get_eccodes_shortname(var)
+
             da = xr.DataArray(darr,
-                              name=da0.name,
-                              attrs=da0.attrs,
-                              dims=da0.dims,
+                              name=shortname,
+                              attrs=self._ds[shortname].attrs,
+                              dims=self._ds[shortname].dims,
                               coords=coords)
 
-            shortname = self.get_eccodes_shortname(var)
+            
             ds[shortname] = da
 
         ds.attrs.update(self._ds.attrs)

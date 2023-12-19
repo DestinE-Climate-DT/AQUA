@@ -1,3 +1,183 @@
+fixer_name:
+    ifs-default:
+        data_model: ifs
+        deltat: 3600
+        jump: month
+        vars:
+            tprate:
+                source: tp
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            cprate:
+                source: cp
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mlsprt:
+                source: lsp
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            erate:
+                source: e
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            esrate:
+                source: es
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mrort:
+                source: ro
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mtsfr:
+                source: sf
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mslhfl:
+                source: slhf
+                grib: true
+                decumulate: true
+            msshfl:
+                source: sshf
+                grib: true
+                decumulate: true
+            msnsrf:
+                source: ssr
+                grib: true
+                decumulate: true
+            msdsrf:
+                source: ssrd
+                grib: true
+                decumulate: true    
+            msntrf:
+                source: str
+                grib: true
+                decumulate: true
+            msdtrf:
+                source: strd
+                grib: true
+                decumulate: true
+            mtnsrf:
+                source: tsr
+                grib: true
+                decumulate: true
+            mtntrf:
+                source: ttr
+                grib: true
+                decumulate: true         
+            var172045:  # if the variable has no short name we can use its paramId
+                source: smlt
+                grib: true
+                decumulate: true
+            iews:
+                source: ewss
+                grib: true
+                decumulate: true  
+            inss: 
+                source: nsss
+                grib: true
+                decumulate: true
+            surfror:  # a very recent version of eccodes is needed for this one
+                source: sro
+                grib: true
+                decumulate: true 
+    ifs-control:
+        parent: ifs-default
+        method: merge
+        vars:
+            tprate:
+                source: tprate
+    ifs-cycle3:
+        # for this exp we have a lot of output from MultI/O, already decumulated and
+        # averaged monthly, so default is without decumulation
+        vars:
+            tprate:
+                src_units: m s**-1
+                source: tp
+                grib: true
+                units: kg m**-2 s**-1
+            cprate:
+                src_units: m s**-1
+                source: cp
+                grib: true
+                units: kg m**-2 s**-1
+            mlsprt:
+                src_units: m s**-1
+                source: lsp
+                grib: true
+                units: kg m**-2 s**-1 
+            erate:
+                src_units: m s**-1
+                source: e
+                grib: true
+                units: kg m**-2 s**-1 
+            esrate:
+                src_units: m s**-1
+                source: es
+                grib: true
+                units: kg m**-2 s**-1 
+            mrort:
+                src_units: m s**-1
+                source: ro
+                grib: true
+                units: kg m**-2 s**-1
+            mtsfr:
+                src_units: m s**-1
+                source: sf
+                grib: true
+                units: kg m**-2 s**-1
+            mslhfl:
+                src_units: W/m2
+                source: slhf
+                grib: true
+            msshfl:
+                src_units: W/m2
+                source: sshf
+                grib: true
+            msnsrf:
+                src_units: W/m2
+                source: ssr
+                grib: true
+            msdsrf:
+                src_units: W/m2
+                source: ssrd
+                grib: true
+            msntrf:
+                src_units: W/m2
+                source: str
+                grib: true
+            msdtrf:
+                src_units: W/m2
+                source: strd
+                grib: true
+            mtnsrf:
+                src_units: W/m2
+                source: tsr
+                grib: true
+            mtntrf:
+                src_units: W/m2
+                source: ttr
+                grib: true  
+    ifs-ci-test:
+        data_model: ifs
+        vars:
+            2t:
+                source: 2t
+                attributes: 
+                    donald: 'duck'
 models:
     IFS:
         default:
@@ -266,22 +446,22 @@ models:
                     tprate:
                         source: tprate
 
-        control-1950-nemo-dev:
-            hourly-1deg:
-                method: merge
-                vars:
-                    tprate:
-                        source: tprate
-            hourly-native:
-                method: merge
-                vars:
-                    tprate:
-                        source: tprate
-            monthly-1deg-2d:
-                method: merge
-                vars:
-                    tprate:
-                        source: tprate
+        # control-1950-nemo-dev:
+        #     hourly-1deg:
+        #         method: merge
+        #         vars:
+        #             tprate:
+        #                 source: tprate
+        #     hourly-native:
+        #         method: merge
+        #         vars:
+        #             tprate:
+        #                 source: tprate
+        #     monthly-1deg-2d:
+        #         method: merge
+        #         vars:
+        #             tprate:
+        #                 source: tprate
 
         historical-1990-fesom-dev:
             hourly-1deg:

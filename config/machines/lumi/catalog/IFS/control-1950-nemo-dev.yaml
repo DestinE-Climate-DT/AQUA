@@ -27,6 +27,7 @@ sources:
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'chnk']
       source_grid_name: tco1279
+      fixer_name: ifs-control
   hourly-1deg:
     args:
       request:
@@ -56,6 +57,7 @@ sources:
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tprate', 'sf', '2t', '10u', 'blh', 'sshf', 'slhf', 'ssrd', 'ssr', 'strd', 'str', 'ttr', 'e', 'tsr', 'ewss', 'nsss', 'chnk', 'sro', 'ssro']
       source_grid_name: lon-lat
+      fixer_name: ifs-control
   6hourly-1deg:
     args:
       request:
@@ -111,6 +113,7 @@ sources:
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
       variables: ['tcc', 'sd', 'tciw', 'tclw', 'msl', 'tcwv', 'lcc', 'mcc', 'hcc']
       source_grid_name: lon-lat
+      fixer_name: ifs-control
   monthly-1deg-3d:
     args:
       request:

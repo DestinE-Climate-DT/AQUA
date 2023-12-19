@@ -13,6 +13,7 @@ sources:
   original_2d:
     metadata:
       source_grid_name: test-pi-2d
+      fixer_name: fesom-default
     args:
       chunks:
         time: 1
@@ -23,6 +24,18 @@ sources:
       - ./AQUA_tests/models/FESOM/short/MLD2.fesom.1986.nc
       - ./AQUA_tests/models/FESOM/short/sst.fesom.1985.nc
       - ./AQUA_tests/models/FESOM/short/sst.fesom.1986.nc
+    description: original 2d output
+    driver: netcdf
+  original_2d_fix:
+    metadata:
+      source_grid_name: test-pi-2d
+      fixer_name: fesom-test
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ./AQUA_tests/models/FESOM/short/a_ice.fesom.1985.nc
+      - ./AQUA_tests/models/FESOM/short/MLD2.fesom.1985.nc
     description: original 2d output
     driver: netcdf
   original_3d:

@@ -1,0 +1,11 @@
+sources:
+  GIOMAS:
+    description: Polar Science Center data for the Southern Hemisphere 
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/giomas.yaml"
+  PIOMAS:
+    description: Polar Science Center data for the Northern Hemisphere 
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/piomas.yaml"

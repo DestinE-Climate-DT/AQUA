@@ -22,20 +22,22 @@ Follow these steps:
 Download the docker image
 --------------------------
 
-Pull the docker image from the docker hub:
+Pull the docker image from the docker hub using the generated token:
 
 .. code-block:: bash
 
-   singularity pull docker://ghcr.io/oloapinivad/aqua:0.3-container
-
-if you have a token, you can use it to pull the image:
-
-.. code-block:: bash
-
-   singularity pull --docker-login docker://ghcr.io/oloapinivad/aqua:0.3-container
+   singularity pull --docker-login docker://ghcr.io/destine-climate-dt/aqua:0.5.1
 
 This will require you to enter your username and token generated above.
-The above command will create a file called ``aqua_0.3-container.sif`` in the current directory.
+The above command will create a file called ``aqua_0.5.1.sif`` in the current directory.
+
+.. note::
+   If you want to use a different version of AQUA, you can change the tag in the above command.
+   For example, to use version 0.4, you can use ``aqua:0.4``.
+
+.. note::
+   If in your machine is installed docker instead of singularity, you can pull the image with docker,
+   just by replacing ``singularity pull`` with ``docker pull``.
 
 Store the token
 ---------------
@@ -53,23 +55,37 @@ It can be particularly useful if you want to use the image in a batch job.
 Load AQUA Environment into the Shell
 -------------------------------------
 
-1. Navigate to the AQUA repository:
+The AQUA repository contains a script to load the AQUA container (updated to the last release) with singularity on LUMI.
+This contains also bindings to the commonly used folders on LUMI but it can be easily adapted to other platforms.
+
+1. Navigate to the AQUA repository, in the ``config/machines/lumi/container`` folder:
 
 .. code-block:: bash
    
-   cd AQUA
+   cd AQUA/config/machines/lumi/container
 
 
-2. Run the `load_aqua_lumi.sh <https://github.com/oloapinivad/AQUA/blob/main/config/machines/lumi/container/load_aqua_lumi.sh>`_ script  to load the AQUA environment into the shell:
+2. Run the `load_aqua_lumi.sh <https://github.com/DestinE-Climate-DT/AQUA/blob/main/config/machines/lumi/container/load_aqua_lumi.sh>`_ script  to load the AQUA environment into the shell:
 
 .. code-block:: bash
 
    ./config/machines/lumi/container/load_aqua_lumi.sh
 
-In this way, you will have your AQUA environment activated on the shell.
+Specify the path to the AQUA repository
++++++++++++++++++++++++++++++++++++++++
 
-.. warning::
-   When running the script, be sure to modify the paths in the script with your own paths.
+The actual version of the script will also ask if you want to use your local AQUA or the one in the container.
+
+This allows to use the container with the latest version of the environment, but with the local version of your AQUA repository,
+pointing to a specific branch or commit you may want to test.
+
+After loading the container you can be sure that the code is loaded from the container in ``/app/AQUA`` or from your local repository by running:
+
+.. code-block:: bash
+
+   echo $AQUA
+
+In this way, you will have your AQUA environment activated on the shell.
 
 Running Jupyter Notebook
 ------------------------
@@ -82,7 +98,7 @@ To run a Jupyter Notebook using the AQUA environment, follow these steps.
 
    ./config/machines/lumi/container/load_aqua_lumi.sh
 
-2. Start Jupyter Lab, which will provide a server URL like: http://localhost:<port>/lab?token=random_token.
+2. Start Jupyter Lab, which will provide a server URL like: ``http://localhost:<port>/lab?token=random_token``.
 
 .. code-block:: bash
 
@@ -139,44 +155,15 @@ Pointing to a Specific FDB
    If you want to access different FDB sources with the AQUA reader, the reader itself can take care of
    different FDB configuration files.
 
-Points for AQUA Developers or Advanced Users 
------------------------------------------------
-If you check the details of the path in Python, you may see this:
-
-.. code-block:: bash
-
-      Singularity> python
-      Python 3.10.12 | packaged by conda-forge | (main, Jun 23 2023, 22:40:32) [GCC 12.3.0] on linux
-      Type "help", "copyright", "credits" or "license" for more information.
-      >>> import sys
-      >>> sys.path
-      ['', '/opt/conda/lib/python3.10/site-packages', '/opt/conda/lib/python310.zip', '/opt/conda/lib/python3.10',
-      '/opt/conda/lib/python3.10/lib-dynload', '__editable__.aqua-0.3.finder.__path_hook__',
-      '__editable__.teleconnections-0.0.9.finder.__path_hook__']
-      >>> import aqua
-      >>> aqua.__file__
-      '/app/AQUA/aqua/__init__.py'
-
-This directory, ``/app/AQUA/`` is in the container, and AQUA is installed as an editable project.
-
-In case you are developing an AQUA project, you want to update the ``/app/AQUA/`` path with your repository location.
-Add the path of AQUA in Python like this:
-
-.. code-block:: bash
-
-   import sys
-   sys.path.clear()
-   local_repo_path = '/path/to/your/AQUA/'
-   sys.path.insert(0, local_repo_path)
-   import aqua
-   print(aqua.__file__)
-
 Submitting Slurm Job Using the Container
 -----------------------------------------
 
 It might be required to use the container within a batch job. 
 Below you can find a template for a Slurm script on Lumi.
 You can customize it according to your needs.
+
+.. note::
+   A copy of this script is available in the AQUA repository in the ``config/machines/lumi/container`` folder.
 
 .. code-block:: bash
 
@@ -191,7 +178,7 @@ You can customize it according to your needs.
    #SBATCH --error=aqua_slurm.err
    #SBATCH -p dev-g    # Change the partition
 
-   AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.3.sif # Change it to your container
+   AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.5.1.sif # Change it to your container
    FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml  # Change it to your simulation
    GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
    GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
@@ -201,11 +188,11 @@ You can customize it according to your needs.
        --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
        --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
        --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
-       --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
+       --env PYTHONPATH=/opt/conda/lib/python3.11/site-packages \
        --env ESMFMKFILE=/opt/conda/lib/esmf.mk  \
        --bind /pfs/lustrep3/scratch/project_465000454  \
        --bind /scratch/project_465000454  \
-       /project/project_465000454/containers/aqua/aqua-v0.3.sif \
+       /project/project_465000454/containers/aqua/aqua-v0.5.1.sif \
        bash -c \
        ' 
        # You can edit the code below for your required script.

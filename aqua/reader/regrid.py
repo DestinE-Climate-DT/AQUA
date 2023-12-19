@@ -55,14 +55,14 @@ class RegridMixin():
         Returns:
             None
         """
-
+       
         if self.vert_coord and self.vert_coord != ["2d"]:
             vert_coord = self.vert_coord[0]  # We need only the first one for areas
         else:
             vert_coord = None
 
         sgridpath = self._get_source_gridpath(source_grid, vert_coord, zoom)
-
+       
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
 
@@ -134,6 +134,8 @@ class RegridMixin():
 
         Args:
             source_grid (dict): The source grid specification.
+            vert_coord (list): vertical coordinate
+            zoom (str): zoom option
 
         Returns:
             xarray.DataArray: The source grid path.
@@ -146,12 +148,13 @@ class RegridMixin():
             # there is no source grid path at all defined in the regrid.yaml file:
             # let's reconstruct it from the file itself
 
-            self.logger.info('Grid file is not defined, retrieving the source itself...')
+            self.logger.warning('Grid file is not defined, retrieving the source itself...')
             data = self._retrieve_plain()
 
-            # If we have also a vertical coordinate, include it in the sample
-            coords = self.src_space_coord
+            # use slicing to copy the object and not create a pointer
+            coords = self.src_space_coord[:]
 
+            # If we have also a vertical coordinate, include it in the sample
             if vert_coord and vert_coord != "2d" and vert_coord != "2dm":
                 coords.append(vert_coord)
 
@@ -255,7 +258,6 @@ class RegridMixin():
 
         except subprocess.CalledProcessError as err:
             # Print the CDO error message
-            # self.logger.critical(err.output.decode('utf-8'))
             self.logger.critical(err.stderr.decode('utf-8'))
             raise
 
@@ -267,8 +269,8 @@ class RegridMixin():
 
     def _retrieve_plain(self, *args, **kwargs):
         """
-        Retrieves making sure that no fixer and agregation are used
-        and converts iterator to data
+        Retrieves making sure that no fixer and agregation are used,
+        read only first variable and converts iterator to data
         """
 
         aggregation = self.aggregation
@@ -277,7 +279,7 @@ class RegridMixin():
         self.fix = False
         self.aggregation = None
         self.streaming = False
-        data = self.retrieve(*args, **kwargs)
+        data = self.retrieve(sample=True, history=False, *args, **kwargs)
         self.aggregation = aggregation
         self.fix = fix
         self.streaming = streaming
@@ -287,21 +289,48 @@ class RegridMixin():
 
         return data
 
-    def _guess_space_coord(self, default_dims):
+    def _guess_coords(self, space_coord, vert_coord, default_horizontal_dims, default_vertical_dims):
         """
-        Given a set of default space dimensions, find the one present in the data
-        and return them
+        Given a set of default space and vertical dimensions, 
+        find the one present in the data and return them
+
+        Args: 
+            space_coord (str or list): horizontal dimension already defined. If None, autosearch enabled.
+            vert_coord (str or list): vertical dimension already defined. If None, autosearch enabled.
+            default_horizontal_dims (list): default dimensions for the horizontal search
+            default_vertical_dims (list): default dimensions for the vertical search 
+
+        Return
+            space_coord and vert_coord from the data source
         """
+        data = None
 
-        data = self._retrieve_plain(startdate=None)
-        guessed = [x for x in data.dims if x in default_dims]
-        if guessed is None:
-            self.logger.info('Default dims that are screened are %s', default_dims)
-            raise KeyError('Cannot identify any space_coord, you will will need to define it regrid.yaml')
+        if space_coord is None:
 
-        self.logger.info('Space_coords deduced from the source are %s', guessed)
+            # this is done to load only if necessary
+            if data is None:
+                data = self._retrieve_plain(startdate=None)
+            space_coord = [x for x in data.dims if x in default_horizontal_dims]
+            if not space_coord:
+                self.logger.debug('Default dims that are screened are %s', default_horizontal_dims)
+                raise KeyError('Cannot identify any space_coord, you will will need to define it regrid.yaml')
+            self.logger.info('Space_coords deduced from the source are %s', space_coord)
 
-        return guessed
+        if vert_coord is None:
+        
+            # this is done to load only if necessary
+            if data is None:
+                data = self._retrieve_plain(startdate=None)
+            vert_coord = [x for x in data.dims if x in default_vertical_dims]
+            if not vert_coord:
+                self.logger.debug('Default dims that are screened are %s', default_vertical_dims)
+                self.logger.debug('Assuming this is a 2d file, i.e. vert_coord=2d')
+                # If not specified we assume that this is only a 2D case
+                vert_coord = '2d'
+            
+            self.logger.info('vert_coord deduced from the source are %s', vert_coord)
+
+        return space_coord, vert_coord
 
 
 def _rename_dims(data, dim_list):

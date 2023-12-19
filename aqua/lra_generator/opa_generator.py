@@ -310,14 +310,6 @@ class OPAgenerator():
             del cat_file['sources'][self.entry_name]
         dump_yaml(outfile=catalogfile, cfg=cat_file)
 
-        # find the regrid of my experiment
-        regridfile = os.path.join(self.configdir, 'machines', self.machine,
-                                  'regrid.yaml')
-        cat_file = load_yaml(regridfile)
-        if self.entry_name in cat_file['sources'][self.model][self.exp]:
-            del cat_file['sources'][self.model][self.exp][self.entry_name]
-        dump_yaml(outfile=regridfile, cfg=cat_file)
-
     def _remove_checkpoint(self):
         """Be sure that the checkpoint is removed"""
 
