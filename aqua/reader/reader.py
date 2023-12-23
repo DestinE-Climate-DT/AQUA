@@ -34,7 +34,7 @@ default_space_dims = ['i', 'j', 'x', 'y', 'lon', 'lat', 'longitude',
                       'value', 'nod2', 'pix', 'elem']
 
 # default vertical dimension
-default_vertical_dims = ['nz1', 'nz', 'height', 'depth']
+default_vertical_dims = ['nz1', 'nz', 'height']
 
 
 # set default options for xarray
