@@ -51,7 +51,7 @@ grids:
       nz1: $grids/pi_fesom_mask_nz1.nc
       nz: $grids/pi_fesom_mask_nz.nc
     space_coord: [nod2]
-    vert_coord: [nz1, nz]
+    #vert_coord: [nz1, nz]
     extra:
     - -setgrid,$grids/pi_griddes_nodes_IFS.nc
   # ICON
@@ -60,6 +60,6 @@ grids:
   test-eORCA1-3d:
     path: 
       level: $grids/NEMO/test-eorca1_3D.nc
-    #vert_coord: ["level"]
+    vert_coord: ["level"]
     extra: 
       - -selname,dummy
