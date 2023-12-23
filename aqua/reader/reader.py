@@ -36,10 +36,8 @@ default_space_dims = ['i', 'j', 'x', 'y', 'lon', 'lat', 'longitude',
 # default vertical dimension
 default_vertical_dims = ['nz1', 'nz', 'height']
 
-
 # set default options for xarray
 xr.set_options(keep_attrs=True)
-
 
 class Reader(FixerMixin, RegridMixin):
     """General reader for NextGEMS data."""
