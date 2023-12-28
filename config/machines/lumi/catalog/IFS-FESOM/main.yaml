@@ -1,0 +1,6 @@
+sources:
+  historical-1990-dev:
+    description: FDB IFS/FESOM tco1279-ng5 historical 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990-dev.yaml'

@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-from aqua.logger import log_configure
+#from aqua.logger import log_configure
 from aqua.util import frequency_string_to_pandas
 
 
@@ -38,7 +38,7 @@ class Streaming():
         """
 
         # define the internal logger
-        self.logger = log_configure(log_level=loglevel, log_name='Streaming')
+        # self.logger = log_configure(log_level=loglevel, log_name='Streaming')
         self.startdate = startdate
         self.enddate = enddate
         self.aggregation = aggregation

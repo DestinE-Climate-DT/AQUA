@@ -20,17 +20,23 @@ def check_catalog_source(cat, model, exp, source, name="dictionary"):
     """
 
     if model not in cat:
-        raise KeyError(f"Model {model} not found in {name}.")
+        avail = list(cat.keys())
+        raise KeyError(f"Model {model} not found in {name}. " 
+                       f"Please choose between available models: {avail}")
     if exp not in cat[model]:
-        raise KeyError(f"Experiment {exp} not found in {name} for model {model}.")
+        avail = list(cat[model].keys())
+        raise KeyError(f"Experiment {exp} not found in {name} for model {model}. "
+                       f"Please choose between available exps: {avail}")
     if not cat[model][exp].keys():
-        raise KeyError(f"Experiment {exp} in {name} for model {model} has no sources")
+        raise KeyError(f"Experiment {exp} in {name} for model {model} has no sources.")
 
     if source:
         if source not in cat[model][exp]:
             if "default" not in cat[model][exp]:
+                avail = list(cat[model][exp].keys())
                 raise KeyError(f"Source {source} of experiment {exp} "
-                               f"not found in {name} for model {model}.")
+                               f"not found in {name} for model {model}. "
+                               f"Please choose between available sources: {avail}")
             source = "default"
     else:
         source = list(cat[model][exp].keys())[0]  # take first source if none provided
@@ -137,7 +143,7 @@ def set_attrs(ds, attrs):
 
 def configure_masked_fields(source_grid):
     """
-    Help function to define where to apply masks: 
+    Help function to define where to apply masks:
     if the grids has the 'masked' option, this can be based on
     generic attribute or alternatively of a series of specific variables using the 'vars' key
 
@@ -145,7 +151,7 @@ def configure_masked_fields(source_grid):
         source_grid (dict): Dictionary containing the grid information
 
     Returns:
-        masked_attr (str): Name of the attribute to use for masking
+        masked_attr (dict): Dict with name and proprierty of the attribute to be used for masking
         masked_vars (list): List of variables to mask
     """
     masked_vars = None
@@ -156,6 +162,8 @@ def configure_masked_fields(source_grid):
             if attr == 'vars':
                 masked_vars = value
             else:
-                masked_attr = value
+                if masked_attr is None:
+                    masked_attr = {}
+                masked_attr[attr] = value
 
     return masked_attr, masked_vars

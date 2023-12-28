@@ -1,10 +1,11 @@
+# one month of data so far
 sources:
   hourly-native:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: lwda
         date: 19900101
@@ -13,26 +14,27 @@ sources:
         levtype: sfc
         step: 0
       data_start_date: 19900101T0000
-      data_end_date: 19901231T2300
+      data_end_date: 19900131T2300
       aggregation: D  # Default aggregation / chunk size
       savefreq: H  # at what frequency are data saved
       timestep: H  # base timestep for step timestyle
       timestyle: step  # variable date or variable step
-    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
-      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
-      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    description: hourly data on native grid TCo1279 (about 10km). Contains
+      tprate(260048), 2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247),
+      blh(159), 2d(168), skt(235), sp(134), fsr(244). See fix yaml for derived vars.
     driver: gsv
-    metadata:
-      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
-      variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'sp']
+    metadata: 
+      fdb_path: /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.31.2/definitions
+      variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'blh', '2d', 'skt', 'sp', 'fsr']
       source_grid_name: tco1279
+      fixer_name: ifs-control
   hourly-1deg:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: scda
         date: 19900101
@@ -41,7 +43,7 @@ sources:
         levtype: sfc
         step: 0
       data_start_date: 19900101T0000
-      data_end_date: 19901231T2300
+      data_end_date: 19900131T2300
       aggregation: D  # Default aggregation / chunk size
       savefreq: H  # at what frequency are data saved
       timestep: H  # base timestep for step timestyle
@@ -51,37 +53,39 @@ sources:
       str(177), ttr(179), e(182), tsr(178), ewss(180), nsss(181), sro(8).
       See fix yaml for derived vars.
     driver: gsv
-    metadata:
-      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+    metadata: 
+      fdb_path: /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.31.2/definitions
       variables: ['tprate', 'sf', '2t', '10u', '10v', 'blh', 'sshf', 'slhf', 'ssrd', 'ssr', 'strd', 'str', 'ttr', 'e', 'tsr', 'ewss', 'nsss', 'sro']
       source_grid_name: lon-lat
+      fixer_name: ifs-control
   6hourly-1deg:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: scwv
         date: 19900101
-        time: "0000"
+        time: '0000'
         param: z
         levtype: pl
         levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 850, 925, 1000]
         step: 6  # First available step
       data_start_date: 19900101T0000
-      data_end_date: 19991231T1800
+      data_end_date: 19900131T1800
       aggregation: D  # Default aggregation / chunk size
       timestep: H  # What one step means
       savefreq: 6H
       timestyle: step
     description: 6hourly data on r100 grid. Contains z(129).
     driver: gsv
-    metadata:
-      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+    metadata: 
+      fdb_path: /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.31.2/definitions
+      levels: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,700, 850, 925, 1000]
       variables: ['z']
       source_grid_name: lon-lat
   monthly-1deg-2d:
@@ -89,7 +93,7 @@ sources:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: monr
         date: 19900101
@@ -98,7 +102,7 @@ sources:
         levtype: sfc
         step: 0
       data_start_date: '19900101'
-      data_end_date: '19901201'
+      data_end_date: '19900101'
       aggregation: Y  # Default aggregation / chunk size
       savefreq: M
       timestep: H
@@ -107,17 +111,18 @@ sources:
     description: monthly data on r100 grid. Contains tprate(260048), 2t(167), tcc(164),
       sd(141), tciw(79), tclw(78), msl(151), tcwv(137), lcc(186), mcc(187), hcc(188).
     driver: gsv
-    metadata:
-      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+    metadata: 
+      fdb_path: /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.31.2/definitions
       variables: ['tprate', '2t', 'tcc', 'sd', 'tciw', 'tclw', 'msl', 'tcwv', 'lcc', 'mcc', 'hcc']
       source_grid_name: lon-lat
+      fixer_name: ifs-control
   monthly-1deg-3d:
     args:
       request:
         domain: g
         class: rd
-        expver: a07p
+        expver: i2hm
         type: fc
         stream: monr
         date: 19900101
@@ -128,7 +133,7 @@ sources:
           700, 850, 925, 1000]
         step: 0
       data_start_date: '19900101'
-      data_end_date: '19901201'
+      data_end_date: '19900101'
       aggregation: M  # Default aggregation / chunk size
       savefreq: M
       timestep: H
@@ -136,19 +141,9 @@ sources:
       timeshift: true    # shift time of resulting xarray by this amount
     description: monthly data on r100 grid. Contains u(131), v(132), t(130), r(157), q(133).
     driver: gsv
-    metadata:
-      fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-HISTORICAL_1990_DEVCON.yaml
-      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
+    metadata: 
+      fdb_path: /pfs/lustrep3/scratch/project_465000454/sbeyer/raps_sbeyer/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.31.2/definitions
+      levels: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,700, 850, 925, 1000]
       variables: ['u', 'v', 't', 'r', 'q']
       source_grid_name: lon-lat
-  lra-r100-monthly:
-    driver: netcdf
-    description: LRA data monthly at r100
-    metadata:
-      source_grid_name: lon-lat
-    args:
-      urlpath: 
-        /pfs/lustrep3/projappl/project_465000454/padavini/LRA-dev/IFS/historical-1990-devcon/r100/monthly/*historical-1990-devcon_r100_monthly_????.nc
-      chunks: {}
-      xarray_kwargs:
-        decode_times: true

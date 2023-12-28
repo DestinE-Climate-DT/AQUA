@@ -75,6 +75,10 @@ grids:
     extra: -setgrid,$grids/IFS/grid_lonlat_025.txt
     cellareas: $grids/IFS/cellarea_unstructured_025.nc
     cellarea_var: cell_area
+  ifs-healpix:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: $grids/HealPix/ifs_hpx10.nc
 
   #ICON
   R02B08:
@@ -104,6 +108,16 @@ grids:
       component: ocean
     space_coord: ["cell"]
     vert_coord: ["depth_half", "depth_full"]
+  icon-healpix-dev:
+    path:
+      2d: $grids/HealPix/icon_hpx9_atm_2d.nc   # this is the default 2d grid
+      #2dm: $grids/HealPix/icon_hpx9_oce_2d.nc  # this is an additional and optional 2d grid used if data are masked
+      #depth_full: $grids/HealPix/icon_hpx9_oce_depth_full.nc
+      #depth_half: $grids/HealPix/icon_hpx9_oce_depth_half.nc
+    #masked:   # This is the attribute used to distinguish variables which should go into the masked category
+    #  component: ocean
+    space_coord: ["ncells"]
+    #vert_coord: ["depth_half", "depth_full"]
   
   #FESOM
   ng5-nodes-2d:
@@ -167,6 +181,12 @@ grids:
       height: $grids/NEMO/eORCA12_mesh_3d_grid_T_level.nc
     space_coord: ["ncells"]
     vert_coord: ["height"]
+  nemo-healpix:
+    path:
+      2d: $grids/HealPix/nemo_hpx10_oce_2d.nc 
+      level: $grids/HealPix/nemo_hpx10_oce_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
 
   # OBSERVATIONS
   aviso:
@@ -208,8 +228,23 @@ grids:
       depth: $grids/WOA18/grid-woa18.nc
     vert_coord: depth
     space_coord: ["lon", "lat"]
-
   
+  psc-piomas:
+    space_coord: ["x", "y"]
+    cellareas: $grids/PSC/grid_piomas.nc
+    cellarea_var: areacello
+    mask: $grids/PSC/grid_piomas.nc
+    mask_var: sftof
+    regrid_method: 'bil'
+
+  psc-giomas:
+    space_coord: ["x", "y"]
+    cellareas: $grids/PSC/grid_giomas.nc
+    cellarea_var: areacello
+    mask: $grids/PSC/grid_giomas.nc
+    mask_var: sftof
+    regrid_method: 'bil'
+
 
   
 

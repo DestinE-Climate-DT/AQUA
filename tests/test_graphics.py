@@ -2,7 +2,12 @@ import pytest
 import xarray as xr
 import numpy as np
 
+from aqua import Reader
 from aqua.util.graphics import add_cyclic_lon, plot_box, minmax_maps
+from aqua.util import cbar_get_label, evaluate_colorbar_limits
+
+loglevel = 'DEBUG'
+
 
 @pytest.fixture()
 def da():
@@ -24,8 +29,10 @@ def test_add_cyclic_lon(da):
     assert 'lon' in new_da.coords, "Output should have a 'lon' coordinate"
     assert 'lat' in new_da.coords, "Output should have a 'lat' coordinate"
     assert np.allclose(new_da.lat, old_da.lat), "Latitude values should be equal"
-    assert np.allclose(new_da.isel(lon=-1).values, old_da.isel(lon=0).values), "First and last longitude values should be equal"
+    assert np.allclose(new_da.isel(lon=-1).values, old_da.isel(lon=0).values), \
+           "First and last longitude values should be equal"
     assert new_da.shape == (18, 37), "Output shape is incorrect"
+
 
 @pytest.mark.graphics
 def test_plot_box():
@@ -59,3 +66,34 @@ def test_minmax_maps(da):
     for i in range(len(maps)):
         assert min_val <= maps[i].min().values, "Minimum value should be less than minimum value of the map"
         assert max_val >= maps[i].max().values, "Maximum value should be greater than maximum value of the map"
+
+
+@pytest.mark.graphics
+def test_label():
+    """Test the cbar_get_label function"""
+    # Retrieve data
+    reader = Reader(model='IFS', exp='test-tco79', source='short', loglevel=loglevel)
+    ds = reader.retrieve()
+    da = ds['2t']
+
+    # Test cbar_get_label function
+    label = cbar_get_label(da, loglevel=loglevel)
+    # assert label is a string
+    assert isinstance(label, str), "Colorbar label should be a string"
+    assert label == '2t [K]', "Colorbar label is incorrect"
+
+    # Test the function with a custom label
+    label = cbar_get_label(da, cbar_label='Temperature', loglevel=loglevel)
+    assert label == 'Temperature', "Colorbar label is incorrect"
+
+    # Test the cbar limits function with sym=False
+    vmin, vmax = evaluate_colorbar_limits(da, sym=False)
+    assert vmin < vmax, "Minimum value should be less than maximum value"
+    assert vmin == 232.79393005371094, "Minimum value is incorrect"
+    assert vmax == 310.61033630371094, "Maximum value is incorrect"
+
+    # Test the cbar limits function with sym=True
+    vmin, vmax = evaluate_colorbar_limits(da, sym=True)
+    assert vmin < vmax, "Minimum value should be less than maximum value"
+    assert vmin == -310.61033630371094, "Minimum value is incorrect"
+    assert vmax == 310.61033630371094, "Maximum value is incorrect"
