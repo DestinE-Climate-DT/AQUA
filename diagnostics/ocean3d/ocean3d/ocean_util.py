@@ -9,6 +9,8 @@ import xarray as xr
 import numpy as np
 from aqua import Reader
 from aqua.exceptions import NoObservationError
+from aqua.util import find_vert_coord
+
 
 warnings.filterwarnings("ignore")
 
@@ -16,6 +18,38 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+
+def check_variable_name(data):
+    vars= list(data.variables)
+    required_vars= []
+    for var in vars:
+        if var in ["SO","so","thetao","THETAO","avg_SO","avg_so","avg_thetao","avg_THETAO"]:
+            required_vars.append(var)
+    if required_vars is not []:
+        logger.info(f"This are the varibles {required_vars} available for the diags in the catalogue.")
+        data = data[required_vars]
+        logger.info("Selected this variables")
+        for var in required_vars:
+            if isinstance(var, str) and 'so' in var.lower():
+                data = data.rename({var: "so"})
+                logger.info(f"renaming {var} as so")
+            if isinstance(var, str) and 'thetao' in var.lower():
+                data = data.rename({var: "ocpt"})
+                logger.info(f"renaming {var} as ocpt")
+    
+    else:
+        logger.info("Required variable avg_so and avg_thetao is not available in the catalogue")
+    
+
+    vertical_coord = find_vert_coord(data)[0]
+    data = data.rename({vertical_coord: "lev"})
+    return data
+
+def time_slicing(data, start_year, end_year):
+    data = data.sel(time=slice(str(start_year),str(end_year)))
+    logger.info(f"Selected the data for the range of {start_year} and {end_year}")
+    return data
 
 def predefined_regions(region):
     """

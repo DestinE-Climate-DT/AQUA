@@ -90,10 +90,10 @@ fixer_name:
                 source: nsss
                 grib: true
                 decumulate: true
-            surfror:  # a very recent version of eccodes is needed for this one
-                source: sro
-                grib: true
-                decumulate: true 
+            # surfror:  # a very recent version of eccodes is needed for this one
+            #     source: sro
+            #     grib: true
+            #     decumulate: true 
     ifs-control:
         parent: ifs-default
         method: merge
@@ -272,10 +272,10 @@ models:
                         source: nsss
                         grib: true
                         decumulate: true
-                    surfror:  # a very recent version of eccodes is needed for this one
-                        source: sro
-                        grib: true
-                        decumulate: true 
+                    # surfror:  # a very recent version of eccodes is needed for this one
+                    #     source: sro
+                    #     grib: true
+                    #     decumulate: true 
         tco2559-ng5-cycle3:
         # for this exp we have a lot of output from MultI/O, already decumulated and
         # averaged monthly, so default is without decumulation

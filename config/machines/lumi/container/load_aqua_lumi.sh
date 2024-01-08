@@ -61,6 +61,10 @@ singularity shell \
     --bind /projappl/ \
     --bind /project \
     --bind /scratch/ \
+    --bind /users/lrb_465000454_fdb/mars/versions/6.99.0.12 \
+    --bind /opt/cray/xpmem/default/lib64/ \
+    --bind /opt/cray/pe/cce/15.0.1/cce/x86_64/lib/ \
+    --bind /opt/cray/pe/cce/15.0.1/cce-clang/x86_64/lib/ \
     $AQUA_container
 # Run this script in LUMI in VSCode 
 

@@ -1,8 +1,12 @@
-model: FESOM 
-exp: tco2559-ng5-cycle3
-source: lra-r100-monthly
+model: NEMO 
+exp: a0er-LUMI-C
+source: fc0-lra-r100-monthly
 outputdir: ./output
 # "--model FESOM --exp tco2559-ng5-cycle3 --source $source"
+
+time_selection : True
+start_year : 2015
+end_year : 2016
 
 predefined_regions:
   - Indian Ocean

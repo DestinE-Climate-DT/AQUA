@@ -6,7 +6,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc0*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p000*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -18,7 +18,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc1*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p001*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -30,7 +30,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc2*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p002*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -42,7 +42,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc3*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p003*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -54,7 +54,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc4*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p004*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -66,7 +66,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc5*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p005*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -78,7 +78,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc6*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p006*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -90,7 +90,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc7*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p007*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -102,7 +102,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc8*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p008*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
@@ -114,7 +114,7 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc9*.nc
+        /scratch/project_465000454/sughosh/data/a0eo/IFS/*p009*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true

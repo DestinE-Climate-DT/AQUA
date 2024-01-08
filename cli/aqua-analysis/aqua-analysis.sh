@@ -9,7 +9,7 @@
 model_atm="IFS"
 model_oce="NEMO"
 exp="a0er-LUMI-C"
-source="fc9-lra-r100-monthly"
+source="fc0-lra-r100-monthly"
 outputdir="$AQUA/../aqua_output"
 mkdir $outputdir
 loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -37,12 +37,14 @@ max_threads=-1  # Set to the desired maximum number of threads, or leave it as 0
 # Define the array of atmospheric diagnostics, add more if needed or available
 atm_diagnostics=("tropical_rainfall" "global_time_series" "radiation" "teleconnections" "atmglobalmean")
 # Define the array of oceanic diagnostics, add more if needed or available
-oce_diagnostics=("global_time_series" "teleconnections" "ocean3d" "seaice")
+# oce_diagnostics=("global_time_series" "teleconnections" "ocean3d" "seaice")
+oce_diagnostics=( "ocean3d" "ecmean")
 # Define the array of diagnostics combining atmospheric and oceanic data, add more if needed or available
 atm_oce_diagnostics=("ecmean")
 
 # Combine all diagnostics into a single array
-all_diagnostics=("${atm_diagnostics[@]}" "${oce_diagnostics[@]}" "${atm_oce_diagnostics[@]}")
+# all_diagnostics=("${atm_diagnostics[@]}" "${oce_diagnostics[@]}" "${atm_oce_diagnostics[@]}")
+all_diagnostics=("${oce_diagnostics[@]}")
 
 run_dummy=true
 

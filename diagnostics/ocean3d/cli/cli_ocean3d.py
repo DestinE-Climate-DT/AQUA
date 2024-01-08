@@ -8,6 +8,8 @@ import sys
 from aqua import Reader
 from aqua.util import load_yaml, get_arg, create_folder
 
+from ocean3d import check_variable_name
+from ocean3d import time_slicing
 from ocean3d import plot_stratification
 from ocean3d import plot_spatial_mld_clim
 
@@ -18,6 +20,7 @@ from ocean3d import zonal_mean_trend_plot
 
 from aqua.util import find_vert_coord
 from aqua.logger import log_configure
+
 
 
 def parse_arguments(args):
@@ -157,7 +160,12 @@ if __name__ == '__main__':
                                             "custom_region", [])
     predefined_regions = get_value_with_default(ocean3d_config,
                                                 "predefined_regions", [])
-
+    time_selection = get_value_with_default(ocean3d_config,"time_selection", [])
+    if time_selection == True:
+        start_year = get_value_with_default(ocean3d_config,"start_year", [])
+        end_year = get_value_with_default(ocean3d_config,"end_year", [])
+        
+    
     logger.debug(f"custom_region: {custom_regions}")
     logger.debug(f"predefined_regions: {predefined_regions}")
 
@@ -169,8 +177,11 @@ if __name__ == '__main__':
                         fix=True, loglevel=loglevel)
         data = reader.retrieve()
 
-        vertical_coord = find_vert_coord(data)[0]
-        data = data.rename({vertical_coord: "lev"})
+        data = check_variable_name(data)
+        if time_selection == True:
+            data = time_slicing(data, start_year, end_year)
+        # vertical_coord = find_vert_coord(data)[0]
+        # data = data.rename({vertical_coord: "lev"})
     except KeyError:
         # NOTE: This should be a proper NoDataError
         logger.error("NoDataError: No data available")
@@ -196,7 +207,7 @@ if __name__ == '__main__':
                 logger.debug("lonE: %s, lonW: %s, latS: %s, latN: %s",
                              lonE, lonW, latS, latN)
 
-                ocean3d_diags(data,
+                ocean3d_diagsself.(data,
                               region=None, latS=latS, latN=latN, lonW=lonW, lonE=lonE,
                               output_dir=outputdir, loglevel=loglevel)
     except AttributeError:
