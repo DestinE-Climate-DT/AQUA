@@ -91,7 +91,7 @@ def _init_get_eccodes_attr():
                 # i = shortname.index(sn)
                 indices = [i for i, x in enumerate(shortname) if x == sn]
                 if len(indices) > 1:
-                    logger.warning('ShortName %s have multiple grib codes associated: %s', sn, [paramid[i] for i in indices])
+                    logger.warning('ShortName %s has multiple grib codes associated: %s', sn, [paramid[i] for i in indices])
                     logger.warning('AQUA will take the first so that %s -> %s, please set up a correct fix if this does not look right',  # noqa E501
                                    sn, paramid[indices[0]])
                 i = indices[0]

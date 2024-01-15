@@ -18,7 +18,7 @@ from aqua.util import load_yaml, load_multi_yaml
 from aqua.util import ConfigPath, area_selection
 from aqua.logger import log_configure, log_history
 from aqua.util import check_chunk_completeness, frequency_string_to_pandas
-from aqua.util import flip_lat_dir
+from aqua.util import flip_lat_dir, find_vert_coord
 import aqua.gsv
 
 from .streaming import Streaming
@@ -456,7 +456,7 @@ class Reader(FixerMixin, RegridMixin):
             self.grid_area = self._fix_area(self.grid_area)
 
     def retrieve(self, var=None, level=None,
-                 startdate=None, enddate=None, 
+                 startdate=None, enddate=None,
                  history=True, sample=False):
         """
         Perform a data retrieve.
@@ -472,9 +472,6 @@ class Reader(FixerMixin, RegridMixin):
         Returns:
             A xarray.Dataset containing the required data.
         """
-
-        if level:  # This is temporary until we introduce a smarter 3D regridding option
-            self.logger.warning("Specific level(s) selected: regridding will not work properly.")
 
         # Streaming emulator require these to be defined in __init__
         if (self.streaming and not self.stream_generator) and (startdate or enddate):
@@ -502,7 +499,7 @@ class Reader(FixerMixin, RegridMixin):
                 if sample:
                     var = [var[0]]
 
-                self.logger.debug(f"FDB source, setting default variables to {var}")
+                self.logger.debug("FDB source, setting default variables to %s", var)
                 loadvar = self.get_fixer_varname(var) if self.fix else var
             else:
                 loadvar = None
@@ -528,20 +525,20 @@ class Reader(FixerMixin, RegridMixin):
             else:
                 fkind = "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
-        
-        # sequence which should be more efficient: decumulate - averaging - regridding - fixing
 
-        if self.fix:   # Do not change easily this order. The fixer assumes to be after regridding
+        if self.fix:
             data = self.fixer(data, var)
 
+        if not ffdb:  # FDB sources already have the index, already selected levels
+            data = self._index_and_level(data, level=level)  # add helper index, select levels (optional)
+
         # log an error if some variables have no units
-        if isinstance(data, xr.Dataset):
+        if isinstance(data, xr.Dataset) and self.fix:
             for var in data.data_vars:
                 if not hasattr(data[var], 'units'):
                     self.logger.error('Variable %s has no units!', var)
 
-        if not fiter:
-            # This is not needed if we already have an iterator
+        if not fiter:  # This is not needed if we already have an iterator
             if self.streaming:
                 if self.stream_generator:
                     data = self.streamer.generator(data, startdate=startdate, enddate=enddate)
@@ -554,6 +551,43 @@ class Reader(FixerMixin, RegridMixin):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
         return data
+    
+    def _index_and_level(self, data, level=None):
+        """
+        Add a helper idx_3d coordinate to the data and select levels if provided
+
+        Arguments:
+            data (xr.Dataset):  the input xarray.Dataset
+            level (list, int):  levels to be selected. Defaults to None.
+
+        Returns:
+            A xarray.Dataset containing the data with the idx_3d coordinate.
+        """
+
+        if self.vert_coord:
+            vert_coord = [coord for coord in self.vert_coord if coord not in ["2d", "2dm"]]  # filter out 2d stuff
+        else:
+            vert_coord = []
+
+        for dim in vert_coord:  # Add a helper index to the data
+            if dim in data.coords:
+                idx = list(range(0, len(data.coords[dim])))
+                data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
+        
+        if level:
+            if not isinstance(level, list):
+                level = [level]
+            if not vert_coord:  # try to find a vertical coordinate
+                vert_coord = find_vert_coord(data)
+            if vert_coord:
+                if len(vert_coord) > 1:
+                    self.logger.warning("Found more than one vertical coordinate, using the first one: %s", vert_coord[0])
+                data = data.sel(**{vert_coord[0]: level})
+                data = log_history(data, f"Selecting levels {level} from vertical coordinate {vert_coord[0]}")
+            else:
+                self.logger.error("Levels selected but no vertical coordinate found in data!")
+
+        return data
 
     def set_default(self):
         """Sets this reader as the default for the accessor."""
@@ -562,12 +596,12 @@ class Reader(FixerMixin, RegridMixin):
 
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
-        
+
         if isinstance(data, types.GeneratorType):
             return self._regridgen(data)
         else:
             return self._regrid(data)
-        
+
     def _regridgen(self, data):
         for ds in data:
             yield self._regrid(ds)
@@ -585,6 +619,44 @@ class Reader(FixerMixin, RegridMixin):
         # Check if original lat has been flipped and in case flip back, returns a deep copy in that case
         data = flip_lat_dir(datain)
 
+        data = data.copy()  # make a copy to avoid modifying the original dataset/dataarray
+
+        # Scan the variables:
+        # if a 2d one is found but this was not expected, then assume that it comes from a 3d one
+        # and expand it along the vertical dimension.
+        # This works only if only one variable was selected,
+        # else the information on which variable was using which dimension is lost.
+        expand_list = []
+        if self.vert_coord and "2d" not in self.vert_coord:
+            if isinstance(data, xr.Dataset):
+                for var in data:
+                    # check if none of the dimensions of var is in self.vert_coord
+                    if not list(set(data[var].dims) & set(self.vert_coord)):
+                        # find list of coordinates that start with idx_ in their name
+                        idx = [coord for coord in data[var].coords if coord.startswith("idx_")]
+                        if idx:  # found coordinates starting with idx_, use first one to expand var
+                            coord_exp = idx[0][4:]  # remove idx_ from the name of the first one (there should be only one)
+                            if coord_exp in data[var].coords:
+                                expand_list.append(var)
+                if expand_list:
+                    for var in expand_list:
+                        data[var] = data[var].expand_dims(dim=coord_exp, axis=1)
+                    self.logger.debug(f"Expanding variables {expand_list} with vertical dimension {coord_exp}")
+                    if len(idx) > 1:
+                        self.logger.warning(f"Found more than one idx_ coordinate for expanded variables, did you select slices of multiple vertical coordinates? Results may not be correct.")
+
+            else:  # assume DataArray
+                if not list(set(data.dims) & set(self.vert_coord)):
+                    idx = [coord for coord in data.coords if coord.startswith("idx_")]
+                    if idx:
+                        if len(idx) > 1:
+                            self.logger.warning("Found more than one idx_ coordinate, did you select slices of multiple vertical coordinates? Results may not be correct.")
+                        coord_exp = idx[0][4:]
+                        if coord_exp in data.coords:
+                            data = data.expand_dims(dim=coord_exp, axis=1)
+                            self.logger.debug(f"Expanding variable {data.name} with vertical dimension {coord_exp}")
+                            expand_list = [data.name]
+
         if self.vert_coord == ["2d"]:
             datadic = {"2d": data}
         else:
@@ -600,6 +672,21 @@ class Reader(FixerMixin, RegridMixin):
         # Iterate over list of groups of variables, regridding them separately
         out = []
         for vc, dd in datadic.items():
+            if isinstance(dd, xr.Dataset):
+                self.logger.debug(f"Using vertical coordinate {vc}: {list(dd.data_vars)}")
+            else:
+                self.logger.debug(f"Using vertical coordinate {vc}: {dd.name}")            
+
+            # remove extra coordinates starting with idx_ (if any)
+            # to make the regridder work correctly with multiple helper indices
+            for coord in dd.coords:
+                if coord.startswith("idx_") and coord != f"idx_{vc}":
+                    dd = dd.drop_vars(coord)
+                    if isinstance(dd, xr.Dataset):
+                        self.logger.debug(f"Dropping {coord} from {list(dd.data_vars)}")
+                    else:
+                        self.logger.debug(f"Dropping {coord} from {dd.name}")
+
             out.append(self.regridder[vc].regrid(dd))
 
         if len(out) > 1:
@@ -608,6 +695,10 @@ class Reader(FixerMixin, RegridMixin):
             # If this was a single dataarray
             out = out[0]
 
+        # If we expanded some variables, squeeze them back
+        if expand_list:
+            out = out.squeeze(dim=coord_exp)
+
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"regridded": 1})
 
@@ -615,11 +706,11 @@ class Reader(FixerMixin, RegridMixin):
         # (but they are actually not used so far)
         self.grid_area = self.dst_grid_area
         self.space_coord = ["lon", "lat"]
-        
+
         out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
         out = log_history(out, f"Regrid from {self.src_grid_name} to {self.dst_grid_name}")
-        
+
         return out
 
     def timmean(self, data, freq=None, exclude_incomplete=False, time_bounds=False):
@@ -651,7 +742,7 @@ class Reader(FixerMixin, RegridMixin):
         resample_freq = frequency_string_to_pandas(freq)
 
         # get original frequency (for history)
-        orig_freq=data['time'].values[1]-data['time'].values[0]
+        orig_freq = data['time'].values[1]-data['time'].values[0]
         # Convert time difference to hours
         self.orig_freq = np.timedelta64(orig_freq, 'ns') / np.timedelta64(1, 'h')
 
@@ -673,7 +764,7 @@ class Reader(FixerMixin, RegridMixin):
         if np.any(np.isnat(out.time)):
             raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
 
-        out=log_history(out, f"resampled from frequency {self.orig_freq} h to frequency {resample_freq} by AQUA timmean")
+        out = log_history(out, f"resampled from frequency {self.orig_freq} h to frequency {resample_freq} by AQUA timmean")
 
         # add a variable to create time_bounds
         if time_bounds:
@@ -773,7 +864,7 @@ class Reader(FixerMixin, RegridMixin):
 
         out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
-        log_history(data, f"spatially averaged from {self.src_grid_name} grid")
+        log_history(data, f"Spatially averaged from {self.src_grid_name} grid")
 
         return out
 
@@ -864,7 +955,7 @@ class Reader(FixerMixin, RegridMixin):
                                             vert_coord=vert_coord, method=method)
         else:
             raise ValueError('This is not an xarray object!')
-        
+
         final = log_history(final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.")
 
         final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
@@ -910,7 +1001,7 @@ class Reader(FixerMixin, RegridMixin):
             startdate (str): a starting date and time in the format YYYYMMDD:HHTT
             enddate (str): an ending date and time in the format YYYYMMDD:HHTT
             dask (bool): return directly a dask array instead of an iterator
-            level (list, float, int): level to be read, overriding default in catalogue 
+            level (list, float, int): level to be read, overriding default in catalogue
         Returns:
             An xarray.Dataset or an iterator over datasets
         """
@@ -954,7 +1045,6 @@ class Reader(FixerMixin, RegridMixin):
         data = esmcat.to_dask()
 
         if loadvar:
-            
             if all(element in data.data_vars for element in loadvar):
                 data = data[loadvar]
             else:

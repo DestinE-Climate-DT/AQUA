@@ -287,6 +287,9 @@ class RegridMixin():
         if isinstance(data, types.GeneratorType):
             data = next(data)
 
+        vars = [var for var in data.data_vars if not var.endswith("_bnds")]
+        data = data[[vars[0]]]
+
         return data
 
     def _guess_coords(self, space_coord, vert_coord, default_horizontal_dims, default_vertical_dims):

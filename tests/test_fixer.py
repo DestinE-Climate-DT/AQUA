@@ -44,7 +44,7 @@ def test_fixer_ifs_long():
     # Metadata checks
 
     # History logged
-    assert 'variable var235, derived with 2t+1.0 by fixer' in tas1.attrs['history']
+    assert 'Variable var235, derived with 2t+1.0 by fixer' in tas1.attrs['history']
 
     # paramId and other attrs
     assert tas1.attrs['paramId'] == '235'

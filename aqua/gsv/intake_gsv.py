@@ -109,16 +109,21 @@ class GSVSource(base.DataSource):
         self._request = request.copy()
         self._kwargs = kwargs
 
-        if level and ("levelist" in self._request):
+        if "levelist" in self._request:
             levelist = self._request["levelist"]
-            self._request["levelist"] = level  # override default levels
-            if self.levels:  # if levels in metadata select them too
-                if not isinstance(levelist, list): levelist = [levelist]
+            if not isinstance(levelist, list): levelist = [levelist]
+            if level:
                 if not isinstance(level, list): level = [level]
-                if not isinstance(self.levels, list): self.levels = [self.levels]
                 idx = list(map(levelist.index, level))
-                self._request["levelist"] = level  # override default levels
-                self.levels = [self.levels[i] for i in idx]
+                self.idx_3d = idx
+                self._request["levelist"] = level  # override default levels                
+                if self.levels:  # if levels in metadata select them too
+                    if not isinstance(self.levels, list): self.levels = [self.levels]
+                    self.levels = [self.levels[i] for i in idx]
+            else:
+                self.idx_3d = list(range(0, len(levelist)))
+        else:
+            self.idx_3d = None
 
         self.onelevel = False
         if "levelist" in self._request:
@@ -321,10 +326,21 @@ class GSVSource(base.DataSource):
             ds[shortname] = da
 
         ds.attrs.update(self._ds.attrs)
+        if self.idx_3d:
+            ds = ds.assign_coords(idx_level=("level", self.idx_3d))
 
         return ds
 
-
+    # Overload read_chunked() from base.DataSource
+    def read_chunked(self):
+        """Return iterator over container fragments of data source"""
+        self._load_metadata()
+        for i in range(self.npartitions):
+            ds = self._get_partition(i)
+            if self.idx_3d:
+                ds = ds.assign_coords(idx_level=("level", self.idx_3d))
+            yield ds
+            
 # This function is repeated here in order not to create a cross dependency between GSVSource and AQUA
 def log_history(data, msg):
     """Elementary provenance logger in the history attribute"""
