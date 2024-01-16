@@ -23,3 +23,54 @@ sources:
     metadata: 
       fdb_path: /app/config.yaml
       source_grid_name: lon-lat
+
+  fdb-levels:
+    args:
+      request:
+        domain: g
+        stream: oper
+        class: ea
+        type: an
+        expver: "0001"
+        param: t
+        levtype: pl
+        levelist: [1000, 900, 800]
+        date: "20080101"
+        time: "0000"
+        step: 0
+      data_start_date: "20080101T1200"
+      data_end_date: "20080101T1200"
+      aggregation: H
+      timestep: H
+      timestyle: date
+    description: test FDB archive
+    driver: gsv
+    metadata: 
+      fdb_path: /app/config.yaml
+      source_grid_name: lon-lat
+      levels: [999.99, 899.99, 799.99]
+
+  fdb-nolevels:
+    args:
+      request:
+        domain: g
+        stream: oper
+        class: ea
+        type: an
+        expver: "0001"
+        param: t
+        levtype: pl
+        levelist: [1000, 900, 800]
+        date: "20080101"
+        time: "0000"
+        step: 0
+      data_start_date: "20080101T1200"
+      data_end_date: "20080101T1200"
+      aggregation: H
+      timestep: H
+      timestyle: date
+    description: test FDB archive
+    driver: gsv
+    metadata: 
+      fdb_path: /app/config.yaml
+      source_grid_name: lon-lat

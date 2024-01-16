@@ -1,4 +1,6 @@
-fix_names:
+fixer_name:
+    icon-destine:
+        data_model: false
     icon-default:
         data_model: false  # Do not attempt to correct coordinates
         delete:  # variables to drop at the end

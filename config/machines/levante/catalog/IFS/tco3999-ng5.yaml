@@ -13,7 +13,7 @@ sources:
       urlpath: reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco3999-ng5/varfiles_all/json.dir/atm2d.json
     metadata:
       source_grid_name: tco3999
-      fix_names: ifs-default
+      fixer_name: ifs-default
   ICMU_atm2d:
     driver: zarr
     description: original 2d output (lnsp)
@@ -23,7 +23,7 @@ sources:
       urlpath: reference::/work/bm1344/AWI/nextGEMS_Cycle2_IFS_concat/tco3999-ng5/varfiles_all/json.dir/atm2d.json
     metadata:
       source_grid_name: tco3999
-      fix_names: ifs-default
+      fixer_name: ifs-default
   ICMU_atm3d:
     driver: zarr
     description: original 3d output
@@ -54,7 +54,7 @@ sources:
       - reference::/work/ab0995/a270088/NextGems_public/appetizer/IFS2.5/10v/netcdf/tco3999-ng5_pc.json
     metadata:
       source_grid_name: ifs-interpolated
-      fix_names: ifs-default
+      fixer_name: ifs-default
   lra-r100-monthly:
     driver: netcdf
     description: LRA data monthly at r100

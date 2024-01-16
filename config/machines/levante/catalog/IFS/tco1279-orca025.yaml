@@ -8,7 +8,7 @@ sources:
     description: original 2d output
     metadata:
       source_grid_name: tco1279
-      fix_names: ifs-default
+      fixer_name: ifs-default
     args:
       consolidated: false
       urlpath:
@@ -19,7 +19,7 @@ sources:
     description: original 2d output (lnsp)
     metadata:
       source_grid_name: tco1279
-      fix_names: ifs-default
+      fixer_name: ifs-default
     args:
       consolidated: false
       urlpath:

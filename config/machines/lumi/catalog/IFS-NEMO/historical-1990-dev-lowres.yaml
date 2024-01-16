@@ -1,0 +1,91 @@
+sources: 
+  hourly-healpix:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: standard
+        expver: a0fe
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 167
+        levtype: sfc
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 20191231T2300
+      aggregation: M  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: step  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables: [167]
+      source_grid_name: tco79
+      fixer_name: ifs-control
+  hourly-native:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: high
+        expver: a0fe
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 167
+        levtype: sfc
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 20191231T2300
+      aggregation: M  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: step  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /projappl/project_465000454/experiments/a0fe/fdb/NATIVE_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables: [167]
+      source_grid_name: tco79
+      fixer_name: ifs-control
+
+
+# Example request:
+# class: d1
+# dataset: climate-dt
+# activity: CMIP6
+# experiment: hist
+# generation: 1
+# model: IFS-NEMO
+# realization: 1
+# resolution: standard
+# expver: a0fe
+# type: fc
+# stream: clte
+# levtype: sfc
+# param: 167
+# date: 19900101
+# time: "0000"

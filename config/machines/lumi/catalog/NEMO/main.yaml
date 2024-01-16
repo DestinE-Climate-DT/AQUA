@@ -3,4 +3,4 @@ sources:
     description: tco79-eorca1 from Bernat to test FDB-NEMO access
     driver: yaml_file_cat
     args:
-        path: '{{CATALOG_DIR}}/fdb-tco79-eorca1.yaml'
+        path: "{{CATALOG_DIR}}/fdb-tco79-eorca1.yaml"

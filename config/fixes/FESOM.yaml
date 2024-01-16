@@ -1,4 +1,4 @@
-fix_names:
+fixer_name:
     fesom-default: 
         data_model: false
         delete:  # variables to drop at the end

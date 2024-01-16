@@ -7,7 +7,7 @@ sources:
     driver: zarr
     metadata:
       source_grid_name: tco2559
-      fix_names: ifs-default
+      fixer_name: ifs-default
     args:
       consolidated: false
       urlpath:
@@ -26,7 +26,7 @@ sources:
     driver: zarr
     metadata:
       source_grid_name: multio-r025
-      fix_names: ifs-cycle3
+      fixer_name: ifs-cycle3
     args:
       consolidated: false
       urlpath:

@@ -1,4 +1,4 @@
-fix_names:
+fixer_name:
     ifs-default:
         data_model: ifs
         deltat: 3600

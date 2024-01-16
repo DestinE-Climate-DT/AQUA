@@ -16,6 +16,16 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/IFS/main.yaml"
+  IFS-NEMO:
+    description: IFS-NEMO coupled model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/IFS-NEMO/main.yaml"
+  IFS-FESOM:
+    description: IFS-FESOM coupled model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/IFS-FESOM/main.yaml"
   FESOM:
     description: FESOM oceanic model
     driver: yaml_file_cat
@@ -26,6 +36,11 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/NEMO/main.yaml"
+  ICON:
+    description: IFS atmospheric model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/ICON/main.yaml"
   ERA5:
     description: test ERA5 data on fdb
     driver: yaml_file_cat

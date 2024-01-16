@@ -13,7 +13,7 @@ sources:
   original_2d:
     metadata:
       source_grid_name: test-pi-2d
-      fix_names: fesom-default
+      fixer_name: fesom-default
     args:
       chunks:
         time: 1
@@ -29,7 +29,7 @@ sources:
   original_2d_fix:
     metadata:
       source_grid_name: test-pi-2d
-      fix_names: fesom-test
+      fixer_name: fesom-test
     args:
       chunks:
         time: 1

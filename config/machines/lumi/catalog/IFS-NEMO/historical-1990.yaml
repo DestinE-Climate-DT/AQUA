@@ -1,0 +1,240 @@
+sources: 
+  hourly-native:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: high
+        expver: a0h3
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 167
+        levtype: sfc
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 19941231T2300
+      aggregation: D  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: date  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /project/project_465000454/experiments/a0h3/fdb/NATIVE_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186, 187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179, 180, 181, 182, 212, 228]
+      source_grid_name: tco1279
+      fixer_name: ifs-control
+  hourly-native-3d:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: high
+        expver: a0h3
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 131
+        levtype: pl
+        levelist: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,
+          700, 850, 925, 1000]
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 19941231T2300
+      aggregation: 6H  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: date  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /project/project_465000454/experiments/a0h3/fdb/NATIVE_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      levels: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600,700, 850, 925, 1000]
+      variables: [60, 129, 130, 131, 132, 133, 135, 157, 246]
+      source_grid_name: tco1279
+      fixer_name: ifs-control
+
+  hourly-hpxstd:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: standard
+        expver: a0h3
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 167
+        levtype: sfc
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 19941231T2300
+      aggregation: D  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: date  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /project/project_465000454/experiments/a0h3/fdb/HEALPIX_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186, 187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179, 180, 181, 182, 212, 228]
+      source_grid_name: tco1279
+      fixer_name: ifs-control
+
+  hourly-hpxhigh:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: high
+        expver: a0h3
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 167
+        levtype: sfc
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 19941231T2300
+      aggregation: D  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: date  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /project/project_465000454/experiments/a0h3/fdb/HEALPIX_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186, 187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179, 180, 181, 182, 212, 228]
+      source_grid_name: ifs-healpix
+      fixer_name: ifs-control
+
+  hourly-r025:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: standard
+        expver: a0h3
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 167
+        levtype: sfc
+        step: 0
+      data_start_date: 19900101T0000
+      data_end_date: 19941231T2300
+      aggregation: D  # Default aggregation / chunk size
+      savefreq: H  # at what frequency are data saved
+      timestep: H  # base timestep for step timestyle
+      timestyle: date  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /project/project_465000454/experiments/a0h3/fdb/REGULARLL_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186, 187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179, 180, 181, 182, 212, 228]
+      source_grid_name: lon-lat
+      fixer_name: ifs-control
+  daily-r025-o2d:
+    args:
+      request:
+        #domain: g
+        class: d1
+        dataset: climate-dt
+        activity: CMIP6
+        experiment: hist
+        generation: 1
+        model: IFS-NEMO
+        realization: 1
+        resolution: standard
+        expver: a0h3
+        type: fc
+        stream: clte
+        date: 19900101
+        time: "0000"
+        param: 263000
+        levtype: o2d
+        step: 0
+      data_start_date: 19900101
+      data_end_date: 19941231
+      aggregation: M  # Default aggregation / chunk size
+      savefreq: D  # at what frequency are data saved
+      timestyle: date  # variable date or variable step
+    description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
+      2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
+      2d(168), skt(235), sp(134). See fix yaml for derived vars.
+    driver: gsv
+    metadata:
+      fdb_path: /project/project_465000454/experiments/a0h3/fdb/REGULARLL_grids/etc/fdb/config.yaml
+      eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
+      variables:  [263000, 263001, 263003, 263004, 263008, 263009, 263021, 263022, 263100, 263101, 263121, 263122, 263124]
+      source_grid_name: lon-lat
+      fixer_name: ifs-control
+
+
+# Example request:
+# class: d1
+# dataset: climate-dt
+# activity: CMIP6
+# experiment: hist
+# generation: 1
+# model: IFS-NEMO
+# realization: 1
+# resolution: standard
+# expver: a0fe
+# type: fc
+# stream: clte
+# levtype: sfc
+# param: 167
+# date: 19900101
+# time: "0000"

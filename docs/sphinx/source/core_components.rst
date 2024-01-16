@@ -363,3 +363,78 @@ The default is ``S`` (step), i.e. single saved timesteps are read at each iterat
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
 Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
+
+Level selection and regridding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When reading 3D data it is possible to specify already during `retrieve()` which levels to select using the `level` keyword.
+The levels are specified in the same units as they are stored in the archive (for example in hPa for atmospheric IFS data, but an index for NEMO data in the FDB archive).
+
+In the case of FDB data this presents the great advantage that a significantly reduced request will be read from the FDB 
+(by default all levels would be read for each timestep even if later a `sel()` or `isel()` selection is performed on the XArray).
+For non-FDB sources the reader simply uses the `sel()` method to select the desired levels.
+
+When reading 3D data the reader also adds an additional coordinates with prefix `idx_`
+and suffix the names of vertical dimensions to the Dataset. These represent the indices 
+of the (possibly selected) levels in the original archive.
+This hidden index helps the regridder to choose the appropriate weights for each level even if a level
+selection has been performed.
+
+This means that when regridding 3D data the regridding can be performed first on a full dataset and then
+levels are selected or vice versa. In both cases the regridding will be performed using the correct weights.
+By default in xarray when a single vertical level is selected the vertical dimension is dropped, but
+the regridder is still able to deal with this situation using the information in the hidden index.
+
+Please avoid performing regridding on datasets in which single levels have been selected for multiple
+3D variables using different vertical dimensions or on datasets containing also 2D data,
+because in such cases it may not be possible to reconstruct which vertical dimension
+each variable was supposed to be using. 
+In these cases it is better to first select a variable, then select levels and finally regrid. 
+The regridder will issue a warning if it detects such a situation.
+An alternative is to maintain the vertical dimension when selecting a single level by specifying a list with one element,
+for example using `isel(nz1=[40])` instead of `isel(nz1=40)`.
+If level selection was performed at the `retrieve()` stage this is not a problem,
+since in that case the vertical level information is preserved by producing 3D variables
+with a single vertical level.
+
+Accessor
+~~~~~~~~
+
+AQUA also provides a special 'aqua' accessor to Xarray which allows to call most functions and methods of the reader
+class as if they were methods of an Xarray DataArray or Dataset.
+Reader methods like `reader.regrid()` or functions like `plot_single_map()` can now also be accessed by appending
+the suffix `aqua`to a DataArray or Dataset, followed by the function of interest, like in `data.aqua.regrid()`
+
+This means that instead of writing:
+
+.. code-block:: python
+    reader.fldmean(reader.timmean(data.tcc, freq="Y"))
+
+we can write
+
+.. code-block:: python
+    data.tcc.aqua.timmean(freq="Y").aqua.fldmean()
+
+Please notice that the accessor always assumes that the Reader instance to be used is either
+the one with which a Dataset was created or, for new derived objects and for *DataArrays in the Datasets*,
+the last instantiated Reader or the last use of the `retrieve()` method.
+This means that if more than one reader instance is used (for example to compare different datasets)
+we recommend not to use the accessor.
+
+As an alternative the Reader class contains a special `set_default()` method which sets that reader
+as an accessor default in the following. The accessor itself also has a `set_default()` method
+(accepting a reader instance as an argument) which sets the default and returns the same object.
+Usage examples when multiple readers are used:
+
+.. code-block:: python
+    from aqua import Reader
+    reader1=Reader(model="IFS", exp="test-tco79", source="short", regrid="r100")  # the default is now reader1
+    reader2=Reader(model="IFS", exp="test-tco79", source="short", regrid="r200")  # the default is now reader2
+    data1 = reader1.retrieve()  # the default is now reader1 
+    data2 = reader2.retrieve()  # the default is now reader2
+    reader1.set_default()  # the default is now reader1 
+    data1r = data1.aqua.regrid()
+    data2r = data2.aqua.regrid()  # data2 was created by retrieve(), so it remembers its default reader
+    data2r = data2['2t'].aqua.set_default(reader2).aqua.regrid()  # the default is set to reader2 before using a method
+
+

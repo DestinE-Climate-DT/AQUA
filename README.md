@@ -1,44 +1,44 @@
 # AQUA
-AQUA model evaluation framework
 
-This repository is thought to host the code development as well as the discussion for the DE_340 AQUA model evaluation framework. In the first phase, please use it as a playground, including code examples or notebook if you want to show some specific configuration. Please use specific branches to host your development.  
+The Application for Quality assessment and Uncertainity quAntification (AQUA) is a is a model evaluation framework designed for running diagnostics on high-resolution climate models, specifically for Climate DT climate simulations being part of Destination Earth activity. The package provides a flexible and efficient framework to process and analyze large volumes of climate data. With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic tools that can be run in parallel. AQUA offers:
 
-AQUA framework will be based on a series of python3 libraries. Those libraries are based on the `xarray+dask` framework so that they will be able to exploit out-of-core computation, fundamental to operate on the large volume of expected DE_340 data. 
-Most important module is the `Reader` class which allows for data access through intake catalog - and later on through FDB - as well as regridding (via the smmregrid module), time and spatial averaging as well as changes in data format convention.
-
-Diagnostics can be introduced within the AQUA framework making use of a specific python3 subpackage, listed in the `diagnostics` folder.
+- Efficient handling of large datasets from high-resolution climate models;
+- Support for various data formats, such as NetCDF, GRIB, HDF or FDB;
+- Robust and fast regridding functionality;
+- Averaging and aggregation tools for temporal and spatial analyses;
+- Modular design for easy integration of new diagnostics.
 
 ## Installation
 
-The code works with python>=3.9.  Recommended installation through mamba (a package manager for conda-forge)
+AQUA requires python>=3.9,<3.12. Recommended installation through mamba (a package manager for conda-forge).
 
-### create conda/mamba environment and install packages
+### Create conda/mamba environment and install packages
 ```
-git clone git@github.com:oloapinivad/AQUA.git
+git clone git@github.com:DestinE-Climate-DT/AQUA.git
 cd AQUA
 mamba env create -f environment-common.yml
-conda activate aqua_common
+mamba activate aqua_common
 ```
 
-Some diagnostics of aqua require extra conda or pip dependencies and have their environment files (for example, `teleconnections/env-teleconnections.yml` or `diagnostics/tropical_rainfall/env-tropical-rainfall.yml`).
-For simplicity, we provide them already in the environment file, `environment-common.yml `, which contains all standard dependencies of aqua and extra dependencies for each diagnostic. 
+This installation will provide both the AQUA framework and the AQUA diagnostics, which can be found in the `diagnostics` folder.
+
+### Use of AQUA container 
+
+An alternative deployment making use of containers is available. Please refer to the `AQUA Container` chapter in the [AQUA Documentation](https://wiki.eduuni.fi/download/attachments/288474772/aqua.pdf).
+
+## Documentation
+
+Full [AQUA Documentation](https://wiki.eduuni.fi/download/attachments/288474772/aqua.pdf) is available on the Climate DT Wiki.
 
 ## Examples
 
-Please look at the `notebook` folder to explore AQUA functionalities
+Please look at the `notebook` folder to explore AQUA functionalities. 
 
-### Note on adding a kernel for DKRZ jupyterhub
+## Command lines tools
 
-Documentation on adding kernels: https://docs.dkrz.de/doc/software%26services/jupyterhub/kernels.html#use-your-own-kernel
-
-It should come down to:
-
-```
-pip install ipykernel
-python -m ipykernel install --user --name aqua_common --display-name="aqua_common"
-```
+Please look at the `cli` folder to have access to the AQUA command line tools. 
 
 ## Contributing guide
 
-A contribution guide is available [here](CONTRIBUTING.md). Please read it before contributing to the project.
+Please refer to the [Guidelines for Contributors](https://github.com/DestinE-Climate-DT/AQUA/blob/main/CONTRIBUTING.md) if you want to join AQUA team!
 

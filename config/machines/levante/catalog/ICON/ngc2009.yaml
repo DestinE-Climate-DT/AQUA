@@ -13,7 +13,7 @@ sources:
       urlpath: /work/bb1153/m300827/ngc2009/R02B09/2d_ml.zarr
     metadata:
       source_grid_name: R02B09
-      fix_names: icon-default
+      fixer_name: icon-default
 
   atm_2d_ml_R02B08:
     driver: zarr
@@ -23,7 +23,7 @@ sources:
       urlpath: /work/bb1153/m300827/ngc2009/R02B08/2d_ml.zarr
     metadata:
       source_grid_name: R02B08
-      fix_names: icon-default
+      fixer_name: icon-default
   
   # atm_2d_ml_R02B06:
   #   driver: zarr

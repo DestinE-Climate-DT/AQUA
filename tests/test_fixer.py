@@ -44,7 +44,7 @@ def test_fixer_ifs_long():
     # Metadata checks
 
     # History logged
-    assert 'variable derived by AQUA fixer' in tas1.attrs['history']
+    assert 'Variable var235, derived with 2t+1.0 by fixer' in tas1.attrs['history']
 
     # paramId and other attrs
     assert tas1.attrs['paramId'] == '235'
@@ -70,7 +70,7 @@ def test_fixer_ifs_short():
 
 @pytest.mark.aqua
 def test_fixer_ifs_names():
-    """Check with fix_names method"""
+    """Check with fixer_name method"""
 
     reader = Reader(model="IFS", exp="test-tco79", source="short_masked", loglevel=loglevel)
     data = reader.retrieve()
@@ -79,7 +79,7 @@ def test_fixer_ifs_names():
 
 @pytest.mark.aqua
 def test_fixer_fesom_names():
-    """Check with fixer parent from fix_names method"""
+    """Check with fixer parent from fixer_name method"""
 
     reader = Reader(model="FESOM", exp="test-pi", source="original_2d_fix", loglevel=loglevel)
     data = reader.retrieve()
