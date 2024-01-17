@@ -1,0 +1,12 @@
+sources:
+  nemo-spinup-exp-5744567:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kkeller/lab/NEMO_SPINUP/exp-5744567/5yspinup_1m_20150101_20191231_grid_T_1x1.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true

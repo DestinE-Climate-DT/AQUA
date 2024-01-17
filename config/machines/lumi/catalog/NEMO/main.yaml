@@ -19,3 +19,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/a0eo-LUMI-G.yaml'
+  nemo-test-data:
+    description: ¡
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/nemo-test-data.yaml'

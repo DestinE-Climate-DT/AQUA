@@ -1,6 +1,11 @@
+# model: NEMO 
+# exp: a0er-LUMI-C
+# source: fc0-lra-r100-monthly
+
 model: NEMO 
-exp: a0er-LUMI-C
-source: fc0-lra-r100-monthly
+exp: nemo-test-data
+source: nemo-spinup-exp-5744567
+
 outputdir: ./output
 # "--model FESOM --exp tco2559-ng5-cycle3 --source $source"
 
