@@ -81,11 +81,20 @@ class Ocean3DCLI:
         reader = Reader(model=model, exp=exp, source=source,
                         fix=True, loglevel=self.loglevel)
         data = reader.retrieve()
+        # data=data.rename_dims({"time_counter":"time"})
+        # data=data.rename_dims({"deptht":"lev"})
+        # data=data.rename_vars({"toce_mean":"ocpt"})
+        # data=data.rename_vars({"soce_mean":"so"})
+        # data=data.drop_dims("bnds")
+        # data=data[["ocpt","so"]]
+        
         data = check_variable_name(data)
         if self.config["time_selection"] == True:
             self.data["catalog_data"] = time_slicing(data,self.config["start_year"],
                                                      self.config["end_year"])
-    
+        else:
+            self.data["catalog_data"]= data
+            
     def ocean3d_diags(self, region=None,
                   latS: float = None,
                   latN: float = None,
@@ -93,76 +102,78 @@ class Ocean3DCLI:
                   lonE: float = None,
                   ):
         
-        data = self.data["catalog_data"]
-        output_dir = self.config["outputdir"]
+        o3d_request={
+            "model":self.config["model"],
+            "exp":self.config["exp"],
+            "source":self.config["source"],
+            "data":self.data["catalog_data"],
+            "region":region,
+            "latS":latS,
+            "latN":latN,
+            "lonW":lonW,
+            "lonE":lonE,
+            "output":True,
+            "output_dir":self.config["outputdir"]
+        }
+        
+        
+
         
         self.logger.debug("Evaluating Hovmoller plots")
          
-        hovmoller_lev_time_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                anomaly=False, standardise=False,
-                                output=True, output_dir=output_dir)
-        hovmoller_lev_time_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                anomaly=False, standardise=True,
-                                output=True, output_dir=output_dir)
-        hovmoller_lev_time_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN,
-                                region=region, anomaly=True, anomaly_ref="t0", standardise=False,
-                                output=True, output_dir=output_dir)
-        hovmoller_lev_time_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                anomaly=True, anomaly_ref="tmean", standardise=False,
-                                output=True, output_dir=output_dir)
-        hovmoller_lev_time_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                anomaly=True, anomaly_ref="t0", standardise=True,
-                                output=True, output_dir=output_dir)
-        hovmoller_lev_time_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                anomaly=True, anomaly_ref="tmean", standardise=True,
-                                output=True, output_dir=output_dir)
+        hovmoller_lev_time_plot(o3d_request,
+                                anomaly=False, standardise=False)
+        hovmoller_lev_time_plot(o3d_request,
+                                anomaly=False, standardise=True)
+        hovmoller_lev_time_plot(o3d_request,
+                                region=region, anomaly=True, anomaly_ref="t0", standardise=False)
+        hovmoller_lev_time_plot(o3d_request,
+                                anomaly=True, anomaly_ref="tmean", standardise=False)
+        hovmoller_lev_time_plot(o3d_request,
+                                anomaly=True, anomaly_ref="t0", standardise=True)
+        hovmoller_lev_time_plot(o3d_request,
+                                anomaly=True, anomaly_ref="tmean", standardise=True)
 
         self.logger.debug("Evaluating time series multilevels")
-        time_series_multilevs(data=data,
-                            lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                            anomaly=False, standardise=False, customise_level=False, levels=list,
-                            output=True, output_dir=output_dir)
-        time_series_multilevs(data=data,
-                            lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                            anomaly=True, standardise=False, anomaly_ref="tmean", customise_level=False, levels=list,
-                            output=True, output_dir=output_dir)
-        time_series_multilevs(data=data,
-                            lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                            anomaly=True, standardise=False, anomaly_ref="t0", customise_level=False, levels=list,
-                            output=True,  output_dir=output_dir)
-        time_series_multilevs(data=data,
-                            lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                            anomaly=True, standardise=True, anomaly_ref="tmean", customise_level=False, levels=list,
-                            output=True, output_dir=output_dir)
-        time_series_multilevs(data=data,
-                            lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                            anomaly=True, standardise=True, anomaly_ref="t0", customise_level=False, levels=list,
-                            output=True, output_dir=output_dir)
+        # time_series_multilevs(data=data,
+        #                     lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                     anomaly=False, standardise=False, customise_level=False, levels=list,
+        #                     output=True, output_dir=output_dir)
+        # time_series_multilevs(data=data,
+        #                     lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                     anomaly=True, standardise=False, anomaly_ref="tmean", customise_level=False, levels=list,
+        #                     output=True, output_dir=output_dir)
+        # time_series_multilevs(data=data,
+        #                     lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                     anomaly=True, standardise=False, anomaly_ref="t0", customise_level=False, levels=list,
+        #                     output=True,  output_dir=output_dir)
+        # time_series_multilevs(data=data,
+        #                     lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                     anomaly=True, standardise=True, anomaly_ref="tmean", customise_level=False, levels=list,
+        #                     output=True, output_dir=output_dir)
+        # time_series_multilevs(data=data,
+        #                     lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                     anomaly=True, standardise=True, anomaly_ref="t0", customise_level=False, levels=list,
+        #                     output=True, output_dir=output_dir)
 
-        self.logger.debug("Evaluating multilevel_t_s_trend_plot")
-        multilevel_t_s_trend_plot(data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                customise_level=False, levels=None,
-                                output=True, output_dir=output_dir)
+        # self.logger.debug("Evaluating multilevel_t_s_trend_plot")
+        # multilevel_t_s_trend_plot(data=data,
+        #                         lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                         customise_level=False, levels=None,
+        #                         output=True, output_dir=output_dir)
 
-        self.logger.debug("Evaluating zonal_mean_trend_plot")
-        zonal_mean_trend_plot(data=data,
-                            lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                            output=True, output_dir=output_dir)
+        # self.logger.debug("Evaluating zonal_mean_trend_plot")
+        # zonal_mean_trend_plot(data=data,
+        #                     lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                     output=True, output_dir=output_dir)
 
-        for time in range(1, 18):  # 1 to 12 is the months, then each number directs the seasonals and the yearly climatology
-            self.logger.debug("Evaluating plot_stratification, time: %s", time)
-            plot_stratification(mod_data=data,
-                                lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
-                                time=time,
-                                output=True, output_dir=output_dir)
-            # plot_spatial_mld_clim(mod_data= data, lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region, time = time, overlap= True,output= True, output_dir= output_dir)
+        # for time in range(1, 18):  # 1 to 12 is the months, then each number directs the seasonals and the yearly climatology
+        #     self.logger.debug("Evaluating plot_stratification, time: %s", time)
+        #     plot_stratification(mod_data=data,
+        #                         lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region,
+        #                         time=time,
+        #                         output=True, output_dir=output_dir)
+        #     # plot_spatial_mld_clim(mod_data= data, lonE=lonE, lonW=lonW, latS=latS, latN=latN, region=region, time = time, overlap= True,output= True, output_dir= output_dir)
 
     def custom_region_diag(self):
         if self.config["custom_region"]:

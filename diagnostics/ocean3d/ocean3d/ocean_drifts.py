@@ -189,11 +189,9 @@ def data_process_by_type(data, anomaly: bool = False,
     return process_data, type, cmap
 
 
-def hovmoller_lev_time_plot(data, region, anomaly: bool = False,
-                            standardise: bool = False, anomaly_ref=None,
-                            latS: float = None, latN: float = None,
-                            lonW: float = None, lonE: float = None,
-                            output=False, output_dir=None):
+def hovmoller_lev_time_plot(o3d_request, anomaly: bool = False,
+                            standardise: bool = False, anomaly_ref=None
+                            ):
     """
     Create a Hovmoller plot of temperature and salinity full values.
 
@@ -213,6 +211,19 @@ def hovmoller_lev_time_plot(data, region, anomaly: bool = False,
     Returns:
         None
     """
+    data = o3d_request.get('data')
+    model = o3d_request.get('model')
+    exp = o3d_request.get('exp')
+    source = o3d_request.get('source')
+    region = o3d_request.get('region', None)
+    latS = o3d_request.get('latS', None)
+    latN = o3d_request.get('latN', None)
+    lonW = o3d_request.get('lonW', None)
+    lonE = o3d_request.get('lonE', None)
+    output = o3d_request.get('output')
+    output_dir = o3d_request.get('output_dir')
+    
+    
     data = weighted_area_mean(data, region, latS, latN, lonW, lonE)
     # Reads the type of timeseries to plot
     data, type, cmap = data_process_by_type(
