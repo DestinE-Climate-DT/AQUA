@@ -157,7 +157,8 @@ class hovmoller_lev_time_plot:
                         output_path, fig_dir, data_dir, filename = dir_creation(data_proc,
                             region, latS, latN, lonW, lonE, output_dir, plot_name = plot_name)
 
-                    ocptlevs, solevs =self.define_lev_values(data_proc)
+                    # ocptlevs, solevs =self.define_lev_values(data_proc)
+                    ocptlevs, solevs = 20,20
                     plot_config = {"anomaly": anomaly,
                                    "standardise": standardise,
                                    "anomaly_ref": anomaly_ref}
@@ -249,7 +250,8 @@ class hovmoller_lev_time_plot:
         logger.info("Hovmoller plotting in process")
         
         for key, value in self.plot_info.items():
-            self.prepare_plot(key)
+            if key not in [1,2,3]:
+                self.prepare_plot(key)
         
         
         return

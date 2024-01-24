@@ -309,7 +309,7 @@ def split_time_equally(data):
     if date_len == 0:
         raise ValueError("Time lenth is 0 in the data")
     elif date_len > 1:
-        data = None
+        # data = None
         if date_len % 2 == 0:
             data_1 = data.isel(time=slice(0, int(date_len/2)))
             data_2 = data.isel(time=slice(int(date_len/2), date_len))

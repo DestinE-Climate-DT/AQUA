@@ -89,7 +89,7 @@ class Ocean3DCLI:
         reader = Reader(model=model, exp=exp, source=source,
                         fix=True, loglevel=self.loglevel)
         data = reader.retrieve()
-        # data=data.rename_dims({"time_counter":"time"})
+        data=data.rename({"time_counter":"time"})
         # data=data.rename_dims({"deptht":"lev"})
         # data=data.rename_vars({"toce_mean":"ocpt"})
         # data=data.rename_vars({"soce_mean":"so"})

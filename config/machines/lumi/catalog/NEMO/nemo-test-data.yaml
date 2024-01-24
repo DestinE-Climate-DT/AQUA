@@ -6,7 +6,22 @@ sources:
       source_grid_name: lon-lat
     args:
       urlpath: 
-        /pfs/lustrep3/scratch/project_465000454/kkeller/lab/NEMO_SPINUP/exp-5744567/5yspinup_1m_20150101_20191231_grid_T_1x1.nc
+        # /pfs/lustrep3/scratch/project_465000454/kkeller/lab/NEMO_SPINUP/exp-5744567/5yspinup_1m_20150101_20191231_grid_T_1x1.nc
+        /pfs/lustrep3/scratch/project_465000454/kkeller/lab/NEMO_SPINUP/dvc-cache-de340/exp-5753281/5yspinup_1m_20150101_20191231_grid_T_1x1.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true
+
+  nemo_standalone:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kkeller/lab/nemo_standalone_aqua_diagnostics/2015-2019_grid_T_1x1.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+        

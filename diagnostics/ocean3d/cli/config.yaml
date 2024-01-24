@@ -1,20 +1,18 @@
-model: IFS-NEMO 
-exp: historical-1990
-source: lra-r100-monthly
+# model: IFS-NEMO 
+# exp: historical-1990
+# source: lra-r100-monthly
 
-# model: NEMO 
-# exp: nemo-test-data
+model: NEMO 
+exp: nemo-test-data
 # source: nemo-spinup-exp-5744567
+source: nemo_standalone
+
 
 outputdir: ./output
 
 time_selection : False
 start_year : 1991
 end_year : 1992
-
-time_selection : True
-start_year : 2015
-end_year : 2016
 
 predefined_regions:
   - Indian Ocean
