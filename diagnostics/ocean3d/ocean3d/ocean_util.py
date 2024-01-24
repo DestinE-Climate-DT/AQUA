@@ -19,6 +19,23 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
     
+def kelvin_to_celsius(data, variable_name):
+    """
+    Convert temperature in Kelvin to degrees Celsius for a specific variable in an xarray dataset.
+
+    Parameters:
+    - data (xarray.Dataset): The input xarray dataset.
+    - variable_name (str): The name of the variable to convert from Kelvin to degrees Celsius.
+
+    Returns:
+    - xarray.Dataset: The modified xarray dataset with the specified variable converted to degrees Celsius.
+    """
+    # Check if the variable exists in the dataset
+    if data.ocpt.attrs['units']== 'K':
+        # Convert Kelvin to Celsius: Celsius = Kelvin - 273.15
+        data[variable_name] -= 273.15
+        data.ocpt.attrs['units']= 'degC'
+    return data
 
 def check_variable_name(data):
     vars= list(data.variables)
@@ -39,7 +56,7 @@ def check_variable_name(data):
             if 'thetao' in var.lower() or 'toce' in var.lower():
                 data = data.rename({var: "ocpt"})
                 logger.info(f"renaming {var} as ocpt")
-    
+        data = kelvin_to_celsius(data, "ocpt")
     else:
         logger.info("Required variable avg_so and avg_thetao is not available in the catalogue")
     
@@ -497,3 +514,31 @@ def dir_creation(data, region=None,  latS: float = None, latN: float = None, lon
     os.makedirs(fig_dir, exist_ok=True)
     os.makedirs(data_dir, exist_ok=True)
     return output_dir, fig_dir, data_dir, filename
+
+
+def write_data(file_name, data):
+    # Check if the file exists
+    if os.path.exists(file_name):
+        # If it exists, delete it
+        os.remove(file_name)
+        print(f"Deleted existing file: {file_name}")
+
+    # Write the new xarray data to the NetCDF file
+    data.to_netcdf(file_name)
+    print(f"Data written to: {file_name}")
+    return
+
+def split_ocean3d_req(self, o3d_request):
+    self.data = o3d_request.get('data')
+    self.model = o3d_request.get('model')
+    self.exp = o3d_request.get('exp')
+    self.source = o3d_request.get('source')
+    self.region = o3d_request.get('region', None)
+    self.latS = o3d_request.get('latS', None)
+    self.latN = o3d_request.get('latN', None)
+    self.lonW = o3d_request.get('lonW', None)
+    self.lonE = o3d_request.get('lonE', None)
+    self.output = o3d_request.get('output')
+    self.output_dir = o3d_request.get('output_dir')
+    
+    return self

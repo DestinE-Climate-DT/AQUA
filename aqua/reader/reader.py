@@ -175,6 +175,8 @@ class Reader(FixerMixin, RegridMixin):
             self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
             if self.src_grid_name is not None:
                 self.logger.info('Grid metadata is %s', self.src_grid_name)
+            else: 
+                self.logger.warning('Grid metadata is not defined. Regridding capabilities might not work.')
             self.dst_grid_name = regrid
 
             # configure all the required elements
@@ -302,7 +304,7 @@ class Reader(FixerMixin, RegridMixin):
         """
 
         if self.src_grid_name not in cfg_regrid['grids']:
-            raise KeyError(f'Source grid {self.src_grid_name} does exist in aqua-grid.yaml!')
+            raise KeyError(f'Source grid {self.src_grid_name} does not exist in aqua-grid.yaml!')
 
         source_grid = cfg_regrid['grids'][self.src_grid_name]
 
@@ -491,16 +493,23 @@ class Reader(FixerMixin, RegridMixin):
         else:
             # If we are retrieving from fdb we have to specify the var
             if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
+
                 metadata = self.esmcat.metadata
                 if metadata:
-                    var = metadata.get('variables')
-                if not var:
-                    var = [self.esmcat._request['param']]  # retrieve var from catalogue
-                if sample:
-                    var = [var[0]]
+                    loadvar = metadata.get('variables')
+                    
+                    if loadvar is None:
+                        loadvar = [self.esmcat._request['param']]  # retrieve var from catalogue
+        
+                    if not isinstance(loadvar, list):
+                        loadvar = [loadvar]
 
-                self.logger.debug("FDB source, setting default variables to %s", var)
-                loadvar = self.get_fixer_varname(var) if self.fix else var
+                    if sample:
+                        #self.logger.debug("FDB source sample reading, selecting only one variable")
+                        loadvar = [loadvar[0]]
+
+                    self.logger.debug("FDB source: loading variables as %s", loadvar)
+
             else:
                 loadvar = None
 
@@ -742,10 +751,15 @@ class Reader(FixerMixin, RegridMixin):
         resample_freq = frequency_string_to_pandas(freq)
 
         # get original frequency (for history)
-        orig_freq = data['time'].values[1]-data['time'].values[0]
-        # Convert time difference to hours
-        self.orig_freq = np.timedelta64(orig_freq, 'ns') / np.timedelta64(1, 'h')
+        if len(data.time)>1:
+            orig_freq = data['time'].values[1]-data['time'].values[0]
+            # Convert time difference to hours
+            self.orig_freq = np.timedelta64(orig_freq, 'ns') / np.timedelta64(1, 'h')
+        else:
+            self.logger.warning('A single timestep is available, is this correct?')
+            self.orig_freq = 'Unknown'
 
+    
         try:
             # resample
             self.logger.info('Resampling to %s frequency...', str(resample_freq))
@@ -757,8 +771,12 @@ class Reader(FixerMixin, RegridMixin):
         out['time'] = out['time'].to_index().to_period(resample_freq).to_timestamp().values
 
         if exclude_incomplete:
+            #if len(data.time)>1:
             boolean_mask = check_chunk_completeness(data, resample_frequency=resample_freq)
             out = out.where(boolean_mask, drop=True)
+            #else:
+            #    self.logger.warning('A single timestep is available, is this correct?')
+            #    out[:] = float('nan')
 
         # check time is correct
         if np.any(np.isnat(out.time)):

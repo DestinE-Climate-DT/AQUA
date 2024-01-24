@@ -1,13 +1,16 @@
-model: NEMO 
-exp: a0er-LUMI-C
-source: fc0-lra-r100-monthly
+model: IFS-NEMO 
+exp: historical-1990
+source: lra-r100-monthly
 
 # model: NEMO 
 # exp: nemo-test-data
 # source: nemo-spinup-exp-5744567
 
 outputdir: ./output
-# "--model FESOM --exp tco2559-ng5-cycle3 --source $source"
+
+time_selection : False
+start_year : 1991
+end_year : 1992
 
 time_selection : True
 start_year : 2015
@@ -15,9 +18,13 @@ end_year : 2016
 
 predefined_regions:
   - Indian Ocean
-  # - Pacific Ocean
+  - Pacific Ocean
+  - Atlantic Ocean
+  - Arctic Ocean
+  - Southern Ocean
+  - Labrador Sea
 
-custom_region:
-  - [latS: -30, latN: 30, lonW: 100, lonE: 300]
+# custom_region:
+#   - [latS: -30, latN: 30, lonW: 100, lonE: 300]
   # - [latS: 0, latN: 30, lonW: 100, lonE: 150]
 

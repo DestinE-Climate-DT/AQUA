@@ -127,3 +127,18 @@ class TestGsv():
         assert all(data.t.coords["plev"].data == [100000, 90000, 80000]), "Wrong level info"
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
+
+    def test_reader_auto(self) -> None:
+        """
+        Reading from a datasource using new operational schema and auto dates
+        """
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+        data = reader.retrieve()
+        # Test if the correct dates have been found
+        assert "1990-01-01T00:00" in str(data.time[0].values)
+        assert "1990-01-02T00:00" in str(data.time[-1].values)
+        # Test if the data can actually be read and contain the expected values
+        assert data.tcc.isel(time=0).values.mean() == pytest.approx(0.6530221138649116)
+        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(0.6687973267265382)
+

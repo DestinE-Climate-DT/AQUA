@@ -75,6 +75,15 @@ class TestAqua:
         assert global_mean.values[1] == pytest.approx(17.98060367,
                                                       rel=approx_rel)
 
+    def test_catalog_override(self):
+        """
+        Test the compact catalogue override functionality
+        """
+        reader = Reader(model="IFS", exp="test-tco79", source="short_override",
+                        loglevel=loglevel)
+        assert reader.esmcat.metadata['test-key'] == "test-value"  # from the default
+        assert reader.src_grid_name == "tco79-nn"  # overwritten key
+
     @pytest.fixture(
         params=[
             ("IFS", "test-tco79", "short", "r200", "tas"),

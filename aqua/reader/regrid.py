@@ -61,14 +61,14 @@ class RegridMixin():
         else:
             vert_coord = None
 
-        sgridpath = self._get_source_gridpath(source_grid, vert_coord, zoom)
+        sgrid = self._get_source_grid(source_grid, vert_coord, zoom)
        
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
 
         src_extra = source_grid.get("extra", [])
 
-        grid_area = self.cdo_generate_areas(source=sgridpath,
+        grid_area = self.cdo_generate_areas(source=sgrid,
                                             gridpath=gridpath,
                                             icongridpath=icongridpath,
                                             extra=src_extra)
@@ -97,7 +97,7 @@ class RegridMixin():
             None
         """
 
-        sgridpath = self._get_source_gridpath(source_grid, vert_coord, zoom)
+        sgrid = self._get_source_grid(source_grid, vert_coord, zoom)
 
         if vert_coord == "2d" or vert_coord == "2dm":  # if 2d we need to pass None to smmregrid
             vert_coord = None
@@ -116,7 +116,10 @@ class RegridMixin():
             extra = []
         extra = extra + src_extra
 
-        weights = rg.cdo_generate_weights(source_grid=sgridpath,
+        sgrid.load()  # load the data to avoid problems with dask in smmregrid
+        sgrid = sgrid.compute()  # for some reason both lines are needed 
+
+        weights = rg.cdo_generate_weights(source_grid=sgrid,
                                           target_grid=cfg_regrid["grids"][regrid],
                                           method=method,
                                           gridpath=cfg_regrid["cdo-paths"]["download"],
@@ -128,7 +131,7 @@ class RegridMixin():
         weights.to_netcdf(weightsfile)
         self.logger.warning("Success!")
 
-    def _get_source_gridpath(self, source_grid, vert_coord, zoom):
+    def _get_source_grid(self, source_grid, vert_coord, zoom):
         """
         Helper function to get the source grid path.
 
@@ -141,10 +144,10 @@ class RegridMixin():
             xarray.DataArray: The source grid path.
         """
 
-        sgridpath = source_grid.get("path", None)
-        self.logger.info("Source grid: %s", sgridpath)
+        sgrid = source_grid.get("path", None)
+        self.logger.info("Source grid: %s", sgrid)
 
-        if not sgridpath:
+        if not sgrid:
             # there is no source grid path at all defined in the regrid.yaml file:
             # let's reconstruct it from the file itself
 
@@ -170,21 +173,21 @@ class RegridMixin():
             # We need only one variable and we do not want vars with "bnds/bounds"
             available_vars = [var for var in list(data.data_vars) if 'bnds' not in var and 'bounds' not in var]
             if available_vars:
-                sgridpath = data[available_vars[0]]
+                sgrid = data[available_vars[0]]
             else:
                 raise ValueError("Cannot find any variabile to extract a grid sample")
 
         else:
-            if isinstance(sgridpath, dict):
+            if isinstance(sgrid, dict):
                 if vert_coord:
-                    sgridpath = sgridpath[vert_coord]
+                    sgrid = sgrid[vert_coord]
                 else:
-                    sgridpath = sgridpath["2d"]
+                    sgrid = sgrid["2d"]
             if zoom is not None:
-                sgridpath = sgridpath.format(zoom=zoom)
-            sgridpath = xr.open_dataset(sgridpath)
+                sgrid = sgrid.format(zoom=zoom)
+            sgrid = xr.open_dataset(sgrid)
 
-        return sgridpath
+        return sgrid
 
     def cdo_generate_areas(self, source, icongridpath=None, gridpath=None, extra=None):
         """

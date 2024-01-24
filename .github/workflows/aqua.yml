@@ -44,7 +44,7 @@ jobs:
     continue-on-error: false
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      image: ghcr.io/destine-climate-dt/fdb:5.11.10-ubuntu
+      image: ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua:ubuntu-docker
       credentials:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -108,23 +108,24 @@ jobs:
       - name: Download and set up tests
         run: |
           ./download_data_for_tests.sh
-      #- name: Set up FDB
-      #  run: |
-      #    export
-      #    # FDB for GSV
-      #    rm -rf /app/
-      #    cp -r ./AQUA_tests/fdb/ /app/
-      #    cat /app/config.yaml
-      #    mkdir -pv /app/localroot/
-      #    cd /app/
-      #    fdb-write sample_test_data.grib
-      #    ls -l /app/localroot
-      #    # The fdb-list command is a good smoke test.
-      #    fdb-list class=ea,expver=0001
-      #    # But the fdb-read using a request is more like what pyfdb does.
-      #    # When it fails, the test.grib file will have 0 (zero) messages.
-      #    fdb-read sample_test_data_fdb_request test.grib
-      #    grib_dump test.grib
+      - name: Set up FDB
+        run: |
+          export
+          # FDB for GSV
+          rm -rf /app/
+          cp -r ./AQUA_tests/fdb/ /app/
+          cat /app/config.yaml
+          mkdir -pv /app/localroot/
+          cd /app/
+          fdb-write sample_test_data.grib
+          fdb-write sample_test_data_d1.grib
+          ls -l /app/localroot
+          # The fdb-list command is a good smoke test.
+          fdb-list class=ea,expver=0001
+          # But the fdb-read using a request is more like what pyfdb does.
+          # When it fails, the test.grib file will have 0 (zero) messages.
+          fdb-read sample_test_data_fdb_request test.grib
+          grib_dump test.grib
       - name: Run tests
         # NOTE: We could gain a few seconds in the build, if needed,
         #       by running with coverage in only one matrix job run.
@@ -132,8 +133,7 @@ jobs:
         #        shell and not with the micromamba shell.
         run: |
           # Produce the HTML report. Defaults to writing in htmlcov/index.html.
-          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or graphics"
-        # pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics"
+          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics"
       - name: Processing coverage
         run: |
           if [[ ${COVERAGE_ENABLED} ]]; then

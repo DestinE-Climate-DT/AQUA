@@ -30,7 +30,7 @@ singularity exec  \
     $AQUA_container
     bash -c \
     '
-    python /scratch/project_465000454/sughosh/AQUA/diagnostics/ocean3d/cli/cli_ocean3d.py
+    python ./cli_ocean3d.py
     '
 
 

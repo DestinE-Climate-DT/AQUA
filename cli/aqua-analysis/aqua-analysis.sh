@@ -83,6 +83,8 @@ oce_extra_args["global_time_series"]="${oce_extra_args["global_time_series"]} \
 # Command line extra arguments for ecmean:
 # -c --config (ecmean config file)
 # -i --interface (custom interface file)
+atm_oce_extra_args["ecmean"]="${atm_oce_extra_args["ecmean"]} \
+--interface $aqua/diagnostics/ecmean/config/interface_AQUA_destine-v1.yml"
 # -------------------------------------------
 # Command line extra arguments for radiation:
 # --config (readiation config file)
@@ -97,6 +99,7 @@ oce_extra_args["global_time_series"]="${oce_extra_args["global_time_series"]} \
 # --dry, -d (dry run, if set it will run without producing plots)
 # --ref (if set it will analyze also the reference data, it is set
 #        by default)
+# --interface (custom interface file)
 # Concatenate the new part to the existing content
 atm_extra_args["teleconnections"]="${atm_extra_args["teleconnections"]} \
 --config cli_config_atm.yaml --ref"

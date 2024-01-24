@@ -1,0 +1,12 @@
+# These are needed for the AQUA retrieve
+model: IFS-NEMO
+exp: historical-1990
+source: daily-r025-oce3d
+var: avg_so
+
+# These are extra info:
+# model name for saving the grid
+model_name: nemo
+3d: True # 2d or 3d
+# target folder for the grid generated
+tgt: /scratch/project_465000454/nurissom/r025_grid_generation

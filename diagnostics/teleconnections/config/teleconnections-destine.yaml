@@ -1,0 +1,25 @@
+# Configuration file of the teleconnections diagnostic
+#
+# Parameters in common to the teleconnections are:
+#
+# telec_type: 'station' or 'region' choose the 
+#             function to use to compute the teleconnection
+# field: field used to compute the teleconnection
+
+# NAO coordinates
+NAO:
+  telec_type: 'station'
+  field: msl
+  lat1: 37.7
+  lon1: -25.7
+  lat2: 64.1
+  lon2: -22
+
+# ENSO 3.4 region coordinates 
+ENSO:
+  telec_type: 'region'
+  field: avg_tos
+  latN:  5
+  lonW: -170
+  latS: -5
+  lonE: -120

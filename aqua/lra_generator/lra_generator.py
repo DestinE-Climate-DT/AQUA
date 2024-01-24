@@ -9,7 +9,6 @@ import glob
 import dask
 import xarray as xr
 import pandas as pd
-import numpy as np
 from dask.distributed import Client, LocalCluster, progress
 from dask.diagnostics import ProgressBar
 from aqua.logger import log_configure, log_history
@@ -17,6 +16,7 @@ from aqua.reader import Reader
 from aqua.util import create_folder, generate_random_string
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
+from aqua.lra_generator.lra_util import check_correct_ifs_fluxes
 
 
 class LRAgenerator():
@@ -33,8 +33,9 @@ class LRAgenerator():
                  model=None, exp=None, source=None, zoom=None,
                  var=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
-                 outdir=None, tmpdir=None, nproc=1, aggregation=None,
-                 loglevel=None, overwrite=False, definitive=False):
+                 outdir=None, tmpdir=None, nproc=1,
+                 loglevel=None, overwrite=False, definitive=False,
+                 exclude_incomplete=False):
         """
         Initialize the LRA_Generator class
 
@@ -57,13 +58,14 @@ class LRAgenerator():
             configdir (string):      Configuration directory where the catalog
                                      are found
             nproc (int, opt):        Number of processors to use. default is 1
-            aggregation(str, opt)    String to control the aggregation for generator
             loglevel (string, opt):  Logging level
             overwrite (bool, opt):   True to overwrite existing files in LRA,
                                      default is False
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
                                      operations, default is False
+            exclude_incomplete (bool,opt)   : True to remove incomplete chunk
+                                            when averaging, default is false.  
         """
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
@@ -71,7 +73,11 @@ class LRAgenerator():
 
         self.overwrite = overwrite
         if self.overwrite:
-            self.logger.info('File will be overwritten if already existing.')
+            self.logger.warning('File will be overwritten if already existing.')
+
+        self.exclude_incomplete = exclude_incomplete
+        if self.exclude_incomplete:
+            self.logger.info('Exclude incomplete for time averaging activated!')
 
         self.definitive = definitive
         if not self.definitive:
@@ -86,11 +92,6 @@ class LRAgenerator():
 
             self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
                                        generate_random_string(10))
-
-        # # Data settings
-        # self._assign_key('model', model)
-        # self._assign_key('exp', exp)
-        # self._assign_key('source', source)
 
         if model:
             self.model = model
@@ -139,7 +140,6 @@ class LRAgenerator():
         self.logger.info('Fixing data: %s', self.fix)
 
         # for data reading from FDB
-        self.aggregation = aggregation
         self.last_record = None
         self.check = False
 
@@ -157,15 +157,6 @@ class LRAgenerator():
         self.client = None
         self.reader = None
 
-    # def _assign_key(self, name, key):
-
-    #     """Assign the key and raise and error"""
-
-    #     if key:
-    #         setattr(self, name, key)
-    #     else:
-    #         raise KeyError('Please specify {name}.')
-
     def retrieve(self):
         """
         Retrieve data from the catalog
@@ -176,7 +167,7 @@ class LRAgenerator():
                              source=self.source, zoom=self.zoom,
                              regrid=self.resolution,
                              loglevel=self.loglevel,
-                             fix=self.fix, aggregation=self.aggregation)
+                             fix=self.fix)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
@@ -325,7 +316,7 @@ class LRAgenerator():
 
         yearfiles = self.get_filename(varname)
         yearfiles = glob.glob(yearfiles)
-        checks = [file_is_complete(yearfile) for yearfile in yearfiles]
+        checks = [file_is_complete(yearfile, loglevel=self.loglevel) for yearfile in yearfiles]
         all_checks_true = all(checks) and len(checks) > 0
         if all_checks_true and not self.overwrite:
             self.logger.info('All the data produced seems complete for var %s...', varname)
@@ -344,8 +335,8 @@ class LRAgenerator():
         if isinstance(self.data, types.GeneratorType):
             self._write_var_generator(var)
         else:
-            if not self.check:
-                self._write_var_catalog(var)
+            #if not self.check:
+            self._write_var_catalog(var)
 
         t_end = time()
         self.logger.info('Process took {:.4f} seconds'.format(t_end - t_beg))
@@ -383,26 +374,32 @@ class LRAgenerator():
             month = temp_data.time.dt.month.values[0]
 
             yearfile = self.get_filename(var, year)
-            filecheck = file_is_complete(yearfile, self.logger)
-            if filecheck and not self.overwrite:
-                self.logger.info('Yearly file %s already exists, skipping...', yearfile)
-                continue
+            filecheck = file_is_complete(yearfile, loglevel=self.loglevel)
+            if filecheck:
+                if not self.overwrite:
+                    self.logger.info('Yearly file %s already exists, skipping...', yearfile)
+                    continue
+                else:
+                    self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
 
             self.logger.info('Processing year %s month %s...', str(year), str(month))
             outfile = self.get_filename(var, year, month)
 
             # checking if file is there and is complete
-            filecheck = file_is_complete(outfile, self.logger)
-            if filecheck and not self.overwrite:
-                self.logger.info('Monthly file %s already exists, skipping...', outfile)
-                continue
-
+            filecheck = file_is_complete(outfile, loglevel=self.loglevel)
+            if filecheck:
+                if not self.overwrite:
+                    self.logger.info('Monthly file %s already exists, skipping...', outfile)
+                    continue
+                else:
+                    self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
+            
             # real writing
             if self.definitive:
                 self.write_chunk(temp_data, outfile)
 
                 # check everything is correct
-                filecheck = file_is_complete(outfile, self.logger)
+                filecheck = file_is_complete(outfile, loglevel=self.loglevel)
                 # we can later add a retry
                 if not filecheck:
                     self.logger.error('Something has gone wrong in %s!', outfile)
@@ -423,11 +420,14 @@ class LRAgenerator():
 
         self.logger.info('Processing variable %s...', var)
         temp_data = self.data[var]
-        if self.frequency:
-            temp_data = self.reader.timmean(temp_data, freq=self.frequency)
-        temp_data = self.reader.regrid(temp_data)
 
-        temp_data = self._remove_regridded(temp_data)
+        # Old version pre-HACK
+        #if self.frequency:
+        #    temp_data = self.reader.timmean(temp_data, freq=self.frequency)
+
+        # regrid
+        #temp_data = self.reader.regrid(temp_data)
+        #temp_data = self._remove_regridded(temp_data)
 
         # Splitting data into yearly files
         years = set(temp_data.time.dt.year.values)
@@ -435,23 +435,42 @@ class LRAgenerator():
 
             self.logger.info('Processing year %s...', str(year))
             yearfile = self.get_filename(var, year)
-            filecheck = file_is_complete(yearfile, self.logger)
-            if filecheck and not self.overwrite:
-                self.logger.info('Yearly file %s already exists, skipping...', yearfile)
-                continue
-
+            filecheck = file_is_complete(yearfile, loglevel=self.loglevel)
+            if filecheck:
+                if not self.overwrite:
+                    self.logger.info('Yearly file %s already exists, skipping...', yearfile)
+                    continue
+                else:
+                    self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
             year_data = temp_data.sel(time=temp_data.time.dt.year == year)
             # Splitting data into monthly files
             months = set(year_data.time.dt.month.values)
             for month in months:
                 self.logger.info('Processing month %s...', str(month))
                 outfile = self.get_filename(var, year, month)
+
                 # checking if file is there and is complete
-                filecheck = file_is_complete(outfile, self.logger)
-                if filecheck and not self.overwrite:
-                    self.logger.info('Monthly file %s already exists, skipping...', outfile)
-                    continue
+                filecheck = file_is_complete(outfile, loglevel=self.loglevel)
+                if filecheck:
+                    if not self.overwrite:
+                        self.logger.info('Monthly file %s already exists, skipping...', outfile)
+                        continue
+                    else:
+                        self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
+
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
+                # HACK: check for ifs wrong fluxes only
+                if len(month_data.time)>1:
+                    month_data = check_correct_ifs_fluxes(month_data, loglevel=self.loglevel)
+
+                # HACK: move the regrid and frequency here
+                if self.frequency:
+                    month_data = self.reader.timmean(month_data, freq=self.frequency, 
+                                                     exclude_incomplete=self.exclude_incomplete)
+                month_data = self.reader.regrid(month_data)
+                month_data = self._remove_regridded(month_data)
+
+                self.logger.debug(month_data.mean().values)
                 self.logger.debug(month_data)
 
                 # real writing
@@ -459,7 +478,7 @@ class LRAgenerator():
                     self.write_chunk(month_data, outfile)
 
                     # check everything is correct
-                    filecheck = file_is_complete(outfile, self.logger)
+                    filecheck = file_is_complete(outfile, loglevel=self.loglevel)
                     # we can later add a retry
                     if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', outfile)

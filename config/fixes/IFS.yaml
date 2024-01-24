@@ -1,4 +1,70 @@
 fixer_name:
+    ifs-destine-v1:
+        data_model: ifs
+        deltat: 3600
+        vars:
+            # Evaporation and snowfall
+            mer: # https://codes.ecmwf.int/grib/param-db/?id=235043
+                source: e
+                grib: true
+                src_units: m
+                #units: kg m**-2 s**-1
+            msr: # https://codes.ecmwf.int/grib/param-db/?id=235031
+                source: sf
+                grib: true
+                src_units: m
+                #units: kg m**-2 s**-1
+            # Latent and sensible heat
+            mslhf: # https://codes.ecmwf.int/grib/param-db/?id=235034
+                source: slhf
+                grib: true
+            msshf:
+                source: sshf
+                grib: true
+            # Surface fluxes
+            msnswrf:
+                source: ssr
+                grib: true
+            msnlwrf:
+                source: str
+                grib: true
+            msdwlwrf:
+                source: strd
+                grib: true
+            msdwswrf:
+                source: ssrd
+                grib: true
+            # TOA fluxes
+            mtnswrf:
+                source: tsr
+                grib: true
+            mtnlwrf:
+                source: ttr
+                grib: true
+            mtdwswrf:
+                source: tisr
+                grib: true      
+            # Wind stresses
+            metss: # https://codes.ecmwf.int/grib/param-db/?id=235041
+                source: ewss
+                grib: true
+            mntss: # https://codes.ecmwf.int/grib/param-db/?id=235042 
+                source: nsss
+                grib: true
+            # Runoffs
+            msror:  # https://codes.ecmwf.int/grib/param-db/?id=235020
+                source: sro
+                grib: true
+            mssror: # https://codes.ecmwf.int/grib/param-db/?id=235021
+                source: ssro
+                grib: true
+    ifs-destine-lowres-v1:
+        parent: ifs-destine-v1
+        vars:
+            tprate:
+                source: tp
+                grib: true
+
     ifs-default:
         data_model: ifs
         deltat: 3600

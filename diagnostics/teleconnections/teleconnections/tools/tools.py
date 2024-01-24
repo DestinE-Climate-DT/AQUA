@@ -12,15 +12,18 @@ class TeleconnectionsConfig():
     """
     Class to handle the configuration of the teleconnections diagnostic.
     """
-    def __init__(self, configdir=None, diagname='teleconnections'):
+    def __init__(self, configdir=None, interface='teleconnections-destine'):
         """
         Initialize the TeleconnectionsConfig class.
 
         Args:
             configdir (str, opt):   path to config directory. Default is None
-            diagname (str, opt):    diagnostic name. Default is 'teleconnections'
+            interface (str, opt):    interface filename. Default is 'teleconnections-destine'
         """
-        self.filename = diagname + '.yaml'
+        if interface:
+            self.filename = interface + '.yaml'
+        else:
+            raise ValueError('No interface file specified')
 
         if not configdir:
             self.configdir = self.get_config_dir()

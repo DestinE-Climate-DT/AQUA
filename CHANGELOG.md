@@ -3,7 +3,40 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [v0.5.2]
+## [Unreleased]
+
+Unreleased in the current development version.
+
+## [v0.6.1]
+
+Complete list:
+- Teleconnection improvement to accept different variable names for ENSO (avg_tos instead of sst) (#778)
+- ERA5 fixes compatible with new data governance (#772)
+- Update the LRA generator (removing aggregation and improving) filecheck and fix entries for historical-1990-dev-lowres (#772)
+- Updates of ECmean to work with production experiments (#773, #780)
+- Automatic data start and end dates for FDB sources (#762)
+
+## [v0.6]
+
+Main changes are:
+1. Inclusion in the catalog of the historical-1990 production simulations from IFS-NEMO and IFS-FESOM.
+2. New fixes that targets the DestinE updated Data Governance
+
+- IFS-FESOM historical-1990-dev-lowres with new data governance added to the catalogue (#770)
+- AtmoGlobalMean diagnostic improvements (#722)
+- Teleconnections diagnostic improvements (#722)
+- Read only one level for retrieving 3D array metadata, select single level for retrieve (#713)
+- IFS-FESOM historical-1990-dev-lowres with new data governance added to the catalogue
+- Fix mismatch between var argument and variables specified in catalogue for FDB (#761)
+- Compact catalogues using yaml override syntax (#752)
+- Fix loading source grid file before smmregrid weight generation (#756)
+
+## [v0.5.2-beta]
+
+Complete list:
+-  A new fdb container is used to generate the correct AQUA container
+
+## [v0.5.2-alpha]
 
 Main changes are:
 1. Coupled models IFS-NEMO and IFS-FESOM are now supported
@@ -229,14 +262,17 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.5.2...HEAD
-[v0.5.2]: https://github.com/oloapinivad/AQUA/compare/v0.5.1...v0.5.2
-[v0.5.1]: https://github.com/oloapinivad/AQUA/compare/v0.5...v0.5.1
-[v0.5]: https://github.com/oloapinivad/AQUA/compare/v0.4...v0.5
-[v0.4]: https://github.com/oloapinivad/AQUA/compare/v0.3...v0.4
-[v0.3]: https://github.com/oloapinivad/AQUA/compare/v0.2.1...v0.3
-[v0.2.1]: https://github.com/oloapinivad/AQUA/compare/v0.2...v0.2.1
-[v0.2]: https://github.com/oloapinivad/AQUA/compare/v0.2-beta...v0.2
-[v0.2-beta]: https://github.com/oloapinivad/AQUA/compare/v0.2-alpha...v0.2-beta
-[v0.2-alpha]: https://github.com/oloapinivad/AQUA/compare/v0.1-beta...v0.2-alpha
-[v0.1-beta]: https://github.com/oloapinivad/AQUA/compare/v0.1-alpha...v0.1-beta
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6.1...HEAD
+[v0.6.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6...v0.6.1
+[v0.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.5.2-beta...v0.6
+[v0.5.2-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.5.2-alpha...v0.5.2-beta
+[v0.5.2-alpha]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.5.1...v0.5.2-alpha
+[v0.5.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.5...v0.5.1
+[v0.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.4...v0.5
+[v0.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.3...v0.4
+[v0.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.2.1...v0.3
+[v0.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.2...v0.2.1
+[v0.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.2-beta...v0.2
+[v0.2-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.2-alpha...v0.2-beta
+[v0.2-alpha]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.1-beta...v0.2-alpha
+[v0.1-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.1-alpha...v0.1-beta

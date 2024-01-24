@@ -7,7 +7,7 @@ from .reader import Reader, catalogue, Streaming, inspect_catalogue
 from .slurm import squeue, job, output_dir, scancel, max_resources_per_node
 from .accessor import AquaAccessor
 
-__version__ = '0.5.2'
+__version__ = '0.6.1'
 
 __all__ = ["rundiag",
            "plot_single_map",

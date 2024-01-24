@@ -22,6 +22,7 @@ Additional options are:
 -  `--exp`: experiment name
 -  `--source`: source name
 -  `--outputdir`: output directory
+-  `--interface`: interface file
 
 Configuration files can be found in this folder and are named `cli_config_*.yaml`:
 - `cli_config_atm.yaml` is an example configuration file for the atmosphere part of the teleconnections diagnostic. It is the default configuration file.

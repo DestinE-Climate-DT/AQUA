@@ -7,14 +7,15 @@ import logging
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from .ocean_util import weighted_area_mean
-from .ocean_util import area_selection
-from .ocean_util import data_time_selection
-from .ocean_util import load_obs_data
-from .ocean_util import crop_obs_overlap_time
-from .ocean_util import compare_arrays
-from .ocean_util import dir_creation
-from .ocean_util import custom_region
+from ocean3d import weighted_area_mean
+from ocean3d import area_selection
+from ocean3d import data_time_selection
+from ocean3d import load_obs_data
+from ocean3d import crop_obs_overlap_time
+from ocean3d import compare_arrays
+from ocean3d import dir_creation
+from ocean3d import custom_region
+from ocean3d import write_data
 
 warnings.filterwarnings("ignore")
 
@@ -265,7 +266,7 @@ def prepare_data_for_stratification_plot(data, region=None, time=None, latS: flo
     return data, time
 
 
-def plot_stratification(mod_data, region=None, time=None, latS: float = None, latN: float = None, lonW: float = None, lonE: float = None,  output=True, output_dir=None):
+def plot_stratification(o3d_request,time=None):
     """
     Create a stratification plot showing the mean state temperature, salinity, and density profiles.
 
@@ -283,6 +284,18 @@ def plot_stratification(mod_data, region=None, time=None, latS: float = None, la
     Returns:
         None
     """
+    mod_data = o3d_request.get('data')
+    model = o3d_request.get('model')
+    exp = o3d_request.get('exp')
+    source = o3d_request.get('source')
+    region = o3d_request.get('region', None)
+    latS = o3d_request.get('latS', None)
+    latN = o3d_request.get('latN', None)
+    lonW = o3d_request.get('lonW', None)
+    lonE = o3d_request.get('lonE', None)
+    output = o3d_request.get('output')
+    output_dir = o3d_request.get('output_dir')
+    
     obs_data = load_obs_data().interp(lev=mod_data.lev)
     obs_data = crop_obs_overlap_time(mod_data, obs_data)
 
@@ -302,7 +315,8 @@ def plot_stratification(mod_data, region=None, time=None, latS: float = None, la
         output_path, fig_dir, data_dir, filename = dir_creation(mod_data,
              region, latS, latN, lonW, lonE, output_dir,
              plot_name=f"stratification_{time}_clim")
-
+        filename = f"{model}_{exp}_{source}_{filename}"
+        
     legend_list = []
     if time in ["Yearly"]:
         start_year = mod_data_list[0].time[0].data
@@ -319,8 +333,7 @@ def plot_stratification(mod_data, region=None, time=None, latS: float = None, la
         legend_info = f"Model {start_year}-{end_year}"
         legend_list.append(legend_info)
         if output:
-            data_1.to_netcdf(
-                f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc')
+            write_data(f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc',data_1)
 
         if len(mod_data_list) > 1:
             data_2 = mod_data_list[1][var].mean("time")
@@ -328,16 +341,15 @@ def plot_stratification(mod_data, region=None, time=None, latS: float = None, la
             legend_info = f"Model {start_year}-{end_year}"
             legend_list.append(legend_info)
             if output:
-                data_2.to_netcdf(
-                    f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc')
+                write_data(f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc',data_2)
+
         if obs_data is not None:
             data_3 = obs_data[var].mean("time")
             axs[i].plot(data_3, data_3.lev, 'r-', linewidth=2.0)
             legend_info = f"Obs {start_year}-{end_year}"
             legend_list.append(legend_info)
             if output:
-                data_3.to_netcdf(
-                    f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc')
+                write_data(f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc',data_3)
 
     region_title = custom_region(region=region, latS=latS, latN=latN, lonW=lonW, lonE=lonE)
 
@@ -448,10 +460,8 @@ def data_for_plot_spatial_mld_clim(data, region=None, time=None,
     return data.mean("time"), time
 
 
-def plot_spatial_mld_clim(mod_data, region=None, time=None, latS: float = None,
-                          latN: float = None, lonW: float = None,
-                          lonE: float = None, overlap=False,
-                          output=False, output_dir=None):
+def plot_spatial_mld_clim(o3d_request, time=None,
+                          overlap=False):
     """
     Plots the climatology of mixed layer depth in the NH as computed with de Boyer Montegut (2004)'s criteria in
     an observational dataset and a model dataset, allowing the user to select the month the climatology is computed
@@ -469,6 +479,18 @@ def plot_spatial_mld_clim(mod_data, region=None, time=None, latS: float = None,
     None
 
     """
+    mod_data = o3d_request.get('data')
+    model = o3d_request.get('model')
+    exp = o3d_request.get('exp')
+    source = o3d_request.get('source')
+    region = o3d_request.get('region', None)
+    latS = o3d_request.get('latS', None)
+    latN = o3d_request.get('latN', None)
+    lonW = o3d_request.get('lonW', None)
+    lonE = o3d_request.get('lonE', None)
+    output = o3d_request.get('output')
+    output_dir = o3d_request.get('output_dir')
+    
     obs_data = load_obs_data(model='EN4', exp='en4', source='monthly')
 
     if overlap:
@@ -533,6 +555,7 @@ def plot_spatial_mld_clim(mod_data, region=None, time=None, latS: float = None,
 
     fig.colorbar(cs1, location="bottom", label='Mixed layer depth (in m)')
 
+    filename = f"{model}_{exp}_{source}_{filename}"
     if output:
         mod_clim.to_netcdf(f'{data_dir}/{filename}_Rho.nc')
         obs_clim.to_netcdf(f'{data_dir}/{filename}_Rho.nc')

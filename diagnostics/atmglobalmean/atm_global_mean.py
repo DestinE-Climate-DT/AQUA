@@ -88,12 +88,8 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None, plev=None, statis
     season_ranges = {'DJF': [12, 1, 2], 'MAM': [3, 4, 5], 'JJA': [6, 7, 8], 'SON': [9, 10, 11]}
     results = []
     for season, months in season_ranges.items():
-        if season == 'DJF':
-            var1_season = var1_climatology.sel(month=months[1:])
-            var2_season = var2_climatology.sel(month=months)
-        else:
-            var1_season = var1_climatology.sel(month=months)
-            var2_season = var2_climatology.sel(month=months)
+        var1_season = var1_climatology.sel(month=months)
+        var2_season = var2_climatology.sel(month=months)
 
         if statistic == 'mean':
             result_season = var1_season.mean(dim='month') - var2_season.mean(dim='month')

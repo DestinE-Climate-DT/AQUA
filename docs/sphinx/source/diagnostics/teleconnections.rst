@@ -30,8 +30,11 @@ The source code is organized in the following way:
 - `statistics.py` contains functions for the regression and correlation analysis.
 - `tc_class.py` contains the class that is used to run the diagnostic.
 
-A configuration file is available in the `config` folder.
-It can be customized to add new teleconnections or to change the default parameters of the diagnostic.
+Configuration files are available in the `config` folder.
+Different interfaces can be used to run the diagnostic, in the context of the `DestinE` project the interface file 
+is `config/teleconnections_destine.py` and it is used as default.
+An argument `interface` is available in the `Teleconnections` class to change the interface.
+It can be also customized to add new teleconnections or to change the default parameters of the diagnostic.
 
 A `pyproject.toml` file is available to install the diagnostic as a package.
 Please refer to the README file in the main diagnostic folder for more details.
@@ -59,7 +62,7 @@ Minimal usage of the CLI is:
 
 .. code-block:: bash
 
-    python cli_teleconnections.py -model <model> -exp <experiment> -source <source> --ref
+    python cli_teleconnections.py --model <model> --exp <experiment> --source <source> --ref
 
 where `<model>`, `<experiment>`, `<source>` are the model, experiment, source and `--ref` is to activate the reference run.
 
@@ -69,13 +72,13 @@ They make use of the `pytest` library and of the functions available in the `cdo
 Input variables
 ---------------
 
-The diagnostic requires the following input variables:
+The diagnostic requires the following input variables with the DestinE naming convention:
 
 - `msl`: mean sea level pressure
-- `sst`: sea surface temperature
+- `avg_tos`: sea surface temperature
 
 The diagnostic can be run on any dataset that provides these variables.
-The diagnostic has been tested on ERA5 reanalysis and nextGEMS cycle3 data.
+The diagnostic has been tested on ERA5 reanalysis and nextGEMS cycle3 data (use interface `config/teleconnections_nextgems.yaml`).
 
 It is possible to evaluate regression maps and correlation maps with a teleconnection index and a different variable.
 In this case, an additional variable is needed as input.

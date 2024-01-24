@@ -139,7 +139,7 @@ class FixerMixin():
                 fixes = self._merge_fixes(parent_fixes, fixes)
         else:
             self.logger.error("Fix names %s does not exist in %s.yaml file. Will try to use model default fixes!",
-                              self.fix_family, self.model)
+                              self.fixer_name, self.model)
             warn("The model default will be deprecated in the future in favour of a fixer_name structure default.",
                  DeprecationWarning, stacklevel=2)
 
@@ -375,8 +375,8 @@ class FixerMixin():
                         tgt_units = self.fixes_dictionary["defaults"]["units"]["shortname"][tgt_units.replace('{',
                                                                                                               '').replace('}',
                                                                                                                           '')]
-                    self.logger.info("Converting %s: %s --> %s", var, data[source].units, tgt_units)
-                    log_history(data, f"Converting units of {var}: from {data[source].units} to {tgt_units}")
+                    self.logger.info("%s: converting units %s --> %s", var, data[source].units, tgt_units)
+                    log_history(data[source], f"Converting units of {var}: from {data[source].units} to {tgt_units}")
                     factor, offset = self.convert_units(data[source].units, tgt_units, var)
                     # self.logger.info('Factor: %s, offset: %s', factor, offset)
 
@@ -386,7 +386,7 @@ class FixerMixin():
                         data[source].attrs.update({"offset": offset})
                         self.logger.debug("Fixing %s to %s. Unit fix: factor=%f, offset=%f",
                                          source, var, factor, offset)
-                        log_history(data, f"Fixing {source} to {var}. Unit fix: factor={factor}, offset={offset}")
+                        log_history(data[source], f"Fixing {source} to {var}. Unit fix: factor={factor}, offset={offset}")
 
         # Only now rename everything
         data = data.rename(fixd)
@@ -791,7 +791,7 @@ class FixerMixin():
 
         # if units are not already updated and if a tgt_units exist
         if tgt_units and org_units != tgt_units:
-            self.logger.info("Applying unit fixes for %s ", data.name)
+            self.logger.debug("Applying unit fixes for %s ", data.name)
 
             # define an old units
             data.attrs.update({"src_units": org_units, "units_fixed": 1})

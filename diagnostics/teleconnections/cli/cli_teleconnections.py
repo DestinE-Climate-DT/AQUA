@@ -42,6 +42,8 @@ def parse_arguments(cli_args):
                         required=False)
     parser.add_argument('--outputdir', type=str, help='output directory',
                         required=False)
+    parser.add_argument('--interface', type=str, help='interface to use',
+                        required=False)
 
     return parser.parse_args(cli_args)
 
@@ -68,6 +70,8 @@ if __name__ == '__main__':
 
     # if ref we're running the analysis against a reference
     ref = get_arg(args, 'ref', False)
+    if ref:
+        logger.debug('Running against a reference')
 
     # if dry we're not saving any file, debug mode
     dry = get_arg(args, 'dry', False)
@@ -91,6 +95,9 @@ if __name__ == '__main__':
 
     configdir = config['configdir']
     logger.debug('configdir: %s', configdir)
+
+    interface = get_arg(args, 'interface', config['interface'])
+    logger.debug('Interface name: %s', interface)
 
     # Turning on/off the teleconnections
     # the try/except is used to avoid KeyError if the teleconnection is not
@@ -157,6 +164,7 @@ if __name__ == '__main__':
                                     outputfig=os.path.join(outputpdf,
                                                            telec),
                                     savefig=savefig, savefile=savefile,
+                                    interface=interface,
                                     loglevel=loglevel)
                 tc.retrieve()
             except NoDataError:
@@ -204,7 +212,11 @@ if __name__ == '__main__':
                 maps = []
                 titles = []
                 if telec == 'NAO':
-                    cbar_label = ['msl [hPa]', 'Pearson correlation']
+                    # TODO: units are Pa since msl is in Pa
+                    #       but we should convert to hPa for readability
+                    #       see issue #575
+                    label1 = tc.var + ' [Pa]'
+                    cbar_label = [label1, 'Pearson correlation']
                     transform_first = False
                     # We duplicate maps if we create more plots
                     # for different teleconnections
@@ -213,7 +225,8 @@ if __name__ == '__main__':
                         maps = [reg_full, cor_full]
                         titles = map_names
                 elif telec == 'ENSO':
-                    cbar_label = ['sst [K]', 'Pearson correlation']
+                    label1 = tc.var + ' [K]'
+                    cbar_label = [label1, 'Pearson correlation']
                     transform_first = True
                     if full_year:
                         map_names = ['regression', 'correlation']
