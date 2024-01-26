@@ -1,0 +1,43 @@
+loglevel: 'WARNING'
+
+lumi:
+    path_to_netcdf: "/users/nazarova/work/output/NetCDF/"
+    path_to_pdf: '/users/nazarova/work/output/PDF/'
+levante:
+    path_to_netcdf: "/work/bb1153/b382267/tropical_rainfall_cicle3/NetCDF/"
+    path_to_pdf: "/work/bb1153/b382267/tropical_rainfall_cicle3/PDF/"
+
+class_attributes:
+  trop_lat:    15 
+  num_of_bins: 1000
+  first_edge:   0
+  bins: 0
+  width_of_bin: 0.05 # in [mm/day]
+  model_variable: 'tprate'
+  new_unit:       'mm/day'
+  loglevel:       'WARNING'
+
+time_frame:
+  s_time: null
+  f_time: null
+  s_year: null
+  f_year: null
+  s_month: null
+  f_month: null
+
+plot_attributes:
+  pdf_format: True
+  figsize: 1
+  linewidth: 3
+  fontsize: 14
+  smooth: True
+  step: False
+  color_map: False 
+  cmap: 'coolwarm'
+  linestyle: '-'
+  ylogscale: True
+  xlogscale: False 
+  number_of_axe_ticks: 4
+  number_of_bar_ticks: 6
+  
+

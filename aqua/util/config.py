@@ -42,7 +42,7 @@ class ConfigPath():
         aquadir = os.environ.get('AQUA')
         if aquadir:
             configdirs.append(os.path.join(aquadir, 'config'))
-
+            
         # the predefined configdirs is in the main folder of the AQUA repository
         configdirs.extend([os.path.dirname(__file__) + "/../../config"])
 
