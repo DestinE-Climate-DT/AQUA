@@ -279,13 +279,19 @@ class RegridMixin():
         aggregation = self.aggregation
         fix = self.fix
         streaming = self.streaming
+        startdate = self.startdate
+        enddate = self.enddate
         self.fix = False
         self.aggregation = None
         self.streaming = False
+        self.startdate = None
+        self.enddate = None
         data = self.retrieve(sample=True, history=False, *args, **kwargs)
         self.aggregation = aggregation
         self.fix = fix
         self.streaming = streaming
+        self.startdate = startdate
+        self.enddate = enddate
 
         if isinstance(data, types.GeneratorType):
             data = next(data)

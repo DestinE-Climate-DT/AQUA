@@ -6,7 +6,8 @@ source: "lra-r100-monthly"
 outputdir: "./"
 
 # This is the list of variables that will be plotted as timeseries
-timeseries: ['2t', 'tprate', 'mer', 'msl', 'tcc',
+timeseries: ['2t', 'tprate', 'mer', 'msl',
+             'tcc', 'lcc', 'mcc', 'hcc',
              'mslhf', #Mean surface latent heat flux
              'msshf', #Mean surface sensible heat flux
              'msdwswrf', #Mean surface downward short-wave radiation flux
@@ -36,9 +37,34 @@ timeseries_plot_params:
     plot_era5: True
     resample: null
     savefig: True
+    annual: True
+    std_startdate: "1980-01-01"
+    std_enddate: "2010-01-01"
   # 2t:
   #   plot_kw:
   #     color: "tab:blue"
   #   plot_era5: True
   #   resample: "M"
   #   savefig: True
+  #   ylim: [-10, 10]
+  lcc: # no ERA5 yet
+    plot_kw:
+      color: "tab:blue"
+    plot_era5: False
+    resample: null
+    savefig: True
+    annual: True
+  mcc: # no ERA5 yet
+    plot_kw:
+      color: "tab:blue"
+    plot_era5: False
+    resample: null
+    savefig: True
+    annual: True
+  hcc: # no ERA5 yet
+    plot_kw:
+      color: "tab:blue"
+    plot_era5: False
+    resample: null
+    savefig: True
+    annual: True

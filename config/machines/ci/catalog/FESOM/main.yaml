@@ -5,7 +5,7 @@ sources:
   #   args:
   #       path: "{{CATALOG_DIR}}/test-ng5.yaml"
   test-pi:
-    description: 5km experiment, coupuled with IFS
+    description: 5km experiment, coupled with IFS
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/test-pi.yaml"

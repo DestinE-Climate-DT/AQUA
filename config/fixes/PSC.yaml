@@ -1,26 +1,25 @@
-models:  
-    PSC:
-        GIOMAS:
-            default:
-                data_model: false  # Do not attempt to fix coordinates
-                delete: [latitude, longitude]
-                vars:
-                    var263008:  # avg_sivol - average sea ice volume [m3/m2]
-                        source: sivol
-                        grib: true
-                    sftof:
-                        source: sftof
-                        src_units: frac
-                        units: frac
-        PIOMAS:
-            default:
-                data_model: false  # Do not attempt to fix coordinates
-                delete: [latitude, longitude]
-                vars:
-                    var263008:  # avg_sivol - average sea ice volume [m3/m2]
-                        source: sivol
-                        grib: true
-                    sftof:
-                        source: sftof
-                        src_units: frac
-                        units: frac
+fixer_name:  
+    PSC-default:
+        data_model: False
+    GIOMAS:
+        data_model: false  # Do not attempt to fix coordinates
+        delete: [latitude, longitude]
+        vars:
+            var263008:  # avg_sivol - average sea ice volume [m3/m2]
+                source: sivol
+                grib: true
+            sftof:
+                source: sftof
+                src_units: frac
+                units: frac
+    PIOMAS:
+        data_model: false  # Do not attempt to fix coordinates
+        delete: [latitude, longitude]
+        vars:
+            var263008:  # avg_sivol - average sea ice volume [m3/m2]
+                source: sivol
+                grib: true
+            sftof:
+                source: sftof
+                src_units: frac
+                units: frac

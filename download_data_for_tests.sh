@@ -25,5 +25,3 @@ fi
 
 #python -m pytest ./tests/test_basic.py
 #mv ./config/config.yaml.bak ./config/config.yaml
-
-

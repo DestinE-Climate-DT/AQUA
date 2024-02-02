@@ -6,7 +6,6 @@ import json
 import warnings
 import types
 from datetime import timedelta
-from warnings import warn
 import xarray as xr
 import numpy as np
 import cf2cdm
@@ -42,34 +41,28 @@ class FixerMixin():
         # check the presence of model-specific fix
         fix_model = self.fixes_dictionary["models"].get(self.model, None)
 
-        # if family fix is not there check for model fix
-        if base_fixes is None:
-
-            # if also model fix are not there, return None
-            if not fix_model:
-                self.logger.warning("No fixes available for model %s",
-                                    self.model)
-                return None
-
-            # otherwise load the model default
-            else:
-                base_fixes = self._load_default_fixes(fix_model)
-                if base_fixes:
-                    warn("Default experiment based fixes are used. This will be deprecated in the future.",
-                         DeprecationWarning, stacklevel=2)
-
         # browse for source-specific fixes
         source_fixes = self._load_source_fixes(fix_model)
 
         # if only fixes family/default is available, return them
         if source_fixes is None:
-            return base_fixes
+            if base_fixes is None:
+                self.logger.warning("No fixes available for model %s, experiment %s, source %s",
+                                    self.model, self.exp, self.source)
+                return None
+            else:
+                self.logger.debug('Final fixes are: %s', base_fixes)
+                return base_fixes
 
-        # join source specific fixes together with default/family
-        final_fixes = self._combine_fixes(base_fixes, source_fixes)
+        # Join source specific fixes together with the found fixer_name
+        if base_fixes is not None and source_fixes is not None:
+            final_fixes = self._combine_fixes(base_fixes, source_fixes)
+        elif base_fixes is None:
+            final_fixes = source_fixes
+        else:  # source_fixes is None
+            final_fixes = base_fixes
 
         self.logger.debug('Final fixes are: %s', final_fixes)
-
         return final_fixes
 
     def _combine_fixes(self, default_fixes, model_fixes):
@@ -121,27 +114,49 @@ class FixerMixin():
         Load the fixer_name reading from the metadata of the catalog.
         If the fixer_name has a parent, load it and merge it giving priority to the child.
         """
+        
+        # if fixer name is found, get it
+        if self.fixer_name is not None:
+            self.logger.info('Fix names in metadata is %s', self.fixer_name)
+            fixes = self.fixes_dictionary["fixer_name"].get(self.fixer_name)
+            if fixes is None:
+                self.logger.error("The requested fixer_name %s does not exist in fixes files", self.fixer_name)
+                return None
+            else:
+                self.logger.info("Fix names %s found in fixes files", self.fixer_name)
 
-        # if fix names is not found in metadata, return None
-        if self.fixer_name is None:
-            return None
+                if 'parent' in fixes:
+                    parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes['parent'])
+                    if parent_fixes is not None:
+                        self.logger.info("Parent fix %s found! Mergin with fixer_name fixes %s!", fixes['parent'], self.fixer_name)
+                        fixes = self._merge_fixes(parent_fixes, fixes)
+                    else:
+                        self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes['parent'])
 
-        # get the fixes from the fix files
-        fixes = self.fixes_dictionary["fixer_name"].get(self.fixer_name, None)
+        # check the default in alternative
+        else:   
+            default_fixer_name = self.model + '-default'
+            self.logger.info('No specific fix found, will call the default fix %s', default_fixer_name)
+            fixes = self.fixes_dictionary["fixer_name"].get(default_fixer_name)
+            if fixes is None:
+                self.logger.error("The requested deafult fixer name %s does not exist in fixes files", default_fixer_name)
+                return None
+            else:
+                self.logger.info("Fix names %s found in fixes files", default_fixer_name)
 
-        # if found, proceed as expected
-        if fixes is not None:
-            self.logger.info("Fix names %s found for model %s, experiment %s, source %s",
-                             self.fixer_name, self.model, self.exp, self.source)
-            if 'parent' in fixes:
-                parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes['parent'])
-                self.logger.info("Parent fix %s found! Mergin with family fixes %s!", fixes['parent'], self.fixer_name)
-                fixes = self._merge_fixes(parent_fixes, fixes)
-        else:
-            self.logger.error("Fix names %s does not exist in %s.yaml file. Will try to use model default fixes!",
-                              self.fixer_name, self.model)
-            warn("The model default will be deprecated in the future in favour of a fixer_name structure default.",
-                 DeprecationWarning, stacklevel=2)
+        # # if found, proceed as expected
+        # if fixes is not None:
+        #     if self.fixer_name is not None:
+        #         self.logger.info("Fix names %s found in fixes files", self.fixer_name)
+        #     if 'parent' in fixes:
+        #         parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes['parent'])
+        #         if parent_fixes is not None:
+        #             self.logger.info("Parent fix %s found! Mergin with fixer_name fixes %s!", fixes['parent'], self.fixer_name)
+        #             fixes = self._merge_fixes(parent_fixes, fixes)
+        #         else:
+        #             self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes['parent'])
+        # else:
+        #     return None
 
         return fixes
 
@@ -172,21 +187,21 @@ class FixerMixin():
         """Browse for source/model specific fixes, return None if not found"""
 
         if fix_model is None:
-            self.logger.debug("No model-specific fixes available for model %s",
+            self.logger.debug("No source-specific fixes available for model %s, using default fixes",
                               self.model)
             return None
 
         # look for exp fix, if not found, set default fixes
         fix_exp = fix_model.get(self.exp, None)
         if fix_exp is None:
-            self.logger.debug("No experiment-specific fixes available for model %s, experiment %s",
+            self.logger.debug("No source-specific fixes available for model %s, experiment %s",
                               self.model, self.exp)
             return None
 
         fixes = fix_exp.get(self.source, None)
         if fixes is None:
             self.logger.debug("No source-specific fixes available for model %s, experiment %s, source %s: checking for model default...",  # noqa: E501
-                             self.model, self.exp, self.source)
+                              self.model, self.exp, self.source)
             fixes = fix_exp.get('default', None)
             if fixes is None:
                 self.logger.debug("Nothing found! I will use with model default or family fixes...")
@@ -194,7 +209,7 @@ class FixerMixin():
                 self.logger.debug("Using experiment-specific default for model %s, experiment %s", self.model, self.exp)
         else:
             self.logger.debug("Source-specific fixes found for model %s, experiment %s, source %s",
-                             self.model, self.exp, self.source)
+                              self.model, self.exp, self.source)
 
         return fixes
 
@@ -345,7 +360,7 @@ class FixerMixin():
                             # issue an error if you are asking that specific variable!
                             self.logger.error('Requested derived variable %s cannot be computed, is it available?', shortname)
                         else:
-                            self.logger.warning('%s is defined in the fixes but cannot be computed, is it available?',
+                            self.logger.info('%s is defined in the fixes but cannot be computed, is it available?',
                                                 shortname)
                         continue
 
@@ -389,7 +404,7 @@ class FixerMixin():
                         data[source].attrs.update({"factor": factor})
                         data[source].attrs.update({"offset": offset})
                         self.logger.debug("Fixing %s to %s. Unit fix: factor=%f, offset=%f",
-                                         source, var, factor, offset)
+                                          source, var, factor, offset)
                         log_history(data[source], f"Fixing {source} to {var}. Unit fix: factor={factor}, offset={offset}")
 
         # Only now rename everything
@@ -400,8 +415,8 @@ class FixerMixin():
             data = self._wrapper_decumulate(data, vars_to_fix, varlist, keep_memory, jump)
             if nanfirst_enddate:  # This is a temporary fix for IFS data, run ony if an end date is specified
                 data = self._wrapper_nanfirst(data, vars_to_fix, varlist,
-                                            startdate=nanfirst_startdate,
-                                            enddate=nanfirst_enddate)
+                                              startdate=nanfirst_startdate,
+                                              enddate=nanfirst_enddate)
 
         if apply_unit_fix:
             for var in data.data_vars:
@@ -415,7 +430,10 @@ class FixerMixin():
         if src_datamodel:
             data = self.change_coord_datamodel(data, src_datamodel, self.dst_datamodel)
             self.logger.info(f"coordinates adjusted to {src_datamodel} by AQUA fixer")
-            data=log_history(data, f"Coordinates adjusted to {src_datamodel} by fixer")
+            data = log_history(data, f"Coordinates adjusted to {src_datamodel} by fixer")
+
+        # Extra coordinate handling
+        data = self._fix_coord(data)
 
         return data
 
@@ -537,7 +555,7 @@ class FixerMixin():
         fixer_tgt_units = varfix.get("units", None)
         if fixer_tgt_units:
             self.logger.debug('Variable %s: Overriding target units "%s" with "%s"',
-                             var, tgt_units, fixer_tgt_units)
+                              var, tgt_units, fixer_tgt_units)
             return fixer_tgt_units
         else:
             return tgt_units
@@ -552,11 +570,11 @@ class FixerMixin():
         if fixer_src_units:
             if "units" in data[source].attrs:
                 self.logger.debug('Variable %s: Overriding source units "%s" with "%s"',
-                                 var, data[source].units, fixer_src_units)
+                                  var, data[source].units, fixer_src_units)
                 data[source].attrs.update({"units": fixer_src_units})
             else:
                 self.logger.debug('Variable %s: Setting missing source units to "%s"',
-                                 var, fixer_src_units)
+                                  var, fixer_src_units)
                 data[source].attrs["units"] = fixer_src_units
 
         return data
@@ -635,6 +653,38 @@ class FixerMixin():
                 area = self.change_coord_datamodel(area, src_datamodel, self.dst_datamodel)
 
             return area
+
+    def _fix_coord(self, data: xr.Dataset):
+        """
+        Other than the data_model we can apply other fixes to the coordinates
+        reading them from the fixes file, in the coords section.
+
+        Arguments:
+            data (xr.Dataset):  input dataset to process
+
+        Returns:
+            The processed input dataset
+        """
+        if self.fixes is None:
+            return data
+
+        coords_fix = self.fixes.get("coords", None)
+
+        if coords_fix:
+            coords = list(coords_fix.keys())
+            self.logger.debug("Coordinates to be checked: %s", coords)
+
+            for coord in coords:
+                src_coord = coords_fix[coord].get("source", None)
+
+                if src_coord and src_coord in data.coords:
+                    data = data.rename({src_coord: coord})
+                    self.logger.debug("Coordinate %s renamed to %s", src_coord, coord)
+                    log_history(data[coord], f"Coordinate {src_coord} renamed to {coord} by fixer")
+                else:
+                    self.logger.warning("Coordinate %s not found", coord)
+
+        return data
 
     def get_fixer_varname(self, var):
         """

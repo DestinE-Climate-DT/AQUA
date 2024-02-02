@@ -80,8 +80,8 @@ class Streaming():
         literal, numeric = extract_literal_and_numeric(aggregation)        
 
         if literal == 'S':
-            nsteps = np.maximum(int('0' + numeric), 1)  # this allows also "S" for "1S"
-            timr = pd.Series(tim).groupby(by=(np.arange(0, len(tim)) // nsteps))
+            #nsteps = np.maximum(int('0' + numeric), 1)  # this allows also "S" for "1S"
+            timr = pd.Series(tim).groupby(by=(np.arange(0, len(tim)) // numeric))
         else:
             timr = tim.resample(time=aggregation)
 

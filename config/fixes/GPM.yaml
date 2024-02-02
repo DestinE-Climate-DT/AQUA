@@ -1,10 +1,8 @@
-models:  
-    GPM:
-        imerg:
-            default:
-                data_model: cf
-                vars:
-                    # Automatic conversion to destination grib units
-                    tprate:
-                        source: precipitationCal
-                        grib: true
+fixer_name:  
+    GPM-default:
+        data_model: cf
+        vars:
+            # Automatic conversion to destination grib units
+            tprate:
+                source: precipitationCal
+                grib: true

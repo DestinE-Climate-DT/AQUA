@@ -35,11 +35,11 @@ Change to the AQUA directory:
    
    cd AQUA
 
-Create a new Mamba environment and install the required packages using the provided ``environment-common.yml`` file:
+Create a new Mamba environment and install the required packages using the provided ``environment.yml`` file:
 
 .. code-block:: bash
    
-   mamba env create -f environment-common.yml
+   mamba env create -f environment.yml
 
 This will install the packages required for the AQUA framework and all the available diagnostics.
 
@@ -47,7 +47,7 @@ Activate the newly created aqua environment:
 
 .. code-block:: bash
    
-   conda activate aqua_common
+   conda activate aqua
 
 At this point, you should have successfully installed the AQUA package and its dependencies 
 in the newly created aqua environment.
@@ -78,9 +78,9 @@ This installs the AQUA environment into a container, and then set up the correct
 
 .. warning ::
    
-   It is possible that, if you're recreating the environment, the code breaks while removing the folder ``~/mambaforge/aqua_common/bin``, complaining the resource is busy.
+   It is possible that, if you're recreating the environment, the code breaks while removing the folder ``~/mambaforge/aqua/bin``, complaining the resource is busy.
    In this case you may have some processes running in the background. 
-   You can check them with ``ps -ef | grep aqua_common`` and kill them manually if needed.
+   You can check them with ``ps -ef | grep aqua`` and kill them manually if needed.
 
 .. note ::
 

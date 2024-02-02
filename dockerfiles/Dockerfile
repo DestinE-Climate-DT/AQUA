@@ -53,7 +53,7 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
 RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab && \
-    micromamba install -y -n base -f AQUA/environment-common.yml
+    micromamba install -y -n base -f AQUA/environment.yml
 
 EXPOSE 8888
 

@@ -118,7 +118,9 @@ def extract_literal_and_numeric(text):
         # If a match is found, return the literal and numeric parts
         literal_part = match.group(2)
         numeric_part = match.group(1)
-        return literal_part, numeric_part
+        if not numeric_part:
+            numeric_part = 1
+        return literal_part, int(numeric_part)
     else:
         # If no match is found, return None or handle it accordingly
         return None, None

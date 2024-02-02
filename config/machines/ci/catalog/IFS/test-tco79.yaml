@@ -29,8 +29,31 @@ sources:
       - ./AQUA_tests/models/IFS/short/IFS2d.tco79.nc
     description: original 2d output
     driver: netcdf
+  short_masked-coord-test:
+    metadata:
+      source_grid_name: tco79-testmask
+      fixer_name: ifs-ci-coords
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ./AQUA_tests/models/IFS/short/IFS2d.tco79.nc
+    description: original 2d output
+    driver: netcdf
   short_nn:
     metadata:
+      fixer_name: ifs-ci-test
+      source_grid_name: tco79-nn
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - ./AQUA_tests/models/IFS/short/IFS2d.tco79.nc
+    description: original 2d output
+    driver: netcdf
+  short_disable_fix:
+    metadata:
+      fixer_name: False
       source_grid_name: tco79-nn
     args:
       chunks:
@@ -41,10 +64,17 @@ sources:
     driver: netcdf
   long:
     metadata:
+      fixer_name: ifs-ci-test
       source_grid_name: lon-lat
     args:
-      chunks:
-        time: 1
+      urlpath:
+      - ./AQUA_tests/models/IFS/long/regridded_r18x9.nc
+    description: coarse IFS data 1y
+    driver: netcdf
+  long_default_fix:
+    metadata:
+      source_grid_name: lon-lat
+    args:
       urlpath:
       - ./AQUA_tests/models/IFS/long/regridded_r18x9.nc
     description: coarse IFS data 1y

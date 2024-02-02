@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- the `AQUA` framework and diagnostics installed, use the `conda` environment `aqua_common` in the main `AQUA` directory.
+- the `AQUA` framework and diagnostics installed, use the `conda` environment `aqua` in the main `AQUA` directory.
 - an internet connection
 
 ## Run the tests

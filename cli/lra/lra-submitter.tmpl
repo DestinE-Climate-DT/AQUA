@@ -15,7 +15,7 @@ whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
 source $whereconda/etc/profile.d/conda.sh
 
 # activate conda environment
-conda activate aqua_common
+conda activate aqua
 
 # set the number of dask workers
 # should be equal to the number of the total tasks available

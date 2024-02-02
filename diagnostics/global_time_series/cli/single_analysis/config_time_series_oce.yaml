@@ -20,6 +20,9 @@ timeseries_plot_params:
     plot_era5: True
     resample: null
     savefig: True
+    annual: True
+    std_startdate: "1980-01-01"
+    std_enddate: "2010-01-01"
   # sst:
   #   plot_kw:
   #     color: "tab:blue"

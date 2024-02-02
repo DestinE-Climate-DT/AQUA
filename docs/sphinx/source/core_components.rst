@@ -180,6 +180,8 @@ frequency by using the ``timmean`` method.
 Data have now been averaged at the desired daily timescale.
 If you want to avoid to have incomplete average over your time period (for example, be sure that all the months are complete before doing the time mean)
 it is possible to activate the ``exclude_incomplete=True`` flag which will remove averaged chunks which are not complete. 
+If you want to center the time mean on the time period, you can activate the ``center_time=True`` flag.
+This is at the moment only available yearly averages.
 
 ..  note ::
     The ``time_bounds`` boolean flag can be activated to build time bounds in a similar way to CMOR standard.
@@ -196,9 +198,9 @@ with the same variable names and units. The default format is GRIB2.
 The fixing is done by default when we initialize the reader, 
 using the instructions in the ``config/fixes`` folder. Each model has its own YAML file that specify the fixes.
 Fixes can be specified in two different ways:
-- Using the ``family`` definitions, to be then provided as a metadata in the catalog. This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog. There is the possibility of specifing a `parent` fix so that a fix can be re-used with minor correction, merging small change to a larger family.
+- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalog. This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog. There is the possibility of specifing a `parent` fix so that a fix can be re-used with minor correction, merging small change to a larger family.
 - Using the source-based definition. Each experiment/source can have its own specific fix, or alternatively a ``default.yaml`` that can be used in the case of necessity. Please note that this is the older AQUA implementation and will be deprecated in favour of the new `family` approach.
-A ``defalt.yaml`` is used for common unit corrections. 
+A ``default.yaml`` is used for common unit corrections. 
 
 The fixer performs a range of operations on data:
 
@@ -234,6 +236,21 @@ three different fixing strategies:
 
 .. warning ::
     Recursive fixes (i.e. fixes of fixes) cannot be implemented.
+
+Fixing: Data model and coordinate names
+---------------------------------------
+
+The fixer can adopt a common 'coordinate data model' (default is the CDS data model as described in the previous section).
+If this data model is not appropriate for a specific source, it is possible to specify a different one in the catalogue.
+If the data model coordinate treatment is not enough to fix the coordinates, it is possible to specify a custom fix in the catalogue.
+For example, if the longitude coordinate is called ``longitude`` instead of ``lon``, it is possible to specify a fix like:
+
+.. code-block:: yaml
+
+    lon:
+        source: longitude
+
+This will rename the coordinate to ``lon``. The block has to be specified in the ``coords`` section of the fixer file.
 
 Streaming simulation
 --------------------

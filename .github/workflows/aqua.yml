@@ -28,8 +28,8 @@ defaults:
 jobs:
   aqua_test:
     # NOTE: this option can be uncommented to run the job only when
-    #       a pull request contains a label with the name "Ready to merge".
-    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    #       a pull request contains a label with the name "Run Tests" or "Ready to Merge".
+    if: contains(github.event.pull_request.labels.*.name, 'run tests') || contains(github.event.pull_request.labels.*.name, 'ready to merge')
     env:
       # You can disable coverage by changing this to false. You can
       # also add other Python versions to the matrix, pinning the
@@ -84,7 +84,7 @@ jobs:
       - name: Set up Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment-common.yml 
+          environment-file: environment.yml 
           environment-name: aqua
           cache-downloads: true
           cache-environment: false

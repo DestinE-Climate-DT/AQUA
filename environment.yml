@@ -3,14 +3,14 @@
 # or if you really want to use conda
 # conda env create -f environment.yml
 
-name: aqua_common
+name: aqua
 channels:
   - conda-forge
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   - python>=3.9,<3.12
   - cdo>=2.2.0 #for healpix support
-  - ecCodes>=2.31.0 # see issue #252, #634
+  - eccodes>=2.31.0 # see issue #252, #634
   - pandas      
   - pandoc
   - pip
@@ -18,3 +18,10 @@ dependencies:
   - tempest-extremes # for TCs
   - xesmf # for ECmean
   - intake-esm
+  - pip:
+    - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
+    - -e ./diagnostics/teleconnections/ # pip install -e of teleconnections
+    - -e ./diagnostics/tropical_cyclones/ # pip install -e of tropical cyclones
+    # pip install -e of AQUA itself
+    - -e .[all]
+    

@@ -29,8 +29,8 @@ If your Pull Request is adding some new dependencies, please make sure to state 
 ### Finalizing a Pull Request
 
 If your Pull Request is a work in progress, please add `[WIP]` to the title.
-When your Pull Request is ready to be reviewed, please remove `[WIP]` from the title.
-A label `ready to merge` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
+When your Pull Request is ready to be reviewed, please remove `[WIP]` from the title. A label `run tests` can be added to the Pull Request to activate the CI tests.
+A label `ready to merge` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author. 
 
 Before asking for a review, please make sure to:
 - be up to date with the `main` branch

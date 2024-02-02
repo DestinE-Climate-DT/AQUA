@@ -15,9 +15,6 @@ from aqua.util import load_yaml, get_arg, create_folder
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.logger import log_configure
 
-# sys.path.insert(0, "../../")
-# from global_time_series import plot_timeseries, plot_gregory
-
 
 def parse_arguments(args):
     """Parse command line arguments."""
@@ -80,7 +77,7 @@ def create_filename(outputdir=None, plotname=None, type=None,
     filename += f"_{model}_{exp}_{source}"
     filename += f"_{plotname}"
 
-    if resample == 'Y':
+    if resample == 'YS':
         filename += "_annual"
 
     if type == "pdf":
@@ -160,6 +157,13 @@ if __name__ == '__main__':
                 ylim = plot_options.get("ylim", {})
                 reader_kw = plot_options.get("reader_kw", {})
                 savefig = plot_options.get("savefig", True)
+                annual = plot_options.get("annual", True)
+                startdate = plot_options.get("startdate", None)
+                enddate = plot_options.get("enddate", None)
+                std_startdate = plot_options.get("std_startdate", "1991-01-01")
+                std_enddate = plot_options.get("std_enddate", "2020-12-31")
+                monthly_std = plot_options.get("monthly_std", True)
+                annual_std = plot_options.get("annual_std", True)
             else:  # default
                 plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", None)
                 plot_era5 = config["timeseries_plot_params"]["default"].get("plot_era5", False)
@@ -167,13 +171,24 @@ if __name__ == '__main__':
                 ylim = config["timeseries_plot_params"]["default"].get("ylim", {})
                 reader_kw = config["timeseries_plot_params"]["default"].get("reader_kw", {})
                 savefig = config["timeseries_plot_params"]["default"].get("savefig", True)
+                annual = config["timeseries_plot_params"]["default"].get("annual", True)
+                startdate = config["timeseries_plot_params"]["default"].get("startdate", None)
+                enddate = config["timeseries_plot_params"]["default"].get("enddate", None)
+                std_startdate = config["timeseries_plot_params"]["default"].get("std_startdate", "1991-01-01")
+                std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", "2020-12-31")
+                monthly_std = config["timeseries_plot_params"]["default"].get("monthly_std", True)
+                annual_std = config["timeseries_plot_params"]["default"].get("annual_std", True)
 
             # Generating the image
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(10, 6))
 
             try:
                 plot_timeseries(model=model, exp=exp, source=source, variable=var,
                                 resample=resample, plot_era5=plot_era5,
+                                annual=annual, startdate=startdate,
+                                enddate=enddate, std_startdate=std_startdate,
+                                std_enddate=std_enddate,
+                                monthly_std=monthly_std, annual_std=annual_std,
                                 ylim=ylim, plot_kw=plot_kw, ax=ax,
                                 reader_kw=reader_kw, outfile=filename_nc,
                                 loglevel=loglevel)
@@ -217,6 +232,13 @@ if __name__ == '__main__':
                 ylim = plot_options.get("ylim", {})
                 reader_kw = plot_options.get("reader_kw", {})
                 savefig = plot_options.get("savefig", True)
+                annual = plot_options.get("annual", False)
+                startdate = plot_options.get("startdate", None)
+                enddate = plot_options.get("enddate", None)
+                std_startdate = plot_options.get("std_startdate", "1991-01-01")
+                std_enddate = plot_options.get("std_enddate", "2020-12-31")
+                monthly_std = plot_options.get("monthly_std", False)
+                annual_std = plot_options.get("annual_std", False)
             else:  # default
                 plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", None)
                 plot_era5 = config["timeseries_plot_params"]["default"].get("plot_era5", False)
@@ -224,13 +246,24 @@ if __name__ == '__main__':
                 ylim = config["timeseries_plot_params"]["default"].get("ylim", {})
                 reader_kw = config["timeseries_plot_params"]["default"].get("reader_kw", {})
                 savefig = config["timeseries_plot_params"]["default"].get("savefig", True)
+                annual = config["timeseries_plot_params"]["default"].get("annual", False)
+                startdate = config["timeseries_plot_params"]["default"].get("startdate", None)
+                enddate = config["timeseries_plot_params"]["default"].get("enddate", None)
+                std_startdate = config["timeseries_plot_params"]["default"].get("std_startdate", "1991-01-01")
+                std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", "2020-12-31")
+                monthly_std = config["timeseries_plot_params"]["default"].get("monthly_std", False)
+                annual_std = config["timeseries_plot_params"]["default"].get("annual_std", False)
 
             # Generating the image
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(10, 6))
 
             try:
                 plot_timeseries(model=model, exp=exp, source=source, variable=var,
                                 resample=resample, plot_era5=plot_era5,
+                                annual=annual, startdate=startdate,
+                                enddate=enddate, std_startdate=std_startdate,
+                                std_enddate=std_enddate,
+                                monthly_std=monthly_std, annual_std=annual_std,
                                 ylim=ylim, plot_kw=plot_kw, ax=ax,
                                 reader_kw=reader_kw, outfile=filename_nc,
                                 loglevel=loglevel, formula=True)
