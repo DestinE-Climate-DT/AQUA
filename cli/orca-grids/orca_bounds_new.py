@@ -42,7 +42,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
            ssh variations are distributed throughout the full column.
         """
         
-        zdim = list(depths_ctn.dims)[0]
+        zdim = list(depths_ctn.sizes)[0]
         nz = depths_ctn.sizes[zdim]
         
         ctns_arr = depths_ctn.values

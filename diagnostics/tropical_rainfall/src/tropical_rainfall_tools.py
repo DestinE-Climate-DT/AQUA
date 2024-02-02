@@ -798,7 +798,7 @@ class ToolsClass:
         if 'DataArray' in str(type(data)):
             _size = data.size
         elif 'Dataset' in str(type(data)):
-            _names = list(data.dims)
+            _names = list(data.sizes)
             _size = 1
             for i in _names:
                 _size *= data[i].size

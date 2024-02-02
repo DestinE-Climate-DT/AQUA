@@ -90,7 +90,7 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None,
     """
     # Is this a DataArray?
     if not isinstance(ds, xr.Dataset):
-        dim = [x for x in shared_dims if x in ds.dims]
+        dim = [x for x in shared_dims if x in ds.sizes]
         if dim:
             return {dim[0]: ds}
         else:
@@ -106,7 +106,7 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None,
     for dim in shared_dims:
         vlist = []
         for var in ds.data_vars:
-            if dim in ds[var].dims:
+            if dim in ds[var].sizes:
                 vlist.append(var)
         if vlist:
             shared_vars.update({dim: ds[vlist]})
@@ -114,7 +114,7 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None,
         vlist = []
         vlistm = []
         for var in ds.data_vars:
-            if not any(x in shared_dims for x in ds[var].dims):
+            if not any(x in shared_dims for x in ds[var].sizes):
                 if check_att(ds[var], masked_att) or (masked_vars is not None and var in masked_vars):
                     vlistm.append(var)
                 else:

@@ -641,7 +641,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             if isinstance(data, xr.Dataset):
                 for var in data:
                     # check if none of the dimensions of var is in self.vert_coord
-                    if not list(set(data[var].dims) & set(self.vert_coord)):
+                    if not list(set(data[var].sizes) & set(self.vert_coord)):
                         # find list of coordinates that start with idx_ in their name
                         idx = [coord for coord in data[var].coords if coord.startswith("idx_")]
                         if idx:  # found coordinates starting with idx_, use first one to expand var
@@ -656,7 +656,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                         self.logger.warning(f"Found more than one idx_ coordinate for expanded variables, did you select slices of multiple vertical coordinates? Results may not be correct.")
 
             else:  # assume DataArray
-                if not list(set(data.dims) & set(self.vert_coord)):
+                if not list(set(data.sizes) & set(self.vert_coord)):
                     idx = [coord for coord in data.coords if coord.startswith("idx_")]
                     if idx:
                         if len(idx) > 1:

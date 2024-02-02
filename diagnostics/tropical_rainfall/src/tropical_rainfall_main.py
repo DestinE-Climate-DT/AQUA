@@ -1395,7 +1395,7 @@ class MainClass:
         if positive:
             data = np.maximum(data, 0.)
         coord_lat, coord_lon = self.coordinate_names(data)
-        if coord in data.dims:
+        if coord in data.sizes:
 
             self.class_attributes_update(trop_lat=trop_lat, s_time=s_time, f_time=f_time,
                                          s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
@@ -1409,7 +1409,7 @@ class MainClass:
                 elif coord == coord_lon:
                     return data.mean('time').mean(coord_lat)
         else:
-            for i in data.dims:
+            for i in data.sizes:
                 coord = i
             return data.median(coord)
 
@@ -1449,7 +1449,7 @@ class MainClass:
         if positive:
             data = np.maximum(data, 0.)
         coord_lat, coord_lon = self.coordinate_names(data)
-        if coord in data.dims:
+        if coord in data.sizes:
             self.class_attributes_update(trop_lat=trop_lat, s_time=s_time, f_time=f_time,
                                          s_year=s_year, f_year=f_year, s_month=s_month, f_month=f_month)
 
@@ -1464,7 +1464,7 @@ class MainClass:
                     return data.median('time').median(coord_lat)
 
         else:
-            for i in data.dims:
+            for i in data.sizes:
                 coord = i
             return data.median(coord)
 

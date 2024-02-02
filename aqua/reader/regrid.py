@@ -164,7 +164,7 @@ class RegridMixin():
             data = _get_spatial_sample(data, coords, self.support_dims)
 
             if vert_coord and vert_coord != "2d" and vert_coord != "2dm":
-                varsel = [var for var in data.data_vars if vert_coord in data[var].dims]
+                varsel = [var for var in data.data_vars if vert_coord in data[var].sizes]
                 if varsel:
                     data = data[varsel]
                 else:
@@ -323,7 +323,7 @@ class RegridMixin():
             # this is done to load only if necessary
             if data is None:
                 data = self._retrieve_plain(startdate=None)
-            space_coord = [x for x in data.dims if x in default_horizontal_dims]
+            space_coord = [x for x in data.sizes if x in default_horizontal_dims]
             if not space_coord:
                 self.logger.debug('Default dims that are screened are %s', default_horizontal_dims)
                 raise KeyError('Cannot identify any space_coord, you will will need to define it regrid.yaml')
@@ -334,7 +334,7 @@ class RegridMixin():
             # this is done to load only if necessary
             if data is None:
                 data = self._retrieve_plain(startdate=None)
-            vert_coord = [x for x in data.dims if x in default_vertical_dims]
+            vert_coord = [x for x in data.sizes if x in default_vertical_dims]
             if not vert_coord:
                 self.logger.debug('Default dims that are screened are %s', default_vertical_dims)
                 self.logger.debug('Assuming this is a 2d file, i.e. vert_coord=2d')
@@ -364,7 +364,7 @@ def _rename_dims(data, dim_list):
         xarray.DataArray: A new DataArray with the renamed dimensions.
     """
 
-    dims = list(data.dims)
+    dims = list(data.sizes)
     # Lisy of dims which are already there
     shared_dims = list(set(dims) & set(dim_list))
     # List of dims in B which are not in space_coord
@@ -393,7 +393,7 @@ def _get_spatial_sample(data, space_coord, support_dims):
         Data array containing a single spatial sample along the specified dimensions.
     """
 
-    dims = list(data.dims)
+    dims = list(data.sizes)
     extra_dims = list(set(dims) - set(space_coord) - set(support_dims))
     da_out = data.isel({dim: 0 for dim in extra_dims})
     return da_out

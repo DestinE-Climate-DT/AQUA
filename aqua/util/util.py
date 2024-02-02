@@ -79,7 +79,7 @@ def file_is_complete(filename, loglevel='WARNING'):
                     logger.error('File %s is full of NaN! Recomputing...', filename)
                     check = False   
                 else:
-                    mydims = [dim for dim in xfield[varname].dims if dim != 'time']
+                    mydims = [dim for dim in xfield[varname].sizes if dim != 'time']
                     nan_count = np.isnan(xfield[varname]).sum(dim=mydims)
                     check = all(value == nan_count[0] for value in nan_count)
                     if check: 

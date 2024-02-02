@@ -827,7 +827,7 @@ class FixerMixin():
             warnings.filterwarnings("ignore", category=UserWarning)
             data = cf2cdm.translate_coords(data, dm)
             # Hack needed because cfgrib.cf2cdm mixes up coordinates with dims
-            if "forecast_reference_time" in data.dims:
+            if "forecast_reference_time" in data.sizes:
                 data = data.swap_dims({"forecast_reference_time": "time"})
 
         check_direction(data, lat_coord, lat_dir)  # set 'flipped' attribute if lat direction has changed

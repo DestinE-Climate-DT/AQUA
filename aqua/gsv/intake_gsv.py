@@ -175,7 +175,7 @@ class GSVSource(base.DataSource):
                 # If we have multiple levels, then this array needs to be expanded
                 if self.onelevel:
                     lev = self.levels
-                    apos = da.dims.index("level")  # expand the size of the "level" axis
+                    apos = da.sizes.index("level")  # expand the size of the "level" axis
                     attrs = da["level"].attrs
                     da = da.squeeze("level").drop_vars("level").expand_dims(level=lev, axis=apos)
                     da["level"].attrs.update(attrs)
@@ -183,7 +183,7 @@ class GSVSource(base.DataSource):
                 self._da = da
 
             metadata = {
-                'dims': self._da.dims,
+                'dims': self._da.sizes,
                 'attrs': self._ds.attrs
             }
             schema = base.Schema(
@@ -308,7 +308,7 @@ class GSVSource(base.DataSource):
         shape = self._schema.shape
         dtype = self._schema.dtype
 
-        self.itime = self._da.dims.index("time")
+        self.itime = self._da.sizes.index("time")
 
         if 'valid_time' in self._da.coords:  # temporary hack because valid_time is inconsistent anyway
             self._da = self._da.drop_vars('valid_time')
@@ -328,7 +328,7 @@ class GSVSource(base.DataSource):
             da = xr.DataArray(darr,
                               name=shortname,
                               attrs=self._ds[shortname].attrs,
-                              dims=self._da.dims,
+                              dims=self._da.sizes,
                               coords=coords)
             
             ds[shortname] = da

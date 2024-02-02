@@ -32,7 +32,7 @@ def add_cyclic_lon(da: xr.DataArray):
     cyclic_da, cyclic_lon = cutil.add_cyclic_point(da, coord=da[lon_name])
 
     # update the longitude coordinate with cyclic longitude
-    new_da = xr.DataArray(cyclic_da, dims=da.dims)
+    new_da = xr.DataArray(cyclic_da, dims=da.sizes)
     new_da = new_da.assign_coords(lon=cyclic_lon)
     new_da = new_da.assign_coords(lat=da[lat_name])
 
