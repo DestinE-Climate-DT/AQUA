@@ -48,7 +48,7 @@ def reader():
 
     elif str(os.getenv('INPUT_ARG')) == 'lumi':
         """reader_levante """
-        data = Reader(model="ERA5", exp="fdb", source="default")
+        data = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly")
         retrieved = data.retrieve()
         try:
             retrieved_array = retrieved['tprate']*86400
@@ -74,7 +74,7 @@ def data_size(reader):
     if 'DataArray' in str(type(data)):
         size = data.size
     elif 'Dataset' in str(type(data)):
-        names = list(data.dims)
+        names = list(data.sizes)
         size = 1
         for i in names:
             size *= data[i].size
@@ -116,10 +116,10 @@ def histogram_output(reader):
     """ Histogram output fixture
     """
     data = reader
-    if 'tprate' in data.shortName:
+    if 'tprate' in data.name:
         diag = Tropical_Rainfall(
             num_of_bins=1000, first_edge=0, width_of_bin=1 - 1*10**(-6), loglevel='debug')
-    elif '2t' in data.shortName:
+    elif '2t' in data.name:
         diag = Tropical_Rainfall(
             num_of_bins=1000, first_edge=0, width_of_bin=0.5, loglevel='debug')
     hist = diag.histogram(data, trop_lat=90)
@@ -317,7 +317,7 @@ def test_units_converter(reader):
 
     old_units = data.units
 
-    if 'tprate' in data.shortName:
+    if 'tprate' in data.name:
         old_mean_value = float(data.mean().values)
         data = diag.precipitation_rate_units_converter(
             data, new_unit=old_units)
