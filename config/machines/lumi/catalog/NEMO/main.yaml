@@ -3,7 +3,6 @@ sources:
     description: tco79-eorca1 from Bernat to test FDB-NEMO access
     driver: yaml_file_cat
     args:
-<<<<<<< HEAD
         path: "{{CATALOG_DIR}}/fdb-tco79-eorca1.yaml"
   control-1990-nemo-dev:
     description: FDB IFS/NEMO tco1279-orca025 historical 1990 run
@@ -20,6 +19,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/a0eo-LUMI-G.yaml'
-=======
-        path: '{{CATALOG_DIR}}/fdb-tco79-eorca1.yaml'
->>>>>>> main
+  a0hy-LUMI-G:
+    description: a0hy-LUMI-G
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0hy-LUMI-G.yaml'

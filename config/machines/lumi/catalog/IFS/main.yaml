@@ -24,7 +24,6 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/historical-1990-nemo-dev.yaml'
-<<<<<<< HEAD
   control-1990-nemo-dev:
     description: FDB IFS/NEMO tco1279-orca025 control 1990 run
     driver: yaml_file_cat
@@ -40,5 +39,8 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/a0eo-LUMI-G.yaml'
-=======
->>>>>>> main
+  a0hy-LUMI-G:
+    description: a0hy-LUMI-G
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0hy-LUMI-G.yaml'

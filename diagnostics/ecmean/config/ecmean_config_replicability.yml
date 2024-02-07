@@ -7,11 +7,11 @@ model:
 dirs:
   exp: '' #not necessary we use xarray dataset instead of files
   clm: /pfs/lustrep3/scratch/project_465000454/kkeller/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology
-  tab: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/tables
-  fig: /pfs/lustrep3/scratch/project_465000454/AQUA-workflow/ecmean/figures
+  tab: /pfs/lustrep3/scratch/project_465000454/kkeller/lab/replicability_mixed/tables
+  fig: /pfs/lustrep3/scratch/project_465000454/kkeller/lab/replicability_mixed/figures
 
 global:
-  atm_vars: [psl,tas,pr]
+  atm_vars: [tas]
   # [tas, psl, pr, evspsbl, pme, cll, clm, clh,
   #           pr_oce, pme_oce, pr_land, pme_land,
   #           rsnt, rlnt, net_toa, rsns, rlns, hfss, hfls, net_sfc_nosn]
@@ -23,11 +23,11 @@ global:
 
 PI:
   2d_vars:
-    field: [psl,tas,pr]
+    field: [tas]
   3d_vars:
     field: [ta, ua, va, hus]
   oce_vars:
-    field: [tos, sos]
+    field: [tos]
   ice_vars:
     field: [siconc]
   regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
