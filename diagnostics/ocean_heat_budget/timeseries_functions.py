@@ -93,7 +93,7 @@ def plot_timeseries(
     resample=None,
     regrid=None,
     plot_era5=True,
-    annual=True,
+    annual=False,
     startdate=None,
     enddate=None,
     std_startdate="1991-01-01",
@@ -105,6 +105,8 @@ def plot_timeseries(
     outfile=None,
     loglevel='WARNING',
     variable_ext=None,
+    variable_ext_name=None,
+    variable_ext_units=None,
     label_ext=None,
     **kwargs,
 ):
@@ -122,7 +124,7 @@ def plot_timeseries(
         resample (str): Optional resample rate (e.g. "M").
         regrid (str): Optional regrid resolution. Default is None.
         plot_era5 (bool): Include ERA5 reference data. Default is True.
-        annual (bool): Plot annual mean. Default is True.
+        annual (bool): Plot annual mean. Default is False.
         startdate (str): Start date. Default is None.
         enddate (str): End date. Default is None.
         std_startdate (str): Start date for standard deviation. Default is "1991-01-01".
@@ -192,8 +194,22 @@ def plot_timeseries(
         plot_kw["label"] = f"{model} {exp} monthly mean"
 
     data.plot(**plot_kw, ax=ax)
+
+    # in case an additional external variable is passed to the timeseries function
+    # plot it with its own axis and units
+
     if variable_ext is not None:
-        data_ext.plot(ax=ax, label=label_ext)
+        # Plot data on the original y-axis
+        data.plot(ax=ax, label=label_ext)
+
+        # Create a twin Axes object
+        ax_ext = ax.twinx()
+
+        # Plot variable_ext data on the twin Axes object
+        data_ext.plot(ax=ax_ext)
+
+        # Set y-axis label for the twin Axes object with its own units
+        ax_ext.set_ylabel(variable_ext_units)
 
     if annual:
         data_annual = reader.timmean(data=data, freq='YS', center_time=True)
@@ -245,7 +261,11 @@ def plot_timeseries(
                 eradata_annual = reader.timmean(data=eradata, freq='YS', center_time=True)
                 eradata_annual.plot(ax=ax, color="k", lw=0.5, linestyle='--', label="ERA5 annual mean")
 
-    ax.set_title(f'Globally averaged {variable}')
+    if variable_ext is not None:
+        ax.set_title(f'Globally averaged {variable} and {variable_ext_name} timeseries')
+    else:
+        ax.set_title(f'Globally averaged {variable} timeseries')
+
     ax.legend(loc='upper right', fontsize='small')
 
     ax.set_ylim(**ylim)
