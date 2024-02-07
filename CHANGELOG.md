@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
-
+- The notebook with a demo of aqua components for Lumi (#854)
 - Refactor of the documentation (#842)
 - The drop warning in `aqua/gsv/intake_gsv.py` (#844)
 
