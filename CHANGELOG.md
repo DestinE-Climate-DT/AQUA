@@ -5,62 +5,88 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-Unreleased is the current development version.
+Unreleased is the current development version:
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-- AQUA new common environment installation tool for LUMI added (#413)
-=======
-- Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
->>>>>>> aqua_container
-=======
-=======
-=======
-=======
-=======
-=======
-- Fix wrong fdb source (#657)
-- Adding tests for NEMO 2D and 3D (#652)
-- tprate not derived from tp for GSV sources (#653)
-- var='paramid' can be used to select variables in the retrieve method (#648)
->>>>>>> cat_a0er_a0eo
-=======
+- Fix loading source grid file before smmregrid weight generation (#756)
+
+## [v0.5.2]
+
+Main changes are:
+1. Coupled models IFS-NEMO and IFS-FESOM are now supported
+2. Accessor to use functions and reader methods as if they were methods of xarray objects, see [notebook](https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/accessor.ipynb)
+3. Preliminary provenance information is now available in the history attribute of the output files
+4. AQUA analysis wrapper is parallelized
+5. A levelist can be provided in FDB sources, this will greatly speed up the data retrieve
+
+Complete list:
+- Fix reading only one sample variable and avoid _bnds variables (#743)
+- Allow correct masked regridding after level selection. Add level selection also for not-FDB sources (#741)
+- Read only one level for retrieving 3D array metadata, select specific levels for FDB retrieve (#713)
+- Defining catalog entry for coupled models IFS-NEMO and IFS-FESOM (#720)
+- Change fixer_name to fixer_name (#703)
+- Reorganization of logging calls (#700)
+- Accessor to use functions and reader methods as if they were methods of xarray objects (#716)
+- Suggestions are printed if a model/exp/source is not found while inspecting the catalogue (#721)
+- Improvements in the single map plot function (#717)
+- Minor metadata fixes (logger newline and keep "GRIB_" in attrs) (#715)
+- LRA fix now correctly aggregating monthly data to yearly when a full year is available (#696)
+- History update and refinement creating preliminary provenance information (plus AQUA emoji!) (#676)
+- OPA lra compatible with no regrid.yaml (#692)
+- Introducing fixer definitions not model/exp/source dependents to be specified at the metadata level (#681)
+- AQUA analysis wrapper is parallelized and output folder is restructured (#684, #725)
+
+## [v0.5.1]
+
+Main changes are:
+1. A new `Reader` method `info()` is available to print the catalogue information
+2. Grids are now stored online and a tool to deploy them on the `cli` folder is available
+
+Complete list:
+- Fix attributes of DataArrays read from FDB (#686)
+- Reader.info() method to print the catalogue information (#683)
+- Simpler reader init() by reorganizing the calls to areas and regrid weights configuration and loading (#682)
+- Optional autosearch for vert_coord (#682)
+- plot_single_map adapted to different coordinate names and bugfixes (#680)
+- Sea ice volume datasets for the Northern Hemisphere (PIOMAS) and the Southern Hemisphere (GIOMAS) (#598)
+- Possibility of defining the regrid method from the grid definition (#678)
+- Grids stored online and tool to deploy them on cli folder (#675)
+- Global time series diagnostic improvements (#637)
+- Teleconnections diagnostic improvements (#672)
+
+## [v0.5]
+
+Main changes are:
+1. Refactor of the Reader() interface with less options at the init() level
+2. Grids are now defined with the source metadata and not in a machine-dependent file
+3. CLI wrapper is available to run all diagnostics in a single call
+4. Refactoring of the streaming emulator with equal treatment for FDB or file sources
+
+Complete list:
 - Controlling the loglevel of the GSV interface (#665)
 - Fix wrong fdb source (#657)
-- Adding tests for NEMO 2D and 3D (#652)
+- Adding sample files and tests for NEMO 2D and 3D grids (#652)
 - tprate not derived from tp for GSV sources (#653)
-- Simplify reader init and retrieve (#620)
-- var='paramid' can be used to select variables in the retriee method (#648)
->>>>>>> main
-- Tropical cyclons improvements (#645)
+- Simplify reader init and retrieve providing less argument in initialization (#620)
+- var='paramid' can be used to select variables in the retrieve method (#648)
 - configdir is not searched based on util file position in the repo (#636)
 - Cleaner mask treatment (Revision of mask structure in the reader #617)
->>>>>>> main
 - Fldmean fix if only one dimension is present for area selection (#640)
 - Adding higher frequency ERA5 data on Levante and Lumi (#628)
-- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#622, #643)
+- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#520, #622, #643)
 - Load all available variables in FDB xarray/dask access (#619)
 - Lint standard and enforced in CI (#616)
 - Reader init split with methods (#523)
-- Single map plot utility (#594)
-- Script for automatic generation of Fdb catalog entries (#572)
+- Single map plot utility to be used by all diagnostics (#594)
+- Script for automatic generation of Fdb catalog entries (IFS only) (#572)
 - Fix loading of singularity mounting /projappl (#612)
 - CLI wrapper parser (#599)
 - Refactoring of streaming emulator (#593)
->>>>>>> main
 - Radiation CLI and diagnostic refinement (#537)
 - Ocean3D CLI and diagnostic refinement (#578)
 - AtmGlobalMean CLI and diagnostic refinement (#587)
-- Tropical cyclones CLI refinements and TC module (#568)
+- Tropical cyclones CLI refinements and TC module (#568, #645)
 - Removing OPA, OPAgenerator and related tests from the AQUA (Remove OPA from AQUA #586)
 - Renaming the experiments according to the DE340 AQUA syntax (Including dev-control-1990 in the source and rename the experiment according to DE340 scheme #556, #614, #618)
-- Allow specifying grid in catalogue metadata (#520)
 - Teleconnections diagnostic improvements (#571, #574, #576, #581, #592, #623)
 
 ## [v0.4]
@@ -112,7 +138,6 @@ Main changes are:
 4. Configuration file `config-aqua.yaml` replaces `config.yaml`
 
 Complete list:
->>>>>>> main
 - Templates in configuration yaml files (#469)
 - Bug fixes for FDB access options (#463, #462)
 - Add observational catalogs on Lumi (Update Lumi catalog #454)
@@ -144,13 +169,11 @@ Complete list:
 
 - Add development control-1950 and historical-1990 experiments to the LRA (LRA for control-1950 and historical-1990 on Levante from v0.2 #455)
 
->>>>>>> main
 ## [v0.2]
 
 - Improve the LRA generator and worklow CLI (Streaming for the LRA #289)
 - AQUA new common environment installation tool for LUMI added (#413)
 - Added a bash script "load_aqua_lumi.sh" to load aqua environment in LUMI with containers (Adding an AQUA singularity container for LUMI #418)
->>>>>>> main
 
 ## [v0.2-beta]
 
@@ -212,7 +235,10 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.4...HEAD
+[unreleased]: https://github.com/oloapinivad/AQUA/compare/v0.5.2...HEAD
+[v0.5.2]: https://github.com/oloapinivad/AQUA/compare/v0.5.1...v0.5.2
+[v0.5.1]: https://github.com/oloapinivad/AQUA/compare/v0.5...v0.5.1
+[v0.5]: https://github.com/oloapinivad/AQUA/compare/v0.4...v0.5
 [v0.4]: https://github.com/oloapinivad/AQUA/compare/v0.3...v0.4
 [v0.3]: https://github.com/oloapinivad/AQUA/compare/v0.2.1...v0.3
 [v0.2.1]: https://github.com/oloapinivad/AQUA/compare/v0.2...v0.2.1

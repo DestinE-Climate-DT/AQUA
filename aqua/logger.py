@@ -31,7 +31,7 @@ def log_configure(log_level=None, log_name=None):
     if logger.handlers:
         if log_level != logging.getLevelName(logger.getEffectiveLevel()):
             logger.setLevel(log_level)
-            logger.info('Updating the log_level to %s', log_level)
+            logger.debug('Updating the log_level to %s', log_level)
         return logger
 
     # avoid duplication/propagation of loggers
@@ -56,7 +56,6 @@ def log_configure(log_level=None, log_name=None):
 
 
 def _check_loglevel(log_level=None):
-
     """
     Basic function to check the log level so that it can be used
     in other logging functions
@@ -97,7 +96,7 @@ def _check_loglevel(log_level=None):
     return log_level
 
 
-def log_history_iter(data, msg):
+def log_history(data, msg):
     """
     Elementary provenance logger in the history attribute also for iterators.
 
@@ -112,7 +111,7 @@ def log_history_iter(data, msg):
         data = _log_history_iter(data, msg)
         return data
     else:
-        log_history(data, msg)
+        _log_history(data, msg)
         return data
 
 
@@ -129,7 +128,7 @@ def _log_history_iter(data, msg):
         yield ds
 
 
-def log_history(data, msg):
+def _log_history(data, msg):
     """
     Elementary provenance logger in the history attribute
 
@@ -141,7 +140,13 @@ def log_history(data, msg):
     if isinstance(data, (xr.DataArray, xr.Dataset)):
         now = datetime.datetime.now()
         date_now = now.strftime("%Y-%m-%d %H:%M:%S")
-        hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
+        hist = data.attrs.get("history", "")
+
+
+        # check that there is a new line at the end of the current history
+        if not hist.endswith("\n"):
+            hist += "\n"
+        hist += f"{date_now} AQUA💧: {msg};\n"
         data.attrs.update({"history": hist})
 
 
@@ -152,7 +157,7 @@ class CustomLogColors(logging.Formatter):
     # GREY = "\x1b[38;20m"  # Unnecessary
     LGREY = "\x1b[37m"
     # DGREY = "\x1b[90m"
-    # LBLUE = "\x1b[38;2;64;183;197m"
+    #  LBLUE = "\x1b[38;2;64;183;197m"
     # GREEN = "\x1b[32m"  # Less vibrant green
     # ORANGE = "\x1b[33m" # Less vibrant orange
     # RED = "\x1b[31;20m"  # Less vibrant red

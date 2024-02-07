@@ -44,8 +44,10 @@ jobs:
     continue-on-error: false
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      # https://hub.docker.com/r/kinow/fdb
-      image: kinow/fdb:5.11.17-jammy
+      image: ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua:ubuntu-docker
+      credentials:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
       options: --user root
     permissions:
       contents: read
@@ -106,6 +108,8 @@ jobs:
       - name: Download and set up tests
         run: |
           ./download_data_for_tests.sh
+      - name: Set up FDB
+        run: |
           export
           # FDB for GSV
           rm -rf /app/

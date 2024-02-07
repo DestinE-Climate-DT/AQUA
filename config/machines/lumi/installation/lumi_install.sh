@@ -143,10 +143,15 @@ fi
 
 if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/C'  "~/load_aqua.sh" ; then
 #if [ ! -f $load_aqua_file ] ; then
+  echo '# Use ClimateDT paths' >> $load_aqua_file
   echo 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/C' >> $load_aqua_file
+
+  echo '# Load modules' >> $load_aqua_file
   echo 'module purge' >> $load_aqua_file
-  echo 'module load pyfdb/0.0.2-cpeCray-23.03' >> $load_aqua_file
-  echo 'module load ecCodes/2.32.0-cpeCray-23.03' >> $load_aqua_file
+  echo 'module load ecCodes/2.33.0-cpeCray-23.03' >> $load_aqua_file
+  echo 'module load fdb/5.11.94-cpeCray-23.03' >> $load_aqua_file
+  echo 'module load eckit/1.25.0-cpeCray-23.03' >> $load_aqua_file
+  echo 'module load metkit/1.11.0-cpeCray-23.03' >> $load_aqua_file
     
   # Config FDB: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
   echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >>  $load_aqua_file
@@ -169,17 +174,26 @@ fi
 # ask if you want to add this to the bash profile
 read -p "Would you like to source $load_aqua_file in your .bash_profile? (y/n) " -n 1 -r
 echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  if ! grep -q "source  $load_aqua_file" ~/.bash_profile; then
-    echo "source  $load_aqua_file" >> ~/.bash_profile
-    echo 'load_aqua.sh added to your .bash_profile.'
-  else
-    echo 'load_aqua.sh is already in your bash profile, not adding it again!'
-  fi
-elif [[ $REPLY =~ ^[Nn]$ ]]; then
-  echo "source load_aqua.sh not added to .bash_profile"
-else
-  echo "Invalid response. Please enter 'y' or 'n'."
-fi
-
- 
+# ask if you want to add this to the bash profile
+while true; do
+  read -p "Would you like to source $load_aqua_file in your .bash_profile? (y/n) " -n 1 -r
+  echo
+  case $REPLY in
+    [Yy])
+      if ! grep -q "source  $load_aqua_file" ~/.bash_profile; then
+        echo "source  $load_aqua_file" >> ~/.bash_profile
+        echo 'load_aqua.sh added to your .bash_profile.'
+      else
+        echo 'load_aqua.sh is already in your bash profile, not adding it again!'
+      fi
+      break
+      ;;
+    [Nn])
+      echo "source load_aqua.sh not added to .bash_profile"
+      break
+      ;;
+    *)
+      echo "Invalid response. Please enter 'y' or 'n'."
+      ;;
+  esac
+done

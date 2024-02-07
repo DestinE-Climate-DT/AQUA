@@ -9,7 +9,7 @@ sources:
     metadata:
       source_grid_name: era5-r025
     args:
-      urlpath: '{{DATA_PATH}}/ERA5/mon/ERA5_*_mon_full**.nc'
+      urlpath: '{{DATA_PATH}}/ERA5/mon/ERA5_*_mon_full*.nc'
       chunks: 
         time: 12
       xarray_kwargs:

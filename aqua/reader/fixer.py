@@ -6,6 +6,7 @@ import json
 import warnings
 import types
 from datetime import timedelta
+from warnings import warn
 import xarray as xr
 import numpy as np
 import cf2cdm
@@ -14,14 +15,19 @@ from metpy.units import units
 from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction
 from aqua.logger import log_history
 
+# Set the warning filter to always display DeprecationWarning
+warnings.simplefilter('always', DeprecationWarning)
+
 
 class FixerMixin():
     """Fixer mixin for the Reader class"""
 
     def find_fixes(self):
-
         """
         Get the fixes for the model/exp/source hierarchy.
+        First looks for family fixes as base_fixes.
+        If not found, looks for default fixes for the model.
+        Then source_fixes are loaded and merged with base_fixes.
 
         Args:
             The fixer class
@@ -30,93 +36,165 @@ class FixerMixin():
             The fixer dictionary
         """
 
-        # look for model fix
+        # look for family fixes and set them as default
+        base_fixes = self._load_fixer_name()
+
+        # check the presence of model-specific fix
         fix_model = self.fixes_dictionary["models"].get(self.model, None)
-        if not fix_model:
-            self.logger.warning("No fixes available for model %s",
-                                self.model)
-            return None
 
-        # get default fixes: they could be written at the default experiment
-        # or the default source level. If none of this is found, set as None
-        default_fixes = self._load_default_fixes(fix_model)
+        # if family fix is not there check for model fix
+        if base_fixes is None:
 
-        # browse for model/source fixes
-        model_fixes = self._load_source_fixes(fix_model)
+            # if also model fix are not there, return None
+            if not fix_model:
+                self.logger.warning("No fixes available for model %s",
+                                    self.model)
+                return None
 
-        # put fixes together
-        fixes = self._combine_fixes(default_fixes, model_fixes)
+            # otherwise load the model default
+            else:
+                base_fixes = self._load_default_fixes(fix_model)
+                if base_fixes:
+                    warn("Default experiment based fixes are used. This will be deprecated in the future.",
+                         DeprecationWarning, stacklevel=2)
 
-        # if None or using default fixes, just return and save time
-        if fixes is None or fixes == default_fixes:
-            return fixes
+        # browse for source-specific fixes
+        source_fixes = self._load_source_fixes(fix_model)
 
-        # get method for replacement: replace is the default
-        method = fixes.get('method', 'replace')
-        self.logger.info("For source %s, method for fixes is: %s", self.source, method)
+        # if only fixes family/default is available, return them
+        if source_fixes is None:
+            return base_fixes
 
-        # if nothing specified or replace method, use the fixes
-        if method == 'replace':
-            self.logger.debug("Replacing default fixes with source-specific fixes")
-            final_fixes = fixes
-
-        # if merge method is specified, replace/add to default fixes
-        elif method == 'merge':
-            self.logger.debug("Merging default fixes with source-specific fixes")
-            final_fixes = default_fixes
-            for item in fixes.keys():
-                if item == 'vars':
-                    final_fixes[item] = {**default_fixes[item], **fixes[item]}
-                else:
-                    final_fixes[item] = fixes[item]
-
-        # if method is default, roll back to default
-        elif method == 'default':
-            self.logger.debug("Rolling back to default fixes")
-            final_fixes = default_fixes
+        # join source specific fixes together with default/family
+        final_fixes = self._combine_fixes(base_fixes, source_fixes)
 
         self.logger.debug('Final fixes are: %s', final_fixes)
 
         return final_fixes
 
-    def _combine_fixes(self, default_fixes, fixes):
+    def _combine_fixes(self, default_fixes, model_fixes):
+        """
+        Combine fixes from the default or the source/model specific or the family fixes
 
-        """Combine fixes from the default or the source/model specific"""
+        Args:
+            default_fixes: Model default or family fixes
+            model_fixes: Source specific fixes with ad hoc rules
 
-        if fixes is None:
-            if default_fixes is None:
-                self.logger.warning("No default fixes found! No fixes available for model %s, experiment %s, source %s",
-                                    self.model, self.exp, self.source)
-                return None
+        Returns:
+            Final fix configuration
+        """
+
+        if model_fixes is None:
+            # TODO; to be removed when restructuring the fixes
+            # if default_fixes is None:
+            #     self.logger.warning("No default fixes found! No fixes available for model %s, experiment %s, source %s",
+            #                         self.model, self.exp, self.source)
+            #     return None
 
             self.logger.info("Default model %s fixes found! Using it for experiment %s, source %s",
                              self.model, self.exp, self.source)
             return default_fixes
         else:
-            return fixes
+            # get method for replacement: replace is the default
+            method = model_fixes.get('method', 'replace')
+            self.logger.info("For source %s, method for fixes is: %s", self.source, method)
+
+            # if nothing specified or replace method, use the fixes
+            if method == 'replace':
+                self.logger.debug("Replacing fixes with source-specific fixes")
+                final_fixes = model_fixes
+
+            # if merge method is specified, replace/add to default fixes
+            elif method == 'merge':
+                self.logger.debug("Merging fixes with source-specific fixes")
+                final_fixes = self._merge_fixes(default_fixes, model_fixes)
+
+            # if method is default, roll back to default
+            elif method == 'default':
+                self.logger.debug("Rolling back to default fixes")
+                final_fixes = default_fixes
+
+            return final_fixes
+
+    def _load_fixer_name(self):
+        """
+        Load the fixer_name reading from the metadata of the catalog.
+        If the fixer_name has a parent, load it and merge it giving priority to the child.
+        """
+
+        # if fix names is not found in metadata, return None
+        if self.fixer_name is None:
+            return None
+
+        # get the fixes from the fix files
+        fixes = self.fixes_dictionary["fixer_name"].get(self.fixer_name, None)
+
+        # if found, proceed as expected
+        if fixes is not None:
+            self.logger.info("Fix names %s found for model %s, experiment %s, source %s",
+                             self.fixer_name, self.model, self.exp, self.source)
+            if 'parent' in fixes:
+                parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes['parent'])
+                self.logger.info("Parent fix %s found! Mergin with family fixes %s!", fixes['parent'], self.fixer_name)
+                fixes = self._merge_fixes(parent_fixes, fixes)
+        else:
+            self.logger.error("Fix names %s does not exist in %s.yaml file. Will try to use model default fixes!",
+                              self.fix_family, self.model)
+            warn("The model default will be deprecated in the future in favour of a fixer_name structure default.",
+                 DeprecationWarning, stacklevel=2)
+
+        return fixes
+
+    def _merge_fixes(self, base, specific):
+        """
+        Small function to merge fixes. Base fixes will be used as a default
+        and specific fixes will replace where necessary. Dictionaries will be merged
+        for variables, with priority for the specific ones.
+
+        Args:
+            base (dict): Base fixes
+            specific (dict): Specific fixes
+
+        Return:
+            dict with merged fixes
+        """
+        final = base
+        for item in base.keys():
+            if item == 'vars':
+                final[item] = {**base[item], **specific[item]}
+            else:
+                if item in specific:
+                    final[item] = specific[item]
+
+        return final
 
     def _load_source_fixes(self, fix_model):
-
         """Browse for source/model specific fixes, return None if not found"""
+
+        if fix_model is None:
+            self.logger.debug("No model-specific fixes available for model %s",
+                              self.model)
+            return None
 
         # look for exp fix, if not found, set default fixes
         fix_exp = fix_model.get(self.exp, None)
         if fix_exp is None:
-            self.logger.info("No specific fixes available for model %s, experiment %s",
-                             self.model, self.exp)
+            self.logger.debug("No experiment-specific fixes available for model %s, experiment %s",
+                              self.model, self.exp)
             return None
 
         fixes = fix_exp.get(self.source, None)
         if fixes is None:
-            self.logger.info("No specific fixes available for model %s, experiment %s, source %s: checking for model default...",  # noqa: E501
+            self.logger.debug("No source-specific fixes available for model %s, experiment %s, source %s: checking for model default...",  # noqa: E501
                              self.model, self.exp, self.source)
             fixes = fix_exp.get('default', None)
             if fixes is None:
-                self.logger.info("Nothing found! I will try with model default fixes...")
+                self.logger.debug("Nothing found! I will use with model default or family fixes...")
             else:
-                self.logger.info("Using default for model %s, experiment %s", self.model, self.exp)
+                self.logger.debug("Using experiment-specific default for model %s, experiment %s", self.model, self.exp)
         else:
-            self.logger.info("Fixes found for model %s, experiment %s, source %s", self.model, self.exp, self.source)
+            self.logger.debug("Source-specific fixes found for model %s, experiment %s, source %s",
+                             self.model, self.exp, self.source)
 
         return fixes
 
@@ -135,11 +213,16 @@ class FixerMixin():
 
         default_fix_exp = fix_model.get('default', None)
         if default_fix_exp is None:
+            self.logger.info("Default fixes not found for %s", self.model)
             default_fixes = None
         else:
             if 'default' in default_fix_exp:
                 default_fixes = default_fix_exp.get('default', None)
+                if default_fixes is not None:
+                    self.logger.debug("Default based fixes found for %s-%s", self.model, self.exp)
+
             else:
+                self.logger.debug("Default based fixes found for %s", self.model)
                 default_fixes = default_fix_exp
 
         return default_fixes
@@ -185,8 +268,8 @@ class FixerMixin():
         # Add extra units (might be moved somewhere else, function is at the bottom of this file)
 
         # Fix GRIB attribute names. This removes "GRIB_" from the beginning
-        for var in data.data_vars:
-            data[var].attrs = {key.split("GRIB_")[-1]: value for key, value in data[var].attrs.items()}
+        # for var in data.data_vars:
+        #    data[var].attrs = {key.split("GRIB_")[-1]: value for key, value in data[var].attrs.items()}
 
         units_extra_definition()
 
@@ -240,7 +323,8 @@ class FixerMixin():
                         continue
                     if source != shortname:
                         fixd.update({f"{source}": f"{shortname}"})
-                    log_history(data[source], "variable renamed by AQUA fixer")
+
+                    log_history(data[source], f"Variable renamed {shortname} by fixer")
 
                 # 2. derived case: let's compute the formula it and create the new variable
                 formula = varfix.get("derived", None)
@@ -249,11 +333,16 @@ class FixerMixin():
                         source = shortname
                         data[source] = eval_formula(formula, data)
                         attributes.update({"derived": formula})
-                        self.logger.info("Derived %s from %s", var, formula)
-                        log_history(data[source], "variable derived by AQUA fixer")
+                        self.logger.debug("Derived %s from %s", var, formula)
+                        log_history(data[source], f"Variable {var}, derived with {formula} by fixer")
                     except KeyError:
                         # The variable could not be computed, let's skip it
-                        self.logger.error('Derived variable %s cannot be computed, is it available?', shortname)
+                        if destvar is not None:
+                            # issue an error if you are asking that specific variable!
+                            self.logger.error('Requested derived variable %s cannot be computed, is it available?', shortname)
+                        else:
+                            self.logger.warning('%s is defined in the fixes but cannot be computed, is it available?',
+                                                shortname)
                         continue
 
                 # safe check debugging
@@ -287,6 +376,7 @@ class FixerMixin():
                                                                                                               '').replace('}',
                                                                                                                           '')]
                     self.logger.info("Converting %s: %s --> %s", var, data[source].units, tgt_units)
+                    log_history(data, f"Converting units of {var}: from {data[source].units} to {tgt_units}")
                     factor, offset = self.convert_units(data[source].units, tgt_units, var)
                     # self.logger.info('Factor: %s, offset: %s', factor, offset)
 
@@ -294,8 +384,9 @@ class FixerMixin():
                         data[source].attrs.update({"tgt_units": tgt_units})
                         data[source].attrs.update({"factor": factor})
                         data[source].attrs.update({"offset": offset})
-                        self.logger.info("Fixing %s to %s. Unit fix: factor=%f, offset=%f",
+                        self.logger.debug("Fixing %s to %s. Unit fix: factor=%f, offset=%f",
                                          source, var, factor, offset)
+                        log_history(data, f"Fixing {source} to {var}. Unit fix: factor={factor}, offset={offset}")
 
         # Only now rename everything
         data = data.rename(fixd)
@@ -315,12 +406,12 @@ class FixerMixin():
         src_datamodel = self.fixes.get("data_model", src_datamodel)
         if src_datamodel:
             data = self.change_coord_datamodel(data, src_datamodel, self.dst_datamodel)
-            log_history(data, "coordinates adjusted by AQUA fixer")
+            self.logger.info(f"coordinates adjusted to {src_datamodel} by AQUA fixer")
+            data=log_history(data, f"Coordinates adjusted to {src_datamodel} by fixer")
 
         return data
 
     def _delete_variables(self, data):
-
         """
         Remove variables which are set to be deleted in the fixer
         """
@@ -333,7 +424,6 @@ class FixerMixin():
         return data
 
     def _wrapper_decumulate(self, data, variables, varlist, keep_memory, jump):
-
         """
         Wrapper function for decumulation, which takes into account the requirement of
         keeping into memory the last step for streaming/fdb purposes
@@ -373,14 +463,13 @@ class FixerMixin():
                         data[varname] = self.simple_decumulate(data[varname],
                                                                jump=jump,
                                                                keep_first=keep_first)
-                    log_history(data[varname], "variable decumulated by AQUA fixer")
+                    log_history(data[varname], f"Variable {varname} decumulated by fixer")
         if fkeep:
             self.previous_data = data1  # keep the last timestep for further decumulations
 
         return data
 
     def _override_tgt_units(self, tgt_units, varfix, var):
-
         """
         Override destination units for the single variable
         """
@@ -388,14 +477,13 @@ class FixerMixin():
         # Override destination units
         fixer_tgt_units = varfix.get("units", None)
         if fixer_tgt_units:
-            self.logger.info('Variable %s: Overriding target units "%s" with "%s"',
+            self.logger.debug('Variable %s: Overriding target units "%s" with "%s"',
                              var, tgt_units, fixer_tgt_units)
             return fixer_tgt_units
         else:
             return tgt_units
 
     def _override_src_units(self, data, varfix, var, source):
-
         """
         Override source units for the single variable
         """
@@ -404,11 +492,11 @@ class FixerMixin():
         fixer_src_units = varfix.get("src_units", None)
         if fixer_src_units:
             if "units" in data[source].attrs:
-                self.logger.info('Variable %s: Overriding source units "%s" with "%s"',
+                self.logger.debug('Variable %s: Overriding source units "%s" with "%s"',
                                  var, data[source].units, fixer_src_units)
                 data[source].attrs.update({"units": fixer_src_units})
             else:
-                self.logger.info('Variable %s: Setting missing source units to "%s"',
+                self.logger.debug('Variable %s: Setting missing source units to "%s"',
                                  var, fixer_src_units)
                 data[source].attrs["units"] = fixer_src_units
 
@@ -425,7 +513,7 @@ class FixerMixin():
         Returns:
             Dictionary for attributes following GRIB convention and string with updated variable name
         """
-        self.logger.info("Grib variable %s, looking for attributes", var)
+        self.logger.debug("Grib variable %s, looking for attributes", var)
         try:
             attributes = get_eccodes_attr(var, loglevel=self.loglevel)
             shortname = attributes.get("shortName", None)
@@ -435,7 +523,7 @@ class FixerMixin():
                 self.logger.debug("For grib variable %s find eccodes shortname %s, replacing it", var, shortname)
                 var = shortname
 
-            self.logger.info("Grib attributes for %s: %s", var, attributes)
+            self.logger.debug("Grib attributes for %s: %s", var, attributes)
         except TypeError:
             self.logger.warning("Cannot get eccodes attributes for %s", var)
             self.logger.warning("Information may be missing in the output file")
@@ -444,7 +532,6 @@ class FixerMixin():
         return attributes, var
 
     def _check_which_variables_to_fix(self, var2fix, destvar):
-
         """
         Check on which variables fixes should be applied
 
@@ -460,10 +547,10 @@ class FixerMixin():
             newkeys = list(set(var2fix.keys()) & set(destvar))
             if newkeys:
                 var2fix = {key: value for key, value in var2fix.items() if key in newkeys}
-                self.logger.debug("Variables to be fixed: %s", var2fix)
+                self.logger.info("Variables to be fixed: %s", var2fix)
             else:
                 var2fix = None
-                self.logger.debug("No variables to be fixed")
+                self.logger.info("No variables to be fixed")
 
         return var2fix
 
@@ -491,7 +578,6 @@ class FixerMixin():
             return area
 
     def get_fixer_varname(self, var):
-
         """
         Load the fixes and check if the variable requested is there
 
@@ -609,7 +695,7 @@ class FixerMixin():
             The processed input dataset
         """
         fn = os.path.join(self.configdir, 'data_models', f'{src_datamodel}2{dst_datamodel}.json')
-        self.logger.info("Data model: %s", fn)
+        self.logger.debug("Data model: %s", fn)
         with open(fn, 'r', encoding="utf8") as f:
             dm = json.load(f)
 
@@ -661,26 +747,26 @@ class FixerMixin():
             if factor.units == "meter ** 3 / kilogram":
                 # Density of water was missing
                 factor = factor * 1000 * units("kg m-3")
-                self.logger.info("%s: corrected multiplying by density of water 1000 kg m-3",
+                self.logger.debug("%s: corrected multiplying by density of water 1000 kg m-3",
                                  var)
             elif factor.units == "meter ** 3 * second / kilogram":
                 # Density of water and accumulation time were missing
                 factor = factor * 1000 * units("kg m-3") / (self.deltat * units("s"))
-                self.logger.info("%s: corrected multiplying by density of water 1000 kg m-3",
+                self.logger.debug("%s: corrected multiplying by density of water 1000 kg m-3",
                                  var)
                 self.logger.info("%s: corrected dividing by accumulation time %s s",
                                  var, self.deltat)
             elif factor.units == "second":
                 # Accumulation time was missing
                 factor = factor / (self.deltat * units("s"))
-                self.logger.info("%s: corrected dividing by accumulation time %s s",
+                self.logger.debug("%s: corrected dividing by accumulation time %s s",
                                  var, self.deltat)
             elif factor.units == "kilogram / meter ** 3":
                 # Density of water was missing
                 factor = factor / (1000 * units("kg m-3"))
-                self.logger.info("%s: corrected dividing by density of water 1000 kg m-3", var)
+                self.logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
             else:
-                self.logger.info("%s: incommensurate units converting %s to %s --> %s",
+                self.logger.debug("%s: incommensurate units converting %s to %s --> %s",
                                  var, src, dst, factor.units)
             offset = 0 * units(dst)
 
@@ -716,7 +802,7 @@ class FixerMixin():
                 data *= factor
             if offset != 0:
                 data += offset
-            log_history(data, "units changed by AQUA fixer")
+            log_history(data, f"Units changed to {tgt_units} by fixer")
             data.attrs.pop('tgt_units', None)
 
     def normalize_units(self, src):

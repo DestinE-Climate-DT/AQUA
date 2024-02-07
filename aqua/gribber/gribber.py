@@ -132,17 +132,17 @@ class Gribber():
             format = ".data"
             self.logger.warning("Search for files with format: %s", format)
             self.logger.info("Restart the gribber if you want to change format.")
-            self.gribfiles = '*'+format
+            self.gribfiles = '*' + format
 
         # Get catalog filename
         self.catalogdir = os.path.join(self.configdir, 'machines',
                                        self.machine, 'catalog',
                                        self.model)
-        self.catalogfile = os.path.join(self.catalogdir, self.exp+'.yaml')
+        self.catalogfile = os.path.join(self.catalogdir, self.exp + '.yaml')
         self.logger.warning("Catalog file: %s", self.catalogfile)
 
         # Get JSON filename
-        self.jsonfile = os.path.join(self.jsondir, self.tgt_json+'.json')
+        self.jsonfile = os.path.join(self.jsondir, self.tgt_json + '.json')
         self.logger.warning("JSON file: %s", self.jsonfile)
 
         self.flag = [False, False, False]
@@ -330,7 +330,7 @@ class Gribber():
         if self.model == 'IFS':
             cmd = ['gribscan-build', '-o', self.jsondir, '--magician', 'ifs',
                    '--prefix', self.datadir + '/'] +\
-                   glob(os.path.join(self.tmpdir, '*index'))
+                glob(os.path.join(self.tmpdir, '*index'))
         else:
             self.logger.warning("Model %s is experimental.", self.model)
             cmd = ['gribscan-build', '-o', self.jsondir,
@@ -350,7 +350,7 @@ class Gribber():
             'args': {
                 'consolidated': False,
                 'urlpath': 'reference::' + os.path.join(self.jsondir,
-                                                        self.tgt_json+'.json')
+                                                        self.tgt_json + '.json')
             }
         }
         self.logger.info("Block to be added to catalog file:")

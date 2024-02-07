@@ -73,6 +73,14 @@ Now we can read the actual data with the ``retrieve`` method.
 
 The reader returns an xarray.Dataset with raw ICON data on the original grid.
 
+If some information about the data is needed, it is possible to use the ``info`` method of the ``Reader`` class.
+
+.. code-block:: python
+
+    reader.info()
+
+This will print to screen some information about the data, including the grid, fixes, regrid setup and FDB details if available.
+
 
 Interpolation and Regridding
 ----------------------------
@@ -83,18 +91,21 @@ operates sparse matrix computation based on externally-computed weights.
 
 The idea of the regridder is first to generate the weights for the interpolation and then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already existent and stored
-in a directory specified in the ``config/machine/<machine-name>/regrid.yaml`` file.
+in a directory specified in the ``config/machine/<machine-name>/catalog.yaml`` file.
 A list of predefined target grids (only regular lon-lat for now) is available in the ``config/aqua-grids.yaml`` file.
 For example, "r100" is a regular grid at 1° resolution.
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
+
 Such an approach has two main advantages:
+
 1. All operations are done in memory so that no I/O is required, and the operations are faster than with CDO
-2. Operations can be easily parallelized with Dask, bringing further speedup. 
+2. Operations can be easily parallelized with Dask, bringing further speedup.
 
 In the long term, it will be possible to support also other interpolation software,
-such as `ESMF <https://earthsystemmodeling.org/>`_ or `MIR <https://github.com/ecmwf/mir>`_. 
+such as `ESMF <https://earthsystemmodeling.org/>`_ or `MIR <https://github.com/ecmwf/mir>`_.
+
 Let's see a practical example.
 We instantiate a reader for ICON data specifying that we will want to interpolate to a 1° grid. 
 As mentioned, if the weights file does not exist in our collection, it will be created automatically.
@@ -104,9 +115,10 @@ As mentioned, if the weights file does not exist in our collection, it will be c
     reader = Reader(model="ICON", exp="ngc2009", source="atm_2d_ml_R02B09", regrid="r100")
     data = reader.retrieve()
 
-Notice that these data still need to be regridded. You could ask to regrid it to the destination grid which we chose when we instantiated the reader.
-Please be warned that this will take longer without a selection.
-It is usually more efficient to load the data, select it, and then regrid it.
+.. note::
+    Notice that these data still need to be regridded. You could ask to regrid it to the destination grid which we chose when we instantiated the reader.
+    Please be warned that this will take longer without a selection.
+    It is usually more efficient to load the data, select it, and then regrid it.
 
 Now we regrid part of the data (the temperature of the first 100 frames):
 
@@ -182,16 +194,20 @@ The general idea is to convert data from different models to a uniform file form
 with the same variable names and units. The default format is GRIB2.
 
 The fixing is done by default when we initialize the reader, 
-using the instructions in the ``config/fixes`` folder. Each model has its own YAML file that specify the fixes, and a ``default.yaml``
-file is used for common unit corrections.
+using the instructions in the ``config/fixes`` folder. Each model has its own YAML file that specify the fixes.
+Fixes can be specified in two different ways:
+- Using the ``family`` definitions, to be then provided as a metadata in the catalog. This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog. There is the possibility of specifing a `parent`
+ fix so that a fix can be re-used with minor correction, merging small change to a larger family
+- Using the source-based definition. Each experiment/source can have its own specific fix, or alternatively a ``default.yaml`` that can be used in the case of necessity. Please note that this is the older AQUA implementation and will be deprecated in favour of the new `family` approach.
+A ``defalt.yaml`` is used for common unit corrections. 
 
 The fixer performs a range of operations on data:
 
 - adopt a common 'coordinate data model' (default is the CDS data model): names of coordinates and dimensions (lon, lat, etc.),
   coordinate units and direction, name (and meaning) of the time dimension. 
-- derive new variables. In particular, it derives from accumulated variables like ``tp`` (in mm), the equivalent mean-rate variables
-  (like ``tprate``, paramid 172228; in mm/s).
-  The fixer can identify these derived variables by their Short Names (ECMWF and WMO eccodes tables are used).
+- Changing variable name, by using ``source`` key, deriving the correct metadata from GRIB tables. The fixer can identify these derived variables by their ShortNames and ParamID (ECMWF and WMO eccodes tables are used).
+- Derive new variables executing trivial operations as multiplication, addition, etc, by using the ``derived`` key. In particular, it derives from accumulated variables like ``tp`` (in mm), the equivalent mean-rate variables
+  (like ``tprate``, paramid 172228; in mm/s). 
 - using the ``metpy.units`` module, it is capable of guessing some basic conversions.
   In particular, if a density is missing, it will assume that it is the density of water and will take it into account.
   If there is an extra time unit, it will assume that division by the timestep is needed. 
@@ -216,6 +232,9 @@ three different fixing strategies:
   It can be used if the most of fixes from default are good, but something different in the specific source is required.
 - ``default``: for this specific source, roll back to default fixes.
   This might be necessary if a default fix exists for a specific experiment and it should not be used in a specific source.
+
+.. warning ::
+    Recursive fixes (i.e. fixes of fixes) cannot be implemented.
 
 Streaming simulation
 --------------------
@@ -299,8 +318,9 @@ The magic behind this is performed by an intake driver for FDB which has been sp
 Please notice that in the case of FDB access specifying the variable is compulsory, but a list can be provided. 
 If not specified, the default variable defined in the catalogue is used.
 
-**In general we recommend to use the default xarray (dask) dataset output**, since this also supports ``dask.distributed`` multiprocessing.
-For example you could create a ``LocalCluster`` and its client with:
+.. warning::
+    In general we recommend to use the default xarray (dask) dataset output, since this also supports ``dask.distributed`` multiprocessing.
+    For example you could create a ``LocalCluster`` and its client with:
 
 .. code-block:: python
 
@@ -343,3 +363,78 @@ The default is ``S`` (step), i.e. single saved timesteps are read at each iterat
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
 Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
+
+Level selection and regridding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When reading 3D data it is possible to specify already during `retrieve()` which levels to select using the `level` keyword.
+The levels are specified in the same units as they are stored in the archive (for example in hPa for atmospheric IFS data, but an index for NEMO data in the FDB archive).
+
+In the case of FDB data this presents the great advantage that a significantly reduced request will be read from the FDB 
+(by default all levels would be read for each timestep even if later a `sel()` or `isel()` selection is performed on the XArray).
+For non-FDB sources the reader simply uses the `sel()` method to select the desired levels.
+
+When reading 3D data the reader also adds an additional coordinates with prefix `idx_`
+and suffix the names of vertical dimensions to the Dataset. These represent the indices 
+of the (possibly selected) levels in the original archive.
+This hidden index helps the regridder to choose the appropriate weights for each level even if a level
+selection has been performed.
+
+This means that when regridding 3D data the regridding can be performed first on a full dataset and then
+levels are selected or vice versa. In both cases the regridding will be performed using the correct weights.
+By default in xarray when a single vertical level is selected the vertical dimension is dropped, but
+the regridder is still able to deal with this situation using the information in the hidden index.
+
+Please avoid performing regridding on datasets in which single levels have been selected for multiple
+3D variables using different vertical dimensions or on datasets containing also 2D data,
+because in such cases it may not be possible to reconstruct which vertical dimension
+each variable was supposed to be using. 
+In these cases it is better to first select a variable, then select levels and finally regrid. 
+The regridder will issue a warning if it detects such a situation.
+An alternative is to maintain the vertical dimension when selecting a single level by specifying a list with one element,
+for example using `isel(nz1=[40])` instead of `isel(nz1=40)`.
+If level selection was performed at the `retrieve()` stage this is not a problem,
+since in that case the vertical level information is preserved by producing 3D variables
+with a single vertical level.
+
+Accessor
+~~~~~~~~
+
+AQUA also provides a special 'aqua' accessor to Xarray which allows to call most functions and methods of the reader
+class as if they were methods of an Xarray DataArray or Dataset.
+Reader methods like `reader.regrid()` or functions like `plot_single_map()` can now also be accessed by appending
+the suffix `aqua`to a DataArray or Dataset, followed by the function of interest, like in `data.aqua.regrid()`
+
+This means that instead of writing:
+
+.. code-block:: python
+    reader.fldmean(reader.timmean(data.tcc, freq="Y"))
+
+we can write
+
+.. code-block:: python
+    data.tcc.aqua.timmean(freq="Y").aqua.fldmean()
+
+Please notice that the accessor always assumes that the Reader instance to be used is either
+the one with which a Dataset was created or, for new derived objects and for *DataArrays in the Datasets*,
+the last instantiated Reader or the last use of the `retrieve()` method.
+This means that if more than one reader instance is used (for example to compare different datasets)
+we recommend not to use the accessor.
+
+As an alternative the Reader class contains a special `set_default()` method which sets that reader
+as an accessor default in the following. The accessor itself also has a `set_default()` method
+(accepting a reader instance as an argument) which sets the default and returns the same object.
+Usage examples when multiple readers are used:
+
+.. code-block:: python
+    from aqua import Reader
+    reader1=Reader(model="IFS", exp="test-tco79", source="short", regrid="r100")  # the default is now reader1
+    reader2=Reader(model="IFS", exp="test-tco79", source="short", regrid="r200")  # the default is now reader2
+    data1 = reader1.retrieve()  # the default is now reader1 
+    data2 = reader2.retrieve()  # the default is now reader2
+    reader1.set_default()  # the default is now reader1 
+    data1r = data1.aqua.regrid()
+    data2r = data2.aqua.regrid()  # data2 was created by retrieve(), so it remembers its default reader
+    data2r = data2['2t'].aqua.set_default(reader2).aqua.regrid()  # the default is set to reader2 before using a method
+
+

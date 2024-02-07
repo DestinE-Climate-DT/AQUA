@@ -1,0 +1,26 @@
+sources:
+  control-1950-dev:
+    description: FDB IFS/NEMO tco1279-orca025 control 1950 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/control-1950-dev.yaml'
+  historical-1990-dev:
+    description: FDB IFS/NEMO tco1279-orca025 historical 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990-dev.yaml'
+  historical-1990-dev-lowres:
+    description: FDB IFS/NEMO tco79-eORCA1 historical 1990 run (lowres)
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990-dev-lowres.yaml'
+  spinup-1990-fracice:
+    description: "1990-1991 coupled spinup (2y) with fractional sea ice coupling"
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/spinup-1990-fracice.yaml'
+  historical-1990:
+    description: FDB IFS/NEMO tco1279-orca025 historical 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990.yaml'

@@ -25,7 +25,7 @@ def reader(request):
         pytest.skip()
     if model == 'ERA5':
         pytest.skip()
-    if model == 'IFS' and source == 'fdb':  # there is another test for that
+    if model == 'IFS' and exp == 'test-fdb':
         pytest.skip()
     # teleconnections catalogue, only on teleconnections workflow
     if model == 'IFS' and exp == 'test-tco79' and source == 'teleconnections':
@@ -34,6 +34,21 @@ def reader(request):
                     fix=False, loglevel=loglevel)
     data = myread.retrieve()
     return myread, data
+
+@pytest.mark.gsv
+def test_catalogue_gsv(reader):
+    """
+    Checking that both reader and Dataset are retrived in reasonable shape
+    """
+    sources = ['fdb', 'fdb-levels', 'fdb-nolevels']
+
+    for source in sources:
+        reader_gsv = Reader(model='IFS', exp='test-fdb', source=source,
+                            loglevel=loglevel)
+        data = reader_gsv.retrieve()
+
+        assert isinstance(reader_gsv, Reader)
+        assert isinstance(data, xarray.Dataset)
 
 @pytest.fixture(params=[(model, exp, source)
                         for model in catalogue()
@@ -60,7 +75,7 @@ def reader_regrid(request):
     myread = Reader(model=model, exp=exp, source=source, areas=True, regrid='r200',
                     loglevel=loglevel, rebuild=False)
     data = myread.retrieve()
-    
+
     return myread, data
 
 

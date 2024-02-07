@@ -89,7 +89,6 @@ def create_filename(outputdir=None, plotname=None, type=None,
 
 if __name__ == '__main__':
 
-    print('Running global time series diagnostic...')
     args = parse_arguments(sys.argv[1:])
 
     # Loglevel settings
@@ -97,6 +96,8 @@ if __name__ == '__main__':
 
     logger = log_configure(log_level=loglevel,
                            log_name='CLI Global Time Series')
+
+    logger.info('Running global time series diagnostic...')
 
     # we change the current directory to the one of the CLI
     # so that relative path works
@@ -133,10 +134,10 @@ if __name__ == '__main__':
     create_folder(folder=outputdir_pdf, loglevel=loglevel)
 
     if "timeseries" in config:
-        logger.warning("Plotting timeseries...")
+        logger.info("Plotting timeseries...")
 
         for var in config["timeseries"]:
-            logger.warning(f"Plotting {var}")
+            logger.info(f"Plotting {var}")
 
             # Creating the output filename
             filename_nc = create_filename(outputdir=outputdir,
@@ -192,7 +193,7 @@ if __name__ == '__main__':
                 fig.savefig(filename_pdf)
 
     if "gregory" in config:
-        logger.warning("Plotting gregory plot...")
+        logger.info("Plotting gregory plot...")
 
         # Creating the output filename
         filename_nc = create_filename(outputdir=outputdir,

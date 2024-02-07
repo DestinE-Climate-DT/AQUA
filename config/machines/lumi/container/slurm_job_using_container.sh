@@ -10,7 +10,7 @@
 #SBATCH -p debug    #change the partition
 
 AQUA_path=/path_to/AQUA 
-AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.4.sif
+AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.5.2.sif
 FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml #Change it to your simulation
 GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
 GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
