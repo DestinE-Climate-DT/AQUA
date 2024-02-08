@@ -28,7 +28,7 @@ Refer to the AQUA documentation for more information.
 ## Data requirements
 
 The diagnostic requires the following data:
-- `ci` (sea ice concentration, GRIB paramid 31)
+- `avg_siconc` (Time-mean sea ice area fraction, GRIB paramid 263001)
 
 ## Examples
 

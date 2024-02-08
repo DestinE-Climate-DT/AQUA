@@ -2,6 +2,7 @@
 import os
 import matplotlib.pyplot as plt
 import xarray as xr
+import numpy as np
 from aqua import Reader
 from aqua.exceptions import NoDataError
 from aqua.util import load_yaml, create_folder
@@ -85,6 +86,19 @@ class SeaIceExtent:
 
         try:
             self.mySetups = config['models']
+
+            # Attribute a color for plotting
+            reserveColorList = ["#1898e0", "#00b2ed", "#00bb62",
+                                "#8bcd45", "#dbe622", "#f9c410",
+                                "#f89e13", "#fb4c27", "#fb4865",
+                                "#d24493", "#8f57bf", "#645ccc",]
+            js = 0
+            for s in self.mySetups:
+                if s["model"] == "OSI-SAF":
+                    s["color_plot"] = [0.2, 0.2, 0.2]
+                else:
+                    s["color_plot"] = reserveColorList[js]
+                js += 1
         except KeyError:
             raise NoDataError("No models specified in configuration")
 
@@ -107,7 +121,7 @@ class SeaIceExtent:
         # Instantiate the various readers (one per setup) and retrieve the
         # corresponding data
         self.myExtents = list()
-        for _, setup in enumerate(self.mySetups):
+        for jSetup, setup in enumerate(self.mySetups):
             # Acquiring the setup
             self.logger.debug("Setup: " + str(setup))
             model = setup["model"]
@@ -116,8 +130,7 @@ class SeaIceExtent:
             # automatically the first source available
             source = setup.get("source", None)
             regrid = setup.get("regrid", None)
-            var = setup.get("var", 'ci')
-            # NOTE: this is not implemented yet
+            var = setup.get("var", 'avg_siconc')
             timespan = setup.get("timespan", None)
 
             self.logger.info(f"Retrieving data for {model} {exp} {source}")
@@ -135,11 +148,12 @@ class SeaIceExtent:
             except KeyError:
                 self.logger.error("Variable %s not found in dataset", var)
                 raise NoDataError("Variable not found in dataset")
-
-            if timespan:
-                # TODO: implement timespan
-                self.logger.warning("Timespan not implemented yet")
-
+            if timespan is None:
+                # if timespan is set to None, retrieve the timespan
+                # from the data directly
+                self.logger.warning("Using timespan based on data availability")
+                self.mySetups[jSetup]["timespan"] = [np.datetime_as_string(data.time[0].values, unit='D'),
+                                                     np.datetime_as_string(data.time[-1].values, unit='D')]
             if regrid:
                 self.logger.info("Regridding data")
                 data = reader.regrid(data)
@@ -154,6 +168,8 @@ class SeaIceExtent:
             # Important: recenter the lon in the conventional 0-360 range
             lon = (lon + 360) % 360
             lon.attrs["units"] = "degrees"
+
+            # Compute climatology
 
             # Create mask based on threshold
             try:
@@ -220,13 +236,31 @@ class SeaIceExtent:
         Method to produce figures plotting seaice extent.
         """
 
-        fig, ax = plt.subplots(self.nRegions, figsize=(13, 3 * self.nRegions))
+        # First figure: raw time series (useful to check any possible suspicious
+        # data that could contaminate statistics like averages: fig1
+
+        # Second figure: seasonal cycles (useful for evaluation): fig2
+        monthsNumeric = range(1, 12 + 1)  # Numeric months
+        monthsNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+
+        fig1, ax1 = plt.subplots(self.nRegions, figsize=(13, 3 * self.nRegions))
+        fig2, ax2 = plt.subplots(self.nRegions, figsize=(6, 4 * self.nRegions))
 
         for jr, region in enumerate(self.myRegions):
             for js, setup in enumerate(self.mySetups):
-                label = setup["model"] + " " + setup["exp"] + " " + setup["source"]
+                strTimeInfo = " to ".join(setup["timespan"])
+                label = setup["model"] + " " + setup["exp"] + " " + setup["source"] + " " + strTimeInfo
+                color_plot = setup["color_plot"]
                 self.logger.debug(f"Plotting {label} for region {region}")
                 extent = self.myExtents[js][jr]
+
+                # Monthly cycle
+                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
+                                        for m in monthsNumeric])
+
+                # One standard deviation of the temporal variability
+                extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
+                                      for m in monthsNumeric])
 
                 # Don't plot osisaf nh in the south and conversely
                 if (setup["model"] == "OSI-SAF" and setup["source"] == "nh-monthly" and
@@ -236,22 +270,46 @@ class SeaIceExtent:
                     self.logger.debug("Not plotting osisaf nh in the south and conversely")
                     pass
                 else:
-                    ax[jr].plot(extent.time, extent, label=label)
+                    ax1[jr].plot(extent.time, extent, label=label, color=color_plot)
+                    ax2[jr].plot(monthsNumeric, extentCycle, label=label, lw=3, color=color_plot)
 
-            ax[jr].set_title("Sea ice extent: region " + region)
+                    # Plot ribbon of uncertainty
+                    if setup["model"] == "OSI-SAF":
+                        mult = 2.0
+                        ax2[jr].fill_between(monthsNumeric, extentCycle - mult * extentStd, extentCycle + mult * extentStd,
+                                             alpha=0.5, zorder=0, color=color_plot, lw=0)
 
-            ax[jr].legend(fontsize=8, ncols=6, loc="best")
-            ax[jr].set_ylabel(extent.units)
-            ax[jr].grid()
+                ax1[jr].set_title("Sea ice extent: region " + region)
 
-        fig.tight_layout()
-        create_folder(self.outputdir, loglevel=self.loglevel)
-        for fmt in ["png", "pdf"]:
-            outputfig = os.path.join(self.outputdir, "pdf", str(fmt))
-            create_folder(outputfig, loglevel=self.loglevel)
-            figName = "SeaIceExtent_" + "all_models" + "." + fmt
-            self.logger.info("Saving figure %s", figName)
-            fig.savefig(outputfig + "/" + figName, dpi=300)
+                ax1[jr].legend(fontsize=6, ncols=6, loc="best")
+                ax1[jr].set_ylabel(extent.units)
+                # ax1[jr].set_ylim(bottom = 0, top = None)
+                ax1[jr].grid()
+                ax1[jr].set_axisbelow(True)
+                fig1.tight_layout()
+
+                ax2[jr].set_title("Sea ice extent seasonal cycle: region " + region)
+                ax2[jr].legend(fontsize=6, loc="best")
+                ax2[jr].set_ylabel(extent.units)
+                # Ticks
+                ax2[jr].set_xticks(monthsNumeric)
+                ax2[jr].set_xticklabels(monthsNames)
+                # ax2[jr].set_ylim(bottom = 0, top = None)
+                ax2[jr].grid()
+                ax2[jr].set_axisbelow(True)
+
+            fig2.tight_layout()
+            create_folder(self.outputdir, loglevel=self.loglevel)
+
+            for fmt in ["png", "pdf"]:
+                outputfig = os.path.join(self.outputdir, "pdf", str(fmt))
+                create_folder(outputfig, loglevel=self.loglevel)
+                fig1Name = "SeaIceExtent_" + "all_models" + "." + fmt
+                fig2Name = "SeaIceExtentCycle_" + "all_models" + "." + fmt
+                self.logger.info("Saving figure %s", fig1Name)
+                self.logger.info("Saving figure %s", fig2Name)
+                fig1.savefig(outputfig + "/" + fig1Name, dpi=300)
+                fig2.savefig(outputfig + "/" + fig2Name, dpi=300)
 
     def createNetCDF(self):
         """Method to create NetCDF files."""

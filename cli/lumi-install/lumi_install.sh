@@ -94,8 +94,8 @@ install_aqua() {
   log_message INFO "Modules have been loaded."
   
   # install AQUA framework and diagnostics
-  conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/config/machines/lumi/installation/environment_lumi.yml"
-  conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/config/machines/lumi/installation/pip_lumi.txt"
+  conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/cli/lumi-install/environment_lumi.yml"
+  conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/cli/lumi-install/pip_lumi.txt"
   log_message INFO "AQUA framework and diagnostics have been installed."
 
 }
