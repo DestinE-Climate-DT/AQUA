@@ -114,7 +114,7 @@ class FixerMixin():
         Load the fixer_name reading from the metadata of the catalog.
         If the fixer_name has a parent, load it and merge it giving priority to the child.
         """
-        
+
         # if fixer name is found, get it
         if self.fixer_name is not None:
             self.logger.info('Fix names in metadata is %s', self.fixer_name)
@@ -128,18 +128,19 @@ class FixerMixin():
                 if 'parent' in fixes:
                     parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes['parent'])
                     if parent_fixes is not None:
-                        self.logger.info("Parent fix %s found! Mergin with fixer_name fixes %s!", fixes['parent'], self.fixer_name)
+                        self.logger.info("Parent fix %s found! Mergin with fixer_name fixes %s!", fixes['parent'],
+                                         self.fixer_name)
                         fixes = self._merge_fixes(parent_fixes, fixes)
                     else:
                         self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes['parent'])
 
         # check the default in alternative
-        else:   
+        else:
             default_fixer_name = self.model + '-default'
             self.logger.info('No specific fix found, will call the default fix %s', default_fixer_name)
             fixes = self.fixes_dictionary["fixer_name"].get(default_fixer_name)
             if fixes is None:
-                self.logger.error("The requested deafult fixer name %s does not exist in fixes files", default_fixer_name)
+                self.logger.error("The requested default fixer name %s does not exist in fixes files", default_fixer_name)
                 return None
             else:
                 self.logger.info("Fix names %s found in fixes files", default_fixer_name)
@@ -360,7 +361,7 @@ class FixerMixin():
                             self.logger.error('Requested derived variable %s cannot be computed, is it available?', shortname)
                         else:
                             self.logger.info('%s is defined in the fixes but cannot be computed, is it available?',
-                                                shortname)
+                                             shortname)
                         continue
 
                 # safe check debugging

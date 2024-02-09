@@ -993,9 +993,12 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             else:
                 try:
                     data = data[var]
-                    self.logger.warning("You are asking for var %s but the fixes definition requires %s, which is not there.", var, loadvar)
-                    self.logger.warning("Retrieving %s, but it would be safer to run with fix=False or to correct the fixes", var)
+                    self.logger.warning("You are asking for var %s but the fixes definition requires %s, which is not there.",
+                                        var, loadvar)
+                    self.logger.warning("Retrieving %s, but it would be safer to run with fix=False or to correct the fixes",
+                                        var)
                 except Exception as e:
+                    self.logger.debug("Error in retrieving the variable %s", var)
                     raise KeyError("You are asking for variables which we cannot find in the catalog!") from e
 
         # check for duplicates
