@@ -34,7 +34,7 @@ sources:
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
       variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186, 187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179, 180, 181, 182, 212, 228]
       source_grid_name: tco1279
-      fixer_name: ifs-destine-v1
+      fixer_name: ifs-fesom-destine-v1-nan
  
   hourly-native-atm3d:
     <<: *base-default

@@ -2,6 +2,7 @@
 
 Main authors:
 - Lukas Kluft (MPI, lukas.kluft@mpimet.mpg.de)
+- Matteo Nurisso (CNR, m.nurisso@isac.crn.it)
 
 ## Description
 
@@ -9,17 +10,13 @@ This diagnostic computes and plots various (atmospheric) global mean time series
 
 ## Table of Contents
 
-* [Installation Instructions](#installation-instructions)
-
-  - [Installation on Levante](#installation-on-levante)
-
-  - [Installation on Lumi](#installation-on-lumi)
-
-* [Data requirements](#data-requirements)
-
-* [Examples](#examples)
-
-* [Contributing](#contributing)
+- [Atmospheric global mean time series](#atmospheric-global-mean-time-series)
+  - [Description](#description)
+  - [Table of Contents](#table-of-contents)
+  - [Installation Instructions](#installation-instructions)
+  - [Data requirements](#data-requirements)
+  - [Examples](#examples)
+  - [Contributing](#contributing)
 
 ## Installation Instructions
 
@@ -42,4 +39,4 @@ The **notebook/** folder contains the following notebooks:
 
 ## Contributing
 
-This diagnostic is maintained by Lukas Kluft (@lkluft).
+This diagnostic is maintained by Lukas Kluft (@lkluft) and Matteo Nurisso (@mnurisso).

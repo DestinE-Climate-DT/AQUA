@@ -311,7 +311,7 @@ class GSVSource(base.DataSource):
         self.itime = self._da.dims.index("time")
 
         if 'valid_time' in self._da.coords:  # temporary hack because valid_time is inconsistent anyway
-            self._da = self._da.drop('valid_time')
+            self._da = self._da.drop_vars('valid_time')
 
         coords = self._da.coords.copy()
         coords['time'] = self.timeaxis
@@ -374,7 +374,7 @@ class GSVSource(base.DataSource):
             if start_date == 'auto':
                 start_date = datesel[0] + 'T0000'
             if end_date == 'auto':
-                end_date = datesel[-1] + 'T0000'
+                end_date = datesel[-2] + 'T2300'
             self.logger.info('Automatic FDB date range: %s - %s', start_date, end_date)
 
         return start_date, end_date

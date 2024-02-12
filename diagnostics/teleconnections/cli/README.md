@@ -7,7 +7,7 @@ This folder contains the code to perform the analysis with the teleconnections d
 The CLI script is called `cli_teleconnections.py` and can be used as follows:
 
 ```bash
-mamba activate aqua_common
+mamba activate aqua
 python cli_teleconnections.py
 ```
 

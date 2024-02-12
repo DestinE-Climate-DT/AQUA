@@ -11,22 +11,19 @@ Welcome to AQUA's documentation!
 
    introduction
    installation
-   configuration
    getting_started
    core_components
    diagnostics/index
-   lra
    adding_data
-   tests
-   slurm
-   graphics
-   aqua_container
+   lra
+   container
    examples_tutorials
+   cli
+   advanced_topics
    api_reference
    troubleshooting_faq
    contributing
    references_acknowledgments
-
 
 Indices and tables
 ==================

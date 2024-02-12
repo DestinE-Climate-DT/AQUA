@@ -8,6 +8,7 @@ sources:
     description: ERA5 monthly data from 1940 to 2022
     driver: netcdf
     metadata:
+      fixer_name: ERA5-monthly
       source_grid_name: era5-r025
     args:
       urlpath: '/work/bb1153/b382076/ERA5/mon/ERA5_*_mon_full*.nc'
@@ -19,6 +20,7 @@ sources:
     description: ERA5 daily data from 1940 to 2022
     driver: netcdf
     metadata:
+    fixer_name: ERA5-daily
       source_grid_name: era5-r025
     args:
       urlpath: '/work/bb1153/b382076/ERA5/day/ERA5_*_day_full*.nc'
@@ -30,6 +32,7 @@ sources:
     description: ERA5 hourly data from 1940 to 2022
     driver: netcdf
     metadata:
+      fixer_name: ERA5-hourly
       source_grid_name: era5-r025
     args:
       urlpath: '/work/bb1153/b382076/ERA5/1hr/ERA5_*_1hr_full*.nc'

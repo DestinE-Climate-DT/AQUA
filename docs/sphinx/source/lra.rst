@@ -3,22 +3,17 @@ Low Resolution Archive
 
 
 The creation and the usage of the Low Resolution Archive (LRA) is a key concept of AQUA framework to simplify
-the analysis of very high resolution data. Indeed, many diagnostics included within AQUA does not need extremely
+the analysis of extreme high resolution data. Indeed, many diagnostics included within AQUA do not need extremely
 high-resolution high-frequency data, and they can assess the model behaviour with daily or monthly data at 
-relatively coarse resolution. Therefore LRA will represent an intermediate layer of data reduction that can be used 
+relatively coarse resolution. Therefore LRA represents an intermediate layer of data reduction that can be used 
 for simpler and fast analysis which can be valuable for climate model assessment. 
-
-.. note ::
-
-    In the long term this will be handled by the Data Bridge and by the MultIO features
-    but on the short term AQUA provides a series of tool to aggregate data.
 
 Basic Concepts
 --------------
 
-The LRA is basically a wrapper of the functionalities included in AQUA, combining the regridding, the fixing
+The LRA is basically a wrapper of the functionalities included in AQUA, combining the regridding, fixing
 and time averaging capabilities. A specific class ``LRAgenerator`` has been developed, using ``dask`` in order to exploit parallel
-computations, and can be investigated in a the `LRA generator notebook <https://github.com/oloapinivad/AQUA/blob/main/notebooks/lra_generator/lra_generator.ipynb>`_
+computations, and can be investigated in a the `LRA generator notebook <https://github.com/oloapinivad/AQUA/blob/main/notebooks/lra_generator/lra_generator.ipynb>`_.
 
 Access to the LRA
 -----------------
@@ -29,13 +24,12 @@ The only difference is that a specific source must be defined, following the syn
 .. code-block:: python
 
     from aqua import Reader
-    reader = Reader(model="FESOM", exp="tco2559-ng5", source="lra-r100-monthly")
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly")
     data = reader.retrieve()
-
 
 .. note ::
 
-    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg resolution) and at ``monthly`` or ``daily`` frequency
+    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg resolution) and at ``monthly`` or ``daily`` frequency. 
 
 Generation of the LRA
 ---------------------
@@ -43,13 +37,12 @@ Generation of the LRA
 Given the character of the computation required, the standard approach is to use the LRA through a command line 
 interface (CLI) which is available in ``cli/lra/cli_lra_generator.py``
 
-The configuration of the CLI is done via a YAML file that can be build from the ``lra_config.tmpl`` template, which include the target resolution, the target frequency,
-the temporary directory and the directory where you want to store the obtained LRA.
-A template for the file is included in the folder. Other options includes the logging level.
+The configuration of the CLI is done via a YAML file that can be build from the ``lumi_lra_config.tmpl`` or ``levante_lra_config.tmpl`` 
+templates, which include the target resolution, the target frequency, the temporary directory and the 
+directory where you want to store the obtained LRA.
 
-Most importantly, you have to edit the entries of the ``catalog`` dictionary, which follows the model-exp-source hierarchy.
+Most importantly, you have to edit the entries of the ``catalog`` dictionary, which follows the model-exp-source 3-level hierarchy.
 On top of that you must specify the variables you want to produce under the ``vars`` key.
-
 
 Usage
 ^^^^^
@@ -93,23 +86,23 @@ A basic example usage can thus be:
 
     ./cli_lra_generator.py -c lra_config.yaml -d -w 4
 
-
 .. warning ::
 
     Keep in mind that this script is ideally submitted via batch to a HPC node, 
     so that a template for SLURM is also available in the same directory (``lra-submitter.tmpl``). 
     Be aware that although the computation is split among different months, the memory consumption of loading very big data
-    is a limiting factor, so that unless you have very fat node it is unlikely you can use more than 16 nodes
+    is a limiting factor, so that unless you have very fat node it is unlikely you can use more than 16 workers.
 
 At the end of the generation, a new entry for the LRA is added to the catalog structure, 
 so that you will be able to access the exactly as shown above.
 
-Further LRA CLI tools
-^^^^^^^^^^^^^^^^^^^^^
+Workflow LRA tool
+^^^^^^^^^^^^^^^^^
 
-Due to integration with workflow, two other CLI tools are available to generate the LRA in a more complex environment accessing data from the GSV
-
-- ``cli_lra_workflow.py`` is the LRA generator used within the DE340 workflow. It is made to work from OPA output and then process them to fix and standardize it.
-  Please refer to workflow developers to get more information on how to use this tool. A template configuration file ``workflow_lra.tmpl`` is included in the folder.
-  The usage is the same as the main LRA generator script discussed above. 
+Due to integration with workflow, another LRA CLI tool is available to generate the LRA in a more complex environment accessing data from the GSV
+The script, named ``cli_lra_workflow.py`` is the LRA generator used within the DE_340 workflow. 
+It is made to work from OPA output and then process them to fix and standardize it.
+Please refer to AQUA team or workflow developers to get more information on how to use this tool.
+A template configuration file ``workflow_lra.tmpl`` is included in the folder. 
+The usage is the same as the main LRA generator script discussed above since it builts on the same `LRAGenerator` class. 
     

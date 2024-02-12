@@ -36,7 +36,7 @@ dependencies = [
     "gribscan",
     "ecCodes",
     "pandas",
-    "intake",
+    "intake==0.7.0",
     "intake-esm",
     "intake-xarray",
     "jinja2",
@@ -50,7 +50,7 @@ dependencies = [
     "sparse",
     "xarray",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@master",
-    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v0.12.0"
+    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v0.14.0"
 ]
 
 [project.optional-dependencies]

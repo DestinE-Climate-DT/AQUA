@@ -5,12 +5,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version.
+Unreleased in the current development version:
 
+- Bugfix of the `aqua-analysis` wrapper, now can work teleconnections on atmospheric and oceanic variables 
+and the default path is an absolute one (#859, #862)
+- Ocean3D: many fixes and adaptations to new data governance (#776)
+- Bugfix of the `aqua-analysis` wrapper, now can work teleconnections on atmospheric and oceanic variables (#859)
+- Radiation: adaptation to new data governance and many improvements (#727)
+- Seaice: Sea ice extent has now seasonal cycle (#797)
+- Fixing the paths in `cli/lumi-install/lumi_install.sh` (#856).
+- Refactor of the documentation (#842)
+- The drop warning in `aqua/gsv/intake_gsv.py` (#844)
+
+## [v0.6.3]
+
+Complete list:
+- Setting last date for NaN fix for IFS-NEMO/IFS-FESOM to 1999-10-01 and cleaner merge of parent fixes (#819)
+- Hotfix to set `intake==0.7.0` as default (#841)
+- Timeseries: can add annual std and now default uncertainty is 2 std (#830)
+- `retrieve_plain()` method now set off startdate and enddate (#829)
+- Complete restructure of fixer to make use of `fixer_name`: set a default for each model and a `False` to disable it (#746)
 - Added `center_time` option in the `timmean()` method to save the time coordinate in the middle of the time interval and create a Timmean module and related TimmeanMixin class (#811)
 - Fixer to rename coordinates available (#822)
-- Fixing new pandas timedelta: replacing H with h in all FDB catalog (#786)
+- Fixing new pandas timedelta definition: replacing H with h in all FDB catalog (#786)
+- Change environment name from `aqua_common` to `aqua`(#805)
 - Adding a run test label to trigger CI (#826)
+- Tropical_rainfall: improve organization and maintainability, introducing nested classes (#814)
+- Revisiting CERES fixes (#833)
+- Timeseries: add bands for observation in Gregory plots (#837)
 
 ## [v0.6.2]
 
@@ -279,7 +301,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6.2...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6.3...HEAD
+[v0.6.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6.2...v0.6.3
 [v0.6.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6.1...v0.6.2
 [v0.6.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.6...v0.6.1
 [v0.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.5.2-beta...v0.6

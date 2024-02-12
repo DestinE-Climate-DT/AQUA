@@ -22,7 +22,7 @@ whereconda=/home/b/b382216/work/mambaforge
 
 #echo $whereconda/etc/profile.d/conda.sh
 source $whereconda/etc/profile.d/conda.sh
-conda activate aqua_common
+conda activate aqua
 python $DIR/tropical_cyclones_cli.py
 
 

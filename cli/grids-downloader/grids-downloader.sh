@@ -3,8 +3,8 @@ set -e
 
 # Check if AQUA is set and the file exists
 if [[ -z "$AQUA" ]]; then
-    echo -e "\033[0;31mError: The AQUA environment variable is not defined, or the file does not exist."
-    echo -e "Please define the AQUA environment variable with the path to your 'AQUA' directory."
+    echo -e "\033[0;31mError: The AQUA environment variable is not defined."
+    echo -e "\x1b[38;2;255;165;0mPlease define the AQUA environment variable with the path to your 'AQUA' directory."
     echo -e "For example: export AQUA=/path/to/aqua\033[0m"
     exit 1  # Exit with status 1 to indicate an error
 else

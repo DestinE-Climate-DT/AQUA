@@ -76,6 +76,21 @@ def test_fixer_ifs_names():
     data = reader.retrieve()
     assert data['2t'].attrs['donald'] == 'duck'
 
+@pytest.mark.aqua
+def test_fixer_ifs_disable():
+    """Check with fixer_name: False method"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="short_disable_fix", loglevel=loglevel)
+    assert reader.fix == False
+
+@pytest.mark.aqua
+def test_fixer_ifs_default_fix():
+    """Check with fixer_name with roll back on model default"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="long_default_fix", loglevel=loglevel)
+    data = reader.retrieve()
+    assert data['mtntrf'].attrs['paramId'] == '172179'
+    
 
 @pytest.mark.aqua
 def test_fixer_ifs_coords():

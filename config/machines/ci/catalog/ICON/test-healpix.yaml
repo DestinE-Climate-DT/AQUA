@@ -4,6 +4,7 @@ plugins:
 sources:
   short:
     metadata:
+      fixer_name: ICON-hpx
       source_grid_name: test-healpix
     args:
       chunks:

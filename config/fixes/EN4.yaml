@@ -1,14 +1,12 @@
-models:  
-  EN4:
-    en4:
-      monthly:
-        data_model: cf
-        vars:
-          ocpt:
-            source: thetao 
-            grib: true
-          so:
-            src_units: psu
-            source: so
-            grib: true
-            units: psu
+fixer_name:  
+  EN4-default:
+    data_model: cf
+    vars:
+      ocpt:
+        source: thetao 
+        grib: true
+      so:
+        src_units: psu
+        source: so
+        grib: true
+        units: psu

@@ -1,12 +1,34 @@
 # These are fixes that are used in the CI tests
 fixer_name:
+    # These are for tests
     ifs-ci-test:
+        #method: merge #replace #merge
         data_model: ifs
+        deltat: 3600
+        jump: month
         vars:
             2t:
                 source: 2t
                 attributes: 
                     donald: 'duck'
+            ttr:    # Just decumulate OLR
+                source: ttr
+                decumulate: true
+            mtntrf: # Convert with auto unit conversion from eccodes properties
+                derived: ttr
+                grib: true
+                decumulate: true     
+            var235: # Test to specify using grib code as a target (actually does nothing) and adding a constant
+                derived: 2t+1.0
+                grib: true
+            mtntrf2:
+                derived: ttr+ttr # example of derived variable, should be double the normal amount
+                src_units: J m-2 # Overruling source units
+                decumulate: true  # Test decumulation
+                units: "{radiation_flux}" # overruling units
+                attributes:
+                    long_name: Mean top net thermal radiation flux doubled # assigning a long_name
+                    paramId: '999179' # assigning an (invented) paramId
     
     ifs-ci-coords:
         data_model: ifs

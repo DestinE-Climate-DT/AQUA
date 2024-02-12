@@ -13,7 +13,7 @@ sources:
   original_2d:
     metadata:
       source_grid_name: test-pi-2d
-      fixer_name: fesom-default
+      fixer_name: FESOM-default
     args:
       chunks:
         time: 1
@@ -29,7 +29,7 @@ sources:
   original_2d_fix:
     metadata:
       source_grid_name: test-pi-2d
-      fixer_name: fesom-test
+      fixer_name: FESOM-test
     args:
       chunks:
         time: 1
@@ -40,6 +40,7 @@ sources:
     driver: netcdf
   original_3d:
     metadata:
+      fixer_name: FESOM-default
       source_grid_name: test-pi-3d
     args:
       chunks:

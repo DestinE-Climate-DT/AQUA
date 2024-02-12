@@ -1,8 +1,8 @@
 #!/bin/bash
 # Check if AQUA is set and the file exists
 if [[ -z "$AQUA" ]]; then
-    echo -e "\033[0;31mError: The AQUA environment variable is not defined, or the file does not exist."
-    echo -e "Please define the AQUA environment variable with the path to your 'AQUA' directory."
+    echo -e "\033[0;31mError: The AQUA environment variable is not defined."
+    echo -e "\x1b[38;2;255;165;0mPlease define the AQUA environment variable with the path to your 'AQUA' directory."
     echo -e "For example: export AQUA=/path/to/aqua\033[0m"
     exit 1  # Exit with status 1 to indicate an error
 else
@@ -23,7 +23,7 @@ model_atm="IFS-NEMO"
 model_oce="IFS-NEMO"
 exp="historical-1990"
 source="lra-r100-monthly"
-outputdir="./output"
+outputdir="$AQUA/cli/aqua-analysis/output" # Prefer absolute paths, e.g., "/path/to/aqua/my/output"
 loglevel="WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 machine="lumi" # will change the aqua config file
 
@@ -51,6 +51,8 @@ atm_oce_diagnostics=("ecmean")
 
 # Combine all diagnostics into a single array
 all_diagnostics=("${atm_diagnostics[@]}" "${oce_diagnostics[@]}" "${atm_oce_diagnostics[@]}")
+
+log_message DEBUG "Running diagnostics: ${all_diagnostics[@]}"
 
 run_dummy=true
 
@@ -248,15 +250,32 @@ for diagnostic in "${all_diagnostics[@]}"; do
   log_message INFO "Running $diagnostic"
 
   if [[ "${atm_diagnostics[@]}" =~ "$diagnostic" ]]; then
+    log_message DEBUG "Atmospheric diagnostic: $diagnostic"
+    log_message DEBUG "Arguments: $args_atm ${atm_extra_args[$diagnostic]} -l $loglevel --outputdir $outputdir_atm/$diagnostic"
+  elif [[ "${oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
+    log_message DEBUG "Oceanic diagnostic: $diagnostic"
+    log_message DEBUG "Arguments: $args_oce ${oce_extra_args[$diagnostic]} -l $loglevel --outputdir $outputdir_oce/$diagnostic"
+  elif [[ "${atm_oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
+    log_message DEBUG "Atmospheric and oceanic diagnostic: $diagnostic"
+    log_message DEBUG "Arguments: $args ${atm_oce_extra_args[$diagnostic]} -l $loglevel --outputdir $outputdir_atm/$diagnostic"
+  fi
+
+  if [[ "${atm_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args_atm ${atm_extra_args[$diagnostic]} \
     -l $loglevel --outputdir $outputdir_atm/$diagnostic > "$outputdir_atm/$diagnostic.log" 2>&1 &
+    # Remove diagnostic from atm_diagnostics array
+    atm_diagnostics=(${atm_diagnostics[@]/$diagnostic})
   elif [[ "${oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args_oce ${oce_extra_args[$diagnostic]} \
     -l $loglevel --outputdir $outputdir_oce/$diagnostic > "$outputdir_oce/$diagnostic.log" 2>&1 &
+    # Remove diagnostic from oce_diagnostics array
+    oce_diagnostics=(${oce_diagnostics[@]/$diagnostic})
   elif [[ "${atm_oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
     # NOTE: atm_oce diagnostics are run in the atmospheric output directory
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args ${atm_oce_extra_args[$diagnostic]} \
     -l $loglevel --outputdir $outputdir_atm/$diagnostic > "$outputdir_atm/$diagnostic.log" 2>&1 &
+    # Remove diagnostic from atm_oce_diagnostics array
+    atm_oce_diagnostics=(${atm_oce_diagnostics[@]/$diagnostic})
   fi
   if [ $max_threads -gt 0 ]; then
     ((thread_count++))

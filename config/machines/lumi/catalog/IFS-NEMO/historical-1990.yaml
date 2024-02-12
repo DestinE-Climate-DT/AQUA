@@ -33,7 +33,7 @@ sources:
         187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
         180, 181, 182, 212, 228]
       source_grid_name: tco1279
-      fixer_name: ifs-destine-v1
+      fixer_name: ifs-nemo-destine-v1-nan
 
   hourly-native-atm3d:
     <<: *base-default

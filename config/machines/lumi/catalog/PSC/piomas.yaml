@@ -7,6 +7,7 @@ sources:
     description: sea ice thickness monthly data
     driver: netcdf
     metadata:
+      fixer_name: PIOMAS
       source_grid_name: psc-piomas
     args:
       chunks:
