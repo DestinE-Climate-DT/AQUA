@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# For setiptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+[project]
+name = "replicability"
+dynamic = ["version"]
+authors = [
+    {name = "Supriyo Ghosh", email = "supryo.ghosh@bsc.es"}
+]
+description = "Replicability"
+readme = "README.md"
+keywords = []
+license = {text = "Private"}
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Science/Research",
+    "Operative System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython"
+]
+dependencies = [
+    
+]
+
+[tool.setuptools.package-data]
+platforms = [
+    "any"
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools.dynamic]
+version = {attr = "replicability.__version__"}
