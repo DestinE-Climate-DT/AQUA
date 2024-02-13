@@ -2,6 +2,9 @@
 teleconnections:
   ENSO: true
 
+# Interface file, found in config folder
+interface: 'teleconnections-destine'
+
 # The first is overwritten if the script with the flags --model, --exp, --source
 # Extra keyword arguments for the models are:
 # regrid: null
@@ -12,8 +15,8 @@ teleconnections:
 # If you want to use native data, you have to set these parameters
 # for each model.
 models:
-  - model: 'FESOM'
-    exp: 'tco2559-ng5-cycle3'
+  - model: 'IFS-NEMO'
+    exp: 'historical-1990'
     source: 'lra-r100-monthly'
 
 # Reference are analyzed if --ref is passed to the script

@@ -9,6 +9,32 @@ from collections import defaultdict
 from ruamel.yaml import YAML
 from aqua.logger import log_configure
 
+import yaml  # This is needed to allow YAML override in intake
+
+
+def construct_yaml_merge(loader, node):
+    """
+    This function is used to enable override in yaml for intake
+    """
+    if isinstance(node, yaml.ScalarNode):
+        # Handle scalar nodes
+        return loader.construct_scalar(node)
+    else:
+        # Handle sequence nodes
+        maps = []
+        for subnode in node.value:
+            maps.append(loader.construct_object(subnode))
+        result = {}
+        for dictionary in reversed(maps):
+            result.update(dictionary)
+        return result
+
+
+# Run this to enable YAML override for the yaml package when using SafeLoader in intake 
+yaml.SafeLoader.add_constructor(
+            'tag:yaml.org,2002:merge',
+            construct_yaml_merge)
+
 
 def load_multi_yaml(folder_path=None, filenames=None,
                     definitions=None, **kwargs):

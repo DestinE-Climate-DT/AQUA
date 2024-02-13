@@ -1,6 +1,6 @@
 """Test of tropical rainfall diagnostic"""
 import pytest
-import numpy as np
+# import numpy as np
 import xarray
 
 import re
@@ -92,6 +92,25 @@ def test_update_default_attribute():
     assert old_trop_lat_value != new_trop_lat_value
 
 
+@pytest.mark.tropical_rainfall
+def test_attribute_type():
+    """ Testing the type of attributes
+    """
+    try:
+        diag = Tropical_Rainfall(trop_lat='str')
+    except TypeError:
+        print(diag.trop_lat)
+        assert True,       "supposed to be the wrong type"
+    try:
+        Tropical_Rainfall(s_year=0.5)
+    except TypeError:
+        assert True,       "supposed to be the wrong type"
+    try:
+        Tropical_Rainfall(model_variable=0)
+    except TypeError:
+        assert True,       "supposed to be the wrong type"
+
+
 @pytest.fixture
 def histogram_output(reader):
     """ Histogram output fixture
@@ -103,7 +122,6 @@ def histogram_output(reader):
     elif '2t' in data.shortName:
         diag = Tropical_Rainfall(
             num_of_bins=1000, first_edge=0, width_of_bin=0.5, loglevel='debug')
-        # Tropical_Rainfall(num_of_bins = 20, first_edge = 200, width_of_bin = (320-200)/20, loglevel='debug')
     hist = diag.histogram(data, trop_lat=90)
     return hist
 
@@ -155,7 +173,7 @@ def test_histogram_load_to_memory(histogram_output):
         remove(histograms_list_full_path[i])
     hist = histogram_output
     diag = Tropical_Rainfall()
-    diag.dataset_to_netcdf(
+    diag.main.dataset_to_netcdf(
         dataset=hist, path_to_netcdf=path_to_histogram, name_of_file='test_hist_saving')
     files = [f for f in listdir(path_to_histogram)
              if isfile(join(path_to_histogram, f))]
@@ -187,10 +205,8 @@ def test_hist_figure_load_to_memory(histogram_output):
 
     hist = histogram_output
     diag = Tropical_Rainfall()
-    diag.histogram_plot(hist, path_to_pdf=str(
-        path_to_pdf) + 'test_hist_fig_saving.png')
-    files = [f for f in listdir(path_to_pdf) if isfile(join(path_to_pdf, f))]
-    assert 'test_hist_fig_saving.png' in files
+    diag.histogram_plot(hist, path_to_pdf=path_to_pdf, name_of_file='test_hist_fig_saving')
+    assert 'test_hist_fig_saving' in listdir(path_to_pdf)[0]
 
 
 @pytest.mark.tropical_rainfall
@@ -225,7 +241,7 @@ def test_global_attributes_of_histogram(histogram_output):
         assert 'lat_band' in hist.attrs['history']
         assert 'lon_band' in hist.attrs['history']
     except KeyError:
-        print(f"The obtained xarray.Dataset doesn't have global attributes.")
+        print("The obtained xarray.Dataset doesn't have global attributes.")
 
 
 @pytest.mark.tropical_rainfall
@@ -264,7 +280,7 @@ def test_latitude_band(reader):
     data = reader
     max_lat_value = max(data.lat.values[0], data.lat.values[-1])
     diag = Tropical_Rainfall(trop_lat=10)
-    data_trop = diag.latitude_band(data)
+    data_trop = diag.main.latitude_band(data)
     assert max_lat_value > max(
         data_trop.lat.values[0], data_trop.lat.values[-1])
     assert 10 > data_trop.lat.values[-1]
@@ -283,11 +299,11 @@ def test_histogram_merge(histogram_output):
     diag = Tropical_Rainfall()
 
     path_to_histogram = str(path_to_diagnostic)+"/test_output/histograms/"
-    diag.dataset_to_netcdf(
+    diag.main.dataset_to_netcdf(
         dataset=hist_2, path_to_netcdf=path_to_histogram, name_of_file='test_merge')
 
     hist_merged = diag.merge_two_datasets(
-        tprate_dataset_1=hist_1, tprate_dataset_2=hist_2)
+        dataset_1=hist_1, dataset_2=hist_2)
     counts_merged = sum(hist_merged.counts.values)
     assert counts_merged == (counts_1 + counts_2)
 

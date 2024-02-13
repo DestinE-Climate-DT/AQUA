@@ -28,8 +28,8 @@ defaults:
 jobs:
   aqua_test:
     # NOTE: this option can be uncommented to run the job only when
-    #       a pull request contains a label with the name "Ready to merge".
-    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    #       a pull request contains a label with the name "Run Tests" or "Ready to Merge".
+    if: contains(github.event.pull_request.labels.*.name, 'run tests') || contains(github.event.pull_request.labels.*.name, 'ready to merge')
     env:
       # You can disable coverage by changing this to false. You can
       # also add other Python versions to the matrix, pinning the
@@ -44,8 +44,10 @@ jobs:
     continue-on-error: false
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      # https://hub.docker.com/r/kinow/fdb
-      image: kinow/fdb:5.11.17-jammy
+      image: ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua:ubuntu-docker
+      credentials:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
       options: --user root
     permissions:
       contents: read
@@ -82,7 +84,7 @@ jobs:
       - name: Set up Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment-common.yml 
+          environment-file: environment.yml 
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -106,6 +108,8 @@ jobs:
       - name: Download and set up tests
         run: |
           ./download_data_for_tests.sh
+      - name: Set up FDB
+        run: |
           export
           # FDB for GSV
           rm -rf /app/
@@ -114,6 +118,7 @@ jobs:
           mkdir -pv /app/localroot/
           cd /app/
           fdb-write sample_test_data.grib
+          fdb-write sample_test_data_d1.grib
           ls -l /app/localroot
           # The fdb-list command is a good smoke test.
           fdb-list class=ea,expver=0001

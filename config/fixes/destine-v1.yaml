@@ -1,0 +1,73 @@
+fixer_name:
+    ERA5-destine-v1:
+        data_model: cf
+        vars:
+            2t: 
+                grib: true
+                source: T2M
+            msl:
+                grib: true
+                source: MSL
+            mer:
+                grib: true
+                source: E
+                src_units: m/day
+                units: kg m**-2 s**-1
+            mtpr: 
+                grib: true
+                source: TP
+                src_units: m/day
+            tcc: 
+                grib: true 
+                source: TCC
+                units: frac
+            avg_tos:
+                grib: true
+                source: SSTK
+            avg_siconc:
+                grib: true
+                source: CI
+            mslhf:
+                src_units: J m**-2 day**-1
+                source: SLHF
+                grib: true
+            msshf:
+                src_units: J m**-2 day**-1
+                source: SSHF
+                grib: true
+            msnswrf:
+                src_units: J m**-2 day**-1
+                source: SSR
+                grib: true
+            msdwswrf:
+                src_units: J m**-2 day**-1
+                source: SSRD
+                grib: true
+            msnlwrf:
+                src_units: J m**-2 day**-1
+                source: STR
+                grib: true
+            msdwlwrf:
+                src_units: J m**-2 day**-1
+                source: STRD
+                grib: true
+            mtnswrf:
+                src_units: J m**-2 day**-1
+                source: TSR
+                grib: true
+            mtnlwrf:
+                src_units: J m**-2 day**-1
+                source: TTR
+                grib: true 
+            u:
+                source: U
+                grib: true
+            v:
+                source: V
+                grib: true
+            q:
+                source: Q
+                grib: true
+            t:
+                source: T
+                grib: true   

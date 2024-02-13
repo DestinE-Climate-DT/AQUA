@@ -16,7 +16,7 @@ sources:
       data_start_date: 20200120
       data_end_date: 20210101
       aggregation: S
-      timestep: H
+      timestep: h
       timestyle: step
     description: FDB data tco399 grid
     driver: gsv

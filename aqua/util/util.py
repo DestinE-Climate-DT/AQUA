@@ -3,7 +3,8 @@
 import os
 import random
 import string
-import logging
+import re
+import numpy as np
 import xarray as xr
 from aqua.logger import log_configure
 
@@ -52,16 +53,18 @@ def create_folder(folder, loglevel="WARNING"):
 
     if not os.path.exists(folder):
         logger.info('Creating folder %s', folder)
-        os.makedirs(folder)
+        os.makedirs(folder, exist_ok=True)
     else:
         logger.info('Folder %s already exists', folder)
 
 
-def file_is_complete(filename, logger=logging.getLogger()):
+def file_is_complete(filename, loglevel='WARNING'):
     """Basic check to see if file exists and that includes values which are not NaN
     Return a boolean that can be used as a flag for further operation
     True means that we have to re-do the computation
     A logger can be passed for correct logging properties"""
+
+    logger = log_configure(loglevel, 'file_is_complete')
 
     if os.path.isfile(filename):
         logger.info('File %s is found...', filename)
@@ -73,15 +76,20 @@ def file_is_complete(filename, logger=logging.getLogger()):
             else:
                 varname = list(xfield.data_vars)[0]
                 if xfield[varname].isnull().all():
-                    # if xfield[varname].isnull().all(dim=['lon','lat']).all():
                     logger.error('File %s is full of NaN! Recomputing...', filename)
-                    check = False
+                    check = False   
                 else:
-                    check = True
-                    logger.info('File %s seems ok!', filename)
+                    mydims = [dim for dim in xfield[varname].dims if dim != 'time']
+                    nan_count = np.isnan(xfield[varname]).sum(dim=mydims)
+                    check = all(value == nan_count[0] for value in nan_count)
+                    if check: 
+                        logger.info('File %s seems ok!', filename)
+                    else:
+                        logger.error('File %s has at least one time step with NaN! Recomputing...', filename)
+                        
         # we have no clue which kind of exception might show up
         except ValueError:
-            logger.info('Something wrong with file %s! Recomputing...', filename)
+            logger.error('Something wrong with file %s! Recomputing...', filename)
             check = False
     else:
         logger.info('File %s not found...', filename)
@@ -97,3 +105,22 @@ def find_vert_coord(ds):
     """
     vert_coord = [x for x in ds.coords if ds.coords[x].attrs.get("units") in ["Pa", "hPa", "m", "km", "Km", "cm", ""]]
     return vert_coord
+
+
+def extract_literal_and_numeric(text):
+    """
+    Given a string, extract its literal and numeric part
+    """
+    # Using regular expression to find alphabetical characters and digits in the text
+    match = re.search(r'(\d*)([A-Za-z]+)', text)
+    
+    if match:
+        # If a match is found, return the literal and numeric parts
+        literal_part = match.group(2)
+        numeric_part = match.group(1)
+        if not numeric_part:
+            numeric_part = 1
+        return literal_part, int(numeric_part)
+    else:
+        # If no match is found, return None or handle it accordingly
+        return None, None

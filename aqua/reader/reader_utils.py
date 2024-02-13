@@ -108,7 +108,8 @@ def group_shared_dims(ds, shared_dims, others=None, masked=None,
         for var in ds.data_vars:
             if dim in ds[var].dims:
                 vlist.append(var)
-        shared_vars.update({dim: ds[vlist]})
+        if vlist:
+            shared_vars.update({dim: ds[vlist]})
     if others:
         vlist = []
         vlistm = []

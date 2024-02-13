@@ -51,14 +51,32 @@ class TestTimmean():
                                        7, 7, 7, 7, 7, 7, 7, 6, 4]))
 
     def test_timmean_yearly_exclude_incomplete(self):
-        """Timmean test for yearly aggregation"""
+        """Timmean test for yearly aggregation with excluded incomplete chunks"""
         reader = Reader(model="IFS", exp="test-tco79", source='long',
-                        fix=False)
-        data = reader.retrieve()
+                        fix=False, loglevel=loglevel)
+        data = reader.retrieve(var='ttr')
         avg = reader.timmean(data, freq='yearly', exclude_incomplete=True)
         assert avg['ttr'].shape == (0, 9, 18)
         #with pytest.raises(ValueError, match=r'Cannot compute average on .* period, not enough data'):
         #    reader.timmean(data['ttr'], exclude_incomplete=True)
+
+    def test_timmean_yearly_center_time(self):
+        """Timmean test for yearly aggregation with center_time=True"""
+        reader = Reader(model="IFS", exp="test-tco79", source='long',
+                        fix=False, loglevel=loglevel)
+        data = reader.retrieve(var='ttr')
+        avg = reader.timmean(data, freq='yearly', center_time=True)
+        assert avg['ttr'].shape == (1, 9, 18) # 1 year was computed
+        assert avg['ttr'].time[0].values == np.datetime64('2020-07-01T00:00:00.000000000')
+
+    def test_timmean_daily_center_time(self):
+        """Timmean test for daily aggregation with center_time=True and exclude_incomplete=True"""
+        reader = Reader(model="IFS", exp="test-tco79", source='long',
+                        loglevel=loglevel)
+        data = reader.retrieve(var='2t')
+        avg = reader.timmean(data, freq='daily', center_time=True, exclude_incomplete=True)
+        assert avg['2t'].shape == (197, 9, 18)
+        assert avg['2t'].time[1].values == np.datetime64('2020-01-21T12:00:00.000000000')
 
     def test_timmean_pandas(self):
         """Timmean test for weekly aggregation based on pandas labels"""

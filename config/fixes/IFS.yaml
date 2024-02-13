@@ -1,5 +1,101 @@
 fixer_name:
-    ifs-default:
+    ifs-destine-v1:
+        data_model: ifs
+        deltat: 3600
+        delete: [tprate]
+
+        vars:
+            # Derive precipitation from TP and drop tprate
+            mtpr: # https://codes.ecmwf.int/grib/param-db/235055
+                nanfirst: true
+                source: tp
+                grib: true
+            # Evaporation and snowfall
+            mer: # https://codes.ecmwf.int/grib/param-db/?id=235043
+                source: e
+                grib: true
+                src_units: m
+                nanfirst: True # option to fix ifs bug in destine-v1, see below
+                #units: kg m**-2 s**-1
+            msr: # https://codes.ecmwf.int/grib/param-db/?id=235031
+                source: sf
+                grib: true
+                src_units: m
+                nanfirst: True
+                #units: kg m**-2 s**-1
+            # Latent and sensible heat
+            mslhf: # https://codes.ecmwf.int/grib/param-db/?id=235034
+                source: slhf
+                grib: true
+                nanfirst: True
+            msshf:
+                source: sshf
+                grib: true
+                nanfirst: True
+            # Surface fluxes
+            msnswrf:
+                source: ssr
+                grib: true
+                nanfirst: True
+            msnlwrf:
+                source: str
+                grib: true
+                nanfirst: True
+            msdwlwrf:
+                source: strd
+                grib: true
+                nanfirst: True
+            msdwswrf:
+                source: ssrd
+                grib: true
+                nanfirst: True
+            # TOA fluxes
+            mtnswrf:
+                source: tsr
+                grib: true
+                nanfirst: True
+            mtnlwrf:
+                source: ttr
+                grib: true
+                nanfirst: True
+            mtdwswrf:
+                source: tisr
+                grib: true
+                nanfirst: True      
+            # Wind stresses
+            metss: # https://codes.ecmwf.int/grib/param-db/?id=235041
+                source: ewss
+                grib: true
+                nanfirst: True
+            mntss: # https://codes.ecmwf.int/grib/param-db/?id=235042 
+                source: nsss
+                grib: true
+                nanfirst: True
+            # Runoffs
+            msror:  # https://codes.ecmwf.int/grib/param-db/?id=235020
+                source: sro
+                grib: true
+                nanfirst: True
+            mssror: # https://codes.ecmwf.int/grib/param-db/?id=235021
+                source: ssro
+                grib: true
+                nanfirst: True
+
+    ifs-nemo-destine-v1-nan:  # special version for historical-1990 IFS-NEMO data, fixing to nan first step of month
+        parent: ifs-destine-v1
+         # The nanfirst keys fix to NaN the first step of each month
+        # for cumulated variables of this experiment
+        # The fix is activated by specifying nanfirst_enddate
+        # The dates are exclusive (the first step is actually ok and will be kept)
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 1999-10-01
+
+    ifs-fesom-destine-v1-nan:  # special version for historical-1990 IFS-FESOM data, fixing to nan first step of month
+        parent: ifs-destine-v1
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 2020-01-01
+  
+    IFS-default:
         data_model: ifs
         deltat: 3600
         jump: month
@@ -94,12 +190,14 @@ fixer_name:
                 source: sro
                 grib: true
                 decumulate: true 
+
     ifs-control:
         parent: ifs-default
         method: merge
         vars:
             tprate:
                 source: tprate
+    
     ifs-cycle3:
         # for this exp we have a lot of output from MultI/O, already decumulated and
         # averaged monthly, so default is without decumulation
@@ -171,263 +269,9 @@ fixer_name:
                 src_units: W/m2
                 source: ttr
                 grib: true  
-    ifs-ci-test:
-        data_model: ifs
-        vars:
-            2t:
-                source: 2t
-                attributes: 
-                    donald: 'duck'
+    
 models:
     IFS:
-        default:
-            default:
-                data_model: ifs
-                deltat: 3600
-                jump: month
-                vars:
-                    tprate:
-                        source: tp
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    cprate:
-                        source: cp
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mlsprt:
-                        source: lsp
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    erate:
-                        source: e
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    esrate:
-                        source: es
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mrort:
-                        source: ro
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mtsfr:
-                        source: sf
-                        grib: true
-                        decumulate: true
-                        src_units: m
-                        units: kg m**-2 s**-1
-                    mslhfl:
-                        source: slhf
-                        grib: true
-                        decumulate: true
-                    msshfl:
-                        source: sshf
-                        grib: true
-                        decumulate: true
-                    msnsrf:
-                        source: ssr
-                        grib: true
-                        decumulate: true
-                    msdsrf:
-                        source: ssrd
-                        grib: true
-                        decumulate: true    
-                    msntrf:
-                        source: str
-                        grib: true
-                        decumulate: true
-                    msdtrf:
-                        source: strd
-                        grib: true
-                        decumulate: true
-                    mtnsrf:
-                        source: tsr
-                        grib: true
-                        decumulate: true
-                    mtntrf:
-                        source: ttr
-                        grib: true
-                        decumulate: true         
-                    var172045:  # if the variable has no short name we can use its paramId
-                        source: smlt
-                        grib: true
-                        decumulate: true
-                    iews:
-                        source: ewss
-                        grib: true
-                        decumulate: true  
-                    inss: 
-                        source: nsss
-                        grib: true
-                        decumulate: true
-                    surfror:  # a very recent version of eccodes is needed for this one
-                        source: sro
-                        grib: true
-                        decumulate: true 
-        tco2559-ng5-cycle3:
-        # for this exp we have a lot of output from MultI/O, already decumulated and
-        # averaged monthly, so default is without decumulation
-            default:
-                data_model: ifs
-                method: replace
-                vars:
-                    tprate:
-                        src_units: m s**-1
-                        source: tp
-                        grib: true
-                        units: kg m**-2 s**-1
-                    cprate:
-                        src_units: m s**-1
-                        source: cp
-                        grib: true
-                        units: kg m**-2 s**-1
-                    mlsprt:
-                        src_units: m s**-1
-                        source: lsp
-                        grib: true
-                        units: kg m**-2 s**-1 
-                    erate:
-                        src_units: m s**-1
-                        source: e
-                        grib: true
-                        units: kg m**-2 s**-1 
-                    esrate:
-                        src_units: m s**-1
-                        source: es
-                        grib: true
-                        units: kg m**-2 s**-1 
-                    mrort:
-                        src_units: m s**-1
-                        source: ro
-                        grib: true
-                        units: kg m**-2 s**-1
-                    mtsfr:
-                        src_units: m s**-1
-                        source: sf
-                        grib: true
-                        units: kg m**-2 s**-1
-                    mslhfl:
-                        src_units: W/m2
-                        source: slhf
-                        grib: true
-                    msshfl:
-                        src_units: W/m2
-                        source: sshf
-                        grib: true
-                    msnsrf:
-                        src_units: W/m2
-                        source: ssr
-                        grib: true
-                    msdsrf:
-                        src_units: W/m2
-                        source: ssrd
-                        grib: true
-                    msntrf:
-                        src_units: W/m2
-                        source: str
-                        grib: true
-                    msdtrf:
-                        src_units: W/m2
-                        source: strd
-                        grib: true
-                    mtnsrf:
-                        src_units: W/m2
-                        source: tsr
-                        grib: true
-                    mtntrf:
-                        src_units: W/m2
-                        source: ttr
-                        grib: true  
-            2D_1h_native: 
-                method: default    
-        tco1279-orca025-cycle3:
-         # for this exp we have a lot of output from MultI/O, already decumulated and
-         # averaged monthly, so default is without decumulation
-            default:
-                data_model: ifs
-                vars:
-                    tprate:
-                        src_units: m s**-1
-                        source: tp
-                        grib: true
-                        units: kg m**-2 s**-1
-                    cprate:
-                        src_units: m s**-1
-                        source: cp
-                        grib: true
-                        units: kg m**-2 s**-1
-                    mlsprt:
-                        src_units: m s**-1
-                        source: lsp
-                        grib: true
-                        units: kg m**-2 s**-1 
-                    erate:
-                        src_units: m s**-1
-                        source: e
-                        grib: true
-                        units: kg m**-2 s**-1 
-                    esrate:
-                        src_units: m s**-1
-                        source: es
-                        grib: true
-                        units: kg m**-2 s**-1 
-                    mrort:
-                        src_units: m s**-1
-                        source: ro
-                        grib: true
-                        units: kg m**-2 s**-1
-                    mtsfr:
-                        src_units: m s**-1
-                        source: sf
-                        grib: true
-                        units: kg m**-2 s**-1
-                    mslhfl:
-                        src_units: W/m2
-                        source: slhf
-                        grib: true
-                    msshfl:
-                        src_units: W/m2
-                        source: sshf
-                        grib: true
-                    msnsrf:
-                        src_units: W/m2
-                        source: ssr
-                        grib: true
-                    msdsrf:
-                        src_units: W/m2
-                        source: ssrd
-                        grib: true
-                    msntrf:
-                        src_units: W/m2
-                        source: str
-                        grib: true
-                    msdtrf:
-                        src_units: W/m2
-                        source: strd
-                        grib: true
-                    mtnsrf:
-                        src_units: W/m2
-                        source: tsr
-                        grib: true
-                    mtntrf:
-                        src_units: W/m2
-                        source: ttr
-                        grib: true  
-            2D_1h_native: 
-                method: default
-
         # this should be exactly the same but we have tprate without decumulation already in the fdb       
         control-1990-nemo-dev:
             hourly-1deg:
@@ -445,23 +289,6 @@ models:
                 vars:
                     tprate:
                         source: tprate
-
-        # control-1950-nemo-dev:
-        #     hourly-1deg:
-        #         method: merge
-        #         vars:
-        #             tprate:
-        #                 source: tprate
-        #     hourly-native:
-        #         method: merge
-        #         vars:
-        #             tprate:
-        #                 source: tprate
-        #     monthly-1deg-2d:
-        #         method: merge
-        #         vars:
-        #             tprate:
-        #                 source: tprate
 
         historical-1990-fesom-dev:
             hourly-1deg:
@@ -497,32 +324,7 @@ models:
                     tprate:
                         source: tprate
 
-        # These are for tests
         test-tco79:
-            long:
-                method: merge #replace #merge
-                data_model: ifs
-                deltat: 3600
-                jump: month
-                vars:
-                    ttr:    # Just decumulate OLR
-                        source: ttr
-                        decumulate: true
-                    mtntrf: # Convert with auto unit conversion from eccodes properties
-                        derived: ttr
-                        grib: true
-                        decumulate: true     
-                    var235: # Test to specify using grib code as a target (actually does nothing) and adding a constant
-                        derived: 2t+1.0
-                        grib: true
-                    mtntrf2:
-                        derived: ttr+ttr # example of derived variable, should be double the normal amount
-                        src_units: J m-2 # Overruling source units
-                        decumulate: true  # Test decumulation
-                        units: "{radiation_flux}" # overruling units
-                        attributes:
-                            long_name: Mean top net thermal radiation flux doubled # assigning a long_name
-                            paramId: '999179' # assigning an (invented) paramId
             short:
                 method: replace
                 data_model: ifs
@@ -531,4 +333,10 @@ models:
                         source: 2t
                         attributes: 
                             mickey: 'mouse'
+
+        test-fdb:
+            fdb-levels:
+                method: replace
+            fdb-nolevels:
+                method: replace
 

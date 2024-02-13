@@ -10,10 +10,11 @@ sources:
             data_start_date: 20200120
             data_end_date: 20250101
             aggregation: D
-            timestep: H
+            timestep: h
             timestyle: date
         description: 'Test FDB data'
         driver: gsv
         metadata: 
           fdb_path: /scratch/project_465000454/igonzalez/fdb-test/config.yaml
           source_grid_name: lon-lat
+          fixer_name: ERA5-fdb

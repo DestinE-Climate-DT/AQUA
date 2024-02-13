@@ -12,13 +12,15 @@ def test_class_ENSO():
     """
     from teleconnections.tc_class import Teleconnection
 
-    telecname = 'ENSO_test'
+    telecname = 'ENSO'
     model = 'IFS'
     exp = 'test-tco79'
     source = 'teleconnections'
+    interface = 'teleconnections-ci'
 
     telec = Teleconnection(model=model, exp=exp, source=source,
                            loglevel=loglevel, telecname=telecname,
+                           interface=interface,
                            configdir="diagnostics/teleconnections/config")
 
     telec.evaluate_index()

@@ -1,0 +1,46 @@
+data:
+  model:  "IFS-NEMO"
+  exp:    "historical-1990"
+  source: "lra-r100-monthly"
+
+  model_obs:  "ERA5"
+  exp_obs:    "era5"
+  source_obs: "monthly"
+
+diagnostic_attributes:
+  variables_no_plev: ['mtpr', '2t', 'msl', 'mtpr', 'mtnlwrf', 'avg_tos']
+  variables_with_plev: ['t', 'u', 'v', 'q']
+  plev: null # You can specify a pressure level here
+  statistic: "mean" # Valid options are: 'mean', 'max', 'min', 'diff', and 'std'.
+  seasonal_bias: True
+  compare_datasets_plev: True
+  plot_map_with_stats: True
+  start_date1: "1990-01-01"
+  end_date1: "1998-11-01"
+  start_date2: "1980-01-01" # Centered around IFS-NEMO historical-1990
+  end_date2: "2010-12-31"
+
+loglevel: 'warning'
+
+path:
+  path_to_output: "/projappl/project_465000454/nurissom/aqua_output/IFS-NEMO/historical-1990/atmglobalmean/"
+
+# Here you can specify the colorbar limits for each variable
+# If you don't specify them, the colorbar limits will be automatically calculated
+# based on the data.
+seasonal_bias:
+  2t:
+    vmin: -10
+    vmax: 10
+  avg_tos:
+    vmin: -10
+    vmax: 10
+  msl:
+    vmin: -1000
+    vmax: 1000
+  mtnlwrf:
+    vmin: -40
+    vmax: 40
+  mtpr:
+    vmin: -8
+    vmax: 8

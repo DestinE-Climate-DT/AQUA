@@ -36,21 +36,21 @@ dependencies = [
     "gribscan",
     "ecCodes",
     "pandas",
-    "intake",
+    "intake==0.7.0",
     "intake-esm",
     "intake-xarray",
     "jinja2",
     "matplotlib",
     "metpy",
     "numpy",
-    "pydantic",
+    "pydantic<2.5.3", # NOTE: pydantic 2.5.3 has a bug that breaks tests
     "pyYAML",
     "ruamel.yaml",
     "smmregrid",
     "sparse",
     "xarray",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@master",
-    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v0.11.0"
+    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v0.14.2"
 ]
 
 [project.optional-dependencies]

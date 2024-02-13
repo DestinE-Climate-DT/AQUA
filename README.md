@@ -6,7 +6,7 @@ The Application for Quality assessment and Uncertainity quAntification (AQUA) is
 - Support for various data formats, such as NetCDF, GRIB, HDF or FDB;
 - Robust and fast regridding functionality;
 - Averaging and aggregation tools for temporal and spatial analyses;
-- Modular design for easy integration of new diagnostics.
+- Modular design for easy integration of new diagnostics. 
 
 ## Installation
 
@@ -16,19 +16,21 @@ AQUA requires python>=3.9,<3.12. Recommended installation through mamba (a packa
 ```
 git clone git@github.com:DestinE-Climate-DT/AQUA.git
 cd AQUA
-mamba env create -f environment-common.yml
-mamba activate aqua_common
+mamba env create -f environment.yml
+mamba activate aqua
 ```
 
 This installation will provide both the AQUA framework and the AQUA diagnostics, which can be found in the `diagnostics` folder.
 
 ### Use of AQUA container 
 
-An alternative deployment making use of containers is available. Please refer to the `AQUA Container` chapter in the [AQUA Documentation](https://wiki.eduuni.fi/download/attachments/288474772/aqua.pdf).
+An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/container.html).
 
 ## Documentation
 
-Full [AQUA Documentation](https://wiki.eduuni.fi/download/attachments/288474772/aqua.pdf) is available on the Climate DT Wiki.
+Full [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/index.html) is available.
+Please notice that the webpage is password protected.
+You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/DE_34070+-+Meetings) or please contact the AQUA team to get access.
 
 ## Examples
 

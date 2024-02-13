@@ -74,9 +74,9 @@ def wgt_area_mean(indat, latN: float, latS: float,
     # 3. -- Weighted area mean --
     logger.debug('Computing weighted area mean')
 
-    # Rechunk to avoid memory issues
-    indat = indat.chunk({'time': -1, 'lat': 1, 'lon': 1})
-
+    # TODO: check if this is still needed
+    # # Rechunk to avoid memory issues
+    # indat = indat.chunk({'time': -1, 'lat': 1, 'lon': 1})
     wgt = np.cos(np.deg2rad(lat))
     odat = indat.weighted(wgt).mean(("lon", "lat"), skipna=True)
     # HACK added with ICON, to avoid NaNs in the output

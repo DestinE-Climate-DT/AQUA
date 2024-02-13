@@ -47,7 +47,7 @@ class TestAquaStreaming:
         else:
             end_date = start_date + offset
 
-        dates = pd.date_range(start=start_date, end=end_date, freq='1H')          
+        dates = pd.date_range(start=start_date, end=end_date, freq='h')          
             
         num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
         

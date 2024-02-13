@@ -8,7 +8,7 @@ diagnostic on a selected experiment.
 The CLI script is called `tropical_cyclones_cli.py` and can be used as follows:
 
 ```bash
-mamba activate aqua_common
+mamba activate aqua
 tropical_cyclones_cli.py --config <path_to_config_file>
 ```
 In case the config file is in the same directory of the CLI there is no need to specify the path.

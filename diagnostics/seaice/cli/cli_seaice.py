@@ -113,7 +113,8 @@ if __name__ == '__main__':
     # Execute the analyzer.
     try:
         analyzer.run()
-    except NoDataError:
+    except NoDataError as e:
+        logger.debug(f"Error: {e}")
         logger.error("No data found for the given configuration. Exiting...")
         sys.exit(0)
     except Exception as e:

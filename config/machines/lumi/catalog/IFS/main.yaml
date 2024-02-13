@@ -1,31 +1,6 @@
 sources:
-  tco79-eORCA1:
-    description: tco79-eORCA1 data
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/tco79-eORCA1.yaml'
   fdb-tco399:  #  https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/wikis/Specifications-of-fdb-long
     description: fdb-long data tco399 grid
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/fdb-tco399.yaml'
-  control-1950-nemo-dev:
-    description: FDB IFS/NEMO tco1279-orca025 control 1950 run
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/control-1950-nemo-dev.yaml'
-  historical-1990-fesom-dev:
-    description: FDB IFS/FESOM tco1279-ng5 historical 1990 run
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/historical-1990-fesom-dev.yaml'
-  historical-1990-nemo-dev:
-    description: FDB IFS/NEMO tco1279-orca025 historical 1990 run
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/historical-1990-nemo-dev.yaml'
-  spinup-nemo-fracice:
-    description: "1990-1991 coupled spinup (2y) with fractional sea ice coupling"
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/spinup-nemo-fracice.yaml'

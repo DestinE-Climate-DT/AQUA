@@ -1,133 +1,137 @@
-models:  
-    ERA5:
-        default: 
-            default:
-                data_model: cf
-                vars:
-                    2t: 
-                        grib: true
-                        source: T2M
-                    msl:
-                        grib: true
-                        source: MSL
-                    erate:
-                        grib: true
-                        source: E
-                        src_units: m/day
-                        units: kg m**-2 s**-1
-                    tprate: 
-                        grib: true
-                        source: TP
-                        src_units: m/day
-                    tcc: 
-                        grib: true 
-                        source: TCC
-                        units: frac
-                    sst:
-                        grib: true
-                        source: SSTK
-                    mslhfl:
-                        src_units: J m**-2 day**-1
-                        source: SLHF
-                        grib: true
-                    msshfl:
-                        src_units: J m**-2 day**-1
-                        source: SSHF
-                        grib: true
-                    msnsrf:
-                        src_units: J m**-2 day**-1
-                        source: SSR
-                        grib: true
-                    msdsrf:
-                        src_units: J m**-2 day**-1
-                        source: SSRD
-                        grib: true
-                    msntrf:
-                        src_units: J m**-2 day**-1
-                        source: STR
-                        grib: true
-                    msdtrf:
-                        src_units: J m**-2 day**-1
-                        source: STRD
-                        grib: true
-                    mtnsrf:
-                        src_units: J m**-2 day**-1
-                        source: TSR
-                        grib: true
-                    mtntrf:
-                        src_units: J m**-2 day**-1
-                        source: TTR
-                        grib: true 
-                    u:
-                        source: U
-                        grib: true
-                    v:
-                        source: V
-                        grib: true
-                    q:
-                        source: Q
-                        grib: true
-                    t:
-                        source: T
-                        grib: true         
-        era5:
-            # daily data are done as an average from hourly data, need to multiply by 24 for fluxes
-            daily:
-                delete:
-                    - SLHF
-                    - SSHF
-                    - SSR
-                    - SSRD
-                    - STR
-                    - STRD
-                    - TSR
-                    - TTR
-                method: merge
-                vars:
-                    mslhfl:
-                        src_units: J m**-2 day**-1
-                        derived: SLHF*24
-                        grib: true
-                    msshfl:
-                        src_units: J m**-2 day**-1
-                        derived: SSHF*24
-                        grib: true
-                    msnsrf:
-                        src_units: J m**-2 day**-1
-                        derived: SSR*24
-                        grib: true
-                    msdsrf:
-                        src_units: J m**-2 day**-1
-                        derived: SSRD*24
-                        grib: true
-                    msntrf:
-                        src_units: J m**-2 day**-1
-                        derived: STR*24
-                        grib: true
-                    msdtrf:
-                        src_units: J m**-2 day**-1
-                        derived: STRD*24
-                        grib: true
-                    mtnsrf:
-                        src_units: J m**-2 day**-1
-                        derived: TSR*24
-                        grib: true
-                    mtntrf:
-                        src_units: J m**-2 day**-1
-                        derived: TTR*24
-                        grib: true 
-                    erate:
-                        grib: true
-                        derived: E*24
-                        src_units: m/day
-                        units: kg m**-2 s**-1
-                    tprate: 
-                        grib: true
-                        derived: TP*24
-                        src_units: m/day
-        fdb:
-            fdb-test:
-                method: replace
+fixer_name:  
+    ERA5-default:
+        data_model: cf
+        vars:
+            2t: 
+                grib: true
+                source: T2M
+            msl:
+                grib: true
+                source: MSL
+            erate:
+                grib: true
+                source: E
+                src_units: m/day
+                units: kg m**-2 s**-1
+            mtpr: 
+                grib: true
+                source: TP
+                src_units: m/day
+            tcc: 
+                grib: true 
+                source: TCC
+                units: frac
+            sst:
+                grib: true
+                source: SSTK
+            mslhfl:
+                src_units: J m**-2 day**-1
+                source: SLHF
+                grib: true
+            msshfl:
+                src_units: J m**-2 day**-1
+                source: SSHF
+                grib: true
+            msnsrf:
+                src_units: J m**-2 day**-1
+                source: SSR
+                grib: true
+            msdsrf:
+                src_units: J m**-2 day**-1
+                source: SSRD
+                grib: true
+            msntrf:
+                src_units: J m**-2 day**-1
+                source: STR
+                grib: true
+            msdtrf:
+                src_units: J m**-2 day**-1
+                source: STRD
+                grib: true
+            mtnsrf:
+                src_units: J m**-2 day**-1
+                source: TSR
+                grib: true
+            mtntrf:
+                src_units: J m**-2 day**-1
+                source: TTR
+                grib: true 
+            u:
+                source: U
+                grib: true
+            v:
+                source: V
+                grib: true
+            q:
+                source: Q
+                grib: true
+            t:
+                source: T
+                grib: true         
+    ERA5-daily:
+        # daily data are done as an average from hourly data, need to multiply by 24 for fluxes
+        delete:
+            - SLHF
+            - SSHF
+            - SSR
+            - SSRD
+            - STR
+            - STRD
+            - TSR
+            - TTR
+        method: merge
+        vars:
+            mslhfl:
+                src_units: J m**-2 day**-1
+                derived: SLHF*24
+                grib: true
+            msshfl:
+                src_units: J m**-2 day**-1
+                derived: SSHF*24
+                grib: true
+            msnsrf:
+                src_units: J m**-2 day**-1
+                derived: SSR*24
+                grib: true
+            msdsrf:
+                src_units: J m**-2 day**-1
+                derived: SSRD*24
+                grib: true
+            msntrf:
+                src_units: J m**-2 day**-1
+                derived: STR*24
+                grib: true
+            msdtrf:
+                src_units: J m**-2 day**-1
+                derived: STRD*24
+                grib: true
+            mtnsrf:
+                src_units: J m**-2 day**-1
+                derived: TSR*24
+                grib: true
+            mtntrf:
+                src_units: J m**-2 day**-1
+                derived: TTR*24
+                grib: true 
+            erate:
+                grib: true
+                derived: E*24
+                src_units: m/day
+                units: kg m**-2 s**-1
+            mtpr: 
+                grib: true
+                derived: TP*24
+                src_units: m/day
+    ERA5-fdb:
+        method: replace
+        deltat: 86400
+        data_model: cf
+        vars:
+            2t:
+                source: 2t
+                src_units: K
+                grib: true
+
             
         # default:
         #     default:

@@ -44,7 +44,7 @@ def test_fixer_ifs_long():
     # Metadata checks
 
     # History logged
-    assert 'variable var235, derived with 2t+1.0 by fixer' in tas1.attrs['history']
+    assert 'Variable var235, derived with 2t+1.0 by fixer' in tas1.attrs['history']
 
     # paramId and other attrs
     assert tas1.attrs['paramId'] == '235'
@@ -75,6 +75,30 @@ def test_fixer_ifs_names():
     reader = Reader(model="IFS", exp="test-tco79", source="short_masked", loglevel=loglevel)
     data = reader.retrieve()
     assert data['2t'].attrs['donald'] == 'duck'
+
+@pytest.mark.aqua
+def test_fixer_ifs_disable():
+    """Check with fixer_name: False method"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="short_disable_fix", loglevel=loglevel)
+    assert reader.fix == False
+
+@pytest.mark.aqua
+def test_fixer_ifs_default_fix():
+    """Check with fixer_name with roll back on model default"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="long_default_fix", loglevel=loglevel)
+    data = reader.retrieve()
+    assert data['mtntrf'].attrs['paramId'] == '172179'
+    
+
+@pytest.mark.aqua
+def test_fixer_ifs_coords():
+    """Check with fixer_name and coords block"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="short_masked-coord-test", loglevel=loglevel)
+    data = reader.retrieve()
+    assert 'timepippo' in data.coords
 
 
 @pytest.mark.aqua

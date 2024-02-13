@@ -151,6 +151,8 @@ def plot_single_map(data: xr.DataArray,
     if sym:
         logger.debug("Setting colorbar ticks to be symmetrical")
         cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
+    else:
+        cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
     # Set x-y labels
     ax.set_xlabel('Longitude [deg]')

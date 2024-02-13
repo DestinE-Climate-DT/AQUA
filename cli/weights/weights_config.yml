@@ -1,0 +1,27 @@
+# Configuration file for weights generation
+# if no model, exp or source is specified all the available in the catalog will be processed
+data:
+  models: []            # List of models to be used
+  experiments: []       # List of experiments
+  sources: []           # Data sources, e.g., 'monthly'
+  resolutions: ['r050','r100'] # Spatial resolutions
+  zoom_max: 10          # Maximum zoom level
+
+rebuild: False          # Flag to indicate whether to rebuild data
+catalogue: True         # Flag to use the entire catalogue or not
+loglevel: 'WARNING'     # Logging level
+
+compute_resources:
+  resubmit: False       # Whether to automatically resubmit the job
+  run_on_sunday: False  # Whether the job should run only on Sundays
+  nproc: 16              # Number of processors to use
+  nodes: 1              # Number of nodes required
+  walltime: '08:00:00'  # Maximum time allowed for the job
+  memory: 0             # Memory allocation for the job
+  lumi_version: 23.03   # Version of LUMI to be used
+  account:              # Account details for different machines
+    lumi: 'project_465000454'
+    levante: 'bb1153'
+  partition:            # Partition settings for different machines
+    lumi: 'small'
+    levante: 'compute'

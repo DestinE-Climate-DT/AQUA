@@ -4,8 +4,3 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/fdb-tco79-eorca1.yaml"
-  spinup-nemo-fracice:
-    description: 1990-1991 coupled spinup (2y) with fractional sea ice coupling
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/spinup-nemo-fracice.yaml'

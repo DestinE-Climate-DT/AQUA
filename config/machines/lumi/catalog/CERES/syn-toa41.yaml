@@ -8,6 +8,7 @@ sources:
     driver: netcdf
     metadata:
       source_grid_name: lon-lat
+      fixer_name: ceres-syn-destine-v1
     args:
       urlpath: 
         - '{{DATA_PATH}}/CERES/SYNOP_v4.1/CERES_SYN1deg-Day_Terra-Aqua-MODIS_Ed4.1_Subset_20010101-20070909.nc'

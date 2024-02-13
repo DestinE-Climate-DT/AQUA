@@ -24,5 +24,5 @@ The **notebook/** folder contains the following notebooks:
 
 - **time_series.ipynb**: a notebook that shows how the output of the `plot_model_comparison_timeseries` function;
 - **gregory.ipynb**: a notebook that demonstrates how to produce gregory plots of desired models;
-- **bar_plot.ipynb**: a notebook that demonstrates how to create bar plots;
+- **box_plot.ipynb**: a notebook that demonstrates how to create box plots;
 - **bias_maps.ipynb**: a notebook that creates bias maps to localise significant biases in comparison to CERES data. 

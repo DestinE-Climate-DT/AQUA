@@ -32,6 +32,7 @@ def index_plot(indx, save=False, outputdir='./', filename='index.png',
         - figsize (tuple,opt):    figure size, default is (11, 8.5)
         - title (str,opt):        title for the plot
         - ylabel (str,opt):       ylabel for the plot
+        - ylim (tuple,opt):       y-axis limits
 
     Returns:
         fig (Figure):           Figure object
@@ -45,6 +46,11 @@ def index_plot(indx, save=False, outputdir='./', filename='index.png',
     # Generate the figure
     figsize = kwargs.get('figsize', (11, 8.5))
     fig, ax = plt.subplots(figsize=figsize)
+
+    ylim = kwargs.get('ylim', None)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+        logger.debug("ylim set to %s", ylim)
 
     # Plot the index
     if step:

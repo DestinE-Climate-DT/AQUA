@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
-AQUA dummy diagnositc command line interface. Reads configuration file and performs dummy 
-diagnostic.
-
-Important: need to be run from its own directory
+AQUA ECmean4 Performance diagnostic CLI
 '''
 import sys
 import argparse
@@ -51,7 +48,7 @@ def reader_data(model, exp, source, keep_vars):
     # if False/None return empty array
     if model is False:
         return None
-    
+
     # Try to read the data, if dataset is not available return None
     try:
         reader = Reader(model=model, exp=exp, source=source, areas=False,
@@ -76,7 +73,6 @@ if __name__ == '__main__':
         os.chdir(dname)
         print(f'Moving from current directory to {dname} to run!')
 
-    print(f'Running AQUA v{aquaversion} Performance Indices diagnostic with ECmean4 v{eceversion}')
     args = parse_arguments(sys.argv[1:])
     file = get_arg(args, 'config', 'config_ecmean_cli.yaml')
 
@@ -84,6 +80,8 @@ if __name__ == '__main__':
     loglevel = configfile['setup']['loglevel']
     loglevel = get_arg(args, 'loglevel', loglevel)
     logger = log_configure(log_level=loglevel, log_name='PI')
+
+    logger.info(f'Running AQUA v{aquaversion} Performance Indices diagnostic with ECmean4 v{eceversion}')
 
     # setting options from configuration files
     atm_vars = configfile['dataset']['atm_vars']
@@ -94,6 +92,7 @@ if __name__ == '__main__':
     # define the interface file
     Configurer = ConfigPath(configdir=None)
     interface = '../config/interface_AQUA_' + Configurer.machine + '.yml'
+    logger.debug('Default interface file: %s', interface)
 
     # activate override from command line
     exp = get_arg(args, 'exp', configfile['dataset']['exp'])
@@ -102,25 +101,25 @@ if __name__ == '__main__':
     model_oce = get_arg(args, 'model_oce', configfile['dataset']['model_oce'])
     outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
     interface = get_arg(args, 'interface', interface)
-    logger.debug('interface file %s', interface)
+    logger.debug('Definitive interface file %s', interface)
 
     # load the data
-    logger.warning('Loading atmospheric data %s', model_atm)
+    logger.info('Loading atmospheric data %s', model_atm)
     data_atm = reader_data(model=model_atm, exp=exp, source=source, keep_vars=atm_vars)
-    logger.warning('Loading oceanic data from %s', model_oce)
+    logger.info('Loading oceanic data from %s', model_oce)
     data_oce = reader_data(model=model_oce, exp=exp, source=source, keep_vars=oce_vars)
 
     # there are issues with vertical axis in LRA
-    #if 'level' in data_atm.coords:
-    #    data_atm = data_atm.rename({'level': 'plev'})
+    # if 'level' in data_atm.coords:
+    #     data_atm = data_atm.rename({'level': 'plev'})
 
     # create a single dataset
     if data_oce is None:
         data = data_atm
-        logger.info('No oceanic data, only atmospheric data will be used')
+        logger.warning('No oceanic data, only atmospheric data will be used')
     elif data_atm is None:
         data = data_oce
-        logger.info('No atmospheric data, only oceanic data will be used')
+        logger.warning('No atmospheric data, only oceanic data will be used')
     else:
         data = xr.merge([data_atm, data_oce])
         logger.debug('Merging atmospheric and oceanic data')
@@ -133,8 +132,8 @@ if __name__ == '__main__':
     # guessing years from the dataset
     year1 = int(data.time[0].values.astype('datetime64[Y]').astype(str))
     year2 = int(data.time[-1].values.astype('datetime64[Y]').astype(str))
-    logger.warning('Guessing starting year %s and ending year %s',
-                   year1, year2)
+    logger.info('Guessing starting year %s and ending year %s',
+                year1, year2)
 
     # run the performance indices if you have at least 12 month of data
     if len(data.time) < 12:
@@ -142,9 +141,9 @@ if __name__ == '__main__':
         logger.error('Not enough data, exiting...')
         exit(0)
     else:
-        logger.warning('Launching ECmean performance indices...')
+        logger.info('Launching ECmean performance indices...')
         performance_indices(exp, year1, year2, numproc=numproc, config=config,
                             interface=interface, loglevel=loglevel,
                             outputdir=outputdir, xdataset=data)
 
-    print('AQUA ECmean4 Performance diagnostic run completed. Go outside and live your life!')
+    logger.info('AQUA ECmean4 Performance diagnostic run completed. Go outside and live your life!')

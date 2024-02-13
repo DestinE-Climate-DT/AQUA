@@ -8,6 +8,7 @@ sources:
     driver: netcdf
     metadata:
       source_grid_name: lon-lat
+      fixer_name: ceres-ebaf-destine-v1
     args:
       urlpath: '{{DATA_PATH}}/CERES/EBAF_v4.2/CERES_EBAF_Edition4.2_MONTHLY_200003-202203.nc'
       chunks: {}

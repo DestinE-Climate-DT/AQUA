@@ -31,25 +31,25 @@ For Performance Indices the following variables are requested:
 * ``tprate`` (total precipitation rate, GRIB paramid 260048)
 * ``2t``     (2 metre temperature, GRIB paramid 167)
 * ``msl``    (mean sea level pressure, GRIB paramid 151)
+* ``metss``  (eastward wind stress, GRIB paramid 180)
+* ``mntss``  (northward wind stress, GRIB paramid 181)
 * ``t``      (air temperature, GRIB paramid 130)        
 * ``u``      (zonal wind, GRIB paramid 131)
 * ``v``      (meridional wind, GRIB paramid 132)
 * ``q``      (specific humidity, GRIB paramid 133)
-* ``sst``    (sea surface temperature, GRIB paramid 34)
-* ``sos``    (sea surface salinity, GRIB paramid 262100)
-* ``ci``     (sea ice concentration, GRIB paramid 31)
+* ``avg_tos``    (sea surface temperature, GRIB paramid 263101)
+* ``avg_sos``    (sea surface salinity, GRIB paramid 263100)
+* ``avg_siconc``     (sea ice concentration, GRIB paramid 263001)
+
 
 3D fields are zonally averaged, so that the PIs reports the performance on the zonal field. 
 
-.. warning ::
-    The original implementation of PIs also includes zonal and meridional wind stress.
-    These are currently missing and will be included in a future release.
-
 
 .. note ::
-    ECmean4 is made to work with cmor variables, but can handle name and file conversion with specification of
+    ECmean4 is made to work with CMOR variables, but can handle name and file conversion with specification of
     an `interface file <https://ecmean4.readthedocs.io/en/latest/configuration.html#interface-files>`_.
-    An AQUA specific one has been designed for this purpose. 
+    An AQUA specific one has been designed for this purpose to work with Climate DT Phase 1. 
+    Updates in the Data Governance will require updates to the interface file.  
     In addition, although PI can work directly on the model raw output, the interface file is made to work only
     with the Low Resolution Archive (LRA) to reduce the amount of computation required. 
 
@@ -60,6 +60,7 @@ Output
 The result are stored as a YAML file, indicating PIs for each variable, region and season, that can be stored for later evaluation.
 Most importantly, a figure is produced showing a score card for the different regions, variables and seasons.
 For the sake of simplicity, the PIs figure is computed as the ratio between the model PI and the average value estimated over the (precomputed) ensemble of CMIP6 models. 
+Numbers lower than one implies that the model is performing better than the average of CMIP6 models. 
 
 Methods and functions used
 --------------------------

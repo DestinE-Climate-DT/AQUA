@@ -1,6 +1,6 @@
 sources:
-  control-1950-icon-dev:
-    description: FDB ICON control 1950 run
+  historical-1990-dev:
+    description: FDB ICON historical 1990 run (converted from unreadable FDB)
     driver: yaml_file_cat
     args:
-      path: '{{CATALOG_DIR}}/control-1950-icon-dev.yaml'
+      path: '{{CATALOG_DIR}}/historical-1990-dev.yaml'

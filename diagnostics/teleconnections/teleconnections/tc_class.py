@@ -30,11 +30,13 @@ class Teleconnection():
     def __init__(self, model: str, exp: str, source: str,
                  telecname: str,
                  configdir=None, aquaconfigdir=None,
+                 interface='teleconnections-destine',
                  regrid=None, freq=None,
                  zoom=None,
                  savefig=False, outputfig=None,
                  savefile=False, outputdir=None,
                  filename=None,
+                 startdate=None, enddate=None,
                  months_window: int = 3, loglevel: str = 'WARNING'):
         """
         Args:
@@ -45,6 +47,7 @@ class Teleconnection():
                                             See documentation for available teleconnections.
             configdir (str, optional):      Path to diagnostics configuration folder.
             aquaconfigdir (str, optional):  Path to AQUA configuration folder.
+            interface (str, optional):      Interface filename. Defaults to 'teleconnections-destine'.
             regrid (str, optional):         Regridding resolution. Defaults to None.
             freq (str, optional):           Frequency of the data. Defaults to None.
             zoom (str, optional):           Zoom for ICON data. Defaults to None.
@@ -55,6 +58,10 @@ class Teleconnection():
             outputdir (str, optional):      Output directory for files.
                                             If None, the current directory is used.
             filename (str, optional):       Output filename.
+            startdate (str, optional):     Start date for the data.
+                                            Format: YYYY-MM-DD. Defaults to None.
+            enddate (str, optional):        End date for the data.
+                                            Format: YYYY-MM-DD. Defaults to None.
             months_window (int, optional):  Months window for teleconnection
                                             index. Defaults to 3.
             loglevel (str, optional):       Log level. Defaults to 'WARNING'.
@@ -72,6 +79,9 @@ class Teleconnection():
         self.model = model
         self.exp = exp
         self.source = source
+
+        self.startdate = startdate
+        self.enddate = enddate
 
         # Load AQUA config and check that the data is available
         self.machine = None
@@ -95,11 +105,11 @@ class Teleconnection():
 
         # Teleconnection variables
         self.telecname = telecname
-        avail_telec = ['NAO', 'ENSO', 'ENSO_test', 'ENSO_2t']
+        avail_telec = ['NAO', 'ENSO']
         if self.telecname not in avail_telec:
             raise ValueError("telecname must be one of {}".format(avail_telec))
 
-        self._load_namelist(configdir=configdir)
+        self._load_namelist(configdir=configdir, interface=interface)
 
         # Variable to be used for teleconnection
         self.var = self.namelist[self.telecname]['field']
@@ -133,9 +143,9 @@ class Teleconnection():
         # but **kwargs are passed to it so that it can be used to pass
         # arguments to the reader if needed
         if self.zoom:
-            self._reader(zoom=self.zoom)
+            self._reader(zoom=self.zoom, startdate=self.startdate, enddate=self.enddate)
         else:
-            self._reader()
+            self._reader(startdate=self.startdate, enddate=self.enddate)
 
     def retrieve(self, var=None, **kwargs):
         """Retrieve teleconnection data with the AQUA reader.
@@ -369,22 +379,22 @@ class Teleconnection():
 
             index_plot(indx=self.index, save=self.savefig,
                        outputdir=self.outputfig, filename=filename,
-                       loglevel=self.loglevel, step=step, title=title,
+                       loglevel=self.loglevel, step=step,
                        ylabel=ylabel, **kwargs)
             self.logger.info("Index plot saved to %s/%s", self.outputfig, filename)
         else:
             index_plot(indx=self.index, save=self.savefig,
-                       loglevel=self.loglevel, step=step, title=title,
+                       loglevel=self.loglevel, step=step,
                        ylabel=ylabel, **kwargs)
 
-    def _load_namelist(self, configdir=None):
+    def _load_namelist(self, configdir=None, interface=None):
         """Load namelist.
 
         Args:
             configdir (str, optional): Path to diagnostics configuration folder.
                                        If None, the default diagnostics folder is used.
         """
-        config = TeleconnectionsConfig(configdir=configdir)
+        config = TeleconnectionsConfig(configdir=configdir, interface=interface)
 
         self.namelist = config.load_namelist()
         self.logger.info('Namelist loaded')
@@ -397,7 +407,7 @@ class Teleconnection():
         """
         aqua_config = ConfigPath(configdir=self.aquaconfigdir)
         self.machine = aqua_config.machine
-        self.logger.debug("Nachine: %s", self.machine)
+        self.logger.debug("Machine: %s", self.machine)
 
         # Check that the data is available in the catalogue
         if inspect_catalogue(model=self.model, exp=self.exp,

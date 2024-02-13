@@ -1,23 +1,23 @@
 # Models for sea ice to be evaluated.
 models:
-  - model: IFS
-    exp: tco1279-orca025-cycle3
-    source: 2D_monthly_native
+  - model: IFS-NEMO
+    exp: historical-1990
+    source: lra-r100-monthly
     regrid: null
-    variable: ci
+    var: avg_siconc
     timespan: null # can be of the format ['2020-01-20', '2024-12-31']
   # These are observational datasets
   - model: OSI-SAF
     exp: osi-450
     source: nh-monthly
     regrid: null
-    variable: ci
+    var: avg_siconc
     timespan: null
   - model: OSI-SAF
     exp: osi-450
     source: sh-monthly
     regrid: null
-    variable: ci
+    var: avg_siconc
     timespan: null
 
 regions: # If this block is missing all regions will be evaluated
@@ -33,7 +33,7 @@ regions: # If this block is missing all regions will be evaluated
 # Please specify the path to the directory where the outputs should be saved.
 # If output directory/folder does not exist, it will be created.
 # This can be overwritten by the command line argument --outputdir
-output_directory: /home/b/b382385/git/AQUA/diagnostics/seaice/cli/output 
+output_directory: ./
 
 # This is the current dask configuration which works for the inputs above.
 # It could be adjusted based on the system this application is run.

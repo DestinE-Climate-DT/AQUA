@@ -13,14 +13,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.logger import log_configure
-from aqua.util import plot_box, add_cyclic_lon, evaluate_colorbar_limits
+from aqua.util import plot_box, add_cyclic_lon
+from aqua.util import coord_names, evaluate_colorbar_limits
 
 
 def maps_plot(maps=None, models=None, exps=None,
               titles=None, save=False, figsize=(11, 8.5),
               nlevels=12, cbar_label=None, title=None,
               sym=True, outputdir='.', filename='maps.png',
-              loglevel='WARNING'):
+              loglevel='WARNING', **kwargs):
     """Plot maps (regression, correlation, etc.)
     A list of xarray.DataArray objects is expected
     and a map is plotted for each of them
@@ -40,6 +41,9 @@ def maps_plot(maps=None, models=None, exps=None,
         outputdir (str,opt):  output directory for the figure, default is '.' (current directory)
         filename (str,opt):   filename for the figure, default is 'maps.png'
         loglevel (str,opt):   log level for the logger, default is 'WARNING'
+
+    Kwargs:
+        transform_first (bool,opt):  transform the data before plotting, default is True
     """
     logger = log_configure(loglevel, 'Multiple maps')
 
@@ -61,9 +65,14 @@ def maps_plot(maps=None, models=None, exps=None,
 
     # Evaluate min and max values for the common colorbar
     vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
+    vmin = kwargs.get('vmin', vmin)
+    vmax = kwargs.get('vmax', vmax)
 
     logger.debug("Min value for the colorbar: %s", vmin)
     logger.debug("Max value for the colorbar: %s", vmax)
+
+    # Option to transform the data before plotting
+    transform_first = kwargs.get('transform_first', False)
 
     # Drop unused axes
     for i, ax in enumerate(axs):
@@ -80,11 +89,20 @@ def maps_plot(maps=None, models=None, exps=None,
 
         data_map = add_cyclic_lon(data_map)
 
-        # Contour plot
-        cs = data_map.plot.contourf(ax=axs[i], transform=ccrs.PlateCarree(),
-                                    cmap='RdBu_r', levels=nlevels,
-                                    add_colorbar=False, add_labels=False,
-                                    extend='both', vmin=vmin, vmax=vmax)
+        # Get the coordinate names
+        lon_name, lat_name = coord_names(data_map)
+
+        # grid lon and lat
+        lon, lat = np.meshgrid(data_map[lon_name],
+                               data_map[lat_name])
+
+        levels = np.linspace(vmin, vmax, nlevels + 1)
+
+        cs = axs[i].contourf(lon, lat, data_map, transform=ccrs.PlateCarree(),
+                             cmap='RdBu_r', levels=levels,
+                             add_colorbar=False, add_labels=False,
+                             extend='both', vmin=vmin, vmax=vmax,
+                             transform_first=transform_first)
 
         # Title
         if titles is not None:
@@ -116,7 +134,9 @@ def maps_plot(maps=None, models=None, exps=None,
     cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.02])
 
     # Add the colorbar
-    fig.colorbar(cs, cax=cbar_ax, orientation='horizontal')
+    cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal')
+
+    cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
     # Colorbar label
     if cbar_label is not None:

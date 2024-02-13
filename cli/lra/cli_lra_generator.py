@@ -11,6 +11,7 @@ import sys
 import argparse
 from aqua import LRAgenerator
 from aqua.util import load_yaml, get_arg
+from aqua import __version__ as version
 
 # to check if GSV is available and return the version
 try:
@@ -20,6 +21,8 @@ except RuntimeError:
     print("GSV not available. FDB5 binary library not present on system.")
 except KeyError:
     print("GSV not available. Environment variables not correctly set.")
+
+print('AQUA version is: ' + version)
 
 
 def parse_arguments(arguments):
@@ -58,11 +61,6 @@ if __name__ == '__main__':
     configdir = config['configdir']
     loglevel = config['loglevel']
 
-    if config['target']['aggregation']:
-        aggregation = config['target']['aggregation']
-    else:
-        aggregation = None
-
     definitive = get_arg(args, 'definitive', False)
     overwrite = get_arg(args, 'overwrite', False)
     fix = get_arg(args, 'fix', True)
@@ -82,8 +80,9 @@ if __name__ == '__main__':
                                        var=varname, resolution=resolution,
                                        frequency=frequency, fix=fix,
                                        outdir=outdir, tmpdir=tmpdir, configdir=configdir,
-                                       nproc=workers, loglevel=loglevel, aggregation=aggregation,
-                                       definitive=definitive, overwrite=overwrite)
+                                       nproc=workers, loglevel=loglevel,
+                                       definitive=definitive, overwrite=overwrite,
+                                       exclude_incomplete=True)
 
                     # check that your LRA is not already there (it will not work in streaming mode)
                     lra.check_integrity(varname)
@@ -92,7 +91,7 @@ if __name__ == '__main__':
                     lra.retrieve()
                     lra.generate_lra()
                     
-                # create the catalog once the loop is over
-                lra.create_catalog_entry()
+        # create the catalog once the loop is over
+        lra.create_catalog_entry()
 
     print('LRA run completed. Have yourself a beer!')

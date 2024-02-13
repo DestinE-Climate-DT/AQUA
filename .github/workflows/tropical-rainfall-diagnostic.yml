@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   tropical-rainfall-diagnostic_test:
-    if: contains(github.event.pull_request.labels.*.name, 'Ready to merge')
+    if: contains(github.event.pull_request.labels.*.name, 'run tests') || contains(github.event.pull_request.labels.*.name, 'ready to merge')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -30,7 +30,7 @@ jobs:
       - name: Setup Micromamba with diagnostic environment
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment-common.yml
+          environment-file: environment.yml
           environment-name: tropical-rainfall
           cache-downloads: true
           cache-environment: true

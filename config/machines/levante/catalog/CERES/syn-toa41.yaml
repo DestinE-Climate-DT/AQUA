@@ -8,6 +8,7 @@ sources:
     driver: netcdf
     metadata:
       source_grid_name: lon-lat
+      fixer_name: ceres-syn-nextgems
     args:
       urlpath: 
         - '/work/bb1153/m300265/NextGEMS/observations/ceres-ebaf/daily/CERES_SYN1deg-Day_Terra-Aqua-MODIS_Ed4.1_Subset_20010101-20070909.nc'

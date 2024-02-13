@@ -9,7 +9,7 @@ a configuration yaml file.
 import sys
 import argparse
 from aqua import LRAgenerator
-from aqua.lra_generator.util import opa_catalog_entry
+from aqua.lra_generator.lra_util import opa_catalog_entry
 from aqua.util import load_yaml, get_arg
 from glob import glob
 import os

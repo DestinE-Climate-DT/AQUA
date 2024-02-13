@@ -1,16 +1,16 @@
 dataset:
-  model_atm: IFS
-  model_oce: False
-  exp: control-1950-devcon
-  atm_vars: ['2t', 'tprate', 'msl', 'iews', 'inss', 'u', 'v', 't', 'q']
-  oce_vars: ['sst', 'ci', 'sos']
+  model_atm: IFS-NEMO
+  model_oce: IFS-NEMO
+  exp: historical-1990
+  atm_vars: ['2t', 'tprate', 'msl', 'mer', 'metss', 'mntss', 'u', 'v', 't', 'q']
+  oce_vars: ['avg_tos', 'avg_siconc', 'avg_sos']
 
 compute:
   numproc: 1
 
 setup:
   loglevel: 'WARNING'
-  interface_file: '../config/interface_AQUA.yml'
-  config_file: '../config/ecmean_config.yml'
+  interface_file: '../config/interface_AQUA_destine-v1.yml'
+  config_file: '../config/ecmean_config_destine-v1.yml'
   outputdir: '../output'
   
