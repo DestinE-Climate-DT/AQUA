@@ -13,7 +13,7 @@ fixer_name:
                 source: E
                 src_units: m/day
                 units: kg m**-2 s**-1
-            tprate: 
+            mtpr: 
                 grib: true
                 source: TP
                 src_units: m/day

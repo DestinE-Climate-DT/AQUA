@@ -75,11 +75,11 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
     except KeyError:
         raise NoDataError(f"The variable {var_name} is not present in the dataset. Please try again.")
 
-    if var_name == 'tprate':
-        logger.warning("Adjusting tprate to be in mm/day")
+    if var_name == 'tprate' or var_name == 'mtpr':
+        logger.warning(f"Adjusting {var_name} to be in mm/day")
         var1 = var1 * 86400
         var2 = var2 * 86400
-        logger.warning("Changing units attribute to 'mm/day'")
+        logger.warning(f"Changing {var_name} units attribute to 'mm/day'")
         var1.attrs['units'] = 'mm/day'
         var2.attrs['units'] = 'mm/day'
 
@@ -99,7 +99,7 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
         end_date2 = str(var2["time.year"][-1].values) + '-' + str(var2["time.month"][-1].values) + '-' + str(var2["time.day"][-1].values)
 
     # Load in memory to speed up the calculation
-    logger.warning("Loading data into memory to speed up the calculation...")
+    logger.info("Loading data into memory to speed up the calculation...")
     var1 = var1.load()
 
     # Check if pre-computed climatology is provided, otherwise compute it
@@ -184,8 +184,8 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
     # Set the colorbar limits
     vmin, vmax = evaluate_colorbar_limits(results, sym=True)
     nlevels = kwargs.get('nlevels', 12)
-    vmin = kwargs.get('vmin', vmin)
-    vmax = kwargs.get('vmax', vmax)
+    vmin = kwargs.get('vmin', vmin) if kwargs.get('vmin', vmin) is not None else vmin
+    vmax = kwargs.get('vmax', vmax) if kwargs.get('vmax', vmax) is not None else vmax
     logger.debug(f"vmin: {vmin}, vmax: {vmax}")
     levels = np.linspace(vmin, vmax, nlevels)
 
@@ -352,7 +352,7 @@ def compare_datasets_plev(dataset1=None, dataset2=None, var_name=None,
 
     if 'plev' in bias.dims:
         # Load in memory to speed up the calculation
-        logger.warning("Loading data into memory to speed up the calculation...")
+        logger.info("Loading data into memory to speed up the calculation...")
         bias = bias.load()
 
         # Get the pressure levels and coordinate values
@@ -437,10 +437,10 @@ def plot_map_with_stats(dataset=None, var_name=None, start_date=None, end_date=N
         start_date = str(dataset["time.year"][0].values) + '-' + str(dataset["time.month"][0].values) + '-' + str(dataset["time.day"][0].values)
         end_date = str(dataset["time.year"][-1].values) + '-' + str(dataset["time.month"][-1].values) + '-' + str(dataset["time.day"][-1].values)
 
-    if var_name == 'tprate':
-        logger.warning("Adjusting tprate to be in mm/day")
+    if var_name == 'tprate' or var_name == 'mtpr':
+        logger.warning(f"Adjusting {var_name} to be in mm/day")
         var_data = var_data * 86400
-        logger.warning("Changing units attribute to 'mm/day'")
+        logger.warning(f"Changing {var_name} units attribute to 'mm/day'")
         var_data.attrs['units'] = 'mm/day'
 
     # Calculate statistics

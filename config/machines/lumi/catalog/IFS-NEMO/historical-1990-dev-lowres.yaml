@@ -33,7 +33,7 @@ sources:
       variables: [175, 176, 177, 178, 179, 144, 146, 147, 169, 182, 212, 228, 165,
         166, 141, 164, 78, 79, 167, 168, 235]
       source_grid_name: tco79
-      fixer_name: ifs-destine-lowres-v1
+      fixer_name: ifs-destine-v1
 
   daily-hpz5-atm2d:
     <<: *base-default

@@ -24,11 +24,13 @@ This installation will provide both the AQUA framework and the AQUA diagnostics,
 
 ### Use of AQUA container 
 
-An alternative deployment making use of containers is available. Please refer to the `AQUA Container` chapter in the [AQUA Documentation](https://wiki.eduuni.fi/download/attachments/288474772/aqua.pdf).
+An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/container.html).
 
 ## Documentation
 
-Full [AQUA Documentation](https://wiki.eduuni.fi/download/attachments/288474772/aqua.pdf) is available on the Climate DT Wiki.
+Full [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/index.html) is available.
+Please notice that the webpage is password protected.
+You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/DE_34070+-+Meetings) or please contact the AQUA team to get access.
 
 ## Examples
 

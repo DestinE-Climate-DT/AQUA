@@ -6,7 +6,7 @@ source: "lra-r100-monthly"
 outputdir: "./"
 
 # This is the list of variables that will be plotted as timeseries
-timeseries: ['2t', 'tprate', 'mer', 'msl',
+timeseries: ['2t', 'mtpr', 'mer', 'msl',
              'tcc', 'lcc', 'mcc', 'hcc',
              'mslhf', #Mean surface latent heat flux
              'msshf', #Mean surface sensible heat flux

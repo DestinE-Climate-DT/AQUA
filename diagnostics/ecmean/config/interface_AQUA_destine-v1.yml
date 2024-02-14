@@ -57,7 +57,7 @@ variables:
     varname: '2m Temperature'
     filetype: atmbase 
   pr:
-    derived: 'tprate'
+    derived: 'mtpr'
     varname: 'Total precipitation'
     filetype: atmbase 
   prns:
@@ -70,7 +70,7 @@ variables:
     filetype: atmbase
   pme:
     varname: 'Precip. minus evap.'
-    derived: 'tprate+mer'
+    derived: 'mtpr+mer'
     filetype: atmbase
   ta: 
     varname: 'Air Temperature'
@@ -159,19 +159,19 @@ variables:
     filetype: ocebase
   pr_land:
     varname: 'Precipitation (land)'
-    derived: tprate
+    derived: mtpr
     filetype: atmbase
   pr_oce:
     varname: 'Precipitation (ocean)'
-    derived: tprate
+    derived: mtpr
     filetype: atmbase
   pme_land:
     varname: 'Precip. minus evap. (land)'
-    derived: 'tprate+mer'
+    derived: 'mtpr+mer'
     filetype: atmbase
   pme_oce:
     varname: 'Precip. minus evap. (ocean)'
-    derived: 'tprate+mer'
+    derived: 'mtpr +mer'
     filetype: atmbase
   rlns:
     varname: 'Surface net LW'
