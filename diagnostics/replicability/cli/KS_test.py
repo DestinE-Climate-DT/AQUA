@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 
-machines = ["LUMI-C", "LUMI-G"]
-members = ["fc0", "fc1", "fc2", "fc3","fc4", "fc5", "fc6", "fc7", "fc8", "fc9"]
+# machines = ["LUMI-C", "LUMI-G"]
+ensemble_name = ["double_precision", "mixed_precision"]
+members = ["fc1", "fc2", "fc3","fc4", "fc5", "fc6", "fc8", "fc10"]
+# members = ["fc1", "fc2", "fc3"]
 
     
 def combine_PI_dict(ensemble_name):
@@ -16,8 +18,8 @@ def combine_PI_dict(ensemble_name):
     for ensemble in ensemble_name:
         data_members= {}
         for member in members:
-            # pattern = f"/scratch/project_465000454/sughosh/ecmean_files/YAML/*{machine}*/*{member}*yml"
-            pattern = f"/pfs/lustrep3/scratch/project_465000454/kkeller/lab/aqua_container/replicability/out/*{ensemble}*/*/*{member}*yml"
+            pattern = f"/pfs/lustrep3/scratch/project_465000454/kkeller/lab/replicability_mixed/PI_Scores/{ensemble}/*_{member}-*yml"
+            # pattern = f"/pfs/lustrep3/scratch/project_465000454/kkeller/lab/aqua_container/replicability/out/*{ensemble}*/*/*{member}*yml"
             # print(pattern)
             # print(ensemble, member)
             yaml_files = glob.glob(pattern)
@@ -104,7 +106,7 @@ def km_test_score_df(df):
 
 
 
-pi_score_dict = combine_PI_dict(machines)
+pi_score_dict = combine_PI_dict(ensemble_name)
 pi_score_dataframe = pi_score_df(pi_score_dict)
 km_test_df = km_test_score_df(pi_score_dataframe)
 
@@ -123,7 +125,7 @@ for i, row in enumerate(p_values.index):
         text = "{:.2f}".format(p_values.iloc[i, j])
         ax.text(j + 0.5, i + 0.5, text, ha='center', va='center', color='black',fontsize=14)
 
-plt.title("P values of Kolmogorov-Smirnov test (LUMI C vs LUMI G)", fontsize=19, fontweight='bold', y=1.02)
+plt.title(f"P values of Kolmogorov-Smirnov test ({ensemble_name[0]} vs {ensemble_name[1]})", fontsize=19, fontweight='bold', y=1.02)
 plt.xticks(fontsize=15,rotation=45)  # Adjust fontsize for x-axis ticks (columns)
 plt.yticks(fontsize=15) 
 
