@@ -1,14 +1,38 @@
-model: FESOM 
-exp: tco2559-ng5-cycle3
+model: IFS-NEMO 
+exp: historical-1990
 source: lra-r100-monthly
+
 outputdir: ./output
-# "--model FESOM --exp tco2559-ng5-cycle3 --source $source"
 
-predefined_regions:
-  - Indian Ocean
-  # - Pacific Ocean
 
-custom_region:
-  - [latS: -30, latN: 30, lonW: 100, lonE: 300]
-  # - [latS: 0, latN: 30, lonW: 100, lonE: 150]
+select_time : False # keep it True, if you want to activate time_range
+time_range:
+  start_year : 1991
+  end_year : 1991
 
+ocean_drift:
+  regions:
+    - Indian Ocean
+    - Pacific Ocean
+    - Atlantic Ocean
+    - Arctic Ocean
+    - Southern Ocean
+    - Labrador Sea
+    # - labrador sea
+    # - irminger sea
+    # - ross sea
+    # - weddell Sea
+    # - gin sea
+  # custom_region:
+  #   - [lat_s: -30, lat_n: 30, lon_w: 100, lon_e: 300]
+    # - [lat_s: 0, lat_n: 30, lon_w: 100, lon_e: 150]
+
+ocean_circulation: #specify region and climatology time
+  regions:
+    labrador sea : DJF
+    irminger sea : DJF
+    # ross sea : JJA
+    # weddell Sea : JJA
+    # gin sea : DJF
+
+compare_model_with_obs: True

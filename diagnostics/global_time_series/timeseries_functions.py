@@ -71,7 +71,7 @@ def get_reference_data(varname, formula=False, model='ERA5', exp='era5', source=
         if annual and annual_std:
             logger.debug(f"Computing annual std for a formula {varname}")
             std_annual = reader.timmean(data.sel(time=slice(std_startdate, std_enddate)),
-                                        freq='YS', center_time=True)
+                                        freq='YS', center_time=True, exclude_incomplete=True)
             std_annual = reader.fldmean(eval_formula(varname, std_annual)).std()
     else:
         if monthly_std:
@@ -82,7 +82,7 @@ def get_reference_data(varname, formula=False, model='ERA5', exp='era5', source=
         if annual and annual_std:
             logger.debug(f"Computing annual std for a variable {varname}")
             std_annual = reader.timmean(data.sel(time=slice(std_startdate, std_enddate)),
-                                        freq='YS', center_time=True)
+                                        freq='YS', center_time=True, exclude_incomplete=True)
             std_annual = reader.fldmean(std_annual).std()
 
     if startdate is not None and enddate is not None:
@@ -117,12 +117,14 @@ def get_reference_data(varname, formula=False, model='ERA5', exp='era5', source=
         if annual:
             if formula:
                 logger.debug(f"Computing annual mean for a formula {varname}")
-                data_annual = reader.timmean(data=eval_formula(varname, data), freq='YS', center_time=True)
+                data_annual = reader.timmean(data=data_mon, freq='YS',
+                                             center_time=True, exclude_incomplete=True)
                 if not annual_std:
                     std_annual = None
             else:
                 logger.debug(f"Computing annual mean for a variable {varname}")
-                data_annual = reader.timmean(data=data_mon, freq='YS', center_time=True)
+                data_annual = reader.timmean(data=data_mon, freq='YS',
+                                             center_time=True, exclude_incomplete=True)
                 if annual_std:
                     std_annual = std_annual[varname]
                 else:
@@ -253,7 +255,8 @@ def plot_timeseries(
 
     if annual:
         logger.debug(f"Computing annual mean for {model} {exp}")
-        data_annual = reader.timmean(data=data, freq='YS', center_time=True)
+        data_annual = reader.timmean(data=data, freq='YS',
+                                     center_time=True, exclude_incomplete=True)
         logger.debug(f"Using {model} {exp} annual mean as label")
         plot_kw["label"] = f"{model} {exp} annual mean"
         data_annual.plot(**plot_kw, ax=ax, linestyle='--')
@@ -320,7 +323,7 @@ def plot_timeseries(
                         eradata_annual - 2.*erastd_annual,
                         eradata_annual + 2.*erastd_annual,
                         facecolor="lightgrey",
-                        alpha=0.25,
+                        alpha=0.3,
                         color="lightgrey",
                         linestyle='--'
                     )

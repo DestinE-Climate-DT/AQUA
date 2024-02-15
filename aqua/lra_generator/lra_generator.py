@@ -227,7 +227,7 @@ class LRAgenerator():
                 },
             },
             'metadata': {
-                'source_grid_name': 'lon-lat'
+                'source_grid_name': 'lon-lat',
             }
         }
 

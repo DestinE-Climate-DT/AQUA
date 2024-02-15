@@ -2,16 +2,17 @@
 target:
   resolution: r100
   frequency: monthly
-  outdir: /pfs/lustrep3/projappl/project_465000454/padavini/LRA
-  tmpdir: /pfs/lustrep3/projappl/project_465000454/padavini/tmp
-  opadir: /pfs/lustrep3/projappl/project_465000454/padavini/one_pass
+  fixer_name: False
+  outdir: %HPCROOTDIR%/tmp
+  tmpdir: %HPCROOTDIR%/tmp
+  opadir: %HPCROOTDIR%/tmp
 
-configdir: '../../config/'
+configdir: '%HPCROOTDIR%/%PROJECT.PROJECT_DESTINATION%/aqua/config'
 loglevel: INFO
 
 # all the variable listed here will be processed by the LRA creator
 catalog:
-  ERA5:
-    fdb:
-      source: fdb-test
-      vars: ['2t']
+  %AQUA.MODEL%:
+    %AQUA.EXP%: 
+      %AQUA.SOURCE%:
+        vars: [%AQUA.VARS%]

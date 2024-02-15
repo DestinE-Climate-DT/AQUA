@@ -57,6 +57,8 @@ if __name__ == '__main__':
     logger.info(f'Running AQUA v{aquaversion} Teleconnections diagnostic v{telecversion}')
 
     # change the current directory to the one of the CLI so that relative path works
+    # before doing this we need to get the directory from wich the script is running
+    execdir = os.getcwd()
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     if os.getcwd() != dname:
@@ -86,12 +88,16 @@ if __name__ == '__main__':
 
     try:
         outputdir = get_arg(args, 'outputdir', config['outputdir'])
+        # if the outputdir is relative we need to make it absolute
+        if not os.path.isabs(outputdir):
+            outputdir = os.path.join(execdir, outputdir)
         outputnetcdf = os.path.join(outputdir, 'netcdf')
         outputpdf = os.path.join(outputdir, 'pdf')
     except KeyError:
         outputdir = None
         outputnetcdf = None
         outputpdf = None
+        logger.error('Output directory not defined')
 
     configdir = config['configdir']
     logger.debug('configdir: %s', configdir)

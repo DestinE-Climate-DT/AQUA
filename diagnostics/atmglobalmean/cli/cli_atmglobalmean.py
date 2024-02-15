@@ -103,17 +103,17 @@ if __name__ == '__main__':
 
     logger.debug(f"Comparing with {model_obs} {exp_obs} {source_obs}.")
 
-    variables_no_plev = config['diagnostic_attributes']['variables_no_plev']
-    variables_with_plev = config['diagnostic_attributes']['variables_with_plev']
-    plev = config['diagnostic_attributes']['plev']
-    statistic = config['diagnostic_attributes']['statistic']
-    seasonal_bias_bool = config['diagnostic_attributes']['seasonal_bias']
-    compare_datasets_plev_bool = config['diagnostic_attributes']['compare_datasets_plev']
-    plot_map_with_stats_bool = config['diagnostic_attributes']['plot_map_with_stats']
-    start_date1 = config['diagnostic_attributes']['start_date1']
-    end_date1 = config['diagnostic_attributes']['end_date1']
-    start_date2 = config['diagnostic_attributes']['start_date2']
-    end_date2 = config['diagnostic_attributes']['end_date2']
+    variables_no_plev = config['diagnostic_attributes'].get('variables_no_plev', [])
+    variables_with_plev = config['diagnostic_attributes'].get('variables_with_plev', [])
+    plev = config['diagnostic_attributes'].get('plev', None)
+    statistic = config['diagnostic_attributes'].get('statistic', 'mean')
+    seasonal_bias_bool = config['diagnostic_attributes'].get('seasonal_bias', True)
+    compare_datasets_plev_bool = config['diagnostic_attributes'].get('compare_datasets_plev', False)
+    plot_map_with_stats_bool = config['diagnostic_attributes'].get('plot_map_with_stats', False)
+    start_date1 = config['diagnostic_attributes'].get('start_date1', None)
+    end_date1 = config['diagnostic_attributes'].get('end_date1', None)
+    start_date2 = config['diagnostic_attributes'].get('start_date2', "1980-01-01")
+    end_date2 = config['diagnostic_attributes'].get('end_date2', "2010-12-31")
 
     model_label = model+'_'+exp
     model_label_obs = model_obs+'_'+exp_obs
@@ -137,7 +137,7 @@ if __name__ == '__main__':
             logger.info(f"Running seasonal bias diagnostic for {var_name}...")
 
             # Getting variable specific attributes
-            var_attributes = config['seasonal_bias'][var_name]
+            var_attributes = config['seasonal_bias'].get(var_name, {})
             vmin = var_attributes.get('vmin', None)
             vmax = var_attributes.get('vmax', None)
             logger.debug(f"var: {var_name}, vmin: {vmin}, vmax: {vmax}")

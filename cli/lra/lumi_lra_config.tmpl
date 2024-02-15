@@ -12,7 +12,7 @@ catalog:
   IFS-NEMO:
     historical-1990:
       hourly-hpz7-atm2d:
-         vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+         vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
            'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
       hourly-hpz7-atm3d:
          vars: ['q', 't', 'u', 'v']
@@ -22,7 +22,7 @@ catalog:
          vars: ['avg_thetao', 'avg_so']
     # historical-1990-dev-lowres:
     #   hourly-native-atm2d:
-    #     vars: ['tprate', '2t', 'skt', 'tcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
+    #     vars: ['mtpr', '2t', 'skt', 'tcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
     #      'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
     #   hourly-native-atm3d:
     #     vars: ['q', 't', 'u', 'v']
@@ -47,7 +47,7 @@ catalog:
   #     monthly-1deg-3d:
   #       vars: ['q', 't', 'u', 'v']
   #     hourly-1deg:
-  #        vars: ['msdtrf', 'mtsfr', 'iews', 'inss', 'mslhfl', 'msshfl', 'msnsrf', 'msntrf', 'erate', 'tprate', '2t', 'mtntrf', 'mtnsrf', 'msdsrf']
+  #        vars: ['msdtrf', 'mtsfr', 'iews', 'inss', 'mslhfl', 'msshfl', 'msnsrf', 'msntrf', 'erate', 'mtpr', '2t', 'mtntrf', 'mtnsrf', 'msdsrf']
   #   control-1950-devcon:
   #     monthly-1deg-2d:
   #       vars: ['msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw']
@@ -55,6 +55,6 @@ catalog:
   #       vars: ['q', 't', 'u', 'v']
   #     hourly-1deg:
   #       #vars: ['mtntrf', 'mtnsrf', 'msdsrf']
-  #       vars: ['msdtrf', 'mtsfr', 'iews', 'inss', 'mslhfl', 'msshfl', 'msnsrf', 'msntrf', 'erate', 'tprate', '2t', 'mtntrf', 'mtnsrf', 'msdsrf']
+  #       vars: ['msdtrf', 'mtsfr', 'iews', 'inss', 'mslhfl', 'msshfl', 'msnsrf', 'msntrf', 'erate', 'mtpr', '2t', 'mtntrf', 'mtnsrf', 'msdsrf']
 
 

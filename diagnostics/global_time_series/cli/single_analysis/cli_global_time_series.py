@@ -88,6 +88,51 @@ def create_filename(outputdir=None, plotname=None, type=None,
     return filename
 
 
+def get_plot_options(config, var):
+    """
+    Get the plot options for a variable
+
+    Args:
+        config (dict): configuration dictionary
+        var (str): variable name
+
+    Returns:
+        plot_options (dict): plot options
+    """
+    plot_options = config["timeseries_plot_params"].get(var)
+    if plot_options:
+        plot_kw = plot_options.get("plot_kw", None)
+        plot_era5 = plot_options.get("plot_era5", False)
+        resample = plot_options.get("resample", "M")
+        ylim = plot_options.get("ylim", {})
+        reader_kw = plot_options.get("reader_kw", {})
+        savefig = plot_options.get("savefig", True)
+        annual = plot_options.get("annual", True)
+        startdate = plot_options.get("startdate", None)
+        enddate = plot_options.get("enddate", None)
+        std_startdate = plot_options.get("std_startdate", "1991-01-01")
+        std_enddate = plot_options.get("std_enddate", "2020-12-31")
+        monthly_std = plot_options.get("monthly_std", True)
+        annual_std = plot_options.get("annual_std", True)
+    else:  # default
+        plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", None)
+        plot_era5 = config["timeseries_plot_params"]["default"].get("plot_era5", False)
+        resample = config["timeseries_plot_params"]["default"].get("resample", "M")
+        ylim = config["timeseries_plot_params"]["default"].get("ylim", {})
+        reader_kw = config["timeseries_plot_params"]["default"].get("reader_kw", {})
+        savefig = config["timeseries_plot_params"]["default"].get("savefig", True)
+        annual = config["timeseries_plot_params"]["default"].get("annual", True)
+        startdate = config["timeseries_plot_params"]["default"].get("startdate", None)
+        enddate = config["timeseries_plot_params"]["default"].get("enddate", None)
+        std_startdate = config["timeseries_plot_params"]["default"].get("std_startdate", "1991-01-01")
+        std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", "2020-12-31")
+        monthly_std = config["timeseries_plot_params"]["default"].get("monthly_std", True)
+        annual_std = config["timeseries_plot_params"]["default"].get("annual_std", True)
+
+    return plot_kw, plot_era5, resample, ylim, reader_kw, savefig, annual,\
+           startdate, enddate, std_startdate, std_enddate, monthly_std, annual_std
+
+
 if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
@@ -149,35 +194,8 @@ if __name__ == '__main__':
             logger.info(f"Output file: {filename_nc}")
 
             # Reading the configuration file
-            plot_options = config["timeseries_plot_params"].get(var)
-            if plot_options:
-                plot_kw = plot_options.get("plot_kw", None)
-                plot_era5 = plot_options.get("plot_era5", False)
-                resample = plot_options.get("resample", "M")
-                ylim = plot_options.get("ylim", {})
-                reader_kw = plot_options.get("reader_kw", {})
-                savefig = plot_options.get("savefig", True)
-                annual = plot_options.get("annual", True)
-                startdate = plot_options.get("startdate", None)
-                enddate = plot_options.get("enddate", None)
-                std_startdate = plot_options.get("std_startdate", "1991-01-01")
-                std_enddate = plot_options.get("std_enddate", "2020-12-31")
-                monthly_std = plot_options.get("monthly_std", True)
-                annual_std = plot_options.get("annual_std", True)
-            else:  # default
-                plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", None)
-                plot_era5 = config["timeseries_plot_params"]["default"].get("plot_era5", False)
-                resample = config["timeseries_plot_params"]["default"].get("resample", "M")
-                ylim = config["timeseries_plot_params"]["default"].get("ylim", {})
-                reader_kw = config["timeseries_plot_params"]["default"].get("reader_kw", {})
-                savefig = config["timeseries_plot_params"]["default"].get("savefig", True)
-                annual = config["timeseries_plot_params"]["default"].get("annual", True)
-                startdate = config["timeseries_plot_params"]["default"].get("startdate", None)
-                enddate = config["timeseries_plot_params"]["default"].get("enddate", None)
-                std_startdate = config["timeseries_plot_params"]["default"].get("std_startdate", "1991-01-01")
-                std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", "2020-12-31")
-                monthly_std = config["timeseries_plot_params"]["default"].get("monthly_std", True)
-                annual_std = config["timeseries_plot_params"]["default"].get("annual_std", True)
+            plot_kw, plot_era5, resample, ylim, reader_kw, savefig, annual,\
+            startdate, enddate, std_startdate, std_enddate, monthly_std, annual_std = get_plot_options(config, var)
 
             # Generating the image
             fig, ax = plt.subplots(figsize=(10, 6))
@@ -224,35 +242,8 @@ if __name__ == '__main__':
             logger.info(f"Output file: {filename_nc}")
 
             # Reading the configuration file
-            plot_options = config["timeseries_plot_params"].get(var)
-            if plot_options:
-                plot_kw = plot_options.get("plot_kw", None)
-                plot_era5 = plot_options.get("plot_era5", False)
-                resample = plot_options.get("resample", "M")
-                ylim = plot_options.get("ylim", {})
-                reader_kw = plot_options.get("reader_kw", {})
-                savefig = plot_options.get("savefig", True)
-                annual = plot_options.get("annual", False)
-                startdate = plot_options.get("startdate", None)
-                enddate = plot_options.get("enddate", None)
-                std_startdate = plot_options.get("std_startdate", "1991-01-01")
-                std_enddate = plot_options.get("std_enddate", "2020-12-31")
-                monthly_std = plot_options.get("monthly_std", False)
-                annual_std = plot_options.get("annual_std", False)
-            else:  # default
-                plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", None)
-                plot_era5 = config["timeseries_plot_params"]["default"].get("plot_era5", False)
-                resample = config["timeseries_plot_params"]["default"].get("resample", "M")
-                ylim = config["timeseries_plot_params"]["default"].get("ylim", {})
-                reader_kw = config["timeseries_plot_params"]["default"].get("reader_kw", {})
-                savefig = config["timeseries_plot_params"]["default"].get("savefig", True)
-                annual = config["timeseries_plot_params"]["default"].get("annual", False)
-                startdate = config["timeseries_plot_params"]["default"].get("startdate", None)
-                enddate = config["timeseries_plot_params"]["default"].get("enddate", None)
-                std_startdate = config["timeseries_plot_params"]["default"].get("std_startdate", "1991-01-01")
-                std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", "2020-12-31")
-                monthly_std = config["timeseries_plot_params"]["default"].get("monthly_std", False)
-                annual_std = config["timeseries_plot_params"]["default"].get("annual_std", False)
+            plot_kw, plot_era5, resample, ylim, reader_kw, savefig, annual,\
+            startdate, enddate, std_startdate, std_enddate, monthly_std, annual_std = get_plot_options(config, var)
 
             # Generating the image
             fig, ax = plt.subplots(figsize=(10, 6))
@@ -317,6 +308,7 @@ if __name__ == '__main__':
             toa = config["gregory"]["toa"]
         except KeyError:
             toa = ['mtnlwrf', 'mtnswrf']
+        ref = config["gregory"].get("ref", True)
 
         # Creating the output filename
         filename_nc = create_filename(outputdir=outputdir,
@@ -329,7 +321,7 @@ if __name__ == '__main__':
         try:
             fig = plot_gregory(model=model, exp=exp, source=source,
                                reader_kw=reader_kw, plot_kw=plot_kw,
-                               outfile=filename_nc,
+                               outfile=filename_nc, ref=ref,
                                ts_name=ts, toa_name=toa,
                                regrid=regrid, freq=resample)
         except (NotEnoughDataError, NoDataError) as e:

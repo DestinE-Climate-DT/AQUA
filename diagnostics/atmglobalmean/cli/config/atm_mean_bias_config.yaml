@@ -8,7 +8,7 @@ data:
   source_obs: "monthly"
 
 diagnostic_attributes:
-  variables_no_plev: ['2t', 'msl', 'tprate', 'mtnlwrf', 'avg_tos']
+  variables_no_plev: ['mtpr', '2t', 'msl', 'mtpr', 'mtnlwrf', 'avg_tos']
   variables_with_plev: ['t', 'u', 'v', 'q']
   plev: null # You can specify a pressure level here
   statistic: "mean" # Valid options are: 'mean', 'max', 'min', 'diff', and 'std'.
@@ -41,6 +41,6 @@ seasonal_bias:
   mtnlwrf:
     vmin: -40
     vmax: 40
-  tprate:
+  mtpr:
     vmin: -8
     vmax: 8

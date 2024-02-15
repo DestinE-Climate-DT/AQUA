@@ -8,14 +8,11 @@ import types
 from datetime import timedelta
 import xarray as xr
 import numpy as np
-import cf2cdm
 from metpy.units import units
 
 from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction
 from aqua.logger import log_history
-
-# Set the warning filter to always display DeprecationWarning
-warnings.simplefilter('always', DeprecationWarning)
+from aqua.data_models import translate_coords
 
 
 class FixerMixin():
@@ -139,7 +136,7 @@ class FixerMixin():
             self.logger.info('No specific fix found, will call the default fix %s', default_fixer_name)
             fixes = self.fixes_dictionary["fixer_name"].get(default_fixer_name)
             if fixes is None:
-                self.logger.error("The requested deafult fixer name %s does not exist in fixes files", default_fixer_name)
+                self.logger.warning("The requested default fixer name %s does not exist in fixes files", default_fixer_name)
                 return None
             else:
                 self.logger.info("Fix names %s found in fixes files", default_fixer_name)
@@ -824,7 +821,7 @@ class FixerMixin():
         # this is needed since cf2cdm issues a (useless) UserWarning
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            data = cf2cdm.translate_coords(data, dm)
+            data = translate_coords(data, dm)
             # Hack needed because cfgrib.cf2cdm mixes up coordinates with dims
             if "forecast_reference_time" in data.dims:
                 data = data.swap_dims({"forecast_reference_time": "time"})
