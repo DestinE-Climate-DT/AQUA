@@ -4,6 +4,7 @@ import logging
 import types
 import datetime
 import xarray as xr
+import warnings
 
 
 def log_configure(log_level=None, log_name=None):
@@ -26,6 +27,15 @@ def log_configure(log_level=None, log_name=None):
 
     # fix the log level
     log_level = _check_loglevel(log_level)
+
+    if log_level in ['DEBUG']:
+        if not logger.handlers:
+            logger.debug('Enabling Future and Deprecation Warning...')
+        warnings.filterwarnings("always", category=DeprecationWarning)
+        warnings.filterwarnings("always", category=FutureWarning)
+    else:
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=FutureWarning)
 
     # if our logger is already out there, update the logging level and return
     if logger.handlers:

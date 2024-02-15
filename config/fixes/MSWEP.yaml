@@ -3,6 +3,6 @@ fixer_name:
         data_model: cf
         vars:
             # Automatic conversion to destination grib units
-            tprate:
+            mtpr:
                 source: precipitation
                 grib: true

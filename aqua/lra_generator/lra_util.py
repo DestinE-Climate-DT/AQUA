@@ -7,7 +7,8 @@ from aqua.logger import log_configure
 import numpy as np
 
 
-def opa_catalog_entry(datadir, model, exp, source, frequency='monthly',
+def opa_catalog_entry(datadir, model, exp, source, 
+                      fixer_name=False, frequency='monthly',
                       loglevel='WARNING'):
     """
     Create an entry in the AQUA catalog based on the presence of output from OPA in datadir
@@ -18,6 +19,7 @@ def opa_catalog_entry(datadir, model, exp, source, frequency='monthly',
         model (str): name of the model
         exp (str): name of the experiment
         source (str): name of the origin source
+        fixer_name (str): fix to be used when reading the opa. Default is False
         frequency (str, opt): frequency of the data, default is 'monthly'
         loglevel (str, opt): logging level, default is 'WARNING'
 
@@ -72,6 +74,7 @@ def opa_catalog_entry(datadir, model, exp, source, frequency='monthly',
         'description': description,
         'metadata': {
             'source_grid_name': 'lon-lat',
+            'fixer_name': fixer_name
         }
     }
 

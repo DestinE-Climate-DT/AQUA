@@ -2,8 +2,14 @@ fixer_name:
     ifs-destine-v1:
         data_model: ifs
         deltat: 3600
-        delete: [tp]
+        delete: [tprate]
+
         vars:
+            # Derive precipitation from TP and drop tprate
+            mtpr: # https://codes.ecmwf.int/grib/param-db/235055
+                nanfirst: true
+                source: tp
+                grib: true
             # Evaporation and snowfall
             mer: # https://codes.ecmwf.int/grib/param-db/?id=235043
                 source: e
@@ -84,19 +90,16 @@ fixer_name:
         nanfirst_startdate: 1990-01-01
         nanfirst_enddate: 1999-10-01
 
-    ifs-fesom-destine-v1-nan:  # special version for historical-1990 IFS-FESOM data, fixing to nan first step of month
+    ifs-nemo-destine-v1-nan-lowres:  # special version for historical-1990-dev-lowres IFS-NEMO data, fixing to nan first step of month
+        parent: ifs-destine-v1
         nanfirst_startdate: 1990-01-01
         nanfirst_enddate: 2020-01-01
-        delete: [tp]
-  
-    ifs-destine-lowres-v1:
-        parent: ifs-destine-v1
-        vars:
-            tprate:
-                nanfirst: true
-                source: tp
-                grib: true
 
+    ifs-fesom-destine-v1-nan:  # special version for historical-1990 IFS-FESOM data, fixing to nan first step of month
+        parent: ifs-destine-v1
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 2020-01-01
+  
     IFS-default:
         data_model: ifs
         deltat: 3600

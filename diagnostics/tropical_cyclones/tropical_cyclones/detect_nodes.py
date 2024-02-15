@@ -61,28 +61,52 @@ class DetectNodes():
         fileout = os.path.join(self.paths['tmpdir'], f'regrid_{timestep}.nc')
 
         if self.model == 'IFS':
+            
             # TO BE IMPROVED: check pressure levels units
             # an import could be using metpy
             # lowres3d = lowres3d.metpy.convert_coordinate_units('plev', 'Pa')
-
+            
             # this assumes that only required 2D data has been retrieved
-            lowres2d = self.reader2d.regrid(self.data2d.sel(time=timestep))
+            self.lowres2d = self.reader2d.regrid(self.data2d.sel(time=timestep))
             
             # rename some variables to run DetectNodes command
-            if '10u' in lowres2d.data_vars:
-                lowres2d = lowres2d.rename({'10u': 'u10m'})
-            if '10v' in lowres2d.data_vars:
-                lowres2d = lowres2d.rename({'10v': 'v10m'})
+            if '10u' in self.lowres2d.data_vars:
+                self.lowres2d = self.lowres2d.rename({'10u': 'u10m'})
+            if '10v' in self.lowres2dd.data_vars:
+                self.lowres2d = self.lowres2d.rename({'10v': 'v10m'})
             # this is required to avoid conflict between z 3D and z 2D (orography)
-            if 'z' in lowres2d.data_vars:
-                lowres2d = lowres2d.rename({'z': 'zs'})
+            if 'z' in self.lowres2d.data_vars:
+                self.lowres2d = self.lowres2d.rename({'z': 'zs'})
                 
             lowres3d = self.reader3d.regrid(
                 self.data3d.sel(time=timestep, plev=[30000, 50000]))
-            outfield = xr.merge([lowres2d, lowres3d])
+            outfield = xr.merge([self.lowres2d, lowres3d])
+            
+        if self.model == 'IFS-NEMO':
 
+            # this assumes that only required 2D data has been retrieved
+            self.lowres2d = self.reader2d.regrid(self.data2d.sel(time=timestep)).load()
+            
+            # rename some variables to run DetectNodes command
+            if '10u' in self.lowres2d.data_vars:
+                self.lowres2d = self.lowres2d.rename({'10u': 'u10m'})
+            if '10v' in self.lowres2d.data_vars:
+                self.lowres2d = self.lowres2d.rename({'10v': 'v10m'})
+                
+            lowres3d = self.reader3d.regrid(
+                self.data3d.sel(time=timestep, plev=[30000, 50000])).load()
+
+            outfield = xr.merge([self.lowres2d, lowres3d])
+
+            if self.orography:
+                self.logger.info("Orography added to detect nodes input file")
+                orog_first_timestep = self.orog.isel(time=0)
+                orog_first_timestep['time'] = outfield['time']
+                outfield = outfield.combine_first(orog_first_timestep)
+            
         else:
             raise KeyError(f'Atmospheric model {self.model} not supported')
+        
 
         # check if output file exists
         if os.path.exists(fileout):
@@ -143,9 +167,16 @@ class DetectNodes():
             self.paths['tmpdir'], 'tempest_output_' + timestep + '.txt')
         self.tempest_fileout = tempest_fileout
 
-        detect_string = f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
-            f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
-            f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2;{tempest_dictionary["orog"]},min,0" --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
+        # if the orography is found run stitch nodes accordingly
+        if 'z' in self.lowres2d.data_vars or self.orography:
+            detect_string = f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
+                f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
+                f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2;{tempest_dictionary["orog"]},min,0" --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
+                
+        else:
+             detect_string = f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
+                f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
+                f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2" --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
         subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
@@ -174,12 +205,3 @@ class DetectNodes():
             store_file = os.path.join(
                 self.paths['fulldir'], f'TC_fullres_{timestep}.nc')
             write_fullres_field(xfield, store_file, self.aquadask.dask)
-
-            # for var in self.var2store:
-
-            #     subselect = self.fullres[var].sel(time=timestep)
-            #     data = self.reader_fullres.regrid(subselect)
-            #     xfield = self.store_fullres_field(0, data, self.tempest_nodes)
-            #     self.logger.info(f'store_fullres_field for timestep {timestep}')
-            #     store_file = os.path.join(self.paths['fulldir'], f'TC_{var}_{timestep}.nc')
-            #     write_fullres_field(xfield, store_file)
