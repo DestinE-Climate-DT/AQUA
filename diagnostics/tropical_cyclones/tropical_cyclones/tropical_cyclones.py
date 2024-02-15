@@ -27,6 +27,7 @@ class TCs(DetectNodes, StitchNodes):
                  startdate=None, enddate=None,
                  stream_step=1, stream_unit='days', stream_startdate=None,
                  loglevel='INFO',
+                 orography=False,
                  nproc=1):
         """
         Constructor method that initializes the class attributes based on the
@@ -73,6 +74,9 @@ class TCs(DetectNodes, StitchNodes):
             self.frequency = tdict['time']['frequency']
             self.startdate = tdict['time']['startdate']
             self.enddate = tdict['time']['enddate']
+            self.orography=orography
+            if self.orography:
+                self.orography_file = tdict['orography']['file_path'] + tdict['orography']['file_name']
         else:
             if paths is None:
                 raise ValueError('Without paths defined you cannot go anywhere!')
@@ -122,18 +126,16 @@ class TCs(DetectNodes, StitchNodes):
         Returns:
             None
         """
-        
-        
-        
+
         # do this to remove the last letter from streamstep! e.g. tdict['stream']['streamstep'] is defined as "10D" but we want only the value 10!
         numbers = [int(i) for i in tdict['stream']['streamstep'] if i.isdigit()]
-        streamstep_n=int(''.join(map(str, numbers)))
-        
+        streamstep_n = int(''.join(map(str, numbers)))
+
         # Check if the character after the number is 'D'
         # if not expressed as "D", raise value error, since we need days for the time loop!
         if tdict['stream']['streamstep'][len(numbers)] != 'D':
             raise ValueError("Critical error! Stream step must be specified in days as 'D' in the config file!")
-
+        
         # retrieve the data and call detect nodes on the first chunk of data
         self.data_retrieve()
         self.detect_nodes_zoomin()
@@ -141,49 +143,48 @@ class TCs(DetectNodes, StitchNodes):
         # parameters for stitch nodes (to save tracks of selected variables in netcdf)
         n_days_stitch = tdict['stitch']['n_days_freq'] + \
             2*tdict['stitch']['n_days_ext']
-        last_run_stitch = pd.Timestamp(self.startdate)
+        last_run_stitch = self.stream_startdate
 
 
         # loop to simulate streaming
         while len(np.unique(self.data2d.time.dt.day)) == streamstep_n:
-            print("entered the loop")
             self.data_retrieve()
             self.logger.warning(
-                "New streaming from %s to %s", pd.Timestamp(self.stream_startdate).strftime('%Y%m%dT%H'), pd.Timestamp(self.stream_enddate).strftime('%Y%m%dT%H'))
-            timecheck = (self.data2d.time.values >
-                         np.datetime64(tdict['time']['enddate']))
+                "New streaming from %s to %s", pd.to_datetime(self.stream_startdate), pd.to_datetime(self.stream_enddate))
+            timecheck = (self.data2d.time.values[-1] > pd.to_datetime(tdict['time']['enddate']))
 
-            if timecheck.any():
-                self.stream_enddate = self.data2d.time.values[np.where(timecheck)[
-                    0][0]-1]
+            if timecheck:
+                self.stream_enddate = self.data2d.time.values[-1]
                 self.logger.warning(
                     'Modifying the last stream date %s', self.stream_enddate)
 
             # call to Tempest DetectNodes
             self.detect_nodes_zoomin()
 
-            if timecheck.any():
+            if timecheck:
+                self.logger.debug("Last chunk of data: breaking the loop")
                 break
 
             # add one hour since time ends at 23
-            dayspassed = (self.stream_enddate + np.timedelta64(1,
-                          'h') - last_run_stitch) / np.timedelta64(1, 'D')
+            dayspassed = (np.datetime64(self.stream_enddate) + np.timedelta64(1, 'h') - np.datetime64(last_run_stitch)) / np.timedelta64(1, 'D')
 
             # call Tempest StitchNodes every n_days_freq days time period and save TCs tracks in a netcdf file
+
             if dayspassed >= n_days_stitch:
-                end_run_stitch = last_run_stitch + \
+                end_run_stitch = np.datetime64(last_run_stitch) + \
                     np.timedelta64(tdict['stitch']['n_days_freq'], 'D')
                 self.logger.warning(
-                    'Running stitch nodes from %s to %s', last_run_stitch, end_run_stitch)
-                self.stitch_nodes_zoomin(startdate=last_run_stitch, enddate=end_run_stitch,
+                    'Running stitch nodes from %s to %s', pd.to_datetime(last_run_stitch), pd.to_datetime(end_run_stitch))
+                self.stitch_nodes_zoomin(startdate=pd.to_datetime(last_run_stitch), enddate=pd.to_datetime(end_run_stitch),
                                          n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
                 last_run_stitch = copy.deepcopy(end_run_stitch)
 
         # end of the loop for the last chunk of data
+
         end_run_stitch = np.datetime64(tdict['time']['enddate'])
         self.logger.warning(
-            'Running stitch nodes from %s to %s', last_run_stitch, end_run_stitch)
-        self.stitch_nodes_zoomin(startdate=pd.Timestamp(last_run_stitch), enddate=pd.Timestamp(end_run_stitch),
+            'Running stitch nodes from %s to %s',  pd.to_datetime(np.datetime64(last_run_stitch)), pd.to_datetime(end_run_stitch))
+        self.stitch_nodes_zoomin(startdate=pd.to_datetime(last_run_stitch), enddate=pd.to_datetime(end_run_stitch),
                                  n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
 
     def catalog_init(self):
@@ -203,16 +204,32 @@ class TCs(DetectNodes, StitchNodes):
 
         if self.streaming:
             self.logger.warning(
-                'Initialised streaming for %s %s starting on %s', self.stream_step, self.stream_units, self.stream_startdate)
+                'Initialised streaming for %s %s starting on %s', self.stream_step, self.stream_units, pd.to_datetime(self.stream_startdate))
         if self.model in 'IFS':
             self.varlist2d = ['msl', '10u', '10v', 'z']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
-                                         regrid=self.highgrid,
+                                         regrid=self.lowgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
             self.varlist3d = ['z']
             self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
                                          regrid=self.highgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            
+        elif self.model in 'IFS-NEMO':
+            self.varlist2d = ['msl', '10u', '10v']
+            self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.varlist3d = ['z']
+            self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d,
+                                         regrid=self.lowgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
             self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
@@ -241,14 +258,24 @@ class TCs(DetectNodes, StitchNodes):
 
         # now retrieve 2d and 3d data needed
         else:
-            self.data2d = self.reader2d.retrieve(vars=self.varlist2d)
-            self.data3d = self.reader3d.retrieve(vars=self.varlist3d)
+            self.data2d = self.reader2d.retrieve(var=self.varlist2d)
+            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
             self.fullres = self.reader_fullres.retrieve(var=self.var2store)
 
 
         if self.streaming:
             self.stream_enddate = self.data2d.time[-1].values
             self.stream_startdate = self.data2d.time[0].values
+            
+        #if orography is provided in a file access it without reader
+            
+        if self.orography:
+            self.logger.info("orography retrieved from file")
+            self.orog = xr.open_dataset(self.orography_file)
+            #rename var for detect nodes
+            self.orog = self.orog.rename({'z': 'zs'})
+
+
 
     def store_fullres_field(self, xfield, nodes):
         """

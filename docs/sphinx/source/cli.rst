@@ -172,3 +172,25 @@ Basic usage:
     ./generate_weights.py -c weights_config.yaml
 
 
+.. _aqua_web:
+Automatic uploading of figures and documentation to aqua-web
+------------------------------------------------------------
+
+AQUA figures produced by the analysis can be uploaded to the [aqua-web](https://github.com/DestinE-Climate-DT/aqua-web)
+repository to publish them automatically on a dedicated website. The same site is used to host the documentation.
+Two scripts in the ``cli/aqua-web`` folder are available to push figures or documentation to aqua-web.
+
+Basic usage:
+
+.. code-block:: bash
+
+    # to generate and push the documentation to aqua-web
+    ./make_push_docs.py 
+
+    # to collect the figures from a directory $INDIR  figures to aqua-web
+    INDIR=/path/to/figures_root
+    MODELEXP=IFS-NEMO/historical-1990 # the subfolder of INDIR where the figures are stored (also model/exp pair for aqua-web)
+    ./make_push_figures.py $INDIR IFS-NEMO/historical-1990 # to collect the figures and push them to aqua-web
+
+The user running the script must have the right to push to the aqua-web repository and must have
+set up the ssh keys to access the repository.

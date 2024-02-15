@@ -33,14 +33,14 @@ sources:
       variables: [175, 176, 177, 178, 179, 144, 146, 147, 169, 182, 212, 228, 165,
         166, 141, 164, 78, 79, 167, 168, 235]
       source_grid_name: tco79
-      fixer_name: ifs-destine-v1
+      fixer_name: ifs-nemo-destine-v1-nan-lowres
 
-  daily-hpz5-atm2d:
+  hourly-hpz5-atm2d:
     <<: *base-default
     description: daily atmospheric 2D data on healpix zoom=5 grid
     args:
-      aggregation: M
-      savefreq: M
+      aggregation: D
+      savefreq: h
       <<: *args-default
       request:
         <<: *request-default
@@ -50,12 +50,12 @@ sources:
       fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
       source_grid_name: hpz5-nested
 
-  daily-r100-atm2d:
+  hourly-r100-atm2d:
     <<: *base-default
     description: daily atmospheric 2D data on regular 1 degree grid (multiIO)
     args:
-      aggregation: M
-      savefreq: M
+      aggregation: D
+      savefreq: h
       <<: *args-default
       request:
         <<: *request-default
@@ -84,12 +84,12 @@ sources:
         850, 925, 1000]
       variables: [129, 130, 131, 132, 133, 157]
 
-  daily-hpz5-atm3d:
+  hourly-hpz5-atm3d:
     <<: *base-default
     description: daily atmospheric 3D data on healpix zoom=5 grid
     args:
-      aggregation: M
-      savefreq: M
+      aggregation: D
+      savefreq: h
       <<: *args-default
       request:
         <<: *request-default
@@ -106,12 +106,12 @@ sources:
       fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
       source_grid_name: hpz5-nested
 
-  daily-r100-atm3d:
+  hourly-r100-atm3d:
     <<: *base-default
     description: daily atmospheric 3D data on regular 1 degree grid
     args:
-      aggregation: M
-      savefreq: M
+      aggregation: D
+      savefreq: h
       <<: *args-default
       request:
         <<: *request-default
@@ -135,7 +135,7 @@ sources:
     args:
       <<: *args-default
       aggregation: M
-      savefreq: M
+      savefreq: D
       request:
         <<: *request-default
         param: 263022
@@ -152,7 +152,7 @@ sources:
     args:
       <<: *args-default
       aggregation: M
-      savefreq: M
+      savefreq: D
       request:
         <<: *request-default
         resolution: standard
@@ -196,7 +196,7 @@ sources:
     args:
       <<: *args-default
       aggregation: M
-      savefreq: M
+      savefreq: D
       request:
         <<: *request-default
         param: 263506
@@ -235,7 +235,7 @@ sources:
     args:
       <<: *args-default
       aggregation: M
-      savefreq: M
+      savefreq: D
       request:
         <<: *request-default
         resolution: standard

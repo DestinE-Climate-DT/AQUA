@@ -90,6 +90,11 @@ fixer_name:
         nanfirst_startdate: 1990-01-01
         nanfirst_enddate: 1999-10-01
 
+    ifs-nemo-destine-v1-nan-lowres:  # special version for historical-1990-dev-lowres IFS-NEMO data, fixing to nan first step of month
+        parent: ifs-destine-v1
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 2020-01-01
+
     ifs-fesom-destine-v1-nan:  # special version for historical-1990 IFS-FESOM data, fixing to nan first step of month
         parent: ifs-destine-v1
         nanfirst_startdate: 1990-01-01

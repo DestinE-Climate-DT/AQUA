@@ -1,17 +1,15 @@
 # experiment
 dataset:
-  model: "IFS"
-  #exp: "tco2559-ng5-cycle3"
-  exp: "tco1279-orca025-cycle3"
-  #exp: "control-1950-devcon"
-  source2d: "2D_1h_native" #"2D_1h_native"
-  source3d: "3D_1h_native" #"3D_1h_native"
+  model: "IFS-NEMO"
+  exp: "historical-1990"
+  source2d: "hourly-hpz7-atm2d"
+  source3d: "hourly-hpz7-atm3d"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
-  tmpdir: '/home/b/b382216/work/tc/tmpdir'
-  fulldir: '/home/b/b382216/work/tc/fullres'
-  plotdir: "/home/b/b382216/work/tc/Figures/"
+  tmpdir: "/scratch/project_465000454/pghinassi/tc_test/tmpdir"
+  fulldir: "/scratch/project_465000454/pghinassi/tc_test/fulldir"
+  plotdir: "/scratch/project_465000454/pghinassi/tc_test/Figures/"
 
 # log level
 setup:
@@ -23,16 +21,16 @@ grids:
   highgrid: 'r010'
 
 # variables to stored 
-varlist: ['msl', '10u', '10v', 'tprate']
+varlist: ['msl', '10u', '10v', 'mtpr']
 
-# temporal definition (YYYY-MM-DD)
+# temporal definition (date format: YYYYMMDD)
 time: 
-  startdate: '2020-01-20'
-  enddate: '2024-12-31'
+  startdate: '19900101'
+  enddate: '19910101'
   frequency: '6h'
 
 stream:
-  streamstep: "4D" # n of days for streaming (check reader args options, IMPORTANT: must be specified in days, "D")
+  streamstep: "1D" # n of days for streaming (check reader args options, IMPORTANT: must be specified in days, "D")
 
 # detect nodes options
 detect:
@@ -43,3 +41,7 @@ stitch:
   n_days_freq: 30 # run stitch nodes (tracks computation) and save tracks every n days
   n_days_ext: 2  # n of days to extend time boundaries not to miss tracks which may start/end before/after the chosen n of days
 
+# path to orography in case file (in case var is not found in the catalogue)
+orography:
+  file_path: "/users/pghinass/orography/IFS-NEMO/historical-1990/"
+  file_name: "orography_r100.nc"

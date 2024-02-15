@@ -59,13 +59,14 @@ if __name__ == '__main__':
     source3d = get_arg(args, 'source3d', config['dataset']['source3d'])
     paths = get_arg(args, 'outputdir', config['paths']['fulldir'])
 
-    # initialise tropical class with streaming options
+        # initialise tropical class with streaming options
     tropical = TCs(tdict=config, streaming=True,
-                   model=model, exp=exp, source2d=source2d, source3d=source3d,
-                   stream_step=config['stream']['streamstep'],
-                   stream_startdate=config['time']['startdate'],
-                   paths=paths,
-                   loglevel=loglevel,
-                   nproc=1)
-
+                    stream_step=config['stream']['streamstep'],
+                    stream_startdate=config['time']['startdate'],
+                    paths=config['paths'],
+                    loglevel=config['setup']['loglevel'],
+                    orography=True,
+                    nproc=1)
+    # finally run the wrapper function
     tropical.loop_streaming(config)
+
