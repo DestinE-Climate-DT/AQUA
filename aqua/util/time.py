@@ -160,3 +160,48 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': taxis.time})
 
     return boolean_mask
+
+
+def std_timerange(startdate, enddate,
+                  obs_data: xr.DataArray = None, loglevel='WARNING'):
+    """
+    Given a start and end date, return a possible time range
+    for the evaluation of standard deviation with observational data.
+
+    If obs_data are provided, the time range will be evaluated
+    based on the obs_data time range, otherwise the time range will
+    be the at least 30 years centered on the center of the input range.
+    
+    Args:
+        startdate: the start date
+        enddate: the end date
+    
+    Returns:
+        A tuple with the start and end date of the time range for the
+        standard deviation evaluation
+    """
+    logger = log_configure(loglevel, 'std_timerange')
+        
+    startdate = pd.Timestamp(startdate)
+    enddate = pd.Timestamp(enddate)
+
+    if obs_data is not None:
+        logger.debug('Using observational data to define time range for standard deviation')
+        obs_start = pd.Timestamp(obs_data.time.min().values)
+        obs_end = pd.Timestamp(obs_data.time.max().values)
+        if startdate < obs_start:
+            logger.warning('Start date is before observational data start date, setting start date to observational data start date')
+            startdate = obs_start
+        if enddate > obs_end:
+            logger.warning('End date is after observational data end date, setting end date to observational data end date')
+            enddate = obs_end
+    else:
+        logger.debug('No observational data provided, using at least 30 years centered on the input range or the range itself if it is longer than 30 years')
+        range_years = (enddate - startdate).days / 365.25
+        if range_years < 30:
+            center = startdate + (enddate - startdate) / 2
+            startdate = center - pd.DateOffset(years=15)
+            enddate = center + pd.DateOffset(years=15)
+    
+    return startdate, enddate
+
