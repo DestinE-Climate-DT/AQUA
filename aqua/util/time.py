@@ -171,17 +171,17 @@ def std_timerange(startdate, enddate,
     If obs_data are provided, the time range will be evaluated
     based on the obs_data time range, otherwise the time range will
     be the at least 30 years centered on the center of the input range.
-    
+
     Args:
         startdate: the start date
         enddate: the end date
-    
+
     Returns:
         A tuple with the start and end date of the time range for the
         standard deviation evaluation
     """
     logger = log_configure(loglevel, 'std_timerange')
-        
+
     startdate = pd.Timestamp(startdate)
     enddate = pd.Timestamp(enddate)
 
@@ -190,10 +190,10 @@ def std_timerange(startdate, enddate,
         obs_start = pd.Timestamp(obs_data.time.min().values)
         obs_end = pd.Timestamp(obs_data.time.max().values)
         if startdate < obs_start:
-            logger.warning('Start date is before observational data start date, setting start date to observational data start date')
+            logger.debug('Start date is before observational data start date, setting start date to observational data start date')
             startdate = obs_start
         if enddate > obs_end:
-            logger.warning('End date is after observational data end date, setting end date to observational data end date')
+            logger.debug('End date is after observational data end date, setting end date to observational data end date')
             enddate = obs_end
     else:
         logger.debug('No observational data provided, using at least 30 years centered on the input range or the range itself if it is longer than 30 years')
@@ -202,6 +202,5 @@ def std_timerange(startdate, enddate,
             center = startdate + (enddate - startdate) / 2
             startdate = center - pd.DateOffset(years=15)
             enddate = center + pd.DateOffset(years=15)
-    
-    return startdate, enddate
 
+    return startdate, enddate
