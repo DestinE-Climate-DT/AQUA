@@ -21,23 +21,6 @@ class replicabilityCLI:
         self.loglevel = {}
         self.config = {}
         self.data = {}
-    def get_arg(self, arg, default):
-        """
-        Support function to get arguments
-
-        Args:
-            args: the arguments
-            arg: the argument to get
-            default: the default value
-
-        Returns:
-            The argument value or the default value
-        """
-
-        res = getattr(self.args, arg)
-        if not res:
-            res = default
-        return res
 
     def get_value_with_default(self, dictionary, key, default_value):
         try:
@@ -56,12 +39,13 @@ class replicabilityCLI:
         self.config["ensemble2_PI_dir"] = self.replicability_config_dict.get('ensemble2_PI_dir')
         self.config["members"] = self.replicability_config_dict.get('members')
         self.config["outputdir"] = self.replicability_config_dict.get('outputdir')
+        self.config["loglevel"] = self.loglevel
 
 
 
     def run_diagnostic(self):
 
-        self.loglevel = self.get_arg('loglevel', 'INFO')
+        self.loglevel = get_arg(self.args, 'loglevel', 'INFO')
         self.logger = log_configure(log_name='replicability CLI', log_level= self.loglevel)
 
         # Change the current directory to the one of the CLI so that relative paths work
@@ -74,7 +58,7 @@ class replicabilityCLI:
         self.logger.info("Running replicability diagnostic...")
 
         # Read configuration file
-        file = self.get_arg('config', 'config.yaml')
+        file = get_arg(self.args, 'config', 'config.yaml')
         self.logger.info('Reading configuration yaml file..')
 
         self.replicability_config_process(file)

@@ -49,7 +49,8 @@ class ks_test:
         
         self.members = args.get("members")
         self.outputdir = args.get("outputdir")
-        
+
+        self.loglevel = args.get('loglevel', 'INFO')
     
     def PI_dict(self, ensemble, ensemble_PI_dir, members,  loglevel="WARNING"):
         """
@@ -64,33 +65,33 @@ class ks_test:
         Returns:
             dict: Dictionary containing predictive interval scores for the ensemble and its members.
         """
-        logger = log_configure(loglevel, 'PI_dict')
+        logger = log_configure(self.loglevel, 'PI_dict')
         
         pi_score = {}
         data_members= {}
-        logger.DEBUG("Going to import yaml files")
+        logger.debug("Going to import yaml files")
         for member in members:
             pattern = f"{ensemble_PI_dir}/*{member}*yml"
             yaml_files = glob.glob(pattern)
             logger.debug("These are the yaml files availabel %s", yaml_files)
-            logger.DEBUG("Going to import yaml of %s", member )
+            logger.debug("Going to import yaml of %s", member )
             loaded_yaml= load_yaml(yaml_files[0])
-            logger.DEBUG("Done")
+            logger.debug("Done")
             data_members[member] = loaded_yaml
         pi_score[ensemble] = data_members
         return pi_score
     
-    def combine_PI_dict(self, loglevel="WARNING"):
+    def combine_PI_dict(self):
         """
         Combines predictive interval scores for both ensembles into a single dictionary.
 
         Args:
             loglevel (str): Logging level (default is "WARNING").
         """
-        logger = log_configure(loglevel, 'combine_PI_dict')
-        logger.DEBUG("Dictionary creation of %s from this directory: %s", self.ensemble1, self.ensemble1_PI_dir)
+        logger = log_configure(self.loglevel, 'combine_PI_dict')
+        logger.debug("Dictionary creation of %s from this directory: %s", self.ensemble1, self.ensemble1_PI_dir)
         ensemble1_PI_score = self.PI_dict(self.ensemble1, self.ensemble1_PI_dir, self.members)
-        logger.DEBUG("Dictionary creation of %s from this directory: %s", self.ensemble2, self.ensemble2_PI_dir)
+        logger.debug("Dictionary creation of %s from this directory: %s", self.ensemble2, self.ensemble2_PI_dir)
         ensemble2_PI_score = self.PI_dict(self.ensemble2, self.ensemble2_PI_dir, self.members)
         self.pi_score = {
             **ensemble1_PI_score,
@@ -98,14 +99,14 @@ class ks_test:
         }
         return 
     
-    def pi_score_df(self, loglevel="WARNING"):
+    def pi_score_df(self):
         """
         Converts predictive interval scores into a DataFrame.
 
         Args:
             loglevel (str): Logging level (default is "WARNING").
         """
-        logger = log_configure(loglevel, 'pi_score_df')
+        logger = log_configure(self.loglevel, 'pi_score_df')
         pi_score_dict = self.pi_score
         ensembles = []
         members = []
@@ -113,7 +114,7 @@ class ks_test:
         seasons = []
         regions = []
         values = []
-        logger.DEBUG("DataFrame creation of PI Dictionary")
+        logger.debug("DataFrame creation of PI Dictionary")
         for ensemble in pi_score_dict:
             for member in pi_score_dict[ensemble]:
                 for variable in pi_score_dict[ensemble][member]:
@@ -149,21 +150,21 @@ class ks_test:
         elif value == np.nan:
             return None
         
-    def km_test_score_df(self, loglevel="WARNING"):
+    def km_test_score_df(self):
         """
         Computes KS test scores and p-values for each variable, season, and region.
 
         Args:
             loglevel (str): Logging level (default is "WARNING").
         """
-        logger = log_configure(loglevel, 'km_test_score_df')
+        logger = log_configure(self.loglevel, 'km_test_score_df')
         df = self.df
         vars = []
         seasons = []
         regions = []
         p_values = []
         KS_score = {}
-        logger.DEBUG("Generating Kolmogorov test results")
+        logger.info("Generating Kolmogorov test results")
         for variable in df.variables.unique():
                 for season in df.seasons.unique():
                         for location in df.locations.unique():
@@ -195,15 +196,15 @@ class ks_test:
 
 
 
-    def plot_pvalues(self, loglevel="WARNING"):
+    def plot_pvalues(self):
         """
         Plots p-values of the KS test.
 
         Args:
             loglevel (str): Logging level (default is "WARNING").
         """
-        logger = log_configure(loglevel, 'create_folder')
-        logger.DEBUG("Plotting Kolmogorov test results!")
+        logger = log_configure(self.loglevel, 'create_folder')
+        logger.info("Plotting Kolmogorov test results!")
         p_values = self.ks_score_df.pivot_table(index="variable", columns="season",
                                         values="p_value", aggfunc='mean')
 
@@ -236,13 +237,12 @@ class ks_test:
         
         dump_yaml(f"{self.outputdir}/yml/{filename}.yml", nested_dict)
         plt.savefig(f"{self.outputdir}/pdf/{filename}.pdf", bbox_inches='tight')
-        
+        logger.info("Test done. Check this dir: %s", self.outputdir)
 
     def compute(self):
         """
         Computes predictive interval scores and KS test scores.
         """
-        logger.DEBUG("Computing Kolmogorov test p values!")
         self.combine_PI_dict()
         self.pi_score_df()
         self.km_test_score_df()
