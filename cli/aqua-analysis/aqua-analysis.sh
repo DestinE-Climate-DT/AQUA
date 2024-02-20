@@ -84,9 +84,9 @@ done
 # --config (config file)
 # Concatenate the new part to the existing content
 atm_extra_args["global_time_series"]="${atm_extra_args["global_time_series"]} \
---config $aqua/diagnostics/global_time_series/cli/single_analysis/config_time_series_atm.yaml"
+--config $aqua/diagnostics/global_time_series/cli/config_time_series_atm.yaml"
 oce_extra_args["global_time_series"]="${oce_extra_args["global_time_series"]} \
---config $aqua/diagnostics/global_time_series/cli/single_analysis/config_time_series_oce.yaml"
+--config $aqua/diagnostics/global_time_series/cli/config_time_series_oce.yaml"
 # ----------------------------------------
 # Command line extra arguments for ecmean:
 # -c --config (ecmean config file)
@@ -126,9 +126,6 @@ declare -A script_path
 for diagnostic in ${all_diagnostics[@]}; do
   script_path["$diagnostic"]="$diagnostic/cli/cli_$diagnostic.py"
 done
-
-# Set specific value for "global_time_series"
-script_path["global_time_series"]="global_time_series/cli/single_analysis/cli_global_time_series.py"
 
 # Command line arguments
 # Define accepted log levels
@@ -262,12 +259,12 @@ for diagnostic in "${all_diagnostics[@]}"; do
 
   if [[ "${atm_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args_atm ${atm_extra_args[$diagnostic]} \
-    -l $loglevel --outputdir $outputdir_atm/$diagnostic > "$outputdir_atm/$diagnostic.log" 2>&1 &
+    -l $loglevel --outputdir $outputdir_atm/$diagnostic > "$outputdir_atm/atm_$diagnostic.log" 2>&1 &
     # Remove diagnostic from atm_diagnostics array
     atm_diagnostics=(${atm_diagnostics[@]/$diagnostic})
   elif [[ "${oce_diagnostics[@]}" =~ "$diagnostic" ]]; then
     python "$aqua/diagnostics/${script_path[$diagnostic]}" $args_oce ${oce_extra_args[$diagnostic]} \
-    -l $loglevel --outputdir $outputdir_oce/$diagnostic > "$outputdir_oce/$diagnostic.log" 2>&1 &
+    -l $loglevel --outputdir $outputdir_oce/$diagnostic > "$outputdir_oce/oce_$diagnostic.log" 2>&1 &
     # Remove diagnostic from oce_diagnostics array
     oce_diagnostics=(${oce_diagnostics[@]/$diagnostic})
   elif [[ "${atm_oce_diagnostics[@]}" =~ "$diagnostic" ]]; then

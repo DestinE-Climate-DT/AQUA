@@ -389,6 +389,24 @@ specifying only what is different:
 This second source will have the same keys as the first one, except for
 the ones that are explicitly overridden.
 
+.. Checking new data
+.. -----------------
+
+.. Checking that all the details of the source and of the experiments are fine can be exhausting task,
+.. considering that several surces can be added to the same experiment. A good thing to do is to check that all 
+.. sources are correctly working and most important reader functionalities as regridding and spatial averaging are working
+
+.. We thus developed a basic function to run a check, `check_experiment()`, which can be simply called as:
+
+.. .. code-block:: python
+
+..     from aqua import check_experiment
+
+..     check_experiment(model="IFS-NEMO", exp="awesome-exp")
+
+.. This will open all the sources available and will regrid them. It can take a while and can be memory intensive, so it would be 
+.. safer to not launch it from notebook. 
+
 
 DE_340 source syntax convention
 -------------------------------
@@ -414,8 +432,7 @@ Considering that we have strict set of experiments that must be produced, we wil
 3. **Extra info** (optional): any information that might be important to define an experiment, as dev, test,
    the expid of the simulation, or anything else that can help for defining the experiment.
 
-Examples are `historical-1990-dev` or `control-1950-dev`. We plan to incorporate info on the expid in the metadata,
-so that we can potentially use it as an alias.
+Examples are `historical-1990-dev` or `control-1950-dev`. For test experiments, we use simply the expid of the experiment
 
 Sources (`source` key)
 ^^^^^^^^^^^^^^^^^^^^^^

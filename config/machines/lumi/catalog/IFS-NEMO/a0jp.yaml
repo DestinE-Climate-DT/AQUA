@@ -10,16 +10,16 @@ sources:
         model: IFS-NEMO
         realization: 1
         resolution: high
-        expver: a0fe
+        expver: a0jp
         type: fc
         stream: clte
-        date: 19900101
+        date: 20200101
         time: '0000'
         param: 167
         levtype: sfc
         step: 0
-      data_start_date: 19900101T0000
-      data_end_date: 20191231T2300
+      data_start_date: 20200101T0000
+      data_end_date: 20491231T2300
       aggregation: D  # Default aggregation / chunk size
       savefreq: h  # at what frequency are data saved
       timestep: h  # base timestep for step timestyle
@@ -27,13 +27,12 @@ sources:
     description: hourly atmospheric 2D data on native grid TCo79.
     driver: gsv
     metadata: &metadata-default
-      fdb_path: 
-        /projappl/project_465000454/experiments/a0fe/fdb/NATIVE_grids/etc/fdb/config.yaml
+      fdb_path: /scratch/project_465000454/experiments/a0jp/fdb/NATIVE_grids/etc/fdb/config.yaml
       eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.32.2/definitions
       variables: [175, 176, 177, 178, 179, 144, 146, 147, 169, 182, 212, 228, 165,
         166, 141, 164, 78, 79, 167, 168, 235]
       source_grid_name: tco79
-      fixer_name: ifs-nemo-destine-v1-nan-lowres
+      fixer_name: ifs-destine-v1
 
   hourly-hpz5-atm2d:
     <<: *base-default
@@ -47,7 +46,7 @@ sources:
         resolution: standard
     metadata:
       <<: *metadata-default
-      fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
+      fdb_path: /scratch/project_465000454/experiments/a0jp/fdb/config.yaml
       source_grid_name: hpz5-nested
 
   hourly-r100-atm2d:
@@ -63,7 +62,7 @@ sources:
     metadata:
       <<: *metadata-default
       fdb_path: 
-        /projappl/project_465000454/experiments/a0fe/fdb/REGULARLL_grids/etc/fdb/config.yaml
+        /scratch/project_465000454/experiments/a0jp/fdb/REGULARLL_grids/etc/fdb/config.yaml
       source_grid_name: lon-lat
 
   hourly-native-atm3d:
@@ -103,7 +102,7 @@ sources:
       levels: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600, 700,
         850, 925, 1000]
       variables: [129, 130, 131, 132, 133, 157]
-      fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
+      fdb_path: /scratch/project_465000454/experiments/a0jp/fdb/config.yaml
       source_grid_name: hpz5-nested
 
   hourly-r100-atm3d:
@@ -126,7 +125,7 @@ sources:
         850, 925, 1000]
       variables: [129, 130, 131, 132, 133, 157]
       fdb_path: 
-        /projappl/project_465000454/experiments/a0fe/fdb/REGULARLL_grids/etc/fdb/config.yaml
+        /scratch/project_465000454/experiments/a0jp/fdb/REGULARLL_grids/etc/fdb/config.yaml
       source_grid_name: lon-lat
 
   daily-native-oce2d:
@@ -162,7 +161,7 @@ sources:
       <<: *metadata-default
       variables: [263022, 263100, 263101, 263124, 263001, 263021, 263000, 263004,
         263003]
-      fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
+      fdb_path: /scratch/project_465000454/experiments/a0jp/fdb/config.yaml
       source_grid_name: nemo-hpz5-nested
 
 
@@ -267,7 +266,7 @@ sources:
         3897.98193359375, 4093.15869140625, 4289.95263671875, 4488.15478515625, 4687.5810546875,
         4888.06982421875, 5089.478515625, 5291.68310546875, 5494.5751953125, 5698.060546875,
         5902.0576171875]
-      fdb_path: /projappl/project_465000454/experiments/a0fe/config.yaml
+      fdb_path: /scratch/project_465000454/experiments/a0jp/fdb/config.yaml
       source_grid_name: nemo-hpz5-nested-3d
 
   # same error as above
@@ -316,7 +315,7 @@ sources:
     description: LRA data monthly at r100
     args:
       urlpath: 
-        /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA/IFS-NEMO/historical-1990-dev-lowres/r100/monthly/*historical-1990-dev-lowres_r100_monthly_*.nc
+        /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA/IFS-NEMO/a0jp/r100/monthly/*a0jp_r100_monthly_*.nc
       chunks: {}
       xarray_kwargs:
         decode_times: true

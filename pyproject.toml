@@ -44,6 +44,7 @@ dependencies = [
     "metpy",
     "numpy",
     "pydantic<2.5.3", # NOTE: pydantic 2.5.3 has a bug that breaks tests
+    "pypdf",
     "pyYAML",
     "ruamel.yaml",
     "smmregrid",
@@ -90,10 +91,10 @@ all = [
 ]
 
 [project.urls]
-homepage = "https://github.com/oloapinivad/AQUA/"
-documentation = "https://github.com/oloapinivad/AQUA/"
-repository = "https://github.com/oloapinivad/AQUA/"
-issues = "https://github.com/oloapinivad/AQUA/issues/"
+homepage = "https://aqua-web-contbuild.2.rahtiapp.fi"
+documentation = "https://aqua-web-contbuild.2.rahtiapp.fi/documentation/index.html"
+repository = "https://github.com/DestinE-Climate-DT/AQUA/"
+issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 
 [tool.setuptools.package-data]
 platforms = [

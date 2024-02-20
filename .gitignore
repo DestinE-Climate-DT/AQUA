@@ -9,6 +9,7 @@ __pycache__/
 *.err
 *.out
 *.bal
+*.log
 
 # documentation
 docs/sphinx/build/*

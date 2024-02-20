@@ -1,13 +1,14 @@
 from .gregory import plot_gregory
-from .timeseries_functions import plot_timeseries
+from .timeseries import Timeseries
 
-__version__ = "0.0.5"
+__version__ = "0.1.0"
 
 __all__ = ["plot_gregory",
-           "plot_timeseries"]
+           "Timeseries"]
 
 # Changelog:
 
+# 0.1.0: complete refactory of the timeseries as a class
 # 0.0.5: support for reference data in Gregory plot
 # 0.0.4: gregory plot in a separate file
 # 0.0.3: added improvement gregory plot

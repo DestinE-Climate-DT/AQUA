@@ -3,7 +3,6 @@
 import intake
 from aqua.util import ConfigPath
 
-
 def catalogue(verbose=True, configdir=None):
     """
     Catalogue of available data.

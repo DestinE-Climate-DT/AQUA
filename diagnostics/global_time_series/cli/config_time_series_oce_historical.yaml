@@ -1,8 +1,10 @@
-# This block can be overridden in the command line by using:
+# The first model in this block can be overridden
+# in the command line by using:
 # --model, --exp, --source, --outputdir
-model: "IFS-NEMO"
-exp: "historical-1990"
-source: "lra-r100-monthly"
+models:
+  - model: 'IFS-NEMO'
+    exp: 'historical-1990'
+    source: 'lra-r100-monthly'
 outputdir: "./"
 
 # This is the list of variables that will be plotted as timeseries
@@ -15,17 +17,6 @@ timeseries_plot_params:
 # If you need specific options for a variable, you can
 # add it here.
   default:
-    plot_kw:
-      color: "tab:blue"
-    plot_era5: True
-    resample: null
-    savefig: True
-    annual: True
-    std_startdate: "1980-01-01"
-    std_enddate: "2010-01-01"
-  # sst:
-  #   plot_kw:
-  #     color: "tab:blue"
-  #   plot_era5: True
-  #   resample: "M"
-  #   savefig: True
+    plot_ref: True
+    std_startdate: null
+    std_enddate: null

@@ -7,7 +7,8 @@ sources:
     description: PHC3    
     driver: netcdf
     metadata:
-      source_grid_name: lon-lat
+      source_grid_name: lon-lat-depth
+      fixer_name: PHC3-default
     args:
       chunks:
         time: 1
@@ -17,7 +18,8 @@ sources:
     description: PHC3    
     driver: netcdf
     metadata:
-      source_grid_name: lon-lat
+      source_grid_name: lon-lat-depth
+      fixer_name: PHC3-default
     args:
       chunks:
         time: 1

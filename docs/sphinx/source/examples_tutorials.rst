@@ -18,3 +18,4 @@ Some example notebooks include:
 7. `Access to other datasets <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/datasets.ipynb>`_
 8. `Streaming emulator <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/streaming.ipynb>`_
 9. `Interactive dask-job  <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/slurm/slurm.ipynb>`_
+10. `Demonstration of the core components <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/demo_lumi.ipynb>`_

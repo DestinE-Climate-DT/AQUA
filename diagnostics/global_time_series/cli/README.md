@@ -2,7 +2,7 @@ This folder contains the CLI for the Global Time Series diagnostic.
 
 ## Available CLI
 
-- In the folder `single_analysis`, run `python global_time_series.py --help` to see the available options. This CLI is used to run the diagnostic for a single model.
-- In the folder `comparison_analysis`, run `python global_time_series.py --help` to see the available options. This CLI is used to run the diagnostic for multiple models at the same time.
+- Run `python global_time_series.py --help` to see the available options.
+- A file for a single comparison with ERA5 is provided. Another file for comparing multiple models is also provided.
 
 By default the models are compared against ERA5.

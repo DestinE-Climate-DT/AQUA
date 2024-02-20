@@ -9,18 +9,33 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/historical-1990-dev.yaml'
-  historical-1990-dev-lowres:
-    description: FDB IFS/NEMO tco79-eORCA1 historical 1990 run (lowres)
+  a0fe:
+    description: FDB IFS/NEMO development tco79-eORCA1 historical 1990-2020 run - not use
     driver: yaml_file_cat
     args:
-      path: '{{CATALOG_DIR}}/historical-1990-dev-lowres.yaml'
+      path: '{{CATALOG_DIR}}/a0fe.yaml'
+  a0gg:
+    description: FDB IFS/NEMO development tco79-eORCA1 historical+scenario 1990-2050 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0gg.yaml'
+  a0jp:
+    description: FDB IFS/NEMO development tco79-eORCA1 scenario 2020-2050 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0jp.yaml'
   spinup-1990-fracice:
     description: "1990-1991 coupled spinup (2y) with fractional sea ice coupling"
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/spinup-1990-fracice.yaml'
   historical-1990:
-    description: FDB IFS/NEMO tco1279-orca025 historical 1990 run
+    description: FDB IFS/NEMO tco1279-orca012 historical 1990 run
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/historical-1990.yaml'
+  ssp370:
+    description: FDB IFS/NEMO tco2559-orca012 scenario 2020 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/ssp370.yaml'

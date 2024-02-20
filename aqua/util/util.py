@@ -3,9 +3,11 @@
 import os
 import random
 import string
+import yaml
 import re
 import numpy as np
 import xarray as xr
+from pypdf import PdfReader, PdfWriter
 from aqua.logger import log_configure
 
 
@@ -86,7 +88,7 @@ def file_is_complete(filename, loglevel='WARNING'):
                         logger.info('File %s seems ok!', filename)
                     else:
                         logger.error('File %s has at least one time step with NaN! Recomputing...', filename)
-                        
+
         # we have no clue which kind of exception might show up
         except ValueError:
             logger.error('Something wrong with file %s! Recomputing...', filename)
@@ -113,7 +115,7 @@ def extract_literal_and_numeric(text):
     """
     # Using regular expression to find alphabetical characters and digits in the text
     match = re.search(r'(\d*)([A-Za-z]+)', text)
-    
+
     if match:
         # If a match is found, return the literal and numeric parts
         literal_part = match.group(2)
@@ -124,3 +126,69 @@ def extract_literal_and_numeric(text):
     else:
         # If no match is found, return None or handle it accordingly
         return None, None
+
+
+def add_pdf_metadata(filename: str,
+                     metadata_value: str,
+                     metadata_name: str = '/Description',
+                     old_metadata: bool = True,
+                     loglevel: str = 'WARNING'):
+    """
+    Open a pdf and add a new metadata.
+
+    Args:
+        filename (str): the filename of the pdf.
+                        It must be a valid full path.
+        metadata_value (str): the value of the new metadata
+        metadata_name (str): the name of the new metadata.
+                            Default is 'Description'
+        old_metadata (bool): if True, the old metadata will be kept.
+                            Default is True
+        loglevel (str): the log level. Default is 'WARNING'
+
+    Raise:
+        FileNotFoundError: if the file does not exist
+    """
+    logger = log_configure(loglevel, 'add_pdf_metadata')
+
+    if not os.path.isfile(filename):
+        raise FileNotFoundError(f'File {filename} not found')
+
+    # Check that metadata_name starts with '/'
+    if metadata_name and metadata_name[0] != '/':
+        logger.debug('metadata_name does not start with "/". Adding it...')
+        metadata_name = '/' + metadata_name 
+    
+
+    pdf_reader = PdfReader(filename)
+    pdf_writer = PdfWriter()
+
+    # Adding existing pages to the new pdf
+    for page in pdf_reader.pages:
+        pdf_writer.add_page(page)
+
+    # Keep old metadata if required
+    if old_metadata is True:
+        logger.debug('Keeping old metadata')
+        metadata = pdf_reader.metadata
+        pdf_writer.add_metadata(metadata)
+    else:
+        logger.debug('Removing old metadata')
+
+    # Add the new metadata
+    pdf_writer.add_metadata({metadata_name: metadata_value})
+
+    # Overwrite input pdf
+    with open(filename, 'wb') as f:
+        pdf_writer.write(f)
+        f.close()
+
+
+def username():
+    """
+    Retrieves the current user's username from the 'USER' environment variable.
+    """
+    user = os.getenv('USER')
+    if user is None:
+        raise EnvironmentError("The 'USER' environment variable is not set.")
+    return user 

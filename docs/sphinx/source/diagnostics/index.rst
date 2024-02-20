@@ -64,12 +64,12 @@ This script will take care of calling the correct Python script for each diagnos
 It is possible to set the following options by changing the values of the variables in the script
 or by passing them as command line arguments:
 
-- **model_atm**: name of the atmospheric model to use (default: `IFS`)
-- **model_ocean**: name of the ocean model to use (default: `FESOM`)
-- **exp**: name of the experiment to use (default: `tco2559-ng5-cycle3`)
+- **model_atm**: name of the atmospheric model to use (default: `IFS-NEMO`)
+- **model_ocean**: name of the ocean model to use (default: `IFS-NEMO`)
+- **exp**: name of the experiment to use (default: `historical-1990`)
 - **source**: name of the source to use (default: `lra-r100-monthly`)
 - **outputdir**: name of the output directory to use (default: `./output`)
-- **machine**: name of the machine to use (default: `levante`)
+- **machine**: name of the machine to use (default: `lumi`)
 - **max_threads**: maximum number of threads to use (default: `-1`, i.e. use all available threads)
 - **loglevel**: log level to use (default: `WARNING`)
 
@@ -125,4 +125,10 @@ Custom diagnostics can be implemented as Python functions or classes and integra
 To support the development of new diagnostic, a `dummy diagnostic <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/dummy/README.md>`_
 has been introduced into the code to support future development and serve as starting point. 
 This includes multiple template files and demo code, ranging from the creation 
-of a proper README up to a command line interface tool, going through the documentation, notebook and tests. 
+of a proper README up to a command line interface tool, going through the documentation, notebook and tests.
+
+Automatic image caption
++++++++++++++++++++++++
+
+AQUA provides a tool to automatically incorporate a caption into the pdf produced by the diagnostics.
+The caption is stored as */Description* metadata in the pdf file with the `add_pdf_metadata` function in the `aqua.util` module.

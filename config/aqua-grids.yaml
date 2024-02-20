@@ -19,6 +19,9 @@ grids:
   lon-lat:
     vert_coord: ["2d"]
     space_coord: [lon, lat]
+  lon-lat-depth:
+    vert_coord: ["depth"]
+    space_coord: [lon, lat]
 
   # target regrid
   r005: r7200x3600
@@ -111,10 +114,10 @@ grids:
     masked: 
       vars: ["ci", "sst"]
     vert_coord: ["2d", "2dm"]
-    space_coord: ["value"]
+    # space_coord: ["value"]
   tco3999: 
     path: $grids/IFS/tco3999_grid.nc
-    space_coord: ["value"]
+    # space_coord: ["value"]
   
   # IFS interpolated
   ifs-interpolated: 

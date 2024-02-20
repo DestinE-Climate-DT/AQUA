@@ -1,10 +1,10 @@
 # AQUA
 
-The Application for Quality assessment and Uncertainity quAntification (AQUA) is a is a model evaluation framework designed for running diagnostics on high-resolution climate models, specifically for Climate DT climate simulations being part of Destination Earth activity. The package provides a flexible and efficient framework to process and analyze large volumes of climate data. With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic tools that can be run in parallel. AQUA offers:
+The Application for Quality assessment and Uncertainity quAntification (AQUA) is a model evaluation framework designed for running diagnostics on high-resolution climate models, specifically for Climate DT climate simulations being part of Destination Earth activity. The package provides a flexible and efficient python3 framework to process and analyze large volumes of climate data. With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic tools that can be run in parallel. AQUA offers:
 
 - Efficient handling of large datasets from high-resolution climate models;
-- Support for various data formats, such as NetCDF, GRIB, HDF or FDB;
-- Robust and fast regridding functionality;
+- Support for various data formats, such as NetCDF, GRIB, Zarr or FDB;
+- Robust and fast regridding functionality based on CDO;
 - Averaging and aggregation tools for temporal and spatial analyses;
 - Modular design for easy integration of new diagnostics. 
 

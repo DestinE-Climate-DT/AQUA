@@ -1,12 +1,13 @@
 fixer_name:  
-  EN4-default:
+  PHC3-default:
     data_model: false
     vars:
       avg_thetao:
-        source: thetao 
+        src_units: C
+        source: temp
         grib: true
       avg_so:
         src_units: psu
-        source: so
+        source: salt
         grib: true
         units: psu

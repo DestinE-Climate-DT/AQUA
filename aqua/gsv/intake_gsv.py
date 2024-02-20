@@ -73,17 +73,19 @@ class GSVSource(base.DataSource):
             raise ImportError(gsv_error_cause)
 
         if metadata:
+            self.fdbhome = metadata.get('fdb_home', None)
             self.fdbpath = metadata.get('fdb_path', None)
             self.eccodes_path = metadata.get('eccodes_path', None)
             self.levels =  metadata.get('levels', None)
         else:
             self.fdbpath = None
+            self.fdbhome = None
             self.eccodes_path = None
             self.levels = None
 
         if data_start_date == 'auto' or data_end_date == 'auto':
             self.logger.debug('Autoguessing of the FDB start and end date enabled.')
-            data_start_date, data_end_date = self.parse_fdb(self.fdbpath, data_start_date, data_end_date)
+            data_start_date, data_end_date = self.parse_fdb(data_start_date, data_end_date)
 
         if not startdate:
             startdate = data_start_date
@@ -250,6 +252,8 @@ class GSVSource(base.DataSource):
         else:
             request["param"] = self._var
 
+        if self.fdbhome:  #if fdbhome is provided, use it, since we are creating a new gsv
+            os.environ["FDB_HOME"] = self.fdbhome
         if self.fdbpath:  # if fdbpath provided, use it, since we are creating a new gsv
             os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
 
@@ -350,18 +354,26 @@ class GSVSource(base.DataSource):
             yield ds
 
     
-    def parse_fdb(self, fdbpath, start_date, end_date):
+    def parse_fdb(self, start_date, end_date):
         """Parse the FDB config file and return the start and end dates of the data."""
 
-        if not fdbpath:
+        if not self.fdbpath and not self.fdbpath:
             raise ValueError('Automatic dates requested but FDB path not specified in catalogue.')
 
         yaml = YAML() 
-
-        with open(fdbpath, 'r') as file:
+  
+        if self.fdbhome and not self.fdbpath:
+            yamlfile = os.path.join(self.fdbhome, '/etc/fdb/config.yaml')
+        else:
+            yamlfile = self.fdbpath
+        
+        with open(yamlfile, 'r') as file:
             cfg = yaml.load(file)
 
-        root = cfg['spaces'][0]['roots'][0]['path']
+        if 'fdbs' in cfg:
+            root = cfg['fdbs'][0]['spaces'][0]['roots'][0]['path']
+        else:
+            root = cfg['spaces'][0]['roots'][0]['path']
 
         file_list = os.listdir(root)
         

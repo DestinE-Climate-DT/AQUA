@@ -1,10 +1,12 @@
 import pytest
 import xarray as xr
 import numpy as np
+from pypdf import PdfReader
 
 from aqua import Reader
 from aqua.util.graphics import add_cyclic_lon, plot_box, minmax_maps
-from aqua.util import cbar_get_label, evaluate_colorbar_limits
+from aqua.util import cbar_get_label, evaluate_colorbar_limits, add_pdf_metadata
+from aqua.graphics import plot_single_map
 
 loglevel = 'DEBUG'
 
@@ -97,3 +99,25 @@ def test_label():
     assert vmin < vmax, "Minimum value should be less than maximum value"
     assert vmin == -310.61033630371094, "Minimum value is incorrect"
     assert vmax == 310.61033630371094, "Maximum value is incorrect"
+
+
+@pytest.mark.graphics
+def test_pdf_metadata():
+    """Test the add_pdf_metadata function"""
+    # Generate a test figure from a random xarray DataArray
+    da = xr.DataArray(np.random.rand(18, 36), dims=['lat', 'lon'], coords={'lon': np.linspace(0, 360, 36),
+                                                                          'lat': np.linspace(-90, 90, 18)})
+    plot_single_map(da, title='Test', save=True, filename='test', format='pdf', loglevel=loglevel)
+
+    # Test the function
+    add_pdf_metadata(filename='./test.pdf', metadata_value='Test',
+                     metadata_name='/Test description', loglevel=loglevel)
+    add_pdf_metadata(filename='./test.pdf', metadata_value='Test caption',
+                     loglevel=loglevel)
+
+    # Open the PDF and check the metadata
+    pdf_reader = PdfReader("./test.pdf")
+    metadata = pdf_reader.metadata
+
+    assert metadata['/Test description'] == 'Test', "Old metadata should be kept"
+    assert metadata['/Description'] == 'Test caption', "Description should be added to metadata"

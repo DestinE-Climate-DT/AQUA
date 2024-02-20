@@ -1,4 +1,4 @@
-# Atmospheric global mean time series
+# Global mean time series
 
 Main authors:
 - Lukas Kluft (MPI, lukas.kluft@mpimet.mpg.de)
@@ -6,11 +6,12 @@ Main authors:
 
 ## Description
 
-This diagnostic computes and plots various (atmospheric) global mean time series.
+This diagnostic computes and plots various global mean time series and Gregory-like
+plot of radiation imbalance to diagnose model drift.
 
 ## Table of Contents
 
-- [Atmospheric global mean time series](#atmospheric-global-mean-time-series)
+- [Global mean time series](#global-mean-time-series)
   - [Description](#description)
   - [Table of Contents](#table-of-contents)
   - [Installation Instructions](#installation-instructions)
@@ -25,9 +26,9 @@ common python environment provided by the AQUA framework.
 
 ## Data requirements
 
-The diagnostic reads various model runs (NextGEMS Cycle 3 at the moment) to
-compute and plot global mean time series. In addition, the time series can be
-extended to inclued ERA5 reanalysis data as reference.
+The diagnostic reads various model runs to compute and plot global mean time series.
+In addition, the time series can be
+extended to inclued any dataset as reference.
 
 ## Examples
 
