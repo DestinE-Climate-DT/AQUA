@@ -241,7 +241,8 @@ class LRAgenerator():
             self.logger.info('Catalog entry for %s %s %s exists, updating the urlpath only...',
                              self.model, self.exp, entry_name)
             cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
-        cat_file['sources'][entry_name] = block_cat
+        else:
+            cat_file['sources'][entry_name] = block_cat
         dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def _set_dask(self):

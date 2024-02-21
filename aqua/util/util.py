@@ -20,6 +20,13 @@ def generate_random_string(length):
     random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
     return random_string
 
+def to_list(arg):
+
+    """Support function to ensure conversion of a variable to list"""
+
+    if isinstance(arg, str):
+        arg = [arg]
+    return arg 
 
 def get_arg(args, arg, default):
     """

@@ -1,7 +1,6 @@
 import os
 import gc
 
-import matplotlib.pyplot as plt
 import xarray as xr
 from aqua import Reader
 from aqua.logger import log_configure
@@ -61,7 +60,6 @@ class Timeseries():
             ax (matplotlib.Axes): (Optional) axes to plot in.
         """
         self.loglevel = loglevel
-
         self.logger = log_configure(log_level=self.loglevel, log_name='Timeseries')
 
         self.var = var
@@ -71,6 +69,8 @@ class Timeseries():
         self.exps = exps
         self.sources = sources
 
+        if self.models is None or self.exps is None:
+            raise NoDataError("No model or exp provided")
         if isinstance(self.models, str):
             self.models = [self.models]
         if isinstance(self.exps, str):
@@ -228,6 +228,8 @@ class Timeseries():
                 ref_label = self.plot_ref_kw['model']
             except KeyError:
                 ref_label = 'Reference'
+        else:
+            ref_label = None
 
         title = f'{self.var} timeseries'
 
@@ -246,9 +248,9 @@ class Timeseries():
         self.logger.debug(f"Saving figure to {outfig}")
         create_folder(outfig, self.loglevel)
         if self.outfile is None:
-            self.outfile = f'timeseries_{self.var}'
+            self.outfile = f'global_time_series_timeseries_{self.var}'
             for i, model in enumerate(self.models):
-                self.outfile += f'_{model}_{self.exps[i]}_'
+                self.outfile += f'_{model}_{self.exps[i]}'
             if self.plot_ref:
                 self.outfile += f'_{ref_label}'
             self.outfile += '.pdf'
@@ -261,7 +263,11 @@ class Timeseries():
             description += f" for {model} {self.exps[i]}"
         if self.plot_ref:
             description += f" with {ref_label} as reference,"
-            description += f" std evaluated from {self.std_startdate} to {self.std_enddate}"
+            sd_format = self.startdate.astype('datetime64[s]').astype('O')
+            sd_format = sd_format.strftime('%Y-%m-%d')
+            ed_format = self.enddate.astype('datetime64[s]').astype('O')
+            ed_format = ed_format.strftime('%Y-%m-%d')
+            description += f" std evaluated from {sd_format} to {ed_format}"
         add_pdf_metadata(filename=os.path.join(outfig, self.outfile),
                          metadata_value=description)
 
@@ -276,38 +282,41 @@ class Timeseries():
         create_folder(outdir, self.loglevel)
 
         for i, model in enumerate(self.models):
-            outfile = f'timeseries_{self.var}_{model}_{self.exps[i]}.nc'
+            outfile = f'global_time_series_timeseries_{self.var}_{model}_{self.exps[i]}.nc'
             self.logger.debug(f"Saving data to {outdir}/{outfile}")
-            if self.monthly is not None:
+            if self.monthly is True:
                 self.data_mon[i].to_netcdf(os.path.join(outdir, outfile))
-            if self.annual is not None:
+            if self.annual is True:
                 self.data_annual[i].to_netcdf(os.path.join(outdir, outfile))
 
         if self.plot_ref:
-            outfile = f'timeseries_{self.var}_ref.nc'
+            outfile = f'global_time_series_timeseries{self.var}_ref.nc'
             self.logger.debug(f"Saving reference data to {outdir}/{outfile}")
-            if self.monthly is not None:
+            if self.monthly_std:
                 self.ref_mon.to_netcdf(os.path.join(outdir, outfile))
-            if self.annual is not None:
+            if self.annual_std:
+                self.logger.debug(f"Saving annual data to {outdir}/{outfile}")
                 self.ref_ann.to_netcdf(os.path.join(outdir, outfile))
 
-            outfile = f'timeseries_{self.var}_std.nc'
+            outfile = f'global_time_series_timeseries{self.var}_std.nc'
             self.logger.debug(f"Saving std data to {outdir}/{outfile}")
-            if self.monthly is not None:
+            if self.monthly_std:
                 self.ref_mon_std.to_netcdf(os.path.join(outdir, outfile))
-            if self.annual is not None:
+            if self.annual_std:
                 self.ref_ann_std.to_netcdf(os.path.join(outdir, outfile))
 
     def cleanup(self):
-        """
-        Clean up
-        """
+        """Clean up"""
         self.logger.debug("Cleaning up")
-        del self.data_mon
-        del self.data_annual
-        del self.ref_mon
-        del self.ref_mon_std
-        del self.ref_ann
-        del self.ref_ann_std
+        if self.monthly:
+            del self.data_mon
+            if self.plot_ref:
+                del self.ref_mon
+                del self.ref_mon_std
+        if self.annual:
+            del self.data_annual
+            if self.plot_ref:
+                del self.ref_ann
+                del self.ref_ann_std
         gc.collect()
         self.logger.debug("Cleaned up")

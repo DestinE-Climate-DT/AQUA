@@ -220,6 +220,7 @@ If you need to develop your own, fixes can be specified in two different ways:
     ``fixer_name`` called ``<MODEL_NAME>-default``.
 
 Please note that the ``default.yaml`` is reserved to define a few of useful tools:
+
 - the default ``data_model``(See :ref:`coord-fix`).
 - the list of units that should be added to the default MetPy unit list. 
 - A series of nicknames (``shortname``) for units to be replaced in the fixes yaml file.

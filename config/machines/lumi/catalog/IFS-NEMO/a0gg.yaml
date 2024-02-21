@@ -47,7 +47,7 @@ sources:
         resolution: standard
     metadata:
       <<: *metadata-default
-      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/config.yaml
+      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/HEALPIX_grids/etc/fdb/config.yaml
       source_grid_name: hpz5-nested
 
   hourly-r100-atm2d:
@@ -103,7 +103,7 @@ sources:
       levels: [1, 5, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 400, 500, 600, 700,
         850, 925, 1000]
       variables: [129, 130, 131, 132, 133, 157]
-      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/config.yaml
+      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/HEALPIX_grids/etc/fdb/config.yaml
       source_grid_name: hpz5-nested
 
   hourly-r100-atm3d:
@@ -162,7 +162,7 @@ sources:
       <<: *metadata-default
       variables: [263022, 263100, 263101, 263124, 263001, 263021, 263000, 263004,
         263003]
-      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/config.yaml
+      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/HEALPIX_grids/etc/fdb/config.yaml
       source_grid_name: nemo-hpz5-nested
 
 
@@ -267,7 +267,7 @@ sources:
         3897.98193359375, 4093.15869140625, 4289.95263671875, 4488.15478515625, 4687.5810546875,
         4888.06982421875, 5089.478515625, 5291.68310546875, 5494.5751953125, 5698.060546875,
         5902.0576171875]
-      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/config.yaml
+      fdb_path: /projappl/project_465000454/experiments/a0gg/fdb/HEALPIX_grids/etc/fdb/config.yaml
       source_grid_name: nemo-hpz5-nested-3d
 
   # same error as above

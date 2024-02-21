@@ -2,8 +2,9 @@
 Function to plot timeseries and reference data,
 both with monthly and annual aggregation options
 """
-from aqua.logger import log_configure
+import numpy as np
 import matplotlib.pyplot as plt
+from aqua.logger import log_configure
 
 
 def plot_timeseries(monthly_data=None,
@@ -47,9 +48,9 @@ def plot_timeseries(monthly_data=None,
                   "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf",
                   "#00bb62", "#f9c410", "#fb4865", "#645ccc"]
 
-    for i in range(len(monthly_data)):
-        color = color_list[i]
-        if monthly_data:
+    if monthly_data is not None:
+        for i in range(len(monthly_data)):
+            color = color_list[i]
             try:
                 mon_data = monthly_data[i]
                 if data_labels:
@@ -59,9 +60,9 @@ def plot_timeseries(monthly_data=None,
             except Exception as e:
                 logger.debug(f"Error plotting monthly data: {e}")
 
-    for i in range(len(annual_data)):
-        color = color_list[i]
-        if annual_data:
+    if annual_data is not None:
+        for i in range(len(annual_data)):
+            color = color_list[i]
             try:
                 ann_data = annual_data[i]
                 if data_labels:
@@ -102,6 +103,74 @@ def plot_timeseries(monthly_data=None,
 
     title = kwargs.get('title', None)
     if title:
+        ax.set_title(title)
+
+    return fig, ax
+
+
+def plot_seasonalcycle(data=None,
+                       ref_data=None,
+                       std_data=None,
+                       data_labels: list = None,
+                       ref_label: str = None,
+                       loglevel: str = 'WARNING',
+                       **kwargs):
+    """
+    Plot the seasonal cycle of the data and the reference data.
+
+    Arguments:
+        data (list of xr.DataArray): data to plot
+        ref_data (xr.DataArray): reference data to plot
+        std_data (xr.DataArray): standard deviation of the reference data
+        data_labels (list of str): labels for the data
+        ref_label (str): label for the reference data
+        loglevel (str): logging level
+
+    Keyword Arguments:
+        figsize (tuple): size of the figure
+        title (str): title of the plot
+
+    Returns:
+        fig, ax (tuple): tuple containing the figure and axis objects
+    """
+    logger = log_configure(loglevel, 'PlotSeasonalCycle')
+    fig_size = kwargs.get('figsize', (10, 5))
+    fig, ax = plt.subplots(1, 1, figsize=fig_size)
+
+    monthsNumeric = range(1, 12 + 1)  # Numeric months
+    monthsNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+
+    color_list = ["#1898e0", "#8bcd45", "#f89e13", "#d24493",
+                  "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf",
+                  "#00bb62", "#f9c410", "#fb4865", "#645ccc"]
+
+    if data is not None:
+        for i in range(len(data)):
+            color = color_list[i]
+            try:
+                mon_data = data[i]
+                mon_data.plot(ax=ax, label=data_labels[i], color=color)
+            except Exception as e:
+                logger.debug(f"Error plotting data: {e}")
+
+    if ref_data is not None:
+        try:
+            ref_data.plot(ax=ax, label=ref_label, color='black', lw=0.6)
+            if std_data is not None:
+                std_data.compute()
+                ax.fill_between(ref_data.month,
+                                ref_data - 2.*std_data,
+                                ref_data + 2.*std_data,
+                                facecolor='grey', alpha=0.25)
+        except Exception as e:
+            logger.debug(f"Error plotting std data: {e}")
+
+    ax.legend(fontsize='small')
+    ax.set_xticks(monthsNumeric)
+    ax.set_xticklabels(monthsNames)
+
+    title = kwargs.get('title', None)
+    if title is not None:
         ax.set_title(title)
 
     return fig, ax

@@ -14,12 +14,13 @@ outputdir: "./IFS-NEMO/scenario/"
 # This is the list of variables that will be plotted as timeseries
 timeseries: ['2t', 'mtpr']
 timeseries_formulae: ['mtnlwrf+mtnswrf']
+seasonal_cycle: ['2t', 'mtpr']
 
 gregory:
   ts: '2t'
   toa: ['mtnlwrf', 'mtnswrf']
-  resample: null
-  savefig: True
+  monthly: True
+  annual: True
 
 timeseries_plot_params:
 # These are options that specify how the data is plotted

@@ -96,6 +96,25 @@ A basic example usage can thus be:
 At the end of the generation, a new entry for the LRA is added to the catalog structure, 
 so that you will be able to access the exactly as shown above.
 
+Parallel LRA tool
+^^^^^^^^^^^^^^^^^
+
+Building the LRA can be an heavy task, which requires a lot of memory and thus cannot be easily parallized in the same job.
+To this end, an extra script for parallel execution is also provided. Using `cli_lra_parallel_slurm.py` it is possible to submit to SLURM multiple jobs,
+one for each of the variables to be processed. For now it is configured only to be run on LUMI but further development should allow for larger portability.
+
+A basic example usage can thus be: 
+
+.. code-block:: python
+
+    ./cli_lra_parallel_slurm.py -c lra_config.yaml -d -w 4
+
+.. note ::
+    Please consider that this script will call both SLURM and the standard `cli_lra_generator.py`, so that modification to the latter will influence this. 
+
+.. warning ::
+    Use this script with caution since it will submit very rapidly tens of job to the SLURM scheduler!
+
 Workflow LRA tool
 ^^^^^^^^^^^^^^^^^
 
