@@ -7,11 +7,11 @@ models:
     var: avg_sithick
     timespan: null # can be of the format ['2020-01-20', '2024-12-31']
   # These are observational datasets
-  #  - model: PSC
-#    exp: 
-#    source: nh-monthly
+#  - model: PSC
+#    exp: PIOMAS
+#    source: monthly
 #    regrid: null
-#    var: avg_siconc
+#    var: avg_sithick
 #    timespan: null
 #  - model: OSI-SAF
 #    exp: osi-450

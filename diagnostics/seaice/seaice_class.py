@@ -615,7 +615,7 @@ class SeaIceThickness:
             xlims = [-180,180]
             
 
-            fig1, ax1 = plt.subplots(nrows = 1, ncols = self.nModels, subplot_kw={'projection': projection}, figsize=(5 * self.nModels, 5))
+            fig1, ax1 = plt.subplots(nrows = 1, ncols = self.nModels, subplot_kw={'projection': projection}, figsize=(6 * self.nModels, 6))
 
 
             if self.nModels == 1:
@@ -714,9 +714,12 @@ class SeaIceThickness:
                 ax1[jSetup].coastlines("110m", linewidth=0.5, color="black")
 
                 contour = ax1[jSetup].pcolormesh(lon, lat, dataPlot,  \
-                          transform=ccrs.PlateCarree(), cmap = myCM, vmin = 0.0, vmax = np.max(levels)
+                          transform=ccrs.PlateCarree(), cmap = myCM, vmin = np.min(levels), vmax = np.max(levels)
                           )
 
+                #contour = ax1[jSetup].contourf(lon, lat, dataPlot,  \
+                #          transform=ccrs.PlateCarree(), cmap = myCM, levels = np.arange(levels[0], levels[-1], 0.2)
+                #          )
 
                 # Add coastlines and gridlines
                 ax1[jSetup].coastlines()
