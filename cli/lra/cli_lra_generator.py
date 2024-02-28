@@ -64,6 +64,7 @@ if __name__ == '__main__':
     config = load_yaml(file)
     resolution = config['target']['resolution']
     frequency = config['target']['frequency']
+    aggregation = config['target']['aggregation']
     outdir = config['target']['outdir']
     tmpdir = config['target']['tmpdir']
     configdir = config['configdir']
@@ -90,7 +91,7 @@ if __name__ == '__main__':
                     # init the LRA
                     lra = LRAgenerator(model=model, exp=exp, source=source, zoom=zoom_level,
                                        var=varname, resolution=resolution,
-                                       frequency=frequency, fix=fix,
+                                       frequency=frequency, aggregation=aggregation, fix=fix,
                                        outdir=outdir, tmpdir=tmpdir, configdir=configdir,
                                        nproc=workers, loglevel=loglevel,
                                        definitive=definitive, overwrite=overwrite,

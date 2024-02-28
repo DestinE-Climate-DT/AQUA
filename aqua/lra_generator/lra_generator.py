@@ -35,7 +35,7 @@ class LRAgenerator():
     def __init__(self,
                  model=None, exp=None, source=None, zoom=None,
                  var=None, configdir=None,
-                 resolution=None, frequency=None, fix=True,
+                 resolution=None, frequency=None, aggregation='all', fix=True,
                  outdir=None, tmpdir=None, nproc=1,
                  loglevel=None, overwrite=False, definitive=False,
                  exclude_incomplete=False):
@@ -132,6 +132,8 @@ class LRAgenerator():
         if not self.frequency:
             self.logger.info('Frequency not specified, no time averagin will be performed.')
 
+        self.aggregation = aggregation
+
         # option for time encoding, defined once for all
         self.time_encoding = {
             'units': 'days since 1850-01-01 00:00:00',
@@ -202,9 +204,12 @@ class LRAgenerator():
         if isinstance(self.var, list):
             for var in self.var:
                 self._write_var(var)
+                self._concat_var_years(self.var, self.aggregation)
 
         else:  # Only one variable
             self._write_var(self.var)
+            self._concat_var_years(self.var, self.aggregation)
+
                 
         self.logger.info('Move tmp files to output directory')
         move_tmp_files(self.tmpdir, self.outdir)
@@ -286,28 +291,60 @@ class LRAgenerator():
         self.logger.info('Removing temporary directory %s', self.tmpdir)
         shutil.rmtree(self.tmpdir)
 
-    def _concat_var_year(self, var, year):
+    def _concat_var_years(self, var, aggregation='all'):
         """
-        To reduce the amount of files concatenate together all the files
-        from the same year
+        To reduce the amount of files concatenate concatenates multiple files for a given variable and saves the aggregated data.
+
+            Args:
+                var (str): The variable name.
+                aggregation (int, optional): The number of years to aggregate. Defaults to 'all'.
         """
 
-        infiles = os.path.join(self.tmpdir,
-                               f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??_tmp.nc')
-        if len(glob.glob(infiles)) == 12:
-            xfield = xr.open_mfdataset(infiles)
-            self.logger.info('Creating a single file for %s, year %s...', var, str(year))
-            outfile = os.path.join(self.tmpdir,
-                                   f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}_tmp.nc')
-            # clean older file
-            if os.path.exists(outfile):
-                os.remove(outfile)
-            xfield.to_netcdf(outfile)
+        if aggregation=='all':
+            infiles = os.path.join(self.tmpdir, f'{var}_{self.exp}_{self.resolution}_{self.frequency}_??????_tmp.nc')
+            outfile = os.path.join(self.tmpdir, f'{var}_{self.exp}_{self.resolution}_{self.frequency}_tmp.nc')
+            if infiles:
+                xfield = xr.open_mfdataset(infiles)
+                # clean older file
+                if os.path.exists(outfile):
+                    os.remove(outfile)
 
-            # clean of monthly files
-            for infile in glob.glob(infiles):
-                self.logger.info('Cleaning %s...', infile)
-                os.remove(infile)
+                xfield.to_netcdf(outfile)
+                self.logger.info(f"All files for variable {var} concatenated and saved in {outfile}")
+               
+                # clean of monthly files
+                for infile in glob.glob(infiles):
+                    self.logger.info('Cleaning %s...', infile)
+                    os.remove(infile)
+
+        else:
+            pattern = r'(\d{4})(\d{2})\_tmp.nc$'
+            # Extract years from filenames
+            years = [int(match.group(1)) for filename in os.listdir(self.tmpdir) if (match := re.search(pattern, filename))]
+
+            for year_start in range(min(years), max(years)+1, aggregation): 
+                year_end = year_start + aggregation - 1
+                infiles = []
+
+                for year in range(year_start, year_end+1):  
+                    infile = os.path.join(self.tmpdir, f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??_tmp.nc')
+                    infiles.extend(glob.glob(infile))
+            
+                if infiles:
+                    if year_start == year_end:
+                        outfile = os.path.join(self.tmpdir, f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year_start}_tmp.nc')
+                    else:
+                        outfile = os.path.join(self.tmpdir, f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year_start}-{year_end}_tmp.nc')
+                    xfield = xr.open_mfdataset(infiles)                
+                    # clean older file
+                    if os.path.exists(outfile):
+                        os.remove(outfile)
+
+                    xfield.to_netcdf(outfile)
+                    self.logger.info(f"Aggregated data for years {year_start}-{year_end} saved in {outfile}")
+            
+                # clean of monthly files
+                [os.remove(infile) for infile in infiles]
 
 
     def get_filename(self, var, year=None, month=None):
@@ -415,9 +452,6 @@ class LRAgenerator():
                 if not filecheck:
                     self.logger.error('Something has gone wrong in %s!', outfile)
 
-            if self.definitive and month == 12:
-                self._concat_var_year(var, year)
-
             self.logger.info('Processing this chunk took {:.4f} seconds'.format(time() - t_beg))
             t_beg = time()
 
@@ -497,8 +531,6 @@ class LRAgenerator():
                         self.logger.error('Something has gone wrong in %s!', outfile)
                 del month_data
             del year_data
-            if self.definitive:
-                self._concat_var_year(var, year)
         del temp_data
 
     def write_chunk(self, data, outfile):
