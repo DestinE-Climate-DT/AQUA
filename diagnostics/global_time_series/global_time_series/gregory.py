@@ -25,7 +25,8 @@ class GregoryPlot():
                  ts_name='2t', toa_name=['mtnlwrf', 'mtnswrf'],
                  ts_std_start='1980-01-01', ts_std_end='2010-12-31',
                  toa_std_start='2001-01-01', toa_std_end='2020-12-31',
-                 ref=True, outdir='./', outfile=None,
+                 ref=True, save=True,
+                 outdir='./', outfile=None,
                  loglevel='WARNING'):
         """
         Args:
@@ -52,6 +53,7 @@ class GregoryPlot():
             ref (bool): If True, reference data is plotted.
                         Default is True. Reference data are ERA5 for 2m temperature
                         and CERES for net radiation at TOA.
+            save (bool): If True, save the figure. Default is True.
             outdir (str): Output directory. Default is './'.
             outfile (str): Output file name. Default is None.
             loglevel (str): Logging level. Default is WARNING.
@@ -88,6 +90,9 @@ class GregoryPlot():
                           f"2m temperature from {time_to_string(self.ts_std_start)} to {time_to_string(self.ts_std_end)}, "
                           f"net radiation at TOA from {time_to_string(self.toa_std_start)} to {time_to_string(self.toa_std_end)}")
 
+        self.save = save
+        if self.save is False:
+            self.logger.info("No output file will be saved.")
         self.outdir = outdir
         self.outfile = outfile
 
@@ -98,7 +103,8 @@ class GregoryPlot():
         self.retrieve_data()
         self.retrieve_ref()
         self.plot()
-        self.save_netcdf()
+        if self.save:
+            self.save_netcdf()
         self.cleanup()
 
     def retrieve_data(self):
@@ -271,6 +277,12 @@ class GregoryPlot():
 
             ax2.legend()
 
+        if self.save:
+            self.save_pdf(fig)
+
+    def save_pdf(self, fig):
+        """Save the figure to a pdf file."""
+        self.logger.info("Saving figure to pdf")
         # Save to outdir/pdf/filename
         outfig = os.path.join(self.outdir, 'pdf')
         self.logger.debug(f"Saving figure to {outfig}")

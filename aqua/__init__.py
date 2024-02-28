@@ -8,7 +8,7 @@ from .reader import Reader, catalogue, Streaming, inspect_catalogue
 from .slurm import squeue, job, output_dir, scancel, max_resources_per_node
 from .accessor import AquaAccessor
 
-__version__ = '0.7.1-beta'
+__version__ = '0.7.1'
 
 __all__ = ["rundiag",
            "translate_coords",

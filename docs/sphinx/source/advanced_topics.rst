@@ -1,8 +1,10 @@
 .. _advanced-topics:
+
 Advanced Topics
 ===============
 
 .. _new-machine:
+
 Adding a new machine
 --------------------
 
@@ -79,6 +81,7 @@ A command line tool is available to download the grids from Swift on your machin
 Please refer to the section :ref:`grids-downloader` for more details.
 
 .. _FDB_dask:
+
 Dask access to FDB or GSV
 --------------------------
 
@@ -111,6 +114,7 @@ In any case, if you use multiprocessing and run into memory troubles for your wo
 the aggregation (i.e. chunk size).
 
 .. _iterators:
+
 Iterator access to data
 -----------------------
 
@@ -136,6 +140,7 @@ Please notice that the resulting object obtained at each iteration is not a lazy
 Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
 
 .. _lev-selection-regrid:
+
 Level selection and regridding
 ------------------------------
 
@@ -169,6 +174,7 @@ the regridder is still able to deal with this situation using the information in
     with a single vertical level.
 
 .. _slurm:
+
 Slurm utilities
 ---------------
 
@@ -229,6 +235,7 @@ specify the queue's name as an argument of the function:
 
 
 .. warning::
+
 	The exclusive argument **does not** automatically provide us the maximum available memory,
     number of cores, and walltime.
 

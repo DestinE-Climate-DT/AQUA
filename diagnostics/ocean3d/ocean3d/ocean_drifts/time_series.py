@@ -28,7 +28,8 @@ class time_series:
         counter = 1
         for anomaly in [False,True]:
             for standardise in [False,True]:
-                for anomaly_ref in ["t0","tmean"]:
+                # for anomaly_ref in ["t0","tmean"]:
+                for anomaly_ref in ["t0"]:
                     data_proc, type, cmap = data_process_by_type(
                         data=data, anomaly=anomaly, standardise=standardise, anomaly_ref=anomaly_ref, loglevel=self.loglevel)
                     key = counter
@@ -42,8 +43,8 @@ class time_series:
                         output_path, fig_dir, data_dir, filename = dir_creation(data_proc,
                             region, lat_s, lat_n, lon_w, lon_e, output_dir, plot_name = plot_name, loglevel=self.loglevel)
 
-                    # ocptlevs, solevs =self.define_lev_values(data_proc)
-                    ocptlevs, solevs = 20, 20
+                    # avg_thetaolevs, solevs =self.define_lev_values(data_proc)
+                    avg_thetaolevs, solevs = 20, 20
                     plot_config = {"anomaly": anomaly,
                                    "standardise": standardise,
                                    "anomaly_ref": anomaly_ref}
@@ -53,7 +54,7 @@ class time_series:
                                             "cmap": cmap,
                                             "region_title": region_title,
                                         "solevs": solevs,
-                                        "ocptlevs": ocptlevs,
+                                        "avg_thetaolevs": avg_thetaolevs,
                                             "output_path": output_path,
                                             "type": type,
                                             "fig_dir": fig_dir,
@@ -66,10 +67,10 @@ class time_series:
     def loop_details(self, i, fig, axs):
         logger = log_configure(self.loglevel, 'loop_details')
         
-        key = i + 4
+        key = i + 2
         plot_info = self.plot_info[key]
         data = plot_info['data']
-        ocptlevs = plot_info['ocptlevs']
+        avg_thetaolevs = plot_info['avg_thetaolevs']
         solevs = plot_info['solevs']
         cmap = plot_info['cmap']
         region_title = plot_info['region_title']
@@ -94,15 +95,15 @@ class time_series:
                 data_level = data.isel(lev=0)
            
             # Plot the temperature time series
-            data_level.ocpt.plot.line(
+            data_level.avg_thetao.plot.line(
                 ax=axs[i,0], label=f"{round(int(data_level.lev.data), -2)}")
 
             # Plot the salinity time series
-            data_level.so.plot.line(
+            data_level.avg_so.plot.line(
                 ax=axs[i,1], label=f"{round(int(data_level.lev.data), -2)}")
 
-        tunits = data_level.ocpt.attrs['units']
-        sunits = data_level.so.attrs['units']
+        tunits = data_level.avg_thetao.attrs['units']
+        sunits = data_level.avg_so.attrs['units']
         axs[i,0].set_title('')
         axs[i,1].set_title('')
 
@@ -117,7 +118,7 @@ class time_series:
         if i==0:
             axs[i,1].set_title(f"Salinity ({sunits})", fontsize=20) 
             axs[i,0].set_title(f"Temperature ({tunits})", fontsize=20) 
-        if i==4:
+        if i==2:
             axs[i,0].set_xlabel("Time", fontsize=12)
             axs[i,1].set_xlabel("Time", fontsize=12) 
 
@@ -148,14 +149,14 @@ class time_series:
 
         filename = f"{self.model}_{self.exp}_{self.source}_{self.region}_time_series"
         filename = filename.replace(" ", "_") 
-        fig, (axs) = plt.subplots(nrows=5, ncols=2, figsize=(14, 25))
-        plt.subplots_adjust(bottom=0.3, top=0.85, wspace=0.3, hspace=0.5)
+        fig, (axs) = plt.subplots(nrows=3, ncols=2, figsize=(14, 20))
+        plt.subplots_adjust(bottom=0.3, top=0.85, wspace=0.5, hspace=0.5)
         
         self.loop_details(0, fig, axs)
         self.loop_details(1, fig, axs)
         self.loop_details(2, fig, axs)
-        self.loop_details(3, fig, axs)
-        self.loop_details(4, fig, axs)
+        # self.loop_details(3, fig, axs)
+        # self.loop_details(4, fig, axs)
 
         fig.suptitle(f"Time Series of {self.region}", fontsize=25, y=0.9)
 

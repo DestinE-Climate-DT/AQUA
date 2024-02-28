@@ -6,6 +6,8 @@ reader:
   catalog: '{configdir}/machines/{machine}/catalog.yaml'
   fixer: '{configdir}/fixes'
 
-cdo:  # CDO path is found automatically with which if not specified here
+# Location of the CDO executable. 
+# Usually this option is not needed, since CDO is required in the environment.yml file and provided by conda.
+cdo:
   levante: /home/m/m214003/local/bin/cdo # CDO 2.2.0 by Uwe Schulzweida (HEALPix support)
 

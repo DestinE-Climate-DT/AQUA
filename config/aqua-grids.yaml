@@ -80,6 +80,14 @@ grids:
       level: $grids/HealPix/nemo_hpz10_nested_oce_level.nc
     space_coord: ["ncells"]
     vert_coord: ["level"]
+  icon-hpz10-nested:
+    space_coord: ["ncells"]
+    path: $grids/HealPix/icon_hpz10_nested_oce.nc
+  icon-hpz10-nested-3d:
+    path:
+      level: $grids/HealPix/icon_hpz10_nested_oce_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
 
   #IFS
   tco79:

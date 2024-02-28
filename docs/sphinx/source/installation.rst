@@ -101,6 +101,8 @@ Run the installation script:
 
 This installs the AQUA environment into a container, and then set up the correct modules
 via a ``load_aqua.sh`` script that is generated and then called from the ``.bash_profile``.
+The script will actually ask the user if they wish to include ``load_aqua.sh`` in ``.bash_profile`` at the end of the installation.
+If you do not agree, you will need to call ``load_aqua.sh`` manually every time you want to use AQUA.
 
 .. note ::
     The installation script is designed to be run on the LUMI cluster, and it may require some adjustments to be run on other systems
@@ -110,6 +112,9 @@ via a ``load_aqua.sh`` script that is generated and then called from the ``.bash
     This installation script, despite the name, does not install the AQUA package in the traditional sense nor in a pure container.
     It wraps the conda installation in a container, allowing to load LUMI modules and run from command line or batch jobs the AQUA code.
     Different LUMI module loading or setups may lead to different results, but it's the most flexible way to develop AQUA on LUMI.
+
+.. note ::
+    If you encounter any issues with the installation script, please refer to the :ref:`faq` section.
 
 Installation and use of the AQUA container
 ------------------------------------------

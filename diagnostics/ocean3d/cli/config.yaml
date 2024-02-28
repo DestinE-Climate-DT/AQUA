@@ -12,27 +12,25 @@ time_range:
 
 ocean_drift:
   regions:
+    - Global Ocean
     - Indian Ocean
     - Pacific Ocean
     - Atlantic Ocean
     - Arctic Ocean
     - Southern Ocean
     - Labrador Sea
-    # - labrador sea
-    # - irminger sea
-    # - ross sea
-    # - weddell Sea
-    # - gin sea
-  # custom_region:
-  #   - [lat_s: -30, lat_n: 30, lon_w: 100, lon_e: 300]
-    # - [lat_s: 0, lat_n: 30, lon_w: 100, lon_e: 150]
-
+    - irminger sea
+    - ross sea
+    - weddell Sea
+    - gin sea
+    
 ocean_circulation: #specify region and climatology time
   regions:
+    Global Ocean : yearly
     labrador sea : DJF
     irminger sea : DJF
-    # ross sea : JJA
-    # weddell Sea : JJA
-    # gin sea : DJF
+    ross sea : JJA
+    weddell Sea : JJA
+    gin sea : DJF
 
 compare_model_with_obs: True

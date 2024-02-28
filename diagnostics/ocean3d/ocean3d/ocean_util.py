@@ -7,7 +7,7 @@ import xarray as xr
 import numpy as np
 from aqua import Reader
 from aqua.exceptions import NoObservationError
-from aqua.util import find_vert_coord
+from aqua.util import find_vert_coord, load_yaml
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 
@@ -25,11 +25,11 @@ def kelvin_to_celsius(data, variable_name, loglevel= "WARNING"):
     """
     logger = log_configure(loglevel, 'Unit')
     # Check if the variable exists in the dataset
-    if data.ocpt.attrs['units']== 'K':
+    if data.avg_thetao.attrs['units']== 'K' or 'kelvin':
         logger.warning("The unit of Pot. Temperature is Kelvin. Converting to degC")
         # Convert Kelvin to Celsius: Celsius = Kelvin - 273.15
         data[variable_name] -= 273.15
-        data.ocpt.attrs['units']= 'degC'
+        data.avg_thetao.attrs['units']= 'degC'
     return data
 
 def check_variable_name(data, loglevel= "WARNING"):
@@ -46,7 +46,7 @@ def check_variable_name(data, loglevel= "WARNING"):
     logger = log_configure(loglevel, 'Check Variables')
     vars = list(data.variables)
     required_vars= []
-    var_list= ["SO","so","thetao","THETAO","avg_SO","avg_so","avg_thetao","avg_THETAO",
+    var_list= ["SO","avg_so","thetao","THETAO","avg_SO","avg_so","avg_thetao","avg_THETAO",
                "toce_mean","soce_mean"]
     for var in vars:
         if var in var_list:
@@ -56,17 +56,17 @@ def check_variable_name(data, loglevel= "WARNING"):
         data = data[required_vars]
         logger.debug("Selected this variables")
         for var in required_vars:
-            if 'so' in var.lower() or 'soce' in var.lower():
-                data = data.rename({var: "so"})
-                logger.debug("renaming %s as so", var)
+            if 'avg_so' in var.lower() or 'soce' in var.lower():
+                data = data.rename({var: "avg_so"})
+                logger.debug("renaming %s as avg_so", var)
             if 'thetao' in var.lower() or 'toce' in var.lower():
-                data = data.rename({var: "ocpt"})
-                logger.debug("renaming %s as ocpt", var)
-        data = kelvin_to_celsius(data, "ocpt")
+                data = data.rename({var: "avg_thetao"})
+                logger.debug("renaming %s as avg_thetao", var)
     else:
         raise ValueError("Required variable avg_so and avg_thetao is not available in the catalogue")
     vertical_coord = find_vert_coord(data)[0]
     data = data.rename({vertical_coord: "lev"})
+    data = kelvin_to_celsius(data, "avg_thetao")
     return data
 
 def time_slicing(data, start_year, end_year, loglevel= "WARNING"):
@@ -87,101 +87,31 @@ def time_slicing(data, start_year, end_year, loglevel= "WARNING"):
     logger.debug("Selected the data for the range of %s and %s", start_year, end_year)
     return data
 
-def predefined_regions(region, loglevel= "WARNING"):
+def process_region_config(regions_yaml):
     """
-    Get the predefined latitude and longitude boundaries for a given region.
-
-    Args:
-        region (str): Name of the region.
-
-    Returns:
-        float, float, float, float: Latitude and longitude boundaries (lat_s, lat_n, lon_w, lon_e) for the region.
-
-    Raises:
-        ValueError: If an invalid region is provided.
-
-    Available predefined regions:
-    - 'Indian Ocean'
-    - 'Labrador Sea'
-    - 'Global Ocean'
-    - 'Atlantic Ocean'
-    - 'Pacific Ocean'
-    - 'Arctic Ocean'
-    - 'Southern Ocean'
+    Converts keys at the top level of the dictionary to lowercase and removes spaces, underscores, and dashes.
     """
-    logger = log_configure(loglevel, 'predefined_regions')
-    region = region.lower().replace(" ", "").replace("_", "")
-    if region in ["indianocean", "indian ocean"]:
-        lat_n, lat_s, lon_w, lon_e = 30.0, -30.0, 30, 110.0
-    elif region in ["labradorsea", "labrador sea"]:
-        lat_n, lat_s, lon_w, lon_e = 65.0, 52.0, 300.0, 316.0
-    elif region in ["labradorginseas", "labrador+gin seas"]:
-        lat_n, lat_s, lon_w, lon_e = 80.0, 50.0, -70.0, 20.0
-    elif region in ["irmingersea", "irminger sea"]:
-        lat_n, lat_s, lon_w, lon_e = 70.0, 60.0, 316.0, 330.0
-    elif region in ["globalocean", "global ocean"]:
-        lat_n, lat_s, lon_w, lon_e = 90.0, -90.0, 0.0, 360.0
-    elif region in ["atlanticocean", "atlantic ocean"]:
-        lat_n, lat_s, lon_w, lon_e = 65.0, -35.0, -80.0, 30.0
-    elif region in ["pacificocean", "pacific ocean"]:
-        lat_n, lat_s, lon_w, lon_e = 65.0, -55.0, 120.0, 290.0
-    elif region in ["arcticocean", "arctic ocean"]:
-        lat_n, lat_s, lon_w, lon_e = 90.0, 65.0, 0.0, 360.0
-    elif region in ["southernocean", "southern ocean"]:
-        lat_n, lat_s, lon_w, lon_e = -50.0, -80.0, 0.0, 360.0
-    elif region in ["ginsea", "gin sea"]:
-        lat_n, lat_s, lon_w, lon_e = 80, 70, -10, 20
-    elif region in ["weddellsea", "weddell sea"]:
-        lat_n, lat_s, lon_w, lon_e = -65.0, -80.0, 295.0, 350.0
-    elif region in ["beringsea", "bering sea"]:
-        lat_n, lat_s, lon_w, lon_e = 66.0, 53.0, 168.0, -178.0
-    elif region in ["gulfofmexico", "gulf of mexico"]:
-        lat_n, lat_s, lon_w, lon_e = 30.0, 18.0, -97.0, -81.0
-    elif region in ["hudsonbay", "hudson bay"]:
-        lat_n, lat_s, lon_w, lon_e = 63.0, 51.0, -95.0, -75.0
-    elif region in ["redsea", "red sea"]:
-        lat_n, lat_s, lon_w, lon_e = 30.0, 12.0, 32.0, 44.0
-    elif region in ["persiangulf", "persian gulf"]:
-        lat_n, lat_s, lon_w, lon_e = 30.0, 24.0, 48.0, 56.0
-    elif region in ["adriaticsea", "adriatic sea"]:
-        lat_n, lat_s, lon_w, lon_e = 45.0, 40.0, 13.0, 19.0
-    elif region in ["caribbeansea", "caribbean sea"]:
-        lat_n, lat_s, lon_w, lon_e = 23.0, 9.0, -85.0, -60.0
-    elif region in ["seaofjapan", "sea of japan"]:
-        lat_n, lat_s, lon_w, lon_e = 43.0, 34.0, 129.0, 132.0
-    elif region in ["mediterraneansea", "mediterranean sea"]:
-        lat_n, lat_s, lon_w, lon_e = 46.0, 30.0, -6.0, 36.0
-    elif region in ["blacksea", "black sea"]:
-        lat_n, lat_s, lon_w, lon_e = 45.0, 41.0, 27.0, 41.0
-    elif region in ["southchina_sea", "south china sea"]:
-        lat_n, lat_s, lon_w, lon_e = 21.0, 3.0, 99.0, 121.0
-    elif region in ["arabiansea", "arabian sea"]:
-        lat_n, lat_s, lon_w, lon_e = 25.0, 12.0, 50.0, 70.0
-    elif region in ["coralsea", "coral sea"]:
-        lat_n, lat_s, lon_w, lon_e = -10.0, -24.0, 147.0, 157.0
-    elif region in ["timorsea", "timor sea"]:
-        lat_n, lat_s, lon_w, lon_e = -10.0, -13.0, 123.0, 129.0
-    elif region in ["gulfofalaska", "gulf of alaska"]:
-        lat_n, lat_s, lon_w, lon_e = 60.0, 48.0, -145.0, -136.0
-    elif region in ["eastchinasea", "east china sea"]:
-        lat_n, lat_s, lon_w, lon_e = 35.0, 30.0, 120.0, 128.0
-    elif region in ["seaofokhotsk", "sea of okhotsk"]:
-        lat_n, lat_s, lon_w, lon_e = 60.0, 45.0, 142.0, 163.0
-    elif region in ["philippinesea", "philippine sea"]:
-        lat_n, lat_s, lon_w, lon_e = 25.0, 5.0, 117.0, 135.0
-    elif region in ["rosssea", "ross sea"]:
-        lat_n, lat_s, lon_w, lon_e = -60.0, -78.0, 160.0, -150.0
-    elif region in ["sargassosea", "sargasso sea"]:
-        lat_n, lat_s, lon_w, lon_e = 35.0, 20.0, -70.0, -50.0
-    elif region in ["andamansea", "andaman sea"]:
-        lat_n, lat_s, lon_w, lon_e = 20.0, 6.0, 93.0, 98.0
-    elif region in ["javasea", "java sea"]:
-        lat_n, lat_s, lon_w, lon_e = -6.0, -8.0, 105.0, 117.0
-    elif region in ["beaufortsea", "beaufort sea"]:
-        lat_n, lat_s, lon_w, lon_e = 79.0, 68.0, -140.0, -148.0
+    if isinstance(regions_yaml, dict):
+        return {key.replace(" ", "").replace("_", "").replace("-", "").lower(): v for key, v in regions_yaml.items()}
     else:
+        return regions_yaml
+
+def predefined_regions(region, loglevel= "WARNING"):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    processed_region = region.replace(" ", "").replace("_","").replace("-","").lower()
+    regions_yaml = f"{current_dir}/../config/regions.yaml"
+    regions_dict = load_yaml(regions_yaml)
+    try:
+        regions_dict = process_region_config(regions_dict["regions"])
+        region_boundary = regions_dict[processed_region]
+        lat_n = region_boundary.get("LatN")
+        lat_s = region_boundary.get("LatS")
+        lon_e = region_boundary.get("LonE")
+        lon_w = region_boundary.get("LonW")
+    except KeyError:
         raise ValueError(
-            "Invalid region. Available options: 'Indian Ocean', 'Labrador Sea', 'Global Ocean', 'Atlantic Ocean', 'Pacific Ocean', 'Arctic Ocean', 'Southern Ocean'")
+            f"Invalid region name: {region}. Check the region name in config file or update it: {regions_yaml}")
+
     return lat_s, lat_n, lon_w, lon_e
 
 
@@ -196,7 +126,7 @@ def convert_longitudes(data, loglevel= "WARNING"):
         DataArray: Dataset with converted longitudes.
 
     """
-    logger = log_configure(loglevel, 'predefined_regions')
+    logger = log_configure(loglevel, 'convert_longitudes')
     # Adjust longitudes to the range of -180 to 180 degrees
     data = data.assign_coords(lon=((data["lon"] + 180) % 360) - 180)
 
@@ -366,8 +296,10 @@ def load_obs_data(model='EN4', exp='en4', source='monthly', loglevel= "WARNING")
 
     den4 = reader.retrieve()
     # We standardise the name for the vertical dimension
-    den4 = den4.rename({"depth": "lev"})
-    den4 = den4[["ocpt", "so"]].resample(time="MS").mean()
+    den4 = den4.rename({find_vert_coord(den4)[0]: "lev"}).resample(time="MS").mean()
+    # den4 = check_variable_name(den4).resample(time="MS").mean()
+    # den4 = den4[["avg_thetao", "avg_so"]].resample(time="MS").mean()
+    
     logger.debug("loaded %s data", model)
     return den4
 
@@ -524,20 +456,13 @@ def dir_creation(data, region=None,  lat_s: float = None, lat_n: float = None, l
     logger = log_configure(loglevel, 'dir_creation')
     # current_time = f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}'
 
-    if "model" in data.attrs and "exp" in data.attrs and "source" in data.attrs:
-        model = data.attrs["model"]
-        exp = data.attrs["exp"]
-        source = data.attrs["source"]
-        filename = f"ocean3d_{model}_{exp}_{source}_"
-    else:
-        filename = f"ocean3d_"
     if output_dir is None:
         raise ValueError("Please provide the outut_dir when output = True")
     if region in [None, "custom", "Custom"]:
         region = "custom"
-        filename = filename + f"{plot_name}_{region.replace(' ', '_').lower()}_lat_{lat_s}_{lat_n}_lon_{lon_w}_{lon_e}"
+        filename =  f"lat_{lat_s}_{lat_n}_lon_{lon_w}_{lon_e}_{plot_name}"
     else:
-        filename = filename + f"{plot_name}_{region.replace(' ', '_').lower()}"
+        filename =  f"{region.replace(' ', '_')}_{plot_name}"
 
     # output_path = f"{output_dir}/"
     fig_dir = f"{output_dir}/pdf"

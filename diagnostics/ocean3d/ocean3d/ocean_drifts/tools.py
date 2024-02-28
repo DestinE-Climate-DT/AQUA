@@ -21,7 +21,7 @@ def data_process_by_type(**kwargs):
     Selects the type of timeseries and colormap based on the given parameters.
 
     Args:
-        data (DataArray): Input data containing temperature (ocpt) and salinity (so).
+        data (DataArray): Input data containing temperature (avg_thetao) and salinity (avg_so).
         anomaly (bool, optional): Specifies whether to compute anomalies. Defaults to False.
         standardise (bool, optional): Specifies whether to standardize the data. Defaults to False.
         anomaly_ref (str, optional): Reference for the anomaly computation. Valid options: "t0", "tmean". Defaults to None.
@@ -144,7 +144,7 @@ def zonal_mean_trend_plot(o3d_request, loglevel= "WARNING"):
 
     fig, (axs) = plt.subplots(nrows=1, ncols=2, figsize=(14, 5))
 
-    data.ocpt.plot.contourf(levels=20, ax=axs[0])
+    data.avg_thetao.plot.contourf(levels=20, ax=axs[0])
     axs[0].set_ylim((5500, 0))
 
     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n,
@@ -160,7 +160,7 @@ def zonal_mean_trend_plot(o3d_request, loglevel= "WARNING"):
     axs[0].set_xlabel("Latitude (in deg North)", fontsize=9)
     axs[0].set_facecolor('grey')
 
-    data.so.plot.contourf(levels=20, ax=axs[1])
+    data.avg_so.plot.contourf(levels=20, ax=axs[1])
     axs[1].set_ylim((5500, 0))
     axs[1].set_title("Salinity", fontsize=14)
     axs[1].set_ylabel("Depth (in m)", fontsize=12)
@@ -313,7 +313,7 @@ def lintrend_2D(y_array, loglevel= "WARNING"):
                          "lat": y_array.lat, "lon": y_array.lon}, name=f"{y_array.name} trends", dims=["lat", "lon"])
     trend.attrs['units'] = f"{y_array.units}/year"
 
-    # data.ocpt.attrs['units'] = 'Standardised Units'
+    # data.avg_thetao.attrs['units'] = 'Standardised Units'
     return trend
 
 
@@ -364,7 +364,7 @@ def lintrend_3D(y_array, loglevel= "WARNING"):
                          "lon": y_array.lon}, name=f"{y_array.name} trends", dims=["lev", "lat", "lon"])
     trend.attrs['units'] = f"{y_array.units}/year"
 
-    # data.ocpt.attrs['units'] = 'Standardised Units'
+    # data.avg_thetao.attrs['units'] = 'Standardised Units'
     return trend
 
 
@@ -373,7 +373,7 @@ def TS_3dtrend(data, loglevel= "WARNING"):
     Computes the trend values for temperature and salinity variables in a 3D dataset.
 
     Parameters:
-        data (xarray.Dataset): Input dataset containing temperature (ocpt) and salinity (so) variables.
+        data (xarray.Dataset): Input dataset containing temperature (avg_thetao) and salinity (avg_so) variables.
 
     Returns:
         xarray.Dataset: Dataset with trend values for temperature and salinity variables.
@@ -381,10 +381,10 @@ def TS_3dtrend(data, loglevel= "WARNING"):
     logger = log_configure(loglevel, 'TS_3dtrend')
     TS_3dtrend_data = xr.Dataset()
 
-    so = lintrend_3D(data.so)
-    ocpt = lintrend_3D(data.ocpt)
+    avg_so = lintrend_3D(data.avg_so)
+    avg_thetao = lintrend_3D(data.avg_thetao)
 
-    TS_3dtrend_data = TS_3dtrend_data.merge({"ocpt": ocpt, "so": so})
+    TS_3dtrend_data = TS_3dtrend_data.merge({"avg_thetao": avg_thetao, "avg_so": avg_so})
 
     logger.debug("Trend value calculated")
     return TS_3dtrend_data
@@ -395,7 +395,7 @@ def multilevel_t_s_trend_plot(o3d_request, customise_level=False, levels=None, l
     Generates a plot showing trends at different depths for temperature and salinity variables.
 
     Parameters:
-        data (xarray.Dataset): Input data containing temperature (ocpt) and salinity (so) variables.
+        data (xarray.Dataset): Input data containing temperature (avg_thetao) and salinity (avg_so) variables.
         region (str): Region name. (Optional)
         customise_level (bool): Whether to use custom levels or predefined levels.
         levels (list): List of levels to plot. Ignored if customise_level is False.
@@ -434,7 +434,7 @@ def multilevel_t_s_trend_plot(o3d_request, customise_level=False, levels=None, l
     else:
         levels = [10, 100, 500, 1000, 3000, 5000]
 
-    # To fix the dimensions so that all subpanels are well visible
+    # To fix the dimensions avg_so that all subpanels are well visible
     dim1 = 16
     dim2 = 5*len(levels)
 
@@ -443,9 +443,11 @@ def multilevel_t_s_trend_plot(o3d_request, customise_level=False, levels=None, l
     fig.subplots_adjust(hspace=0.18, wspace=0.15, top=0.95)
     for levs in range(len(levels)):
 
-        data["ocpt"].interp(lev=levels[levs]).plot.contourf(
+        data["avg_thetao"].interp(lev=levels[levs]).plot.contourf(
+            cmap="coolwarm",
             ax=axs[levs, 0], levels=18)
-        data["so"].interp(lev=levels[levs]).plot.contourf(
+        data["avg_so"].interp(lev=levels[levs]).plot.contourf(
+            cmap="coolwarm",
             ax=axs[levs, 1], levels=18)
 
         axs[levs, 0].set_ylabel("Latitude (in deg North)", fontsize=9)

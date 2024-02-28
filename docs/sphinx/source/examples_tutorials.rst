@@ -15,7 +15,8 @@ Some example notebooks include:
 4. `Temporal averaging  <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/timmean.ipynb>`_
 5. `Spatial (field) averaging <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/fldmean.ipynb>`_
 6. `Vertical interpolation <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/vertinterp.ipynb>`_
-7. `Access to other datasets <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/datasets.ipynb>`_
-8. `Streaming emulator <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/streaming.ipynb>`_
-9. `Interactive dask-job  <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/slurm/slurm.ipynb>`_
-10. `Demonstration of the core components <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/demo_lumi.ipynb>`_
+7. `Access to observational datasets <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/datasets_observational.ipynb>`_
+8. `Access to datasets available on LUMI only <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/datasets_observational.ipynb>`_
+9. `Streaming emulator <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/reader/streaming.ipynb>`_
+10. `Interactive dask-job  <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/slurm/slurm.ipynb>`_
+11. `Demonstration of the core components on LUMI <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/demo_lumi.ipynb>`_

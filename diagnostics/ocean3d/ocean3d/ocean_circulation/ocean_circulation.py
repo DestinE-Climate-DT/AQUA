@@ -17,13 +17,13 @@ from ocean3d import custom_region
 from ocean3d import write_data
 from aqua.logger import log_configure
 
-def convert_so(so, loglevel= "WARNING"):
+def convert_so(avg_so, loglevel= "WARNING"):
     """
     Convert practical salinity to absolute.
 
     Parameters
     ----------
-    so: dask.array.core.Array
+    avg_so: dask.array.core.Array
         Masked array containing the practical salinity values (psu or 0.001).
 
     Returns
@@ -39,10 +39,10 @@ def convert_so(so, loglevel= "WARNING"):
 
     """
     logger = log_configure(loglevel, 'convert_so')
-    return so / 0.99530670233846
+    return avg_so / 0.99530670233846
 
 
-def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
+def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
     """
     convert potential temperature to conservative temperature
 
@@ -50,12 +50,12 @@ def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values.
-    ocpt: dask.array.core.Array
+    avg_thetao: dask.array.core.Array
         Masked array containing the potential temperature values (degC).
 
     Returns
     -------
-    bigocpt: dask.array.core.Array
+    bigavg_thetao: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
 
     Note
@@ -63,9 +63,9 @@ def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
     http://www.teos-10.org/pubs/gsw/html/gsw_CT_from_pt.html
 
     """
-    logger = log_configure(loglevel, 'convert_ocpt')
+    logger = log_configure(loglevel, 'convert_avg_thetao')
     x = np.sqrt(0.0248826675584615*absso)
-    y = ocpt*0.025e0
+    y = avg_thetao*0.025e0
     enthalpy = 61.01362420681071e0 + y*(168776.46138048015e0 +
                                         y*(-2735.2785605119625e0 + y*(2574.2164453821433e0 +
                                                                       y*(-1536.6644434977543e0 + y*(545.7340497931629e0 +
@@ -86,7 +86,7 @@ def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
     return enthalpy/3991.86795711963
 
 
-def compute_rho(absso, bigocpt, ref_pressure, loglevel= "WARNING"):
+def compute_rho(absso, bigavg_thetao, ref_pressure, loglevel= "WARNING"):
     """
     Computes the potential density in-situ.
 
@@ -94,7 +94,7 @@ def compute_rho(absso, bigocpt, ref_pressure, loglevel= "WARNING"):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values (g/kg).
-    bigocpt: dask.array.core.Array
+    bigavg_thetao: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
     ref_pressure: float
         Reference pressure (dbar).
@@ -116,7 +116,7 @@ def compute_rho(absso, bigocpt, ref_pressure, loglevel= "WARNING"):
     Zu = 1e4
     deltaS = 32.
     ss = np.sqrt((absso+deltaS)/SAu)
-    tt = bigocpt / CTu
+    tt = bigavg_thetao / CTu
     pp = ref_pressure / Zu
 
     # vertical reference profile of density
@@ -213,8 +213,8 @@ def convert_variables(data, loglevel= "WARNING"):
     Returns
     -------
     converted_data : xarray.Dataset
-        Dataset containing the converted variables: absolute salinity (so),
-        conservative temperature (ocpt),
+        Dataset containing the converted variables: absolute salinity (avg_so),
+        conservative temperature (avg_thetao),
         and potential density (rho) at reference pressure 0 dbar.
 
     """
@@ -222,18 +222,18 @@ def convert_variables(data, loglevel= "WARNING"):
     converted_data = xr.Dataset()
 
     # Convert practical salinity to absolute salinity
-    absso = convert_so(data.so)
+    absso = convert_so(data.avg_so)
     logger.debug("Practical salinity converted to absolute salinity")
     # Convert potential temperature to conservative temperature
-    ocpt = convert_ocpt(absso, data.ocpt)
+    avg_thetao = convert_avg_thetao(absso, data.avg_thetao)
     logger.debug("Potential temperature converted to conservative temperature")
     # Compute potential density in-situ at reference pressure 0 dbar
-    rho = compute_rho(absso, ocpt, 0)
+    rho = compute_rho(absso, avg_thetao, 0)
     logger.debug(
         "Calculated potential density in-situ at reference pressure 0 dbar ")
     # Merge the converted variables into a new dataset
     converted_data = converted_data.merge(
-        {"ocpt": ocpt, "so": absso, "rho": rho})
+        {"avg_thetao": avg_thetao, "avg_so": absso, "rho": rho})
 
     return converted_data
 
@@ -244,7 +244,7 @@ def prepare_data_for_stratification_plot(data, region=None, time=None, lat_s: fl
     Prepare data for plotting stratification profiles.
 
     Parameters:
-        data (xarray.Dataset): Input data containing temperature (ocpt) and salinity (so).
+        data (xarray.Dataset): Input data containing temperature (avg_thetao) and salinity (avg_so).
         region (str, optional): Region name.
         time (str or list, optional): Time period to select. Can be a single date or a list of start and end dates.
         lat_s (float, optional): Southern latitude bound. Required if region is not provided or None.
@@ -324,7 +324,7 @@ def plot_stratification(o3d_request,time=None, loglevel= "WARNING"):
         start_year = mod_data_list[0].time[0].dt.year.data
         end_year = mod_data_list[0].time[-1].dt.year.data
 
-    for i, var in zip(range(len(axs)), ["ocpt", "so", "rho"]):
+    for i, var in zip(range(len(axs)), ["avg_thetao", "avg_so", "rho"]):
         axs[i].set_ylim((4500, 0))
         data_1 = mod_data_list[0][var].mean("time")
 
@@ -592,8 +592,7 @@ def plot_spatial_mld_clim(o3d_request, time=None,
         mod_clim.to_netcdf(f'{data_dir}/{filename}_Rho.nc')
         obs_clim.to_netcdf(f'{data_dir}/{filename}_Rho.nc')
 
-    plt.close(fig)
-    #plt.show()
+    plt.show()
     return
 
 def plot_spatial_mld_clim_parallel(o3d_request, loglevel= "WARNING"):

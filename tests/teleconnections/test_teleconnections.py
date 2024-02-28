@@ -38,7 +38,6 @@ def test_namelist():
     from teleconnections.tools import TeleconnectionsConfig
 
     configdir = "./diagnostics/teleconnections/config"
-    interface = 'teleconnections-ci'
     config = TeleconnectionsConfig(configdir=configdir)
     namelist = config.load_namelist()
     assert len(namelist) > 0

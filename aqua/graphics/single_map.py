@@ -149,7 +149,7 @@ def plot_single_map(data: xr.DataArray,
                         wspace=0.1, hspace=0.5)
 
     # Add a colorbar axis at the bottom of the graph
-    cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.02])
+    cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
 
     cbar_label = cbar_get_label(data,
                                 cbar_label=kwargs.get('cbar_label', None),
@@ -162,9 +162,10 @@ def plot_single_map(data: xr.DataArray,
     # Make tick of colorbar simmetric if sym=True
     if sym:
         logger.debug("Setting colorbar ticks to be symmetrical")
-        cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
+        bar_ticks = np.linspace(-vmax, vmax, nlevels + 1)
     else:
-        cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+        bar_ticks = np.linspace(vmin, vmax, nlevels + 1)
+    cbar.set_ticks(bar_ticks)
 
     # Set x-y labels
     ax.set_xlabel('Longitude [deg]')
@@ -186,7 +187,10 @@ def plot_single_map(data: xr.DataArray,
         create_folder(outputdir, loglevel=loglevel)
         filename = kwargs.get('filename', 'map')
         plot_format = kwargs.get('format', 'pdf')
-        filename = f"{filename}.{plot_format}"
+        if filename.endswith(plot_format):
+            logger.debug("Format already set in the filename")
+        else:
+            filename = f"{filename}.{plot_format}"
         logger.debug("Setting filename to %s", filename)
 
         logger.info("Saving figure as %s/%s", outputdir, filename)
@@ -211,9 +215,12 @@ def plot_single_map(data: xr.DataArray,
 
 def plot_single_map_diff(data: xr.DataArray,
                          data_ref: xr.DataArray,
+                         vmin_fill=None, vmax_fill=None,
+                         vmin_contour=None, vmax_contour=None,
                          save=False, display=True,
                          sym_contour=False, sym=True,
                          outputdir='.', filename='map.png',
+                         title=None, loglevel='WARNING',
                          **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
@@ -222,6 +229,10 @@ def plot_single_map_diff(data: xr.DataArray,
     Args:
         data (xr.DataArray):       Data to plot.
         data_ref (xr.DataArray):   Reference data to plot the difference.
+        vmin_fill (float, optional): Minimum value for the colorbar of the fill.
+        vmax_fill (float, optional): Maximum value for the colorbar of the fill.
+        vmin_contour (float, optional): Minimum value for the colorbar of the contour.
+        vmax_contour (float, optional): Maximum value for the colorbar of the contour.
         save (bool, optional):     If True, save the figure. Defaults to False.
         display (bool, optional):  If True, display the figure. Defaults to True.
         sym_contour (bool, optional): If True, set the contour levels to be symmetrical.
@@ -229,13 +240,15 @@ def plot_single_map_diff(data: xr.DataArray,
         sym (bool, optional):      If True, set the colorbar for the diff to be symmetrical.
                                    Default to True
         outputdir (str, optional): Output directory. Defaults to ".".
+        filename (str, optional):  Filename. Defaults to 'map.png'.
+        title (str, optional):     Title of the figure. Defaults to None.
+        loglevel (str, optional):  Log level. Defaults to 'WARNING'.
         **kwargs:                  Keyword arguments for plot_single_map.
                                    Check the docstring of plot_single_map.
 
     Raise:
         ValueError: If data or data_ref is not a DataArray.
     """
-    loglevel = kwargs.get('loglevel', 'WARNING')
     logger = log_configure(loglevel, 'plot_single_map_diff')
 
     if isinstance(data_ref, xr.DataArray) is False or isinstance(data, xr.DataArray) is False:
@@ -248,7 +261,9 @@ def plot_single_map_diff(data: xr.DataArray,
 
     fig, ax = plot_single_map(diff_map, return_fig=True,
                               contour=contour, sym=sym,
-                              save=False, **kwargs)
+                              save=False, loglevel=loglevel,
+                              vmin=vmin_fill, vmax=vmax_fill,
+                              **kwargs)
 
     logger.info("Plotting the map as contour")
 
@@ -262,26 +277,37 @@ def plot_single_map_diff(data: xr.DataArray,
             logger.warning("Cyclic longitude can be set to False with the cyclic_lon kwarg")
 
     # Evaluate vmin and vmax of the contour
-    vmin_map, vmax_map = evaluate_colorbar_limits(maps=[data],
-                                                  sym=sym_contour)
+    if vmin_contour is None or vmax_contour is None:
+        vmin_contour, vmax_contour = evaluate_colorbar_limits(maps=[data],
+                                                              sym=sym_contour)
+    else:
+        if sym_contour:
+            logger.warning("sym_contour=True, vmin_map and vmax_map given will be ignored")
+            vmin_contour, vmax_contour = evaluate_colorbar_limits(maps=[data],
+                                                                  sym=sym_contour)
 
-    logger.debug("Setting difference vmin to %s, vmax to %s",
-                 vmin_map, vmax_map)
+    logger.debug("Setting contour vmin to %s, vmax to %s", vmin_contour, vmax_contour)
 
     ds = data.plot.contour(ax=ax,
                            transform=ccrs.PlateCarree(),
                            colors='k', levels=10,
                            linewidths=0.5,
-                           vmin=vmin_map, vmax=vmax_map)
+                           vmin=vmin_contour, vmax=vmax_contour)
 
     ax.clabel(ds, fmt='%1.1f', fontsize=6, inline=True)
+
+    if title:
+        logger.debug("Setting title to %s", title)
+        ax.set_title(title)
 
     if save:
         logger.debug("Saving figure to %s", outputdir)
         create_folder(outputdir, loglevel=loglevel)
-        filename = kwargs.get('filename', 'map')
         plot_format = kwargs.get('format', 'pdf')
-        filename = f"{filename}.{plot_format}"
+        if filename.endswith('.png') or filename.endswith('.pdf'):
+            logger.debug("Format already set in the filename")
+        else:
+            filename = f"{filename}.{plot_format}"
         logger.debug("Setting filename to %s", filename)
 
         logger.info("Saving figure as %s/%s", outputdir, filename)

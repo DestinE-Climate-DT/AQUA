@@ -1,4 +1,5 @@
 .. _add-data:
+
 Adding new data
 ===============
 
@@ -11,10 +12,11 @@ How to create a new source and add new data is documented in the next sections.
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
-- Finally, to exploit of the regridding functionalities, you will also need to configure the machine-dependent
+- Finally, to exploit the regridding functionalities, you will also need to configure the machine-dependent
   ``regrid.yaml``. 
 
 .. _file-based-sources:
+
 File-based sources
 ------------------
 
@@ -111,6 +113,7 @@ You can add fixes to your dataset by following examples in the ``config/fixes/``
     `intake-xarray <https://intake-xarray.readthedocs.io/en/latest/>`_ documentation.
 
 .. _FDB-based-sources:
+
 FDB-based sources
 -----------------
 

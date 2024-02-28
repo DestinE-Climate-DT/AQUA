@@ -2,15 +2,17 @@
 Container
 =========
 
-Every new version of AQUA generates a new container available
+Every new version of AQUA generates a new container, which is available on the GitHub Container Registry.
+
+Download the container image
+----------------------------
+
+The container is available
 `here <https://github.com/DestinE-Climate-DT/AQUA/pkgs/container/aqua>`_.
 
 Using `Singularity <https://docs.sylabs.io/guides/latest/user-guide/>`_ or
 `Docker <https://docs.docker.com/>`_, you can quickly download the container and
 load the AQUA environment on any platform.
-
-Download the container image
-----------------------------
 
 Pull the container image from the docker hub using a personal access token (PAT) generated from GitHub.
 If you don't have a PAT, :ref:`pat`.
@@ -39,7 +41,7 @@ The container can be loaded using the following command:
 
 .. parsed-literal:: 
 
-   singularity shell aqua\_\ |version|\.sif
+   singularity shell --cleanenv aqua\_\ |version|\.sif
 
 or analogue for Docker.
 
@@ -54,7 +56,7 @@ The scripts are located in the ``cli/lumi-container`` folder.
   This is the most common script to use the AQUA container on LUMI on production environment.
 - **slurm_job_container.sh**: A template for a Slurm script to use the AQUA container on LUMI.
   This is useful to run batch jobs on LUMI using the AQUA container, but it can be easily adapted to
-  any platform using Slurm.
+  any platform using Slurm. By default it opens a Jupyter Lab server on the computational node.
 
 .. _pat:
 Generate a Personal Access Token (PAT)
@@ -105,18 +107,28 @@ To run a Jupyter Notebook using the container, follow these steps.
 
 .. code-block:: bash
 
-   jupyter-lab --no-browser
+   node=$(hostname -s)
+   port=$(shuf -i8000-9999 -n1)
+   jupyter-lab --no-browser --port=${port} --ip=${node}
 
-This will provide a server URL like: ``http://localhost:<port>/lab?token=random_token``
+This will provide a server URL like: ``http://nodeurl:<port>/lab?token=random_token`` (e.g. ``http://nid007521:8839/lab?token=random_value``)
 
 - If you wish to open Jupyter Lab in your browser, execute the following command in a separate terminal,
   replacing "lumi" with your SSH hostname:
 
 .. code-block:: bash
 
-   ssh -L <port>:localhost:<port> lumi
+   ssh -L <port>:nodeurl:<port> lumi
+
+(e.g. ``ssh -L 8839:nid007521:8839 lumi``)
 
 - Open the Jupyter Lab URL in your browser. It will launch Jupyter Lab. Choose the **Python 3 (ipykernel)** kernel for the AQUA environment.
+
+.. note::
+    Using the load_container_lumi.sh script will launch the Jupyter Lab server on the node where the script is executed.
+    You may want to use a computational node to run the Jupyter Lab server, especially if you are running a large notebook.
+    This can be achieved by requiring a computational node and then running the Jupyter Lab server on that node or 
+    by using the Slurm script to run the Jupyter Lab server (you can find an example in the Slurm script itself).
 
 Running Jupyter Notebook within VSCode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

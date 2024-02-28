@@ -13,15 +13,15 @@ Welcome to AQUA's documentation!
    installation
    getting_started
    core_components
+   container
    diagnostics/index
    adding_data
    lra
-   container
    examples_tutorials
    cli
    advanced_topics
    api_reference
-   troubleshooting_faq
+   troubleshooting_faq/index
    contributing
    references_acknowledgments
 

@@ -56,7 +56,7 @@ Running Diagnostics
 -------------------
 
 Together with the diagnostics, AQUA provides a command line interface tool to run them.
-The tool is called `aqua-analysis` and it is available in the `cli` directory of the repository.
+The tool is called `aqua-analysis.sh` and it is available in the `cli` directory of the repository.
 It can be used to run a single diagnostic or a group of diagnostics.
 It consists of a single bash script that can be run from the command line.
 This script will take care of calling the correct Python script for each diagnostic.
@@ -90,16 +90,13 @@ Once the options have been set, the diagnostics can be run by executing the scri
 
 .. code-block:: bash
 
-   ./aqua-analysis
+   ./aqua-analysis.sh
 
 or by passing the options as command line arguments:
 
 .. code-block:: bash
 
-   ./aqua-analysis --model-atm IFS --model-ocean FESOM --exp tco2559-ng5-cycle3 --source lra-r100-monthly --outputdir ./output --machine levante --max-threads -1 --loglevel WARNING
-
-Advanced options
-++++++++++++++++
+   ./aqua-analysis.sh --model-atm IFS --model-ocean FESOM --exp tco2559-ng5-cycle3 --source lra-r100-monthly --outputdir ./output --machine levante --max-threads -1 --loglevel WARNING
 
 It is possible to run a subset of the diagnostics by modifying the arrays `atm_diagnostics` and
 `oce_diagnostics` in the script. By default, all the diagnostics are run.
@@ -111,8 +108,10 @@ set the `run_dummy` variable to `false`.
 Some diagnostics may accept additional options. These options are listed in the comments of the
 script and can be set by modifying the `atm_extra_args` or `oce_extra_args` arrays.
 
+Please see also the section :ref:`cli` for further information and a detailed description of the API.
+
 .. note::
-   The `aqua-analysis` tool is a simple way to run the diagnostics with a single command and predefined options.
+   The `aqua-analysis.sh` tool is a simple way to run the diagnostics with a single command and predefined options.
    However, it is possible to run the diagnostics in other ways, for example by calling the Python scripts directly or by
    running them in a Jupyter notebook, allowing more flexibility and customization.
 
@@ -126,9 +125,6 @@ To support the development of new diagnostic, a `dummy diagnostic <https://githu
 has been introduced into the code to support future development and serve as starting point. 
 This includes multiple template files and demo code, ranging from the creation 
 of a proper README up to a command line interface tool, going through the documentation, notebook and tests.
-
-Automatic image caption
-+++++++++++++++++++++++
 
 AQUA provides a tool to automatically incorporate a caption into the pdf produced by the diagnostics.
 The caption is stored as */Description* metadata in the pdf file with the `add_pdf_metadata` function in the `aqua.util` module.

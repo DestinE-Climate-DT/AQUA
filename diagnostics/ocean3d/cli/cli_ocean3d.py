@@ -14,11 +14,8 @@ from aqua import Reader
 from aqua.util import load_yaml, get_arg, create_folder
 
 from ocean3d import check_variable_name
-from ocean3d import time_slicing
 from ocean3d import plot_stratification
-# from ocean3d.ocean_circulation.ocean_circulation import plot_stratification_parallel
 from ocean3d import plot_spatial_mld_clim
-# from ocean3d.ocean_circulation.ocean_circulation import plot_spatial_mld_clim_parallel
 from ocean3d import load_obs_data
 
 from ocean3d import hovmoller_plot
@@ -26,7 +23,6 @@ from ocean3d import time_series
 from ocean3d import multilevel_t_s_trend_plot
 from ocean3d import zonal_mean_trend_plot
 
-from aqua.util import find_vert_coord
 from aqua.logger import log_configure
 
 
@@ -94,25 +90,21 @@ class Ocean3DCLI:
         
         reader = Reader(model=model, exp=exp, source=source,
                         fix=True, loglevel=self.loglevel)
-        data = reader.retrieve()
         
         self.logger.info(f"data retrieved for model={model}, exp={exp}, source={source}")
-        # data=data.rename_dims({"time_counter":"time"})
-        # data=data.rename_dims({"deptht":"lev"})
-        # data=data.rename_vars({"toce_mean":"ocpt"})
-        # data=data.rename_vars({"soce_mean":"so"})
-        # data=data.drop_dims("bnds")
-        # data=data[["ocpt","so"]]
         
-        data = check_variable_name(data)
         if self.config["select_time"] == True:
-            self.data["catalog_data"] = time_slicing(data,self.config["start_year"],
-                                                     self.config["end_year"])
+            self.data["catalog_data"] = reader.retrieve(startdate= str(self.config["start_year"]),
+                                                        enddate= str(self.config["end_year"]))
         else:
-            self.data["catalog_data"]= data
+            self.data["catalog_data"] = reader.retrieve()
             
+        self.data["catalog_data"] = check_variable_name(self.data["catalog_data"])
+        
         if self.config["compare_model"]:
             self.data["obs_data"] = load_obs_data(model='EN4', exp='en4', source='monthly')
+        self.data["obs_data"] = check_variable_name(self.data["obs_data"])
+        
         return
     
     def make_request(self,kwargs):

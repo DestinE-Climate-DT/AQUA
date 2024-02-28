@@ -25,6 +25,7 @@ class SeasonalCycle(Timeseries):
                  startdate=None, enddate=None,
                  std_startdate=None, std_enddate=None,
                  plot_kw={'ylim': {}},
+                 save=True,
                  outdir='./',
                  outfile=None,
                  loglevel='WARNING'):
@@ -37,7 +38,19 @@ class SeasonalCycle(Timeseries):
             models: the list of models to analyze
             exps: the list of experiments to analyze
             sources: the list of sources to analyze
-
+            regrid: the regridding resolution. If None or False, no regridding is performed.
+            plot_ref: if True, plot the reference seasonal cycle. Default is True.
+            plot_ref_kw: the keyword arguments to pass to the reference plot.
+                         Default is {'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}
+            startdate: the start date of the time series
+            enddate: the end date of the time series
+            std_startdate: the start date to evaluate the standard deviation
+            std_enddate: the end date to evaluate the standard deviation
+            plot_kw: the keyword arguments to pass to the plot
+            save: if True, save the figure. Default is True.
+            outdir: the output directory
+            outfile: the output file
+            loglevel: the logging level. Default is 'WARNING'.
         """
         super().__init__(var=var, formula=formula,
                          models=models, exps=exps, sources=sources,
@@ -48,6 +61,7 @@ class SeasonalCycle(Timeseries):
                          monthly_std=True, annual_std=False,
                          std_startdate=std_startdate, std_enddate=std_enddate,
                          plot_kw=plot_kw,
+                         save=save,
                          outdir=outdir,
                          outfile=outfile,
                          loglevel=loglevel)
@@ -75,14 +89,19 @@ class SeasonalCycle(Timeseries):
         self.logger.info("Extracting the seasonal cycle")
 
         self.cycle = len(self.models) * [None]
+        description_timerange = []
 
         for i, model in enumerate(self.models):
             self.logger.info(f"Processing {model} {self.exps[i]}")
+
+            # We save here the time range of the data before compressing it to monthly means
+            description_timerange.append(f" from {time_to_string(self.data_mon[i].time.values[0])} to {time_to_string(self.data_mon[i].time.values[-1])}") # noqa: E501
 
             # Extract the seasonal cycle
             self.cycle[i] = self.data_mon[i].groupby('time.month').mean('time')
 
         self.cycle_ref = self.ref_mon.groupby('time.month').mean('time')
+        self.description_timerange = description_timerange
 
     def plot(self):
         """Plot the seasonal cycle."""
@@ -103,7 +122,19 @@ class SeasonalCycle(Timeseries):
                                      loglevel=self.loglevel,
                                      title=title)
 
-        # Save to outdir/pdf/filename
+        if self.save:
+            self.save_seasonal_pdf(fig, ref_label)
+
+    def save_seasonal_pdf(self, fig, ref_label):
+        """
+        Save the figure to a pdf file
+
+        Args:
+            fig (matplotlib.figure.Figure): Figure to save
+            ref_label (str): Label for the reference data
+        """
+        self.logger.info("Saving figure to pdf")
+
         outfig = os.path.join(self.outdir, 'pdf')
         self.logger.debug(f"Saving figure to {outfig}")
         create_folder(outfig, self.loglevel)
@@ -118,9 +149,9 @@ class SeasonalCycle(Timeseries):
         fig.savefig(os.path.join(outfig, self.outfile))
 
         description = f"Seasonal cycle of the global mean of {self.var}"
-        description += f" from {time_to_string(self.startdate)} to {time_to_string(self.enddate)}"
         for i, model in enumerate(self.models):
             description += f" for {model} {self.exps[i]}"
+            description += self.description_timerange[i]
         if self.plot_ref:
             description += f" with {ref_label} as reference,"
             description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"

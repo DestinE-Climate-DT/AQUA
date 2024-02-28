@@ -1,5 +1,6 @@
 """An intake driver for FDB/GSV access"""
 import os
+import glob
 import datetime
 import eccodes
 import xarray as xr
@@ -72,6 +73,8 @@ class GSVSource(base.DataSource):
         if not gsv_available:
             raise ImportError(gsv_error_cause)
 
+        self._request = request.copy()
+
         if metadata:
             self.fdbhome = metadata.get('fdb_home', None)
             self.fdbpath = metadata.get('fdb_path', None)
@@ -112,7 +115,6 @@ class GSVSource(base.DataSource):
         else:
             self._var = var
 
-        self._request = request.copy()
         self._kwargs = kwargs
 
         if "levelist" in self._request:
@@ -355,7 +357,9 @@ class GSVSource(base.DataSource):
 
     
     def parse_fdb(self, start_date, end_date):
-        """Parse the FDB config file and return the start and end dates of the data."""
+        """Parse the FDB config file and return the start and end dates of the data.
+           This works only with the DE GSV schema.
+        """
 
         if not self.fdbpath and not self.fdbpath:
             raise ValueError('Automatic dates requested but FDB path not specified in catalogue.')
@@ -375,7 +379,11 @@ class GSVSource(base.DataSource):
         else:
             root = cfg['spaces'][0]['roots'][0]['path']
 
-        file_list = os.listdir(root)
+        req = self._request
+
+        # This assumes a fixed schema and that all keys are present
+        file_mask = f"{req['class']}:{req['dataset']}:{req['activity']}:{req['experiment']}:{req['generation']}:{req['model']}:{req['realization']}:{req['expver']}:{req['stream']}:*"
+        file_list = glob.glob(os.path.join(root, file_mask))
         
         datesel = [filename[-8:] for filename in file_list if (filename[-8:].isdigit() and len(filename[-8:])==8)]
         datesel.sort()

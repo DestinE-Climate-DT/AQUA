@@ -221,7 +221,7 @@ If you need to develop your own, fixes can be specified in two different ways:
 
 Please note that the ``default.yaml`` is reserved to define a few of useful tools:
 
-- the default ``data_model``(See :ref:`coord-fix`).
+- the default ``data_model`` (See :ref:`coord-fix`).
 - the list of units that should be added to the default MetPy unit list. 
 - A series of nicknames (``shortname``) for units to be replaced in the fixes yaml file.
 
@@ -619,5 +619,3 @@ This will produce the following plot:
 .. figure:: figures/single_map_example.png
     :align: center
     :width: 100%
-
-    Example of the above code.

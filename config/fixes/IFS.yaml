@@ -197,7 +197,7 @@ fixer_name:
                 decumulate: true 
 
     ifs-control:
-        parent: ifs-default
+        parent: IFS-default
         method: merge
         vars:
             tprate:

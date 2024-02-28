@@ -35,6 +35,7 @@ class Timeseries():
                  monthly_std=True, annual_std=True,
                  std_startdate=None, std_enddate=None,
                  plot_kw={'ylim': {}},
+                 save=True,
                  outdir='./',
                  outfile=None,
                  loglevel='WARNING'):
@@ -48,17 +49,19 @@ class Timeseries():
             sources (list or str): Source IDs.
             regrid (str): Optional regrid resolution. Default is None.
             plot_ref (bool): Include reference data. Default is True.
-            annual (bool): Plot annual mean. Default is True.
+            plot_ref_kw (dict): Keyword arguments passed to `get_reference_timeseries`.
             startdate (str): Start date. Default is None.
             enddate (str): End date. Default is None.
-            std_startdate (str): Start date for standard deviation. Default is "1991-01-01".
-            std_enddate (str): End date for standard deviation. Default is "2020-12-31".
+            annual (bool): Plot annual mean. Default is True.
             monthly_std (bool): Plot monthly standard deviation. Default is True.
             annual_std (bool): Plot annual standard deviation. Default is True.
-            ylim (dict): Keyword arguments passed to `set_ylim()`.
-            reader_kw (dict): Additional keyword arguments passed to the `aqua.Reader`.
+            std_startdate (str): Start date for standard deviation. Default is "1991-01-01".
+            std_enddate (str): End date for standard deviation. Default is "2020-12-31".
             plot_kw (dict): Additional keyword arguments passed to the plotting function.
-            ax (matplotlib.Axes): (Optional) axes to plot in.
+            save (bool): Save the figure. Default is True.
+            outdir (str): Output directory. Default is "./".
+            outfile (str): Output file name. Default is None.
+            loglevel (str): Log level. Default is "WARNING".
         """
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='Timeseries')
@@ -99,23 +102,23 @@ class Timeseries():
 
         self.plot_kw = plot_kw
 
+        self.save = save
+        if self.save is False:
+            self.logger.info("Figure will not be saved")
         self.outdir = outdir
         self.outfile = outfile
 
     def run(self):
-        """
-        Retrieve ref, retrieve data and plot
-        """
+        """Retrieve ref, retrieve data and plot"""
         self.retrieve_data()
         self.retrieve_ref()
         self.plot()
-        self.save_netcdf()
+        if self.save:
+            self.save_netcdf()
         self.cleanup()
 
     def retrieve_ref(self):
-        """
-        Retrieve reference data
-        """
+        """Retrieve reference data"""
         if self.plot_ref:
             self.logger.debug('Retrieving reference data')
             try:
@@ -244,7 +247,19 @@ class Timeseries():
                                   data_labels=data_labels,
                                   title=title)
 
-        # Save to outdir/pdf/filename
+        if self.save:
+            self.save_pdf(fig, ref_label)
+
+    def save_pdf(self, fig, ref_label):
+        """
+        Save the figure to a pdf file
+
+        Args:
+            fig (matplotlib.figure.Figure): Figure to save
+            ref_label (str): Label for the reference data
+        """
+        self.logger.info("Saving figure to pdf")
+
         outfig = os.path.join(self.outdir, 'pdf')
         self.logger.debug(f"Saving figure to {outfig}")
         create_folder(outfig, self.loglevel)

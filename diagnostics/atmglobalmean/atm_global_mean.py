@@ -121,6 +121,8 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
 
     var1_climatology = var1.groupby('time.month').mean(dim='time')
 
+    bias_time_range_mean = var1_climatology.mean(dim='month') - var2_climatology.mean(dim='month')
+
     # Select the desired pressure level if provided
     if 'plev' in var1_climatology.dims:
         if plev:
@@ -169,17 +171,12 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
 
     # Create a cartopy projection
     projection = ccrs.PlateCarree()
-
-    # Calculate the number of rows and columns for the subplot grid
-    num_rows = 2
-    num_cols = 2
-
-    # Plot the bias maps for each season
-    fig = plt.figure(figsize=(15, 10))
-    gs = gridspec.GridSpec(num_rows, num_cols, figure=fig)
-
+    
     # Create a list to store the plotted objects
     cnplots = []
+    
+    num_rows = 3  
+    num_cols = 2
 
     # Set the colorbar limits
     vmin, vmax = evaluate_colorbar_limits(results, sym=True)
@@ -188,11 +185,44 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
     vmax = kwargs.get('vmax', vmax) if kwargs.get('vmax', vmax) is not None else vmax
     logger.debug(f"vmin: {vmin}, vmax: {vmax}")
     levels = np.linspace(vmin, vmax, nlevels)
+    
+    # Plot the bias maps for each season
+    fig = plt.figure(figsize=(15, 15))  
+    gs = gridspec.GridSpec(num_rows, num_cols, figure=fig)
 
-    for i, (result, season) in enumerate(zip(results, season_ranges.keys())):
-        ax = fig.add_subplot(gs[i], projection=projection)
+    # Plot the whole time range mean bias in the first row
+    ax = fig.add_subplot(gs[0, :], projection=projection) 
+    # Add coastlines to the plot
+    ax.coastlines()
+    # Add other cartographic features (optional)
+    ax.add_feature(cfeature.LAND, facecolor='lightgray')
+    ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
+    # Set latitude and longitude tick labels
+    ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
+    ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
+    ax.xaxis.set_major_formatter(LongitudeFormatter())
+    ax.yaxis.set_major_formatter(LatitudeFormatter())
+
+    # Plot the whole time range mean bias data
+    try:
+        bias_time_range_mean = add_cyclic_lon(bias_time_range_mean)
+    except Exception as e:
+        logger.debug(f"Error: {e}")
+        logger.warning(f"Cannot add cyclic longitude for {var_name} variable.")
+    else:
+        cnplot = bias_time_range_mean.plot.contourf(ax=ax, cmap='RdBu_r', levels=levels, extend='both',
+                                                    add_colorbar=False)
+        cnplots.append(cnplot)
+
+    ax.set_title("Climatological Bias")
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+
+    # Plot the DJF and MAM in the second subplot
+    for i, (result, season) in enumerate(zip(results[:2], season_ranges.keys())):
+        ax = fig.add_subplot(gs[1, i], projection=projection)
         # Add coastlines to the plot
-        ax.add_feature(cfeature.COASTLINE)
+        ax.coastlines()
         # Add other cartographic features (optional)
         ax.add_feature(cfeature.LAND, facecolor='lightgray')
         ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
@@ -211,20 +241,45 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
             continue
 
         cnplot = result.plot.contourf(ax=ax, cmap='RdBu_r', levels=levels, extend='both',
-                                      add_colorbar=False)
+                                    add_colorbar=False)
         cnplots.append(cnplot)
 
         ax.set_title(f'{season}')
         ax.set_xlabel('Longitude')
         ax.set_ylabel('Latitude')
 
-    # Remove any empty subplots if the number of results is less than the number of subplots
-    if len(results) < num_rows * num_cols:
-        for i in range(len(results), num_rows * num_cols):
-            fig.delaxes(fig.axes[i])
+    # Plot the SON and JJA in the third subplot
+    for i, (result, season) in enumerate(zip(results[2:], season_ranges.keys())):
+        ax = fig.add_subplot(gs[2, i], projection=projection)  # Third row
+        # Add coastlines to the plot
+        ax.coastlines()
+        # Add other cartographic features (optional)
+        ax.add_feature(cfeature.LAND, facecolor='lightgray')
+        ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
+        # Set latitude and longitude tick labels
+        ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
+        ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
+        ax.xaxis.set_major_formatter(LongitudeFormatter())
+        ax.yaxis.set_major_formatter(LatitudeFormatter())
+
+        # Plot the bias data using the corresponding cnplot object
+        try:
+            result = add_cyclic_lon(result)
+        except Exception as e:
+            logger.debug(f"Error: {e}")
+            logger.warning(f"Cannot add cyclic longitude for {var_name} variable.")
+            continue
+
+        cnplot = result.plot.contourf(ax=ax, cmap='RdBu_r', levels=levels, extend='both',
+                                    add_colorbar=False)
+        cnplots.append(cnplot)
+
+        ax.set_title(f'{season}')
+        ax.set_xlabel('Longitude')
+        ax.set_ylabel('Latitude')
 
     # Add a colorbar
-    cbar_ax = fig.add_axes([0.25, 0.05, 0.5, 0.02])  # Adjust the position and size of the colorbar
+    cbar_ax = fig.add_axes([0.25, 0.02, 0.5, 0.02])  # Adjust the position and size of the colorbar
     cbar = fig.colorbar(cnplots[0], cax=cbar_ax, orientation='horizontal')
     cbar.set_label(f'Bias [{var2.units}]')
 
@@ -246,11 +301,9 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
 
     if outputdir is not None:
         create_folder(folder=str(outputdir), loglevel='WARNING')
-        # Write the data into a NetCDF file
         data_directory = outputdir
         data_filename = f"atmglobalmean.seasonal_bias.{var_name}.{statistic}.{model_label1}.{model_label2}.nc"
         data_path = os.path.join(data_directory, data_filename)
-
         data_array = xr.concat(results, dim='season')
         data_array.attrs = var1.attrs  # Copy attributes from var1 to the data_array
         data_array.attrs['statistic'] = statistic
@@ -258,13 +311,11 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
         data_array.attrs['dataset2'] = model_label2
         data_array.attrs['climatology_range1'] = f'{start_date1}-{end_date1}'
         data_array.attrs['climatology_range2'] = f'{start_date2}-{end_date2}'
-
         data_array.to_netcdf(data_path)
         logger.info(f"The seasonal bias data has been saved to {outputdir} for {var_name} variable.")
 
     if outputfig:
         create_folder(folder=str(outputfig), loglevel='WARNING')
-        # Save the figure
         filename = f"{outputfig}/atmglobalmean.seasonal_bias.{var_name}.{statistic}.{model_label1}.{model_label2}.pdf"
         plt.savefig(filename, dpi=300, format='pdf')
         logger.info(f"The seasonal bias plots have been saved to {outputfig} for {var_name} variable.")
@@ -273,7 +324,7 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
 
     if outputfig and outputdir:
         logger.info(
-                    f"The seasonal bias maps were calculated and plotted for {var_name} variable.")
+            f"The seasonal bias maps were calculated and plotted for {var_name} variable.")
 
 
 def compare_datasets_plev(dataset1=None, dataset2=None, var_name=None,
