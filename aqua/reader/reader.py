@@ -553,8 +553,11 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             try:
                 if 'use_cftime' in self.esmcat.xarray_kwargs:
                     cftime = self.esmcat.xarray_kwargs['use_cftime']
+                else:
+                    cftime = False
             except AttributeError:
                 cftime = False
+    
             if cftime:
                 data = data.assign_attrs({'use_cftime': 1})
                 for var in data.data_vars:
