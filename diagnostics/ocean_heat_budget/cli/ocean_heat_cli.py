@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
-Command-line interface for global time series diagnostic.
+Command-line interface for global ocean heat budget time series diagnostic.
 
 This CLI allows to plot timeseries of a set of variables
 defined in a yaml configuration file for a single experiment
 and gregory plot.
 """
+import os
+import sys
 import argparse
 from aqua import Reader
+from aqua.util import load_yaml, get_arg
 import numpy as np
+
+# include functions/utilities from the diagnostics/ocean_heat_budget directory
+sys.path.insert(0, "../")
 from ocean_heat_functions import compute_net_surface_fluxes, plot_time_series
 
 
@@ -103,13 +109,8 @@ if __name__ == '__main__':
         os.chdir(dname)
         logger.info(f'Moving from current directory to {dname} to run!')
 
-    # import the functions from the diagnostic now that
-    # we are in the right directory
-    sys.path.insert(0, "../../../")
-    from global_time_series import plot_timeseries, plot_gregory
-
     # Read configuration file
-    file = get_arg(args, 'config', 'config_time_series_atm.yaml')
+    file = get_arg(args, 'config', 'config_ocean_heat_budget.yaml')
     logger.info(f"Reading configuration yaml file: {file}")
     config = load_yaml(file)
 
@@ -128,3 +129,33 @@ if __name__ == '__main__':
     create_folder(folder=outputdir_nc, loglevel=loglevel)
     outputdir_pdf = os.path.join(outputdir, "pdf")
     create_folder(folder=outputdir_pdf, loglevel=loglevel)
+
+    #code to compute ocean heat budget time series starts here
+
+    reader_atm = Reader(model=model, exp=exp, source=source_atm, startdate=startdate, enddate=enddate, regrid="r010", )
+    data_atm = reader_atm.retrieve(var=['mslhf','msnlwrf','msnswrf','msshf'])
+    data_atm = reader_atm.timmean(data_atm, freq="daily")
+    data_atm = reader_atm.regrid(data_atm)
+
+    reader_oc = Reader(model=model, exp=exp, source=source_oc, startdate=startdate, enddate=enddate, regrid="r010")
+    data_oc = reader_oc.retrieve(var=["avg_tos", "avg_hc700m"])
+    #fai lo stesso time mean
+    data_oc = reader_oc.regrid(data_oc)
+
+    #computes net surface fluxes at the ocean surface including land sea mask
+    net_surface_fluxes, mask = compute_net_surface_fluxes(data_atm, data_oc)
+    # compute the time series of the net surface fluxes
+    net_surface_fluxes = reader_atm.fldmean(net_surface_fluxes)
+    print (net_surface_fluxes.shape)
+
+    # get the heat content of the 700m ocean layer and perform spatial averaging
+    avg_hc700m = data_oc['avg_hc700m']
+    avg_hc700m=reader_oc.fldmean(avg_hc700m)
+    # compute time derivative of the heat content
+    time_diff = np.diff(avg_hc700m.time.values, axis=0) / np.timedelta64(1, 's')
+    avg_hc_time_derivative = np.diff(avg_hc700m, axis=0) / time_diff
+    print (avg_hc_time_derivative.shape)
+
+    # now plot the time series
+    title_args = {'model': model, 'exp': exp, 'source': source_atm}
+    plot_time_series(net_surface_fluxes, avg_hc_time_derivative, title_args, var1_label="Net OSF [W m**2]",  var2_label="HC700m time derivative [W m**2]")
