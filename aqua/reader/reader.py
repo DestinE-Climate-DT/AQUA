@@ -557,6 +557,8 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                 cftime = False
             if cftime:
                 data = data.assign_attrs({'use_cftime': 1})
+                for var in data.data_vars:
+                    data[var] = data[var].assign_attrs({'use_cftime': 1})
 
         if not fiter:  # This is not needed if we already have an iterator
             if self.streaming:

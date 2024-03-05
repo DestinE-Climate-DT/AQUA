@@ -1,10 +1,14 @@
 """
 Functions to retrieve reference data for global time series diagnostics.
 """
+import xarray as xr
+
 from aqua import Reader
 from aqua.logger import log_configure
 from aqua.exceptions import NoObservationError
 from aqua.util import eval_formula
+
+xr.set_options(keep_attrs=True)
 
 
 def get_reference_ts_gregory(ts_name='2t', ts_ref={'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'},

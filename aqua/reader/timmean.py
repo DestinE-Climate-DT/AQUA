@@ -49,13 +49,17 @@ class TimmeanMixin():
         resample_freq = frequency_string_to_pandas(freq)
 
         # Check if cftime is used, present as attribute use_cftime with value 1
+        self.logger.debug('Checking if cftime is used...')
         if hasattr(data, 'use_cftime'):
             # check the value of use_cftime
+            self.logger.debug('use_cftime attribute is present')
             if data.attrs['use_cftime'] == 1:
                 cftime=True
-                self.logger.debug('cftime is used')
+                self.logger.info('cftime is used')
             else:
                 cftime=False
+        else:
+            cftime=False
 
         # Get original frequency (for history)
         if len(data.time) > 1:
@@ -77,7 +81,7 @@ class TimmeanMixin():
             raise ValueError('Cant find a frequency to resample, aborting!') from exc
 
         if exclude_incomplete:
-            if cftime: #TODO: implement exclude_incomplete for cftime
+            if cftime is True: #TODO: implement exclude_incomplete for cftime
                 self.logger.error('exclude_incomplete is not implemented for cftime')
                 pass
             else:
@@ -91,14 +95,14 @@ class TimmeanMixin():
         # if not center_time as the first timestamp of each month/day according to the sampling frequency
         # if center_time as the middle timestamp of each month/day according to the sampling frequency
         if center_time:
-            if cftime: #TODO: implement center_time for cftime
+            if cftime is True: #TODO: implement center_time for cftime
                 self.logger.error('center_time is not implemented for cftime')
                 pass
             else:
                 out = self.center_time_axis(out, resample_freq)
                 
         # Check time is correct
-        if cftime: # TODO: check time is correct for cftime
+        if cftime is True: # TODO: check time is correct for cftime
             self.logger.warning('cftime is used, time is not checked')
         else:
             if np.any(np.isnat(out.time)):
@@ -108,7 +112,7 @@ class TimmeanMixin():
 
         # Add a variable to create time_bounds
         if time_bounds:
-            if cftime: #TODO: implement time_bounds for cftime
+            if cftime is True: #TODO: implement time_bounds for cftime
                 self.logger.error('time_bounds is not implemented for cftime')
                 pass
             else:
