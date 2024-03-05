@@ -51,7 +51,7 @@ class TimmeanMixin():
         # Check if cftime is used, present as attribute use_cftime with value 1
         if hasattr(data, 'use_cftime'):
             # check the value of use_cftime
-            if data.use_cftime == 1:
+            if data.attrs['use_cftime'] == 1:
                 cftime=True
                 self.logger.debug('cftime is used')
             else:
