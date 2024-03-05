@@ -48,6 +48,15 @@ class TimmeanMixin():
         """
         resample_freq = frequency_string_to_pandas(freq)
 
+        # Check if cftime is used, present as attribute use_cftime with value 1
+        if hasattr(data, 'use_cftime'):
+            # check the value of use_cftime
+            if data.use_cftime == 1:
+                cftime=True
+                self.logger.debug('cftime is used')
+            else:
+                cftime=False
+
         # Get original frequency (for history)
         if len(data.time) > 1:
             orig_freq = data['time'].values[1]-data['time'].values[0]
@@ -68,35 +77,49 @@ class TimmeanMixin():
             raise ValueError('Cant find a frequency to resample, aborting!') from exc
 
         if exclude_incomplete:
-
-            self.logger.info('Checking if incomplete chunks has been produced...')
-            boolean_mask = check_chunk_completeness(data,
-                                                    resample_frequency=resample_freq,
-                                                    loglevel=self.loglevel)
-            out = out.where(boolean_mask, drop=True)
+            if cftime: #TODO: implement exclude_incomplete for cftime
+                self.logger.error('exclude_incomplete is not implemented for cftime')
+                pass
+            else:
+                self.logger.info('Checking if incomplete chunks has been produced...')
+                boolean_mask = check_chunk_completeness(data,
+                                                        resample_frequency=resample_freq,
+                                                        loglevel=self.loglevel)
+                out = out.where(boolean_mask, drop=True)
 
         # Set time:
         # if not center_time as the first timestamp of each month/day according to the sampling frequency
         # if center_time as the middle timestamp of each month/day according to the sampling frequency
         if center_time:
-            out = self.center_time_axis(out, resample_freq)
+            if cftime: #TODO: implement center_time for cftime
+                self.logger.error('center_time is not implemented for cftime')
+                pass
+            else:
+                out = self.center_time_axis(out, resample_freq)
                 
         # Check time is correct
-        if np.any(np.isnat(out.time)):
-            raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
+        if cftime: # TODO: check time is correct for cftime
+            self.logger.warning('cftime is used, time is not checked')
+        else:
+            if np.any(np.isnat(out.time)):
+                raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
 
         out = log_history(out, f"resampled from frequency {self.orig_freq}h to frequency {freq} by AQUA timmean")
 
         # Add a variable to create time_bounds
         if time_bounds:
-            resampled = data.time.resample(time=resample_freq)
-            time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds').transpose()
-            time_bnds['time'] = out.time
-            time_bnds.name = 'time_bnds'
-            out = xr.merge([out, time_bnds])
-            if np.any(np.isnat(out.time_bnds)):
-                raise ValueError('Resampling cannot produce output for all time_bnds step!')
-            log_history(out, "time_bnds added by by AQUA timmean")
+            if cftime: #TODO: implement time_bounds for cftime
+                self.logger.error('time_bounds is not implemented for cftime')
+                pass
+            else:
+                resampled = data.time.resample(time=resample_freq)
+                time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds').transpose()
+                time_bnds['time'] = out.time
+                time_bnds.name = 'time_bnds'
+                out = xr.merge([out, time_bnds])
+                if np.any(np.isnat(out.time_bnds)):
+                    raise ValueError('Resampling cannot produce output for all time_bnds step!')
+                log_history(out, "time_bnds added by by AQUA timmean")
 
         out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
