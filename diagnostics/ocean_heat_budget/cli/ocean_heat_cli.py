@@ -10,7 +10,8 @@ import os
 import sys
 import argparse
 from aqua import Reader
-from aqua.util import load_yaml, get_arg
+from aqua.util import load_yaml, get_arg, create_folder
+from aqua.logger import log_configure
 import numpy as np
 
 # include functions/utilities from the diagnostics/ocean_heat_budget directory
@@ -34,8 +35,11 @@ def parse_arguments(args):
                         required=False, help="model name")
     parser.add_argument("--exp", type=str,
                         required=False, help="experiment name")
-    parser.add_argument("--source", type=str,
-                        required=False, help="source name")
+    parser.add_argument("--source_atm", type=str,
+                        required=False, help="source name for atmosphere")
+    parser.add_argument("--source_oc", type=str,
+                        required=False, help="source name for ocean")
+    
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
 
@@ -74,7 +78,7 @@ def create_filename(outputdir=None, plotname=None, type=None,
     if type != "pdf" and type != "nc":
         raise ValueError("Type must be pdf or nc.")
 
-    diagnostic = "global_time_series"
+    diagnostic = "ocean_heat_budget_time_series"
     filename = f"{diagnostic}"
     filename += f"_{model}_{exp}_{source}"
     filename += f"_{plotname}"
@@ -97,9 +101,9 @@ if __name__ == '__main__':
     loglevel = get_arg(args, 'loglevel', 'WARNING')
 
     logger = log_configure(log_level=loglevel,
-                           log_name='CLI Global Time Series')
+                           log_name='Ocean Heat Budget Time Series')
 
-    logger.info('Running global time series diagnostic...')
+    logger.info('Running Ocean Heat Budget time series diagnostic...')
 
     # we change the current directory to the one of the CLI
     # so that relative path works
@@ -114,15 +118,30 @@ if __name__ == '__main__':
     logger.info(f"Reading configuration yaml file: {file}")
     config = load_yaml(file)
 
-    model = get_arg(args, 'model', config['model'])
-    exp = get_arg(args, 'exp', config['exp'])
-    source = get_arg(args, 'source', config['source'])
+    models = config['models']
+    models['model'] = get_arg(args, 'model', models['model'])
+    models['exp'] = get_arg(args, 'exp', models['exp'])
+    models['source_atm'] = get_arg(args, 'source_atm', models['source_atm'])
+    models['source_oc'] = get_arg(args, 'source_oc', models['source_oc'])
+
+    startdate=config['startdate']
+    enddate=config['enddate']
+    regrid=config['regrid']
+
+    logger.debug("Analyzing models:")
+    models_list = []
+    exp_list = []
+    source_list_atm = []
+    source_list_oc = []
+
+    for model in models:
+        logger.debug(f"  - {model['model']} {model['exp']} {model['source']}")
+        models_list.append(model['model'])
+        exp_list.append(model['exp'])
+        source_list_atm.append(model['source_atm'])
+        source_list_oc.append(model['source_oc'])
 
     outputdir = get_arg(args, 'outputdir', config['outputdir'])
-
-    logger.debug(f"model: {model}")
-    logger.debug(f"exp: {exp}")
-    logger.debug(f"source: {source}")
     logger.debug(f"outputdir: {outputdir}")
 
     outputdir_nc = os.path.join(outputdir, "netcdf")
@@ -132,12 +151,12 @@ if __name__ == '__main__':
 
     #code to compute ocean heat budget time series starts here
 
-    reader_atm = Reader(model=model, exp=exp, source=source_atm, startdate=startdate, enddate=enddate, regrid="r010", )
+    reader_atm = Reader(model=model, exp=exp_list, source=source_list_atm, startdate=startdate, enddate=enddate, regrid="r010")
     data_atm = reader_atm.retrieve(var=['mslhf','msnlwrf','msnswrf','msshf'])
     data_atm = reader_atm.timmean(data_atm, freq="daily")
     data_atm = reader_atm.regrid(data_atm)
 
-    reader_oc = Reader(model=model, exp=exp, source=source_oc, startdate=startdate, enddate=enddate, regrid="r010")
+    reader_oc = Reader(model=model, exp=exp_list, source=source_list_oc, startdate=startdate, enddate=enddate, regrid=regrid)
     data_oc = reader_oc.retrieve(var=["avg_tos", "avg_hc700m"])
     #fai lo stesso time mean
     data_oc = reader_oc.regrid(data_oc)
@@ -146,7 +165,6 @@ if __name__ == '__main__':
     net_surface_fluxes, mask = compute_net_surface_fluxes(data_atm, data_oc)
     # compute the time series of the net surface fluxes
     net_surface_fluxes = reader_atm.fldmean(net_surface_fluxes)
-    print (net_surface_fluxes.shape)
 
     # get the heat content of the 700m ocean layer and perform spatial averaging
     avg_hc700m = data_oc['avg_hc700m']
@@ -154,7 +172,6 @@ if __name__ == '__main__':
     # compute time derivative of the heat content
     time_diff = np.diff(avg_hc700m.time.values, axis=0) / np.timedelta64(1, 's')
     avg_hc_time_derivative = np.diff(avg_hc700m, axis=0) / time_diff
-    print (avg_hc_time_derivative.shape)
 
     # now plot the time series
     title_args = {'model': model, 'exp': exp, 'source': source_atm}
