@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#SBATCH -A project_465000454
+#SBATCH --nodes=1
+#SBATCH -t 0-00:29:00 #change the wallclock
+#SBATCH -J aqua-ocean-heat-budget
+#SBATCH --output=/users/pghinass/AQUA/diagnostics/ocean_heat_budget/cli/slurm_jobs/OHB_slurm_%j.out
+#SBATCH --error=/users/pghinass/AQUA/diagnostics/ocean_heat_budget/cli/slurm_jobs/OHB_slurm_%j.err
+#SBATCH -p debug    # change the partition
+#SBATCH --mem=128G  # memory allocation
+
+set -e
+# directory of python script to execute
+DIR=/users/pghinass/AQUA/diagnostics/ocean_heat_budget/cli
+python $DIR/ocean_heat_cli.py
