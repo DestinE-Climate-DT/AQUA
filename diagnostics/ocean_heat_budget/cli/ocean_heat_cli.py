@@ -2,9 +2,9 @@
 """
 Command-line interface for global ocean heat budget time series diagnostic.
 
-This CLI allows to plot timeseries of a set of variables
-defined in a yaml configuration file for a single experiment
-and gregory plot.
+This CLI allows to plot timeseries of the net surface fluxes over the ocean and
+the time derivative of the ocean heat content.
+See config details in the dedicated yaml configuration file for model, experiment, and different sources.
 """
 import os
 import sys
@@ -83,9 +83,6 @@ def create_filename(outputdir=None, plotname=None, type=None,
     filename += f"_{model}_{exp}_{source}"
     filename += f"_{plotname}"
 
-    if resample == 'YS':
-        filename += "_annual"
-
     if type == "pdf":
         filename += ".pdf"
     elif type == "nc":
@@ -119,10 +116,10 @@ if __name__ == '__main__':
     config = load_yaml(file)
 
     models = config['models']
-    models['model'] = get_arg(args, 'model', models['model'])
-    models['exp'] = get_arg(args, 'exp', models['exp'])
-    models['source_atm'] = get_arg(args, 'source_atm', models['source_atm'])
-    models['source_oc'] = get_arg(args, 'source_oc', models['source_oc'])
+    models[0]['model'] = get_arg(args, 'model', models[0]['model'])
+    models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
+    models[0]['source_atm'] = get_arg(args, 'source_atm', models[0]['source_atm'])
+    models[0]['source_oc'] = get_arg(args, 'source_oc', models[0]['source_oc'])
 
     startdate=config['startdate']
     enddate=config['enddate']
@@ -135,7 +132,7 @@ if __name__ == '__main__':
     source_list_oc = []
 
     for model in models:
-        logger.debug(f"  - {model['model']} {model['exp']} {model['source']}")
+        logger.debug(f"  - {model['model']} {model['exp']} {model['source_atm']} {model['source_oc']}")
         models_list.append(model['model'])
         exp_list.append(model['exp'])
         source_list_atm.append(model['source_atm'])
@@ -151,12 +148,12 @@ if __name__ == '__main__':
 
     #code to compute ocean heat budget time series starts here
 
-    reader_atm = Reader(model=model, exp=exp_list, source=source_list_atm, startdate=startdate, enddate=enddate, regrid="r010")
+    reader_atm = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz10-atm2d", startdate=startdate, enddate=enddate, regrid="r010")
     data_atm = reader_atm.retrieve(var=['mslhf','msnlwrf','msnswrf','msshf'])
     data_atm = reader_atm.timmean(data_atm, freq="daily")
     data_atm = reader_atm.regrid(data_atm)
 
-    reader_oc = Reader(model=model, exp=exp_list, source=source_list_oc, startdate=startdate, enddate=enddate, regrid=regrid)
+    reader_oc = Reader(model="IFS-NEMO", exp="historical-1990", source="daily-hpz10-oce2d", startdate=startdate, enddate=enddate, regrid=regrid)
     data_oc = reader_oc.retrieve(var=["avg_tos", "avg_hc700m"])
     #fai lo stesso time mean
     data_oc = reader_oc.regrid(data_oc)
@@ -174,5 +171,5 @@ if __name__ == '__main__':
     avg_hc_time_derivative = np.diff(avg_hc700m, axis=0) / time_diff
 
     # now plot the time series
-    title_args = {'model': model, 'exp': exp, 'source': source_atm}
-    plot_time_series(net_surface_fluxes, avg_hc_time_derivative, title_args, var1_label="Net OSF [W m**2]",  var2_label="HC700m time derivative [W m**2]")
+    title_args = {'model': "IFS-NEMO", 'exp': "historical-1990", 'source': "hourly-hpz10"}
+    plot_time_series(net_surface_fluxes, avg_hc_time_derivative, title_args, var1_label="Net OSF [W m**2]",  var2_label="HC700m time derivative [W m**2]", outdir=outputdir_pdf)

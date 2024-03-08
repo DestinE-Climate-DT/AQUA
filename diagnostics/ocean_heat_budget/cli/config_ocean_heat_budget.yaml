@@ -2,10 +2,10 @@
 # in the command line by using:
 # --model, --exp, --source, --outputdir
 models:
-    model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source_atm: 'hourly-hpz10-atm2d'
-    source_oc: 'hourly-hpz10-oce2d'
+    - model: 'IFS-NEMO'
+      exp: 'historical-1990'
+      source_atm: 'hourly-hpz7-atm2d'
+      source_oc: 'daily-hpz7-oce2d'
 outputdir: "./"
 startdate: "19950101"
 enddate: "19950131"
