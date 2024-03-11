@@ -242,7 +242,6 @@ class SeaIceExtent:
 
         # Second figure: seasonal cycles (useful for evaluation): fig2
         monthsNumeric = range(1, 12 + 1)  # Numeric months
-        monthsNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
         for jr, region in enumerate(self.myRegions):
             for js, setup in enumerate(self.mySetups):
@@ -272,29 +271,29 @@ class SeaIceExtent:
                 ax1.set_axisbelow(True)
                 fig1.tight_layout()
 
-
-                # Make second figure: seasonal cycles 
-                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
-                                        for m in monthsNumeric])
-                extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
-                                      for m in monthsNumeric])
+                # Make second figure: seasonal cycles
+                extentCycle = extent.groupby('time.month').mean(dim='time')
+                extentStd = extent.groupby('time.month').std(dim='time')
+                # extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
+                #                         for m in monthsNumeric])
+                # extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
+                #                       for m in monthsNumeric])
 
                 title = "Sea ice extent seasonal cycle: region " + region
                 print(extentCycle)
-                
+
                 print(extentCycle)
                 print(extentStd)
                 print(label)
                 print(title)
-              
-                fig2, ax2 = plot_seasonalcycle(data=extentCycle,
-                                    ref_data=extentCycle,
-                                    std_data=extentStd,
-                                    data_labels=label,
-                                    ref_label=label,
-                                    loglevel=self.loglevel,
-                                    title=title)
 
+                fig2, ax2 = plot_seasonalcycle(data=extentCycle,
+                                                ref_data=extentCycle,
+                                                std_data=extentStd,
+                                                data_labels=label,
+                                                ref_label=label,
+                                                loglevel=self.loglevel,
+                                                title=title)
 
                 create_folder(self.outputdir, loglevel=self.loglevel)
 
