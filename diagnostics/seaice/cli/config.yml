@@ -7,22 +7,22 @@ models:
     var: avg_siconc
     timespan: null # can be of the format ['2020-01-20', '2024-12-31']
   # These are observational datasets
-  - model: OSI-SAF
-    exp: osi-450
-    source: nh-monthly
-    regrid: null
-    var: avg_siconc
-    timespan: null
-  - model: OSI-SAF
-    exp: osi-450
-    source: sh-monthly
-    regrid: null
-    var: avg_siconc
-    timespan: null
+  #  - model: OSI-SAF
+  #  exp: osi-450
+  #  source: nh-monthly
+  #  regrid: null
+  #  var: avg_siconc
+  #  timespan: null
+  #- model: OSI-SAF
+  #  exp: osi-450
+  #  source: sh-monthly
+  #  regrid: null
+  #  var: avg_siconc
+  #  timespan: null
 
 regions: # If this block is missing all regions will be evaluated
   - Arctic
-  - Southern Ocean
+    #- Southern Ocean
   # - Hudson Bay
   # - Ross Sea
   # - Amundsen-Bellingshausen Seas

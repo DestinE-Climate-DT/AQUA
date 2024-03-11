@@ -5,7 +5,7 @@ import xarray as xr
 import numpy as np
 from aqua import Reader
 from aqua.exceptions import NoDataError
-from aqua.util import load_yaml, create_folder
+from aqua.util import load_yaml, create_folder, time_to_string
 from aqua.logger import log_configure
 from aqua.graphics import plot_seasonalcycle
 
@@ -244,9 +244,6 @@ class SeaIceExtent:
         monthsNumeric = range(1, 12 + 1)  # Numeric months
         monthsNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
-        fig1, ax1 = plt.subplots(self.nRegions, figsize=(13, 3 * self.nRegions))
-        fig2, ax2 = plt.subplots(self.nRegions, figsize=(6, 4 * self.nRegions))
-
         for jr, region in enumerate(self.myRegions):
             for js, setup in enumerate(self.mySetups):
                 strTimeInfo = " to ".join(setup["timespan"])
@@ -255,15 +252,9 @@ class SeaIceExtent:
                 self.logger.debug(f"Plotting {label} for region {region}")
                 extent = self.myExtents[js][jr]
 
-                # Monthly cycle
-                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
-                                        for m in monthsNumeric])
+                fig1, ax1 = plt.subplots(1, 1, figsize=(13, 3))
 
-                # One standard deviation of the temporal variability
-                extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
-                                      for m in monthsNumeric])
-
-                # Don't plot osisaf nh in the south and conversely
+                # Make first figure -- raw time series
                 if (setup["model"] == "OSI-SAF" and setup["source"] == "nh-monthly" and
                     self.regionDict[region]["latN"] < 20.0) or (
                         setup["model"] == "OSI-SAF" and setup["source"] == "sh-monthly"
@@ -271,46 +262,100 @@ class SeaIceExtent:
                     self.logger.debug("Not plotting osisaf nh in the south and conversely")
                     pass
                 else:
-                    ax1[jr].plot(extent.time, extent, label=label, color=color_plot)
-                    ax2[jr].plot(monthsNumeric, extentCycle, label=label, lw=3, color=color_plot)
+                    ax1.plot(extent.time, extent, label=label, color=color_plot)
 
-                    # Plot ribbon of uncertainty
-                    if setup["model"] == "OSI-SAF":
-                        mult = 2.0
-                        ax2[jr].fill_between(monthsNumeric, extentCycle - mult * extentStd, extentCycle + mult * extentStd,
-                                             alpha=0.5, zorder=0, color=color_plot, lw=0)
-
-                ax1[jr].set_title("Sea ice extent: region " + region)
-
-                ax1[jr].legend(fontsize=6, ncols=6, loc="best")
-                ax1[jr].set_ylabel(extent.units)
-                # ax1[jr].set_ylim(bottom = 0, top = None)
-                ax1[jr].grid()
-                ax1[jr].set_axisbelow(True)
+                ax1.set_title("Sea ice extent: region " + region)
+                ax1.legend(fontsize=6, ncols=6, loc="best")
+                ax1.set_ylabel(extent.units)
+                #ax1[jr].set_ylim(bottom = 0, top = None)
+                ax1.grid()
+                ax1.set_axisbelow(True)
                 fig1.tight_layout()
 
-                ax2[jr].set_title("Sea ice extent seasonal cycle: region " + region)
-                ax2[jr].legend(fontsize=6, loc="best")
-                ax2[jr].set_ylabel(extent.units)
-                # Ticks
-                ax2[jr].set_xticks(monthsNumeric)
-                ax2[jr].set_xticklabels(monthsNames)
-                # ax2[jr].set_ylim(bottom = 0, top = None)
-                ax2[jr].grid()
-                ax2[jr].set_axisbelow(True)
 
-            fig2.tight_layout()
-            create_folder(self.outputdir, loglevel=self.loglevel)
+                # Make second figure: seasonal cycles 
+                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
+                                        for m in monthsNumeric])
+                extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
+                                      for m in monthsNumeric])
 
-            for fmt in ["png", "pdf"]:
-                outputfig = os.path.join(self.outputdir, "pdf", str(fmt))
-                create_folder(outputfig, loglevel=self.loglevel)
-                fig1Name = "SeaIceExtent_" + "all_models" + "." + fmt
-                fig2Name = "SeaIceExtentCycle_" + "all_models" + "." + fmt
-                self.logger.info("Saving figure %s", fig1Name)
-                self.logger.info("Saving figure %s", fig2Name)
-                fig1.savefig(outputfig + "/" + fig1Name, dpi=300)
-                fig2.savefig(outputfig + "/" + fig2Name, dpi=300)
+                title = "Sea ice extent seasonal cycle: region " + region
+                print(extentCycle)
+                
+                print(extentCycle)
+                print(extentStd)
+                print(label)
+                print(title)
+              
+                fig2, ax2 = plot_seasonalcycle(data=extentCycle,
+                                    ref_data=extentCycle,
+                                    std_data=extentStd,
+                                    data_labels=label,
+                                    ref_label=label,
+                                    loglevel=self.loglevel,
+                                    title=title)
+
+
+                create_folder(self.outputdir, loglevel=self.loglevel)
+
+                for fmt in ["pdf"]:
+                    outputfig = os.path.join(self.outputdir, str(fmt))
+                    create_folder(outputfig, loglevel=self.loglevel)
+                    fig1Name = "SeaIceExtent_"      + region + setup["model"] + "." + fmt
+                    fig2Name = "SeaIceExtentCycle_" + region + setup["model"] + "." + fmt
+                    self.logger.info("Saving figure %s", fig1Name)
+                    self.logger.info("Saving figure %s", fig2Name)
+                    fig1.savefig(outputfig + "/" + fig1Name, dpi=300)
+                    fig2.savefig(outputfig + "/" + fig2Name, dpi=300)
+                
+
+                # OLD CODE TO BE DELETED
+                ## Monthly cycle
+                #extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
+                #                        for m in monthsNumeric])
+                #
+                ## One standard deviation of the temporal variability
+                #extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
+                #                      for m in monthsNumeric])
+                #
+                ## Don't plot osisaf nh in the south and conversely
+                #if (setup["model"] == "OSI-SAF" and setup["source"] == "nh-monthly" and
+                #    self.regionDict[region]["latN"] < 20.0) or (
+                #        setup["model"] == "OSI-SAF" and setup["source"] == "sh-monthly"
+                #        and self.regionDict[region]["latS"] > -20.0):
+                #    self.logger.debug("Not plotting osisaf nh in the south and conversely")
+                #    pass
+                #else:
+                #    
+                #    ax2[jr].plot(monthsNumeric, extentCycle, label=label, lw=3, color=color_plot)
+                #
+                #    # Plot ribbon of uncertainty
+                #    if setup["model"] == "OSI-SAF":
+                #        mult = 2.0
+                #        ax2[jr].fill_between(monthsNumeric, extentCycle - mult * extentStd, extentCycle + mult * extentStd,
+                #                             alpha=0.5, zorder=0, color=color_plot, lw=0)
+                #
+                #ax1[jr].set_title("Sea ice extent: region " + region)
+
+                #ax1[jr].legend(fontsize=6, ncols=6, loc="best")
+                #ax1[jr].set_ylabel(extent.units)
+                ## ax1[jr].set_ylim(bottom = 0, top = None)
+                #ax1[jr].grid()
+                #ax1[jr].set_axisbelow(True)
+                #fig1.tight_layout()
+
+                #ax2[jr].set_title("Sea ice extent seasonal cycle: region " + region)
+                #ax2[jr].legend(fontsize=6, loc="best")
+                #ax2[jr].set_ylabel(extent.units)
+                ## Ticks
+                #ax2[jr].set_xticks(monthsNumeric)
+                #ax2[jr].set_xticklabels(monthsNames)
+                ## ax2[jr].set_ylim(bottom = 0, top = None)
+                #ax2[jr].grid()
+                #ax2[jr].set_axisbelow(True)
+
+            #fig2.tight_layout()
+
 
     def createNetCDF(self):
         """Method to create NetCDF files."""
