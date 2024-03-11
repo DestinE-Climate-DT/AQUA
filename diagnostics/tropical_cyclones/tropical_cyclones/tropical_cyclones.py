@@ -233,19 +233,16 @@ class TCs(DetectNodes, StitchNodes):
             None
         """
 
-        if reset_stream:
-            self.reader2d.reset_stream()
-            self.reader3d.reset_stream()
-            self.reader_fullres.reset_stream()
-
         # now retrieve 2d and 3d data needed
-        else:
-            self.data2d = self.reader2d.retrieve(var=self.varlist2d)
-            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
-            self.fullres = self.reader_fullres.retrieve(var=self.var2store)
-            if isinstance(self.data2d, type(None)):
-                self.logger.warning("End of streaming")
-                raise SystemExit
+
+        self.data2d = self.reader2d.retrieve(var=self.varlist2d)
+        self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
+        self.fullres = self.reader_fullres.retrieve(var=self.var2store)
+        
+        # in case data2d is empty, we reached the end of the data
+        if isinstance(self.data2d, type(None)):
+            self.logger.warning("End of data/streaming")
+            raise SystemExit
 
         if self.streaming:
             self.stream_enddate = self.data2d.time[-1].values
