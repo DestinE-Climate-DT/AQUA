@@ -23,13 +23,13 @@ def plot_time_series(var1, var2, title_args, var1_label, var2_label, outdir):
     color1 = 'tab:red'
     ax1.set_xlabel('Time')
     ax1.set_ylabel(var1_label, color=color1)
-    ax1.plot(var1.time.values, var1, color=color1, label=var1_label)
+    ax1.plot(var1.time.values[:-1], var1[:-1], color=color1, label=var1_label)
     ax1.tick_params(axis='y', labelcolor=color1)
 
     color2 = 'tab:blue'
     ax2 = ax1.twinx()
     ax2.set_ylabel(var2_label, color=color2)
-    ax2.plot(var1.time.values[:-1], var2, color=color2, label=var2_label)
+    ax2.plot(var2.time.values, var2, color=color2, label=var2_label)
     ax2.tick_params(axis='y', labelcolor=color2)
 
     # Set the same y limits for both axes
