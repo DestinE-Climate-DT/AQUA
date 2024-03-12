@@ -16,7 +16,7 @@ import numpy as np
 
 # include functions/utilities from the diagnostics/ocean_heat_budget directory
 sys.path.insert(0, "../")
-from ocean_heat_functions import compute_net_surface_fluxes, plot_time_series
+from ocean_heat_functions_cli import compute_net_surface_fluxes, plot_time_series
 
 
 def parse_arguments(args):
@@ -148,15 +148,12 @@ if __name__ == '__main__':
 
     #code to compute ocean heat budget time series starts here
 
-    reader_atm = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz10-atm2d", startdate=startdate, enddate=enddate, regrid="r010")
+    reader_atm = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz10-atm2d", startdate=startdate, enddate=enddate)
     data_atm = reader_atm.retrieve(var=['mslhf','msnlwrf','msnswrf','msshf'])
     data_atm = reader_atm.timmean(data_atm, freq="daily")
-    data_atm = reader_atm.regrid(data_atm)
 
-    reader_oc = Reader(model="IFS-NEMO", exp="historical-1990", source="daily-hpz10-oce2d", startdate=startdate, enddate=enddate, regrid=regrid)
+    reader_oc = Reader(model="IFS-NEMO", exp="historical-1990", source="daily-hpz10-oce2d", startdate=startdate, enddate=enddate)
     data_oc = reader_oc.retrieve(var=["avg_tos", "avg_hc700m"])
-    #fai lo stesso time mean
-    data_oc = reader_oc.regrid(data_oc)
 
     #computes net surface fluxes at the ocean surface including land sea mask
     net_surface_fluxes, mask = compute_net_surface_fluxes(data_atm, data_oc)
