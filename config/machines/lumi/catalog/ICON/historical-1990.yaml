@@ -43,7 +43,7 @@ sources:
       <<: *args-default
       chunks: 
         time: 6h
-        time: 10
+        vertical: 10
       request:
         <<: *request-default
         param: 129
@@ -62,7 +62,7 @@ sources:
     description: daily 2D oceanic data on healpix grid (zoom=10, h1024).
     args:
       <<: *args-default
-      chunks: ME
+      chunks: MS
       savefreq: D
       request:
         <<: *request-default
@@ -83,7 +83,7 @@ sources:
       data_start_date: 19900701T0000
       chunks:
         time: D
-        level: 5
+        vertical: 5
       savefreq: D
       request:
         <<: *request-default
