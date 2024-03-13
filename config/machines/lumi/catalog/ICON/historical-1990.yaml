@@ -41,7 +41,9 @@ sources:
     description: hourly 3D atmospheric data on healpix grid (zoom=10, h1024).
     args:
       <<: *args-default
-      chunks: 6h
+      chunks: 
+        time: 6h
+        time: 10
       request:
         <<: *request-default
         param: 129
@@ -79,7 +81,9 @@ sources:
     args:
       <<: *args-default
       data_start_date: 19900701T0000
-      chunks: D
+      chunks:
+        time: D
+        level: 5
       savefreq: D
       request:
         <<: *request-default
