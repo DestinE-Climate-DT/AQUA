@@ -43,6 +43,8 @@ def parse_arguments(arguments):
                         help='overwrite existing output')
     parser.add_argument('-l', '--loglevel', type=str,
                         help='log level [default: WARNING]')
+    parser.add_argument('--monitoring', action="store_true",
+                        help='enable the dask performance monitoring. Will run a single chunk')
     parser.add_argument('-m', '--model', type=str,
                         help='model to be processed. Use with coherence with --exp')
     parser.add_argument('-e', '--exp', type=str,
@@ -70,6 +72,7 @@ if __name__ == '__main__':
     loglevel = config['loglevel']
 
     definitive = get_arg(args, 'definitive', False)
+    monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
     fix = get_arg(args, 'fix', True)
     workers = get_arg(args, 'workers', 1)
@@ -94,6 +97,7 @@ if __name__ == '__main__':
                                        outdir=outdir, tmpdir=tmpdir, configdir=configdir,
                                        nproc=workers, loglevel=loglevel,
                                        definitive=definitive, overwrite=overwrite,
+                                       performance_reporting=monitoring,
                                        exclude_incomplete=True)
 
                     # check that your LRA is not already there (it will not work in streaming mode)

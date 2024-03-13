@@ -9,7 +9,7 @@ from ruamel.yaml import YAML
 from aqua.util.eccodes import init_get_eccodes_shortname
 from intake.source import base
 from .timeutil import check_dates, shift_time_dataset
-from .timeutil import split_date, make_timeaxis, date2str, add_offset
+from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
 from aqua.logger import log_configure, _check_loglevel
 
 import time
@@ -92,8 +92,13 @@ class GSVSource(base.DataSource):
             self.eccodes_path = None
             self.levels = None
 
+        # set the timestyle
+        self.timestyle = timestyle
+
         if data_start_date == 'auto' or data_end_date == 'auto':
             self.logger.debug('Autoguessing of the FDB start and end date enabled.')
+            if self.timestyle == 'yearmonth':
+                raise ValueError('Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!')
             data_start_date, data_end_date = self.parse_fdb(data_start_date, data_end_date)
 
         if not startdate:
@@ -101,12 +106,12 @@ class GSVSource(base.DataSource):
         if not enddate:
             enddate = data_end_date
 
-        offset = int(request["step"])  # optional initial offset for steps (in timesteps)
 
-        # special for 6h: set offset startdate if needed
-        startdate = add_offset(data_start_date, startdate, offset, timestep)
+        if self.timestyle != "yearmonth":
+            offset = int(request["step"])  # optional initial offset for steps (in timesteps)
 
-        self.timestyle = timestyle
+            # special for 6h: set offset startdate if needed
+            startdate = add_offset(data_start_date, startdate, offset, timestep)
 
         if isinstance(chunks, dict):
             chunking_time = chunks.get('time', 'S')
@@ -255,7 +260,7 @@ class GSVSource(base.DataSource):
         Args:
             ii (int): partition number
             var (string, optional): single variable to retrieve. Defaults to using those set at init
-            first (bool, optional): read only the first step (used for schema retrieval
+            first (bool, optional): read only the first step (used for schema retrieval)
             onelevel (bool, optional): read only one level. Defaults to False.
         Returns:
             An xarray.DataSet
@@ -276,19 +281,34 @@ class GSVSource(base.DataSource):
             else:
                 request["date"] = f"{dds}/to/{dde}"
                 request["time"] = f"{tts}/to/{tte}"
-            s0 = None
-            s1 = None
-        else:  # style is 'step'
+
+        elif self.timestyle == "step":  # style is 'step'
             request["date"] = self.data_startdate
             request["time"] = self.data_starttime
-
             s0 = self.chk_start_idx[i]
             s1 = self.chk_end_idx[i]
-
             if s0 == s1 or first:
                 request["step"] = f'{s0}'
             else:
                 request["step"] = f'{s0}/to/{s1}'
+
+        elif self.timestyle == "yearmonth": #style is 'yearmonth'
+            yys, mms = date2yyyymm(self.chk_start_date[i])
+            yye, mme = date2yyyymm(self.chk_end_date[i])
+            if ((yys == yye) or first):
+                request["year"] = f"{yys}"
+            else:
+                request["year"] = f"{yys}/to/{yye}"
+            if ((mms == mme) or first):
+                request["month"] = f"{mms}"     
+            else:
+                request["month"] = f"{mms}/to/{mme}"
+            # HACK: step is required by the code, but not needed by GSV
+            #for key in ["date", "step", "time"]:
+            #    if key in request:
+            #        del request[key]
+        else:
+            raise ValueError(f'Timestyle {self.timestyle} not supported')
 
         if onelevel:  # limit to one single level
             request["levelist"] = request["levelist"][0]
@@ -440,8 +460,7 @@ class GSVSource(base.DataSource):
             root = cfg['spaces'][0]['roots'][0]['path']
 
         req = self._request
-
-        # This assumes a fixed schema and that all keys are present
+        
         file_mask = f"{req['class']}:{req['dataset']}:{req['activity']}:{req['experiment']}:{req['generation']}:{req['model']}:{req['realization']}:{req['expver']}:{req['stream']}:*"
         file_list = glob.glob(os.path.join(root, file_mask))
         
