@@ -55,7 +55,9 @@ def plot_difference(var1, var2, title_args, var1_label, var2_label, outdir):
     ax.set_ylabel(f"{var1_label} - {var2_label}")
 
     title = f"Model: {title_args['model']}, Exp: {title_args['exp']}, Source: {title_args['source']}"
+    subtitle = f"Difference between {var1_label} and {var2_label}"
     fig.suptitle(title)
+    ax.set_title(subtitle, fontsize=10)  # Add the subtitle with reduced fontsize
     ax.legend()
     plt.savefig(outdir + f"/ocean_heat_budget_difference_{title_args['model']}_{title_args['exp']}_{title_args['source']}.pdf")
     plt.show()
