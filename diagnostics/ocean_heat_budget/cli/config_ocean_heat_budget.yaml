@@ -1,13 +1,14 @@
 # The first model in this block can be overridden
 # in the command line by using:
 # --model, --exp, --source, --outputdir
-models:
-    - model: 'IFS-NEMO'
-      exp: 'historical-1990'
-      source_atm: 'hourly-hpz7-atm2d'
-      source_oc: 'daily-hpz7-oce2d'
+
+model: 'IFS-NEMO'
+exp: 'historical-1990'
+source_atm: 'hourly-hpz7-atm2d'
+source_oc: 'daily-hpz7-oce2d'
 outputdir: "./"
 startdate: "19950101"
 enddate: "19950131"
-regrid: "r010"
+loglevel: "INFO"
+#regrid: "r010"
 

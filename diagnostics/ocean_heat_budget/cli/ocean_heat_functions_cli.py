@@ -6,14 +6,20 @@ import xarray as xr
 import matplotlib.pyplot as plt
 
 def compute_net_surface_fluxes(dataset_atm, dataset_oc):
+
+    wflh=3.34e5 # water fusion latent heat in J/kg
+
     mslhf = dataset_atm['mslhf']
     msnlwrf = dataset_atm['msnlwrf']
     msnswrf = dataset_atm['msnswrf']
     msshf = dataset_atm['msshf']
+    snow_prec = dataset_atm['sf'] 
     avg_tos = dataset_oc['avg_tos']
     mask=xr.where(np.isnan(avg_tos[0,:]), 0, 1)
 
-    net_fluxes = mslhf + msnlwrf + msnswrf + msshf
+    # net fluxes are the sum of the 4 fluxes minus the snow precipitation times
+    # the water latent heat of fusion (minus means the flux is from the ocean to atmosphere)
+    net_fluxes = mslhf + msnlwrf + msnswrf + msshf - snow_prec*wflh
     net_fluxes = net_fluxes * mask
     return net_fluxes, mask
 
@@ -45,8 +51,7 @@ def plot_time_series(var1, var2, title_args, var1_label, var2_label, outdir):
 
 def plot_difference(var1, var2, title_args, var1_label, var2_label, outdir):
     diff = var1[:-1] - var2
-    #time_diff = np.diff(var1.time.values[:-1], axis=0) / np.timedelta64(1, 's') 
-    #integral = np.trapz(diff, dx=(60*60*24*30))
+
     avg_diff=np.mean(diff)
     fig, ax = plt.subplots()
     ax.plot(var1.time.values[:-1], diff)
@@ -54,8 +59,10 @@ def plot_difference(var1, var2, title_args, var1_label, var2_label, outdir):
     ax.set_xlabel('Time')
     ax.set_ylabel(f"{var1_label} - {var2_label}")
 
-    title = f"Model: {title_args['model']}, Exp: {title_args['exp']}, Source: {title_args['source']}"
-    fig.suptitle(title)
+    title = f"Model: {title_args['model']}, Exp: {title_args['exp']}, Sources: {title_args['source']}"
+    subtitle = f"Difference between {var1_label} and {var2_label}"
+    fig.suptitle(title, fontsize=10)  # Add the title with reduced fontsize
+    ax.set_title(subtitle, fontsize=8)  # Add the subtitle 
     ax.legend()
     plt.savefig(outdir + f"/ocean_heat_budget_difference_{title_args['model']}_{title_args['exp']}_{title_args['source']}.pdf")
     plt.show()
