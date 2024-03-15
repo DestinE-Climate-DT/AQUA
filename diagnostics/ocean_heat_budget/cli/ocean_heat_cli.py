@@ -95,7 +95,7 @@ if __name__ == '__main__':
     client = Client(cluster)
 
     reader_atm = Reader(model=model, exp=exp, source=source_atm, startdate=startdate, enddate=enddate)
-    data_atm = reader_atm.retrieve(var=['mslhf','msnlwrf','msnswrf','msshf',"sf"])
+    data_atm = reader_atm.retrieve(var=['mslhf','msnlwrf','msnswrf','msshf',"msr"])
     data_atm = reader_atm.timmean(data_atm, freq="daily")
 
     reader_oc = Reader(model=model, exp=exp, source=source_oc, startdate=startdate, enddate=enddate)

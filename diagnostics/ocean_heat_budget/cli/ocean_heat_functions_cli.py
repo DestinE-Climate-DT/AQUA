@@ -13,7 +13,7 @@ def compute_net_surface_fluxes(dataset_atm, dataset_oc):
     msnlwrf = dataset_atm['msnlwrf']
     msnswrf = dataset_atm['msnswrf']
     msshf = dataset_atm['msshf']
-    snow_prec = dataset_atm['sf'] 
+    snow_prec = dataset_atm['msr'] 
     avg_tos = dataset_oc['avg_tos']
     mask=xr.where(np.isnan(avg_tos[0,:]), 0, 1)
 
