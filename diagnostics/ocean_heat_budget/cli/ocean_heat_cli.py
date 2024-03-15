@@ -50,12 +50,16 @@ if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
 
+    # Read configuration file
+    file = get_arg(args, 'config', 'config_ocean_heat_budget.yaml')
+    config = load_yaml(file)
+    loglevel = get_arg(args, 'loglevel', config["loglevel"])
+
     # Loglevel settings
-    loglevel = get_arg(args, 'loglevel', 'WARNING')
 
     logger = log_configure(log_level=loglevel,
                            log_name='Ocean Heat Budget Time Series')
-
+    logger.info(f"Reading configuration yaml file: {file}")
     logger.info('Running Ocean Heat Budget time series diagnostic...')
 
     # we change the current directory to the one of the CLI
@@ -66,10 +70,6 @@ if __name__ == '__main__':
         os.chdir(dname)
         logger.info(f'Moving from current directory to {dname} to run!')
 
-    # Read configuration file
-    file = get_arg(args, 'config', 'config_ocean_heat_budget.yaml')
-    logger.info(f"Reading configuration yaml file: {file}")
-    config = load_yaml(file)
 
     model = get_arg(args, 'model', config['model'])
     exp = get_arg(args, 'exp', config['exp'])
