@@ -1,4 +1,5 @@
 .. _getting_started:
+
 Getting Started
 ===============
 
@@ -59,8 +60,9 @@ The configuration file is used to specify the following parameters:
 - **machine**: the machine on which the code is running. This is used to specify the
   location of the AQUA catalogue and the location of the data. Default is ``lumi``.
   Other options are ``ci`` and ``levante``. Custom machines can be defined (see :ref:`new-machine`).
-- **reader**: this block contains catalogue and fixes location. These paths are intended to be
-  inside the AQUA repository, so that these paths should not be changed if not necessary.
+- **reader**: this block contains catalogue and fixes location.
+  These paths are required to be inside the AQUA repository,
+  so these paths should not be changed unless strictly necessary.
   Refer to :ref:`add-data` for more information.
 - **cdo**: location of the CDO executable. By default this option is not needed, since CDO is required in the ``environment.yml`` file
   and provided by conda.
@@ -97,8 +99,10 @@ Activate the environment and register the kernel with the following command:
 
 .. warning::
 
-    If you are using a container and you want to use a Jupyter notebook, you need to
-    follow some additional steps. Please refer to the :ref:`container` section for more information.
+    On lumi you cannot use mamba or conda to install the environment, so that this step is not possible.
+    Please refer to the :ref:`container` section if you are working from a container
+    or the :ref:`installation` section for more information on how to install AQUA
+    specifically on lumi.
 
 Example use case
 ----------------

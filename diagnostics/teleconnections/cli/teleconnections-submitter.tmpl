@@ -29,9 +29,7 @@ fi
 
 function load_aqua() {
 	# Load env modules on LUMI
-    module purge
-    module use LUMI/22.08
-    module load python-xarray/3.10.6-cpeCray-22.08
+    source $HOME/load_aqua.sh
 }
 
 # if machine is lumi use modules
@@ -41,7 +39,7 @@ if [ $machine == "lumi" ]; then
     # get username
     username=$USER
     # be aware that the path to mambaforge is hard-coded to the default environment name
-    export PATH="/users/$username/mambaforge/aqua_common/bin:$PATH"
+    export PATH="/users/$username/mambaforge/aqua/bin:$PATH"
 fi
 
 # run the Python script, both for the atmosphere and the ocean
@@ -52,5 +50,5 @@ oce_config="$AQUA/diagnostics/teleconnections/cli/cli_config_oce.yaml"
 atm_config="$AQUA/diagnostics/teleconnections/cli/cli_config_atm.yaml"
 
 # run the diagnostics
-python $scriptpy --config $oce_config --ref
-python $scriptpy --config $atm_config --ref
+python $scriptpy --config $oce_config -l INFO --ref > oce.log
+python $scriptpy --config $atm_config -l INFO --ref > atm.log

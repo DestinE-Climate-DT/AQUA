@@ -1,19 +1,32 @@
+log_level: DEBUG
+log_name: ssh_logger
+check_complete_timespan_data: False
+check_complete_timespan_models: False
+
 # Models for which sea surface height (SSH) variability is to be evaluated.
 models:
-  - name: FESOM
-    experiment: tco2559-ng5-cycle3
-    source: 2D_daily_native
+  - name: ICON
+    experiment: ngc3028
+    source: P1D
     regrid: r025
     variable: zos
     zoom: 7
-    timespan: ['2020-01-20', '2024-12-31']
+    #timespan: ['2020-01-20', '2020-12-31']
+    timespan: ['2020-01-21', '2020-06-22']
   # - name: ICON
-  #   experiment: ngc3028
+  #   experiment: ngc3026
   #   source: P1D
-  #   regrid: r025
+  #   regrid: r100 #r005 is computationally demanding and takes over 2 hours.
   #   variable: zos
   #   zoom: 7
-  #   timespan: ['2020-01-20', '2025-07-22']
+  #   timespan: ['2020-01-20', '2021-01-24']
+  # - name: FESOM
+  #   experiment: tco2559-ng5-cycle3
+  #   source: 2D_daily_native
+  #   regrid: r025
+  #   variable: zos
+  #   zoom:
+  #   timespan: ['2020-01-21', '2020-12-31']
 
 # This is the model against which other models are compared.
 base_model: 
@@ -31,7 +44,9 @@ northern_boundary_latitude: 70
 southern_boundary_latitude: -62
 
 # As default one timespan for all models will be set but this can be overwritten for each model by entering the timespan in the individual model configurations. This timespan will be applied to the AVISO observation data.
-timespan: {start: '2015-01-20', end: '2020-12-31'}
+timespan: {start: '2020-01-20', end: '2021-12-31'}
+#timespan: {start: '2020-01-21', end: '2021-07-22'}
+
 
 # These are options to adjust subplots visualizations.
 subplot_options:
@@ -41,7 +56,8 @@ subplot_options:
   } 
 
 # Please specify the path to the directory where the outputs should be saved. If output directory/ folder does not exist, another directory called output will be created in your current working directory.
-output_directory: /work/ab0995/a270088/AQUA/diagnostics/ssh/output
+output_directory: /work/ab0995/a270238/work/AQUA/diagnostics/ssh_jal/out.
+
 
 # This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
 dask_cluster:

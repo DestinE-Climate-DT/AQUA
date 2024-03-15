@@ -15,7 +15,7 @@ sources:
         step: 0
       data_start_date: 20200120
       data_end_date: 20240101
-      aggregation: D
+      chunks: D
       savefreq: h
       timestep: h
       timestyle: step
@@ -49,7 +49,7 @@ sources:
         step: 0
       data_start_date: 20200120
       data_end_date: 20240101
-      aggregation: D
+      chunks: D
       savefreq: h
       timestep: h
       timestyle: step

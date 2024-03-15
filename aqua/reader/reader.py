@@ -48,7 +48,8 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                  areas=True, datamodel=None,
                  streaming=False, stream_generator=False,
                  startdate=None, enddate=None,
-                 rebuild=False, loglevel=None, nproc=4, aggregation=None):
+                 rebuild=False, loglevel=None, nproc=4,
+                 aggregation=None, chunks=None):
         """
         Initializes the Reader class, which uses the catalog
         `config/config.yaml` to identify the required data.
@@ -73,9 +74,14 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             loglevel (str, optional): Level of logging according to logging module.
                                       Defaults to log_level_default of loglevel().
             nproc (int,optional): Number of processes to use for weights generation. Defaults to 4.
-            aggregation (str, optional): aggregation/chunking to be used for GSV access (e.g. D, M, Y).
-                                         Defaults to None (using default from catalogue, recommended).
-
+            aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
+            chunks (str or dict, optional): chunking to be used for GSV access.
+                                              Defaults to None (using default from catalogue, recommended).
+                                              If it is a string time chunking is assumed.
+                                              If it is a dictionary the keys 'time' and 'vertical' are looked for.
+                                              Time chunking can be one of S (step), 10M, 15M, 30M, h, 1h, 3h, 6h, D, 5D, W, M, Y.
+                                              Vertical chunking is expressed as the number of vertical levels to be used.
+                                              
         Returns:
             Reader: A `Reader` class object.
         """
@@ -93,6 +99,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         self.vert_coord = None
         self.deltat = 1
         self.aggregation = aggregation
+        self.chunks = chunks
 
         self.grid_area = None
         self.src_grid_area = None
@@ -283,7 +290,10 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                 self._make_weights_file(self.weightsfile[vc], source_grid,
                                         cfg_regrid, regrid=self.dst_grid_name,
                                         vert_coord=vc, extra=[],
-                                        zoom=self.zoom, method=self.regrid_method)
+                                        zoom=self.zoom, method=self.regrid_method,
+                                        original_grid_size=self.grid_area.size,
+                                        nproc = self.nproc)
+
 
             self.weights.update({vc: xr.open_mfdataset(self.weightsfile[vc])})
             vc2 = None if vc == "2d" or vc == "2dm" else vc
@@ -653,7 +663,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                         data[var] = data[var].expand_dims(dim=coord_exp, axis=1)
                     self.logger.debug(f"Expanding variables {expand_list} with vertical dimension {coord_exp}")
                     if len(idx) > 1:
-                        self.logger.warning(f"Found more than one idx_ coordinate for expanded variables, did you select slices of multiple vertical coordinates? Results may not be correct.")
+                        self.logger.warning("Found more than one idx_ coordinate for expanded variables, did you select slices of multiple vertical coordinates? Results may not be correct.")
 
             else:  # assume DataArray
                 if not list(set(data.dims) & set(self.vert_coord)):
@@ -918,6 +928,55 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         return final
 
+    def detrend(self, data, dim="time", degree=1, skipna=True):
+        """
+        A basic detrending routine based on polyfit and polyval xarray functions
+        within AQUA. Given an xarray object, will provide the detrended timeseries,
+        by default working along time coordinate
+        If it is a Dataset, only variables with the required
+        coordinate will be detrended.
+
+        Args:
+            data (DataArray, Dataset): your dataset
+            dim (str): The dimension along which apply detrending
+            degree (str, optional): The degree of the polinominal fit. Default is 1, i.e. linear detrend
+            skinpna (bool, optional): skip or not the NaN
+
+        Return
+            A detrended DataArray or a Dataset 
+        """
+
+        if isinstance(data, xr.DataArray):
+            final = self._detrend(data=data, dim=dim, degree=degree, skipna=skipna)
+
+        elif isinstance(data, xr.Dataset):
+            selected_vars = [da for da in data.data_vars if dim in data[da].coords]
+            final = data[selected_vars].map(self._detrend, keep_attrs=True, 
+                                            dim=dim, degree=degree, skipna=skipna)
+        else:
+            raise ValueError('This is not an xarray object!')
+
+        final = log_history(final, f"Detrended with polynominal of order {degree} along {dim} dimension")
+
+        # This links the dataset accessor to this instance of the Reader class
+        final.aqua.set_default(self)
+
+        return final
+
+    def _detrend(self, data, dim="time", degree=1, skipna=True):
+        """
+        Detrend a DataArray along a single dimension.
+        Taken from https://ncar.github.io/esds/posts/2022/dask-debug-detrend/
+        According to the post, current implementation is not the most efficient one.
+        """
+
+        # calculate polynomial coefficients
+        p = data.polyfit(dim=dim, deg=degree, skipna=skipna)
+        # evaluate trend
+        fit = xr.polyval(data[dim], p.polyfit_coefficients)
+        # remove the trend
+        return data - fit
+
     def reader_esm(self, esmcat, var):
         """Reads intake-esm entry. Returns a dataset."""
         cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
@@ -953,17 +1012,21 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             level = [level]
 
         if dask:
-            if self.aggregation:
+            if self.chunks:  # if the chunking option is specified override that from the catalogue
                 data = esmcat(startdate=startdate, enddate=enddate, var=var, level=level,
-                              aggregation=self.aggregation,
+                              chunks=self.chunks,
                               logging=True, loglevel=self.loglevel).to_dask()
             else:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var, level=level,
                               logging=True, loglevel=self.loglevel).to_dask()
         else:
-            if self.aggregation:
+            if self.aggregation:  # covers special case: if GSV source and stream_generator then aggregation overrides chunks if specified
+                chunks = self.aggregation
+            else:
+                chunks = self.chunks
+            if chunks:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var, level=level,
-                              aggregation=self.aggregation,
+                              chunks=chunks,
                               logging=True, loglevel=self.loglevel).read_chunked()
             else:
                 data = esmcat(startdate=startdate, enddate=enddate, var=var, level=level,

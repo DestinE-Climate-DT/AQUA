@@ -81,6 +81,14 @@ fixer_name:
                 grib: true
                 nanfirst: True
 
+    ifs-nemo-destine-v1-monthly:
+        # multio saves 2t as mean2t if it averages. This is pretty weird and we have to fix it back.
+        parent: ifs-destine-v1
+        vars:
+            2t: 
+                source: mean2t
+                grib: true
+
     ifs-nemo-destine-v1-nan:  # special version for historical-1990 IFS-NEMO data, fixing to nan first step of month
         parent: ifs-destine-v1
          # The nanfirst keys fix to NaN the first step of each month
@@ -105,7 +113,7 @@ fixer_name:
         deltat: 3600
         jump: month
         vars:
-            tprate:
+            mtpr:
                 source: tp
                 grib: true
                 decumulate: true
@@ -197,17 +205,17 @@ fixer_name:
                 decumulate: true 
 
     ifs-control:
-        parent: ifs-default
+        parent: IFS-default
         method: merge
         vars:
-            tprate:
+            mtpr:
                 source: tprate
     
     ifs-cycle3:
         # for this exp we have a lot of output from MultI/O, already decumulated and
         # averaged monthly, so default is without decumulation
         vars:
-            tprate:
+            mtpr:
                 src_units: m s**-1
                 source: tp
                 grib: true
@@ -282,51 +290,51 @@ models:
             hourly-1deg:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
             hourly-native:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
             monthly-1deg-2d:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
 
         historical-1990-fesom-dev:
             hourly-1deg:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
             hourly-native:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
             monthly-1deg-2d:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
 
         historical-1990-nemo-dev:
             hourly-1deg:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
             hourly-native:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
             monthly-1deg-2d:
                 method: merge
                 vars:
-                    tprate:
+                    mtpr:
                         source: tprate
 
         test-tco79:

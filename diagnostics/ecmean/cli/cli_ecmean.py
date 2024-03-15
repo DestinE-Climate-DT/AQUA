@@ -23,6 +23,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='ECmean Performance Indices  CLI')
     parser.add_argument('-c', '--config', type=str,
                         help='ecmean yaml configuration file', default='config_ecmean_cli.yaml')
+    parser.add_argument('-n', '--nworkers',  type=int,
+                        help='number of dask distributed processes')
     parser.add_argument('-m', '--model_atm', type=str,
                         help='atmospheric model to be analysed')
     parser.add_argument('-x', '--model_oce', type=str,
@@ -66,28 +68,28 @@ def reader_data(model, exp, source, keep_vars):
 
 if __name__ == '__main__':
 
+    args = parse_arguments(sys.argv[1:])
+    loglevel = get_arg(args, 'loglevel', 'WARNING')
+    logger = log_configure(log_level=loglevel, log_name='PI')
+
     # change the current directory to the one of the CLI so that relative path works
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     if os.getcwd() != dname:
         os.chdir(dname)
-        print(f'Moving from current directory to {dname} to run!')
+        logger.info(f'Moving from current directory to {dname} to run!')
 
-    args = parse_arguments(sys.argv[1:])
     file = get_arg(args, 'config', 'config_ecmean_cli.yaml')
-
     configfile = load_yaml(file)
-    loglevel = configfile['setup']['loglevel']
-    loglevel = get_arg(args, 'loglevel', loglevel)
-    logger = log_configure(log_level=loglevel, log_name='PI')
-
     logger.info(f'Running AQUA v{aquaversion} Performance Indices diagnostic with ECmean4 v{eceversion}')
 
     # setting options from configuration files
     atm_vars = configfile['dataset']['atm_vars']
     oce_vars = configfile['dataset']['oce_vars']
-    numproc = configfile['compute']['numproc']
     config = configfile['setup']['config_file']
+    numproc = configfile['compute']['numproc']
+
+    numproc = get_arg(args, 'nworkers', numproc)
 
     # define the interface file
     Configurer = ConfigPath(configdir=None)
@@ -146,4 +148,4 @@ if __name__ == '__main__':
                             interface=interface, loglevel=loglevel,
                             outputdir=outputdir, xdataset=data)
 
-    logger.info('AQUA ECmean4 Performance diagnostic run completed. Go outside and live your life!')
+    logger.info('AQUA ECmean4 Performance diagnostic is terminated. Go outside and live your life!')

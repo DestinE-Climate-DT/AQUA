@@ -1,0 +1,52 @@
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  outdir: /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA
+  tmpdir: /pfs/lustrep3/projappl/project_465000454/padavini/tmp
+
+configdir: '../../config/'
+loglevel: INFO
+
+slurm:
+  partition: small
+  username: padavini
+  account: project_465000454
+  time: 10:00:00
+  mem: 256GB
+
+catalog:
+  IFS-NEMO:
+    ssp370:
+      hourly-hpz7-atm2d:
+         vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+      hourly-hpz7-atm3d:
+         vars: ['q', 't', 'u', 'v']
+      daily-hpz7-oce2d:
+         vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+      daily-hpz7-oce3d:
+        vars: ['avg_thetao', 'avg_so']
+  
+  ICON:
+    historical-1990:
+      hourly-hpz10-atm2d:
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
+           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss']
+      hourly-hpz10-atm3d:
+        vars: ['q', 't', 'u', 'v']
+      daily-hpz10-oce2d:
+        vars: ['avg_sithick', 'avg_siconc']
+      #daily-hpz10-oce3d:
+      #  vars: ['avg_thetao', 'avg_so']
+        
+    ssp370:
+      hourly-hpz10-atm2d:
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
+           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss']
+      hourly-hpz10-atm3d:
+        vars: ['q', 't', 'u', 'v']
+      daily-hpz10-oce2d:
+        vars: ['avg_sithick', 'avg_siconc']
+      #daily-hpz10-oce3d:
+      #  vars: ['avg_thetao', 'avg_so']

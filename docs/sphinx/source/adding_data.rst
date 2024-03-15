@@ -1,4 +1,5 @@
 .. _add-data:
+
 Adding new data
 ===============
 
@@ -11,10 +12,11 @@ How to create a new source and add new data is documented in the next sections.
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
-- Finally, to exploit of the regridding functionalities, you will also need to configure the machine-dependent
+- Finally, to exploit the regridding functionalities, you will also need to configure the machine-dependent
   ``regrid.yaml``. 
 
 .. _file-based-sources:
+
 File-based sources
 ------------------
 
@@ -111,6 +113,7 @@ You can add fixes to your dataset by following examples in the ``config/fixes/``
     `intake-xarray <https://intake-xarray.readthedocs.io/en/latest/>`_ documentation.
 
 .. _FDB-based-sources:
+
 FDB-based sources
 -----------------
 
@@ -138,7 +141,7 @@ We report here an example and we later describe the different elements.
                     step: 0
                 data_start_date: 19500101T0000
                 data_end_date: 19591231T2300
-                aggregation: D  # Default aggregation / chunk size
+                chunks: D  # Default time chunk size
                 savefreq: h  # at what frequency are data saved
                 timestep: h  # base timestep for step timestyle
                 timestyle: step  # variable date or variable step
@@ -181,25 +184,38 @@ Some of the parameters are here described:
 
     As above, it tells AQUA when to stop reading from the FDB and it can be set to ``auto`` too (only if ``timestyle`` is 'date').
 
-.. option:: aggregation
+.. option:: chunks
 
-    The aggregation parameter is essential, whether you are using Dask or a generator.
+    The chunks parameter is essential, whether you are using Dask or a generator.
     It determines the size of the chunk loaded in memory at each iteration. 
 
     When using a generator, it corresponds to the chunk size loaded into memory during each iteration.
-    For Dask, it signifies the size of each chunk used by Dask's parallel processing.
+    For Dask, it controls the size of each chunk used by Dask's parallel processing.
 
-    The choice of aggregation value is crucial as it strikes a balance between memory consumption and
+    The choice of the chunks value is crucial as it strikes a balance between memory consumption and
     distributing enough work to each worker when Dask is utilized with multiple cores. 
     In most cases, the default values in the catalog have been thoughtfully chosen through experimentation.
 
-    For instance, an aggregation value of ``D`` (for daily) works well for hourly-native data because it
+    For instance, an chunks value of ``D`` (for daily) works well for hourly-native data because it
     occupies approximately 1.2GB in memory.
     Increasing it beyond this limit may lead to memory issues. 
 
-    It is possible to choose a smaller aggregation value, but keep in mind that each worker has its own overhead,
+    It is possible to choose a smaller chunks value, but keep in mind that each worker has its own overhead,
     and it is usually more efficient to retrieve as much data as possible from the FDB for each worker.
-    There is also a consideration to rename this parameter to "chunksize."
+
+    By the ``chunks`` argument is a string and refers to time-chunking.
+    In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
+    by passing a dictionary to chunks with the keys ``time`` and ``vertical``. 
+    In this case ``time``is as usual a time frequency (in pandas notations) and ``vertical``is instead the maxmimum number of vertical levels
+    in each chunk.
+
+    An example would be:
+
+.. code-block:: yaml
+
+    chunks:
+      time: D  # Default time chunk size
+      vertical: 3  # Three vertical levels in each chunk
 
 .. option:: timestep
 
@@ -221,20 +237,24 @@ Some of the parameters are here described:
 
 .. option:: timestyle
 
-    The timestyle parameter can be set to either ``step`` or ``date``.
-    It determines how data is written in the FDB. 
+    The timestyle parameter can be set to either ``step``, ``date`` or ``yearmonth`` according to the FDB schema.
+    Indeed, it determines how the time axis data is written in the FDB. 
 
-    The recent examples have used ``step``, which involves specifying a fixed date (e.g., 19500101) and time (e.g., 0000)
-    in the request.
-    Time is then identified by the step in the request.
+    The above examples have used ``step``, which involves specifying a fixed ``date`` (e.g., 19500101) and ``time`` (e.g., 0000)
+    in the request. Time axis is then identified by the ``step`` in the request.
 
-    Alternatively, when timestyle is set to ``date``, you can directly specify both date and time in the request,
+    Alternatively, when timestyle is set to ``date``, you can directly specify both ``date`` and ``time`` in the request,
     and ``step`` is always set to 0.
+
+    Finally, when using the ``yearmonth`` timestyle you do not have to set neither time, step, and date in the request.
+    On the contrary, the ``year`` and ``month`` keys need to be specified. The FDB module will then build the corresponding
+    request. 
+
+    Please note that it is very important to know which timestyle has been used in the FDB before creating the request
 
 .. option:: timeshift
 
     Timeshift is a boolean parameter used exclusively for shifting the date of monthly data back by one month.
-    Without this shift, data for January would have a date like ``19500201T0000``.
 
     Implementing this correctly in a general case can be quite complex, so it was decided to implement only the monthly shift.
 
@@ -362,7 +382,7 @@ that is defined as:
             [ ... other request parameters ... ]
         data_start_date: 19900101T0000
         data_end_date: 19941231T2300
-        aggregation: D  
+        chunks: D  
         [ ... other keys ... ]
         metadata: &metadata-default
             fdb_path: [ ... some path to the FDB ... ]

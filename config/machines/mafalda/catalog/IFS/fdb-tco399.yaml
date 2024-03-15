@@ -15,7 +15,7 @@ sources:
         step: 0
       data_start_date: 20200120
       data_end_date: 20210101
-      aggregation: S
+      chunks: S
       timestep: h
       timestyle: step
     description: FDB data tco399 grid

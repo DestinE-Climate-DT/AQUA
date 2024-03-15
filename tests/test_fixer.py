@@ -2,6 +2,7 @@
 
 import pytest
 from aqua import Reader
+import numpy as np
 
 loglevel = 'DEBUG'
 
@@ -57,6 +58,23 @@ def test_fixer_ifs_long():
     assert mtntrf2.attrs['units_fixed'] == 1
     assert mtntrf2.attrs['units'] == 'W m-2'  # these were coded by hand
     assert mtntrf2.attrs['long_name'] == 'Mean top net thermal radiation flux doubled'
+
+
+@pytest.mark.aqua
+def test_fixer_ifs_long_mindate():
+    """Test fixing with a minimum date functionality"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="long-mindate",
+                    fix=True, loglevel=loglevel)
+    data = reader.retrieve(var='2t')
+
+    data1 = data['2t'].sel(time="2020-07-31T00:00")[1,1]
+    data2 = data['2t'].sel(time="2020-08-01T00:00")[1,1]
+
+    assert np.isnan(data1.values)
+    assert not np.isnan(data2.values)
+    assert 'mindate' in data['2t'].attrs
+    assert data['2t'].attrs['mindate'] == '2020-08-01T00:00'
 
 
 @pytest.mark.aqua

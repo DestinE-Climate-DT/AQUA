@@ -9,7 +9,7 @@ sources:
                 param: tcc
             data_start_date: 20200120
             data_end_date: 20250101
-            aggregation: S
+            chunks: S
             timestep: h
             timestyle: date
         description: 'Test FDB data'

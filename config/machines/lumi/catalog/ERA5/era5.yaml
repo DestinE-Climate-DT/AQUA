@@ -20,7 +20,7 @@ sources:
     driver: netcdf
     metadata:
       source_grid_name: era5-r025
-      fixer_name: ERA5-destine-v1
+      fixer_name: ERA5-daily-destine-v1
     args:
       urlpath: '{{DATA_PATH}}/ERA5/day/ERA5_*_day_full*.nc'
       chunks: 
@@ -32,10 +32,10 @@ sources:
     driver: netcdf
     metadata:
       source_grid_name: era5-r025
-      fixer_name: ERA5-destine-v1
+      fixer_name: ERA5-hourly-destine-v1
     args:
       urlpath: '{{DATA_PATH}}/ERA5/1hr/ERA5_*_1hr_full*.nc'
-      chunks: 
+      chunks:
         time: 24
       xarray_kwargs:
         decode_times: True

@@ -182,6 +182,7 @@ Users can also change the unit of the vertical coordinate.
     interp = field.aqua.vertinterp(levels=[830, 835], units='hPa', method='linear')
 
 .. _fixer:
+
 Fixer functionalities
 ---------------------
 
@@ -221,7 +222,7 @@ If you need to develop your own, fixes can be specified in two different ways:
 
 Please note that the ``default.yaml`` is reserved to define a few of useful tools:
 
-- the default ``data_model``(See :ref:`coord-fix`).
+- the default ``data_model`` (See :ref:`coord-fix`).
 - the list of units that should be added to the default MetPy unit list. 
 - A series of nicknames (``shortname``) for units to be replaced in the fixes yaml file.
 
@@ -243,6 +244,7 @@ The fixer performs a range of operations on data:
   If there is an extra time unit, it will assume that division by the timestep is needed. 
 
 .. _fix-structure:
+
 Fix structure
 ^^^^^^^^^^^^^
 
@@ -285,6 +287,7 @@ Here we show an example of a fixer file, including all the possible options:
                     src_units: J m-2 # Overruling source units
                     decumulate: true  # Test decumulation
                     units: "{radiation_flux}" # overruling units
+                    mindate: 1990-09-01T00:00 # setting to NaN all data before this date
                     attributes:
                         # assigning a long_name
                         long_name: Mean top net thermal radiation flux doubled
@@ -314,6 +317,7 @@ different sections of the fixer file.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
 
 .. _metadata-fix:
+
 Metadata Correction
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -340,11 +344,14 @@ Then, extra keys can be then specified for `each` variable to allow for further 
 - **decumulate**: if set to ``True``, activate the decumulation of the variables
 - **attributes**: with this key, it is possible to define a dictionary of attributes to be modified. 
   Please refer to the above example to see the possible implementation. 
+- **mindate**: used to set to NaN all data before a specified date. 
+  This is useful when dealing with data that are not available for the whole period of interest or which are partially wrong.
 
 .. warning ::
     Recursive fixes (i.e. fixes of fixes) cannot be implemented. For example, it is not possibile to derive a variable from a derived variable
 
 .. _coord-fix:
+
 Data Model and Coordinates Correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -391,6 +398,28 @@ Some extra options are available:
 - ``center_time=True``: this flag will center the time coordinate on the mean time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
 
+Detrending
+----------
+
+For some analysis, removing from the data a linear trend can be helpful to highlight the internal variability.
+The ``detrend`` method can be used as a high-level wrapper of xarray functionalities to achieve this goal.
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
+    data = reader.retrieve()
+    daily = reader.detrend(data['2t'], dim='time')
+
+In this way, linear trend is removed from each grid point of the original dataset along the time dimension. 
+Other dimension can be targeted too, although with limited physical meaning. 
+Of course, it can be used in collaboration with temporal and spatial averaging. Higher order polynominial fits are available too.
+
+Some options includes:
+
+- ``degree``: this will define with an integer the order of the polynominial fit. Default is 1, i.e. linear Detrending
+- ``skipna==True``: removing the NaN from the fit. Default is True. 
+
+
 Spatial Averaging
 -----------------
 
@@ -419,6 +448,7 @@ It is also possible to apply a regional section to the domain before performing 
     described in the :ref:`fixer` section.
 
 .. _time-selection:
+
 Time selection
 --------------
 
@@ -434,6 +464,7 @@ immediatly only a chunck of data.
     overview of the behaviour of the Reader with these options.
 
 .. _lev-selection:
+
 Level selection
 ---------------
 
@@ -457,6 +488,7 @@ but an index for NEMO data in the FDB archive).
     the section :ref:`lev-selection-regrid`.
 
 .. _streaming:
+
 Streaming of data
 -----------------
 
@@ -511,6 +543,7 @@ We can do operations with them by iterating on the generator object like:
         # Do something with the data
 
 .. _accessors:
+
 Accessors
 ---------
 
@@ -593,8 +626,12 @@ The description of this feature is provided in the section :ref:`slurm`.
 Graphic tools
 -------------
 
-The aqua.graphics module provides a simple function to easily plot a map of a variable.
-A function called ``plot_single_map`` is provided with many options to customize the plot.
+The *aqua.graphics* module provides a set of simple functions to easily plot the result of analysis done within AQUA.
+
+Single map
+^^^^^^^^^^
+
+A function called ``plot_single_map()`` is provided with many options to customize the plot.
 
 The function takes as input an xarray.DataArray, with a single timestep to be selected
 before calling the function. The function will then plot the map of the variable and,
@@ -620,4 +657,68 @@ This will produce the following plot:
     :align: center
     :width: 100%
 
-    Example of the above code.
+Single map with differences
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A function called ``plot_single_map_diff()`` is provided with many options to customize the plot.
+
+The function is built as an expansion of the ``plot_single_map()`` function, so that arguments and options are similar.
+The function takes as input two xarray.DataArray, with a single timestep.
+
+The function will plot as colormap or contour filled map the difference between the two input DataArray (the first one minus the second one).
+Additionally a contour line map is plotted with the first input DataArray, to show the original data.
+
+.. figure:: figures/teleconnections_ENSO_correlation_IFS-NEMO_ssp370_lra-r100-monthly_ERA5.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_single_map_diff()`` output done with the :ref:`teleconnections`.
+    The map shows the correlation for the ENSO teleconnection between IFS-NEMO scenario run and ERA5 reanalysis.
+
+Time series
+^^^^^^^^^^^
+
+A function called ``plot_timeseries()`` is provided with many options to customize the plot.
+The function is built to plot time series of a single variable,
+with the possibility to plot multiple lines for different models and a special line for a reference dataset.
+The reference dataset can have a representation of the uncertainty over time.
+
+By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`global_mean_timeseries` diagnostic.
+
+The function takes as data input:
+
+- **monthly_data**: a (list of) xarray.DataArray, each one representing the monthly time series of a model.
+- **annual_data**: a (list of) xarray.DataArray, each one representing the annual time series of a model.
+- **ref_monthly_data**: a xarray.DataArray representing the monthly time series of the reference dataset.
+- **ref_annual_data**: a xarray.DataArray representing the annual time series of the reference dataset.
+- **std_monthly_data**: a xarray.DataArray representing the monthly values of the standard deviation of the reference dataset.
+- **std_annual_data**: a xarray.DataArray representing the annual values of the standard deviation of the reference dataset.
+
+The function will automatically plot what is available, so it is possible to plot only monthly or only yearly time series, with or without a reference dataset.
+
+.. figure:: figures/timeseries_example_plot.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_timeseries()`` output done with the :ref:`global_mean_timeseries`.
+    The plot shows the global mean 2 meters temperature time series for the IFS-NEMO scenario and the ERA5 reference dataset.
+
+Seasonal cycle
+^^^^^^^^^^^^^^
+
+A function called ``plot_seasonalcycle()`` is provided with many options to customize the plot.
+
+The function takes as data input:
+
+- **data**: a xarray.DataArray representing the seasonal cycle of a variable.
+- **ref_data**: a xarray.DataArray representing the seasonal cycle of the reference dataset.
+- **std_data**: a xarray.DataArray representing the standard deviation of the seasonal cycle of the reference dataset.
+
+The function will automatically plot what is available, so it is possible to plot only the seasonal cycle, with or without a reference dataset.
+
+.. figure:: figures/seasonalcycle_example_plot.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_seasonalcycle()`` output done with the :ref:`global_mean_timeseries`.
+    The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.

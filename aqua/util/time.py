@@ -4,6 +4,7 @@ Module including time utilities for AQUA
 
 import math
 import pandas as pd
+import numpy as np
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from aqua.logger import log_configure
@@ -94,8 +95,6 @@ def _generate_expected_time_series(start_date, frequency, time_period):
     return time_series
 
 
-
-
 def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNING'):
     """Support function for timmean().
     Verify that all the chunks available in a dataset are complete given a
@@ -160,3 +159,26 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': taxis.time})
 
     return boolean_mask
+
+
+def time_to_string(time=None):
+    """Convert a time object to a string in the format YYYY-MM-DD
+
+    Args:
+        time: a time object, either a string or a datetime64 object
+
+    Returns:
+        A string in the format YYYY-MM-DD
+
+    Raises:
+        ValueError if time is None
+    """
+    if time is None:
+        raise ValueError('time_to_string() requires a time argument')
+    else:
+        try:
+            time_str = time.astype('datetime64[s]').astype('O')
+            time_str = time_str.strftime('%Y-%m-%d')
+        except AttributeError:
+            time_str = time
+        return time_str

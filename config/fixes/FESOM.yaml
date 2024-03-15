@@ -55,7 +55,7 @@ fixer_name:
             vdf: 
                 source: Kv
                 grib: true
-            tprate:
+            mtpr:
                 source: prec
                 grib: true
             mlotst125:

@@ -7,9 +7,9 @@ If you just want to run a container with AQUA, check with others if there
 is already a version of the AQUA container deployed in a shared folder in
 your target HPC environment.
 
-## Dockerfile
+## Dockerfiles
 
-The only file for now is `Dockerfile` used to generate an image that contains:
+The file `Dockerfile` is used to generate an image that contains:
 
 - FDB with dependencies like metkit, eckit, and ecCodes;
 - Micromamba;
@@ -24,6 +24,10 @@ Slurm calling Singularity to run simple tests.
 
 The final test was using FDB data that uses the DestinE schema, but with
 fewer data entries.
+
+A second file `Dockerfile.ubuntu` is used to generate a Docker image with 
+a recent version of Ubuntu LTS and containing updated versions of FDB, ecCodes, metkit, eckit and ecbuild.  The AQUA docker image is then derived from this one.
+
 
 ### Prerequisites
 

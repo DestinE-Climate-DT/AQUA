@@ -12,18 +12,19 @@ from ocean3d import data_time_selection
 from ocean3d import load_obs_data
 from ocean3d import crop_obs_overlap_time
 from ocean3d import compare_arrays
-from ocean3d import dir_creation
+from ocean3d import file_naming
 from ocean3d import custom_region
 from ocean3d import write_data
+from ocean3d import export_fig
 from aqua.logger import log_configure
 
-def convert_so(so, loglevel= "WARNING"):
+def convert_so(avg_so, loglevel= "WARNING"):
     """
     Convert practical salinity to absolute.
 
     Parameters
     ----------
-    so: dask.array.core.Array
+    avg_so: dask.array.core.Array
         Masked array containing the practical salinity values (psu or 0.001).
 
     Returns
@@ -39,10 +40,10 @@ def convert_so(so, loglevel= "WARNING"):
 
     """
     logger = log_configure(loglevel, 'convert_so')
-    return so / 0.99530670233846
+    return avg_so / 0.99530670233846
 
 
-def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
+def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
     """
     convert potential temperature to conservative temperature
 
@@ -50,12 +51,12 @@ def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values.
-    ocpt: dask.array.core.Array
+    avg_thetao: dask.array.core.Array
         Masked array containing the potential temperature values (degC).
 
     Returns
     -------
-    bigocpt: dask.array.core.Array
+    bigavg_thetao: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
 
     Note
@@ -63,9 +64,9 @@ def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
     http://www.teos-10.org/pubs/gsw/html/gsw_CT_from_pt.html
 
     """
-    logger = log_configure(loglevel, 'convert_ocpt')
+    logger = log_configure(loglevel, 'convert_avg_thetao')
     x = np.sqrt(0.0248826675584615*absso)
-    y = ocpt*0.025e0
+    y = avg_thetao*0.025e0
     enthalpy = 61.01362420681071e0 + y*(168776.46138048015e0 +
                                         y*(-2735.2785605119625e0 + y*(2574.2164453821433e0 +
                                                                       y*(-1536.6644434977543e0 + y*(545.7340497931629e0 +
@@ -86,7 +87,7 @@ def convert_ocpt(absso, ocpt, loglevel= "WARNING"):
     return enthalpy/3991.86795711963
 
 
-def compute_rho(absso, bigocpt, ref_pressure, loglevel= "WARNING"):
+def compute_rho(absso, bigavg_thetao, ref_pressure, loglevel= "WARNING"):
     """
     Computes the potential density in-situ.
 
@@ -94,7 +95,7 @@ def compute_rho(absso, bigocpt, ref_pressure, loglevel= "WARNING"):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values (g/kg).
-    bigocpt: dask.array.core.Array
+    bigavg_thetao: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
     ref_pressure: float
         Reference pressure (dbar).
@@ -116,7 +117,7 @@ def compute_rho(absso, bigocpt, ref_pressure, loglevel= "WARNING"):
     Zu = 1e4
     deltaS = 32.
     ss = np.sqrt((absso+deltaS)/SAu)
-    tt = bigocpt / CTu
+    tt = bigavg_thetao / CTu
     pp = ref_pressure / Zu
 
     # vertical reference profile of density
@@ -213,8 +214,8 @@ def convert_variables(data, loglevel= "WARNING"):
     Returns
     -------
     converted_data : xarray.Dataset
-        Dataset containing the converted variables: absolute salinity (so),
-        conservative temperature (ocpt),
+        Dataset containing the converted variables: absolute salinity (avg_so),
+        conservative temperature (avg_thetao),
         and potential density (rho) at reference pressure 0 dbar.
 
     """
@@ -222,20 +223,23 @@ def convert_variables(data, loglevel= "WARNING"):
     converted_data = xr.Dataset()
 
     # Convert practical salinity to absolute salinity
-    absso = convert_so(data.so)
+    absso = convert_so(data.avg_so)
     logger.debug("Practical salinity converted to absolute salinity")
     # Convert potential temperature to conservative temperature
-    ocpt = convert_ocpt(absso, data.ocpt)
+    avg_thetao = convert_avg_thetao(absso, data.avg_thetao)
     logger.debug("Potential temperature converted to conservative temperature")
     # Compute potential density in-situ at reference pressure 0 dbar
-    rho = compute_rho(absso, ocpt, 0)
+    rho = compute_rho(absso, avg_thetao, 0)
     logger.debug(
         "Calculated potential density in-situ at reference pressure 0 dbar ")
     # Merge the converted variables into a new dataset
-    converted_data = converted_data.merge(
-        {"ocpt": ocpt, "so": absso, "rho": rho})
+    data["avg_thetao"] = avg_thetao
+    data["rho"] = rho
 
-    return converted_data
+    # data = converted_data.merge(
+    #     {"avg_thetao": avg_thetao, "avg_so": absso, "rho": rho})
+
+    return data
 
 
 def prepare_data_for_stratification_plot(data, region=None, time=None, lat_s: float = None, lat_n: float = None, lon_w: float = None,
@@ -244,7 +248,7 @@ def prepare_data_for_stratification_plot(data, region=None, time=None, lat_s: fl
     Prepare data for plotting stratification profiles.
 
     Parameters:
-        data (xarray.Dataset): Input data containing temperature (ocpt) and salinity (so).
+        data (xarray.Dataset): Input data containing temperature (avg_thetao) and salinity (avg_so).
         region (str, optional): Region name.
         time (str or list, optional): Time period to select. Can be a single date or a list of start and end dates.
         lat_s (float, optional): Southern latitude bound. Required if region is not provided or None.
@@ -311,10 +315,8 @@ def plot_stratification(o3d_request,time=None, loglevel= "WARNING"):
     logger.info("Stratification plot is in process")
 
     if output:
-        output_path, fig_dir, data_dir, filename = dir_creation(mod_data,
-             region, lat_s, lat_n, lon_w, lon_e, output_dir, plot_name=f"stratification_{time}_clim")
-        filename = f"{model}_{exp}_{source}_{filename}"
-        
+        filename = file_naming(region, lat_s, lat_n, lon_w, lon_e, plot_name=f"{model}-{exp}-{source}_stratification_{time}_clim")
+             
     legend_list = []
     if time in ["Yearly"]:
         start_year = mod_data_list[0].time[0].data
@@ -324,7 +326,7 @@ def plot_stratification(o3d_request,time=None, loglevel= "WARNING"):
         start_year = mod_data_list[0].time[0].dt.year.data
         end_year = mod_data_list[0].time[-1].dt.year.data
 
-    for i, var in zip(range(len(axs)), ["ocpt", "so", "rho"]):
+    for i, var in zip(range(len(axs)), ["avg_thetao", "avg_so", "rho"]):
         axs[i].set_ylim((4500, 0))
         data_1 = mod_data_list[0][var].mean("time")
 
@@ -332,28 +334,48 @@ def plot_stratification(o3d_request,time=None, loglevel= "WARNING"):
         legend_info = f"Model {start_year}-{end_year}"
         legend_list.append(legend_info)
         if output:
-            write_data(f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc',data_1)
+            new_filename = f"{filename}_{legend_info.replace(' ', '_')}"
+            write_data(output_dir, new_filename, data_1)
 
         if len(mod_data_list) > 1:
+            if time in ["Yearly"]:
+                start_year_data_2 = mod_data_list[1].time[0].data
+                end_year_data_2 = mod_data_list[1].time[-1].data
+                logger.debug(end_year)
+            else:
+                start_year_data_2 = mod_data_list[1].time[0].dt.year.data
+                end_year_data_2 = mod_data_list[1].time[-1].dt.year.data
+            
             data_2 = mod_data_list[1][var].mean("time")
             axs[i].plot(data_2, data_2.lev, 'b-', linewidth=2.0)
-            legend_info = f"Model {start_year}-{end_year}"
-            legend_list.append(legend_info)
+
+            legend_info_data_2 = f"Model {start_year_data_2}-{end_year_data_2}"
+            legend_list.append(legend_info_data_2)
             if output:
-                write_data(f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc',data_2)
+                new_filename = f"{filename}_{legend_info_data_2.replace(' ', '_')}"
+                write_data(output_dir, new_filename, data_2)
 
         if obs_data is not None:
             data_3 = obs_data[var].mean("time")
             axs[i].plot(data_3, data_3.lev, 'r-', linewidth=2.0)
+            # if var == "avg_thetao":
+            #     axs[i].plot(obs_data["thetao_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
+            # if var == "avg_so":
+            #     axs[i].plot(obs_data["so_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
+            
             legend_info = f"Obs {start_year}-{end_year}"
             legend_list.append(legend_info)
             if output:
-                write_data(f'{data_dir}/{filename}_{legend_info.replace(" ","_")}.nc',data_3)
+                new_filename = f"{filename}_{legend_info.replace(' ', '_')}"
+                write_data(output_dir, new_filename, data_3)
+
 
     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n, lon_w=lon_w, lon_e=lon_e)
 
-    fig.suptitle(
-        f"Climatological {time.upper()} T, S and rho0 stratification in {region_title}", fontsize=20)
+    title = f"Climatological {time.upper()} T, S and rho0 stratification in {region_title}"
+    fig.suptitle(title, fontsize=20)
+    axs[0].legend(legend_list, loc='best')
+    
     axs[0].set_title("Temperature Profile", fontsize=16)
     axs[0].set_ylabel("Depth (m)", fontsize=15)
     axs[0].set_xlabel("Temperature (°C)", fontsize=12)
@@ -368,12 +390,10 @@ def plot_stratification(o3d_request,time=None, loglevel= "WARNING"):
     # axs[2].set_ylabel("", fontsize=0)
     axs[2].set_yticklabels([])
 
-    axs[0].legend(legend_list, loc='best')
 
     if output:
-        plt.savefig(f"{fig_dir}/{filename}.pdf")
-        logger.info(
-            "Figure and data used in the plot, saved here : %s", output_path)
+        export_fig(output_dir, filename , "pdf", metadata_value = title, loglevel= loglevel)
+
     return
 
 def plot_stratification_parallel(o3d_request, loglevel= "WARNING"):
@@ -530,17 +550,13 @@ def plot_spatial_mld_clim(o3d_request, time=None,
     mod_clim = mod_clim["rho"]
     obs_clim = obs_clim["rho"]
  
-    if output:
-        output_path, fig_dir, data_dir, filename = dir_creation(mod_data,
-             region, lat_s, lat_n, lon_w, lon_e, output_dir, plot_name=f"spatial_MLD_{time}")
 
     logger.info("Spatial MLD plot is in process")
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(20, 6.5))
 
     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n, lon_w=lon_w, lon_e=lon_e)
-
-    fig.suptitle(
-        f'Climatology of {time.upper()} mixed layer depth in {region_title}', fontsize=20)
+    title = f'Climatology of {time.upper()} mixed layer depth in {region_title}'
+    fig.suptitle(title, fontsize=20)
     fig.set_figwidth(18)
 
     clev1 = 0.0
@@ -571,7 +587,6 @@ def plot_spatial_mld_clim(o3d_request, time=None,
 
     fig.colorbar(cs1, location="bottom", label='Mixed layer depth (in m)')
 
-    filename = f"{model}_{exp}_{source}_{filename}"
 
     axs[0].set_title(f"Model climatology {myr1}-{myr2}", fontsize=18)
     axs[0].set_ylabel("Latitude", fontsize=14)
@@ -585,15 +600,14 @@ def plot_spatial_mld_clim(o3d_request, time=None,
     axs[1].set_facecolor('grey')
 
     plt.subplots_adjust(top=0.85, wspace=0.1)
-    if output:
-        plt.savefig(f"{fig_dir}/{filename}.pdf")
-        logger.info(
-            "Figure and data used for this plot are saved here: %s", output_path)
-        mod_clim.to_netcdf(f'{data_dir}/{filename}_Rho.nc')
-        obs_clim.to_netcdf(f'{data_dir}/{filename}_Rho.nc')
 
-    plt.close(fig)
-    #plt.show()
+    if output:
+        filename = file_naming(region, lat_s, lat_n, lon_w, lon_e, plot_name=f"{model}-{exp}-{source}_spatial_MLD_{time}")
+        write_data(output_dir,f"{filename}_mod_clim", mod_clim)
+        write_data(output_dir,f"{filename}_obs_clim", obs_clim)
+        export_fig(output_dir, filename , "pdf", metadata_value = title, loglevel= loglevel)
+
+    plt.show()
     return
 
 def plot_spatial_mld_clim_parallel(o3d_request, loglevel= "WARNING"):

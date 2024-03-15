@@ -101,7 +101,7 @@ def evaluate_colorbar_limits(maps: list, sym: bool = True):
     Evaluate the minimum and maximum values of the colorbar
 
     Args:
-        maps (list):     List of maps.
+        maps (list):     List of DataArrays.
         sym (bool, opt): If True, the colorbar is symmetrical around 0.
 
     Returns:
@@ -109,7 +109,7 @@ def evaluate_colorbar_limits(maps: list, sym: bool = True):
         vmax (float): Maximum value of the colorbar.
     """
     if maps is None:
-        raise ValueError('maps must be specified.')
+        raise ValueError('DataArrays must be specified.')
 
     if sym:
         vmin, vmax = minmax_maps(maps)

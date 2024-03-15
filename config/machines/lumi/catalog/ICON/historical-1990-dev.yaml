@@ -9,7 +9,7 @@ sources:
         step: 0
       data_start_date: 19900101T0100
       data_end_date: 19951231T2300
-      aggregation: D  # Default aggregation / chunk size
+      chunks: D  # Default time chunk size
       savefreq: h
       timestyle: date
       #timeshift: Yes    # shift time of resulting xarray by this amount

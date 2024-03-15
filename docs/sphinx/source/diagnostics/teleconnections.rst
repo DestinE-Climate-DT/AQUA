@@ -1,3 +1,5 @@
+.. _teleconnections:
+
 Teleconnections diagnostic
 ==========================
 

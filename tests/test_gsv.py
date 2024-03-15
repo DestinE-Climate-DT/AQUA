@@ -43,7 +43,7 @@ class TestGsv():
         """Simplest test, to check that we can create it correctly."""
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           aggregation="S", var='167', metadata=None)
+                           chunks="S", var='167', metadata=None)
         assert source is not None
 
     @pytest.mark.parametrize('gsv', [{'request': {
@@ -72,7 +72,7 @@ class TestGsv():
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", aggregation="D",
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", chunks="D",
                         stream_generator=True, loglevel=loglevel)
         data = reader.retrieve(startdate='20080101T1200', enddate='20080101T1200', var='t')
         assert isinstance(data, types.GeneratorType), 'Reader does not return iterator'
@@ -127,6 +127,18 @@ class TestGsv():
         assert all(data.t.coords["plev"].data == [100000, 90000, 80000]), "Wrong level info"
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
+
+    def test_reader_3d_chunks(self) -> None:
+        """Testing 3D access with vertical chunking"""
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels-chunks", loglevel=loglevel)
+        data = reader.retrieve()
+
+        # can read second level
+        assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
+
+        data = reader.retrieve(level=[900, 800])  # Read only two levels
+        assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
     def test_reader_auto(self) -> None:
         """

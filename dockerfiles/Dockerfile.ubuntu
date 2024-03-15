@@ -1,0 +1,68 @@
+# Custom Ubuntu 22.04 Docker image with recent FDB5, ECCODES
+FROM ubuntu:22.04
+
+LABEL maintainer="jost.hardenberg@polito.it"
+LABEL version="0.1"
+LABEL description="Custom docker image based ion Ubuntu 22.04 with FDB5 and ECCODES for CA DestinE"
+
+#ARG DEBIAN_FRONTEND=noninteractive
+RUN apt update
+
+RUN apt -y install git wget cmake g++
+RUN apt -y install libaec-dev gfortran
+
+# DIR definitions
+ENV INSTALL_DIR=/usr/local
+ENV ECKIT_VER=1.25.2
+ENV ECCODES_VER=2.33.1
+ENV METKIT_VER=1.11.2
+ENV FDB5_VER=5.11.99
+
+# ECBUILD
+WORKDIR /usr/local
+RUN git clone https://github.com/ecmwf/ecbuild
+ENV PATH=/usr/local/ecbuild/bin:$PATH
+
+# ECKIT
+WORKDIR /home
+RUN wget https://github.com/ecmwf/eckit/archive/refs/tags/$ECKIT_VER.tar.gz
+RUN tar xvfz $ECKIT_VER.tar.gz
+WORKDIR eckit-$ECKIT_VER
+RUN mkdir build
+WORKDIR build
+RUN ecbuild --prefix=$INSTALL_DIR -- ..
+RUN make -j10
+RUN make install
+
+# ECCODES
+WORKDIR /home
+RUN wget https://github.com/ecmwf/eccodes/archive/refs/tags/$ECCODES_VER.tar.gz
+RUN tar xvfz $ECCODES_VER.tar.gz
+WORKDIR eccodes-$ECCODES_VER
+RUN mkdir build
+WORKDIR build
+RUN cmake  .. -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR
+RUN make -j10
+RUN make install
+
+# METKIT
+WORKDIR /home
+RUN wget https://github.com/ecmwf/metkit/archive/refs/tags/$METKIT_VER.tar.gz
+RUN tar xvfz $METKIT_VER.tar.gz
+WORKDIR metkit-$METKIT_VER
+RUN mkdir build
+WORKDIR build
+RUN ecbuild --prefix=$INSTALL_DIR -- -DECKIT_PATH=/usr/local/ ..
+RUN make -j10
+RUN make install
+
+# FDB5
+WORKDIR /home
+RUN wget https://github.com/ecmwf/fdb/archive/refs/tags/$FDB5_VER.tar.gz
+RUN tar xvfz $FDB5_VER.tar.gz
+WORKDIR fdb-$FDB5_VER
+RUN mkdir build
+WORKDIR build
+RUN ecbuild --prefix=$INSTALL_DIR -- -DECKIT_PATH=/usr/local/ ..
+RUN make -j10
+RUN make install

@@ -14,7 +14,7 @@ sources:
         step: 0
       data_start_date: '19900101'
       data_end_date: '19911231'
-      aggregation: Y
+      chunks: Y
       savefreq: M
       timestep: h
       timestyle: step
@@ -43,7 +43,7 @@ sources:
           700, 850, 925, 1000]
       data_start_date: '19900101'
       data_end_date: '19911231'
-      aggregation: M
+      chunks: M
       savefreq: M
       timestep: h
       timestyle: step
@@ -71,7 +71,7 @@ sources:
         step: 0
       data_start_date: '19900101'
       data_end_date: '19911231'
-      aggregation: M
+      chunks: M
       savefreq: M
       timestep: h
       timestyle: step
@@ -103,7 +103,7 @@ sources:
           73, 74, 75]
       data_start_date: '19900101'
       data_end_date: '19911231'
-      aggregation: M
+      chunks: M
       savefreq: M
       timestep: h
       timestyle: step

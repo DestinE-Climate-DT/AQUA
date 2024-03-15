@@ -359,7 +359,7 @@ class FixerMixin():
                             self.logger.info('%s is defined in the fixes but cannot be computed, is it available?',
                                                 shortname)
                         continue
-
+                
                 # safe check debugging
                 self.logger.debug('Name of fixer var: %s', var)
                 self.logger.debug('Name of data source var: %s', source)
@@ -402,6 +402,13 @@ class FixerMixin():
                         self.logger.debug("Fixing %s to %s. Unit fix: factor=%f, offset=%f",
                                           source, var, factor, offset)
                         log_history(data[source], f"Fixing {source} to {var}. Unit fix: factor={factor}, offset={offset}")
+
+                # Set to NaN before a certain date
+                mindate = varfix.get("mindate", None)
+                if mindate:
+                    data[source] = data[source].where(data.time >= np.datetime64(str(mindate)), np.nan)
+                    data[source].attrs.update({"mindate": mindate})
+                    self.logger.debug("Steps before %s set to NaN for variable %s", str(mindate), var)
 
         # Only now rename everything
         data = data.rename(fixd)

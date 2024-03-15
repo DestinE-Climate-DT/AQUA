@@ -1,3 +1,5 @@
+.. _references_acknowledgments:
+
 References and Acknowledgments
 ==============================
 

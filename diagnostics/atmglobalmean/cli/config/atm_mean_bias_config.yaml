@@ -15,12 +15,10 @@ diagnostic_attributes:
   seasonal_bias: True
   compare_datasets_plev: True
   plot_map_with_stats: True
-  start_date1: "1990-01-01"
-  end_date1: "1998-11-01"
-  start_date2: "1980-01-01" # Centered around IFS-NEMO historical-1990
-  end_date2: "2010-12-31"
-
-loglevel: 'warning'
+    #start_date1: "1990-01-01"
+    #end_date1: "1998-11-01"
+  start_date2: "1990-01-01" # Centered around IFS-NEMO historical-1990
+  end_date2: "2020-12-31"
 
 path:
   path_to_output: "/projappl/project_465000454/nurissom/aqua_output/IFS-NEMO/historical-1990/atmglobalmean/"

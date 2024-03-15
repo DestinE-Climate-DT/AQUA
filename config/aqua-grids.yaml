@@ -42,6 +42,10 @@ grids:
     space_coord: ["ncells"]
     vert_coord: ["2d"]
     path: $grids/HealPix/hpz7_nested_atm.nc
+  hpz9-nested:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: $grids/HealPix/hpz9_nested_atm.nc
   hpz10-nested:
     space_coord: ["ncells"]
     vert_coord: ["2d"]
@@ -55,7 +59,7 @@ grids:
     vert_coord: ["2d"]
     path: $grids/HealPix/hpz10_ring_atm.nc
   
-  # Oceanic Healpix
+  # NEMO oceanic Healpix
   nemo-hpz5-nested:
     space_coord: ["ncells"]
     path: $grids/HealPix/nemo_hpz5_nested_oce.nc
@@ -80,6 +84,40 @@ grids:
       level: $grids/HealPix/nemo_hpz10_nested_oce_level.nc
     space_coord: ["ncells"]
     vert_coord: ["level"]
+  
+  # FESOM oceanic healpix
+  fesom-hpz5-nested:
+    space_coord: ["ncells"]
+    path: $grids/HealPix/fesom_hpz5_nested_oce.nc
+  fesom-hpz5-nested-3d:
+    path: 
+      level: $grids/HealPix/fesom_hpz5_nested_oce_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  fesom-hpz7-nested:
+    space_coord: ["ncells"]
+    path: $grids/HealPix/fesom_hpz7_nested_oce.nc
+  fesom-hpz7-nested-3d:
+    path:
+      level: $grids/HealPix/fesom_hpz7_nested_oce_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  fesom-hpz9-nested:
+    space_coord: ["ncells"]
+    path: $grids/HealPix/fesom_hpz9_nested_oce.nc
+  fesom-hpz9-nested-3d:
+    path:
+      level: $grids/HealPix/fesom_hpz9_nested_oce_level.nc
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+
+# ICON oceanic healpix
+  icon-hpz10-nested:
+    space_coord: ["ncells"]
+    path: $grids/HealPix/icon_hpz10_nested_oce.nc
+  icon-hpz10-nested-3d:
+    path:
+      level: $grids/HealPix/icon_hpz10_nested_oce_level.nc
 
   #IFS
   tco79:

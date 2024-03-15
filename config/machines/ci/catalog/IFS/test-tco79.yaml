@@ -71,6 +71,15 @@ sources:
       - ./AQUA_tests/models/IFS/long/regridded_r18x9.nc
     description: coarse IFS data 1y
     driver: netcdf
+  long-mindate:
+    metadata:
+      fixer_name: ifs-ci-mindate
+      source_grid_name: lon-lat
+    args:
+      urlpath:
+      - ./AQUA_tests/models/IFS/long/regridded_r18x9.nc
+    description: coarse IFS data 1y with mindate fixer
+    driver: netcdf
   long_default_fix:
     metadata:
       source_grid_name: lon-lat
@@ -92,6 +101,7 @@ sources:
   teleconnections:
     metadata:
       source_grid_name: lon-lat
+      fixer_name: ci-teleconnections
     args:
       chunks:
         time: 1

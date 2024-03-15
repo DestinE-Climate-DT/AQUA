@@ -15,7 +15,5 @@ diagnostic_attributes:
   gregory: True
   time_series: True
 
-loglevel: 'warning'
-
 path:
   path_to_output: "./"

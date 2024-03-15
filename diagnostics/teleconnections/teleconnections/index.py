@@ -130,6 +130,7 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
     # 7. -- Drop NaNs --
     logger.debug('Dropping NaNs')
     field_mean = field_mean.dropna(dim='time')
+    field_mean = field_mean.rename('index')
 
     logger.debug('Index evaluated')
     return field_mean
@@ -181,6 +182,7 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
 
     field_mean_an = field_mean_an.rolling(time=months_window,
                                           center=True).mean(skipna=True)
+    field_mean_an = field_mean_an.rename('index')
 
     logger.debug('Index evaluated')
     return field_mean_an

@@ -30,8 +30,23 @@ fixer_name:
                     long_name: Mean top net thermal radiation flux doubled # assigning a long_name
                     paramId: '999179' # assigning an (invented) paramId
     
+    ifs-ci-mindate:
+        parent: ifs-ci-test
+        vars:
+            2t:
+                mindate: 2020-08-01T00:00
+                source: 2t
+
     ifs-ci-coords:
         data_model: ifs
         coords:
             timepippo:
                 source: time
+    
+    ci-teleconnections:
+        data_model: false
+        delete:
+            - valid_time
+            - surface
+            - step
+            - number

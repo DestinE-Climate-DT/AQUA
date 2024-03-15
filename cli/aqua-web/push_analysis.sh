@@ -38,6 +38,14 @@ mkdir -p $dstdir
 
 find $indir -name "*.pdf"  -exec cp {} $dstdir/ \;
 
+# Remove dates from EC-mean filenames
+for file in $dstdir/PI4*_????_????.pdf
+do
+    mv -- "$file" "${file%_*_*}.pdf"
+done
+
+echo $(date) > $dstdir/last_update.txt
+
 # commit and push
 log_message INFO "Commit and push"
 

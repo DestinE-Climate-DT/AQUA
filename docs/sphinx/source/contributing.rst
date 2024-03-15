@@ -60,6 +60,7 @@ If you have suggestions for improvements, want to help maintain the documentatio
 please create an issue on the GitHub repository and/or submit a pull request with your proposed changes.
 
 .. _tests:
+
 Testing
 -------
 

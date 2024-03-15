@@ -107,7 +107,9 @@ A basic example usage can thus be:
 
 .. code-block:: python
 
-    ./cli_lra_parallel_slurm.py -c lra_config.yaml -d -w 4
+    ./cli_lra_parallel_slurm.py -c lra_config.yaml -d -w 4 -p 4
+
+This will launch the `definitive` writing of the LRA, using 4 workers per node and a maximum of 4 concurrent SLURM jobs at the same time.
 
 .. note ::
     Please consider that this script will call both SLURM and the standard `cli_lra_generator.py`, so that modification to the latter will influence this. 

@@ -3,7 +3,7 @@
 # --model, --exp, --source, --outputdir
 models:
   - model: 'IFS-NEMO'
-    exp: 'historical-1990'
+    exp: 'ssp370'
     source: 'lra-r100-monthly'
 outputdir: "./"
 
@@ -20,17 +20,6 @@ timeseries: ['2t', 'mtpr', 'mer', 'msl',
              'mtnswrf' #Mean top net short-wave radiation flux
              ]
 timeseries_formulae: ['mtnlwrf+mtnswrf']
-seasonal_cycle: ['2t', 'mtpr', 'mer', 'msl',
-                 'tcc', 'lcc', 'mcc', 'hcc',
-                 'mslhf', #Mean surface latent heat flux
-                 'msshf', #Mean surface sensible heat flux
-                 'msdwswrf', #Mean surface downward short-wave radiation flux
-                 'msdwlwrf', #Mean surface downward long-wave radiation flux
-                 'msnswrf', #Mean surface net short-wave radiation flux
-                 'msnlwrf', #Mean surface net long-wave radiation flux
-                 'mtnlwrf', #Mean top net long-wave radiation flux
-                 'mtnswrf' #Mean top net short-wave radiation flux
-                 ]
 
 gregory:
   ts: '2t'
@@ -48,8 +37,8 @@ timeseries_plot_params:
     plot_ref: True
     monthly: True
     annual: True
-    std_startdate: '1980-01-01'
-    std_enddate: '2010-01-01'
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
   # 2t:
   #   plot_kw:
   #     color: "tab:blue"
@@ -57,12 +46,3 @@ timeseries_plot_params:
   #   resample: "M"
   #   savefig: True
   #   ylim: [-10, 10]
-  lcc: # no ERA5 yet
-    plot_era5: False
-    annual: True
-  mcc: # no ERA5 yet
-    plot_ref: False
-    annual: True
-  hcc: # no ERA5 yet
-    plot_ref: False
-    annual: True

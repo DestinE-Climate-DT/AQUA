@@ -10,6 +10,8 @@ import argparse
 import os
 import sys
 
+from dask.distributed import Client, LocalCluster
+
 from aqua.util import load_yaml, get_arg
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.logger import log_configure
@@ -23,6 +25,8 @@ def parse_arguments(args):
     parser.add_argument("-c", "--config",
                         type=str, required=False,
                         help="yaml configuration file")
+    parser.add_argument('-n', '--nworkers', type=int,
+                        help='number of dask distributed workers')
     parser.add_argument("--loglevel", "-l", type=str,
                         required=False, help="loglevel")
 
@@ -102,8 +106,14 @@ if __name__ == '__main__':
         os.chdir(dname)
         logger.info(f"Changing directory to {dname}")
 
+    # Dask distributed cluster
+    nworkers = get_arg(args, 'nworkers', None)
+    if nworkers:
+        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+        client = Client(cluster)
+        logger.info(f"Running with {nworkers} dask distributed workers.")
+
     # Import diagnostic module
-    sys.path.insert(0, "../../")
     from global_time_series import Timeseries, GregoryPlot, SeasonalCycle
 
     # Load configuration file
@@ -218,6 +228,10 @@ if __name__ == '__main__':
         annual = config_gregory.get("annual", True)
         ref = config_gregory.get("ref", True)
         regrid = config_gregory.get("regrid", None)
+        ts_std_start = config_gregory.get("ts_std_start", "1980-01-01")
+        ts_std_end = config_gregory.get("ts_std_end", "2010-12-31")
+        toa_std_start = config_gregory.get("toa_std_start", "2001-01-01")
+        toa_std_end = config_gregory.get("toa_std_end", "2020-12-31")
 
         gp = GregoryPlot(models=models_list,
                          exps=exp_list,
@@ -227,6 +241,10 @@ if __name__ == '__main__':
                          ref=ref,
                          ts_name=ts_name,
                          toa_name=toa_name,
+                         ts_std_start=ts_std_start,
+                         ts_std_end=ts_std_end,
+                         toa_std_start=toa_std_start,
+                         toa_std_end=toa_std_end,
                          outdir=outputdir,
                          regrid=regrid,
                          loglevel=loglevel)
@@ -276,4 +294,4 @@ if __name__ == '__main__':
                 logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
             except Exception as e:
                 logger.error(f"Error plotting {var} seasonal cycle: {e}")
-    logger.info("Analysis completed.")
+    logger.info("Global Time Series is terminated.")

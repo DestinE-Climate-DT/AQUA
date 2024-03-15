@@ -21,7 +21,7 @@ sources:
         step: 0
       data_start_date: 19900101T0000
       data_end_date: auto
-      aggregation: D  # Default aggregation / chunk size
+      chunks: D  # Default time chunk size
       savefreq: H  # at what frequency are data saved
       timestep: H  # base timestep for step timestyle
       timestyle: date  # variable date or variable step
@@ -41,7 +41,7 @@ sources:
     description: hourly 3D atmospheric data on native grid TCo1279 (about 10km).
     args:
       <<: *args-default
-      aggregation: 6H
+      chunks: 6H
       request:
         <<: *request-default
         param: 131
@@ -71,7 +71,7 @@ sources:
     description: hourly 3D atmospheric data on healpix grid (zoom=7, h128).
     args:
       <<: *args-default
-      aggregation: 6H
+      chunks: 6H
       request:
         <<: *request-default
         resolution: standard
@@ -104,7 +104,7 @@ sources:
     description: hourly 3D atmospheric data on healpix grid (zoom=10, h1024).
     args:
       <<: *args-default
-      aggregation: 6H
+      chunks: 6H
       request:
         <<: *request-default
         resolution: high
@@ -137,7 +137,7 @@ sources:
     description: hourly 3D atmospheric data on regular r025 grid (1440x721).
     args:
       <<: *args-default
-      aggregation: 6H
+      chunks: 6H
       request:
         <<: *request-default
         resolution: standard

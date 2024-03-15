@@ -9,7 +9,6 @@ compute:
   numproc: 1
 
 setup:
-  loglevel: 'WARNING'
   interface_file: '../config/interface_AQUA_destine-v1.yml'
   config_file: '../config/ecmean_config_destine-v1.yml'
   outputdir: '../output'

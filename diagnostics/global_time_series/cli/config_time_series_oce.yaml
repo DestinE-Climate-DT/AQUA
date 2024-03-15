@@ -3,7 +3,7 @@
 # --model, --exp, --source, --outputdir
 models:
   - model: 'IFS-NEMO'
-    exp: 'historical-1990'
+    exp: 'ssp370'
     source: 'lra-r100-monthly'
 outputdir: "./"
 
@@ -19,5 +19,7 @@ timeseries_plot_params:
 # add it here.
   default:
     plot_ref: True
-    std_startdate: '1980-01-01'
-    std_enddate: '2010-01-01'
+    monthly: True
+    annual: True
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'

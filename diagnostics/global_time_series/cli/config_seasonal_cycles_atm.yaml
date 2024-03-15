@@ -1,0 +1,47 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir
+models:
+  - model: 'IFS-NEMO'
+    exp: 'ssp370'
+    source: 'lra-r100-monthly'
+outputdir: "./"
+
+# This is the list of variables that will be plotted as seasonal cycles
+seasonal_cycle: ['2t', 'mtpr', 'mer', 'msl',
+                 'tcc', 'lcc', 'mcc', 'hcc',
+                 'mslhf', #Mean surface latent heat flux
+                 'msshf', #Mean surface sensible heat flux
+                 'msdwswrf', #Mean surface downward short-wave radiation flux
+                 'msdwlwrf', #Mean surface downward long-wave radiation flux
+                 'msnswrf', #Mean surface net short-wave radiation flux
+                 'msnlwrf', #Mean surface net long-wave radiation flux
+                 'mtnlwrf', #Mean top net long-wave radiation flux
+                 'mtnswrf' #Mean top net short-wave radiation flux
+                 ]
+
+gregory:
+  ts: '2t'
+  toa: ['mtnlwrf', 'mtnswrf']
+  monthly: True
+  annual: True
+
+timeseries_plot_params:
+# These are options that specify how the data is plotted
+# Default values are used if the variable that is being
+# plotted is not specified here.
+# If you need specific options for a variable, you can
+# add it here.
+  default:
+    plot_ref: True
+    monthly: True
+    annual: True
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
+  # 2t:
+  #   plot_kw:
+  #     color: "tab:blue"
+  #   plot_era5: True
+  #   resample: "M"
+  #   savefig: True
+  #   ylim: [-10, 10]

@@ -1,7 +1,7 @@
 "Module defining a new aqua accessor to extend xarray"
 
-import aqua
 import xarray as xr
+import aqua
 
 # For now not distinguishing between dataarray and dataset methods
 @xr.register_dataset_accessor("aqua")
@@ -48,6 +48,10 @@ class AquaAccessor:
     def vertinterp(self, **kwargs):
         """A basic vertical interpolation."""
         return self.instance.vertinterp(self._obj, **kwargs)
+    
+    def detrend(self, **kwargs):
+        """A basic detrending."""
+        return self.instance.detrend(self._obj, **kwargs)
     
     def stream(self, **kwargs):
         """Stream the dataset."""

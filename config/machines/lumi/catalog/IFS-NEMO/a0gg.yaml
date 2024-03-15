@@ -20,7 +20,7 @@ sources:
         step: 0
       data_start_date: 19900101T0000
       data_end_date: 20491231T2300
-      aggregation: D  # Default aggregation / chunk size
+      chunks: D  # Default time chunk size
       savefreq: h  # at what frequency are data saved
       timestep: h  # base timestep for step timestyle
       timestyle: date  # variable date or variable step
@@ -39,7 +39,7 @@ sources:
     <<: *base-default
     description: daily atmospheric 2D data on healpix zoom=5 grid
     args:
-      aggregation: D
+      chunks: D
       savefreq: h
       <<: *args-default
       request:
@@ -54,7 +54,7 @@ sources:
     <<: *base-default
     description: daily atmospheric 2D data on regular 1 degree grid (multiIO)
     args:
-      aggregation: D
+      chunks: D
       savefreq: h
       <<: *args-default
       request:
@@ -71,7 +71,7 @@ sources:
     description: hourly atmospheric 3D data on native grid TCo79
     args:
       <<: *args-default
-      aggregation: D
+      chunks: D
       request:
         <<: *request-default
         param: 130
@@ -88,7 +88,7 @@ sources:
     <<: *base-default
     description: daily atmospheric 3D data on healpix zoom=5 grid
     args:
-      aggregation: D
+      chunks: D
       savefreq: h
       <<: *args-default
       request:
@@ -110,7 +110,7 @@ sources:
     <<: *base-default
     description: daily atmospheric 3D data on regular 1 degree grid
     args:
-      aggregation: D
+      chunks: D
       savefreq: h
       <<: *args-default
       request:
@@ -134,7 +134,7 @@ sources:
     description: daily ocean 2D data on native grid eORCA1
     args:
       <<: *args-default
-      aggregation: M
+      chunks: M
       savefreq: D
       request:
         <<: *request-default
@@ -151,7 +151,7 @@ sources:
     description: daily ocean 2D data on healpix zoom=5 grid
     args:
       <<: *args-default
-      aggregation: M
+      chunks: M
       savefreq: D
       request:
         <<: *request-default
@@ -195,7 +195,7 @@ sources:
     description: daily ocean 3D data on native grid eORCA1
     args:
       <<: *args-default
-      aggregation: M
+      chunks: M
       savefreq: D
       request:
         <<: *request-default
@@ -234,7 +234,7 @@ sources:
     description: daily ocean 3D data on healpix zoom=5 grid
     args:
       <<: *args-default
-      aggregation: M
+      chunks: M
       savefreq: D
       request:
         <<: *request-default

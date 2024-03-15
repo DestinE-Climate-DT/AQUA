@@ -1,3 +1,5 @@
+.. _global_mean_timeseries:
+
 Global mean time series
 =======================
 

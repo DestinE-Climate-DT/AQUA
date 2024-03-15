@@ -1,0 +1,32 @@
+name: "FDB container build and publish"
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME_FDB: ubuntu22.04-fdb-aqua
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+       packages: write
+       contents: read
+    steps:
+      - name: "Check out code"
+        uses: actions/checkout@v4
+      - name: "Log in to registry"
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }}  --password-stdin
+      - name: "build fdb container"
+        run: docker build --file dockerfiles/Dockerfile.ubuntu --tag $IMAGE_NAME_FDB --label "runnumber=${GITHUB_RUN_ID}" .
+      - name: "publish fdb container"
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME_FDB
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          [ "$VERSION" == "main" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME_FDB $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION

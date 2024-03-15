@@ -17,6 +17,19 @@ def date2str(dateobj):
 
     return dateobj.strftime('%Y%m%d'), dateobj.strftime('%H%M')
 
+def date2yyyymm(dateobj):
+    """
+    Converts a date object to year, month string representation
+
+    Args:
+        dateobj (datetime): datetime object
+
+    Returns:
+        year, month (str): Date as year and month
+    """
+
+    return dateobj.strftime('%Y'), dateobj.strftime('%m')
+
 
 def add_offset(data_start_date, startdate, offset, timestep):
     """

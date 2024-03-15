@@ -1,5 +1,7 @@
 # pip dependencies
+pip install -e $AQUA/diagnostics/global_time_series/[all]
 pip install -e $AQUA/diagnostics/ocean3d/[all]
 pip install -e $AQUA/diagnostics/teleconnections/[all]
 pip install -e $AQUA/diagnostics/tropical_cyclones/[all]
+pip install -e $AQUA/diagnostics/tropical_rainfall/[all]
 pip install -e $AQUA/[all]

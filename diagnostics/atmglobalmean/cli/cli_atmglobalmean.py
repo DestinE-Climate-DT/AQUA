@@ -7,6 +7,7 @@ from aqua.util import load_yaml, get_arg
 from aqua import Reader
 from aqua.logger import log_configure
 
+from dask.distributed import Client, LocalCluster
 
 def parse_arguments(args):
     """Parse command line arguments"""
@@ -14,6 +15,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='Atmospheric global mean biases CLI')
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
+    parser.add_argument('-n', '--nworkers', type=int,
+                        help='number of dask distributed workers')
     # This arguments will override the configuration file if provided
     parser.add_argument('--model', type=str, help='model name',
                         required=False)
@@ -39,36 +42,42 @@ def parse_arguments(args):
 
 if __name__ == '__main__':
 
-    print('Running atmospheric global mean biases diagnostic...')
+    args = parse_arguments(sys.argv[1:])
+    loglevel = get_arg(args, 'loglevel', 'WARNING')
+
+    logger = log_configure(log_level=loglevel, log_name='Atmglobalmean CLI')
+    logger.info('Running atmospheric global mean biases diagnostic...')
 
     # change the current directory to the one of the CLI so that relative path works
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     if os.getcwd() != dname:
         os.chdir(dname)
-        print(f'Moving from current directory to {dname} to run!')
+        logger.info(f'Moving from current directory to {dname} to run!')
 
     try:
         sys.path.insert(0, '../../')
         from atmglobalmean import compare_datasets_plev, seasonal_bias, plot_map_with_stats
     except ImportError as import_error:
         # Handle ImportError
-        print(f"ImportError occurred: {import_error}")
+        logger.error(f"ImportError occurred: {import_error}")
         sys.exit(0)
     except Exception as custom_error:
         # Handle other custom exceptions if needed
-        print(f"CustomError occurred: {custom_error}")
+        logger.error(f"Exception occurred: {custom_error}")
         sys.exit(0)
 
-    # Aquiring arguments and configuration
-    args = parse_arguments(sys.argv[1:])
+    # Aquiring the configuration
     file = get_arg(args, 'config', 'config/atm_mean_bias_config.yaml')
-    print('Reading configuration yaml file..')
+    logger.info('Reading configuration yaml file..')
     config = load_yaml(file)
 
-    # Configure logging
-    loglevel = get_arg(args, 'loglevel', config['loglevel'])
-    logger = log_configure(log_level=loglevel, log_name='Atmglobalmean CLI')
+    # Dask distributed cluster
+    nworkers = get_arg(args, 'nworkers', None)
+    if nworkers:
+        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+        client = Client(cluster)
+        logger.info(f"Running with {nworkers} dask distributed workers.")
 
     # Acquiring model, experiment and source
     model = get_arg(args, 'model', config['data']['model'])

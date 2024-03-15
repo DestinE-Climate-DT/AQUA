@@ -30,7 +30,7 @@ An alternative deployment making use of containers is available. Please refer to
 
 Full [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/index.html) is available.
 Please notice that the webpage is password protected.
-You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/DE_34070+-+Meetings) or please contact the AQUA team to get access.
+You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/AQUA+-+Meetings) or please contact the AQUA team to get access.
 
 ## Examples
 

@@ -21,6 +21,18 @@ fixer_name:
                 grib: true 
                 source: TCC
                 units: frac
+            lcc: 
+                grib: true 
+                source: LCC
+                units: frac
+            mcc: 
+                grib: true 
+                source: MCC
+                units: frac
+            hcc: 
+                grib: true 
+                source: HCC
+                units: frac
             avg_tos:
                 grib: true
                 source: SSTK
@@ -70,4 +82,66 @@ fixer_name:
                 grib: true
             t:
                 source: T
-                grib: true   
+                grib: true
+    ERA5-daily-destine-v1:
+        delete:
+            - SLHF
+            - SSHF
+            - SSR
+            - SSRD
+            - STR
+            - STRD
+            - TSR
+            - TTR
+        vars:
+            mslhfl:
+                src_units: J m**-2 day**-1
+                derived: SLHF*24
+                grib: true
+            msshfl:
+                src_units: J m**-2 day**-1
+                derived: SSHF*24
+                grib: true
+            msnsrf:
+                src_units: J m**-2 day**-1
+                derived: SSR*24
+                grib: true
+            msdsrf:
+                src_units: J m**-2 day**-1
+                derived: SSRD*24
+                grib: true
+            msntrf:
+                src_units: J m**-2 day**-1
+                derived: STR*24
+                grib: true
+            msdtrf:
+                src_units: J m**-2 day**-1
+                derived: STRD*24
+                grib: true
+            mtnsrf:
+                src_units: J m**-2 day**-1
+                derived: TSR*24
+                grib: true
+            mtntrf:
+                src_units: J m**-2 day**-1
+                derived: TTR*24
+                grib: true
+            erate:
+                grib: true
+                derived: E*24
+                src_units: m/day
+                units: kg m**-2 s**-1
+            mtpr:
+                grib: true
+                derived: TP*24
+                src_units: m/day
+    ERA5-hourly-destine-v1:
+        delete:
+            - TSR
+            - TTR
+            - TP
+        vars:
+            mtpr:
+                grib: true
+                derived: TP*24
+                src_units: m/day

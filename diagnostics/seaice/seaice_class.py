@@ -7,6 +7,7 @@ from aqua import Reader
 from aqua.exceptions import NoDataError
 from aqua.util import load_yaml, create_folder
 from aqua.logger import log_configure
+from aqua.graphics import plot_seasonalcycle
 
 
 class SeaIceExtent:

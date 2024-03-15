@@ -1,0 +1,55 @@
+#!/bin/bash
+#SBATCH --partition=debug
+#SBATCH --job-name=lra
+#SBATCH --output=%j.out
+#SBATCH --error=%j.err
+#SBATCH --account=project_465000454
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --time=00:30:00
+#SBATCH --mem=200G
+
+set -e
+
+AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.7.sif"
+FDB5_CONFIG_FILE="/project/project_465000454/experiments/a0h3/fdb/config.yaml"
+GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
+GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
+WORKERS=8
+
+export AQUA="/users/caprioli/AQUA/"
+#export AQUA = "/app/AQUA"
+
+module --force purge
+
+singularity exec   \
+--cleanenv \
+--env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
+--env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
+--env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
+--env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
+--env ESMFMKFILE=/opt/conda/lib/esmf.mk  \
+--env AQUA=$AQUA \
+--env PYTHONPATH=$AQUA \
+--env WORKERS=8 \
+--bind /pfs/lustrep3/ \
+--bind /projappl/ \
+--bind /project \
+--bind /scratch/ \
+$AQUA_container  \
+bash -c \
+'
+cd /users/caprioli/AQUA/cli/lra
+./cli_lra_generator.py --config ifs-nemo-test.yaml -w $WORKERS -d -l INFO
+'
+
+# run the Python script
+# -c to specify the configuration file
+# -f to use the fixer on data
+# -d to perform a dry run (to check generated lra)
+# -o to overwrite existing lra
+# -l to set the log level (default is WARNING)
+
+
+
+

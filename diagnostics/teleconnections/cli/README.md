@@ -7,7 +7,7 @@ This folder contains the code to perform the analysis with the teleconnections d
 The CLI script is called `cli_teleconnections.py` and can be used as follows:
 
 ```bash
-mamba activate aqua
+mamba activate aqua # if you are using the conda environment
 python cli_teleconnections.py
 ```
 
@@ -49,10 +49,9 @@ models:
     exp: 'tco2559-ng5-cycle3'
     source: 'lra-r100-monthly'
 
-# Reference are analyzed if --ref is passed to the script
-# This can be a list of models if needed.
+# Reference is analyzed if --ref is passed to the script
 # The same extra keyword arguments as for the models can be used.
-references:
+reference:
   - model: 'ERA5'
     exp: 'era5'
     source: 'monthly'
@@ -62,13 +61,7 @@ references:
 # Structure of the output directory:
 # outputdir
 # ├── pdf
-# │   ├── NAO
-# │   ├── ENSO
-# │   └── ...
-# ├── netcdf
-# |   ├── NAO
-# |   ├── ENSO
-# |   └── ...
+# └── netcdf
 outputdir: './output' # common output directory for figures and netcdf files
 
 # Configdir for the teleconnections

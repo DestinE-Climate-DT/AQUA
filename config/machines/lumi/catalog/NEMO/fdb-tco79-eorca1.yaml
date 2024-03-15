@@ -19,7 +19,7 @@
           step: 0
         data_start_date: 19500101T0000
         data_end_date: 19500601T0000
-        aggregation: M  # Default aggregation if timestep=S is used
+        chunks: M  # Default time chunking if timestep=S is used
         savefreq: M
         timestep: h
         timestyle: step

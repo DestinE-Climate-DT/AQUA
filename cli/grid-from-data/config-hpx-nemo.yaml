@@ -1,7 +1,7 @@
 # These are needed for the AQUA retrieve
 model: IFS-NEMO
 exp: historical-1990
-source: daily-hpxstd-oce2d
+source: daily-hpz7-oce2d
 var: avg_sos
 
 # These are needed for grid conversion with CDO

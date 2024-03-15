@@ -1,4 +1,5 @@
 .. _cli:
+
 Command Line Interface tools
 ============================
 
@@ -6,6 +7,7 @@ This sections describes the series of Command Line Interface (CLI) tools current
 It includes software with a variety of goals, which are mostly made for advanced usage. 
 
 .. _aqua_analysis:
+
 AQUA analysis wrapper
 ---------------------
 
@@ -32,44 +34,52 @@ Additional options
 Some options are available to launch the script without having to modify the script itself,
 so that the script can be used in a batch job or in a workflow.
 
-.. option:: -a, --model_atm
+.. option:: -a <model>, --model_atm <model>
 
     The atmospheric model to use.
 
-.. option:: -o, --model_oce
+.. option:: -o <model>, --model_oce <model>
 
     The oceanic model to use.
 
-.. option:: -e, --exp
+.. option:: -e <exp>, --exp <exp>
 
     The experiment to use.
 
-.. option:: -s, source
+.. option:: -s <source>, source <source>
 
     The source to use.
 
-.. option:: -d, --outputdir
+.. option:: -d <dir>, --outputdir <dir>
 
     The output directory to use.
     Default is ``$AQUA/cli/aqua-analysis/output``.
     Prefer to use an absolute path.
 
-.. option:: -m, --machine
+.. option:: -m <machine>, --machine <machine>
 
     The machine to use.
     Default is ``lumi``.
 
-.. option:: -l, --loglevel
+.. option:: -l <loglevel>, --loglevel <loglevel>
 
     The log level to use for the cli and the diagnostics.
     Default is ``WARNING``.
 
-.. option:: -t, --threads
+.. option:: -t <threads>, --threads <threads>
 
     The number of threads to use for the cli and the diagnostics.
     Default is ``0``, which means the number of threads is automatically set to the number of available cores.
     Notice that the diagnostics are run in a single thread, which means that the parallelization
     is used to run multiple diagnostics at the same time.
+    This is basically the number of diagnostics running in parallel.
+
+.. option:: -p, --parallel
+
+    This flag activates running the diagnostics with multiple dask.distributed workers.
+    A predefined number of workers is used for each diagnostic, set in the script itself.
+    For ecmean the multiprocessing option is used.
+    
 
 .. note ::
 
@@ -78,12 +88,14 @@ so that the script can be used in a batch job or in a workflow.
     where arrays with atmospheric and oceanic diagnostics are defined.
 
 .. _fdb-catalog-generator:
+
 Catalog entry generator for FDB sources
 ---------------------------------------
 
 This tool, currently under development, will provide the generation of the FDB sources for the Climate DT project.
 
 .. _gribber:
+
 GRIB catalog generator
 ----------------------
 
@@ -96,6 +108,7 @@ A script in the ``cli/gribber`` folder is available.
 
 
 .. _grids-from-data:
+
 Generation of grid from data
 ----------------------------
 
@@ -116,6 +129,7 @@ Basic usage:
     ./hpx-from-source.py -c config-hpx-nemo.yaml -l INFO
 
 .. _grids-downloader:
+
 Grids downloader
 ----------------
 
@@ -143,6 +157,7 @@ LUMI conda installation
 Includes the script for the installation of conda environment on LUMI: please refer to :ref:`installation-lumi`
 
 .. _orca:
+
 ORCA grid generator
 -------------------
 
@@ -156,6 +171,7 @@ Basic usage:
     ./orca_bounds_new.py mesh_mask.nc orcefile.nc
 
 .. _weights:
+
 Weights generator
 -----------------
 
@@ -173,6 +189,7 @@ Basic usage:
 
 
 .. _aqua_web:
+
 Automatic uploading of figures and documentation to aqua-web
 ------------------------------------------------------------
 
