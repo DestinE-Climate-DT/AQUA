@@ -49,6 +49,11 @@ if __name__ == '__main__':
     logger.info('Reading tcs configuration yaml file %s', file)
     config = load_yaml(file)
 
+    # logger setup (via config or clommand line)
+
+    loglevel = get_arg(args, 'loglevel', config['setup']['loglevel'])
+    logger = log_configure(log_level=loglevel, log_name='TC')
+
     # override config args in case they are passed from command line
     model = get_arg(args, 'model', config['dataset']['model'])
     exp = get_arg(args, 'exp', config['dataset']['exp'])
