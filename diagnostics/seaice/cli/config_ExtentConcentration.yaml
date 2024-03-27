@@ -19,6 +19,17 @@ models:
     regrid: r100
     variable: avg_siconc
     timespan: null
+
+regions:
+  - Arctic
+  - Southern Ocean
+  # - Hudson Bay
+  # - Ross Sea
+  # - Amundsen-Bellingshausen Seas
+  # - Weddell Sea
+  # - Indian Ocean
+  # - Pacific Ocean
+  #
 # Please specify the path to the directory where the outputs should be saved.
 # If output directory/folder does not exist, it will be created.
 # This can be overwritten by the command line argument --outputdir

@@ -223,17 +223,19 @@ class SeaIceExtent:
                     )
 
                 # Print area of region
-                if source == "lra-r100-monthly" or model == "OSI-SAF":
-                    if source == "lra-r100-monthly":
-                        dim1Name, dim2Name = "lon", "lat"
-                    elif model == "OSI-SAF":
-                        dim1Name, dim2Name = "xc", "yc"
-                    myExtent = areacello.where(regionMask).where(
-                        ci_mask.notnull()).sum(dim=[dim1Name, dim2Name]) / 1e12
-                else:
-                    myExtent = areacello.where(regionMask).where(
-                        ci_mask.notnull()).sum(dim="value") / 1e12
+#                if source == "lra-r100-monthly" or model == "OSI-SAF":
+#                    if source == "lra-r100-monthly":
+#                        dim1Name, dim2Name = "lon", "lat"
+#                    elif model == "OSI-SAF":
+#                        dim1Name, dim2Name = "xc", "yc"
+#                    myExtent = areacello.where(regionMask).where(
+#                        ci_mask.notnull()).sum(dim=[dim1Name, dim2Name]) / 1e12
+#                else:
+#                    myExtent = areacello.where(regionMask).where(
+#                        ci_mask.notnull()).sum(dim="value") / 1e12
 
+                myExtent = areacello.where(regionMask).where(
+                        ci_mask.notnull()).sum(dim=["lon", "lat"]) / 1e12
                 myExtent.attrs["units"] = "million km^2"
                 myExtent.attrs["long_name"] = "Sea ice extent"
                 self.regionExtents.append(myExtent)
@@ -314,8 +316,8 @@ class SeaIceExtent:
             for fmt in ["pdf"]:
                 outputfig = self.outputdir + "/" + fmt
                 create_folder(outputfig, loglevel=self.loglevel)
-                fig1Name = "SeaIceExtent_" + "all_models" + "." + fmt
-                fig2Name = "SeaIceExtentCycle_" + "all_models" + "." + fmt
+                fig1Name = "seaice.extent." + fmt
+                fig2Name = "seaice.extent.cycle." + fmt
                 self.logger.info("Saving figure %s", fig1Name)
                 self.logger.info("Saving figure %s", fig2Name)
                 fig1.savefig(outputfig + "/" + fig1Name, dpi=300)
