@@ -260,15 +260,18 @@ class SeaIceExtent:
 
         for jr, region in enumerate(self.myRegions):
             for js, setup in enumerate(self.mySetups):
-                strTimeInfo = " to ".join(setup["timespan"])
+                timespan = setup["timespan"]
+                strTimeInfo = " to ".join(timespan)
                 label = setup["model"] + " " + setup["exp"] + " " + setup["source"] + " " + strTimeInfo
                 color_plot = setup["color_plot"]
                 self.logger.debug(f"Plotting {label} for region {region}")
                 extent = self.myExtents[js][jr]
 
                 # Monthly cycle
-                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
+
+                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).sel(time = slice(timespan[0], timespan[1])).mean(dim='time').values
                                         for m in monthsNumeric])
+
 
                 # One standard deviation of the temporal variability
                 extentStd = np.array([extent.sel(time=extent['time.month'] == m).std(dim='time').values
