@@ -218,6 +218,22 @@ class TCs(DetectNodes, StitchNodes):
                                          regrid=self.highgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
+
+        elif self.model in 'ICON':
+            self.varlist2d = ['msl', '10u', '10v']
+            self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.varlist3d = ['z']
+            self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                         regrid=self.highgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
         else:
             raise ValueError(f'Model {self.model} not supported')
 
@@ -254,8 +270,15 @@ class TCs(DetectNodes, StitchNodes):
         if self.orography:
             self.logger.info("orography retrieved from file")
             self.orog = xr.open_dataset(self.orography_file)
-            #rename var for detect nodes
-            self.orog = self.orog.rename({'z': 'zs'})
+            if self.model == "IFS" or self.model == "IFS-NEMO":
+                #rename var for detect nodes
+                self.logger.info(f"orography file for {self.model} is {self.orography_file}")
+                self.orog = self.orog.rename({'z': 'zs'})
+            elif self.model == "ICON":
+                self.logger.info(f"orography file for {self.model} is {self.orography_file}")
+                self.orog = self.orog.rename({'oromea': 'zs'})
+            else:
+                raise ValueError(f'Orography variable of {self.model} not recognised!')
 
 
 

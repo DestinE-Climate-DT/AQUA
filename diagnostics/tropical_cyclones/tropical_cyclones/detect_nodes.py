@@ -103,6 +103,31 @@ class DetectNodes():
                 orog_first_timestep = self.orog.isel(time=0)
                 orog_first_timestep['time'] = outfield['time']
                 outfield = outfield.combine_first(orog_first_timestep)
+                
+        if self.model == 'ICON':
+
+            # this assumes that only required 2D data has been retrieved
+            self.lowres2d = self.reader2d.regrid(self.data2d.sel(time=timestep)).load()
+            
+            # rename some variables to run DetectNodes command
+            if '10u' in self.lowres2d.data_vars:
+                self.lowres2d = self.lowres2d.rename({'10u': 'u10m'})
+            if '10v' in self.lowres2d.data_vars:
+                self.lowres2d = self.lowres2d.rename({'10v': 'v10m'})
+                
+            # deal with vertical levels in ICON (transform to Pa)
+            lowres3d = self.reader3d.regrid(
+                self.data3d.sel(time=timestep))
+            lowres3d['level'] = lowres3d['level'] * 100.0
+            lowres3d['level'].attrs['units'] = 'Pa'
+
+            outfield = xr.merge([self.lowres2d, lowres3d])
+
+            if self.orography:
+                self.logger.info("Orography added to detect nodes input file")
+                outfield = outfield.combine_first(self.orog)
+                
+            print (outfield.keys(), outfield.coords)
             
         else:
             raise KeyError(f'Atmospheric model {self.model} not supported')

@@ -61,7 +61,7 @@ if __name__ == '__main__':
     source3d = get_arg(args, 'source3d', config['dataset']['source3d'])
     paths = get_arg(args, 'outputdir', config['paths']['fulldir'])
 
-    # initialise tropical class with streaming options
+    # initialise tropical class with streaming options, if orography is true you must specify file path in the config file!
     tropical = TCs(tdict=config, streaming=True,
                    stream_step=config['stream']['streamstep'],
                    stream_startdate=config['time']['startdate'],
