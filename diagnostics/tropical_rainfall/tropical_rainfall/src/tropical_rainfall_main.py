@@ -5,6 +5,7 @@
 """
 
 import re
+import os
 from os import listdir
 from os.path import isfile, join
 from datetime import datetime
@@ -592,7 +593,8 @@ class MainClass:
                   width_of_bin: Optional[float] = None, bins: Union[int, List[float]] = 0,
                   path_to_histogram: Optional[str] = None, name_of_file: Optional[str] = None,
                   positive: bool = True, new_unit: Optional[str] = None, threshold: int = 2,
-                  test: bool = False, seasons_bool: Optional[bool] = None) -> Union[xr.Dataset, np.ndarray]:
+                  test: bool = False, seasons_bool: Optional[bool] = None,
+                  rebuild: bool = False) -> Union[xr.Dataset, np.ndarray]:
         """
         Function to calculate a histogram of the high-resolution Dataset.
 
@@ -760,11 +762,12 @@ class MainClass:
             if path_to_histogram is not None and name_of_file is not None:
                 bins_info = self.get_bins_info()
                 self.dataset_to_netcdf(
-                    mtpr_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
+                    mtpr_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info,
+                    rebuild=rebuild)
 
         return mtpr_dataset
 
-    def dataset_to_netcdf(self, dataset: Optional[xr.Dataset] = None, path_to_netcdf: Optional[str] = None,
+    def dataset_to_netcdf(self, dataset: Optional[xr.Dataset] = None, path_to_netcdf: Optional[str] = None, rebuild: bool = False,
                           name_of_file: Optional[str] = None) -> str:
         """
         Function to save the histogram.
@@ -789,15 +792,34 @@ class MainClass:
                 name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[0] + '_' + \
                     re.split(":", re.split(", ", time_band)[1])[0] + '_' + re.split("=", re.split(", ", time_band)[2])[1]
             except IndexError:
-                name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
+                try:
+                    name_of_file = name_of_file + '_' + re.split(":", re.split(", ", time_band)[0])[0] + '_' + \
+                        re.split(":", re.split(", ", time_band)[1])[0]
+                except IndexError:
+                    name_of_file = name_of_file + '_' + re.split(":", time_band)[0]
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
-            dataset.to_netcdf(path=path_to_netcdf, mode='w')
-            self.logger.info(f"NetCDF is saved in the storage.")
-            self.logger.debug(f"The path to NetCDF is: {path_to_netcdf}")
+            if os.path.exists(path_to_netcdf):
+                self.logger.info(f"File {path_to_netcdf} already exists. Set `rebuild=True` if you want to update it.")
+                if rebuild:
+                    try:
+                        # Attempt to remove the file (make sure you have permissions)
+                        self.logger.warning(f"Removing existing file: {path_to_netcdf}.")
+                        os.remove(path_to_netcdf)
+                    except PermissionError:
+                        self.logger.error(f"Permission denied when attempting to remove {path_to_netcdf}. Check file permissions.")
+                        return  # Exiting the function or handling the error accordingly
+
+                    # Proceed to save the new NetCDF file after successfully removing the old one
+                    dataset.to_netcdf(path=path_to_netcdf, mode='w')
+                    self.logger.info(f"Updated NetCDF file saved at {path_to_netcdf}")
+                # No need for the else block here to repeat the log message about setting rebuild=True
+            else:
+                # If the file doesn't exist, simply save the new one
+                dataset.to_netcdf(path=path_to_netcdf, mode='w')
+                self.logger.info(f"NetCDF file saved at {path_to_netcdf}")
         else:
-            self.logger.debug(
-                "The path to save the histogram needs to be provided.")
+            self.logger.debug("The path to save the histogram needs to be provided.")
         return path_to_netcdf
 
     def grid_attributes(self, data: Optional[xr.Dataset] = None, mtpr_dataset: Optional[xr.Dataset] = None,
@@ -986,26 +1008,25 @@ class MainClass:
                 self.tools.sanitize_attributes(dataset_3)
             return dataset_3
 
-    def merge_list_of_histograms(self, path_to_histograms: str = None, multi: int = None, start_year: int = None, end_year: int = None,
-                                 start_month: int = None, end_month: int = None, seasons_bool: bool = False,
-                                 all: bool = False, test: bool = False, tqdm: bool = True) -> xr.Dataset:
+    def merge_list_of_histograms(self, path_to_histograms: str = None, start_year: int = None, end_year: int = None,
+                             start_month: int = None, end_month: int = None, seasons_bool: bool = False,
+                             test: bool = False, tqdm: bool = False) -> xr.Dataset:
         """
-        Function to merge a list of histograms.
-
+        Function to merge a list of histograms based on specified criteria. It supports merging by seasonal 
+        categories or specific year and month ranges.
+        
         Args:
-            path_to_histograms (str, optional): The path to the list of histograms. Defaults to None.
-            multi (int, optional): The number of histograms to merge. Defaults to None.
-            start_year (int, optional): Start year of the range (inclusive). Defaults to None.
-            end_year (int, optional): End year of the range (inclusive). Defaults to None.
-            start_month (int, optional): Start month of the range (inclusive). Defaults to None.
-            end_month (int, optional): End month of the range (inclusive). Defaults to None.
-            seasons_bool (bool, optional): If True, histograms will be merged based on seasonal categories. Defaults to False.
-            all (bool, optional): If True, all histograms in the repository will be merged. Defaults to False.
-            test (bool, optional): Whether to run the function in test mode. Defaults to False.
-            tqdm (bool, optional): If True, displays a progress bar during merging. Defaults to True.
-
+            path_to_histograms (str, optional): Path to the list of histograms.
+            start_year (int, optional): Start year of the range (inclusive).
+            end_year (int, optional): End year of the range (inclusive).
+            start_month (int, optional): Start month of the range (inclusive).
+            end_month (int, optional): End month of the range (inclusive).
+            seasons_bool (bool, optional): True to merge based on seasonal categories.
+            test (bool, optional): Runs function in test mode.
+            tqdm (bool, optional): Displays a progress bar during merging.
+        
         Returns:
-            xarray.Dataset: The xarray.Dataset with the merged data.
+            xr.Dataset: Merged xarray Dataset.
         """
 
         if seasons_bool:
@@ -1063,27 +1084,27 @@ class MainClass:
             for i in range(0, len(histograms_to_load)):
                 self.logger.debug(f"{histograms_to_load[i]}")
 
-            #if all:
-            #    histograms_to_load = [histogram_list[i] for i in range(0, len(histogram_list))]
-            #elif multi is not None:
-            #    histograms_to_load = [histogram_list[i] for i in range(0, multi)]
-            #else:
-            #    histograms_to_load = histogram_list
             if len(histograms_to_load) > 0:
-                for i in range(0, len(histograms_to_load)):
-                    try:
-                        dataset = self.tools.open_dataset(path_to_netcdf=histograms_to_load[i])
-                        dataset = self.merge_two_datasets(dataset_1=dataset,
-                                                          dataset_2=self.tools.open_dataset(
-                                                              path_to_netcdf=histograms_to_load[i]), test=test)
-                    except Exception as e:
-                        # Handle other exceptions
-                        self.logger.error(f"An unexpected error occurred: {e}")
-                        self.logger.error(f"The hisrogram path is : {histograms_to_load[i]}")
-                self.logger.debug("Histograms are merged.")
-                return dataset
+                progress_bar_template = "[{:<40}] {}%"
+                try:
+                    # Initialize the merged dataset with the first histogram
+                    merged_dataset = self.tools.open_dataset(path_to_netcdf=histograms_to_load[0])
+                    
+                    # Loop through the rest of the histograms and merge them one by one
+                    for i in range(1, len(histograms_to_load)):
+                        if tqdm:
+                            ratio = i / len(histograms_to_load)
+                            progress = int(40 * ratio)
+                            print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
+                        
+                        self.logger.debug(f"Merging histogram: {histograms_to_load[i]}")
+                        next_dataset = self.tools.open_dataset(path_to_netcdf=histograms_to_load[i])
+                        merged_dataset = self.merge_two_datasets(dataset_1=merged_dataset, dataset_2=next_dataset)
+                    return merged_dataset
+                except Exception as e:
+                    self.logger.error(f"An unexpected error occurred while merging histograms: {e}") 
             else:
-                self.logger.warning(f"The specified repository {histograms_to_load} is empty.")
+                self.logger.error("No histograms to load and merge.")
 
     def convert_counts_to_frequency(self, data: xr.Dataset, test: bool = False) -> xr.DataArray:
         """
@@ -1232,7 +1253,7 @@ class MainClass:
 
     def histogram_plot(self, data: xr.Dataset, new_unit: str = None, pdfP: bool = False, positive: bool = True,
                        save: bool = True, weights: np.ndarray = None, frequency: bool = False, pdf: bool = True,
-                       smooth: bool = True, step: bool = False, color_map: bool = False, linestyle: str = None,
+                       smooth: bool = False, step: bool = True, color_map: bool = False, linestyle: str = None,
                        ylogscale: bool = True, xlogscale: bool = False, color: str = 'tab:blue', figsize: float = None,
                        legend: str = '_Hidden', plot_title: str = None, loc: str = 'upper right', model_variable: str = None,
                        add: tuple = None, fig: object = None, path_to_pdf: str = None, name_of_file: str = '',
@@ -1282,15 +1303,18 @@ class MainClass:
             data = data['counts']
         if not pdf and not frequency and not pdfP:
             pass
+            self.logger.debug("Generating a histogram to visualize the counts...")
         elif pdf and not frequency and not pdfP:
             data = self.convert_counts_to_pdf(data,  test=test)
+            self.logger.debug("Generating a histogram to visualize the PDF...")
         elif not pdf and frequency and not pdfP:
             data = self.convert_counts_to_frequency(data,  test=test)
+            self.logger.debug("Generating a histogram to visualize the frequency...")
         elif pdfP:
             data = self.convert_counts_to_pdfP(data,  test=test)
+            self.logger.debug("Generating a histogram to visualize the PDFP...")
 
-        x = data.center_of_bin.values
-
+        x = self.precipitation_rate_units_converter(data.center_of_bin, new_unit=self.new_unit).values
         if self.new_unit is None:
             xlabel = self.model_variable+", ["+str(data.attrs['units'])+"]"
         else:
@@ -1298,15 +1322,19 @@ class MainClass:
 
         if pdf and not frequency and not pdfP:
             ylabel = 'PDF'
+            _name = '_PDF_histogram'
         elif not pdf and frequency and not pdfP:
             ylabel = 'Frequency'
+            _name = '_frequency_histogram'
         elif not frequency and not pdfP and not pdf:
             ylabel = 'Counts'
+            _name = '_counts_histogram'
         elif pdfP:
             ylabel = 'PDF * P'
+            _name = '_PDFP_histogram'
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
-            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_histogram.pdf'
+            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + _name + '.pdf'
 
         return self.plots.histogram_plot(x=x, data=data, positive=positive, xlabel=xlabel, ylabel=ylabel,
                                          weights=weights, smooth=smooth, step=step, color_map=color_map,
@@ -2033,7 +2061,7 @@ class MainClass:
                                       model_variable: str = None, path_to_netcdf: str = None, name_of_file: str = None,
                                       trop_lat: float = None, value: float = 0.95, rel_error: float = 0.1,
                                       new_unit: str = None, lon_length: int = None, lat_length: int = None,
-                                      space_grid_factor: int = None, tqdm: bool = True):
+                                      space_grid_factor: int = None, tqdm: bool = False):
         """ Function to plot.
 
         Args:
@@ -2149,10 +2177,10 @@ class MainClass:
         else:
             return seasonal_095level
 
-    def add_localtime_DataAaray(self, data, model_variable: str = None, space_grid_factor: int = None,
-                                time_length: int = None, trop_lat: float = None, new_unit: str = None,
-                                path_to_netcdf: str = None, name_of_file: str = None,
-                                tqdm_enabled: bool = True) -> Union[xr.Dataset, None]:
+    def add_localtime(self, data, model_variable: str = None, space_grid_factor: int = None,
+                      time_length: int = None, trop_lat: float = None, new_unit: str = None,
+                      path_to_netcdf: str = None, name_of_file: str = None, rebuild: bool = False,
+                      tqdm_enabled: bool = False) -> Union[xr.Dataset, None]:
         """
         Add a new dataset with local time based on the provided data.
 
@@ -2183,7 +2211,8 @@ class MainClass:
             pass
 
         # Extract latitude range and calculate mean
-        data = data.sel(lat=slice(-self.trop_lat, self.trop_lat)).mean('lat')
+        data_final_grid = data.sel(lat=slice(-self.trop_lat, self.trop_lat))
+        data = data_final_grid.mean('lat')
 
         # Slice time dimension if specified
         if time_length is not None:
@@ -2208,8 +2237,8 @@ class MainClass:
 
                 utc_time = data.time[time_ind]
                 longitude = data.lon[lon_ind].values - 180
-                utc_datetime = float(utc_time['time.hour'].values + utc_time['time.minute'].values / 60)
-                local_element = self.tools._utc_to_local(longitude=longitude, utc_time=utc_datetime)
+                local_time = float(utc_time['time.hour'].values + utc_time['time.minute'].values / 60)
+                local_element = self.tools.get_local_time_decimal(longitude=longitude, utc_decimal_hour=local_time)
                 local_data[time_ind].append(local_element)
 
         # Create an xarray DataArray for utc_data
@@ -2218,16 +2247,18 @@ class MainClass:
         # Create a new dataset with mtpr and utc_time
         new_dataset = xr.Dataset({'mtpr': data, 'local_time': local_data_array})
         new_dataset.attrs = data.attrs
-
+        new_dataset = self.grid_attributes(data=data_final_grid, mtpr_dataset=new_dataset)
         # Calculate relative mtpr and add to the dataset
         mean_val = new_dataset['mtpr'].mean()
         new_dataset['mtpr_relative'] = (new_dataset['mtpr'] - mean_val) / mean_val
         new_dataset['mtpr_relative'].attrs = new_dataset.attrs
 
-        # Save the dataset to NetCDF if paths are provided
-        # if path_to_netcdf and name_of_file:
-        #   self.dataset_to_netcdf(new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file)
-        # else:
+        if path_to_netcdf is None and self.path_to_netcdf is not None:
+                path_to_netcdf = self.path_to_netcdf+'daily_variability/'
+        
+        if name_of_file is not None:
+            self.dataset_to_netcdf(
+                new_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file+'_daily_variability', rebuild=rebuild)
         return new_dataset
 
     def daily_variability_plot(self, ymax: int = 12, trop_lat: float = None, relative: bool = True, save: bool = True,
@@ -2284,7 +2315,7 @@ class MainClass:
             data.attrs['units'] = self.new_unit
 
         if isinstance(path_to_pdf, str) and name_of_file is not None:
-            path_to_pdf = path_to_pdf + 'trop_rainfall_' + name_of_file + '_dailyvar.pdf'
+            path_to_pdf = path_to_pdf + 'tropical_rainfall_' + name_of_file + '_daily_variability.pdf'
 
         return self.plots.daily_variability_plot(data, ymax=y_lim_max, relative=relative, save=save,
                                                  legend=legend, figsize=figsize, linestyle=linestyle, color=color,

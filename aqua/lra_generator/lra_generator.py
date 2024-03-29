@@ -11,8 +11,9 @@ import dask
 import xarray as xr
 import numpy as np
 import pandas as pd
-from dask.distributed import Client, LocalCluster, progress
+from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
+from dask.distributed.diagnostics import MemorySampler
 from aqua.logger import log_configure, log_history
 from aqua.reader import Reader
 from aqua.util import create_folder, generate_random_string
@@ -34,12 +35,13 @@ class LRAgenerator():
         return self.nproc > 1
 
     def __init__(self,
-                 model=None, exp=None, source=None, zoom=None,
+                 model=None, exp=None, source=None,
                  var=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
                  outdir=None, tmpdir=None, nproc=1,
                  loglevel=None, overwrite=False, definitive=False,
-                 exclude_incomplete=False):
+                 performance_reporting=False,
+                 exclude_incomplete=False, **kwargs):
         """
         Initialize the LRA_Generator class
 
@@ -49,7 +51,6 @@ class LRAgenerator():
             source (string):         The sourceid name from the catalog
             var (str, list):         Variable(s) to be processed and archived
                                      in LRA.
-            zoom (int):              Healpix level of zoom
             resolution (string):     The target resolution for the LRA
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
@@ -68,8 +69,11 @@ class LRAgenerator():
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
                                      operations, default is False
+            performance_reporting (bool, opt): True to save an html report of the
+                                               dask usage, default is False.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.  
+            **kwargs:                kwargs to be sent to the Reader, as zoom
         """
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
@@ -89,13 +93,13 @@ class LRAgenerator():
 
         self.nproc = int(nproc)
         self.tmpdir = tmpdir
-        if self.nproc > 1:
+        if self.dask:
             self.logger.info('Running dask.distributed with %s workers', self.nproc)
             if not self.tmpdir:
                 raise KeyError('Please specify tmpdir for dask.distributed.')
 
-            self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
-                                       generate_random_string(10))
+        self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
+                                    generate_random_string(10))
 
         if model:
             self.model = model
@@ -112,7 +116,7 @@ class LRAgenerator():
         else:
             raise KeyError('Please specify source.')
 
-        self.zoom = zoom
+        self.kwargs = kwargs
 
         Configurer = ConfigPath(configdir=configdir)
         self.configdir = Configurer.configdir
@@ -138,10 +142,13 @@ class LRAgenerator():
             'units': 'days since 1850-01-01 00:00:00',
             'calendar': 'standard',
             'dtype': 'float64',
-            'zlib' : True,
+            'zlib': True,
             'complevel': 1,
             '_FillValue': np.nan
         }
+
+        # add the performance report
+        self.performance_reporting = performance_reporting
 
         self.fix = fix
         self.logger.info('Fixing data: %s', self.fix)
@@ -172,10 +179,10 @@ class LRAgenerator():
 
         # Initialize the reader
         self.reader = Reader(model=self.model, exp=self.exp,
-                             source=self.source, zoom=self.zoom,
+                             source=self.source,
                              regrid=self.resolution,
                              loglevel=self.loglevel,
-                             fix=self.fix)
+                             fix=self.fix, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
@@ -234,7 +241,8 @@ class LRAgenerator():
                 'urlpath': urlpath,
                 'chunks': {},
                 'xarray_kwargs': {
-                    'decode_times': True
+                    'decode_times': True,
+                    'combine': 'by_coords'
                 },
             },
             'metadata': {
@@ -449,6 +457,8 @@ class LRAgenerator():
 
         # Splitting data into yearly files
         years = sorted(set(temp_data.time.dt.year.values))
+        if self.performance_reporting:
+            years = [years[0]]
         for year in years:
 
             self.logger.info('Processing year %s...', str(year))
@@ -466,6 +476,8 @@ class LRAgenerator():
 
             # Splitting data into monthly files
             months = sorted(set(year_data.time.dt.month.values))
+            if self.performance_reporting:
+                months = [months[0]]
             for month in months:
                 self.logger.info('Processing month %s...', str(month))
                 outfile = self.get_filename(var, year = year, month = month)
@@ -481,22 +493,16 @@ class LRAgenerator():
 
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
 
-                # HACK: check for ifs wrong fluxes only
-                #if len(month_data.time)>1:
-                #    month_data = check_correct_ifs_fluxes(month_data, loglevel=self.loglevel)
-                #if month_data.isnull().all():
-                #    self.logger.warning('All the records are null for month %s, skipping this...', month)
-                #    continue
-                #month_data = self.reader.regrid(month_data)
-                #month_data = self._remove_regridded(month_data)
-
-                self.logger.debug(month_data.mean().values)
-                self.logger.debug(month_data)
+                #self.logger.debug(month_data.mean().values)
+                #self.logger.debug(month_data)
 
                 # real writing
                 if self.definitive:
                     tmpfile = self.get_filename(var, year = year, month = month, tmp = True)
+                    schunk = time()
                     self.write_chunk(month_data, tmpfile)
+                    tchunk = time() - schunk
+                    self.logger.info('Chunk execution time: %.2f', tchunk)
 
                     # check everything is correct
                     filecheck = file_is_complete(tmpfile, loglevel=self.loglevel)
@@ -533,9 +539,25 @@ class LRAgenerator():
                                    compute=False)
 
         if self.dask:
-            w_job = write_job.persist()
-            progress(w_job)
-            del w_job
+            # optional full stack dashboard to html
+            if self.performance_reporting:
+                filename = f"dask-{self.model}-{self.exp}-{self.source}-{self.nproc}.html"
+                with performance_report(filename=filename):
+                    w_job = write_job.persist()
+                    progress(w_job)
+                    del w_job
+            else:
+                # memory monitoring is always operating
+                ms = MemorySampler()
+                with ms.sample('chunk'):
+                    w_job = write_job.persist()
+                    progress(w_job)
+                    del w_job
+                array_data = np.array(vars(ms)['samples']['chunk'])
+                avg_mem = np.mean(array_data[:, 1])/1e9
+                max_mem = np.max(array_data[:, 1])/1e9
+                self.logger.info('Avg memory used: %.2f GiB, Peak memory used: %.2f GiB', avg_mem, max_mem)
+                
         else:
             with ProgressBar():
                 write_job.compute()

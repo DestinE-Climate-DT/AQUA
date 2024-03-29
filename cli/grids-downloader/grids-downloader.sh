@@ -10,7 +10,6 @@ if [[ -z "$AQUA" ]]; then
 else
     source "$AQUA/cli/util/logger.sh"
     log_message INFO "Sourcing logger.sh from: $AQUA/cli/util/logger.sh"
-    # Your subsequent commands here
 fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 

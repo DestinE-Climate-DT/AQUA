@@ -9,7 +9,7 @@ from ruamel.yaml import YAML
 from aqua.util.eccodes import init_get_eccodes_shortname
 from intake.source import base
 from .timeutil import check_dates, shift_time_dataset
-from .timeutil import split_date, make_timeaxis, date2str, add_offset
+from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
 from aqua.logger import log_configure, _check_loglevel
 
 # Test if FDB5 binary library is available
@@ -42,7 +42,7 @@ class GSVSource(base.DataSource):
     timeaxis = None  # Used for dask access
 
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
-                 aggregation="S", savefreq="h", timestep="h", timeshift=None,
+                 chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
                  loglevel='WARNING', **kwargs):
         """
@@ -54,11 +54,15 @@ class GSVSource(base.DataSource):
             data_start_date (str): Start date of the available data.
             data_end_date (str): End date of the available data.
             timestyle (str, optional): Time style. Defaults to "date".
-            aggregation (str, optional): Time aggregation level.
-                                         Can be one of S (step), 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y.
-                                         Defaults to "S".
-            timestep (str, optional): Time step. Can be one of 10M, 15M, 30M, 1H, H, 3H, 6H, D, 5D, W, M, Y.
-                                      Defaults to "H".
+            chunks (str or dict, optional): Time and vertical chunking.
+                                        If a string is provided, it is assumed to be time chunking.
+                                        If it is a dictionary the keys 'time' and 'vertical' are looked for.
+                                        Time chunking can be one of S (step), 10M, 15M, 30M, h, 1h, 3h, 6h, D, 5D, W, M, Y.
+                                        Defaults to "S".
+                                        Vertical chunking is expressed as the number of vertical levels to be used.
+                                        Defaults to None (no vertical chunking).
+            timestep (str, optional): Time step. Can be one of 10M, 15M, 30M, 1h, h, 3h, 6h, D, 5D, W, M, Y.
+                                      Defaults to "h".
             startdate (str, optional): Start date for request. Defaults to None.
             enddate (str, optional): End date for request. Defaults to None.
             var (str, optional): Variable ID. Defaults to those in the catalogue.
@@ -86,8 +90,13 @@ class GSVSource(base.DataSource):
             self.eccodes_path = None
             self.levels = None
 
+        # set the timestyle
+        self.timestyle = timestyle
+
         if data_start_date == 'auto' or data_end_date == 'auto':
             self.logger.debug('Autoguessing of the FDB start and end date enabled.')
+            if self.timestyle == 'yearmonth':
+                raise ValueError('Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!')
             data_start_date, data_end_date = self.parse_fdb(data_start_date, data_end_date)
 
         if not startdate:
@@ -95,15 +104,22 @@ class GSVSource(base.DataSource):
         if not enddate:
             enddate = data_end_date
 
-        offset = int(request["step"])  # optional initial offset for steps (in timesteps)
 
-        # special for 6h: set offset startdate if needed
-        startdate = add_offset(data_start_date, startdate, offset, timestep)
+        if self.timestyle != "yearmonth":
+            offset = int(request["step"])  # optional initial offset for steps (in timesteps)
 
-        self.timestyle = timestyle
+            # special for 6h: set offset startdate if needed
+            startdate = add_offset(data_start_date, startdate, offset, timestep)
 
-        if aggregation.upper() == "S":  # special case: 'aggegation at single saved level
-            aggregation = savefreq
+        if isinstance(chunks, dict):
+            chunking_time = chunks.get('time', 'S')
+            chunking_vertical = chunks.get('vertical', None)
+        else:
+            chunking_time = chunks
+            chunking_vertical = None
+
+        if chunking_time.upper() == "S":  # special case: time chunking is single saved frame
+            chunking_time = savefreq
 
         self.timeshift = timeshift
         self.itime = 0  # position of time dim
@@ -153,9 +169,24 @@ class GSVSource(base.DataSource):
          self.chk_start_date, self.chk_end_idx,
          self.chk_end_date, self.chk_size) = make_timeaxis(self.data_start_date, self.startdate, self.enddate,
                                                            shiftmonth=self.timeshift, timestep=timestep,
-                                                           savefreq=savefreq, chunkfreq=aggregation)
+                                                           savefreq=savefreq, chunkfreq=chunking_time)
 
         self._npartitions = len(self.chk_start_date)
+
+        if "levelist" in self._request:
+            self.chunking_vertical = chunking_vertical
+            if self.chunking_vertical:
+                levelist = self._request["levelist"]
+                if not isinstance(levelist, list): levelist = [levelist]
+                if len(levelist) <= self.chunking_vertical:
+                    self.chunking_vertical = None
+                else:
+                    self.chk_vert = [levelist[i:i+self.chunking_vertical] for i in range(0, len(levelist), self.chunking_vertical)]
+                    self.ntimechunks = self._npartitions
+                    self.nlevelchunks = len(self.chk_vert)
+                    self._npartitions = self._npartitions*len(self.chk_vert)
+        else:
+            self.chunking_vertical = None  # no vertical chunking
 
         super(GSVSource, self).__init__(metadata=metadata)
 
@@ -209,19 +240,35 @@ class GSVSource(base.DataSource):
 
         return schema
 
-    def _get_partition(self, i, var=None, first=False, onelevel=False):
+    def _index_to_timelevel(self, ii):
+        """
+        Internal method to convert partition index to time and level indices
+        """
+        if self.chunking_vertical:
+            i = ii // len(self.chk_vert)
+            j = ii % len(self.chk_vert)
+        else:         
+            i = ii
+            j = 0
+        return i, j
+
+    def _get_partition(self, ii, var=None, first=False, onelevel=False):
         """
         Standard internal method reading i-th data partition from FDB
         Args:
-            i (int): partition number
+            ii (int): partition number
             var (string, optional): single variable to retrieve. Defaults to using those set at init
-            first (bool, optional): read only the first step (used for schema retrieval
+            first (bool, optional): read only the first step (used for schema retrieval)
             onelevel (bool, optional): read only one level. Defaults to False.
         Returns:
             An xarray.DataSet
         """
 
         request = self._request.copy()  # We are going to change it, threads do need this
+
+        i, j = self._index_to_timelevel(ii)
+        if self.chunking_vertical:
+            request["levelist"] = self.chk_vert[j]
 
         if self.timestyle == "date":
             dds, tts = date2str(self.chk_start_date[i])
@@ -232,19 +279,34 @@ class GSVSource(base.DataSource):
             else:
                 request["date"] = f"{dds}/to/{dde}"
                 request["time"] = f"{tts}/to/{tte}"
-            s0 = None
-            s1 = None
-        else:  # style is 'step'
+
+        elif self.timestyle == "step":  # style is 'step'
             request["date"] = self.data_startdate
             request["time"] = self.data_starttime
-
             s0 = self.chk_start_idx[i]
             s1 = self.chk_end_idx[i]
-
             if s0 == s1 or first:
                 request["step"] = f'{s0}'
             else:
                 request["step"] = f'{s0}/to/{s1}'
+
+        elif self.timestyle == "yearmonth": #style is 'yearmonth'
+            yys, mms = date2yyyymm(self.chk_start_date[i])
+            yye, mme = date2yyyymm(self.chk_end_date[i])
+            if ((yys == yye) or first):
+                request["year"] = f"{yys}"
+            else:
+                request["year"] = f"{yys}/to/{yye}"
+            if ((mms == mme) or first):
+                request["month"] = f"{mms}"     
+            else:
+                request["month"] = f"{mms}/to/{mme}"
+            # HACK: step is required by the code, but not needed by GSV
+            #for key in ["date", "step", "time"]:
+            #    if key in request:
+            #        del request[key]
+        else:
+            raise ValueError(f'Timestyle {self.timestyle} not supported')
 
         if onelevel:  # limit to one single level
             request["levelist"] = request["levelist"][0]
@@ -286,7 +348,7 @@ class GSVSource(base.DataSource):
         ds = xr.concat(ds, dim='time')
         return ds
 
-    def get_part_delayed(self, i, var, shape, dtype):
+    def get_part_delayed(self, ii, var, shape, dtype):
         """
         Function to read a delayed partition.
         Returns a dask.array
@@ -297,14 +359,20 @@ class GSVSource(base.DataSource):
             shape: shape of the schema
             dtype: data type of the schema
         """
-        ds = dask.delayed(self._get_partition)(i, var=var)
+
+        i, j = self._index_to_timelevel(ii)
+
+        ds = dask.delayed(self._get_partition)(ii, var=var)
 
         # get the data from the first (and only) data array
         ds = ds.to_array()[0].data
         newshape = list(shape)
         newshape[self.itime] = self.chk_size[i]
-        return dask.array.from_delayed(ds, newshape, dtype)
+        if self.chunking_vertical:  # if we have vertical chunking
+            newshape[self.ilevel] = len(self.chk_vert[j])
 
+        return dask.array.from_delayed(ds, newshape, dtype)
+    
     def to_dask(self):
         """Return a dask xarray dataset for this data source"""
 
@@ -315,6 +383,8 @@ class GSVSource(base.DataSource):
         dtype = self._schema.dtype
 
         self.itime = self._da.dims.index("time")
+        if self.chunking_vertical:
+            self.ilevel = self._da.dims.index("level")
 
         if 'valid_time' in self._da.coords:  # temporary hack because valid_time is inconsistent anyway
             self._da = self._da.drop_vars('valid_time')
@@ -326,8 +396,16 @@ class GSVSource(base.DataSource):
 
         for var in self._var:
             # Create a dask array from a list of delayed get_partition calls
-            dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
-            darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
+
+            if not self.chunking_vertical:
+                dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
+                darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
+            else:
+                dalist = []
+                for j in range(self.nlevelchunks):
+                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, var, shape, dtype) for i in range(self.ntimechunks)]
+                    dalist.append(dask.array.concatenate(dalistlev, axis=self.itime))                
+                darr = dask.array.concatenate(dalist, axis=self.ilevel)  # This is a lazy dask array
 
             shortname = self.get_eccodes_shortname(var)
 
@@ -380,8 +458,7 @@ class GSVSource(base.DataSource):
             root = cfg['spaces'][0]['roots'][0]['path']
 
         req = self._request
-
-        # This assumes a fixed schema and that all keys are present
+        
         file_mask = f"{req['class']}:{req['dataset']}:{req['activity']}:{req['experiment']}:{req['generation']}:{req['model']}:{req['realization']}:{req['expver']}:{req['stream']}:*"
         file_list = glob.glob(os.path.join(root, file_mask))
         

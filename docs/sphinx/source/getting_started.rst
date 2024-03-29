@@ -77,8 +77,7 @@ The configuration folder has this structure:
     │   └── machines
     │       ├── lumi
     │       │   ├── catalog 
-    │       │   ├── catalog.yaml
-    │       │   └── regrid.yaml
+    │       │   └── catalog.yaml
     │       ├── levante
     │       └── ...
     ├── aqua-grids.yaml

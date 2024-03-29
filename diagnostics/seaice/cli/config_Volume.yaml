@@ -1,25 +1,31 @@
 # Models for sea ice to be evaluated.
+
+run_extent: False
+run_concentration: False
+run_volume: True
+run_thickness: False
+
 models:
   - model: IFS-NEMO
     exp: historical-1990
     source: lra-r100-monthly
     regrid: null
-    var: avg_siconc
+    var: avg_sivol
     timespan: null # can be of the format ['2020-01-20', '2024-12-31']
-  # These are observational datasets
-  - model: OSI-SAF
-    exp: osi-450
-    source: nh-monthly
+# These are observational datasets / reanalyses
+  - model: PSC
+    exp: PIOMAS
+    source: monthly
     regrid: null
-    var: avg_siconc
+    variable: avg_sivol
     timespan: null
-  - model: OSI-SAF
-    exp: osi-450
-    source: sh-monthly
+  - model: PSC
+    exp: GIOMAS
+    source: monthly
     regrid: null
-    var: avg_siconc
+    variable: avg_sivol
     timespan: null
-
+    
 regions: # If this block is missing all regions will be evaluated
   - Arctic
   - Southern Ocean
@@ -29,7 +35,6 @@ regions: # If this block is missing all regions will be evaluated
   # - Weddell Sea
   # - Indian Ocean
   # - Pacific Ocean
-
 # Please specify the path to the directory where the outputs should be saved.
 # If output directory/folder does not exist, it will be created.
 # This can be overwritten by the command line argument --outputdir

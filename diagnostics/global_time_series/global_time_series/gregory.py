@@ -172,6 +172,12 @@ class GregoryPlot():
         # Check at least one dataset has been retrieved
         if all([d is None for d in self.data_ts_mon]) and all([d is None for d in self.data_ts_annual]):
             raise NotEnoughDataError("Not enough data available. No plot will be drawn.")
+        elif all([d is None for d in self.data_ts_mon]):
+            self.monthly = False
+            self.logger.warning("No monthly data available. Monthly plot will not be drawn.")
+        elif all([d is None for d in self.data_ts_annual]):
+            self.annual = False
+            self.logger.warning("No annual data available. Annual plot will not be drawn.")
 
     def retrieve_ref(self):
         """Retrieve reference data."""
@@ -223,6 +229,11 @@ class GregoryPlot():
             toa_min = min(toa_min, -12.)
             toa_max = max(toa_max, 12.)
             ax1.set_ylim(toa_min, toa_max)
+            ts_min, ts_max = evaluate_colorbar_limits(self.data_ts_mon, sym=False)
+            ts_min = min(ts_min, 10.)
+            ts_max = max(ts_max, 16.5)
+            ax1.set_xlim(ts_min, ts_max)
+            self.logger.debug(f"Monthly x-axis limits: {ts_min} to {ts_max}")
             self.logger.debug(f"Monthly y-axis limits: {toa_min} to {toa_max}")
 
             for i, model in enumerate(self.models):
@@ -256,7 +267,12 @@ class GregoryPlot():
             toa_min, toa_max = evaluate_colorbar_limits(self.data_toa_annual, sym=False)
             toa_min = min(toa_min, -2.)
             toa_max = max(toa_max, 2.)
+            ts_min, ts_max = evaluate_colorbar_limits(self.data_ts_annual, sym=False)
+            ts_min = min(ts_min, 13.5)
+            ts_max = max(ts_max, 15.)
+            ax2.set_xlim(ts_min, ts_max)
             ax2.set_ylim(toa_min, toa_max)
+            self.logger.debug(f"Annual x-axis limits: {ts_min} to {ts_max}")
             self.logger.debug(f"Annual y-axis limits: {toa_min} to {toa_max}")
 
             for i, model in enumerate(self.models):

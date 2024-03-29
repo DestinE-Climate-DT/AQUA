@@ -3,7 +3,7 @@ sources:
     metadata:
       grid: HealPIX
       source_grid_name: icon-healpix
-      fixer_name: icon-cycle3
+      fixer_name: ICON-cycle3
     args:
       #chunks: null
       consolidated: true
@@ -32,7 +32,7 @@ sources:
     metadata:
       grid: HealPIX
       source_grid_name: icon-healpix
-      fixer_name: icon-cycle3
+      fixer_name: ICON-cycle3
     args:
       #chunks: null
       consolidated: true
@@ -84,7 +84,7 @@ sources:
     metadata:
       grid: HealPIX
       source_grid_name: icon-healpix
-      fixer_name: icon-cycle3
+      fixer_name: ICON-cycle3
     driver: zarr
   lra-r100-monthly:
     driver: netcdf
@@ -97,3 +97,4 @@ sources:
         decode_times: true
     metadata:
       source_grid_name: lon-lat
+      fixer_name: lra-cycle3

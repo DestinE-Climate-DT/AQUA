@@ -1,6 +1,6 @@
 fixer_name:
     icon-destine-v1:
-        data_model: false
+        data_model: ifs
         deltat: 3600
 
         vars:
@@ -83,7 +83,26 @@ fixer_name:
             msnlwrf:
                 source: str
                 grib: true
-                mindate: 2020-09-01T00:00        
+                mindate: 2020-09-01T00:00
+
+    icon-destine-v1-ssp370-lra:
+        parent: icon-destine-v1-ssp370
+        vars:
+            mtnswrf:
+                source: mtnswrf
+                grib: true
+                mindate: 2020-09-01T00:00
+            mtnlwrf:
+                source: mtnlwrf
+                grib: true
+                mindate: 2020-09-01T00:00
+            msnswrf:
+                source: msnswrf
+                mindate: 2020-09-01T00:00
+            msnlwrf:
+                source: msnlwrf
+                grib: true
+                mindate: 2020-09-01T00:00
 
     icon-destine-v1-hist:
         parent: icon-destine-v1
@@ -104,6 +123,26 @@ fixer_name:
                 source: str
                 grib: true
                 mindate: 1991-03-01T00:00
+    
+    icon-destine-v1-hist-lra:
+        parent: icon-destine-v1
+        vars:
+            mtnswrf:
+                source: mtnswrf
+                grib: true
+                mindate: 1991-03-01T00:00
+            mtnlwrf:
+                source: mtnlwrf
+                grib: true
+                mindate: 1991-03-01T00:00
+            msnswrf:
+                source: msnswrf
+                grib: true
+                mindate: 1991-03-01T00:00
+            msnlwrf:
+                source: msnlwrf
+                grib: true
+                mindate: 1991-03-01T00:00
 
     ICON-default:
         data_model: false  # Do not attempt to correct coordinates
@@ -116,10 +155,10 @@ fixer_name:
             - rsdt
             - rsut
         vars:
-            iews:
+            metss:
                 source: tauu
                 grib: true
-            inss:
+            mntss:
                 source: tauv
                 grib: true
             skt:
@@ -134,12 +173,11 @@ fixer_name:
             10si:
                 source: sfcwind
                 grib: true
-            ci:
+            avg_siconc:
                 source: sic
-                src_units: "1"
+                src_units: frac
                 grib: true
-                units: "1"
-            sithick:
+            avg_sithick:
                 source: sit
                 grib: true
             2t:
@@ -176,28 +214,27 @@ fixer_name:
             tcwv:
                 source: prw
                 grib: true
-            msdtrf:
+            msdwlwrf:
                 source: rlds
                 grib: true
-            msntrf:
+            msnlwrf:
                 derived: rlds-rlus
                 grib: true
-            mtntrf:
+            mtnlwrf:
                 derived: -rlut
                 grib: true
-            msdsrf:
+            msdwswrf:
                 source: rsds
                 grib: true
-            msnsrf:
+            msnswrf:
                 derived: rsds-rsus
                 grib: true
-            mtnsrf:
+            mtnswrf:
                 derived: rsdt-rsut
                 grib: true
-            ocpt:
+            avg_thetao:
                 source: to
                 grib: true
-                units: degC
             t:
                 source: ta
                 grib: true
@@ -208,15 +245,48 @@ fixer_name:
             u:
                 source: ua
                 grib: true
-            uo:
+            avg_uo:
                 source: u
                 grib: true
             v:
                 source: va
                 grib: true
-            vo:
+            avg_vo:
                 source: v
                 grib: true
+
+            #fixes for NextGems data    
+            cfh_lnd: 
+                source: cfh_lnd
+                src_units: m s**-1
+                units: m s**-1 
+            conc: 
+                source: conc
+                src_units: frac
+                units: frac
+            heat_content_seaice: 
+                source: heat_content_seaice
+                src_units: J/m**2
+                units: J/m**2
+            heat_content_snow: 
+                source: heat_content_snow
+                src_units: J/m**2
+                units: J/m**2
+            heat_content_total: 
+                source: heat_content_total
+                src_units: J/m**2
+                units: J/m**2
+            hydro_canopy_cond_limited_box: 
+                source: hydro_canopy_cond_limited_box
+                src_units: m/s
+                units: m/s
+            prls:
+                source: prls
+                src_units: kg m**-2 s**-1
+                units: kg m**-2 s**-1
+
+
+            
 
     ICON-cycle3:
         parent: ICON-default
@@ -225,7 +295,7 @@ fixer_name:
                 source: pres_msl
                 src_units: Pa
                 grib: true
-            sst:
+            avg_tos:
                 source: ts
                 grib: false
                 src_units: K

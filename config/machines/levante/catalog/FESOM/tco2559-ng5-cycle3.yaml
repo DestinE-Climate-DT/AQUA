@@ -1722,3 +1722,5 @@ sources:
         decode_times: true
     metadata:
       source_grid_name: lon-lat
+      fixer_name: lra-cycle3
+

@@ -1,0 +1,6 @@
+sources:
+  ssp370-ng4:
+    description: FDB IFS/FESOM 5km IFS_9-FESOM_5-production
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/ssp370-ng4.yaml'

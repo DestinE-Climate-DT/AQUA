@@ -22,21 +22,26 @@ rebuild_output: False
 plot:
   color: 'tab:green'      # Color for the plot
   figsize: 1              # Figure size for the plot
-  xmax: null                # Max value for the x-axis in the plot
+  xmax: null              # Max value for the x-axis in the plot
   loc: 'upper right'      # Location of the legend/annotation in the plot
   pdf_format: True        # Whether to save plots in PDF format
 
-machine: lumi          # The machine/environment where the analysis is run
+machine: lumi             # The machine/environment where the analysis is run
 
 output:
   levante: "/work/bb1153/b382267/tropical_rainfall_cicle3/cli_test/"  # File path for Levante machine
-  lumi: "/users/nazarova/work/output/cli_test/"
+  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/output/cli_test/"
+
 mswep:
   levante: "/work/bb1153/b382267/observations/MSWEP/"  # File path for Levante machine
-  lumi: "/users/nazarova/work/observations/MSWEP/"
+  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/MSWEP/"
+  s_year:  1990           # Start year for analysis, 'null' means it will be set dynamically
+  f_year:  2021           # Final year for analysis, 'null' means it will be set dynamically
+  auto: False             # will be set dynamically
 
 logger:
-  loglevel: debug
+  diag_loglevel: info
+  reader_loglevel: warning
 
 compute_resources:
   resubmit: False         # Whether to automatically resubmit the job if it fails

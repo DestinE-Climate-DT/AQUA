@@ -42,3 +42,4 @@ ENSO:
   months_window: 3
   full_year: true
   seasons: null # to analyse additionally to the full data
+  cbar_range: [-2, 2] # colorbar range for the regression figures

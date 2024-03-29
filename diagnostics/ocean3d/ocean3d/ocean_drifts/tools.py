@@ -6,14 +6,17 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import xarray as xr
 import numpy as np
+import dask.array as da
 from scipy.stats import t as statt
 from ocean3d import weighted_area_mean
 from ocean3d import area_selection
 from ocean3d import weighted_zonal_mean
-from ocean3d import dir_creation
+from ocean3d import file_naming
 from ocean3d import custom_region
 from ocean3d import write_data
+from ocean3d import export_fig
 from aqua.logger import log_configure
+
 
 
 def data_process_by_type(**kwargs):
@@ -149,9 +152,8 @@ def zonal_mean_trend_plot(o3d_request, loglevel= "WARNING"):
 
     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n,
                                  lon_w=lon_w, lon_e=lon_e)
-
-    fig.suptitle(
-        f"Zonally-averaged long-term trends in the {region_title}", fontsize=20)
+    title = f"Zonally-averaged long-term trends in the {region_title}"
+    fig.suptitle(title, fontsize=20)
 
     plt.subplots_adjust(top=0.85)
 
@@ -168,13 +170,9 @@ def zonal_mean_trend_plot(o3d_request, loglevel= "WARNING"):
     axs[1].set_facecolor('grey')
 
     if output:
-        output_path, fig_dir, data_dir, filename = dir_creation(data,
-            region, lat_s, lat_n, lon_w, lon_e, output_dir, plot_name="zonal_mean_trend")
-        filename = f"{model}_{exp}_{source}_{filename}"
-        write_data(f'{data_dir}/{filename}.nc',data)
-        plt.savefig(f"{fig_dir}/{filename}.pdf")
-        logger.info(
-            "Figure and data used for this plot are saved here: %s", output_path)
+        filename = file_naming(region, lat_s, lat_n, lon_w, lon_e, plot_name=f"{model}-{exp}-{source}_zonal_mean_trend")
+        write_data(output_dir,filename, data)
+        export_fig(output_dir, filename , "pdf", metadata_value = title, loglevel= loglevel)
 
     # plt.show()
 
@@ -266,55 +264,6 @@ def linregress_3D(y_array, loglevel= "WARNING"):
     return n, slope, intercept, p_val, r_square, rmse
 
 
-def lintrend_2D(y_array, loglevel= "WARNING"):
-    """
-    Simplified version of linregress_3D that computes the trends in a 3D array formated in time, latitude and longitude coordinates
-
-    It outputs the trends in xarray format
-
-    Parameters
-    ----------
-    data : y_array.Dataset
-
-    Dataset containing a single 3D field with time, latitude and longitude as coordinates
-
-
-    Returns
-    -------
-    n,slope,intercept,p_val,r_square,rmse
-
-    """
-    logger = log_configure(loglevel, 'lintrend_2D')
-
-    x_array = np.empty(y_array.shape)
-    for i in range(y_array.shape[0]):
-        # This would be fine if time series is not too long. Or we can use i+yr (e.g. 2019).
-        x_array[i, :, :] = i+1
-    x_array[np.isnan(y_array)] = np.nan
-    # Compute the number of non-nan over each (lon,lat) grid box.
-    n = np.sum(~np.isnan(x_array), axis=0)
-    # Compute mean and standard deviation of time series of x_array and y_array over each (lon,lat) grid box.
-    x_mean = np.nanmean(x_array, axis=0)
-    y_mean = np.nanmean(y_array, axis=0)
-    x_std = np.nanstd(x_array, axis=0)
-    # y_std = np.nanstd(y_array, axis=0)
-    # Compute co-variance between time series of x_array and y_array over each (lon,lat) grid box.
-    cov = np.nansum((x_array-x_mean)*(y_array-y_mean), axis=0)/n
-    # Compute slope between time series of x_array and y_array over each (lon,lat) grid box.
-    trend = cov/(x_std**2)
-
-    # Do further filteration if needed (e.g. We stipulate at least 3 data records are needed to do regression analysis) and return values
-    n = n*1.0  # convert n from integer to float to enable later use of np.nan
-    n[n < 3] = np.nan
-    trend[np.isnan(n)] = np.nan
-
-    # trend=xr.DataArray(trend,coords={"lat": y_array.lat,"lon": y_array.lon},name=str(y_array.name),dims=["lat","lon"])
-    trend = xr.DataArray(trend, coords={
-                         "lat": y_array.lat, "lon": y_array.lon}, name=f"{y_array.name} trends", dims=["lat", "lon"])
-    trend.attrs['units'] = f"{y_array.units}/year"
-
-    # data.avg_thetao.attrs['units'] = 'Standardised Units'
-    return trend
 
 
 def lintrend_3D(y_array, loglevel= "WARNING"):
@@ -337,32 +286,53 @@ def lintrend_3D(y_array, loglevel= "WARNING"):
     """
     logger = log_configure(loglevel, 'lintrend_3D')
 
-    x_array = np.empty(y_array.shape)
-    for i in range(y_array.shape[0]):
-        # This would be fine if time series is not too long. Or we can use i+yr (e.g. 2019).
-        x_array[i, :, :, :] = i+1
-    x_array[np.isnan(y_array)] = np.nan
-    # Compute the number of non-nan over each (lon,lat) grid box.
-    n = np.sum(~np.isnan(x_array), axis=0)
-    # Compute mean and standard deviation of time series of x_array and y_array over each (lon,lat) grid box.
-    x_mean = np.nanmean(x_array, axis=0)
-    y_mean = np.nanmean(y_array, axis=0)
-    x_std = np.nanstd(x_array, axis=0)
-    # y_std = np.nanstd(y_array, axis=0)
-    # Compute co-variance between time series of x_array and y_array over each (lon,lat) grid box.
-    cov = np.nansum((x_array-x_mean)*(y_array-y_mean), axis=0)/n
-    # Compute slope between time series of x_array and y_array over each (lon,lat) grid box.
-    trend = cov/(x_std**2)
+    # Assuming 'y_array' is a Dask array, and 'yr' is defined somewhere as the starting year
 
-    # Do further filteration if needed (e.g. We stipulate at least 3 data records are needed to do regression analysis) and return values
-    n = n*1.0  # convert n from integer to float to enable later use of np.nan
-    n[n < 3] = np.nan
-    trend[np.isnan(n)] = np.nan
+    # Create a Dask array 'x_array' with the same shape as 'y_array'
+    x_array = da.empty_like(y_array)
+    time_indices = y_array["time"]
+    # Fill 'x_array' with values representing time indices
+    for i in range(len(y_array["time"])):
+        x_array[i, :, :, :] = i + 1
 
-    # trend=xr.DataArray(trend,coords={"lat": y_array.lat,"lon": y_array.lon},name=str(y_array.name),dims=["lat","lon"])
+
+    # Replace NaNs in 'x_array' with NaNs
+    x_array = da.where(da.isnan(y_array), np.nan, x_array)
+
+    # Compute the number of non-NaNs over each (lon,lat) grid box
+    n = da.sum(~da.isnan(x_array), axis=0)
+
+    # Compute mean and standard deviation of time series of 'x_array' and 'y_array' over each (lon,lat) grid box
+    x_mean = da.nanmean(x_array, axis=0)
+    y_mean = da.nanmean(y_array, axis=0)
+    x_std = da.nanstd(x_array, axis=0)
+    x_var = da.nanvar(x_array, axis=0)
+
+    # Compute covariance between time series of 'x_array' and 'y_array' over each (lon,lat) grid box
+    cov = da.nansum((x_array - x_mean) * (y_array - y_mean), axis=0) / n
+
+    # Compute slope between time series of 'x_array' and 'y_array' over each (lon,lat) grid box
+    trend = cov / (x_var)
+
+    # Do further filtration if needed (e.g., stipulate at least 3 data records are needed to do regression analysis)
+    n = n.astype(float)  # Convert 'n' from integer to float to enable later use of NaN
+    n = da.where(n < 3, np.nan, n)
+    trend = da.where(da.isnan(n), np.nan, trend)
     trend = xr.DataArray(trend, coords={"lev": y_array.lev, "lat": y_array.lat,
                          "lon": y_array.lon}, name=f"{y_array.name} trends", dims=["lev", "lat", "lon"])
+
+    time_frequency = y_array["time"].to_index().inferred_freq
+    if time_frequency=="MS":
+        trend = trend*12
+    elif time_frequency=="H" :
+        trend = trend*24*30*12
+    elif time_frequency=="Y":
+        trend = trend
+    else:
+        raise ValueError(f"The frequency: {time_frequency} of the data must be in Daily/Monthly/Yearly")
+    
     trend.attrs['units'] = f"{y_array.units}/year"
+    
 
     # data.avg_thetao.attrs['units'] = 'Standardised Units'
     return trend
@@ -426,13 +396,21 @@ def multilevel_t_s_trend_plot(o3d_request, customise_level=False, levels=None, l
     TS_trend_data = TS_3dtrend(data)
     TS_trend_data.attrs = data.attrs
     data = TS_trend_data
+    
+    # p = data.polyfit(dim="time", deg=1, skipna=True)
+    # p = p.rename({"avg_so_polyfit_coefficients": "avg_so"}).rename({"avg_thetao_polyfit_coefficients": "avg_thetao"})
+    
+    # data=p.isel(degree=1)
     # Define the levels for plotting
+
+
     if customise_level:
         if levels is None:
             raise ValueError(
                 "Custom levels are selected, but levels are not provided.")
     else:
         levels = [10, 100, 500, 1000, 3000, 5000]
+        # levels = [10, 100]
 
     # To fix the dimensions avg_so that all subpanels are well visible
     dim1 = 16
@@ -467,19 +445,14 @@ def multilevel_t_s_trend_plot(o3d_request, customise_level=False, levels=None, l
         # axs[levs, 1].set_aspect('equal', adjustable='box')
     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n, lon_w=lon_w, lon_e=lon_e)
 
-    plt.suptitle(
-        f'Linear Trends of T,S at different depths in the {region_title}', fontsize=24)
+    title = f'Linear Trends of T,S at different depths in the {region_title}'
+    plt.suptitle(title, fontsize=24)
+
     axs[0, 0].set_title("Temperature", fontsize=18)
     axs[0, 1].set_title("Salinity", fontsize=18)
     if output:
-        output_path, fig_dir, data_dir, filename = dir_creation(data,
-            region, lat_s, lat_n, lon_w, lon_e, output_dir, plot_name="multilevel_t_s_trend")
-        filename = f"{model}_{exp}_{source}_{filename}"
-        write_data(f'{data_dir}/{filename}.nc',data.interp(lev=levels[levs]))
-        plt.savefig(f"{fig_dir}/{filename}.pdf")
-        logger.info(
-            "Figure and data used for this plot are saved here: %s", output_path)
-
-    #plt.show()
+        filename = file_naming(region, lat_s, lat_n, lon_w, lon_e, plot_name=f"{model}-{exp}-{source}_multilevel_t_s_trend")
+        write_data(output_dir,filename, data.interp(lev=levels[levs]))
+        export_fig(output_dir, filename , "pdf", metadata_value = title, loglevel= loglevel)
 
     return

@@ -3,7 +3,6 @@ Function to plot timeseries and reference data,
 both with monthly and annual aggregation options
 """
 import xarray as xr
-import numpy as np
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 
@@ -154,8 +153,8 @@ def plot_seasonalcycle(data=None,
     fig_size = kwargs.get('figsize', (6, 4))
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
 
-    monthsNumeric = range(1, 12 + 1)  # Numeric months
-    monthsNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+    monthsNumeric = range(0, 13 + 1)  # Numeric months
+    monthsNames = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
 
     color_list = ["#1898e0", "#8bcd45", "#f89e13", "#d24493",
                   "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf",
@@ -171,15 +170,17 @@ def plot_seasonalcycle(data=None,
             else:
                 label = None
             try:
-                mon_data = data[i]
+                mon_data = _extend_cycle(data[i], loglevel)
                 mon_data.plot(ax=ax, label=label, color=color, lw=3)
             except Exception as e:
                 logger.debug(f"Error plotting data: {e}")
 
     if ref_data is not None:
         try:
+            ref_data = _extend_cycle(ref_data, loglevel)
             ref_data.plot(ax=ax, label=ref_label, color='black', lw=3)
             if std_data is not None:
+                std_data = _extend_cycle(std_data, loglevel)
                 std_data.compute()
                 ax.fill_between(ref_data.month,
                                 ref_data - 2.*std_data,
@@ -191,6 +192,7 @@ def plot_seasonalcycle(data=None,
     ax.legend(fontsize='small')
     ax.set_xticks(monthsNumeric)
     ax.set_xticklabels(monthsNames)
+    ax.set_xlim(0.5, 12.5)
     ax.set_axisbelow(True)
 
     if grid:
@@ -201,3 +203,33 @@ def plot_seasonalcycle(data=None,
         ax.set_title(title)
 
     return fig, ax
+
+
+def _extend_cycle(data: xr.DataArray = None, loglevel='WARNING'):
+    """
+    Add december value at the beginning and january value at the end of the data
+    for a cyclic plot
+
+    Arguments:
+        data (xr.DataArray): data to extend
+        loglevel (str): logging level. Default is 'WARNING'
+
+    Returns:
+        data (xr.DataArray): extended data (if possible)
+    """
+    if data is None:
+        raise ValueError("No data provided")
+
+    logger = log_configure(loglevel, 'ExtendCycle')
+
+    try:
+        left_data = data.isel(month=11)
+        right_data = data.isel(month=0)
+    except IndexError:
+        logger.debug("No data for January or December")
+        return data
+
+    left_data['month'] = 0
+    right_data['month'] = 13
+
+    return xr.concat([left_data, data, right_data], dim='month')

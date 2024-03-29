@@ -1,0 +1,62 @@
+fixer_name:
+  lra-cycle3:
+    data_model: False
+    vars:
+      avg_siconc: 
+        source: ci
+        grib: true
+      mtpr:
+        source: tprate
+        grib: true 
+      metss: 
+        source: ewss
+        grib: true 
+      mntss:
+        source: nsss
+        grib: true 
+      avg_tos:
+        source: sst
+        grib: true 
+      # Surface fluxes
+      msnswrf:
+        source: msnsrf
+        grib: true
+      msnlwrf:
+        source: mtnsrf
+        grib: true
+      msdwlwrf:
+        source: msdtrf
+        grib: true
+      msdwswrf:
+        source: msdsrf
+        grib: true
+      mslhfl:
+        source: mslhf 
+        grib: true
+      msshfl:
+        source: msshf
+        grib: true
+      # TOA fluxes
+      mtnswrf:
+        source: mtnsrf
+        grib: true
+      mtnlwrf:
+        source: mtntrf
+        grib: true
+      avg_thetao:
+        source: ocpt
+        grib: true
+      avg_sos:
+        source: sos
+        grib: true
+      avg_so:
+        source: so
+        grib: true
+
+      #mtdwswrf:
+      #  source: tisr
+      #  grib: true
+
+
+      
+      

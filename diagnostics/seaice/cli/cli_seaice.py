@@ -4,17 +4,21 @@
 Sea ice Diagnostic CLI. Strongly Inspired from its SSH equivalent
 
 This script allows users to execute sea ice diagnostics using command-line arguments.
-By default, it will read configurations from 'config.yml' unless specified by the user.
+By default, it will read configurations from 'config.yaml' unless specified by the user.
 """
 
 import argparse
 import os
 import sys
 
+from dask.distributed import Client, LocalCluster
+
 # Imports related to the aqua package, which is installed and available globally.
 from aqua.logger import log_configure
 from aqua.util import get_arg, load_yaml
 from aqua.exceptions import NoDataError
+
+from seaice import SeaIceExtent, SeaIceVolume, SeaIceConcentration, SeaIceThickness
 
 
 def parse_arguments(args):
@@ -27,8 +31,10 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='sea ice CLI')
 
     # Arguments for the CLI.
-    parser.add_argument('--config', type=str, default='config.yml',
-                        help=f'yaml configuration file (default: config.yml)')
+    parser.add_argument('--config', type=str, default='config.yaml',
+                        help=f'yaml configuration file (default: config.yaml)')
+    parser.add_argument('-n', '--nworkers', type=int,
+                        help='number of dask distributed workers')
     parser.add_argument('--all-regions', action='store_true',
                         help='Compute sea ice extent for all regions')
     parser.add_argument('--loglevel', '-l', type=str, default='WARNING',
@@ -43,6 +49,23 @@ def parse_arguments(args):
 
     return parser.parse_args(args)
 
+def run_analyzer(analyzer):
+    """
+    Run the given analyzer.
+
+    :param analyzer: Analyzer object.
+    """
+    
+    try:
+        analyzer.run()
+    except NoDataError as e:
+        logger.debug(f"Error: {e}")
+        logger.error("No data found for the given configuration. Exiting...")
+
+    except Exception as e:
+        logger.error(f"An error occurred while running the analyzer: {e}")
+        logger.warning("Please report this error to the developers. Exiting...")
+    
 
 if __name__ == '__main__':
     # Add the directory containing the `seaice` module to the Python path.
@@ -50,6 +73,7 @@ if __name__ == '__main__':
     # and then move one level up.
     # change the current directory to the one of the CLI so that relative path works
     # Parse the provided command line arguments.
+
     args = parse_arguments(sys.argv[1:])
 
     # Configure the logger.
@@ -63,19 +87,21 @@ if __name__ == '__main__':
         os.chdir(dname)
         logger.info(f'Moving from current directory to {dname} to run!')
 
-    sys.path.insert(0, "../..")
-
-    # Local module imports.
-    from seaice import SeaIceExtent
-
     logger.info("Running sea ice diagnostic...")
+
+    # Dask distributed cluster
+    nworkers = get_arg(args, 'nworkers', None)
+    if nworkers:
+        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+        client = Client(cluster)
+        logger.info(f"Running with {nworkers} dask distributed workers.")
 
     # Outputdir
     outputdir = get_arg(args, 'outputdir', None)
     logger.debug(f"Output directory: {outputdir}")
 
     # Read configuration file.
-    # We first load a config.yml file from the current directory,
+    # We first load a config.yaml file from the current directory,
     # then if present, we override the first model with the CLI arguments.
     logger.info('Reading configuration yaml file...')
     config = load_yaml(args.config)
@@ -93,29 +119,51 @@ if __name__ == '__main__':
     config['output_directory'] = get_arg(args, 'outputdir',
                                          config['output_directory'])
 
-    # If the user wants to compute sea ice extent for all regions, we override the
-    # configuration file.
-    if args.all_regions:
-        config['regions'] = None
-
-    logger.debug(f"Final configuration: {config}")
+    run_extent = config.get('run_extent', False)
+    run_volume = config.get('run_volume', False)
+    run_concentration = config.get('run_concentration', False)
+    run_thickness = config.get('run_thickness', False)
 
     outputdir = config['output_directory']
 
-    # Initialize the object
-    analyzer = SeaIceExtent(config=config, outputdir=outputdir,
-                            loglevel=loglevel)
+    if run_extent:
+        logger.info("Running sea ice extent diagnostic...")
 
-    # Execute the analyzer.
-    try:
-        analyzer.run()
-    except NoDataError as e:
-        logger.debug(f"Error: {e}")
-        logger.error("No data found for the given configuration. Exiting...")
-        sys.exit(0)
-    except Exception as e:
-        logger.error(f"An error occurred while running the analyzer: {e}")
-        logger.warning("Please report this error to the developers. Exiting...")
-        sys.exit(0)
+        # If the user wants to compute sea ice extent for all regions, we override the
+        # configuration file.
+        if args.all_regions:
+            config['regions'] = None
 
-    logger.info("sea ice diagnostic terminated!")
+        logger.debug(f"Final configuration: {config}")
+        analyzer = SeaIceExtent(config=config, outputdir=outputdir,
+                                loglevel=loglevel)
+        run_analyzer(analyzer)
+        logger.info("sea ice diagnostic Extent terminated!")
+
+    if run_volume:
+        logger.info("Running sea ice volume diagnostic...")
+        # If the user wants to compute sea ice volume for all regions, we override the
+        # configuration file.
+        if args.all_regions:
+            config['regions'] = None
+
+        logger.debug(f"Final configuration: {config}")
+
+        analyzer = SeaIceVolume(config=config, outputdir=outputdir,
+                                loglevel=loglevel)
+        run_analyzer(analyzer)
+        logger.info("sea ice diagnostic Volume terminated!")
+
+    if run_concentration:
+        logger.info("Running sea ice concentration diagnostic...")
+        analyzer = SeaIceConcentration(config=config, outputdir=outputdir,
+                                loglevel=loglevel)
+        run_analyzer(analyzer)
+        logger.info("sea ice diagnostic Concentration terminated!")
+
+    if run_thickness:
+        logger.info("Running sea ice thickness diagnostic...")
+        analyzer = SeaIceThickness(config=config, outputdir=outputdir,
+                                loglevel=loglevel)
+        run_analyzer(analyzer)
+        logger.info("sea ice diagnostic Thickness terminated!")   

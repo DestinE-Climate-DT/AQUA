@@ -23,6 +23,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='ECmean Performance Indices  CLI')
     parser.add_argument('-c', '--config', type=str,
                         help='ecmean yaml configuration file', default='config_ecmean_cli.yaml')
+    parser.add_argument('-n', '--nworkers',  type=int,
+                        help='number of dask distributed processes')
     parser.add_argument('-m', '--model_atm', type=str,
                         help='atmospheric model to be analysed')
     parser.add_argument('-x', '--model_oce', type=str,
@@ -84,8 +86,10 @@ if __name__ == '__main__':
     # setting options from configuration files
     atm_vars = configfile['dataset']['atm_vars']
     oce_vars = configfile['dataset']['oce_vars']
-    numproc = configfile['compute']['numproc']
     config = configfile['setup']['config_file']
+    numproc = configfile['compute']['numproc']
+
+    numproc = get_arg(args, 'nworkers', numproc)
 
     # define the interface file
     Configurer = ConfigPath(configdir=None)

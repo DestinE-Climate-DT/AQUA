@@ -118,6 +118,23 @@ If you do not agree, you will need to call ``load_aqua.sh`` manually every time 
 .. note ::
     If you encounter any issues with the installation script, please refer to the :ref:`faq` section.
 
+Installation on Levante HPC at DKRZ
+-----------------------------------
+
+You can follow the mamba installation process described in the previous section.
+
+The only issue regards the availability of the FDB5 binary library (``libfdb5.so``) since
+at the moment a specific module for levante seems not to be available.
+
+You can either compile your own copy and then make it available (download the source code from ``https://github.com/ecmwf/fdb``),
+or you can use our precompiled version by setting
+
+.. code-block:: bash
+
+    export LD_LIBRARY_PATH=/work/bb1153/b382075/aqua/local/lib:$LD_LIBRARY_PATH 
+    
+in ``.bash_profile`` and in ``.bashrc`` in your home directory.
+
 Installation and use of the AQUA container
 ------------------------------------------
 

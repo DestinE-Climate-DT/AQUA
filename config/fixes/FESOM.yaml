@@ -1,4 +1,18 @@
 fixer_name:
+    fesom-destine-v1:
+        data_model: false
+        vars:
+            avg_tos:
+                source: avg_tos
+                src_units: degC
+                grib: true
+                units: 'K'
+            avg_thetao:
+                source: avg_thetao
+                src_units: degC
+                grib: true
+                units: 'K'
+
     FESOM-default: 
         data_model: false
         delete:  # variables to drop at the end
@@ -7,41 +21,41 @@ fixer_name:
             - sss
             - ssh
         vars:
-            ci:
+            avg_siconc:
                 source: a_ice
                 src_units: frac
                 grib: true
                 units: '%'
-            sst: 
+            avg_tos: 
                 source: sst
                 grib: true
-            sos:
+            avg_sos:
                 source: sss
                 grib: true
                 units: psu
-            sithick:
+            avg_sithick:
                 source: m_ice
                 grib: true
-            zos:
+            avg_zos:
                 source: ssh
                 grib: true
-            ocpt:
+            avg_thetao:
                 source: temp 
                 src_units: degC
                 grib: true
                 units: degC 
-            uo:
+            avg_uo:
                 source: u
                 grib: true
                 src_units: m/s
-            vo:
+            avg_vo:
                 source: v
                 grib: true
                 src_units: m/s
-            wo:
+            avg_wo:
                 source: w
                 grib: true
-            so:
+            avg_so:
                 src_units: psu
                 source: salt
                 grib: true

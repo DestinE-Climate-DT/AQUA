@@ -54,3 +54,26 @@ sources:
       - ./AQUA_tests/models/FESOM/short/w.fesom.1986.nc
     description: original 3d output
     driver: netcdf
+  
+  kwargs-2d:
+    metadata:
+      source_grid_name: test-pi-2d
+      fixer_name: FESOM-default
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - './AQUA_tests/models/FESOM/short/{{ variable }}.fesom.{{ year }}.nc'
+    description: original 2d output
+    driver: netcdf
+    parameters:
+      variable:
+        allowed: ['a_ice', 'sst', 'MLD2']
+        description: realization member
+        type: str
+        default: 'sst'
+      year:
+        allowed: [1985, 1986]
+        description: realization member
+        type: int
+        default: 1985

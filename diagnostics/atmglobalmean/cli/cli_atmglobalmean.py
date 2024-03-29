@@ -7,6 +7,7 @@ from aqua.util import load_yaml, get_arg
 from aqua import Reader
 from aqua.logger import log_configure
 
+from dask.distributed import Client, LocalCluster
 
 def parse_arguments(args):
     """Parse command line arguments"""
@@ -14,6 +15,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='Atmospheric global mean biases CLI')
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
+    parser.add_argument('-n', '--nworkers', type=int,
+                        help='number of dask distributed workers')
     # This arguments will override the configuration file if provided
     parser.add_argument('--model', type=str, help='model name',
                         required=False)
@@ -68,6 +71,13 @@ if __name__ == '__main__':
     file = get_arg(args, 'config', 'config/atm_mean_bias_config.yaml')
     logger.info('Reading configuration yaml file..')
     config = load_yaml(file)
+
+    # Dask distributed cluster
+    nworkers = get_arg(args, 'nworkers', None)
+    if nworkers:
+        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+        client = Client(cluster)
+        logger.info(f"Running with {nworkers} dask distributed workers.")
 
     # Acquiring model, experiment and source
     model = get_arg(args, 'model', config['data']['model'])

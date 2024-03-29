@@ -2,7 +2,7 @@
 from .index import station_based_index, regional_mean_index
 from .index import regional_mean_anomalies
 from .plots import index_plot, indexes_plot
-from .plots import maps_plot, maps_diffs_plot
+from .plots import maps_diffs_plot
 from .statistics import reg_evaluation, cor_evaluation
 from .tc_class import Teleconnection
 from .tools import TeleconnectionsConfig
@@ -13,7 +13,7 @@ __version__ = '0.4.0'
 __all__ = ['station_based_index', 'regional_mean_index',
            'regional_mean_anomalies',
            'index_plot', 'indexes_plot',
-           'maps_plot', 'maps_diffs_plot',
+           'maps_diffs_plot',
            'reg_evaluation', 'cor_evaluation',
            'Teleconnection', 'TeleconnectionsConfig',
            'wgt_area_mean']

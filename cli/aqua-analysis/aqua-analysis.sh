@@ -43,9 +43,9 @@ machine="lumi" # will change the aqua config file
 max_threads=-1  # Set to the desired maximum number of threads, or leave it as 0 for no limit
 
 # Define the array of atmospheric diagnostics, add more if needed or available
-atm_diagnostics=("tropical_rainfall" "global_time_series" "radiation" "teleconnections" "atmglobalmean")
+atm_diagnostics=("tropical_rainfall" "global_time_series" "seasonal_cycles" "radiation" "teleconnections" "atmglobalmean")
 # Define the array of oceanic diagnostics, add more if needed or available
-oce_diagnostics=("global_time_series" "teleconnections" "ocean3d" "seaice")
+oce_diagnostics=("global_time_series" "teleconnections" "ocean3d_drift" "ocean3d_circulation" "seaice_extent" "seaice_conc" "seaice_volume" "seaice_thick")
 # Define the array of diagnostics combining atmospheric and oceanic data, add more if needed or available
 atm_oce_diagnostics=("ecmean")
 
@@ -83,6 +83,7 @@ done
 # Command line extra arguments for global_time_series:
 # --config (config file)
 # Concatenate the new part to the existing content
+
 atm_extra_args["global_time_series"]="${atm_extra_args["global_time_series"]} \
 --config ${aqua}/diagnostics/global_time_series/cli/config_time_series_atm.yaml"
 oce_extra_args["global_time_series"]="${oce_extra_args["global_time_series"]} \
@@ -114,7 +115,7 @@ atm_extra_args["teleconnections"]="${atm_extra_args["teleconnections"]} \
 oce_extra_args["teleconnections"]="${oce_extra_args["teleconnections"]} \
 --config cli_config_oce.yaml --ref"
 # Concatenate the new part to the existing content
-atm_extra_args["tropical_rainfall"]="--regrid=r100 --freq=M"
+atm_extra_args["tropical_rainfall"]="--regrid=r100 --freq=M --xmax=75"
 # End of user defined variables
 # ---------------------------------------------------
 # Command line extra arguments for seasonal_cycles:
@@ -123,6 +124,24 @@ atm_extra_args["tropical_rainfall"]="--regrid=r100 --freq=M"
 atm_extra_args["seasonal_cycles"]="${atm_extra_args["seasonal_cycles"]} \
 --config ${aqua}/diagnostics/global_time_series/cli/config_seasonal_cycles_atm.yaml"
 # -----------------------------
+# Command line extra arguments for ocean3d:
+#
+oce_extra_args["ocean3d_circulation"]="${atm_extra_args["ocean3d_circulation"]} \
+--config ${aqua}/diagnostics/ocean3d/cli/config.circulation.yaml"
+oce_extra_args["ocean3d_drift"]="${atm_extra_args["ocean3d_drift"]} \
+--config ${aqua}/diagnostics/ocean3d/cli/config.drift.yaml"
+
+# -----------------------------
+# Command line extra arguments for seaice:
+#
+oce_extra_args["seaice_extent"]="${atm_extra_args["seaice_extent"]} \
+--config ${aqua}/diagnostics/seaice/cli/config_Extent.yaml"
+oce_extra_args["seaice_conc"]="${atm_extra_args["seaice_conc"]} \
+--config ${aqua}/diagnostics/seaice/cli/config_Concentration.yaml"
+oce_extra_args["seaice_volume"]="${atm_extra_args["seaice_volume"]} \
+--config ${aqua}/diagnostics/seaice/cli/config_Volume.yaml"
+oce_extra_args["seaice_thick"]="${atm_extra_args["seaice_thick"]} \
+--config ${aqua}/diagnostics/seaice/cli/config_Thickness.yaml"
 
 # Trap Ctrl-C to clean up and kill the entire process group
 trap 'kill 0' SIGINT
@@ -137,10 +156,17 @@ done
 
 # Set the path if it is not standard
 script_path["seasonal_cycles"]="global_time_series/cli/cli_global_time_series.py"
+script_path["ocean3d_drift"]="ocean3d/cli/cli_ocean3d.py"
+script_path["ocean3d_circulation"]="ocean3d/cli/cli_ocean3d.py"
+script_path["seaice_volume"]="seaice/cli/cli_seaice.py"
+script_path["seaice_thick"]="seaice/cli/cli_seaice.py"
+script_path["seaice_conc"]="seaice/cli/cli_seaice.py"
+script_path["seaice_extent"]="seaice/cli/cli_seaice.py"
 
 # Command line arguments
 # Define accepted log levels
 accepted_loglevels=("info" "debug" "error" "warning" "critical" "INFO" "DEBUG" "ERROR" "WARNING" "CRITICAL")
+distributed=0
 
 # Parse command-line options
 while [[ $# -gt 0 ]]; do
@@ -168,6 +194,10 @@ while [[ $# -gt 0 ]]; do
     -m|--machine)
       machine="$2"
       shift 2
+      ;;
+    -p|--parallel)
+      distributed=1
+      shift 1
       ;;
     -t|--threads)
       max_threads="$2"
@@ -198,6 +228,26 @@ log_message INFO "Experiment: $exp"
 log_message INFO "Source: $source"
 log_message INFO "Machine: $machine"
 log_message INFO "Output directory: $outputdir"
+
+# Set extra arguments in distributed case
+if [ $distributed -eq 1 ]; then
+  log_message INFO "Running with distributed cluster"
+  atm_extra_args["atmglobalmean"]="${atm_extra_args['atmglobalmean']} --nworkers 16"
+  atm_extra_args["global_time_series"]="${atm_extra_args['global_time_series']} --nworkers 16"
+  atm_extra_args["seasonal_cycles"]="${atm_extra_args['seasonal_cycles']} --nworkers 16"
+  atm_extra_args["radiation"]="${atm_extra_args['radiation']} --nworkers 8"
+  atm_extra_args["teleconnections"]="${atm_extra_args['teleconnections']} --nworkers 8"
+  atm_extra_args["tropical_rainfall"]="${atm_extra_args['tropical_rainfall']} --nworkers 16"
+  oce_extra_args["global_time_series"]="${oce_extra_args['global_time_series']} --nworkers 8"
+  oce_extra_args["ocean3d_drift"]="${oce_extra_args['ocean3d_drift']} --nworkers 8"
+  oce_extra_args["ocean3d_circulation"]="${oce_extra_args['ocean3d_circulation']} --nworkers 4"
+  oce_extra_args["seaice_extent"]="${oce_extra_args['seaice_extent']} --nworkers 4"
+  oce_extra_args["seaice_conc"]="${oce_extra_args['seaice_conc']} --nworkers 4"
+  oce_extra_args["seaice_volume"]="${oce_extra_args['seaice_volume']} --nworkers 4"
+  oce_extra_args["seaice_thick"]="${oce_extra_args['seaice_thick']} --nworkers 4"
+  oce_extra_args["teleconnections"]="${oce_extra_args['teleconnections']} --nworkers 4"
+  atm_oce_extra_args["ecmean"]="${atm_oce_extra_args['ecmean']} --nworkers 4"
+fi
 
 # Define the outputdir for ocanic and atmospheric diagnostics
 outputdir_atm="$outputdir/$model_atm/$exp"

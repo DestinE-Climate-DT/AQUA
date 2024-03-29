@@ -24,6 +24,11 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/a0jp.yaml'
+  a0xv:
+    description: FDB IFS/NEMO development tco79-eORCA1 control 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0xv.yaml'
   spinup-1990-fracice:
     description: "1990-1991 coupled spinup (2y) with fractional sea ice coupling"
     driver: yaml_file_cat

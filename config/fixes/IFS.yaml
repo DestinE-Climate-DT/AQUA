@@ -81,6 +81,14 @@ fixer_name:
                 grib: true
                 nanfirst: True
 
+    ifs-nemo-destine-v1-monthly:
+        # multio saves 2t as mean2t if it averages. This is pretty weird and we have to fix it back.
+        parent: ifs-destine-v1
+        vars:
+            2t: 
+                source: mean2t
+                grib: true
+
     ifs-nemo-destine-v1-nan:  # special version for historical-1990 IFS-NEMO data, fixing to nan first step of month
         parent: ifs-destine-v1
          # The nanfirst keys fix to NaN the first step of each month
@@ -123,7 +131,7 @@ fixer_name:
                 decumulate: true
                 src_units: m
                 units: kg m**-2 s**-1
-            erate:
+            mer:
                 source: e
                 grib: true
                 decumulate: true
@@ -141,41 +149,41 @@ fixer_name:
                 decumulate: true
                 src_units: m
                 units: kg m**-2 s**-1
-            mtsfr:
+            msr:
                 source: sf
                 grib: true
                 decumulate: true
                 src_units: m
                 units: kg m**-2 s**-1
-            mslhfl:
+            mslhf:
                 source: slhf
                 grib: true
                 decumulate: true
-            msshfl:
+            msshf:
                 source: sshf
                 grib: true
                 decumulate: true
-            msnsrf:
+            msnswrf:
                 source: ssr
                 grib: true
                 decumulate: true
-            msdsrf:
+            msdwswrf:
                 source: ssrd
                 grib: true
                 decumulate: true    
-            msntrf:
+            msnlwrf:
                 source: str
                 grib: true
                 decumulate: true
-            msdtrf:
+            msdwlwrf:
                 source: strd
                 grib: true
                 decumulate: true
-            mtnsrf:
+            mtnswrf:
                 source: tsr
                 grib: true
                 decumulate: true
-            mtntrf:
+            mtnlwrf:
                 source: ttr
                 grib: true
                 decumulate: true         
@@ -183,18 +191,44 @@ fixer_name:
                 source: smlt
                 grib: true
                 decumulate: true
-            iews:
+            metss:
                 source: ewss
                 grib: true
                 decumulate: true  
-            inss: 
+            mntss: 
                 source: nsss
                 grib: true
                 decumulate: true
-            surfror:  # a very recent version of eccodes is needed for this one
+            msror:  # a very recent version of eccodes is needed for this one
                 source: sro
                 grib: true
                 decumulate: true 
+            lcc:
+                source: lcc
+                grib: true
+                src_units: frac
+                units: frac
+            10u:
+                source: 10u
+                grib: true
+                src_units: m s-1
+                units: m s-1
+            10v:
+                source: 10v
+                grib: true
+                src_units: m s-1
+                units: m s-1
+            2d: 
+                source: 2d
+                grib: true
+                src_units: K
+                units: K
+            2t: 
+                source: 2t
+                grib: true
+                src_units: K
+                units: K
+
 
     ifs-control:
         parent: IFS-default
@@ -203,7 +237,7 @@ fixer_name:
             mtpr:
                 source: tprate
     
-    ifs-cycle3:
+    ifs-multio-cycle3:
         # for this exp we have a lot of output from MultI/O, already decumulated and
         # averaged monthly, so default is without decumulation
         vars:
@@ -211,7 +245,6 @@ fixer_name:
                 src_units: m s**-1
                 source: tp
                 grib: true
-                units: kg m**-2 s**-1
             cprate:
                 src_units: m s**-1
                 source: cp
@@ -222,11 +255,10 @@ fixer_name:
                 source: lsp
                 grib: true
                 units: kg m**-2 s**-1 
-            erate:
+            mer:
                 src_units: m s**-1
                 source: e
                 grib: true
-                units: kg m**-2 s**-1 
             esrate:
                 src_units: m s**-1
                 source: es
@@ -237,40 +269,40 @@ fixer_name:
                 source: ro
                 grib: true
                 units: kg m**-2 s**-1
-            mtsfr:
+            msr:
                 src_units: m s**-1
                 source: sf
                 grib: true
                 units: kg m**-2 s**-1
-            mslhfl:
+            mslhf:
                 src_units: W/m2
                 source: slhf
                 grib: true
-            msshfl:
+            msshf:
                 src_units: W/m2
                 source: sshf
                 grib: true
-            msnsrf:
+            msnswrf:
                 src_units: W/m2
                 source: ssr
                 grib: true
-            msdsrf:
+            msdwswrf:
                 src_units: W/m2
                 source: ssrd
                 grib: true
-            msntrf:
+            msnlwrf:
                 src_units: W/m2
                 source: str
                 grib: true
-            msdtrf:
+            msdwlwrf:
                 src_units: W/m2
                 source: strd
                 grib: true
-            mtnsrf:
+            mtnswrf:
                 src_units: W/m2
                 source: tsr
                 grib: true
-            mtntrf:
+            mtnlwrf:
                 src_units: W/m2
                 source: ttr
                 grib: true  

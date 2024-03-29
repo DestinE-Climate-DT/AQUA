@@ -44,6 +44,8 @@ do
     mv -- "$file" "${file%_*_*}.pdf"
 done
 
+echo $(date) > $dstdir/last_update.txt
+
 # commit and push
 log_message INFO "Commit and push"
 

@@ -1,0 +1,39 @@
+# Models for sea ice to be evaluated.
+
+run_extent: False
+run_concentration: True
+run_volume: False
+run_thickness: False
+
+models:
+  - model: IFS-NEMO
+    exp: historical-1990
+    source: lra-r100-monthly
+    regrid: null
+    var: avg_siconc
+    timespan: null # can be of the format ['2020-01-20', '2024-12-31']
+# These are observational datasets
+  - model: OSI-SAF
+    exp: osi-450
+    source: nh-monthly
+    regrid: r100
+    variable: avg_siconc
+    timespan: null
+  - model: OSI-SAF
+    exp: osi-450
+    source: sh-monthly
+    regrid: r100
+    variable: avg_siconc
+    timespan: null
+# Please specify the path to the directory where the outputs should be saved.
+# If output directory/folder does not exist, it will be created.
+# This can be overwritten by the command line argument --outputdir
+output_directory: ./
+
+# This is the current dask configuration which works for the inputs above.
+# It could be adjusted based on the system this application is run.
+dask_cluster:
+  n_workers: 16
+  threads_per_worker: 1
+
+

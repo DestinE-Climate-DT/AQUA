@@ -63,7 +63,7 @@ Options:
 
 .. option:: -w, --workers
 
-    Set up the number of dask workers (default: 1)
+    Set up the number of dask workers (default: 1, i.e. dask disabled)
 
 .. option:: -l, --loglevel
 
@@ -76,6 +76,10 @@ Options:
 .. option:: -o, --overwrite
 
     Overwrite LRA existing data (default: WARNING).
+
+.. option:: --monitoring
+
+    Enable a single chunk run to produce the html dask performance report. Dask should be activated.
 
 
 Please note that this options override the ones available in the configuration file. 

@@ -102,9 +102,10 @@ but a list can be provided and it is done for the FDB sources available in the c
 If not specified, the default variable defined in the catalogue is used.
 
 .. warning::
+
     The FDB access can be significantly fasten by selecting variables and time range.
 
-An optional keyword, which in general we do **not** recommend to specify for dask access, is ``aggregation``,
+An optional keyword, which in general we do **not** recommend to specify for dask access, is ``chunks``,
 which specifies the chunk size for dask access.
 Values could be ``D``, ``M``, ``Y`` etc. (in pandas notation) to specify daily, monthly and yearly aggregation.
 It is best to use the default, which is already specified in the catalogue for each data source.
@@ -112,6 +113,9 @@ This default is based on the memory footprint of single grib message, so for exa
 we use ``D`` for Tco2559 (native) and "1deg" streams, ``Y`` for monthly 2D data and ``M`` for 3D monthly data.
 In any case, if you use multiprocessing and run into memory troubles for your workers, you may wish to decrease
 the aggregation (i.e. chunk size).
+It is also possible to specify vertical chunking by passing a dictionary with the keys ``time`` and ``vertical``.
+In this case ``time`` will follow the notation discussed above, while ``vertical`` specifies the number of vertical
+levels to use for each chunk.
 
 .. _iterators:
 
@@ -138,6 +142,8 @@ The default is ``S`` (step), i.e. single saved timesteps are read at each iterat
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
 Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
+
+In the special case where the source is FDB/GSV and iterator access is requested, ``aggregation`` takes precedence over ``chunks`` and chunking is set to the value specified by it.
 
 .. _lev-selection-regrid:
 
@@ -236,8 +242,8 @@ specify the queue's name as an argument of the function:
 
 .. warning::
 
-	The exclusive argument **does not** automatically provide us the maximum available memory,
-    number of cores, and walltime.
+        The exclusive argument **does not** automatically provide us the maximum available memory,
+        number of cores, and walltime.
 
 The function ``slurm.job()`` has an argument ``max_resources_per_node``, False by default.
 If we set the argument to ``max_resources_per_node=True``, the number of cores, memory,
@@ -279,5 +285,6 @@ Then the user can cancel the particular Job as:
 	slurm.scancel(all=False, Job_ID=5000000)
 
 .. warning::
+
     It is potentially dangerous to cancel all your jobs,
     always prefer to cancel jobs with the Job_ID

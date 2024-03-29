@@ -1,14 +1,4 @@
 sources:
-  tco3999-ng5:
-    description: 2.5km experiment, coupuled with IFS
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/tco3999-ng5.yaml"
-  tco2559-ng5:
-    description: 5km experiment, coupuled with IFS
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/tco2559-ng5.yaml"
   tco2559-ng5-cycle3:
     description: 5km experiment, coupuled with IFS
     driver: yaml_file_cat

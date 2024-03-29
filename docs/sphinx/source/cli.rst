@@ -34,44 +34,52 @@ Additional options
 Some options are available to launch the script without having to modify the script itself,
 so that the script can be used in a batch job or in a workflow.
 
-.. option:: -a, --model_atm
+.. option:: -a <model>, --model_atm <model>
 
     The atmospheric model to use.
 
-.. option:: -o, --model_oce
+.. option:: -o <model>, --model_oce <model>
 
     The oceanic model to use.
 
-.. option:: -e, --exp
+.. option:: -e <exp>, --exp <exp>
 
     The experiment to use.
 
-.. option:: -s, source
+.. option:: -s <source>, source <source>
 
     The source to use.
 
-.. option:: -d, --outputdir
+.. option:: -d <dir>, --outputdir <dir>
 
     The output directory to use.
     Default is ``$AQUA/cli/aqua-analysis/output``.
     Prefer to use an absolute path.
 
-.. option:: -m, --machine
+.. option:: -m <machine>, --machine <machine>
 
     The machine to use.
     Default is ``lumi``.
 
-.. option:: -l, --loglevel
+.. option:: -l <loglevel>, --loglevel <loglevel>
 
     The log level to use for the cli and the diagnostics.
     Default is ``WARNING``.
 
-.. option:: -t, --threads
+.. option:: -t <threads>, --threads <threads>
 
     The number of threads to use for the cli and the diagnostics.
     Default is ``0``, which means the number of threads is automatically set to the number of available cores.
     Notice that the diagnostics are run in a single thread, which means that the parallelization
     is used to run multiple diagnostics at the same time.
+    This is basically the number of diagnostics running in parallel.
+
+.. option:: -p, --parallel
+
+    This flag activates running the diagnostics with multiple dask.distributed workers.
+    A predefined number of workers is used for each diagnostic, set in the script itself.
+    For ecmean the multiprocessing option is used.
+    
 
 .. note ::
 
@@ -83,8 +91,21 @@ so that the script can be used in a batch job or in a workflow.
 
 Catalog entry generator for FDB sources
 ---------------------------------------
+A tool which streamlines the process of adding new experiments to the catalog.
+It exploits the capabilities of the Jinja package to obtain a cleaner and more flexible code.
+Users can easily customize their experiments by updating the ``config.tmpl`` file, with the experiment's specific details.
+The script is available in the ``cli/fdb-catalog-generator`` folder.
+Basic usage:
 
-This tool, currently under development, will provide the generation of the FDB sources for the Climate DT project.
+.. code-block:: bash
+
+    ./catalog-jinja-generator.py -c config.tmpl -j ifs-nemo-default.j2 -l INFO
+
+
+.. warning::
+
+    Please note that currently only one Jinja template is available (``ifs-nemo-default.j2`` for IFS-NEMO), but it is possible to add more templates in the future.
+
 
 .. _gribber:
 
@@ -137,6 +158,46 @@ Basic usage:
 This will download all the grids used in AQUA.
 It is also possible to download only a subset of the grids,
 by specifying the group of grids to download (usually one per model).
+
+Grids synchronization
+---------------------
+
+Since the upload of the grids to the SWIFT platform used to store the grids is available only from Levante,
+a simple script to synchronize the grids from Levante to LUMI and viceversa is available in the ``cli/grids-downloader/`` folder.
+You will need to be logged to the destination platform to run the script and to have
+passwordless ssh access to the source platform.
+
+Basic usage:
+
+.. code-block:: bash
+
+    bash grids-sync.sh [levante_to_lumi | lumi_to_levante]
+
+This will synchronize the grids from Levante to LUMI or viceversa.
+
+.. warning::
+
+    If more grids are added to the Levante platform, the SWIFT database should be updated.
+    Please contact the AQUA team to upload new relevant grids to the SWIFT platform.
+
+Grids uploader
+--------------
+
+A script to upload the grids to the SWIFT platform is available in the ``cli/grids-downloader/`` folder.
+You will need to be on levante and to have the access to the SWIFT platform to run the script.
+With the automatic setup updated folders will be uploaded in the same location on the SWIFT platform and 
+no updates of the links in the `grids-downloader.sh` script will be needed.
+
+Basic usage:
+
+.. code-block:: bash
+
+    bash grids-uploader.sh [all | modelname]
+
+.. note::
+
+    The script will check that a valid SWIFT token is available before starting the upload.
+    If the token is not available, the script will ask the user to login to the SWIFT platform to obtain a new token.
 
 LUMI container installation
 ---------------------------

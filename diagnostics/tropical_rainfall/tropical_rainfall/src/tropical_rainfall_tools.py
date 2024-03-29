@@ -9,7 +9,6 @@ from typing import Union
 from aqua.util import ConfigPath
 from aqua.logger import log_configure
 import yaml
-from os import listdir
 from os.path import isfile, join, exists, isdir
 
 from importlib import resources
@@ -232,7 +231,7 @@ class ToolsClass:
         Returns:
             list: A list of file paths matching the specified year and month range or all files if no year range is specified.
         """
-        files = [join(path_to_histograms, f) for f in listdir(path_to_histograms) if isfile(join(path_to_histograms, f))]
+        files = [join(path_to_histograms, f) for f in os.listdir(path_to_histograms) if isfile(join(path_to_histograms, f))]
         files.sort()
         if start_year is None and end_year is None:
             # If no year range is provided, return all files sorted alphabetically
@@ -251,7 +250,7 @@ class ToolsClass:
                     selected_files.append(file_path)
         return selected_files
 
-    def find_files_with_keys(self, folder_path: str = None, keys: list = None):
+    def find_files_with_keys(self, folder_path: str = None, keys: list = None, get_path: bool = False):
         """
         Searches a specified folder for any file names that contain all the provided keys.
 
@@ -266,15 +265,21 @@ class ToolsClass:
         if folder_path is None or not exists(folder_path):
             self.logger.warning(f"Folder path '{folder_path}' does not exist yet or was not provided.")
             return False
+        else:
+            self.logger.debug(f"The provided path is {folder_path}")
 
-        files = [join(folder_path, f) for f in listdir(folder_path) if isfile(join(folder_path, f)) or isdir(join(folder_path, f))]
+        files = [join(folder_path, f) for f in os.listdir(folder_path) if isfile(join(folder_path, f)) or isdir(join(folder_path, f))]
         files.sort()
         keys = [str(key) for key in keys]
         for filename in files:
             if all(key in filename for key in keys):
                 self.logger.debug(f"A file {filename} meeting all specified criteria ({', '.join(keys)}) exists")
-                self.logger.warning(f"A file {filename} exists. Skipping calculations.")
-                return True
+                if get_path:
+                    self.logger.info(f"Returning the full path of the file {filename}")
+                    return filename
+                else:
+                    self.logger.warning(f"A file {filename} exists. Skipping calculations.")
+                    return True
         return False
 
     def remove_file_if_exists_with_keys(self, folder_path: str, keys: list):
@@ -293,7 +298,7 @@ class ToolsClass:
             self.logger.warning(f"Folder path '{folder_path}' does not exist yet or was not provided.")
             return False
 
-        files = [join(folder_path, f) for f in listdir(folder_path) if isfile(join(folder_path, f)) or isdir(join(folder_path, f))]
+        files = [join(folder_path, f) for f in os.listdir(folder_path) if isfile(join(folder_path, f)) or isdir(join(folder_path, f))]
         files.sort()
         keys = [str(key) for key in keys]
         for filename in files:
@@ -568,29 +573,15 @@ class ToolsClass:
                 time_unit = None #'day'
         return mass_unit, space_unit, time_unit
 
-    def _utc_to_local(self, utc_time: int, longitude: float) -> int:
-        """
-        Convert a UTC time to local time based on the longitude provided.
-
-        The function calculates the time zone offset based on the longitude, where each 15 degrees of
-        longitude corresponds to 1 hour of time difference. It then applies the time zone offset to convert
-        the UTC time to local time.
-
-        Args:
-            utc_time (int): The UTC time to convert to local time.
-            longitude (float): The longitude value to calculate the time zone offset.
-
-        Returns:
-            int: The local time after converting the UTC time based on the provided longitude.
-        """
-        # Calculate the time zone offset based on longitude
-        # Each 15 degrees of longitude corresponds to 1 hour of time difference
-        time_zone_offset_hours = int(longitude / 15)
-
-        # Apply the time zone offset to convert UTC time to local time
-        local_time = (utc_time + time_zone_offset_hours) % 24
-
-        return local_time
+    def get_local_time_decimal(self, utc_decimal_hour, longitude):
+        # Each degree of longitude corresponds to 4 minutes of time difference
+        # Convert that into hours for the calculation (4 minutes = 4/60 hours)
+        time_zone_offset_hours = longitude * 4 / 60
+        
+        # Calculate the local time in decimal hours
+        local_decimal_hour = (utc_decimal_hour + time_zone_offset_hours) % 24
+        
+        return local_decimal_hour
 
     def update_dict_of_loaded_analyses(self, loaded_dict: dict = None) -> Union[dict, None]:
         """

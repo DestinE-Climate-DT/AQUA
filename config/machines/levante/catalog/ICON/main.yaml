@@ -1,9 +1,4 @@
 sources:
-  ngc2009:
-    description: 5km coupled run, main ICON nextGEMS C2 run
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/ngc2009.yaml"
   ngc3026:
     description: 5km coupled run, 1-year intermediate ICON nextGEMS C3 run
     driver: yaml_file_cat
@@ -14,10 +9,3 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/ngc3028.yaml"
-
-
-  # grids:
-  #   description: ICON grids
-  #   driver: yaml_file_cat
-  #   args:
-  #       path: "/home/m/m300827/catalogs/grids/icon_grids_by_uuid.yaml"

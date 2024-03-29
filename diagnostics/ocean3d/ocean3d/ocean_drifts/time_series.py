@@ -36,13 +36,6 @@ class time_series:
                     
                     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n, lon_w=lon_w, lon_e=lon_e, loglevel=self.loglevel)
 
-                    if self.output:
-                        # if standardise:
-                        #     type = f"{type} standardised"
-                        plot_name = f'hovmoller_plot_{type.replace(" ","_")}'
-                        output_path, fig_dir, data_dir, filename = dir_creation(data_proc,
-                            region, lat_s, lat_n, lon_w, lon_e, output_dir, plot_name = plot_name, loglevel=self.loglevel)
-
                     # avg_thetaolevs, solevs =self.define_lev_values(data_proc)
                     avg_thetaolevs, solevs = 20, 20
                     plot_config = {"anomaly": anomaly,
@@ -55,11 +48,7 @@ class time_series:
                                             "region_title": region_title,
                                         "solevs": solevs,
                                         "avg_thetaolevs": avg_thetaolevs,
-                                            "output_path": output_path,
                                             "type": type,
-                                            "fig_dir": fig_dir,
-                                            "data_dir": data_dir,
-                                            "filename": filename,
                                             "plot_config": plot_config}
                     counter += 1            
         return 
@@ -75,8 +64,6 @@ class time_series:
         cmap = plot_info['cmap']
         region_title = plot_info['region_title']
         type = plot_info['type']
-        data_dir = plot_info["data_dir"]
-        filename = plot_info["filename"]
         customise_level = False
 
         if customise_level:
@@ -134,10 +121,12 @@ class time_series:
 
         # axs[i,1].set_yticklabels([])
 
-        axs[i, 0].text(-0.35, 0.2, type.replace("wrt", "\nwrt\n"), fontsize=15, color='dimgray', rotation=90, transform=axs[i, 0].transAxes, ha='center')
+        axs[i, 0].text(-0.35, 0.3, type.replace("wrt", "\nwrt\n"), fontsize=15, color='dimgray', rotation=90, transform=axs[i, 0].transAxes, ha='center')
 
         if self.output:
-            write_data(f'{data_dir}/{filename}.nc', data)
+            type = type.replace(" ","_").lower()
+            filename =  f"{self.filename}_{type}"
+            write_data(self.output_dir, filename, data)
     
 
     def plot(self):
@@ -147,10 +136,14 @@ class time_series:
         
         self.data_for_hovmoller_lev_time_plot()
 
-        filename = f"{self.model}_{self.exp}_{self.source}_{self.region}_time_series"
-        filename = filename.replace(" ", "_") 
+        if self.output:
+            self.filename = file_naming(self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e, 
+                                    plot_name=f"{self.model}-{self.exp}-{self.source}_time_series")
+
+  
+
         fig, (axs) = plt.subplots(nrows=3, ncols=2, figsize=(14, 20))
-        plt.subplots_adjust(bottom=0.3, top=0.85, wspace=0.5, hspace=0.5)
+        plt.subplots_adjust(bottom=0.3, top=0.85, wspace=0.3, hspace=0.1)
         
         self.loop_details(0, fig, axs)
         self.loop_details(1, fig, axs)
@@ -158,10 +151,12 @@ class time_series:
         # self.loop_details(3, fig, axs)
         # self.loop_details(4, fig, axs)
 
-        fig.suptitle(f"Time Series of {self.region}", fontsize=25, y=0.9)
+        title = f"Time Series of {self.region}"
+        fig.suptitle(title, fontsize=25, y=0.9)
 
         if self.output:
-            export_fig(self.output_dir, filename , "pdf")
+            export_fig(self.output_dir, self.filename , "pdf",
+                        metadata_value = title)
         
         logger.debug("Time series plot completed")
         return

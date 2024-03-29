@@ -4,6 +4,11 @@ paths:
   areas: /work/bb1153/b382075/aqua/areas
   
 sources:
+  IFS-FESOM:
+    description: IFS-FESOM NextGEMS pre-final (cycle 4)
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/IFS-FESOM/main.yaml"
   IFS:
     description: IFS atmosphere model
     driver: yaml_file_cat

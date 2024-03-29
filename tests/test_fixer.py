@@ -107,8 +107,8 @@ def test_fixer_ifs_default_fix():
 
     reader = Reader(model="IFS", exp="test-tco79", source="long_default_fix", loglevel=loglevel)
     data = reader.retrieve()
-    assert data['mtntrf'].attrs['paramId'] == '172179'
-    
+    assert data['mtnlwrf'].attrs['paramId'] == '235040'
+
 
 @pytest.mark.aqua
 def test_fixer_ifs_coords():

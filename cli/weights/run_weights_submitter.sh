@@ -38,7 +38,7 @@ log_message INFO "Machine Name: $machine"
 read -r nproc nodes walltime memory lumi_version account partition run_on_sunday < <(python -c "
 try:
     import yaml
-    with open('$AQUA/cli/weights/config/weights_config.yml') as f:
+    with open('$AQUA/cli/weights/weights_config.yml') as f:
         config = yaml.safe_load(f)['compute_resources']
         print(config['nproc'], config['nodes'], config['walltime'], config['memory'], config['lumi_version'], \
         config['account']['$machine'], config['partition']['$machine'], config['run_on_sunday'])

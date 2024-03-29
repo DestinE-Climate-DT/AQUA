@@ -70,7 +70,8 @@ def opa_catalog_entry(datadir, model, exp, source,
             'urlpath': os.path.join(datadir, f'*{frequency}_mean.nc'),
             'chunks': {},
             'xarray_kwargs': {
-                'decode_times': True
+                'decode_times': True,
+                'combine': 'by_coords'
             }
         },
         'description': description,

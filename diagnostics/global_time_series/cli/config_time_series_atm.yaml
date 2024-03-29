@@ -39,10 +39,5 @@ timeseries_plot_params:
     annual: True
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
-  # 2t:
-  #   plot_kw:
-  #     color: "tab:blue"
-  #   plot_era5: True
-  #   resample: "M"
-  #   savefig: True
-  #   ylim: [-10, 10]
+  mtnlwrf+mtnswrf:
+    longname: "Net top radiation" # This is to override title and ylabel

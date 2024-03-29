@@ -36,10 +36,10 @@ f_month = ToolsClass().get_config_value(config, 'time_frame', 'f_month', default
 # plot_attributes
 pdf_format = ToolsClass().get_config_value(config, 'plot_attributes', 'pdf_format', default=True)
 figsize = ToolsClass().get_config_value(config, 'plot_attributes', 'figsize', default=1)
-linewidth = ToolsClass().get_config_value(config, 'plot_attributes', 'linewidth', default=3)
+linewidth = ToolsClass().get_config_value(config, 'plot_attributes', 'linewidth', default=2)
 fontsize = ToolsClass().get_config_value(config, 'plot_attributes', 'fontsize', default=14)
-smooth = ToolsClass().get_config_value(config, 'plot_attributes', 'smooth', default=True)
-step = ToolsClass().get_config_value(config, 'plot_attributes', 'step', default=False)
+smooth = ToolsClass().get_config_value(config, 'plot_attributes', 'smooth', default=False)
+step = ToolsClass().get_config_value(config, 'plot_attributes', 'step', default=True)
 color_map = ToolsClass().get_config_value(config, 'plot_attributes', 'color_map', default=False)
 cmap = ToolsClass().get_config_value(config, 'plot_attributes', 'cmap', default='coolwarm')
 linestyle = ToolsClass().get_config_value(config, 'plot_attributes', 'linestyle', default='-')

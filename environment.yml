@@ -21,6 +21,7 @@ dependencies:
   - pip:
     - -e ./diagnostics/global_time_series/ # pip install -e of global_time_series
     - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
+    - -e ./diagnostics/seaice/ # pip install -e of seaice
     - -e ./diagnostics/teleconnections/ # pip install -e of teleconnections
     - -e ./diagnostics/tropical_cyclones/ # pip install -e of tropical cyclones
     - -e ./diagnostics/tropical_rainfall/ # pip install -e of tropical_rainfall

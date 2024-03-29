@@ -5,7 +5,7 @@ fixer_name:
         data_model: false  # Do not attempt to fix coordinates
         delete: [latitude, longitude]
         vars:
-            var263008:  # avg_sivol - average sea ice volume [m3/m2]
+            avg_sivol:  # avg_sivol - average sea ice volume [m3/m2]
                 source: sivol
                 grib: true
             sftof:
@@ -16,7 +16,7 @@ fixer_name:
         data_model: false  # Do not attempt to fix coordinates
         delete: [latitude, longitude]
         vars:
-            var263008:  # avg_sivol - average sea ice volume [m3/m2]
+            avg_sivol:  # avg_sivol - average sea ice volume [m3/m2]
                 source: sivol
                 grib: true
             sftof:

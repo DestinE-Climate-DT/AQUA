@@ -2,9 +2,11 @@
 import sys
 import os
 import argparse
+
+from dask.distributed import Client, LocalCluster
+
 from aqua.util import load_yaml, get_arg
 from aqua.logger import log_configure
-
 
 def parse_arguments(args):
     """Parse command line arguments"""
@@ -12,6 +14,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='Radiation Budget Diagnostic CLI')
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
+    parser.add_argument('-n', '--nworkers', type=int,
+                        help='number of dask distributed workers')
     # This arguments will override the configuration file if provided
     parser.add_argument('--model', type=str, help='model name',
                         required=False)
@@ -42,12 +46,19 @@ if __name__ == '__main__':
     sys.path.insert(0, '../../')
     try:
         from radiation import process_ceres_data, process_model_data
-        from radiation import boxplot_model_data, plot_mean_bias, gregory_plot, plot_model_comparison_timeseries
+        from radiation import boxplot_model_data, plot_mean_bias, plot_model_comparison_timeseries
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
         sys.exit(0)
 
     logger.info('Running Radiation Budget Diagnostic ...')
+
+    # Dask distributed cluster
+    nworkers = get_arg(args, 'nworkers', None)
+    if nworkers:
+        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+        client = Client(cluster)
+        logger.info(f"Running with {nworkers} dask distributed workers.")
 
     file = get_arg(args, 'config', 'config/radiation_config.yml')
     logger.info('Reading configuration yaml file..')
@@ -76,7 +87,6 @@ if __name__ == '__main__':
 
     box_plot_bool = config['diagnostic_attributes']['box_plot']
     bias_maps_bool = config['diagnostic_attributes']['bias_maps']
-    gregory_bool = config['diagnostic_attributes']['gregory']
     time_series_bool = config['diagnostic_attributes']['time_series']
     try:
         model_data = process_model_data(model=model, exp=exp, source=source, loglevel=loglevel)
@@ -96,13 +106,13 @@ if __name__ == '__main__':
 
     if box_plot_bool:
         try:
-            datasets = [ceres, model_data]
+            datasets = [era5, ceres, model_data]
             boxplot_model_data(datasets=datasets, outputdir=outputdir, outputfig=outputfig, loglevel=loglevel)
-            logger.info("The boxplot with provided model and CERES was created and saved. Variables ttr and tsr are plotted to show imbalances.")
+            logger.info("The boxplot with provided model and observation was created and saved. Variables are plotted to show imbalances.")
         except Exception as e:
             # Handle other exceptions
             logger.error(f"An unexpected error occurred: {e}")
-
+            
     if bias_maps_bool:
         for var in ['mtnlwrf', 'mtnswrf', 'tnr']:
             try:
@@ -114,21 +124,11 @@ if __name__ == '__main__':
                 # Handle other exceptions
                 logger.error(f"An unexpected error occurred: {e}")
 
-    if gregory_bool:
-        try:
-            gregory_plot(obs_data=era5, models=model_data,
-                         outputdir=outputdir, outputfig=outputfig, loglevel=loglevel)
-            logger.info(
-                "Gregory Plot was created and saved with various models and an observational dataset.")
-        except Exception as e:
-            # Handle other exceptions
-            logger.error(f"An unexpected error occurred: {e}")
-
     if time_series_bool:
         try:
             plot_model_comparison_timeseries(models=model_data, ceres=ceres,
                                              outputdir=outputdir, outputfig=outputfig,
-                                             ylim=15, loglevel=loglevel)
+                                             loglevel=loglevel)
             logger.info(
                 "The time series bias plot with various models and CERES was created and saved.")
         except Exception as e:

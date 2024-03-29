@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 
+from dask.distributed import Client, LocalCluster
+
 from aqua import Reader
 from aqua.util import load_yaml
 
@@ -178,6 +180,13 @@ class Ocean3DCLI:
         self.loglevel = self.get_arg('loglevel', 'WARNING')
         self.logger = log_configure(log_name='Ocean3D CLI', log_level=self.loglevel)
 
+        # Dask distributed cluster
+        nworkers = self.get_arg('nworkers', None)
+        if nworkers:
+            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+            client = Client(cluster)
+            self.logger.info(f"Running with {nworkers} dask distributed workers.")
+
         # Change the current directory to the one of the CLI so that relative paths work
         abspath = os.path.abspath(__file__)
         dname = os.path.dirname(abspath)
@@ -209,6 +218,8 @@ def parse_arguments(args):
 
     parser.add_argument('--config', type=str,
                         help='yaml configuration file')
+    parser.add_argument('-n', '--nworkers', type=int,
+                        help='number of dask distributed workers')
     parser.add_argument('-l', '--loglevel', type=str,
                         help='log level [default: WARNING]')
 

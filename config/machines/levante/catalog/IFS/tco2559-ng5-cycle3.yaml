@@ -7,7 +7,7 @@ sources:
     driver: zarr
     metadata:
       source_grid_name: tco2559
-      fixer_name: ifs-default
+      fixer_name: IFS-default
     args:
       consolidated: false
       urlpath:
@@ -72,3 +72,4 @@ sources:
         decode_times: true
     metadata:
       source_grid_name: lon-lat
+      fixer_name: lra-cycle3

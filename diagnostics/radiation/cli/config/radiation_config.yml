@@ -12,7 +12,6 @@ data:
 diagnostic_attributes:
   box_plot: True
   bias_maps: True
-  gregory: True
   time_series: True
 
 path:

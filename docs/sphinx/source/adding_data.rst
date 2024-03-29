@@ -141,7 +141,7 @@ We report here an example and we later describe the different elements.
                     step: 0
                 data_start_date: 19500101T0000
                 data_end_date: 19591231T2300
-                aggregation: D  # Default aggregation / chunk size
+                chunks: D  # Default time chunk size
                 savefreq: h  # at what frequency are data saved
                 timestep: h  # base timestep for step timestyle
                 timestyle: step  # variable date or variable step
@@ -184,25 +184,38 @@ Some of the parameters are here described:
 
     As above, it tells AQUA when to stop reading from the FDB and it can be set to ``auto`` too (only if ``timestyle`` is 'date').
 
-.. option:: aggregation
+.. option:: chunks
 
-    The aggregation parameter is essential, whether you are using Dask or a generator.
+    The chunks parameter is essential, whether you are using Dask or a generator.
     It determines the size of the chunk loaded in memory at each iteration. 
 
     When using a generator, it corresponds to the chunk size loaded into memory during each iteration.
-    For Dask, it signifies the size of each chunk used by Dask's parallel processing.
+    For Dask, it controls the size of each chunk used by Dask's parallel processing.
 
-    The choice of aggregation value is crucial as it strikes a balance between memory consumption and
+    The choice of the chunks value is crucial as it strikes a balance between memory consumption and
     distributing enough work to each worker when Dask is utilized with multiple cores. 
     In most cases, the default values in the catalog have been thoughtfully chosen through experimentation.
 
-    For instance, an aggregation value of ``D`` (for daily) works well for hourly-native data because it
+    For instance, an chunks value of ``D`` (for daily) works well for hourly-native data because it
     occupies approximately 1.2GB in memory.
     Increasing it beyond this limit may lead to memory issues. 
 
-    It is possible to choose a smaller aggregation value, but keep in mind that each worker has its own overhead,
+    It is possible to choose a smaller chunks value, but keep in mind that each worker has its own overhead,
     and it is usually more efficient to retrieve as much data as possible from the FDB for each worker.
-    There is also a consideration to rename this parameter to "chunksize."
+
+    By the ``chunks`` argument is a string and refers to time-chunking.
+    In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
+    by passing a dictionary to chunks with the keys ``time`` and ``vertical``. 
+    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maxmimum number of vertical levels
+    in each chunk.
+
+    An example would be:
+
+.. code-block:: yaml
+
+    chunks:
+      time: D  # Default time chunk size
+      vertical: 3  # Three vertical levels in each chunk
 
 .. option:: timestep
 
@@ -224,20 +237,24 @@ Some of the parameters are here described:
 
 .. option:: timestyle
 
-    The timestyle parameter can be set to either ``step`` or ``date``.
-    It determines how data is written in the FDB. 
+    The timestyle parameter can be set to either ``step``, ``date`` or ``yearmonth`` according to the FDB schema.
+    Indeed, it determines how the time axis data is written in the FDB. 
 
-    The recent examples have used ``step``, which involves specifying a fixed date (e.g., 19500101) and time (e.g., 0000)
-    in the request.
-    Time is then identified by the step in the request.
+    The above examples have used ``step``, which involves specifying a fixed ``date`` (e.g., 19500101) and ``time`` (e.g., 0000)
+    in the request. Time axis is then identified by the ``step`` in the request.
 
-    Alternatively, when timestyle is set to ``date``, you can directly specify both date and time in the request,
+    Alternatively, when timestyle is set to ``date``, you can directly specify both ``date`` and ``time`` in the request,
     and ``step`` is always set to 0.
+
+    Finally, when using the ``yearmonth`` timestyle you do not have to set neither time, step, and date in the request.
+    On the contrary, the ``year`` and ``month`` keys need to be specified. The FDB module will then build the corresponding
+    request. 
+
+    Please note that it is very important to know which timestyle has been used in the FDB before creating the request
 
 .. option:: timeshift
 
     Timeshift is a boolean parameter used exclusively for shifting the date of monthly data back by one month.
-    Without this shift, data for January would have a date like ``19500201T0000``.
 
     Implementing this correctly in a general case can be quite complex, so it was decided to implement only the monthly shift.
 
@@ -365,7 +382,7 @@ that is defined as:
             [ ... other request parameters ... ]
         data_start_date: 19900101T0000
         data_end_date: 19941231T2300
-        aggregation: D  
+        chunks: D  
         [ ... other keys ... ]
         metadata: &metadata-default
             fdb_path: [ ... some path to the FDB ... ]
@@ -409,6 +426,56 @@ the ones that are explicitly overridden.
 
 .. This will open all the sources available and will regrid them. It can take a while and can be memory intensive, so it would be 
 .. safer to not launch it from notebook. 
+
+
+Intake capabilities and kwargs data access
+------------------------------------------
+
+Intake ships a template replacement capabilities based on Jinja2 which is able to "compress" multiple sources. 
+This is combined by the capacity of AQUA of elaborating extra arguments which goes beyond the classical model-exp-source hierarchy
+For example, we could assume we have a FDB source as the one above. However, this sources is made by multiple ensemble
+members, and we want to described this in the catalog. This is something intake can easily handle with the Jinja `{{ }}`` syntax.
+
+
+.. code-block:: yaml
+
+    sources:
+        hourly-native:
+            args:
+                request:
+                    domain: g
+                    class: rd
+                    expver: a06x
+                    realization: {{ realization }}
+
+                    ...
+                   
+                driver: gsv
+                parameters:
+                    realization:
+                        allowed: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+                        description: realization member
+                        type: str
+                        default: '1'
+
+This can be later accessed via the reader providing an extra argument, or kwargs in python jargon, which define the realization
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="control-1950-devcon", source="hourly-native", realization=5)
+    data = reader.retrieve(var='2t')
+
+This will load the realizaiton number 5 of my experiment above. Of course, if we do not specify the realization in the `Reader()`
+call a default will be provided, so in the case above the number 1 will be loaded. 
+
+This capacity can be tuned to multiple features according to source characteristics, and will be further expaned in the future.
+
+.. warning::
+
+    Some kwargs might have an impact on the resolution of the data, and consequently on the grid file name and format. An example is the `zoom` key used for some ICON data. 
+    In this case, AQUA will modify the file templates accordingly. If this modication is required or not can be controlled through the
+    variable ``default_weights_areas_parameters`` in the reader.py module. This is a test feature and will be expanded in the future. 
+
 
 
 DE_340 source syntax convention

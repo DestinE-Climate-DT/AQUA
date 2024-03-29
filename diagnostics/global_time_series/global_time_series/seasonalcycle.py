@@ -122,11 +122,11 @@ class SeasonalCycle(Timeseries):
 
         if self.formula is False or self.formula is None:
             try:
-                title = self.data_mon[0].attrs['long_name'] + ' (' + self.data_mon[0].attrs['units'] + ') timeseries'
+                title = self.data_mon[0].attrs['long_name'] + ' (' + self.data_mon[0].attrs['units'] + ') seasonal cycle'
             except KeyError:
-                title = f'{self.var} timeseries'
+                title = f'{self.var} seasonal cycle'
         else:
-            title = f'{self.var} timeseries'
+            title = f'{self.var} seasonal cycle'
 
         fig, _ = plot_seasonalcycle(data=self.cycle,
                                     ref_data=self.cycle_ref,
@@ -168,7 +168,10 @@ class SeasonalCycle(Timeseries):
             description += self.description_timerange[i]
         if self.plot_ref:
             description += f" with {ref_label} as reference,"
-            description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"
+            try:
+                description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"  # noqa: E501
+            except ValueError:
+                description += f" std evaluated from {time_to_string(self.ref_mon.time.values[0])} to {time_to_string(self.ref_mon.time.values[-1])}"  # noqa: E501
         description += "."
         self.logger.debug(f"Description: {description}")
         add_pdf_metadata(filename=os.path.join(outfig, self.outfile),

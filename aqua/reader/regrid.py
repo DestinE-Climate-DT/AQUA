@@ -6,6 +6,7 @@ import types
 import subprocess
 import tempfile
 import xarray as xr
+import numpy as np
 
 import smmregrid as rg
 
@@ -41,7 +42,7 @@ class RegridMixin():
         self.logger.warning("Success!")
 
     def _make_src_area_file(self, areafile, source_grid,
-                            gridpath="", icongridpath="", zoom=None):
+                            gridpath="", icongridpath=""):
         """
         Helper function to create source area files.
 
@@ -50,7 +51,6 @@ class RegridMixin():
             source_grid (dict): The source grid specification.
             gridpath (str, optional): The path to the grid files. Defaults to an empty string.
             icongridpath (str, optional): The path to the ICON grid files. Defaults to an empty string.
-            zoom (int, optional): The zoom level for the grid (for HealPix grids). Defaults to None.
 
         Returns:
             None
@@ -61,7 +61,7 @@ class RegridMixin():
         else:
             vert_coord = None
 
-        sgrid = self._get_source_grid(source_grid, vert_coord, zoom)
+        sgrid = self._get_source_grid(source_grid, vert_coord)
        
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
@@ -79,8 +79,53 @@ class RegridMixin():
         grid_area.to_netcdf(areafile)
         self.logger.warning("Success!")
 
-    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, method='ycon',
-                           regrid=None, extra=None, zoom=None, vert_coord=None):
+    def _weights_generation_time(self, original_grid_size=None, new_grid_size=None, nproc=None, vert_coord_size=None):
+        """
+        Helper function to estimate the time required for generating regridding weights.
+
+        Args:
+            original_grid_size (int, optional): Size of the original grid. Defaults to None.
+            new_grid_size (int, optional): Size of the new grid. Defaults to None.
+            nproc (int, optional): Number of processors to be used in the computation. Defaults to None.
+            vert_coord_size (int, optional): Size of the vertical coordinate. Defaults to None.
+
+        Returns:
+            None: This function does not return a value but logs the estimated time for weight generation.
+        """
+        if None in [original_grid_size, new_grid_size, nproc, vert_coord_size]:
+            self.logger.error("Missing required parameter for weight generation time estimation.")
+            return
+
+        warning_threshold = 59  # seconds
+
+        # Log comparison of grid sizes
+        self.logger.debug(f"Grid size comparison - Original: {original_grid_size}, New: {new_grid_size}.")
+
+        # Assumptions for Instructions Per Second (IPS)
+        IPS_original = 0.00013 / max(vert_coord_size, 1)
+        IPS_new = 0.000043 / max(vert_coord_size / (nproc + 1), 1)
+
+        clock_speed = 3.5 * 10**9  # Hz
+
+        # Operations Per Second (OPS)
+        OPS_original = clock_speed * IPS_original
+        OPS_new = clock_speed * IPS_new
+
+        expected_time_original = original_grid_size / OPS_original
+        expected_time_new = new_grid_size / OPS_new
+        expected_time = expected_time_original + expected_time_new
+
+        self.logger.debug(f"The total expected processing time is {expected_time} seconds.")
+
+        if expected_time > warning_threshold:
+            hours, remainder = divmod(int(expected_time), 3600)
+            minutes = round((int(expected_time) % 3600) / 60)
+            formatted_time = f'{hours} hours, {minutes} minutes'
+            self.logger.warning(f'Time to generate the weights will take approximately {formatted_time}.')
+
+
+    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, method='ycon', regrid=None, extra=None, 
+                           vert_coord=None, original_grid_size=None, nproc=None):
         """
         Helper function to produce weights file.
 
@@ -90,20 +135,35 @@ class RegridMixin():
             cfg_regrid (dict): The regrid configuration.
             regrid (str, optional): The regrid option. Defaults to None.
             extra (str or list, optional): Extra command(s) to apply to source grid before weight generation. Defaults to None.
-            zoom (int, optional): The zoom level for the grid (for HealPix grids). Defaults to None.
             vert_coord (str, optional): The vertical coordinate to use for weight generation. Defaults to None.
             method (str, optional): The interpolation method to be used (see CDO manual). Defaults to 'ycon'.
         Returns:
             None
         """
 
-        sgrid = self._get_source_grid(source_grid, vert_coord, zoom)
+        sgrid = self._get_source_grid(source_grid, vert_coord)
+
+        self.logger.warning("Weights file not found: %s", weightsfile)
+        self.logger.warning("Attempting to generate it ...")
 
         if vert_coord == "2d" or vert_coord == "2dm":  # if 2d we need to pass None to smmregrid
             vert_coord = None
 
-        self.logger.warning("Weights file not found: %s", weightsfile)
-        self.logger.warning("Attempting to generate it ...")
+        width, height = map(int, cfg_regrid['grids'][regrid][1:].split('x'))
+        new_grid_size = width * height
+        
+        total_size = sgrid.sizes
+        total_elements = 1
+        for dim_size in total_size.values():
+            total_elements *= dim_size
+
+        if original_grid_size > 0:  # Prevent division by zero
+            vert_coord_size = total_elements / original_grid_size
+        else:
+            vert_coord_size = 1
+
+        self._weights_generation_time(original_grid_size=original_grid_size,
+                                      new_grid_size=new_grid_size, vert_coord_size=vert_coord_size, nproc=nproc)
 
         # hack to  pass a correct list of all options
         src_extra = source_grid.get("extra", [])
@@ -118,7 +178,7 @@ class RegridMixin():
 
         sgrid.load()  # load the data to avoid problems with dask in smmregrid
         sgrid = sgrid.compute()  # for some reason both lines are needed 
-
+        
         weights = rg.cdo_generate_weights(source_grid=sgrid,
                                           target_grid=cfg_regrid["grids"][regrid],
                                           method=method,
@@ -131,14 +191,13 @@ class RegridMixin():
         weights.to_netcdf(weightsfile)
         self.logger.warning("Success!")
 
-    def _get_source_grid(self, source_grid, vert_coord, zoom):
+    def _get_source_grid(self, source_grid, vert_coord):
         """
         Helper function to get the source grid path.
 
         Args:
             source_grid (dict): The source grid specification.
             vert_coord (list): vertical coordinate
-            zoom (str): zoom option
 
         Returns:
             xarray.DataArray: The source grid path.
@@ -183,8 +242,7 @@ class RegridMixin():
                     sgrid = sgrid[vert_coord]
                 else:
                     sgrid = sgrid["2d"]
-            if zoom is not None:
-                sgrid = sgrid.format(zoom=zoom)
+                sgrid = sgrid.format(**self.kwargs)
             sgrid = xr.open_dataset(sgrid)
 
         return sgrid
@@ -277,17 +335,20 @@ class RegridMixin():
         """
 
         aggregation = self.aggregation
+        chunks = self.chunks
         fix = self.fix
         streaming = self.streaming
         startdate = self.startdate
         enddate = self.enddate
         self.fix = False
         self.aggregation = None
+        self.chunks = None
         self.streaming = False
         self.startdate = None
         self.enddate = None
         data = self.retrieve(sample=True, history=False, *args, **kwargs)
         self.aggregation = aggregation
+        self.chunks = chunks
         self.fix = fix
         self.streaming = streaming
         self.startdate = startdate

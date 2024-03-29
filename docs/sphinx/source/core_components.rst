@@ -722,3 +722,18 @@ The function will automatically plot what is available, so it is possible to plo
 
     Example of a ``plot_seasonalcycle()`` output done with the :ref:`global_mean_timeseries`.
     The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.
+
+Multiple maps
+^^^^^^^^^^^^^
+
+A function called ``plot_maps()`` is provided with many options to customize the plot.
+The function takes as input a list of xarray.DataArray, each one representing a map.
+It is built to plot multiple maps in a single figure, with a shared colorbar.
+This can be userdefined or evaluated automatically.
+Figsize can be adapted and the number of plots and their position is automatically evaluated.
+
+.. figure:: figures/maps_example.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_maps()`` output.

@@ -43,6 +43,8 @@ def parse_arguments(arguments):
                         help='overwrite existing output')
     parser.add_argument('-l', '--loglevel', type=str,
                         help='log level [default: WARNING]')
+    parser.add_argument('--monitoring', action="store_true",
+                        help='enable the dask performance monitoring. Will run a single chunk')
     parser.add_argument('-m', '--model', type=str,
                         help='model to be processed. Use with coherence with --exp')
     parser.add_argument('-e', '--exp', type=str,
@@ -70,9 +72,10 @@ if __name__ == '__main__':
     loglevel = config['loglevel']
 
     definitive = get_arg(args, 'definitive', False)
+    monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
     fix = get_arg(args, 'fix', True)
-    workers = get_arg(args, 'workers', 1)
+    default_workers = get_arg(args, 'workers', 1)
     loglevel = get_arg(args, 'loglevel', loglevel)
     
     models = to_list(get_arg(args, 'model', config['catalog'].keys()))
@@ -87,14 +90,19 @@ if __name__ == '__main__':
                     # get the zoom level
                     zoom_level = config['catalog'][model][exp][source].get('zoom', None)
 
+                    # get the number of workers for this specific configuration
+                    workers = config['catalog'][model][exp][source].get('workers', default_workers)
+
                     # init the LRA
-                    lra = LRAgenerator(model=model, exp=exp, source=source, zoom=zoom_level,
+                    lra = LRAgenerator(model=model, exp=exp, source=source,
                                        var=varname, resolution=resolution,
                                        frequency=frequency, fix=fix,
                                        outdir=outdir, tmpdir=tmpdir, configdir=configdir,
                                        nproc=workers, loglevel=loglevel,
                                        definitive=definitive, overwrite=overwrite,
-                                       exclude_incomplete=True)
+                                       performance_reporting=monitoring,
+                                       exclude_incomplete=True,
+                                       zoom=zoom_level)
 
                     # check that your LRA is not already there (it will not work in streaming mode)
                     lra.check_integrity(varname)
