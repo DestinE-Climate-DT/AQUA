@@ -82,7 +82,7 @@ class DetectNodes():
                 self.data3d.sel(time=timestep, plev=[30000, 50000]))
             outfield = xr.merge([self.lowres2d, lowres3d])
             
-        if self.model == 'IFS-NEMO':
+        elif self.model == 'IFS-NEMO':
 
             # this assumes that only required 2D data has been retrieved
             self.lowres2d = self.reader2d.regrid(self.data2d.sel(time=timestep)).load()
@@ -104,7 +104,7 @@ class DetectNodes():
                 orog_first_timestep['time'] = outfield['time']
                 outfield = outfield.combine_first(orog_first_timestep)
                 
-        if self.model == 'ICON':
+        elif self.model == 'ICON':
 
             # this assumes that only required 2D data has been retrieved
             self.lowres2d = self.reader2d.regrid(self.data2d.sel(time=timestep)).load()
