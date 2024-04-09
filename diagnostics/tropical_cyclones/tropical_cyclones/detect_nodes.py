@@ -126,8 +126,6 @@ class DetectNodes():
             if self.orography:
                 self.logger.info("Orography added to detect nodes input file")
                 outfield = outfield.combine_first(self.orog)
-                
-            print (outfield.keys(), outfield.coords)
             
         else:
             raise KeyError(f'Atmospheric model {self.model} not supported')
