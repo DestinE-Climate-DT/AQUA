@@ -16,6 +16,8 @@ from matplotlib.ticker import StrMethodFormatter
 import numpy as np
 import xarray as xr
 
+from scipy.optimize import curve_fit
+from scipy.stats import t
 
 class PlottingClass:
     """This is class to create the plots."""
@@ -671,6 +673,7 @@ class PlottingClass:
             self.savefig(path_to_pdf, self.pdf_format)
 
     def daily_variability_plot(self, data, ymax: float = 12, relative: bool = True, save: bool = True,
+                               percentile: bool = False,
                                legend: str = '_Hidden', figsize: float = None, linestyle: str = None, color: str = 'tab:blue',
                                model_variable: str = None, loc: str = 'upper right', fontsize: int = None,
                                add: Optional[Tuple] = None, fig: Optional[object] = None, plot_title: str = None,
@@ -711,43 +714,63 @@ class PlottingClass:
         elif add is not None:
             fig, ax = add
 
+        def sine_model(x, A, B, C, D):
+            return A * np.sin(B * (x - C)) + D
+        if percentile:
+            grouped_smooth = data.groupby('local_time')
+            mean_per_hour_smooth = grouped_smooth.mean()
+                
+            X = mean_per_hour_smooth['local_time'].values
+            y = mean_per_hour_smooth['mtpr'].values
+            
+            popt, pcov = curve_fit(sine_model, X, y)
+            
+            predictions = sine_model(X, *popt)
+
+            residuals = y - predictions
+            var_res = np.var(residuals, ddof=len(popt))  # Degrees of freedom = number of parameters
+            se_pred = np.sqrt(var_res)  # Standard error of predictions (simplified)
+
+            t_multiplier = t.ppf(0.875, df=len(y)-len(popt))  # 0.875 for 75th percentile, two-tailed
+
+            pred_int_lower = predictions - t_multiplier * se_pred
+            pred_int_upper = predictions + t_multiplier * se_pred
+
+            plt.fill_between(X, pred_int_lower, pred_int_upper, color=color, alpha=0.2, label='Pred. Interval')
+            #plt.plot(X, predictions, label='Fitted Model')
+            #plt.scatter(X, y, label='Data')
+        
         grouped = data.groupby('local_time')
         mean_per_hour = grouped.mean()
-        
         data['local_time'].values = data['local_time'].astype(int).values
         grouped_smooth = data.groupby('local_time')
         mean_per_hour_smooth = grouped_smooth.mean()
         
-        utc_time = mean_per_hour['local_time']
         utc_time_smooth = mean_per_hour_smooth['local_time']
         if relative:
-            mtpr = mean_per_hour['mtpr_relative']
             mtpr_smooth = mean_per_hour_smooth['mtpr_relative']
         else:
-            mtpr = mean_per_hour[self.model_variable]
             mtpr_smooth = mean_per_hour_smooth[self.model_variable]
         try:
             units = mean_per_hour.units
         except AttributeError:
             units = mean_per_hour.mtpr.units
-
-        #plt.plot(utc_time, mtpr, color=color, linestyle=self.linestyle, alpha=0.25)
+            
         plt.plot(utc_time_smooth, mtpr_smooth, color=color, label=legend, linestyle=self.linestyle,
                  linewidth=1*self.linewidth)
         if plot_title is None:
             if relative:
                 plt.suptitle(
                     'Relative Value of Daily Precipitation Variability', fontsize=self.fontsize+1)
-                plt.ylabel('relative mtpr', fontsize=self.fontsize-2)
+                plt.ylabel('mtpr variability, '+units, fontsize=self.fontsize-2)
             else:
                 plt.suptitle('Daily Precipitation Variability', fontsize=self.fontsize+1)
-                plt.ylabel('mtpr variability, '+units, fontsize=self.fontsize-2)
-                
+                plt.ylabel('relative mtpr', fontsize=self.fontsize-2)
         else:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
         plt.grid(True)
-        plt.xlim([0-0.2,24+0.2])
+        plt.xlim([0-0.5,23+0.5])
         plt.xlabel('Local time', fontsize=self.fontsize-2)
 
         if legend != '_Hidden':
@@ -755,6 +778,7 @@ class PlottingClass:
                        fontsize=self.fontsize-2, ncol=2)
 
         if save and isinstance(path_to_pdf, str):
-            path_to_pdf = self.savefig(path_to_pdf, self.pdf_format)
+             path_to_pdf = self.savefig(path_to_pdf, self.pdf_format)
 
-        return {fig, ax}, path_to_pdf
+        return {fig, ax},  path_to_pdf
+

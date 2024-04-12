@@ -2109,6 +2109,7 @@ class MainClass:
         return new_dataset
 
     def daily_variability_plot(self, ymax: int = 12, trop_lat: float = None, relative: bool = True, save: bool = True,
+                               percentile: bool = False,
                                legend: str = '_Hidden', figsize: int = None, linestyle: str = None, color: str = 'tab:blue',
                                model_variable: str = None, loc: str = 'upper right', fontsize: int = None,
                                add: Any = None, fig: Any = None, plot_title: str = None, path_to_pdf: str = None,
@@ -2165,6 +2166,7 @@ class MainClass:
             path_to_pdf = path_to_pdf + 'tropical_rainfall_' + name_of_file + '_daily_variability.pdf'
 
         return self.plots.daily_variability_plot(data, ymax=y_lim_max, relative=relative, save=save,
+                                                 percentile=percentile,
                                                  legend=legend, figsize=figsize, linestyle=linestyle, color=color,
                                                  model_variable=self.model_variable, loc=loc, fontsize=fontsize,
                                                  add=add, fig=fig, plot_title=None, path_to_pdf=path_to_pdf,
