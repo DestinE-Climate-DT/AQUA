@@ -36,7 +36,7 @@ catalog:
     historical-1990:
       hourly-hpz10-atm2d:
         vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
-           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss']
+           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
         workers: 12
       hourly-hpz10-atm3d:
         vars: ['q', 't', 'u', 'v']
@@ -52,7 +52,7 @@ catalog:
       hourly-hpz10-atm2d:
         workers: 12
         vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
-           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss']
+           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
       hourly-hpz10-atm3d:
         workers: 6
         vars: ['q', 't', 'u', 'v']
