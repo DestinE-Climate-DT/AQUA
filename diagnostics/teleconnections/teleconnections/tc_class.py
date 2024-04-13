@@ -25,6 +25,8 @@ from teleconnections.plots import index_plot
 from teleconnections.statistics import reg_evaluation, cor_evaluation
 from teleconnections.tools import TeleconnectionsConfig, set_filename
 
+xr.set_options(keep_attrs=True)
+
 
 class Teleconnection():
     """Class for teleconnection objects."""

@@ -3,6 +3,8 @@ import xarray as xr
 
 from teleconnections.tools import _check_dim, select_season
 
+xr.set_options(keep_attrs=True)
+
 
 def reg_evaluation(indx,
                    data,
