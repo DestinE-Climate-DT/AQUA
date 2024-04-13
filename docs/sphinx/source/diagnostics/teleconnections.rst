@@ -99,9 +99,10 @@ Example plot
 ------------
 
 .. figure:: figures/teleconnections.png
-   :width: 10 cm
+   :width: 100%
 
-   Example plot of the NAO index for ERA5 data.
+   ENSO IFS-NEMO ssp370 regression map (avg_tos) compared to ERA5.
+   The contour lines are the model regression map and the filled contour map is the difference between the model and the reference regression map.
 
 Available demo notebooks
 ------------------------
