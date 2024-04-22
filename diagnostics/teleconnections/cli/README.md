@@ -79,3 +79,17 @@ It requires in order to produce all the figures if `--ref` is set the ERA5 reana
 We provide a slurm script to run the diagnostic but the execution on a low resolution archive is very fast and an interactive session is sufficient.
 
 Please note that a wrapper to execute all the diagnostics is provided in the `cli/aqua-analysis` folder.
+
+## Bootstrap CLI
+
+An additional CLI not included in the wrapper is the `cli_bootstrap.py` script.
+This script will not produce any plot but it will evaluate with 1000 bootstrap the significance of the teleconnections regression map.
+This is available only for full year regression maps and not for the seasonal ones.
+The script can be run as follows:
+
+```bash
+mamba activate aqua # if you are using the conda environment
+python cli_bootstrap.py -c config_bootstrap.yaml
+```
+
+The configuration file has the same structure of the `cli_config_*.yaml` files.

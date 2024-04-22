@@ -94,6 +94,11 @@ Then, run the following command:
 This will run the basic test suite and print the results to the terminal.
 Have a look at the ``tests`` directory for more tests.
 
+.. note::
+   The ``-m aqua`` flag is used to run only the tests that are marked with the ``aqua`` marker.
+   More markers are available such as ``slow`` and ``graphics``.
+   To run the graphics tests, you will need to download the teleconnections data by running the ``tests/teleconnections/download_data_for_tests.sh`` script.
+
 Writing Tests
 ^^^^^^^^^^^^^
 

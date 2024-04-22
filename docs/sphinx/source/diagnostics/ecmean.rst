@@ -28,7 +28,7 @@ Input variables
 
 For Performance Indices the following variables are requested:
 
-* ``tprate`` (total precipitation rate, GRIB paramid 260048)
+* ``mtpr`` (Mean total precipitation rate, GRIB paramid 235055)
 * ``2t``     (2 metre temperature, GRIB paramid 167)
 * ``msl``    (mean sea level pressure, GRIB paramid 151)
 * ``metss``  (eastward wind stress, GRIB paramid 180)
@@ -40,7 +40,13 @@ For Performance Indices the following variables are requested:
 * ``avg_tos``    (sea surface temperature, GRIB paramid 263101)
 * ``avg_sos``    (sea surface salinity, GRIB paramid 263100)
 * ``avg_siconc``     (sea ice concentration, GRIB paramid 263001)
+* ``msshf``     (surface sensible heat flux, GRIB paramid 235033, required for net surface flux computation)
+* ``mslhf```    (surface latent heat flux, GRIB paramid 235034, required for net surface flux computation)
+* ``msnlwrf``  (surface net longwave radiation flux, GRIB paramid 235038, required for net surface flux computation)
+* ``msnswrf``   (surface net shortwave radiation flux, GRIB paramid 235037, required for net surface flux computation)
+* ``msr``      (snowfall rate, GRIB paramid 235031, required for net surface flux computation)
 
+If a variable (or more) is missing, blank line will be reported in the output figures. 
 
 3D fields are zonally averaged, so that the PIs reports the performance on the zonal field. 
 

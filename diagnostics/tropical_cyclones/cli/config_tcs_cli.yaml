@@ -1,15 +1,21 @@
 # experiment
 dataset:
   model: "IFS-NEMO"
-  exp: "historical-1990"
+  exp: "ssp370"
   source2d: "hourly-hpz7-atm2d"
   source3d: "hourly-hpz7-atm3d"
 
 # folders for regridded data, temprorary and stored high res data
+# scratch path: "/scratch/project_465000454/pghinassi/tc_test/Figures/"
+# work path: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis"
 paths: 
-  tmpdir: "/scratch/project_465000454/pghinassi/tc_test/tmpdir"
-  fulldir: "/scratch/project_465000454/pghinassi/tc_test/fulldir"
+  tmpdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/tmpdir"
+  fulldir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/fulldir"
   plotdir: "/scratch/project_465000454/pghinassi/tc_test/Figures/"
+
+# log level
+setup:
+  loglevel: 'WARNING'
 
 # grid on which operate
 grids:
@@ -21,8 +27,8 @@ varlist: ['msl', '10u', '10v', 'mtpr']
 
 # temporal definition (date format: YYYYMMDD)
 time: 
-  startdate: '19900101'
-  enddate: '19910101'
+  startdate: '20200103'
+  enddate: '20260101'
   frequency: '6h'
 
 stream:

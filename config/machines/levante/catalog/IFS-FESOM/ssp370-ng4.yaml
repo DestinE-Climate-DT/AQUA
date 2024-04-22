@@ -157,7 +157,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz7-nested
+      source_grid_name: fesom-nextgems4-hpz7-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz7-oce3d:
@@ -187,7 +187,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz7-nested-3d
+      source_grid_name: fesom-nextgems4-hpz7-nested-3d
       fixer_name: fesom-destine-v1
 
 # Healpix h512 (zoom=9)
@@ -243,7 +243,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz9-nested
+      source_grid_name: fesom-nextgems4-hpz9-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz9-oce3d:
@@ -273,7 +273,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz9-nested-3d
+      source_grid_name: fesom-nextgems4-hpz9-nested-3d
       fixer_name: fesom-destine-v1
 
 
@@ -370,7 +370,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb2/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz7-nested
+      source_grid_name: fesom-nextgems4-hpz7-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz7-oce3d-fdb2:
@@ -400,7 +400,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz7-nested-3d
+      source_grid_name: fesom-nextgems4-hpz7-nested-3d
       fixer_name: fesom-destine-v1
 
 # FDB3
@@ -458,7 +458,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb3/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz7-nested
+      source_grid_name: fesom-nextgems4-hpz7-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz7-oce3d-fdb3:
@@ -488,7 +488,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz7-nested-3d
+      source_grid_name: fesom-nextgems4-hpz7-nested-3d
       fixer_name: fesom-destine-v1
 
 # FDB4
@@ -546,7 +546,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb4/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz7-nested
+      source_grid_name: fesom-nextgems4-hpz7-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz7-oce3d-fdb4:
@@ -576,7 +576,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz7-nested-3d
+      source_grid_name: fesom-nextgems4-hpz7-nested-3d
       fixer_name: fesom-destine-v1
 
 # Duplicates for additional FDBs (hpz9)
@@ -636,7 +636,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb2/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz9-nested
+      source_grid_name: fesom-nextgems4-hpz9-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz9-oce3d-fdb2:
@@ -666,7 +666,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz9-nested-3d
+      source_grid_name: fesom-nextgems4-hpz9-nested-3d
       fixer_name: fesom-destine-v1
 
 # FDB3
@@ -724,7 +724,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb3/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz9-nested
+      source_grid_name: fesom-nextgems4-hpz9-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz9-oce3d-fdb3:
@@ -754,7 +754,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz9-nested-3d
+      source_grid_name: fesom-nextgems4-hpz9-nested-3d
       fixer_name: fesom-destine-v1
 
 # FDB4
@@ -812,7 +812,7 @@ sources:
       <<: *metadata-default
       fdb_path: /work/bm1235/b382776/cycle4/fdb4/healpix/etc/fdb/config.yaml
       variables: [263000, 263001, 263002, 263003, 263004, 263100, 263101, 263124]
-      source_grid_name: fesom-levante-hpz9-nested
+      source_grid_name: fesom-nextgems4-hpz9-nested
       fixer_name: fesom-destine-v1
 
   daily-hpz9-oce3d-fdb4:
@@ -842,7 +842,7 @@ sources:
         2775, 3025, 3275, 3525, 3775, 4025, 4275, 4525, 4775, 5025, 5275, 5525, 5825,
         6175]
       variables: [263500, 263501, 263505, 263506, 263507]
-      source_grid_name: fesom-levante-hpz9-nested-3d
+      source_grid_name: fesom-nextgems4-hpz9-nested-3d
       fixer_name: fesom-destine-v1
 
   lra-r100-monthly:

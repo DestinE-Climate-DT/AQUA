@@ -13,7 +13,7 @@ The diagnostic follows a class structure and consists of the file:
 
 Input variables 
 ----------------
-Variables that can be analyzed within this tool are the following:
+Exemplary variables that can be analyzed within this tool are the following:
 
 * 2m temperature (2t)
 * Total Precipitation (tprate)
@@ -21,49 +21,52 @@ Variables that can be analyzed within this tool are the following:
 * Temperature (t)
 * Specific humidity (q)
 
-The data we retrieve through the provided functions have monthly timesteps and a 1x1 deg resolution.
+The data we retrieve through the provided functions have monthly timesteps and a 1x1 deg resolution via the LRA.
 A higher resolution is not necessary for this diagnostic.
 
 
 Output
 ------
-The output files generated in this diagnostic are figures, that are saved in a PDF format as well as NetCDF data to reproduce theese figures. 
+The output files generated in this diagnostic are figures, that are saved in a PDF format as well as NetCDF data to reproduce these figures. 
 
 Run the diagnostic
 -------------------
 
-Import the necessary functions from the ``AQUA`` framework and import the ``AGM_diag-class``.
+Import the necessary functions from the ``AQUA`` framework and import the ``atm_global_mean module``.
 
 .. code-block:: python
 
   from aqua import Reader, catalogue, inspect_catalogue
-  from atm_global_mean import AGM_diag
+  from atm_global_mean import seasonal_bias
   
+To run the diagnostic via the cli simply execute the following:
+
+  ``./cli_atmglobalmean.py --config=./config/atm_mean_bias_config.yaml``
 
 Functions used
 --------------
-Following methods are used in the AGM_diag class (inside the ``atm_global_mean.py`` file):
+Following methods are used (inside the ``atm_global_mean.py`` file):
 
-* ``seasonal_bias``: Plot the seasonal bias maps between two datasets for a specific variable and year.
-* ``compare_datasets_plev``:  Compare two datasets and plot the zonal bias for a selected model time range with respect to the ERA5 climatology from 2000-2020.
+* ``seasonal_bias``: Plot the seasonal bias maps and the climatological bias map between two datasets for a specific variable and time range.
+* ``compare_datasets_plev``:  Compare two datasets and plot the zonal bias for a selected model time range with respect to another dataset.
 * ``plot_map_with_stats``: Plot a map of a chosen variable from a dataset with colorbar and statistics.
 * ``README.md`` : a readme file which contains some basic information about this tool.
 
 Observations
 ------------
-Data will be compared to ERA5 data
+Data can be compared to ERA5 data an analysis of two model datasets is also possible. This means that the analysis of differences between historical and scenario experiments is also possible.
 
-Example plots
+Example plot
 -------------
 
-.. figure:: figures/atm_global_mean.png
+.. figure:: figures/atmglobalmean.seasonal_bias.2t.mean.IFS-NEMO_historical-1990.ERA5_era5.png
    :width: 20cm
    :align: center
 
-   Example map to visualize the bias of the 2t-variable IFS 4.4 km run with respect to the ERA5 climatology.
+   Example map to visualize the seasonal and climatological bias of the 2t-variable of the IFS-NEMO historical experiment (a0h3) with respect to the ERA5 climatology.
 
 
-Available demo noteboks
+Available demo notebooks
 ------------------------
     
 * `agm_ng3_seasons.ipynb <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/atmglobalmean/notebooks/agm_ng3_seasons.ipynb>`_: Notebook to demonstrate the seasonal_bias method with example plots

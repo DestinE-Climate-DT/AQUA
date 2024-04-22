@@ -4,3 +4,18 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/ssp370-ng4.yaml'
+  story-2017-control:
+    description: IFS/FESOM tco1279-ng5 storyline nudged from 2017 with ocean from control 1950
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/story-2017-control.yaml'
+  story-2017-historical:
+    description: IFS/FESOM tco1279-ng5 storyline nudged from 2017 historical
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/story-2017-historical.yaml'
+  story-2017-T2K:
+    description: IFS/FESOM tco1279-ng5 storyline nudged from 2017 for the 2K warmer climate
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/story-2017-T2K.yaml'

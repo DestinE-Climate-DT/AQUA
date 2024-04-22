@@ -47,7 +47,7 @@ Currently implemented diagnostics are:
 
    atm_global_mean
    ecmean
-   global_mean_timeseries
+   global_timeseries
    ocean3d
    radiation
    seaice

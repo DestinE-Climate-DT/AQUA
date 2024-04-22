@@ -2,10 +2,17 @@ paths:
   grids: /work/bb1153/b382075/aqua/grids
   weights: /work/bb1153/b382075/aqua/weights
   areas: /work/bb1153/b382075/aqua/areas
+
+metadata:
+  parameters:
+    LRA_LUMI:
+      type: str
+      description: the path of the rsynced LRA data from lumi
+      default: /work/bb1153/b382076/LRA-lumi
   
 sources:
   IFS-FESOM:
-    description: IFS-FESOM NextGEMS pre-final (cycle 4)
+    description: IFS-FESOM NextGEMS pre-final (cycle 4) and LUMI backup
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/IFS-FESOM/main.yaml"
@@ -14,6 +21,11 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/catalog/IFS/main.yaml"
+  IFS-NEMO:
+    description: IFS-NEMO coupled model
+    driver: yaml_file_cat
+    args:
+        path: "{{CATALOG_DIR}}/catalog/IFS-NEMO/main.yaml"
   FESOM:
     description: FESOM ocean model
     driver: yaml_file_cat

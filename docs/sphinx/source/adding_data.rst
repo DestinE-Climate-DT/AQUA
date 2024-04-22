@@ -12,8 +12,8 @@ How to create a new source and add new data is documented in the next sections.
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
-- Finally, to exploit the regridding functionalities, you will also need to configure the machine-dependent
-  ``regrid.yaml``. 
+- Finally, to exploit the regridding functionalities, you will also need to verify the grid is supported by the machine-independent
+  ``aqua-grids.yaml``. 
 
 .. _file-based-sources:
 
@@ -46,6 +46,9 @@ The additional entry in this file will look like this:
 
 The first step is to add this catalogue to the ``config/machines/lumi/catalog.yaml`` file.  
 This will create the ``model`` entry within the catalog that can be used later by the ``Reader()``.
+
+.. note::
+    Sources are built using intake, which means that they can exploit of the built-in Jinja2 template replacamente as done in the example above with `{{CATALOG_DIR}}`
 
 Then we will need to create the ``exp`` entry, which will be included in the ``main.yaml``.
 In our case, the ``main.yaml`` file will look like this (but many other experiments,
@@ -315,10 +318,10 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
     icon-healpix:
         path:
-            2d: $grids/HealPix/icon_hpx{zoom}_atm_2d.nc   # this is the default 2d grid
-            2dm: $grids/HealPix/icon_hpx{zoom}_oce_2d.nc  # this is an additional and optional 2d grid used if data are masked
-            depth_full: $grids/HealPix/icon_hpx{zoom}_oce_depth_full.nc
-            depth_half: $grids/HealPix/icon_hpx{zoom}_oce_depth_half.nc
+            2d: '{{grids}}/HealPix/icon_hpx{zoom}_atm_2d.nc'   # this is the default 2d grid
+            2dm: '{{grids}}/HealPix/icon_hpx{zoom}_oce_2d.nc'  # this is an additional and optional 2d grid used if data are masked
+            depth_full: '{{grids}}/HealPix/icon_hpx{zoom}_oce_depth_full.nc'
+            depth_half: '{{grids}}/HealPix/icon_hpx{zoom}_oce_depth_half.nc'
         masked:   # This is the attribute used to distinguish variables which should go into the masked category
             component: ocean
         space_coord: ["cell"]
@@ -327,10 +330,16 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
     tco1279:
         path: 
-            2d: $grids/IFS/tco1279_grid.nc
-            2dm: $grids/IFS/tco1279_grid_masked.nc
+            2d: '{{grids}}/IFS/tco1279_grid.nc'
+            2dm: '{{grids}}/IFS/tco1279_grid_masked.nc'
         masked_vars: ["ci", "sst"]
         vert_coord: ["2d", "2dm"]
+
+.. note::
+
+    Two kinds of template replacament are available in the `aqua-grids.yaml`. The Jinja formatting `{{ var }}` is used to set
+    variables as path that comes from the `catalog.yaml` file. The default python formatting `{}` is used for file structure which comes
+    Reader arguments, as model, experiment or any other kwargs the user might set. Please pay attention to which one you are using in your files.
 
 
 - **path**: Path to the grid data file, can be a single file if the grid is 2d,

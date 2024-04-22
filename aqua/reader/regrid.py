@@ -6,8 +6,6 @@ import types
 import subprocess
 import tempfile
 import xarray as xr
-import numpy as np
-
 import smmregrid as rg
 
 
@@ -333,7 +331,11 @@ class RegridMixin():
         Retrieves making sure that no fixer and agregation are used,
         read only first variable and converts iterator to data
         """
+        if self.sample_data is not None:
+            self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
+            return self.sample_data
 
+        self.logger.debug('Getting sample data through _retrieve_plain()...')
         aggregation = self.aggregation
         chunks = self.chunks
         fix = self.fix
@@ -357,11 +359,12 @@ class RegridMixin():
         if isinstance(data, types.GeneratorType):
             data = next(data)
 
-        vars = [var for var in data.data_vars if
+        # select only first relevant variable
+        variables = [var for var in data.data_vars if
                 not var.endswith("_bnds") and not var.startswith("bounds") and not var.endswith("_bounds")]
-        data = data[[vars[0]]]
+        self.sample_data = data[[variables[0]]]
 
-        return data
+        return self.sample_data
 
     def _guess_coords(self, space_coord, vert_coord, default_horizontal_dims, default_vertical_dims):
         """
@@ -377,13 +380,10 @@ class RegridMixin():
         Return
             space_coord and vert_coord from the data source
         """
-        data = None
 
         if space_coord is None:
 
-            # this is done to load only if necessary
-            if data is None:
-                data = self._retrieve_plain(startdate=None)
+            data = self._retrieve_plain(startdate=None)
             space_coord = [x for x in data.dims if x in default_horizontal_dims]
             if not space_coord:
                 self.logger.debug('Default dims that are screened are %s', default_horizontal_dims)
@@ -391,10 +391,9 @@ class RegridMixin():
             self.logger.info('Space_coords deduced from the source are %s', space_coord)
 
         if vert_coord is None:
-        
+     
             # this is done to load only if necessary
-            if data is None:
-                data = self._retrieve_plain(startdate=None)
+            data = self._retrieve_plain(startdate=None)
             vert_coord = [x for x in data.dims if x in default_vertical_dims]
             if not vert_coord:
                 self.logger.debug('Default dims that are screened are %s', default_vertical_dims)

@@ -4,12 +4,15 @@ Module to extract the seasonal cycle of a variable from a time series.
 import os
 import gc
 
+import xarray as xr
 from matplotlib import pyplot as plt
 from aqua.graphics import plot_seasonalcycle
 from aqua.util import create_folder, add_pdf_metadata, time_to_string
 from aqua.logger import log_configure
 
 from .timeseries import Timeseries
+
+xr.set_options(keep_attrs=True)
 
 
 class SeasonalCycle(Timeseries):
@@ -138,6 +141,7 @@ class SeasonalCycle(Timeseries):
 
         if self.save:
             self.save_seasonal_pdf(fig, ref_label)
+            self.save_seasonal_netcdf()
 
     def save_seasonal_pdf(self, fig, ref_label):
         """
@@ -176,6 +180,28 @@ class SeasonalCycle(Timeseries):
         self.logger.debug(f"Description: {description}")
         add_pdf_metadata(filename=os.path.join(outfig, self.outfile),
                          metadata_value=description)
+    
+    def save_seasonal_netcdf(self):
+        """
+        Save the seasonal cycle to a netcdf file
+        """
+        self.logger.info("Saving seasonal cycle to netcdf")
+        outdir= os.path.join(self.outdir, 'netcdf')
+        create_folder(outdir, self.loglevel)
+
+        for i, model in enumerate(self.models):
+            outfile = f'global_time_series_seasonalcycle_{self.var}_{model}_{self.exps[i]}.nc'
+            try:
+                self.cycle[i].to_netcdf(os.path.join(outdir, outfile))
+            except Exception as e:
+                self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
+        
+        if self.plot_ref:
+            outfile = f'global_time_series_seasonalcycle_{self.var}_{self.plot_ref_kw["model"]}.nc'
+            try:
+                self.cycle_ref.to_netcdf(os.path.join(outdir, outfile))
+            except Exception as e:
+                self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
 
     def cleanup(self):
         """Clean up the data."""

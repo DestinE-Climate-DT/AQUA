@@ -52,10 +52,10 @@ fixer_name:
             # Wind stresses
             # ICON use different variables that should not be decumulated
             metss: # https://codes.ecmwf.int/grib/param-db/?id=235041
-                source: utaua
+                source: 140101
                 grib: true
             mntss: # https://codes.ecmwf.int/grib/param-db/?id=235042 
-                source: vtaua
+                source: 140102
                 grib: true
             # Runoffs
             msror:  # https://codes.ecmwf.int/grib/param-db/?id=235020

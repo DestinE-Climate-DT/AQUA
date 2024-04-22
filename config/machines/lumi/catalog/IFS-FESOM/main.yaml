@@ -14,5 +14,10 @@ sources:
     driver: yaml_file_cat
     args:
       path: '{{CATALOG_DIR}}/story-2017-historical.yaml'
+  story-2017-T2K:
+    description: IFS/FESOM tco1279-ng5 storyline nudged from 2017 for the 2K warmer climate
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/story-2017-T2K.yaml'
 
   

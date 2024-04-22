@@ -15,6 +15,7 @@ keywords = [
     "diagnostics"
 ]
 license = {text = "Private"}
+requires-python = ">=3.9"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -24,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
@@ -52,7 +54,7 @@ dependencies = [
     "sparse",
     "xarray",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@master",
-    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v1.1.0"
+    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v1.2.0"
 ]
 
 [project.optional-dependencies]

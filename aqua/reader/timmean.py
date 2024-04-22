@@ -48,6 +48,9 @@ class TimmeanMixin():
         """
         resample_freq = frequency_string_to_pandas(freq)
 
+        if 'time' not in data.dims:
+            raise ValueError('Time dimension not found in the input data. Cannot compute timmean.')
+
         # Check if cftime is used, present as attribute use_cftime with value 1
         self.logger.debug('Checking if cftime is used...')
         if hasattr(data, 'use_cftime'):
@@ -67,6 +70,7 @@ class TimmeanMixin():
             # Convert time difference to hours
             self.orig_freq = round(np.timedelta64(orig_freq, 'ns') / np.timedelta64(1, 'h'))
         else:
+            # this block is likely never run, as the check for time dimension is done before
             self.logger.warning('A single timestep is available, is this correct?')
             self.orig_freq = 'Unknown'
             if exclude_incomplete:

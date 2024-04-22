@@ -3,6 +3,7 @@
 import os
 import xarray as xr
 import numpy as np
+import scipy.stats as stats
 import matplotlib.pylab as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -198,10 +199,11 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
     ax.add_feature(cfeature.LAND, facecolor='lightgray')
     ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
     # Set latitude and longitude tick labels
-    ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
-    ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
+    #ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
+    #ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
     ax.xaxis.set_major_formatter(LongitudeFormatter())
     ax.yaxis.set_major_formatter(LatitudeFormatter())
+    ax.gridlines(draw_labels=True)
 
     # Plot the whole time range mean bias data
     try:
@@ -227,10 +229,11 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
         ax.add_feature(cfeature.LAND, facecolor='lightgray')
         ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
         # Set latitude and longitude tick labels
-        ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
-        ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
+        #ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
+        #ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
         ax.xaxis.set_major_formatter(LongitudeFormatter())
         ax.yaxis.set_major_formatter(LatitudeFormatter())
+        ax.gridlines(draw_labels=True)
 
         # Plot the bias data using the corresponding cnplot object
         try:
@@ -249,18 +252,19 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
         ax.set_ylabel('Latitude')
 
     # Plot the SON and JJA in the third subplot
-    for i, (result, season) in enumerate(zip(results[2:], season_ranges.keys())):
-        ax = fig.add_subplot(gs[2, i], projection=projection)  # Third row
+    for i, (result, season) in enumerate(zip(results[2:], list(season_ranges.keys())[2:])):
+        ax = fig.add_subplot(gs[2, i], projection=projection)
         # Add coastlines to the plot
         ax.coastlines()
         # Add other cartographic features (optional)
         ax.add_feature(cfeature.LAND, facecolor='lightgray')
         ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
         # Set latitude and longitude tick labels
-        ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
-        ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
+        #ax.set_xticks(np.arange(-180, 181, 60), crs=projection)
+        #ax.set_yticks(np.arange(-90, 91, 30), crs=projection)
         ax.xaxis.set_major_formatter(LongitudeFormatter())
         ax.yaxis.set_major_formatter(LatitudeFormatter())
+        ax.gridlines(draw_labels=True)
 
         # Plot the bias data using the corresponding cnplot object
         try:
@@ -352,6 +356,11 @@ def compare_datasets_plev(dataset1=None, dataset2=None, var_name=None,
         dataset2_precomputed (xarray.Dataset or None): Pre-computed climatology for dataset2.
         loglevel (str): The desired level of logging. Default is 'WARNING'.
 
+    Keyword Args:
+        nlevels (int): The number of levels for the colorbar. Default is 12.
+        vmin (float): The minimum value for the colorbar. Default is None.
+        vmax (float): The maximum value for the colorbar. Default is None.
+
     Returns:
         A zonal bias plot.
     """
@@ -415,11 +424,18 @@ def compare_datasets_plev(dataset1=None, dataset2=None, var_name=None,
         # Create the z-values for the contour plot
         z_values = mean_bias.mean(dim='lon')
 
-        vmin, vmax = evaluate_colorbar_limits(z_values)
-        if vmin*vmax < 0:  # we want the colorbar to be symmetric
-            vmax = max(abs(vmin), abs(vmax))
-            vmin = -vmax
-        logger.debug(f"vmin: {vmin}, vmax: {vmax}")
+        # Check if vmin and vmax are provided by the user
+        if 'vmin' in kwargs and 'vmax' in kwargs:
+            vmin = kwargs['vmin']
+            vmax = kwargs['vmax']
+        else:
+            # Calculate vmin and vmax
+            vmin, vmax = evaluate_colorbar_limits(z_values)
+            if vmin * vmax < 0:  # we want the colorbar to be symmetric
+                vmax = max(abs(vmin), abs(vmax))
+                vmin = -vmax
+            logger.debug(f"vmin: {vmin}, vmax: {vmax}")
+    
         levels = np.linspace(vmin, vmax, nlevels)
 
         # Create the plot
@@ -431,6 +447,7 @@ def compare_datasets_plev(dataset1=None, dataset2=None, var_name=None,
         ax.set_xlabel('Latitude')
         ax.invert_yaxis()
         ax.set_xlim(-90, 90)
+        ax.grid(True)
 
         # Add colorbar
         cbar = fig.colorbar(cax)
@@ -552,7 +569,7 @@ def plot_map_with_stats(dataset=None, var_name=None, start_date=None, end_date=N
         data_path = os.path.join(outputdir, data_filename)
 
         data_array = var_data.to_dataset(name=var_name)
-        data_array.attrs = dataset[var_name].attrs  # Copy attributes from the original dataset
+        data_array.attrs = dataset[var_name].attrs
         data_array.attrs['model_label'] = model_label
 
         data_array.to_netcdf(data_path)

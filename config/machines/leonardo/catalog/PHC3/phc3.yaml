@@ -1,0 +1,27 @@
+plugins:
+  source:
+    - module: intake_xarray
+
+sources:
+  annual:
+    description: PHC3    
+    driver: netcdf
+    metadata:
+      source_grid_name: lon-lat-depth
+      fixer_name: PHC3-default
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - '{{DATA_PATH}}/PHC3/phc3.0_annual.nc'
+  seasonal:
+    description: PHC3    
+    driver: netcdf
+    metadata:
+      source_grid_name: lon-lat-depth
+      fixer_name: PHC3-default
+    args:
+      chunks:
+        time: 1
+      urlpath:
+      - '{{DATA_PATH}}/PHC3/phc3.0_seasonal.nc'

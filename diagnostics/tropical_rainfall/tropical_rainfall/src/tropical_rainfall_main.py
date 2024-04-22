@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import matplotlib.figure as figure
 
 import dask.array as da
-import dask_histogram as dh  # pip
 import fast_histogram
 
 from aqua.util import create_folder
@@ -418,171 +417,6 @@ class MainClass:
                 return data_per_lat_band
         else:
             return data
-
-    def histogram_lowres(self, data: xr.Dataset, data_with_global_atributes: Optional[xr.Dataset] = None,
-                         weights: Optional[Any] = None, preprocess: bool = True, trop_lat: Optional[float] = None,
-                         model_variable: Optional[str] = None, s_time: Optional[Union[str, int]] = None,
-                         f_time: Optional[Union[str, int]] = None, s_year: Optional[int] = None, save: bool = True,
-                         f_year: Optional[int] = None, s_month: Optional[int] = None, f_month: Optional[int] = None,
-                         num_of_bins: Optional[int] = None, first_edge: Optional[float] = None,
-                         width_of_bin: Optional[float] = None, bins: Union[int, List[float]] = 0,
-                         lazy: bool = False, create_xarray: bool = True, path_to_histogram: Optional[str] = None,
-                         name_of_file: Optional[str] = None, positive: bool = True, threshold: int = 2,
-                         new_unit: Optional[str] = None, test: bool = False) -> Union[xr.Dataset, np.ndarray]:
-        """
-        Function to calculate a histogram of the low-resolution Dataset.
-
-        Args:
-            data (xarray.Dataset):          The input Dataset.
-            preprocess (bool, optional):    If True, preprocesses the Dataset.              Defaults to True.
-            trop_lat (float, optional):     The maximum absolute value of tropical latitude in the Dataset. Defaults to 10.
-            model_variable (str, optional): The variable of interest in the Dataset.        Defaults to 'mtpr'.
-            weights (array-like, optional): The weights of the data.                        Defaults to None.
-            data_with_global_attributes (xarray.Dataset, optional): The Dataset with global attributes. Defaults to None.
-            s_time (str/int, optional):     The starting time value/index in the Dataset.   Defaults to None.
-            f_time (str/int, optional):     The final time value/index in the Dataset.      Defaults to None.
-            s_year (int, optional):         The starting year in the Dataset.               Defaults to None.
-            f_year (int, optional):         The final year in the Dataset.                  Defaults to None.
-            s_month (int, optional):        The starting month in the Dataset.              Defaults to None.
-            f_month (int, optional):        The final month in the Dataset.                 Defaults to None.
-            num_of_bins (int, optional):    The number of bins for the histogram.           Defaults to None.
-            first_edge (float, optional):   The starting edge value for the bins.           Defaults to None.
-            width_of_bin (float, optional): The width of each bin.                          Defaults to None.
-            bins (int, optional):           The number of bins for the histogram (alternative argument to 'num_of_bins').
-                                            Defaults to 0.
-            lazy (bool, optional):          If True, delays computation until necessary.    Defaults to False.
-            create_xarray (bool, optional): If True, creates an xarray dataset from the histogram counts. Defaults to True.
-            path_to_histogram (str, optional):   The path to save the xarray dataset.       Defaults to None.
-
-        Returns:
-            xarray.Dataset or numpy.ndarray: The histogram of the Dataset.
-        """
-        self.class_attributes_update(trop_lat=trop_lat, model_variable=model_variable, new_unit=new_unit,
-                                     s_time=s_time, f_time=f_time, s_year=s_year, f_year=f_year,
-                                     s_month=s_month, f_month=f_month, first_edge=first_edge, num_of_bins=num_of_bins,
-                                     width_of_bin=width_of_bin)
-
-        coord_lat, coord_lon = self.coordinate_names(data)
-
-        if isinstance(self.bins, int):
-            bins = [self.first_edge + i *
-                    self.width_of_bin for i in range(0, self.num_of_bins+1)]
-            width_table = [
-                self.width_of_bin for j in range(0, self.num_of_bins)]
-            center_of_bin = [bins[i] + 0.5*width_table[i]
-                             for i in range(0, len(bins)-1)]
-        else:
-            bins = self.bins
-            width_table = [self.bins[i+1]-self.bins[i]
-                           for i in range(0, len(self.bins)-1)]
-            center_of_bin = [self.bins[i] + 0.5*width_table[i]
-                             for i in range(0, len(self.bins)-1)]
-
-        data_original = data
-        if preprocess:
-            data = self.preprocessing(data, preprocess=preprocess,
-                                      model_variable=self.model_variable, trop_lat=self.trop_lat,
-                                      s_time=self.s_time, f_time=self.f_time, s_year=self.s_year, f_year=self.f_year,
-                                      s_month=None, f_month=None, dask_array=False, new_unit=self.new_unit)
-        data = data.dropna(dim='time')
-        size_of_the_data = self.tools.data_size(data)
-
-        if self.new_unit is not None:
-            data = self.precipitation_rate_units_converter(
-                data, model_variable=self.model_variable, new_unit=self.new_unit)
-        data_with_final_grid = data
-        if weights is not None:
-
-            weights = self.latitude_band(weights, trop_lat=self.trop_lat)
-            data, weights = xr.broadcast(data, weights)
-            try:
-                weights = weights.stack(total=['time', coord_lat, coord_lon])
-            except KeyError:
-                weights = weights.stack(total=[coord_lat, coord_lon])
-            weights_dask = da.from_array(weights)
-
-        if positive:
-            data = np.maximum(data, 0.)
-
-        try:
-            data_dask = da.from_array(data.stack(
-                total=['time', coord_lat, coord_lon]))
-        except KeyError:
-            data_dask = da.from_array(data.stack(
-                total=[coord_lat, coord_lon]))
-        if weights is not None:
-            counts, edges = dh.histogram(data_dask, bins=bins, weights=weights_dask, storage=dh.storage.Weight())
-        else:
-            counts, edges = dh.histogram(data_dask, bins=bins, storage=dh.storage.Weight())
-        if not lazy:
-            counts = counts.compute()
-            edges = edges.compute()
-            self.logger.info('Histogram of the data is created')
-            self.logger.debug('Size of data after preprocessing/Sum of Counts: {}/{}'
-                              .format(self.tools.data_size(data), int(sum(counts))))
-            if int(sum(counts)) != size_of_the_data:
-                self.logger.warning('Amount of counts in the histogram is not equal to the size of the data')
-                self.logger.info('Check the data and the bins')
-        width_table = [edges[i+1]-edges[i] for i in range(0, len(edges)-1)]
-        center_of_bin = [edges[i] + 0.5*width_table[i] for i in range(0, len(edges)-1)]
-        counts_per_bin = xr.DataArray(counts, coords=[center_of_bin], dims=["center_of_bin"])
-
-        counts_per_bin = counts_per_bin.assign_coords(width=("center_of_bin", width_table))
-        counts_per_bin.attrs = data.attrs
-        counts_per_bin.center_of_bin.attrs['units'] = data.units
-        counts_per_bin.center_of_bin.attrs['history'] = 'Units are added to the bins to coordinate'
-        counts_per_bin.attrs['size_of_the_data'] = size_of_the_data
-
-        if data_with_global_atributes is None:
-            data_with_global_atributes = data_original
-
-        if not lazy and create_xarray:
-            mtpr_dataset = counts_per_bin.to_dataset(name="counts")
-            mtpr_dataset.attrs = data_with_global_atributes.attrs
-            mtpr_dataset = self.add_frequency_and_pdf(mtpr_dataset=mtpr_dataset, test=test)
-
-            mean_from_hist, mean_original, mean_modified = self.mean_from_histogram(hist=mtpr_dataset,
-                                                                                    data=data_with_final_grid,
-                                                                                    model_variable=self.model_variable,
-                                                                                    trop_lat=self.trop_lat, positive=positive)
-            relative_discrepancy = abs(mean_modified - mean_from_hist)*100/mean_modified
-            self.logger.debug('The difference between the mean of the data and the mean of the histogram: {}%'
-                              .format(round(relative_discrepancy, 4)))
-            if self.new_unit is None:
-                unit = data.units
-            else:
-                unit = self.new_unit
-            self.logger.debug('The mean of the data: {}{}'.format(mean_original, unit))
-            self.logger.debug('The mean of the histogram: {}{}'.format(mean_from_hist, unit))
-            if relative_discrepancy > threshold:
-                self.logger.warning('The difference between the mean of the data and the mean of the histogram is \
-                                    greater than the threshold. \n Increase the number of bins and decrease the width \
-                                        of the bins.')
-            for variable in (None, 'counts', 'frequency', 'pdf'):
-                mtpr_dataset = self.grid_attributes(
-                    data=data_with_final_grid, mtpr_dataset=mtpr_dataset, variable=variable)
-            if save:
-                if path_to_histogram is None and self.path_to_netcdf is not None:
-                    path_to_histogram = self.path_to_netcdf+'histograms/'
-                if path_to_histogram is not None and name_of_file is not None:
-                    bins_info = self.get_bins_info()
-                    self.dataset_to_netcdf(
-                        mtpr_dataset, path_to_netcdf=path_to_histogram, name_of_file=name_of_file+'_histogram_'+bins_info)
-            return mtpr_dataset
-        else:
-            mtpr_dataset = counts_per_bin.to_dataset(name="counts")
-            mtpr_dataset.attrs = data_with_global_atributes.attrs
-            counts_per_bin = self.grid_attributes(data=data_with_final_grid, mtpr_dataset=mtpr_dataset, variable='counts')
-            mtpr_dataset = self.grid_attributes(data=data_with_final_grid, mtpr_dataset=mtpr_dataset)
-
-            if save:
-                if path_to_histogram is None and self.path_to_netcdf is not None:
-                    path_to_histogram = self.path_to_netcdf + 'histograms/'
-                if path_to_histogram is not None and name_of_file is not None:
-                    bins_info = self.get_bins_info()
-                    self.dataset_to_netcdf(mtpr_dataset, path_to_netcdf=path_to_histogram,
-                                           name_of_file=name_of_file+'_histogram_'+bins_info)
-            return counts_per_bin
 
     def histogram(self, data: xr.Dataset, data_with_global_atributes: Optional[xr.Dataset] = None,
                   weights: Optional[Any] = None, preprocess: bool = True, trop_lat: Optional[float] = None,
@@ -1010,7 +844,7 @@ class MainClass:
 
     def merge_list_of_histograms(self, path_to_histograms: str = None, start_year: int = None, end_year: int = None,
                              start_month: int = None, end_month: int = None, seasons_bool: bool = False,
-                             test: bool = False, tqdm: bool = False) -> xr.Dataset:
+                             test: bool = False, tqdm: bool = False, flag: str = None) -> xr.Dataset:
         """
         Function to merge a list of histograms based on specified criteria. It supports merging by seasonal 
         categories or specific year and month ranges.
@@ -1024,6 +858,7 @@ class MainClass:
             seasons_bool (bool, optional): True to merge based on seasonal categories.
             test (bool, optional): Runs function in test mode.
             tqdm (bool, optional): Displays a progress bar during merging.
+            flag (str, optional): A specific flag to look for in the filenames. Defaults to None.
         
         Returns:
             xr.Dataset: Merged xarray Dataset.
@@ -1047,7 +882,8 @@ class MainClass:
                         start_year=start_year,
                         end_year=end_year,
                         start_month=month,
-                        end_month=month
+                        end_month=month,
+                        flag=flag
                     )
                     seasons[season][1].extend(files_for_month)
 
@@ -1077,9 +913,15 @@ class MainClass:
                 self.logger.info("No data available for merging.")
                 return None
         else:
-            histograms_to_load = self.tools.select_files_by_year_and_month_range(path_to_histograms=path_to_histograms, start_year=start_year, end_year=end_year,
-                                                                             start_month=start_month, end_month=end_month)
-
+            histograms_to_load = self.tools.select_files_by_year_and_month_range(path_to_histograms=path_to_histograms,
+                                                                                 start_year=start_year, end_year=end_year,
+                                                                                 start_month=start_month, end_month=end_month,
+                                                                                 flag=flag)
+            
+            self.tools.check_time_continuity(histograms_to_load)
+            self.tools.check_incomplete_months(histograms_to_load)
+            histograms_to_load = self.tools.check_and_remove_incomplete_months(histograms_to_load)
+            
             self.logger.debug(f"List of files to merge:")
             for i in range(0, len(histograms_to_load)):
                 self.logger.debug(f"{histograms_to_load[i]}")
@@ -1258,7 +1100,8 @@ class MainClass:
                        legend: str = '_Hidden', plot_title: str = None, loc: str = 'upper right', model_variable: str = None,
                        add: tuple = None, fig: object = None, path_to_pdf: str = None, name_of_file: str = '',
                        pdf_format: str = None, xmax: float = None, test: bool = False, linewidth: float = None,
-                       fontsize: float = None) -> (object, object):
+                       fontsize: float = None,
+                       factor=None) -> (object, object):
         """
         Function to generate a histogram figure based on the provided data.
 
@@ -1291,6 +1134,9 @@ class MainClass:
             test (bool, optional): Whether to run the test. Default is False.
             linewidth (float, optional): The width of the line. Default is None.
             fontsize (float, optional): The font size for the plot. Default is None.
+            factor (float or None): The factor by which to adjust bin widths. Values > 1 increase bin width, 
+                                    values < 1 decrease it. None leaves the bin width unchanged.
+
 
         Returns:
             A tuple (fig, ax) containing the figure and axes objects.
@@ -1300,6 +1146,7 @@ class MainClass:
         if path_to_pdf is None and self.path_to_pdf is not None:
             path_to_pdf = self.path_to_pdf
         if 'Dataset' in str(type(data)):
+            data = self.tools.adjust_bins(data, factor=factor)
             data = data['counts']
         if not pdf and not frequency and not pdfP:
             pass
@@ -2322,3 +2169,86 @@ class MainClass:
                                                  model_variable=self.model_variable, loc=loc, fontsize=fontsize,
                                                  add=add, fig=fig, plot_title=None, path_to_pdf=path_to_pdf,
                                                  pdf_format=pdf_format)
+
+    def concat_two_datasets(self, dataset_1: xr.Dataset = None, dataset_2: xr.Dataset = None) -> xr.Dataset:
+        """
+        Function to concatenate two datasets along the time dimension.
+
+        Args:
+            dataset_1 (xarray.Dataset, optional): The first dataset. Defaults to None.
+            dataset_2 (xarray.Dataset, optional): The second dataset. Defaults to None.
+
+        Returns:
+            xarray.Dataset: The xarray.Dataset resulting from concatenating dataset_1 and dataset_2 along the time dimension.
+        """
+
+        if not isinstance(dataset_1, xr.Dataset) or not isinstance(dataset_2, xr.Dataset):
+            raise ValueError("Both dataset_1 and dataset_2 must be xarray.Dataset instances")
+
+        # Ensure both datasets have a 'time' coordinate to concatenate along
+        if 'time' not in dataset_1.coords or 'time' not in dataset_2.coords:
+            raise ValueError("Both datasets must have a 'time' coordinate for concatenation")
+
+        # Concatenate datasets along the time dimension
+        concatenated_dataset = xr.concat([dataset_1, dataset_2], dim='time')
+        concatenated_dataset.attrs['time_band_history'] = str(dataset_1.time_band)+'; '+str(dataset_2.time_band)
+        concatenated_dataset.attrs['time_band'] = self.tools.merge_time_bands(dataset_1, dataset_2)
+                        
+        return concatenated_dataset
+
+
+    def merge_list_of_daily_variability(self, path_to_output: str = None, start_year: int = None, end_year: int = None,
+                             start_month: int = None, end_month: int = None,
+                             test: bool = False, tqdm: bool = False, flag: str = None) -> xr.Dataset:
+        """
+        Function to merge a list of histograms based on specified criteria. It supports merging by seasonal 
+        categories or specific year and month ranges.
+        
+        Args:
+            path_to_output (str, optional): Path to the list of daily_variability data.
+            start_year (int, optional): Start year of the range (inclusive).
+            end_year (int, optional): End year of the range (inclusive).
+            start_month (int, optional): Start month of the range (inclusive).
+            end_month (int, optional): End month of the range (inclusive).
+            test (bool, optional): Runs function in test mode.
+            tqdm (bool, optional): Displays a progress bar during merging.
+            flag (str, optional): A specific flag to look for in the filenames. Defaults to None.
+        
+        Returns:
+            xr.Dataset: Merged xarray Dataset.
+        """
+
+        list_to_load = self.tools.select_files_by_year_and_month_range(path_to_histograms=path_to_output,
+                                                                       start_year=start_year, end_year=end_year,
+                                                                       start_month=start_month, end_month=end_month,
+                                                                       flag=flag)
+        
+        self.tools.check_time_continuity(list_to_load)
+        self.tools.check_incomplete_months(list_to_load)
+        list_to_load = self.tools.check_and_remove_incomplete_months(list_to_load)
+        
+        self.logger.debug(f"List of files to merge:")
+        for i in range(0, len(list_to_load)):
+            self.logger.debug(f"{list_to_load[i]}")
+
+        if len(list_to_load) > 0:
+            progress_bar_template = "[{:<40}] {}%"
+            try:
+                # Initialize the merged dataset with the first histogram
+                merged_dataset = self.tools.open_dataset(path_to_netcdf=list_to_load[0])
+                
+                # Loop through the rest of the histograms and merge them one by one
+                for i in range(1, len(list_to_load)):
+                    if tqdm:
+                        ratio = i / len(list_to_load)
+                        progress = int(40 * ratio)
+                        print(progress_bar_template.format("=" * progress, int(ratio * 100)), end="\r")
+                    
+                    self.logger.debug(f"Merging histogram: {list_to_load[i]}")
+                    next_dataset = self.tools.open_dataset(path_to_netcdf=list_to_load[i])
+                    merged_dataset = self.concat_two_datasets(dataset_1=merged_dataset, dataset_2=next_dataset)
+                return merged_dataset
+            except Exception as e:
+                self.logger.error(f"An unexpected error occurred while merging histograms: {e}") 
+        else:
+            self.logger.error("No histograms to load and merge.")

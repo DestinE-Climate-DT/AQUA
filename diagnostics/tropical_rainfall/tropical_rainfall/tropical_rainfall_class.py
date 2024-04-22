@@ -131,5 +131,4 @@ class Tropical_Rainfall(metaclass=MetaClass):
     def import_methods(self):
         pass
 
-
-Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__
+#Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__

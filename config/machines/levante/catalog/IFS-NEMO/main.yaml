@@ -1,0 +1,26 @@
+sources:
+  historical-1990:
+    description: FDB IFS/NEMO tco1279-orca012 historical 1990 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990.yaml'
+  ssp370:
+    description: FDB IFS/NEMO tco2559-orca012 scenario 2020 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/ssp370.yaml'
+  a0fe:
+    description: FDB IFS/NEMO development tco79-eORCA1 historical 1990-2020 run - not use
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0fe.yaml'
+  a0gg:
+    description: FDB IFS/NEMO development tco79-eORCA1 historical+scenario 1990-2050 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0gg.yaml'
+  a0jp:
+    description: FDB IFS/NEMO development tco79-eORCA1 scenario 2020-2050 run
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/a0jp.yaml'

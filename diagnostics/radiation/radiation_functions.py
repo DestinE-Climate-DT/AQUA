@@ -117,7 +117,7 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     return dictionary
 
 
-def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WARNING'):
+def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WARNING', start_date=None, end_date=None):
     """
     Function to extract Model output data for further analysis and create global means.
 
@@ -127,6 +127,8 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
         source (str):  Input source to be selected from the catalogue.
         fix (bool):    If True, apply the fix to the model data. Default is False.
         loglevel (str): The log level for the logger. Default is 'WARNING'.
+        start_date (str): Start date of the time range to select (format: 'YYYY-MM-DD').
+        end_date (str): End date of the time range to select (format: 'YYYY-MM-DD').
 
     Returns:
         dict: A dictionary containing the following information:
@@ -146,6 +148,10 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
     data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf', 'mslhf', 'msnlwrf', 'msnswrf', 'msshf'])
     data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
     gm = reader.fldmean(data)
+    
+    # Select time range if start_date and end_date are provided
+    if start_date is not None and end_date is not None:
+        data = data.sel(time=slice(start_date, end_date))
 
     dictionary = {
         "model": model.lower(),
@@ -297,24 +303,52 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
         linelabels = []
         for model in models:
             linelabels.append(model["model"]+' '+model["exp"]+' '+model["source"])
-
+        
     for i, model in enumerate(models):
         ttr_diff = []  # Initialize an empty list to store the data for each year
         tsr_diff = []
         tnr_diff = []
         # Iterate through the years
         for year in years:
-            ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
-            tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
-            tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
-        # Concatenate the data along the 'time' dimension
-        ttr_diff = xr.concat(ttr_diff, dim='time')
-        tsr_diff = xr.concat(tsr_diff, dim='time')
-        tnr_diff = xr.concat(tnr_diff, dim='time')
-        # Plot the data for the current model
-        ttr_diff.plot(ax=axes[0], color=linecolors[i], label=linelabels[i], x='time')
-        tsr_diff.plot(ax=axes[1], color=linecolors[i], label=linelabels[i], x='time')
-        tnr_diff.plot(ax=axes[2], color=linecolors[i], label=linelabels[i], x='time')
+            try:
+                ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
+                tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
+                tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
+            except KeyError:
+                # Skip the current year if not all values are found in the index 'time'
+                continue
+                
+        # Check if any data points are collected before concatenating
+        if ttr_diff:
+            # Concatenate the data along the 'time' dimension
+            ttr_diff = xr.concat(ttr_diff, dim='time')
+            ttr_diff.plot(ax=axes[0], color=linecolors[i], label=linelabels[i], x='time')
+            
+        if tsr_diff:
+            tsr_diff = xr.concat(tsr_diff, dim='time')
+            tsr_diff.plot(ax=axes[1], color=linecolors[i], label=linelabels[i], x='time')
+            
+        if tnr_diff:
+            tnr_diff = xr.concat(tnr_diff, dim='time')
+            tnr_diff.plot(ax=axes[2], color=linecolors[i], label=linelabels[i], x='time')
+
+    # for i, model in enumerate(models):
+    #     ttr_diff = []  # Initialize an empty list to store the data for each year
+    #     tsr_diff = []
+    #     tnr_diff = []
+    #     # Iterate through the years
+    #     for year in years:
+    #         ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
+    #         tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
+    #         tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
+    #     # Concatenate the data along the 'time' dimension
+    #     ttr_diff = xr.concat(ttr_diff, dim='time')
+    #     tsr_diff = xr.concat(tsr_diff, dim='time')
+    #     tnr_diff = xr.concat(tnr_diff, dim='time')
+    #     # Plot the data for the current model
+    #     ttr_diff.plot(ax=axes[0], color=linecolors[i], label=linelabels[i], x='time')
+    #     tsr_diff.plot(ax=axes[1], color=linecolors[i], label=linelabels[i], x='time')
+    #     tnr_diff.plot(ax=axes[2], color=linecolors[i], label=linelabels[i], x='time')
 
     samples_tmp = []
     for year in range(int(ceres["data"]["time.year"][0].values), int(ceres["data"]["time.year"][-1].values)-1):
@@ -355,8 +389,11 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
                 abs(tsr_diff.max()), abs(tsr_diff.min()),
                 abs(tnr_diff.max()), abs(tnr_diff.min()))
             for model in models
-    )
-    ylim = max_bias * 1.1  # Add a buffer for better visualization
+        )
+    else:
+        max_bias = ylim
+    ylim = max_bias * 1.1
+
     
     for i in range(3):
         axes[i].set_ylabel('$W/m^2$')
@@ -565,7 +602,7 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             # Save the data to a netCDF file
             ceres_model_name = ceres["model"] + '_' + ceres["exp"] + '_' + ceres["source"]
             #filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}_seasons.pdf"
-            filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{ceres_model_name}_seasons.pdf"
+            filename = f"{outputdir}mean_biases_{var}_{model_label}_{ceres_model_name}_seasons.pdf"
             plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
             logger.info(f"Data has been saved to {outputdir}.")
 
@@ -573,7 +610,7 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             create_folder(folder=str(outputfig), loglevel='WARNING')
             ceres_model_name = ceres["model"] + '_' + ceres["exp"] + '_' + ceres["source"]
             #filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}_seasons.pdf"
-            filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{ceres_model_name}_seasons.pdf"
+            filename = f"{outputfig}mean_biases_{var}_{model_label}_{ceres_model_name}_seasons.pdf"
             plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
             logger.info(f"Plot has been saved to {outputfig}.")
         else:
@@ -670,7 +707,7 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             # Save the data to a netCDF file
             ceres_model_name = ceres["model"]+'_'+ceres["exp"]+'_'+ceres["source"]
             # filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}.nc"
-            filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{ceres_model_name}.nc"
+            filename = f"{outputdir}mean_biases_{var}_{model_label}_{ceres_model_name}.nc"
             mean_bias.to_netcdf(filename)
             logger.info(f"Data has been saved to {outputdir}.")
 
@@ -678,7 +715,7 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             create_folder(folder=str(outputfig), loglevel='WARNING')
             ceres_model_name = ceres["model"]+'_'+ceres["exp"]+'_'+ceres["source"]
             # filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}.pdf"
-            filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{ceres_model_name}.pdf"
+            filename = f"{outputfig}mean_biases_{var}_{model_label}_{ceres_model_name}.pdf"
             plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
             logger.info(f"Plot has been saved to {outputfig}.")
         else:

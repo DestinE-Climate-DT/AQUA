@@ -1,7 +1,7 @@
 # Ocean3D diagnostic
 
 Main authors: 
-- Supriyo Ghosh (BSC, supryo.gosh@bsc.es)
+- Supriyo Ghosh (BSC, supriyo.ghosh@bsc.es)
 - Pablo Ortega (BSC, pablo.ortega@bsc.es)
 
 ## Description
@@ -47,4 +47,4 @@ The **notebook/** folder contains the notebook
 
 ## Contributing
 
-The  ocean3d module is in a developing stage and will be significantly improved in the near future. If you have any suggestions, comments, or problems with its usage, please get in touch with the AQUA team, particulaty with Supriyo Ghosh (supryo.gosh@bsc.es) or Pablo Ortega (pablo.ortega@bsc.es).
+The  ocean3d module is in a developing stage and will be significantly improved in the near future. If you have any suggestions, comments, or problems with its usage, please get in touch with the AQUA team, particulaty with Supriyo Ghosh (supriyo.ghosh@bsc.es) or Pablo Ortega (pablo.ortega@bsc.es).

@@ -7,11 +7,34 @@ from aqua.logger import log_configure
 
 
 class hovmoller_plot:
+    """
+    A class for generating Hovmoller plots from ocean3d data.
+
+    Args:
+        o3d_request: Request object containing necessary data for plot generation.
+
+    Attributes:
+        Inherits all attributes from the parent class.
+    """
     def __init__(self, o3d_request):
-        
-        self = split_ocean3d_req(self,o3d_request)
+        """
+        Initializes the hovmoller_plot object.
+
+        Args:
+            o3d_request: Request object containing necessary data for plot generation.
+        """
+        split_ocean3d_req(self,o3d_request)
         
     def define_lev_values(self, data_proc):
+        """
+        Defines the levels for temperature and salinity data.
+
+        Args:
+            data_proc: Processed ocean data.
+
+        Returns:
+            Tuple: A tuple containing arrays of temperature levels and salinity levels.
+        """
         logger = log_configure(self.loglevel, 'define_lev_values')
         # data_proc = args[1]["data_proc"]
         # To center the colorscale around zero when we plot temperature anomalies
@@ -47,6 +70,12 @@ class hovmoller_plot:
 
                    
     def data_for_hovmoller_lev_time_plot(self):
+        """
+        Processes data for generating Hovmoller plots.
+
+        Returns:
+            None
+        """
         logger = log_configure(self.loglevel, 'data_for_hovmoller_lev_time_plot')
         data = self.data
         region = self.region
@@ -87,6 +116,14 @@ class hovmoller_plot:
         return 
 
     def loop_details(self, i, fig, axs):
+        """
+        Loop over plot details to generate Hovmoller plots.
+
+        Args:
+            i: Index indicating the loop iteration.
+            fig: Figure object for plotting.
+            axs: Axes object for plotting.
+        """
         logger = log_configure(self.loglevel, 'loop_details')
         
         key = i + 2
@@ -158,6 +195,12 @@ class hovmoller_plot:
 
 
     def plot(self):
+        """
+        Generate and display time series plots.
+
+        Returns:
+            None
+        """
         logger = log_configure(self.loglevel, 'single_plot')
         logger.debug("Hovmoller plot started")
         

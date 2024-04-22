@@ -18,7 +18,7 @@ def parse_arguments(args):
     """
 
     parser = argparse.ArgumentParser(description='AQUA gribber')
-    parser.add_argument('-c', '--config', type=str, required=False,
+    parser.add_argument('-c', '--config', type=str, required=True,
                         help='yaml file with exp information and directories')
     parser.add_argument('-l', '--loglevel', type=str,
                         help='log level [default: WARNING]')
@@ -29,9 +29,10 @@ def parse_arguments(args):
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='hpx-from-nemo')
+    logger = log_configure(log_level=loglevel, log_name='hpx-from-sources')
 
-    file = get_arg(args, 'config', 'config-hpx-fesom.yaml')
+    file = get_arg(args, 'config', None)
+    
     logger.info('Reading configuration from %s', file)
     config = load_yaml(file)
 

@@ -24,6 +24,8 @@ def parse_arguments(args):
                         required=False)
     parser.add_argument('--outputdir', type=str, help='output directory',
                         required=False)
+    parser.add_argument('--bufferdir', type=str, help='buffer directory',
+                        required=False)
     parser.add_argument('--xmax', type=int, help='maximum value on horizontal axe',
                         required=False)
     parser.add_argument('--nproc', type=int, required=False,
@@ -57,6 +59,8 @@ def validate_arguments(args):
         raise TypeError("Frequency value must be a string.")
     if args.outputdir and not isinstance(args.outputdir, str):
         raise TypeError("Output directory must be a string.")
+    if args.bufferdir and not isinstance(args.bufferdir, str):
+        raise TypeError("Buffer directory must be a string.")
     if args.xmax and not isinstance(args.xmax, int):
         raise TypeError("Xmax must be an integer.")
     if args.nproc and not isinstance(args.nproc, int):

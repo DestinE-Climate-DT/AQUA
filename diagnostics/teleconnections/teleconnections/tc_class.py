@@ -25,6 +25,8 @@ from teleconnections.plots import index_plot
 from teleconnections.statistics import reg_evaluation, cor_evaluation
 from teleconnections.tools import TeleconnectionsConfig, set_filename
 
+xr.set_options(keep_attrs=True)
+
 
 class Teleconnection():
     """Class for teleconnection objects."""
@@ -34,7 +36,6 @@ class Teleconnection():
                  configdir=None, aquaconfigdir=None,
                  interface='teleconnections-destine',
                  regrid=None, freq=None,
-                 zoom=None,
                  savefig=False, outputfig=None,
                  savefile=False, outputdir=None,
                  filename=None,
@@ -52,7 +53,6 @@ class Teleconnection():
             interface (str, optional):      Interface filename. Defaults to 'teleconnections-destine'.
             regrid (str, optional):         Regridding resolution. Defaults to None.
             freq (str, optional):           Frequency of the data. Defaults to None.
-            zoom (str, optional):           Zoom for ICON data. Defaults to None.
             savefig (bool, optional):       Save figures if True. Defaults to False.
             outputfig (str, optional):      Output directory for figures.
                                             If None, the current directory is used.
@@ -102,9 +102,6 @@ class Teleconnection():
                              'already at the desired frequency')
         self.logger.debug("Frequency: %s", self.freq)
 
-        self.zoom = zoom
-        self.logger.debug("Zoom: %s", self.zoom)
-
         # Teleconnection variables
         self.telecname = telecname
         avail_telec = ['NAO', 'ENSO']
@@ -144,10 +141,7 @@ class Teleconnection():
         # Notice that reader is a private method
         # but **kwargs are passed to it so that it can be used to pass
         # arguments to the reader if needed
-        if self.zoom:
-            self._reader(zoom=self.zoom, startdate=self.startdate, enddate=self.enddate)
-        else:
-            self._reader(startdate=self.startdate, enddate=self.enddate)
+        self._reader(startdate=self.startdate, enddate=self.enddate)
 
     def retrieve(self, var=None, **kwargs):
         """Retrieve teleconnection data with the AQUA reader.
@@ -243,15 +237,6 @@ class Teleconnection():
                                                  months_window=self.months_window,
                                                  loglevel=self.loglevel, **kwargs)
 
-        # HACK: ICON has a depth_full dimension that is not used
-        #       but it is not removed by the index evaluation
-        if self.model == 'ICON':
-            try:
-                self.index = self.index.isel(depth_full=0)
-            except ValueError as e:
-                self.logger.debug(f"Depth_full dimension not found, skipping: {e}")
-                self.index = self.index
-
         self.logger.info('Index evaluated')
         if self.index is None:
             raise ValueError('It was not possible to calculate the index')
@@ -291,14 +276,6 @@ class Teleconnection():
         data, dim = self._prepare_corr_reg(var=var, data=data, dim=dim)
 
         reg = reg_evaluation(indx=self.index, data=data, dim=dim, season=season)
-        # HACK: ICON has a depth_full dimension that is not used
-        #       but it is not removed by the regression evaluation
-        if self.model == 'ICON':
-            try:
-                self.logger.warning("ICON data, trying to remove depth_full dimension")
-                reg = reg.isel(depth_full=0)
-            except ValueError:
-                self.logger.warning("Depth_full dimension not found, skipping")
 
         if self.savefile:
             if var:

@@ -10,11 +10,7 @@ With this tool is possible to compute global mean and Reichler and Kim performan
 
 ## Table of Contents
 
-* [Installation Instructions](#installation-instructions)
-
-  - [Installation on Levante](#installation-on-levante)
-
-  - [Installation on Lumi](#installation-on-lumi)
+* [Installation](#installation)
 
 * [Data requirements](#data-requirements)
 
@@ -22,30 +18,14 @@ With this tool is possible to compute global mean and Reichler and Kim performan
 
 * [Contributing](#contributing)
 
-## Installation Instructions
 
-### Installation on Levante
+## Installation
 
-To install the diagnostic on `Levante` you can use conda. However, to simplif the procedure a installation script `install_ECmean4.sh` is available in this folder and will guide through the installation. Simply run:
-
-```bash
-install_ECmean4.sh
-```
-
-A few flag are available in the script and can be manually adjusted if necessary. 
-- `do_clean` is used to remove a pre-existing mamba/conda environment
-- `do_pip`: you can chose if you want to install the [PyPi version](https://pypi.org/project/ECmean4/) of ECmean4 (i.e. a stable realease) or the one from Github. 
-- `branch`: In case you install from GitHub (`do_pip=False`) you can select with branch point to. Mostly for development purposes. 
-- `mamba`: If you have mamba installed, do not change. You can set here conda instead (not tested)
-
-
-### Installation on Lumi 
-
-Not yet tested.
+ECmean4 can be installed trough pip `pip install ECmean4`. However, this comes from the default installation of AQUA. 
 
 ## Data requirements  
 
-ECmean4 is based on multiple variables but can be configured as a function what the user might need. Performance Indices, the key diagnostic included in AQUA, 
+ECmean4 is based on multiple variables but can be configured as a function what the user might need. Performance Indices, the key diagnostic included in AQUA.
 
 ## Examples
 
@@ -53,6 +33,12 @@ The **notebook/** folder contains the following notebooks:
 
 - **ecmean-test.ipynb**: 
   A simple test for ECmean4 usage on some of the LRA data
+
+- **ecmean-destine.ipynb**: 
+  A notebook using the Climate DT data
+
+- **comparison.ipynb**: 
+  A simple notebook to show come comparison for ECmean
 
 
 ## Contributing

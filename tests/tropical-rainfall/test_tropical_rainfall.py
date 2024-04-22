@@ -35,7 +35,7 @@ def retrieved_dataarray():
 
     elif str(os.getenv('INPUT_ARG')) == 'levante':
         """reader_levante """
-        data = Reader(model="ICON", exp="ngc2009", source="lra-r100-monthly")
+        data = Reader(model="ICON", exp="historical-1990", source="lra-r100-monthly")
         retrieved = data.retrieve()
         try:
             retrieved_array = retrieved['mtpr']*86400
@@ -195,17 +195,6 @@ def test_hist_figure_load_to_memory(histogram_output):
     hist = histogram_output
     diag.histogram_plot(hist, path_to_pdf=path_to_pdf, name_of_file='test_hist_fig_saving')
     assert 'test_hist_fig_saving' in listdir(path_to_pdf)[0]
-
-
-@pytest.mark.tropical_rainfall
-def test_lazy_mode_calculation(retrieved_dataarray):
-    """ Testing the lazy mode of the calculation
-    """
-    data = retrieved_dataarray
-    diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=1 - 1*10**(-6))
-    hist_lazy = diag.histogram_lowres(data, lazy=True)
-    assert 'frequency' not in hist_lazy.attrs
-    assert 'pdf' not in hist_lazy.variables
 
 
 @pytest.mark.tropical_rainfall

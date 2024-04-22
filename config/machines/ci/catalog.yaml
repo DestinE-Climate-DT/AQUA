@@ -31,35 +31,35 @@ grids:
   # IFS
   tco79-testmask:
     path:  
-      2d: $grids/IFS/tco79_grid.nc
-      2dm: $grids/IFS/tco79_grid_masked.nc
+      2d: '{{ grids }}/IFS/tco79_grid.nc'
+      2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
     vert_coord: ["2d", "2dm"]
     masked: 
       vars: ["2t"] # for testing purposes
   tco79-nn:
-      path: $grids/IFS/tco79_grid.nc
+      path: '{{ grids }}/IFS/tco79_grid.nc'
       regrid_method: 'nn'
   # FESOM
   test-pi-2d:
-    path: $grids/pi_griddes_nodes_IFS.nc
+    path: '{{ grids }}/pi_griddes_nodes_IFS.nc'
     #space_coord: [nod2]
     extra:
-    - -setgrid,$grids/pi_griddes_nodes_IFS.nc
+    - -setgrid,{{ grids }}/pi_griddes_nodes_IFS.nc
     - -selname,cell_area
   test-pi-3d:
     path:
-      nz1: $grids/pi_fesom_mask_nz1.nc
-      nz: $grids/pi_fesom_mask_nz.nc
+      nz1: '{{ grids }}/pi_fesom_mask_nz1.nc'
+      nz: '{{ grids }}/pi_fesom_mask_nz.nc'
     space_coord: [nod2]
     vert_coord: [nz1, nz]
     extra:
-    - -setgrid,$grids/pi_griddes_nodes_IFS.nc
+    - -setgrid,{{ grids }}/pi_griddes_nodes_IFS.nc
   # ICON
-  test-healpix: {path: $grids/icon_healpix0.nc} #space_coord: [x]
+  test-healpix: {path: '{{ grids }}/icon_healpix0.nc'} #space_coord: [x]
   test-r2b0: {path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc} #space_coord: [cell]
   test-eORCA1-3d:
     path: 
-      level: $grids/NEMO/test-eorca1_3D.nc
+      level: '{{ grids }}/NEMO/test-eorca1_3D.nc'
     #vert_coord: ["level"]
     extra: 
       - -selname,dummy

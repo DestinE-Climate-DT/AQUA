@@ -9,7 +9,6 @@ interface: 'teleconnections-destine'
 # Extra keyword arguments for the models are:
 # regrid: null
 # freq: null
-# zoom: null
 # These are all null (None) by default because we're assuming
 # data are monthly and already regridded to a 1deg grid.
 # If you want to use native data, you have to set these parameters

@@ -162,6 +162,7 @@ class SeaIceExtent:
                 self.logger.warning("Using timespan based on data availability")
                 self.mySetups[jSetup]["timespan"] = [np.datetime_as_string(data.time[0].values, unit='D'),
                                                      np.datetime_as_string(data.time[-1].values, unit='D')]
+                timespan = self.mySetups[jSetup]["timespan"]
             if regrid:
                 self.logger.info("Regridding data")
                 data = reader.regrid(data)
@@ -220,11 +221,9 @@ class SeaIceExtent:
                         & (lon <= lonE)
                     )
 
-                # Print area of region
-                    
-                myExtent = areacello.where(regionMask).where(
-                    ci_mask.notnull()).sum(dim=reader.space_coord) / 1e12
-
+                      
+                myExtent = areacello.where(regionMask).where(ci_mask.notnull()).sel(time=slice(timespan[0], timespan[1])).sum(skipna = True, min_count = 1, dim=reader.space_coord) / 1e12
+           
                 myExtent.attrs["units"] = "million km^2"
                 myExtent.attrs["long_name"] = "Sea ice extent"
                 self.regionExtents.append(myExtent)
@@ -254,10 +253,11 @@ class SeaIceExtent:
                 label = setup["model"] + " " + setup["exp"] + " " + setup["source"] + " " + strTimeInfo
                 color_plot = setup["color_plot"]
                 self.logger.debug(f"Plotting {label} for region {region}")
+
                 extent = self.myExtents[js][jr]
 
                 # Monthly cycle
-                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).sel(time=slice(timespan[0], timespan[1])).mean(dim='time').values
+                extentCycle = np.array([extent.sel(time=extent['time.month'] == m).mean(dim='time').values
                                         for m in monthsNumeric])
 
                 # One standard deviation of the temporal variability
@@ -491,6 +491,9 @@ class SeaIceVolume:
                 self.logger.warning("Using timespan based on data availability")
                 self.mySetups[jSetup]["timespan"] = [np.datetime_as_string(data.time[0].values, unit='D'),
                                                      np.datetime_as_string(data.time[-1].values, unit='D')]
+
+                timespan = self.mySetups[jSetup]["timespan"]
+                
             if regrid:
                 self.logger.info("Regridding data")
                 data = reader.regrid(data)
@@ -546,7 +549,8 @@ class SeaIceVolume:
                 avg_sivol_mask = data.avg_sivol.where((data.avg_sivol > 0) &
                                         (data.avg_sivol < 99.0))
 
-                myVolume = (avg_sivol_mask * areacello.where(regionMask)).sum(dim=reader.space_coord) / 1e12
+                myVolume = (avg_sivol_mask * areacello.where(regionMask)).sel(time=slice(timespan[0], timespan[1])).sum(dim=reader.space_coord, 
+                                                                              skipna = True, min_count = 1) / 1e12
                                
                 myVolume.attrs["units"] = "thousands km^3"
                 myVolume.attrs["long_name"] = "Sea ice volume"
@@ -581,7 +585,7 @@ class SeaIceVolume:
                 volume = self.myVolumes[js][jr]
 
                 # Monthly cycle
-                volumeCycle = np.array([volume.sel(time=volume['time.month'] == m).sel(time=slice(timespan[0], timespan[1])).mean(dim='time').values
+                volumeCycle = np.array([volume.sel(time=volume['time.month'] == m).mean(dim='time').values
                                         for m in monthsNumeric])
 
                 # One standard deviation of the temporal variability

@@ -17,6 +17,9 @@ def main():
     trop_rainfall_cli = Tropical_Rainfall_CLI(config, args)
     trop_rainfall_cli.calculate_histogram_by_months()
     trop_rainfall_cli.plot_histograms()
+    trop_rainfall_cli.daily_variability()
+    trop_rainfall_cli.plot_daily_variability()
+    trop_rainfall_cli.average_profiles()
     
 
 if __name__ == '__main__':

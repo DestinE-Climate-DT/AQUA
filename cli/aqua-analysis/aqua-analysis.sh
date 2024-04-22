@@ -274,6 +274,9 @@ log_message INFO "Creating output directory $outputdir"
 mkdir -p "$outputdir_atm"
 mkdir -p "$outputdir_oce"
 
+atm_extra_args["tropical_rainfall"]="${atm_extra_args["tropical_rainfall"]} \
+--bufferdir=${outputdir_atm}/tropical_rainfall/"
+
 cd $AQUA
 if [ "$run_dummy" = true ] ; then
   log_message INFO "Running setup checker"
@@ -354,4 +357,3 @@ done
 # Wait for all background processes to finish
 wait
 log_message INFO "Finished all diagnostics"
-

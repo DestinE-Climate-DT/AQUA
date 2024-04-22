@@ -166,12 +166,20 @@ if __name__ == '__main__':
     if compare_datasets_plev_bool:
         for var_name in variables_with_plev:
             logger.info(f"Running compare datasets plev diagnostic for {var_name}...")
+            
+            # Getting variable specific attributes
+            var_attributes = config['compare_datasets_plev'].get(var_name, {})
+            vmin = var_attributes.get('vmin', None)
+            vmax = var_attributes.get('vmax', None)
+            logger.debug(f"var: {var_name}, vmin: {vmin}, vmax: {vmax}")
+            
             try:
                 compare_datasets_plev(dataset1=data, dataset2=data_obs, var_name=var_name,
                                       model_label1=model_label, model_label2=model_label_obs,
                                       start_date1=start_date1, end_date1=end_date1,
                                       start_date2=start_date2, end_date2=end_date2,
                                       outputdir=outputdir, outputfig=outputfig,
+                                      vin=vmin, vmax=vmax,
                                       loglevel=loglevel)
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")

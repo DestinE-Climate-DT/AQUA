@@ -9,3 +9,14 @@ sources:
     driver: yaml_file_cat
     args:
         path: "{{CATALOG_DIR}}/ngc3028.yaml"
+  historical-1990:
+    description: FDB ICON historical 1990
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/historical-1990.yaml'
+  ssp370:
+    description: FDB ICON ssp370
+    driver: yaml_file_cat
+    args:
+      path: '{{CATALOG_DIR}}/ssp370.yaml'
+

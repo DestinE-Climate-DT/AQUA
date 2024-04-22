@@ -131,6 +131,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         self.enddate = enddate
 
         self.previous_data = None  # used for FDB iterator fixing
+        self.sample_data = None #used to avoid multiple calls of retrieve_plain
 
         # define configuration file and paths
         Configurer = ConfigPath()

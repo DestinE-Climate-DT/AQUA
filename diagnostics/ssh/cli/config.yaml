@@ -1,0 +1,81 @@
+log_level: DEBUG
+log_name: ssh_logger
+check_complete_timespan_data: False
+check_complete_timespan_models: False
+enter_aviso_dates_manually: False
+difference_plots: True
+region_selection: True
+fig_format: pdf
+# Number of contours for the contour plot. If not set (or 0) then pcolormesh is used
+# contours is recommended for pdf plots, pcolormesh for png plots
+contours: 21
+
+# Models for which sea surface height (SSH) variability is to be evaluated.
+models:
+#   - name: ICON
+#     experiment: ssp370
+#     source: daily-hpz10-oce2d
+#     regrid: r005
+#     variable: avg_zos
+#     zoom: 10
+#     timespan: ['2020-01-20', '2025-05-30']
+# #    timespan: ['2020-01-01', '2020-12-31']
+
+  - name: IFS-NEMO
+    experiment: ssp370
+    source: daily-r025-oce2d
+    regrid: r005
+    variable: avg_zos
+    zoom: 7
+    timespan: ['2020-01-01', '2024-12-31']
+    
+  # - name: IFS-FESOM
+  #   experiment: story-2017-historical
+  #   source: hourly-hpz7-oce2d
+  #   regrid: r005
+  #   variable: avg_zos
+  #   zoom: 7
+  #   timespan: ['2017-01-21', '2017-12-31']
+
+# This is the model against which other models are compared.
+base_model: 
+  { name: AVISO,
+    experiment: ssh-L4,
+    source: daily,
+    regrid: r005
+  }
+
+# ONLY FOR ICON: Flags for northern and southern boundaries to mask out specific latitudes.
+# As AVISO does not have data under the sea ice, which ICON does, to make the datasets comparable - SSH under sea ice for ICON can be masked out.
+mask_northern_boundary: true
+mask_southern_boundary: true
+northern_boundary_latitude: 70
+southern_boundary_latitude: -62
+
+# As default one timespan for all models will be set but this can be overwritten for each model by entering the timespan in the individual model configurations. This timespan will be applied to the AVISO observation data.
+timespan: {start: '1993-01-01', end: '1999-06-23'}
+#timespan: {start: '2020-01-21', end: '2021-07-22'}
+
+region name : Agulhas
+region_selection_limits:
+  lon_lim: [5, 50]
+  lat_lim: [-10, -50]
+
+
+# These are options to adjust subplots visualizations.
+subplot_options:
+  { scale_min: 0.1,
+    scale_max: 0.4,
+    cmap: viridis
+  } 
+  
+# Please specify the path to the directory where the outputs should be saved. If output directory/ folder does not exist, another directory called output will be created in your current working directory.
+output_directory: /projappl/project_465000454/sunnyjal/AQUA/diagnostics/ssh/output/
+
+
+# This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
+dask_cluster:
+  n_workers: 8
+  threads_per_worker: 1
+  memory_limit: 30e9
+

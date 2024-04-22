@@ -36,6 +36,7 @@ class Timeseries():
                  monthly_std=True, annual_std=True,
                  std_startdate=None, std_enddate=None,
                  plot_kw={'ylim': {}}, longname=None,
+                 expand=True,
                  save=True,
                  outdir='./',
                  outfile=None,
@@ -60,6 +61,7 @@ class Timeseries():
             std_enddate (str): End date for standard deviation. Default is "2020-12-31".
             plot_kw (dict): Additional keyword arguments passed to the plotting function.
             longname (str): Long name of the variable. Default is None and logname attribute is used.
+            expand (bool): Expand the reference range. Default is True.
             save (bool): Save the figure. Default is True.
             outdir (str): Output directory. Default is "./".
             outfile (str): Output file name. Default is None.
@@ -98,6 +100,7 @@ class Timeseries():
         self.annual_std = annual_std if annual else False
         self.std_startdate = std_startdate
         self.std_enddate = std_enddate
+        self.expand = expand
         self.expanding_ref_range = False
 
         self.startdate = startdate
@@ -115,7 +118,7 @@ class Timeseries():
     def run(self):
         """Retrieve ref, retrieve data and plot"""
         self.retrieve_data()
-        self.retrieve_ref()
+        self.retrieve_ref(extend=self.expand)
         self.plot()
         if self.save:
             self.save_netcdf()
@@ -345,13 +348,13 @@ class Timeseries():
             outfile = f'global_time_series_timeseries_{self.var}_{model}_{self.exps[i]}'
             try:
                 if self.monthly is True:
-                    outfile += '_mon.nc'
-                    self.logger.debug(f"Saving monthly data to {outdir}/{outfile}")
-                    self.data_mon[i].to_netcdf(os.path.join(outdir, outfile))
+                    outmon = outfile + '_mon.nc'
+                    self.logger.debug(f"Saving monthly data to {outdir}/{outmon}")
+                    self.data_mon[i].to_netcdf(os.path.join(outdir, outmon))
                 if self.annual is True:
-                    outfile += '_ann.nc'
-                    self.logger.debug(f"Saving annual data to {outdir}/{outfile}")
-                    self.data_annual[i].to_netcdf(os.path.join(outdir, outfile))
+                    outann = outfile + '_ann.nc'
+                    self.logger.debug(f"Saving annual data to {outdir}/{outann}")
+                    self.data_annual[i].to_netcdf(os.path.join(outdir, outann))
             except Exception as e:
                 self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
 
@@ -359,26 +362,26 @@ class Timeseries():
             outfile = f'global_time_series_timeseries_{self.var}_{self.plot_ref_kw["model"]}_{self.plot_ref_kw["exp"]}'
             try:
                 if self.monthly:
-                    outfile += '_mon_std.nc'
-                    self.logger.debug(f"Saving monthly data to {outdir}/{outfile}")
-                    self.ref_mon.to_netcdf(os.path.join(outdir, outfile))
+                    outmon = outfile + '_mon.nc'
+                    self.logger.debug(f"Saving monthly data to {outdir}/{outmon}")
+                    self.ref_mon.to_netcdf(os.path.join(outdir, outmon))
                 if self.annual:
-                    outfile += '_ann_std.nc'
-                    self.logger.debug(f"Saving annual data to {outdir}/{outfile}")
-                    self.ref_ann.to_netcdf(os.path.join(outdir, outfile))
+                    outann = outfile + '_ann.nc'
+                    self.logger.debug(f"Saving annual data to {outdir}/{outann}")
+                    self.ref_ann.to_netcdf(os.path.join(outdir, outann))
             except Exception as e:
                 self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
 
             outfile = f'global_time_series_timeseries_{self.var}_{self.plot_ref_kw["model"]}_{self.plot_ref_kw["exp"]}_std'
             try:
                 if self.monthly_std:
-                    outfile += '_mon.nc'
-                    self.logger.debug(f"Saving monthly std to {outdir}/{outfile}")
-                    self.ref_mon_std.to_netcdf(os.path.join(outdir, outfile))
+                    outmon = outfile + '_mon.nc'
+                    self.logger.debug(f"Saving monthly std to {outdir}/{outmon}")
+                    self.ref_mon_std.to_netcdf(os.path.join(outdir, outmon))
                 if self.annual_std:
-                    outfile += '_ann.nc'
-                    self.logger.debug(f"Saving annual std to {outdir}/{outfile}")
-                    self.ref_ann_std.to_netcdf(os.path.join(outdir, outfile))
+                    outann = outfile + '_ann.nc'
+                    self.logger.debug(f"Saving annual std to {outdir}/{outann}")
+                    self.ref_ann_std.to_netcdf(os.path.join(outdir, outann))
             except Exception as e:
                 self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
 

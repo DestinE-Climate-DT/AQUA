@@ -15,6 +15,7 @@ body:
       description: Which machine are you using?
       options:
       - Levante
+      - Leonardo
       - Lumi
       - MN4
       - CI
@@ -28,14 +29,12 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v0.8
       - v0.7.3
       - v0.7.2
       - v0.7.1
       - v0.7
-      - v0.6.3
-      - v0.6.2
-      - v0.6.1
-      - v0.6
+      - v0.6.x
       - older
     validations:
       required: true

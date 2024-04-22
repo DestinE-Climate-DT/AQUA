@@ -157,16 +157,15 @@ if __name__ == '__main__':
             exp_ref = ref_config.get('exp', 'era5')
             source_ref = ref_config.get('source', 'monthly')
             regrid = ref_config.get('regrid', None)
-            zoom = ref_config.get('zoom', None)
             freq = ref_config.get('freq', None)
-            logger.debug("setup: %s %s %s %s %s %s",
-                         model_ref, exp_ref, source_ref, regrid, freq, zoom)
+            logger.debug("setup: %s %s %s %s %s",
+                         model_ref, exp_ref, source_ref, regrid, freq)
 
             try:
                 tc = Teleconnection(telecname=telec,
                                     configdir=configdir,
                                     model=model_ref, exp=exp_ref, source=source_ref,
-                                    regrid=regrid, freq=freq, zoom=zoom,
+                                    regrid=regrid, freq=freq,
                                     months_window=months_window,
                                     outputdir=outputnetcdf,
                                     outputfig=outputpdf,
@@ -246,19 +245,18 @@ if __name__ == '__main__':
             source = mod['source']
             regrid = mod.get('regrid', None)
             freq = mod.get('freq', None)
-            zoom = mod.get('zoom', None)
             reference = mod.get('reference', False)
             startdate = mod.get('startdate', None)
             enddate = mod.get('enddate', None)
 
-            logger.debug("setup: %s %s %s %s %s %s",
-                         model, exp, source, regrid, freq, zoom)
+            logger.debug("setup: %s %s %s %s %s",
+                         model, exp, source, regrid, freq)
 
             try:
                 tc = Teleconnection(telecname=telec,
                                     configdir=configdir,
                                     model=model, exp=exp, source=source,
-                                    regrid=regrid, freq=freq, zoom=zoom,
+                                    regrid=regrid, freq=freq,
                                     months_window=months_window,
                                     outputdir=outputnetcdf,
                                     outputfig=outputpdf,

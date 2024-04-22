@@ -135,13 +135,14 @@ class PlottingClass:
                     path_to_pdf), loglevel='WARNING')
 
         if pdf_format:
-            plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=1, transparent=True,
+            plt.savefig(path_to_pdf, format="pdf", bbox_inches="tight", pad_inches=0.1, transparent=True,
                         facecolor="w", edgecolor='w', orientation='landscape')
         else:
             path_to_pdf = path_to_pdf.replace('.pdf', '.png')
-            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=1,
+            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=0.1,
                         transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
         self.logger.info(f"The path to plot is: {path_to_pdf}")
+        return path_to_pdf
 
     def histogram_plot(self, x: Union[np.ndarray, List[float]], data: Union[np.ndarray, List[float]],
                        positive: bool = True, xlabel: str = '', ylabel: str = '',
@@ -235,13 +236,10 @@ class PlottingClass:
 
         if xmax is not None:
             plt.xlim([0, xmax])
-        if not any([child.get_visible() for child in ax.get_children()]):
-            self.logger.error("The plot is empty. Skipping saving the plot.")
-            return
-        else:
-            if save and isinstance(path_to_pdf, str):
-                self.savefig(path_to_pdf, self.pdf_format)
-        return {fig, ax}
+            
+        if save and isinstance(path_to_pdf, str):
+            path_to_pdf = self.savefig(path_to_pdf, self.pdf_format)
+        return {fig, ax}, path_to_pdf
 
     def plot_of_average(self, data: Union[list, xr.DataArray] = None, trop_lat: Optional[float] = None, ylabel: str = '',
                         coord: Optional[str] = None, fontsize: Optional[int] = None, pad: int = 15,
@@ -420,12 +418,12 @@ class PlottingClass:
             plt.xscale('log') if self.xlogscale else None
 
         if save and isinstance(path_to_pdf, str):
-            self.savefig(path_to_pdf, self.pdf_format)
+            path_to_pdf = self.savefig(path_to_pdf, self.pdf_format)
 
         if 'Dataset' in str(type(data)):
-            return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5]
+            return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5, path_to_pdf]
         else:
-            return [fig,  ax]
+            return [fig,  ax, path_to_pdf]
 
     def plot_seasons_or_months(self, data: xr.DataArray, cbarlabel: Optional[str] = None, seasons: Optional[list] = None,
                                months: Optional[list] = None, cmap: str = 'coolwarm', save: bool = True,
@@ -733,22 +731,22 @@ class PlottingClass:
         except AttributeError:
             units = mean_per_hour.mtpr.units
 
-        plt.plot(utc_time, mtpr, color=color, linestyle=self.linestyle, alpha=0.25)
+        #plt.plot(utc_time, mtpr, color=color, linestyle=self.linestyle, alpha=0.25)
         plt.plot(utc_time_smooth, mtpr_smooth, color=color, label=legend, linestyle=self.linestyle,
                  linewidth=1*self.linewidth)
         if plot_title is None:
             if relative:
                 plt.suptitle(
                     'Relative Value of Daily Precipitation Variability', fontsize=self.fontsize+1)
-                plt.ylabel('mtpr variability, '+units, fontsize=self.fontsize-2)
+                plt.ylabel('relative mtpr', fontsize=self.fontsize-2)
             else:
                 plt.suptitle('Daily Precipitation Variability', fontsize=self.fontsize+1)
-                plt.ylabel('relative mtpr', fontsize=self.fontsize-2)
+                plt.ylabel('mtpr variability, '+units, fontsize=self.fontsize-2)
+                
         else:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)
 
         plt.grid(True)
-        plt.ylim([-2,5])
         plt.xlim([0-0.2,24+0.2])
         plt.xlabel('Local time', fontsize=self.fontsize-2)
 
@@ -757,6 +755,6 @@ class PlottingClass:
                        fontsize=self.fontsize-2, ncol=2)
 
         if save and isinstance(path_to_pdf, str):
-            self.savefig(path_to_pdf, self.pdf_format)
+            path_to_pdf = self.savefig(path_to_pdf, self.pdf_format)
 
-        return {fig, ax}
+        return {fig, ax}, path_to_pdf

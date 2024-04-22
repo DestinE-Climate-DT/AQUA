@@ -34,7 +34,7 @@ jobs:
       # You can disable coverage by changing this to false. You can
       # also add other Python versions to the matrix, pinning the
       # coverage job to be executed only on certain versions.
-      COVERAGE_ENABLED: ${{ matrix.python-version == '3.11' }}
+      COVERAGE_ENABLED: ${{ matrix.python-version == '3.12' }}
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
@@ -58,7 +58,7 @@ jobs:
       # If true, the entire matrix will stop running when one of the jobs fails.
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

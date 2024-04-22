@@ -10,7 +10,7 @@ The Application for Quality assessment and Uncertainity quAntification (AQUA) is
 
 ## Installation
 
-AQUA requires python>=3.9,<3.12. Recommended installation should be done through mamba (a package manager for conda-forge).
+AQUA requires python>=3.9. Recommended installation should be done through mamba (a package manager for conda-forge).
 
 ### Create conda/mamba environment and install packages
 ```

@@ -1,0 +1,24 @@
+plugins:
+  source:
+    - module: intake_xarray
+
+sources:
+  monthly:
+    description: CERES EBAF TOA Ed4.2 from 2000 to 2023
+    driver: netcdf
+    metadata:
+      fixer_name: ceres-ebaf-destine-v1
+      source_grid_name: lon-lat
+    args:
+      urlpath: '{{DATA_PATH}}/CERES/EBAF_v4.2/CERES_EBAF-TOA_Edition4.2_MONTHLY_200003-202301.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True
+  # zonal_monthly:
+  #   description: CERES EBAF TOA Ed4.2 from 2000 to 2023
+  #   driver: netcdf
+  #   args:
+  #     urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA/CERES_EBAF-TOA_Edition4.2_ZONALMEAN_MONTHLY_200003-202301.nc'
+  #     chunks: {}
+  #     xarray_kwargs:
+  #       decode_times: True

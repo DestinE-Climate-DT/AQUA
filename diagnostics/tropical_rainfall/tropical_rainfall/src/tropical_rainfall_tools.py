@@ -5,11 +5,16 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import xarray as xr
+from datetime import datetime
 from typing import Union
 from aqua.util import ConfigPath
 from aqua.logger import log_configure
 import yaml
 from os.path import isfile, join, exists, isdir
+from dateutil.relativedelta import relativedelta
+
+from calendar import monthrange
+from collections import defaultdict
 
 from importlib import resources
 full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
@@ -100,6 +105,64 @@ class ToolsClass:
             path_to_netcdf = None
         self.logger.info(f"NetCDF folder: {path_to_netcdf}")
         return path_to_netcdf
+
+    def adjust_bins(self, ds, factor):
+        """
+        Adjusts the histogram bins by a specified factor, recalculating the center of each bin based on the assumption
+        that the first bin center is (center_of_bin - 0.5 * width). If factor is None, the function returns a copy of the 
+        dataset unchanged.
+
+        Args:
+            ds (xarray.Dataset): The dataset containing the histogram.
+            factor (float or None): The factor by which to adjust bin widths. Values > 1 increase bin width, 
+                                    values < 1 decrease it. None leaves the bin width and counts unchanged.
+
+        Returns:
+            xarray.Dataset: A new dataset with adjusted 'counts' and possibly 'center_of_bin' if factor is not None.
+        """
+        if factor is None:
+            # If factor is None, return a copy of the original dataset
+            return ds.copy()
+
+        if factor <= 0:
+            raise ValueError("Factor must be positive.")
+
+        original_width = ds.width.values[0]  # Assuming uniform width for all bins
+        new_width = original_width * factor
+        original_centers = ds.center_of_bin.values
+        
+        # Calculate new bin centers based on the adjusted first bin center
+        new_centers = np.array([original_centers[0] - 0.5 * original_width + (0.5 * new_width) + i * new_width for i in range(len(original_centers))])
+
+        # If the factor is meant to decrease bin size, this might result in more bins than originally
+        if factor < 1:
+            additional_bins = int((original_centers[-1] - new_centers[-1]) / new_width)
+            for i in range(1, additional_bins + 1):
+                new_centers = np.append(new_centers, new_centers[-1] + new_width)
+        
+        # Linear interpolation for counts
+        new_counts = np.interp(new_centers, original_centers, ds.counts.values, left=0, right=0)
+
+        # Create the adjusted dataset
+        adjusted_ds = xr.Dataset({
+            'counts': ('center_of_bin', new_counts),
+        }, coords={
+            'center_of_bin': ('center_of_bin', new_centers),
+            'width': ('center_of_bin', np.full(len(new_centers), new_width)),
+        })
+
+        # Preserve global attributes
+        adjusted_ds.attrs = ds.attrs.copy()
+        adjusted_ds.counts.attrs = ds.counts.attrs.copy()
+        adjusted_ds.center_of_bin.attrs = ds.center_of_bin.attrs.copy()
+        
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        history_update = str(current_time)+f" the histogram bins adjusted by a specified factor {factor} ;\n "
+        if 'history' not in adjusted_ds.attrs:
+            adjusted_ds.attrs['history'] = ' '
+        history_attr = adjusted_ds.attrs['history'] + history_update
+        adjusted_ds.attrs['history'] = history_attr
+        return adjusted_ds
 
     def get_pdf_path(self, configname: str = full_path_to_config) -> tuple:
         """
@@ -216,10 +279,10 @@ class ToolsClass:
                 "The specified dataset file was not found.")
 
     def select_files_by_year_and_month_range(self, path_to_histograms: str, start_year: int = None, end_year: int = None,
-                                             start_month: int = None, end_month: int = None) -> list:
+                                             start_month: int = None, end_month: int = None, flag: str = None) -> list:
         """
-        Select files within a specific year and optional month range from a given directory.
-        If no year range is provided, return all files sorted alphabetically.
+        Select files within a specific year and optional month range from a given directory that also contain a certain flag in their filename.
+        If no year range is provided, return all files sorted alphabetically that match the flag condition.
 
         Args:
             path_to_histograms (str): Directory path containing the histogram files.
@@ -227,26 +290,33 @@ class ToolsClass:
             end_year (int, optional): End year of the range (inclusive). Defaults to None.
             start_month (int, optional): Start month of the range (inclusive). Defaults to None.
             end_month (int, optional): End month of the range (inclusive). Defaults to None.
+            flag (str, optional): A specific flag to look for in the filenames. Defaults to None.
 
         Returns:
-            list: A list of file paths matching the specified year and month range or all files if no year range is specified.
+            list: A list of file paths matching the specified year, month range, and flag or all files if no year range is specified and match the flag condition.
         """
         files = [join(path_to_histograms, f) for f in os.listdir(path_to_histograms) if isfile(join(path_to_histograms, f))]
         files.sort()
-        if start_year is None and end_year is None:
-            # If no year range is provided, return all files sorted alphabetically
+        if start_year is None and end_year is None and flag is None:
+            # If no year range and flag are provided, return all files sorted alphabetically
             return files
 
         selected_files = []
         for file_path in files:
             # Extract the year and month from the filename
             date_match = re.search(r'(\d{4})-(\d{2})-\d{2}T', file_path)
-            if date_match:
+            # Check if flag is present in the filename if a flag is specified
+            flag_present = flag is None or flag in file_path
+            if date_match and flag_present:
                 year, month = map(int, date_match.groups())
                 # Check if the year and optionally month falls within the specified range
-                if (start_year is None or start_year <= year) and (end_year is None or year <= end_year) and (not start_month or start_month <= month <= (end_month or 12)):
+                if ((start_year is None or start_year <= year) and 
+                    (end_year is None or year <= end_year) and 
+                    (not start_month or start_month <= month <= (end_month or 12))):
                     selected_files.append(file_path)
                 elif start_year is None and end_year is None:
+                    # This line seems to be redundant in the context of flag checking,
+                    # since it's already handled by the flag_present check.
                     selected_files.append(file_path)
         return selected_files
 
@@ -835,6 +905,110 @@ class ToolsClass:
             merged_time_band += f", freq={common_freq}"
 
         return merged_time_band
+
+    def parse_filename_to_datetime(self, filename):
+        """
+        Extracts datetimes from the filename, accommodating both single and range date formats.
+        """
+        pattern = r"(\d{4}-\d{2}-\d{2}T\d{2})_?(\d{4}-\d{2}-\d{2}T\d{2})?(?:_\d+H)?\.nc"
+        match = re.search(pattern, filename)
+        if match:
+            start_time_str, end_time_str = match.groups()
+            start_time = datetime.strptime(start_time_str, "%Y-%m-%dT%H")
+            end_time = datetime.strptime(end_time_str, "%Y-%m-%dT%H") if end_time_str else start_time
+            return start_time, end_time
+        else:
+            raise ValueError(f"Time information not found in filename: {filename}")
+
+    def check_time_continuity(self, filenames, freq='M'):
+        """
+        Checks if the time coordinate is continuous for the given filenames and frequency.
+        """
+        filenames = [os.path.basename(file) for file in filenames]
+        times = [self.parse_filename_to_datetime(filename) for filename in filenames]
+        times.sort(key=lambda x: x[0])  # Sort by start time
+        
+        for i in range(len(times) - 1):
+            current_start_time, current_end_time = times[i]
+            next_start_time, _ = times[i + 1]
+            
+            if freq == 'M':  # Monthly data
+                expected_next_start = current_end_time + relativedelta(months=+1)
+                # Adjust for the end of the month
+                expected_next_start = expected_next_start.replace(day=1, hour=0)
+            elif '3H' in freq:  # 3-hourly data
+                expected_next_start = current_end_time + relativedelta(hours=+3)
+            
+            if next_start_time != expected_next_start:
+                self.logger.error(f"Discontinuity in results found: Expected {expected_next_start}, got {next_start_time}")
+                return False
+            else:
+                self.logger.info(f"Continuity of results confirmed: {next_start_time} follows {expected_next_start}")
+            
+        return True
+    
+    def check_incomplete_months(self, files):
+        filenames = [os.path.basename(file) for file in files]
+        for file in filenames:
+            # Updated regex to accommodate both filename patterns
+            match = re.search(r"(\d{4})-(\d{2})-(\d{2})T\d{2}(?:_(\d{4})-(\d{2})-(\d{2})T\d{2})?_?(?:\dH)?\.nc", file)
+            if match:
+                start_year, start_month, start_day, end_year, end_month, end_day = match.groups()
+
+                if end_year and end_month and end_day:
+                    # If the file has an end date, use it to check completeness
+                    start_date = datetime(int(start_year), int(start_month), int(start_day))
+                    end_date = datetime(int(end_year), int(end_month), int(end_day))
+
+                    # Calculate the last day of the end month
+                    last_day = monthrange(end_date.year, end_date.month)[1]
+
+                    # If the end date is before the last day of the month, it's incomplete
+                    if end_date < datetime(int(end_year), int(end_month), last_day):
+                        self.logger.debug(f"The month {end_year}-{end_month} may be incomplete.")
+            else:
+                self.logger.warning(f"Could not match the file name format: {file}.")
+
+        return files
+
+    def check_and_remove_incomplete_months(self, files):
+        filenames = [os.path.basename(file) for file in files]
+        complete_files_by_month = defaultdict(list)
+        incomplete_files_by_month = defaultdict(list)
+
+        # Adjusted regex to match both file name formats
+        for file, full_path in zip(filenames, files):
+            match = re.search(r"(\d{4})-(\d{2})-(\d{2})T\d{2}(?:_(\d{4})-(\d{2})-(\d{2})T\d{2})?_?(?:\dH)?\.nc", file)
+            if match:
+                start_year, start_month, start_day, end_year, end_month, end_day = match.groups()
+
+                if end_year and end_month and end_day:
+                    # Handle files with both start and end timestamps
+                    end_date = datetime(int(end_year), int(end_month), int(end_day))
+                    last_day = monthrange(int(end_year), int(end_month))[1]
+                    if int(end_day) == last_day:  # Complete file
+                        complete_files_by_month[f"{start_year}-{start_month}"].append(full_path)
+                    else:  # Incomplete file
+                        incomplete_files_by_month[f"{start_year}-{start_month}"].append(full_path)
+                else:
+                    # Assuming files with a single date are complete month summaries
+                    # Add additional checks here if needed
+                    complete_files_by_month[f"{start_year}-{start_month}"].append(full_path)
+            else:
+                self.logger.error(f"Could not match the file name format: {file}")
+
+        # Logic to prioritize complete months and prepare the final list of files
+        final_files = []
+        for month, paths in complete_files_by_month.items():
+            final_files.extend(paths)
+            if month in incomplete_files_by_month:
+                self.logger.warning(f"Warning: Removing incomplete records for {month} because a complete month file is present.")
+
+        for month, paths in incomplete_files_by_month.items():
+            if month not in complete_files_by_month:
+                final_files.extend(paths)
+
+        return final_files
 
     def sanitize_attributes(self, ds, max_attr_length=500):
         """

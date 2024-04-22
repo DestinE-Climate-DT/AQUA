@@ -3,57 +3,42 @@ from ocean3d import write_data
 from ocean3d import export_fig
 from ocean3d import split_ocean3d_req
 import matplotlib.pyplot as plt
+from .hovmoller_plot import hovmoller_plot
 from aqua.logger import log_configure
 
 
 
 
-class time_series:
+class time_series(hovmoller_plot):
+    """
+    A class for generating time series plots from ocean3d data.
+
+    Inherits from hovmoller_plot.
+
+    Args:
+        o3d_request: Request object containing necessary data for plot generation.
+
+    Attributes:
+        Inherits all attributes from the parent class.
+    """
     def __init__(self, o3d_request):
-        self = split_ocean3d_req(self,o3d_request)
+        """
+        Initializes the time_series object.
 
-    def data_for_hovmoller_lev_time_plot(self):
-        logger = log_configure(self.loglevel, 'data_for_hovmoller_lev_time_plot')
-        data = self.data
-        region = self.region
-        lat_s = self.lat_s
-        lat_n = self.lat_n
-        lon_w = self.lon_w
-        lon_e = self.lon_e
-        output_dir = self.output_dir
-        self.plot_info = {}
-        
-        data = weighted_area_mean(data, region, lat_s, lat_n, lon_w, lon_e, loglevel=self.loglevel)
-        
-        counter = 1
-        for anomaly in [False,True]:
-            for standardise in [False,True]:
-                # for anomaly_ref in ["t0","tmean"]:
-                for anomaly_ref in ["t0"]:
-                    data_proc, type, cmap = data_process_by_type(
-                        data=data, anomaly=anomaly, standardise=standardise, anomaly_ref=anomaly_ref, loglevel=self.loglevel)
-                    key = counter
-                    
-                    region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n, lon_w=lon_w, lon_e=lon_e, loglevel=self.loglevel)
-
-                    # avg_thetaolevs, solevs =self.define_lev_values(data_proc)
-                    avg_thetaolevs, solevs = 20, 20
-                    plot_config = {"anomaly": anomaly,
-                                   "standardise": standardise,
-                                   "anomaly_ref": anomaly_ref}
-                    
-                    self.plot_info[key] = {"data": data_proc,
-                                            "type": type,
-                                            "cmap": cmap,
-                                            "region_title": region_title,
-                                        "solevs": solevs,
-                                        "avg_thetaolevs": avg_thetaolevs,
-                                            "type": type,
-                                            "plot_config": plot_config}
-                    counter += 1            
-        return 
-        
+        Args:
+            o3d_request: Request object containing necessary data for plot generation.
+        """
+        super().__init__(o3d_request)
+  
     def loop_details(self, i, fig, axs):
+        """
+        Loop over plot details to generate time series plots.
+
+        Args:
+            i: Index indicating the loop iteration.
+            fig: Figure object for plotting.
+            axs: Axes object for plotting.
+        """
         logger = log_configure(self.loglevel, 'loop_details')
         
         key = i + 2
@@ -130,11 +115,19 @@ class time_series:
     
 
     def plot(self):
+        """
+        Generate and display time series plots.
+
+        Returns:
+            None
+        """
         logger = log_configure(self.loglevel, 'single_plot')
         
         logger.debug("Time series plot started")
         
-        self.data_for_hovmoller_lev_time_plot()
+        # self.data_for_hovmoller_lev_time_plot()
+        super().data_for_hovmoller_lev_time_plot()
+
 
         if self.output:
             self.filename = file_naming(self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e, 

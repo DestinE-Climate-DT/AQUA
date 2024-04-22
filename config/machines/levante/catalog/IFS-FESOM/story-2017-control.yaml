@@ -1,0 +1,14 @@
+#IFS-FESOM storyline (control runs) from 2017
+sources:
+  lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    args:
+      urlpath: 
+        "{{LRA_LUMI}}/IFS-FESOM/story-2017-control/r100/monthly/*story-2017-control_r100_monthly_*.nc"
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+        combine: by_coords
+    metadata:
+      source_grid_name: lon-lat

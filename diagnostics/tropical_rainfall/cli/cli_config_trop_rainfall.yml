@@ -1,7 +1,7 @@
 data:
-  model:  "MSWEP"         # Name of the climate model used
-  exp:    "past"          # Experiment identifier
-  source: "3hourly"       # Data source, specifying resolution and frequency
+  model:  "IFS-NEMO"         # Name of the climate model used
+  exp:    "ssp370"          # Experiment identifier
+  source: "hourly-hpz10-atm2d"       # Data source, specifying resolution and frequency #hourly-hpz10-atm2d
   freq:   "3H"            # Frequency of data, 'M' stands for Monthly
   regrid: "r010"          # Regridding option to apply
   s_year:  null           # Start year for analysis, 'null' means it will be set dynamically
@@ -11,33 +11,57 @@ data:
 
 class_attributes:
   trop_lat:    15         # Tropical latitude boundary for analysis
-  num_of_bins: 5000       # Number of bins for histogram generation
+  num_of_bins: 10000       # Number of bins for histogram generation
   first_edge:   0         # Starting edge value for the histogram bins
-  width_of_bin: 0.1       # Width of each bin in the histogram, in mm/day
+  width_of_bin: 0.5       # Width of each bin in the histogram, in mm/day
   model_variable: 'mtpr'  # Model variable to be analyzed
   new_unit:       'mm/day' # Unit for the model variable
 
 rebuild_output: False
+machine: lumi             # The machine/environment where the analysis is run
 
 plot:
-  color: 'tab:green'      # Color for the plot
-  figsize: 1              # Figure size for the plot
+  factor: null            # The factor by which to adjust bin widths
   xmax: null              # Max value for the x-axis in the plot
   loc: 'upper right'      # Location of the legend/annotation in the plot
   pdf_format: True        # Whether to save plots in PDF format
-
-machine: lumi             # The machine/environment where the analysis is run
+  color: 'tab:green'      # Color for the plot
+  figsize: 1              # Figure size for the plot
 
 output:
   levante: "/work/bb1153/b382267/tropical_rainfall_cicle3/cli_test/"  # File path for Levante machine
   lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/output/cli_test/"
 
+buffer:
+  levante: "/scratch/b/b382267/cli_test/"
+  lumi: "/pfs/lustrep3/scratch/project_465000454/nazarova/cli_test/"
+
 mswep:
   levante: "/work/bb1153/b382267/observations/MSWEP/"  # File path for Levante machine
   lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/MSWEP/"
   s_year:  1990           # Start year for analysis, 'null' means it will be set dynamically
+  f_year:  2020           # Final year for analysis, 'null' means it will be set dynamically
+  auto: False             # will be set dynamically
+  factor: 10              # The factor by which to adjust bin widths
+  color: 'tab:red'        # Color for the plot
+
+era5:
+  levante: "/work/bb1153/b382267/observations/ERA5/"  # File path for Levante machine
+  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/ERA5/"
+  s_year:  1990           # Start year for analysis, 'null' means it will be set dynamically
   f_year:  2021           # Final year for analysis, 'null' means it will be set dynamically
   auto: False             # will be set dynamically
+  factor: null            # The factor by which to adjust bin widths
+  color: 'tab:blue'       # Color for the plot
+
+imerg:
+  levante: "/work/bb1153/b382267/observations/IMERG/"  # File path for Levante machine
+  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/IMERG/"
+  s_year:  2000           # Start year for analysis, 'null' means it will be set dynamically
+  f_year:  2023           # Final year for analysis, 'null' means it will be set dynamically
+  auto: False             # will be set dynamically
+  factor: null            # The factor by which to adjust bin widths
+  color: 'tab:orange'     # Color for the plot
 
 logger:
   diag_loglevel: info
