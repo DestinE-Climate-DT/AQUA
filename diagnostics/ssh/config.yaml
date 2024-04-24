@@ -4,43 +4,52 @@ check_complete_timespan_data: False
 check_complete_timespan_models: False
 enter_aviso_dates_manually: False
 difference_plots: False
-region_selection: True
-fig_format: pdf
-contours: 21  # Number of contours for the contour plot. If not set (or 0) then pcolormesh is used
+region_selection: False
+fig_format: png
+contours: 0  # Number of contours for the contour plot. If not set (or 0) then pcolormesh is used
 
 # Models for which sea surface height (SSH) variability is to be evaluated.
-models:
-  - name: ICON
-    experiment: ssp370
-    source: daily-hpz10-oce2d
-    regrid: r005
-    variable: avg_zos
-    zoom: 10
-    timespan: ['2020-01-20', '2025-05-30']
-# #    timespan: ['2020-01-01', '2020-12-31']
+models:   
+  # - name: IFS-NEMO
+  #   experiment: historical-1990
+  #   source: daily-hpz10-oce2d
+  #   regrid: r010
+  #   variable: avg_zos
+  #   zoom: 10
+  #   timespan: ['1990-01-20', '2002-02-01']
+
 
   # - name: IFS-NEMO
   #   experiment: ssp370
   #   source: daily-hpz10-oce2d
-  #   regrid: r005
+  #   regrid: r010
   #   variable: avg_zos
   #   zoom: 10
-  #   timespan: ['2020-01-20', '2025-05-30']
-    
-  # - name: IFS-FESOM
-  #   experiment: story-2017-historical
-  #   source: hourly-hpz7-oce2d
-  #   regrid: r005
+  #   timespan: ['2029-01-20', '2039-06-01']
+
+
+  # - name: ICON
+  #   experiment: ssp370
+  #   source: daily-hpz10-oce2d
+  #   regrid: r010
   #   variable: avg_zos
-  #   zoom: 7
-  #   timespan: ['2017-01-21', '2017-12-31']
+  #   zoom: 10
+  #   timespan: ['2020-01-01', '2030-02-01']
+    
+  - name: ICON
+    experiment: historical-1990
+    source: daily-hpz10-oce2d
+    regrid: r010
+    variable: avg_zos
+    zoom: 7
+    timespan: ['1990-01-01', '1990-04-01']
 
 # This is the model against which other models are compared.
 base_model: 
   { name: AVISO,
     experiment: ssh-L4,
     source: daily,
-    regrid: r005
+    regrid: r010
   }
 
 # ONLY FOR ICON: Flags for northern and southern boundaries to mask out specific latitudes.
@@ -73,7 +82,7 @@ output_directory: /projappl/project_465000454/sunnyjal/AQUA/diagnostics/ssh/outp
 
 # This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
 dask_cluster:
-  n_workers: 16
+  n_workers: 8
   threads_per_worker: 1
-  memory_limit: 20e9
+  memory_limit: 30e9
 
