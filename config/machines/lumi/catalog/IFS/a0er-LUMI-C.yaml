@@ -1,0 +1,121 @@
+sources:
+  fc0-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc0*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc1-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc1*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc2-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc2*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc3-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc3*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc4-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc4*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc5-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc5*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc6-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc6*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc7-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc7*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc8-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc8*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
+  fc9-lra-r100-monthly:
+    driver: netcdf
+    description: LRA data monthly at r100
+    metadata:
+      source_grid_name: lon-lat
+    args:
+      urlpath: 
+        /pfs/lustrep3/scratch/project_465000454/kaikeller/a0er/notebooks/gendat_a0eo/lab/out/fc9*.nc
+      chunks: {}
+      xarray_kwargs:
+        decode_times: true
+
