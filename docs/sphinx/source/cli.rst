@@ -209,10 +209,10 @@ Basic usage:
     The script will check that a valid SWIFT token is available before starting the upload.
     If the token is not available, the script will ask the user to login to the SWIFT platform to obtain a new token.
 
-LUMI container installation
----------------------------
+HPC container utilities
+-----------------------
 
-Includes the script for the installation of the container on LUMI: please refer to :ref:`container`
+Includes the script for the usage of the container on LUMI and Levante HPC: please refer to :ref:`container`
 
 LUMI conda installation
 -----------------------

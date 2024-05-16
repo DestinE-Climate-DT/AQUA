@@ -144,6 +144,6 @@ The AQUA container is a Docker container that contains the AQUA package and all 
 Please refer to the :ref:`container` section for more information on how to deploy and how to use the AQUA container.
 
 .. note ::
-    If you're working on LUMI HPC, a compact script is available to load the AQUA container,
+    If you're working on LUMI or Levante HPC, a compact script is available to load the AQUA container,
     mounting the necessary folders and creating the necessary environment variables.
     Please refer to the :ref:`container` section.

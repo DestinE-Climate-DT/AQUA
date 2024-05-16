@@ -139,14 +139,14 @@ The idea of the regridder is first to generate the weights for the interpolation
 then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already
 existent and stored in a directory specified in the ``config/machine/<machine-name>/catalog.yaml`` file.
-A list of predefined target grids (only regular lon-lat for now) is available in the ``config/aqua-grids.yaml`` file.
+A list of predefined target grids (only regular lon-lat for now) is available in the ``config/grids/default.yaml`` file.
 For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, etc.
 
 .. note::
     The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
     centered between 90 and -90 degrees is sometimes used in the field. If you need sucha a grid please add an additional definition
-    to the ``config/aqua-grids.yaml`` file with a different grid name (for example ``r100a``).
+    to the ``config/grids`` folder with a different grid name (for example ``r100a``).
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 

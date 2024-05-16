@@ -139,7 +139,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         self.machine = Configurer.machine
 
         # get configuration from the machine
-        self.catalog_file, self.fixer_folder, self.config_file = (
+        self.catalog_file, self.fixer_folder, self.grids_folder, self.config_file = (
             Configurer.get_reader_filenames())
         self.cat = intake.open_catalog(self.catalog_file)
 
@@ -177,11 +177,10 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         # load and check the regrid
         if regrid or areas:
-
             # loading the grid defintion file
-            main_file = os.path.join(self.configdir, 'aqua-grids.yaml')
             machine_file = os.path.join(self.configdir, 'machines', self.machine, 'catalog.yaml')
-            cfg_regrid = load_multi_yaml(filenames=[main_file, machine_file],
+            cfg_regrid = load_multi_yaml(filenames=[machine_file],
+                                         folder_path=self.grids_folder,
                                          definitions="paths",
                                          loglevel=self.loglevel)
 

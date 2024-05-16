@@ -6,9 +6,8 @@ model:
 
 dirs:
   exp: '../data/' 
-  clm: /users/padavini/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology
-  tab: /users/padavini/work/ecmean_new/output/YAML
-  fig: /users/padavini/work/ecmean_new/output/PDF
+  tab: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean_new/output/YAML
+  fig: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean_new/output/PDF
 
 global:
   atm_vars: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,

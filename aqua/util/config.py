@@ -80,7 +80,7 @@ class ConfigPath():
         Extract the filenames for the reader for catalog, regrid and fixer
 
         Returns:
-            Four strings for the path of the catalog, regrid, fixer and config files
+            Four strings for the path of the catalog, fixer, regrid and config files
         """
 
         if os.path.exists(self.config_file):
@@ -93,5 +93,9 @@ class ConfigPath():
                                                           configdir=self.configdir)
             if not os.path.exists(fixer_folder):
                 raise FileNotFoundError(f'Cannot find catalog file in {fixer_folder}')
+            grids_folder = base['reader']['regrid'].format(machine=self.machine,
+                                                           configdir=self.configdir)
+            if not os.path.exists(grids_folder):
+                raise FileNotFoundError(f'Cannot find catalog file in {grids_folder}')
 
-        return catalog_file, fixer_folder, self.config_file
+        return catalog_file, fixer_folder, grids_folder, self.config_file

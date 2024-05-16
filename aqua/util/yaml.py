@@ -232,8 +232,8 @@ def _load_merge(folder_path=None, filenames=None,
     else:
         logger.debug('Updating an existing dictionary')
 
-    if filenames and folder_path is not None or filenames is None and folder_path is None:
-        raise ValueError('ERROR: either folder_path or filenames must be provided')
+    if filenames is None and folder_path is None:
+        raise ValueError('ERROR: at least one between folder_path or filenames must be provided')
 
     if filenames:  # Merging a list of files
         logger.debug(f'Files to be merged: {filenames}')

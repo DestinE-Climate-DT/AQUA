@@ -1,0 +1,26 @@
+grids:
+  # Generic Healpix
+  hpz5-nested:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz5_nested_atm.nc'
+  hpz7-nested:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz7_nested_atm.nc'
+  hpz9-nested:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz9_nested_atm.nc'
+  hpz10-nested:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz10_nested_atm.nc'
+  hpz7-ring:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz7_ring_atm.nc'
+  hpz10-ring:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz10_ring_atm.nc'

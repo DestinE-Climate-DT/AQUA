@@ -49,9 +49,10 @@ or analogue for Docker.
 Anyway, you may want to bind some folders to the container to access your data and scripts or
 to define some environment variables.
 
-AQUA provides scripts to use the AQUA container (updated to the last release) with Singularity on LUMI.
-These contain also bindings to the commonly used folders on LUMI but they can be easily adapted to other platforms.
-The scripts are located in the ``cli/lumi-container`` folder.
+AQUA provides scripts to use the AQUA container (updated to the last release) with Singularity on LUMI and Levante.
+These contain also bindings to the commonly used folders on the machine but they can be easily adapted to other platforms.
+The scripts are located in the ``cli/lumi-container`` and ``cli/levante-container`` folders.
+The scripts are (for LUMI, but same in the Levante folder):
 
 - **load_container_lumi.sh**: Load the AQUA container with the most common bindings and environment variables.
   This is the most common script to use the AQUA container on LUMI on production environment.

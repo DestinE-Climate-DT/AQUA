@@ -5,8 +5,7 @@ model:
   name: ClimateDT
 
 dirs:
-  exp: '../data/' 
-  clm: /home/b/b382076/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology
+  exp: '../data/'
   tab: /work/bb1153/b382076/ecmean_new/output/YAML
   fig: /work/bb1153/b382076/ecmean_new/output/PDF
 
