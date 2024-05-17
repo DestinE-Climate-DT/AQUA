@@ -21,6 +21,7 @@ singularity exec \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
+    --bind /pool/data/ICDC/atmosphere/ceres_ebaf/ \
     --bind /work/bb1153 \
     $AQUA_container \
     bash -c \

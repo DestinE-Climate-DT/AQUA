@@ -43,4 +43,5 @@ singularity shell \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
     --bind /work/bb1153 \
+    --bind /pool/data/ICDC/atmosphere/ceres_ebaf/ \
     $AQUA_container
