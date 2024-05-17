@@ -87,10 +87,7 @@ class MainClass:
         self.path_to_netcdf = self.tools.get_netcdf_path() if path_to_netcdf is None else path_to_netcdf
         self.path_to_pdf = self.tools.get_pdf_path() if path_to_pdf is None else path_to_pdf
 
-        if width_of_bin is None:
-            self.width_of_bin = self.precipitation_rate_units_converter(0.05, old_unit='mm/day', new_unit=self.new_unit)
-        else:
-            self.width_of_bin = width_of_bin
+        self.width_of_bin = width_of_bin
 
     def class_attributes_update(self, trop_lat: Union[float, None] = None, s_time: Union[str, int, None] = None,
                                 f_time: Union[str, int, None] = None, s_year: Union[int, None] = None,

@@ -491,7 +491,7 @@ class ToolsClass:
         """
         fix = FixerMixin()
         fix.logger = self.logger
-        _, fix.fixer_folder, _ = (ConfigPath().get_reader_filenames())
+        _, fix.fixer_folder, _, _  = (ConfigPath().get_reader_filenames())
         fix.fixes_dictionary = load_multi_yaml(fix.fixer_folder)
 
         factor, offset = fix.convert_units(from_unit, to_unit)

@@ -17,6 +17,7 @@ AQUA core complete list:
 - Define AQUA NEMO healpix grids as a function of their ORCA source (#1113)
 
 AQUA diagnostics complete list:
+- Tropical Rainfall: Improve Paths in Live Demonstration Notebook  (#1157)
 - Atm global mean: produce seasonal bias plots by default (#1140)
 - Tropical Rainfall: Notebook for the Live Demonstration (#1112)
 - Teleconnections: MJO Hovmoller plot introduced as notebook (#247)
