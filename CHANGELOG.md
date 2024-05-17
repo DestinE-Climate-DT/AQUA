@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- Jinja replacement is added to the aqua-config.yaml (#1154)
 - grid definitions split in multiple files (#1152)
 - Add script to access the container on Levante HPC (#1151)
 - Add support for IFS TL63 and TL159 grids (#1150)

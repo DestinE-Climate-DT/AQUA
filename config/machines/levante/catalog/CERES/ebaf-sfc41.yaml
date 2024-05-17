@@ -8,7 +8,7 @@ sources:
     driver: netcdf
     metadata:
       source_grid_name: lon-lat
-      fixer_name: ceres-ebaf-nextgems
+      fixer_name: ceres-ebaf-destine-v1
     args:
       urlpath: '/pool/data/ICDC/atmosphere/ceres_ebaf/DATA_OLD/CERES_EBAF-Surface_Ed4.1_Subset_200003-202203.nc'
       chunks: {}

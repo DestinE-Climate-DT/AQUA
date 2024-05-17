@@ -3,9 +3,9 @@
 machine: lumi
 
 reader: 
-  catalog: '{configdir}/machines/{machine}/catalog.yaml'
-  fixer: '{configdir}/fixes'
-  regrid: '{configdir}/grids'
+  catalog: '{{ configdir }}/machines/{{ machine }}/catalog.yaml'
+  fixer: '{{ configdir }}/fixes'
+  regrid: '{{ configdir }}/grids'
 
 # Location of the CDO executable. 
 # Usually this option is not needed, since CDO is required in the environment.yml file and provided by conda.
