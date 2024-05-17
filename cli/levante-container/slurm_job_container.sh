@@ -5,7 +5,7 @@
 #SBATCH --error=output_%j.err
 #SBATCH --account=bb1153
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=32
 #SBATCH --time=08:00:00
 #SBATCH --mem=0 
 set -e
@@ -14,7 +14,7 @@ set -e
 AQUA_container="/work/bb1153/b382289/container/AQUA/aqua_v0.8.1.sif"
 
 module load singularity
-
+cd $AQUA
 singularity exec \
     --cleanenv \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
