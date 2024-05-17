@@ -5,7 +5,7 @@
 #SBATCH --error=output_%j.err
 #SBATCH --account=bb1153
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks-per-node=120
 #SBATCH --time=08:00:00
 #SBATCH --mem=0 
 set -e

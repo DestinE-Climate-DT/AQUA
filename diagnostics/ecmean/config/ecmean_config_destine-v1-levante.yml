@@ -6,8 +6,8 @@ model:
 
 dirs:
   exp: '../data/'
-  tab: /work/bb1153/b382076/ecmean_new/output/YAML
-  fig: /work/bb1153/b382076/ecmean_new/output/PDF
+  tab: ./
+  fig: ./
 
 global:
   atm_vars: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,
