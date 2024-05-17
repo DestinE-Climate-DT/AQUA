@@ -10,7 +10,8 @@ from aqua import Reader
 from aqua.util import create_folder, add_cyclic_lon
 from aqua.logger import log_configure
 
-def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , level = 'toa', loglevel='WARNING'):
+
+def process_ceres_data(exp=None, source=None, fix=True, variable_names=None, level='toa', loglevel='WARNING'):
     """
     Function to extract CERES data for further analysis + create global means
 
@@ -18,7 +19,6 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
         exp (str):   Input experiment to be selected from the catalogue.
         source (str): Input source to be selected from the catalogue.
         fix (bool):  If True, apply the fix to the CERES data. Default is True.
-        level (str): Input level (either 'toa' or 'sfc'). Defaults to 'toa'
         variable_names (dict): Dictionary containing variable names mapping. Defaults for toa and sfc are:
                                 default_variable_names_toa = {
                                                         'mtnlwrf': 'mtnlwrf',
@@ -28,6 +28,7 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
                                                         'msnlwrf': 'msnlwrf',
                                                         'msnswrf': 'msnswrf',
                                                     }
+        level (str): Input level (either 'toa' or 'sfc'). Defaults to 'toa'
         loglevel (str): The log level for the logger. Default is 'WARNING'.
 
     Returns:
@@ -42,7 +43,7 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
             - "anom": Monthly anomalies data.
     """
     logger = log_configure(log_level=loglevel, log_name='Process CERES Data')
-    
+
     # Default variable names dictionaries for 'toa' and 'sfc' levels
     default_variable_names_toa = {
         'mtnlwrf': 'mtnlwrf',
@@ -53,7 +54,7 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
         'msnlwrf': 'msnlwrf',
         'msnswrf': 'msnswrf',
     }
-    
+
     # Select appropriate default variable names dictionary based on the level parameter
     if level == 'toa':
         default_variable_names = default_variable_names_toa
@@ -68,7 +69,7 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     else:
         # Merge user-provided variable names with default variable names, if any
         variable_names = {**default_variable_names, **variable_names}
-        
+
     if fix is None or fix is False:
         reader = Reader(model='CERES', exp=exp, source=source, regrid='r100', fix=False, loglevel=loglevel)
     else:
@@ -84,7 +85,7 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     elif level == 'sfc':
         data['snr'] = data['msnlwrf'] + data['msnswrf']
         ceres = reader.regrid(data[['snr', 'msnlwrf', 'msnswrf']])
-        
+
     starting_year = str(ceres["time.year"][0].values) if len(ceres.sel(time=str(ceres["time.year"][0].values)).time) == 12 \
         else str(ceres["time.year"][0].values + 1)
     final_year = str(ceres["time.year"][-1].values) if len(ceres.sel(time=str(ceres["time.year"][-1].values)).time) == 12 \
@@ -117,7 +118,8 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     return dictionary
 
 
-def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WARNING', start_date=None, end_date=None):
+def process_model_data(model=None, exp=None, source=None, fix=True,
+                       start_date=None, end_date=None, loglevel='WARNING'):
     """
     Function to extract Model output data for further analysis and create global means.
 
@@ -126,9 +128,9 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
         exp (str):     Input experiment to be selected from the catalogue.
         source (str):  Input source to be selected from the catalogue.
         fix (bool):    If True, apply the fix to the model data. Default is False.
-        loglevel (str): The log level for the logger. Default is 'WARNING'.
         start_date (str): Start date of the time range to select (format: 'YYYY-MM-DD').
         end_date (str): End date of the time range to select (format: 'YYYY-MM-DD').
+        loglevel (str): The log level for the logger. Default is 'WARNING'.
 
     Returns:
         dict: A dictionary containing the following information:
@@ -145,10 +147,12 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
         reader = Reader(model=model, exp=exp, source=source,
                         regrid='r100', fix=True, loglevel=loglevel)
 
-    data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf', 'mslhf', 'msnlwrf', 'msnswrf', 'msshf'])
+    # Removed 'msnswrf' since it is not used
+    # data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf', 'mslhf', 'msnlwrf', 'msnswrf', 'msshf'])
+    data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf', 'mslhf', 'msnlwrf', 'msshf'])
     data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
     gm = reader.fldmean(data)
-    
+
     # Select time range if start_date and end_date are provided
     if start_date is not None and end_date is not None:
         data = data.sel(time=slice(start_date, end_date))
@@ -162,6 +166,7 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
     }
 
     return dictionary
+
 
 def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfig=None, year=None,
                        fontsize=14, loglevel='WARNING', variables=None):
@@ -210,7 +215,7 @@ def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfi
                 boxplot_data['Datasets'].extend([model_name] * len(values))
 
                 units = dataset_year[var_name].attrs.get('units', 'Unknown')
-    
+
     # Create a DataFrame from the boxplot_data dictionary
     boxplot_df = pd.DataFrame(boxplot_data)
     ax = sns.boxplot(x='Variables', y='Values', hue='Datasets', data=boxplot_df)
