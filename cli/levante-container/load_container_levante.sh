@@ -35,7 +35,7 @@ fi
 log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
 module load singularity
-
+cd $AQUA
 singularity shell \
     --cleanenv \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
@@ -43,5 +43,7 @@ singularity shell \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
     --bind /work/bb1153 \
+    --bind /work/uc0928/DATA/ocean/ \
+    --bind /home/m/m214003/local/bin/cdo \
     --bind /pool/data/ICDC/atmosphere/ceres_ebaf/ \
     $AQUA_container
