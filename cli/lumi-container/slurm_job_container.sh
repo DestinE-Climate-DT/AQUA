@@ -26,6 +26,7 @@ singularity exec \
     --env PYTHONPATH=$AQUA_path \
     --env AQUA=$AQUA_path \
     --bind /pfs/lustrep3/ \
+    --bind /flash/project_465000454 \
     --bind /projappl/ \
     --bind /project \
     --bind /scratch/ \
