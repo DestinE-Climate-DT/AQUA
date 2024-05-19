@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -A project_465000454
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=1
 #SBATCH -n 1
 #SBATCH -t 00:25:00 #change the wallclock
 #SBATCH -J aqua_jupyter
