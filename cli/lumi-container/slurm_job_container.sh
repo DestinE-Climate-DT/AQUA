@@ -2,18 +2,19 @@
 
 #SBATCH -A project_465000454
 #SBATCH --cpus-per-task=128
-#SBATCH -n 1
-#SBATCH -t 72:00:00 #change the wallclock
+#SBATCH -n 2
+#SBATCH -t 00:30:00 #change the wallclock
 #SBATCH -J aqua_jupyter
-#SBATCH --output=aqua_slurm.out
-#SBATCH --error=aqua_slurm.err
-#SBATCH -p small    #change the partition
+#SBATCH --output=output_%j.out
+#SBATCH --error=output_%j.err
+#SBATCH -p debug    #change the partition
 
 AQUA_path=$AQUA
 AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.8.1.sif
 FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml
 GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
 GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
+cd $AQUA_path
 
 # singularity shell can be an option depending on the requirement
 singularity exec \

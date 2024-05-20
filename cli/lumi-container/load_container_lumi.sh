@@ -37,6 +37,8 @@ fi
 
 log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
+cd $AQUA
+
 singularity shell \
     --cleanenv \
     --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
