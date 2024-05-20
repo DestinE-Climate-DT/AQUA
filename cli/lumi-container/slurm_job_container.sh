@@ -1,15 +1,15 @@
 #!/bin/bash
 
 #SBATCH -A project_465000454
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=128
 #SBATCH -n 1
-#SBATCH -t 00:25:00 #change the wallclock
+#SBATCH -t 72:00:00 #change the wallclock
 #SBATCH -J aqua_jupyter
 #SBATCH --output=aqua_slurm.out
 #SBATCH --error=aqua_slurm.err
-#SBATCH -p debug    #change the partition
+#SBATCH -p small    #change the partition
 
-AQUA_path=/path_to/AQUA 
+AQUA_path=$AQUA
 AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.8.1.sif
 FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml
 GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
@@ -26,6 +26,8 @@ singularity exec \
     --env PYTHONPATH=$AQUA_path \
     --env AQUA=$AQUA_path \
     --bind /pfs/lustrep3/ \
+    --bind /pfs/lustrep3/scratch/ \
+    --bind /users/lrb_465000454_fdb/ \
     --bind /flash/project_465000454 \
     --bind /projappl/ \
     --bind /project \
