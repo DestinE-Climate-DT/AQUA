@@ -6,8 +6,8 @@ model:
 
 dirs:
   exp: '../data/' 
-  tab: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean_new/output/YAML
-  fig: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean_new/output/PDF
+  tab: '/pfs/lustrep3/scratch/project_465000454/sughosh/AQUA/notebooks/demonstration'
+  fig: '/pfs/lustrep3/scratch/project_465000454/sughosh/AQUA/notebooks/demonstration' 
 
 global:
   atm_vars: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,
