@@ -2,9 +2,11 @@
 import xarray as xr
 import pandas as pd
 from aqua.util import extract_literal_and_numeric
+from aqua.logger import log_configure
 
 
-def loop_seasonalcycle(data=None, startdate=None, enddate=None, freq='MS'):
+def loop_seasonalcycle(data=None, startdate=None, enddate=None,
+                       freq='MS', loglevel='WARNING'):
     """
     Take the data, evaluate a seasonal cycle and repeat it over a required time period
 
@@ -13,7 +15,10 @@ def loop_seasonalcycle(data=None, startdate=None, enddate=None, freq='MS'):
         startdate (str): The start date of the required time period
         enddate (str): The end date of the required time period
         freq (str): The frequency of the time period (default 'MS' for monthly)
+        loglevel (str): The logging level (default 'WARNING')
     """
+    logger = log_configure(loglevel, 'loop_seasonalcycle')
+
     if data is None:
         raise ValueError('Data not provided')
     if startdate is None or enddate is None:
@@ -26,6 +31,7 @@ def loop_seasonalcycle(data=None, startdate=None, enddate=None, freq='MS'):
     else:
         raise ValueError(f'Frequency {freq} not supported')
 
+    logger.debug(f'Start: {startdate}, End: {enddate}, Freq: {freq}')
     time_range = pd.date_range(start=startdate, end=enddate, freq=freq)
 
     if freq == 'MS' or freq == 'mon' or freq == 'monthly':

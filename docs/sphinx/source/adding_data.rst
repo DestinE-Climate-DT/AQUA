@@ -12,8 +12,8 @@ How to create a new source and add new data is documented in the next sections.
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
-- Finally, to exploit the regridding functionalities, you will also need to verify the grid is supported by the machine-independent
-  ``aqua-grids.yaml``. 
+- Finally, to exploit the regridding functionalities, you will also need to verify the grid is available in the ``config/grids`` folder 
+  or to add it (see :ref:`grid_definition`).
 
 .. _file-based-sources:
 
@@ -306,12 +306,13 @@ In our case, we will need to add the following metadata to the ``yearly_SST.yaml
         metadata:
             source_grid_name: lon-lat
 
+.. _grid_definition:
 
 Grid definitions
 ----------------
 
-As mentioned above, AQUA has some predefined grids available in ``config/aqua-grids.yaml``:
-here below we provide some information on the grid key so that it might me possibile define new grids.
+As mentioned above, AQUA has some predefined grids available in the ``config/grids`` folder.
+Here below we provide some information on the grid key so that it might me possibile define new grids.
 As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 .. code-block:: yaml
@@ -337,9 +338,10 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 .. note::
 
-    Two kinds of template replacament are available in the `aqua-grids.yaml`. The Jinja formatting `{{ var }}` is used to set
-    variables as path that comes from the `catalog.yaml` file. The default python formatting `{}` is used for file structure which comes
+    Two kinds of template replacament are available in the files contained in the ``config/grids`` folder. The Jinja formatting ``{{ var }}`` is used to set
+    variables as path that comes from the ``catalog.yaml`` file. The default python formatting ``{}`` is used for file structure which comes
     Reader arguments, as model, experiment or any other kwargs the user might set. Please pay attention to which one you are using in your files.
+    In the future we will try to uniform this towards the Jinja formatting.
 
 
 - **path**: Path to the grid data file, can be a single file if the grid is 2d,

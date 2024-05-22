@@ -41,13 +41,13 @@ if __name__ == '__main__':
     exp = config['exp']
     source = config['source']
     var = config['var']
+    resolution = config.get('resolution')
     logger.info('Retrieving %s from %s %s %s', var, model, exp, source)
 
     # Configuration needed to save the file
     tmp = config['tmp']
     model_name = config['model_name']
     zoom = config['zoom']
-    model3d = config['3d']
     nested = config['nested']
 
     # Create Reader object
@@ -55,12 +55,19 @@ if __name__ == '__main__':
                     areas=False, fix=False, loglevel=loglevel)
     data = reader.retrieve(var=var)
 
+    #automatic detection of 3d
+    if data['level'] is not None:
+        model3d = True
+    else: 
+        model3d = False
+
     if model3d:
         logger.debug("Modifying level axis attributes as Z")
         data['level'].attrs['axis'] = 'Z'
 
     # Save data in a netcdf file on the temporary directory
     create_folder(tmp)
+
     filename = tmp + '/' + model + '_' + exp + '_' + source + '_' + var + '.nc'
 
     logger.info('Saving data in %s', filename)
@@ -79,7 +86,11 @@ if __name__ == '__main__':
     # setting output filename
     tgt = config['tgt']
     create_folder(tgt)
-    filename_tgt = tgt + '/' + model_name + '_hpz' + str(zoom)
+    filename_tgt = tgt + '/' + model_name
+    if resolution:
+        filename_tgt = filename_tgt + "-" + resolution
+
+    filename_tgt = filename_tgt + '_hpz' + str(zoom)
     if nested:
         filename_tgt = filename_tgt + '_nested_oce'
     else:

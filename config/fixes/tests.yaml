@@ -42,6 +42,9 @@ fixer_name:
         coords:
             timepippo:
                 source: time
+        dims:
+            cellspippo:
+                source: cell
     
     ci-teleconnections:
         data_model: false

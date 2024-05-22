@@ -12,7 +12,7 @@ set -e
 
 whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
 source $whereconda/etc/profile.d/conda.sh
-mamba activate aqua
+conda activate aqua
 
 configfile="${AQUA}/diagnostics/global_time_series/deliverable/config_deliverable.yaml"
 scriptfile="${AQUA}/diagnostics/global_time_series/cli/cli_global_time_series.py"

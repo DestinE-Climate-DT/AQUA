@@ -145,3 +145,12 @@ fixer_name:
                 grib: true
                 derived: TP*24
                 src_units: m/day
+                
+    ESA-CCI-destine-v1:
+        vars:
+            avg_tos: 
+                source: analysed_sst
+                grib: true
+            avg_siconc:
+                source: sea_ice_fraction
+                grib: true

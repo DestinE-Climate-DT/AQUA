@@ -1,0 +1,62 @@
+grids:
+  # OBSERVATIONS
+
+  # AVISO
+  aviso:
+    space_coord: ["longitude", "latitude"]
+
+  # EN4
+  en4:
+    path:
+      lev: '{{ grids }}/EN4/en4-grid.nc'
+    space_coord: ["lon", "lat"]
+    vert_coord: ["lev"]
+
+  # ERA5
+  era5-n320:
+    path: '{{ grids }}/ERA5/n320_unstructured.nc'
+    space_coord: ["values"]
+  era5-r025:
+    path: 
+      2d: '{{ grids }}/ERA5/r025_grid.nc'
+      2dm: '{{ grids }}/ERA5/r025_grid_masked.nc'
+    masked: 
+      vars: ["SSTK", "sst", "avg_tos"]
+    space_coord: ["lon", "lat"]
+    vert_coord: ["2d", "2dm"]
+
+  # OSI-SAF
+  osi-saf-nh:
+    path: '{{ grids }}/OSI-SAF/grid_osi-saf_nh.nc'
+    space_coord: ['xc', 'yc']
+    cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc'
+    cellarea_var: areacello
+    regrid_method: 'bil'
+
+  osi-saf-sh:
+    path: '{{ grids }}/OSI-SAF/grid_osi-saf_sh.nc'
+    space_coord: ['xc', 'yc']
+    cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc'
+    cellarea_var: areacello
+    regrid_method: 'bil'
+
+  # WOA
+  woa:
+    path:
+      depth: '{{ grids }}/WOA18/grid-woa18.nc'
+    vert_coord: depth
+    space_coord: ["lon", "lat"]
+
+  # PSC
+  psc-piomas:
+    space_coord: ["x", "y"]
+    cellareas: '{{ grids }}/PSC/cellarea_piomas.nc'
+    cellarea_var: areacello
+    path: '{{ grids }}/PSC/grid_piomas_new.nc'
+    regrid_method: 'bil'
+  psc-giomas:
+    space_coord: ["x", "y"]
+    cellareas: '{{ grids }}/PSC/cellarea_giomas.nc'
+    cellarea_var: areacello
+    path: '{{ grids }}/PSC/grid_giomas_new.nc'
+    regrid_method: 'bil'

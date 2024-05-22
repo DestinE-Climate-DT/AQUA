@@ -149,6 +149,7 @@ if __name__ == '__main__':
             var_attributes = config['seasonal_bias'].get(var_name, {})
             vmin = var_attributes.get('vmin', None)
             vmax = var_attributes.get('vmax', None)
+            seasons = config['diagnostic_attributes'].get('seasons', None)
             logger.debug(f"var: {var_name}, vmin: {vmin}, vmax: {vmax}")
 
             try:
@@ -159,7 +160,7 @@ if __name__ == '__main__':
                               start_date2=start_date2, end_date2=end_date2,
                               outputdir=outputdir, outputfig=outputfig,
                               vmin=vmin, vmax=vmax,
-                              loglevel=loglevel)
+                              loglevel=loglevel, seasons=seasons)
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")
 
@@ -172,6 +173,8 @@ if __name__ == '__main__':
             vmin = var_attributes.get('vmin', None)
             vmax = var_attributes.get('vmax', None)
             logger.debug(f"var: {var_name}, vmin: {vmin}, vmax: {vmax}")
+            plev_min = config['compare_datasets_plev'].get('plev_min', None)
+            plev_max = config['compare_datasets_plev'].get('plev_max', None)
             
             try:
                 compare_datasets_plev(dataset1=data, dataset2=data_obs, var_name=var_name,
@@ -179,7 +182,8 @@ if __name__ == '__main__':
                                       start_date1=start_date1, end_date1=end_date1,
                                       start_date2=start_date2, end_date2=end_date2,
                                       outputdir=outputdir, outputfig=outputfig,
-                                      vin=vmin, vmax=vmax,
+                                      vmin=vmin, vmax=vmax,
+                                      plev_min=plev_min, plev_max=plev_max,
                                       loglevel=loglevel)
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")

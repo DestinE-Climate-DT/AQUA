@@ -1043,6 +1043,7 @@ class SeaIceThickness:
                         maskTime = (data['time.month'] == month_diagnostic)
     
                         dataPlot = data[var].where(maskTime, drop=True).sel(time = slice(timespan[0], timespan[1])).mean("time").values
+                        dataPlot[dataPlot < 0.001] = np.nan
                         # Create color sequence for sit
                         masterColors = [[0.0, 0.0, 0.2],[0.0, 0.5, 0.5],[0.0, 0.5, 0.0], [1.0, 0.5, 0.0], [0.5, 0.0, 0.0] ]
 

@@ -14,8 +14,9 @@ The diagnostic is based on the computation of the regression or correlation betw
 of the teleconnection index and the time series of the variable used to compute the teleconnection index.
 Teleconnections available:
 
-- `NAO: notebook available <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/teleconnections/notebooks/NAO.ipynb>`_
-- `ENSO: notebook available <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/teleconnections/notebooks/ENSO.ipynb>`_
+- `NAO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/NAO.ipynb>`_
+- `ENSO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/ENSO.ipynb>`_
+- `MJO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/MJO.ipynb>`_
 
 More diagnostics or functionalities will be added in the future.
 
@@ -32,6 +33,7 @@ The source code is organized in the following way:
 - ``index.py`` contains functions for the direct evaluation of teleconnection indices.
 - ``statistics.py`` contains functions for the regression and correlation analysis.
 - ``bootstrap.py`` contains functions for the bootstrap evaluation for concordance maps of regression and correlation.
+- ``mjo.py`` contains functions for the evaluation of the MJO teleconnections. This is still under development.
 - ``plots`` folder contains functions for the visualization of time series and maps for teleconnection diagnostic. Part of the graphical functions are part of the AQUA framework.
 - ``tools`` folder contains generic functions that may be useful to the whole diagnostic.
 - ``cdo_testing.py`` contains function evaluating teleconnections with cdo bindings, in order to test the python libraries.
@@ -55,6 +57,7 @@ They are organized in the following way:
 - `NAO.ipynb` contains an example of the usage of the diagnostic for the NAO index with ERA5 reanalysis.
 - `ENSO.ipynb` contains an example of the usage of the diagnostic for the ENSO index with ERA5 reanalysis.
 - `concordance_map.ipynb` contains an example of bootstrap evaluation for concordance maps of regression and correlation.
+- `MJO.ipynb` contains an example of the usage of the diagnostic for the MJO Hovmoeller plots.
 
 Other notebooks are left for legacy purposes and are related to the analysis of previous DestinE or nextGEMS simulations.
 Additionally a ``deliverable`` folder is available, containing configuration files and notebooks used for the analysis of the DestinE simulations
@@ -102,6 +105,10 @@ Basic usage of the CLI is:
 This will run the diagnostic with the default configuration file and the default model, experiment and source.
 It will not not compare the models with the reference dataset.
 
+.. note::
+
+    The CLI is available only for ENSO and NAO teleconnections at the moment.
+
 CLI options
 ^^^^^^^^^^^
 
@@ -148,6 +155,7 @@ The diagnostic requires the following input variables with the DestinE naming co
 
 - ``msl``: (Mean sea level pressure, paramid 151) for NAO
 - ``avg_tos``: (Time-mean sea surface temperature, paramid 263101) for ENSO
+- ``mtntrf``: (Mean top net thermal radiation flux, paramid 172179) for MJO
 
 The diagnostic can be run on any dataset that provides these variables.
 
@@ -163,6 +171,7 @@ The diagnostic produces the following output:
 
 - `NAO`: North Atlantic Oscillation index, regression and correlation maps.
 - `ENSO`: El Niño Southern Oscillation index, regression and correlation maps.
+- `MJO`: Madden-Julian Oscillation Hovmoeller plots of the Mean top net thermal radiation flux variable. A more detailed analysis is still under development.
 
 All these outputs can be stored both as images (pdf format) and as netCDF files.
 If a reference dataset is provided, the automatic maps consist of contour lines for the model regression map 
@@ -180,9 +189,10 @@ Example plot
 Available demo notebooks
 ------------------------
 
-- `NAO: notebook available <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/teleconnections/notebooks/NAO.ipynb>`_
-- `ENSO: notebook available <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/teleconnections/notebooks/ENSO.ipynb>`_
-- `concordance_map: notebook available <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/teleconnections/notebooks/concordance_map.ipynb>`_
+- `NAO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/NAO.ipynb>`_
+- `ENSO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/ENSO.ipynb>`_
+- `concordance_map: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/concordance_map.ipynb>`_
+- `MJO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/teleconnections/notebooks/MJO.ipynb>`_
 
 Detailed API
 ------------

@@ -60,7 +60,7 @@ The configuration file is used to specify the following parameters:
 - **machine**: the machine on which the code is running. This is used to specify the
   location of the AQUA catalogue and the location of the data. Default is ``lumi``.
   Other options are ``ci`` and ``levante``. Custom machines can be defined (see :ref:`new-machine`).
-- **reader**: this block contains catalogue and fixes location.
+- **reader**: this block contains catalogue, fixes and grids location.
   These paths are required to be inside the AQUA repository,
   so these paths should not be changed unless strictly necessary.
   Refer to :ref:`add-data` for more information.
@@ -74,13 +74,13 @@ The configuration folder has this structure:
     ├── config
     │   ├── data_models
     │   ├── fixes
+    │   ├── grids
     │   └── machines
     │       ├── lumi
     │       │   ├── catalog 
     │       │   └── catalog.yaml
     │       ├── levante
     │       └── ...
-    ├── aqua-grids.yaml
     ├── config-aqua.yaml
 
 Set up Jupyter kernel

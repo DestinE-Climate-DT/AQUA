@@ -1,0 +1,6 @@
+sources:
+  L4:
+    description: ESA-CCI-L4
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/l4.yaml"

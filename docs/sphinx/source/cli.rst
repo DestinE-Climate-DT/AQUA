@@ -107,6 +107,16 @@ Basic usage:
     Please note that currently only one Jinja template is available (``ifs-nemo-default.j2`` for IFS-NEMO), but it is possible to add more templates in the future.
 
 
+.. _benchmarker:
+
+Benchmarker
+-----------
+
+A tool to benchmark the performance of the AQUA analysis tools. The tool is available in the ``cli/benchmarker`` folder.
+It runs a few selected methods for multiple times and report the durations of multiple execution: it has to be run in batch mode with 
+the associated jobscript in order to guarantee robust results. 
+It will be replaced in future by more robust performance machinery.
+
 .. _gribber:
 
 GRIB catalog generator
@@ -199,10 +209,10 @@ Basic usage:
     The script will check that a valid SWIFT token is available before starting the upload.
     If the token is not available, the script will ask the user to login to the SWIFT platform to obtain a new token.
 
-LUMI container installation
----------------------------
+HPC container utilities
+-----------------------
 
-Includes the script for the installation of the container on LUMI: please refer to :ref:`container`
+Includes the script for the usage of the container on LUMI and Levante HPC: please refer to :ref:`container`
 
 LUMI conda installation
 -----------------------

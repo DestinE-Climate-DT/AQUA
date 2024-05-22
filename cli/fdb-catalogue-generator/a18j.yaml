@@ -1,0 +1,36 @@
+# this is a template file for the FDB catalog generator, which is still in testing
+# you need to copy this file into a config.yaml file and then fill all keys below
+
+# AQUA definitions
+model: IFS-NEMO
+exp:  a18j
+fixer_name: ifs-destine-v1
+
+# Request/experiment definitions
+activity: CMIP6
+experiment:  hist
+atm_grid: tco399
+oce_grid: eORCA025
+expver: a18j
+resolutions: 
+  - native
+  - hpz7
+  #- hpz10
+  #- r025
+#description: pippo # if commented out, it will be built by the script
+data_start_date: 19900101
+data_end_date: auto
+fdb_home_healpix: /users/lrb_465000454_fdb
+fdb_home_regular: /users/lrb_465000454_fdb/latlon
+fdb_home_native: /users/lrb_465000454_fdb/native
+eccodes_version: 2.32.5
+
+#List of variables
+variables_atm2d: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
+                  187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
+                  180, 181, 182, 212, 228]
+variables_atm3d: [60, 129, 130, 131, 132, 133, 135, 157, 246]
+
+variables_oce2d: [263000, 263001, 263003, 263004, 263008, 263009, 263021, 263022, 263100, 263101, 263121, 263122, 263124]
+
+variables_oce3d: [263500, 263501, 263505, 263506, 263507]

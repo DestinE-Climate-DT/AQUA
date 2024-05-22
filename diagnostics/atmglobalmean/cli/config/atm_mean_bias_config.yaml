@@ -13,6 +13,7 @@ diagnostic_attributes:
   plev: null # You can specify a pressure level here
   statistic: "std" # Valid options are: 'mean', 'max', 'min', 'diff', and 'std'.
   seasonal_bias: True
+  seasons: True
   compare_datasets_plev: True
   plot_map_with_stats: True
   start_date1: "1990-01-01"

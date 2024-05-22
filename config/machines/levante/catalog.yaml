@@ -86,3 +86,9 @@ sources:
     driver: yaml_file_cat
     args:
       path: "{{CATALOG_DIR}}/catalog/PSC/main.yaml"
+  ESA-CCI:
+    description: ESA-CCI data
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog/ESA-CCI/main.yaml"
+

@@ -25,7 +25,7 @@ def catalogue(verbose=True, configdir=None):
     Configurer = ConfigPath(configdir=configdir)
 
     # get configuration from the machine
-    catalog_file, _, _ = Configurer.get_reader_filenames()
+    catalog_file, _, _, _ = Configurer.get_reader_filenames()
 
     cat = intake.open_catalog(catalog_file)
     if verbose:

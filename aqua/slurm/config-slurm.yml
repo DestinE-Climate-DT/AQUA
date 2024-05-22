@@ -1,0 +1,37 @@
+machines:
+  atos:
+    queue: 'nf'
+    account: null
+    walltime: '02:30:00'
+    memory: '10 GB'
+    cores: 1
+    jobs: 1
+    loglevel: 'WARNING'
+    path_to_output: '.'
+  levante:
+    queue: 'compute'
+    account: 'bb1153'
+    walltime: '02:30:00'
+    memory: '10 GB'
+    cores: 1
+    jobs: 1
+    loglevel: 'WARNING'
+    path_to_output: '.'
+  lumi:
+    queue: 'small'
+    account: 'project_465000454'
+    walltime: '02:30:00'
+    memory: '10 GB'
+    cores: 1
+    jobs: 1
+    loglevel: 'WARNING'
+    path_to_output: '.'
+  mafalda:
+    queue: 'batch'
+    account: null
+    walltime: '02:30:00'
+    memory: '10 GB'
+    cores: 1
+    jobs: 1
+    loglevel: 'WARNING'
+    path_to_output: '.'

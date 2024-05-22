@@ -31,9 +31,6 @@ ECmean4 is based on multiple variables but can be configured as a function what 
 
 The **notebook/** folder contains the following notebooks:
 
-- **ecmean-test.ipynb**: 
-  A simple test for ECmean4 usage on some of the LRA data
-
 - **ecmean-destine.ipynb**: 
   A notebook using the Climate DT data
 

@@ -120,6 +120,7 @@ The ``timeseries_plot_params`` block contains the following parameters:
 * ``std_startdate``, ``std_enddate``: the start and end date for the standard deviation calculation.
 * ``expand``: a boolean that enables the expansion of the time series of the reference dataset to match the model time series length. Default is True.
 * ``longname``: the long name of the variable. Used to overwrite formulae names.
+* ``units``: the units of the variable. Used to overwrite formulae units.
 
 Output
 ------

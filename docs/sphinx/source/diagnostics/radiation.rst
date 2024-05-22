@@ -44,13 +44,13 @@ Example on how to load the datasets from the LRA:
 
 .. code-block:: python
 
-   ifs_nemo_historical_dev = process_model_data(model='IFS-NEMO', exp='historical-1990',
+   ifs_nemo_historical = process_model_data(model='IFS-NEMO', exp='historical-1990',
                                                 source='lra-r100-monthly', fix = True)
 
 The returned data contains a dictionary containing the following information:
 
 *  ``model``: Model name;
-*  ``exp``: Experiment name``;
+*  ``exp``: Experiment name;
 *  ``source``: Source name;
 *  ``gm``: Global means of model output data;
 *  ``data``: Model output data.
@@ -83,7 +83,7 @@ Example plots
    :width: 600px
    :align: center
 
-   Figure 1: Time series of model biases with respect to CERES data.   
+   Figure 1: Time series of model biases with respect to CERES data. The outgoing long-wave flux (LW) has negative sign, while the short-wave upward flux (SW) has positive sign and net being the difference of both variables. 
 
 .. figure:: figures/boxplot_mtnlwrf_mtnswrf_ceres_ebaf-toa41_monthly_ifs-nemo_historical-1990_lra-r100-monthly-1.png
    :width: 600px
@@ -95,7 +95,7 @@ Example plots
    :width: 600px
    :align: center
 
-   Figure 3: Mean bias map of the net radiation with respect to CERES.
+   Figure 3: Mean bias map of the net radiation with respect to CERES. The outgoing long-wave flux (LW) has negative sign, while the short-wave upward flux (SW) has positive sign. The net flux (TTR) is the difference of both variables. 
    
    
 Available demo notebooks

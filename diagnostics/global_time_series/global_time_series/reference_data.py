@@ -172,7 +172,7 @@ def get_reference_timeseries(var, formula=False,
 
     # Monthly data
     if monthly or monthly_std:
-        # exclude resample if 'monthly' is in the source name
+        # Exclude resample if 'monthly' is in the source name
         if 'monthly' in source or 'mon' in source:
             logger.debug(f"No monthly resample needed for {model} {exp} {source}")
         else:

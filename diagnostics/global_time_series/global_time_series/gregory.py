@@ -250,7 +250,7 @@ class GregoryPlot():
                         label_b = None
                         label_e = None
                     ax1.plot(self.data_ts_mon[i][0], self.data_toa_mon[i][0], marker=">",
-                             color="tab:green", label=label_b)
+                             color="tab:blue", label=label_b) # Blue to be colorblind friendly
                     ax1.plot(self.data_ts_mon[i][-1], self.data_toa_mon[i][-1], marker="<",
                              color="tab:red", label=label_e)
 
@@ -286,7 +286,7 @@ class GregoryPlot():
                         label_b = None
                         label_e = None
                     ax2.plot(self.data_ts_annual[i][0], self.data_toa_annual[i][0], marker=">",
-                             color="tab:green", label=label_b)
+                             color="tab:blue", label=label_b)
                     ax2.plot(self.data_ts_annual[i][-1], self.data_toa_annual[i][-1], marker="<",
                              color="tab:red", label=label_e)
                     ax2.text(self.data_ts_annual[i][0], self.data_toa_annual[i][0],
@@ -353,10 +353,10 @@ class GregoryPlot():
             except Exception as e:
                 self.logger.error(f"Error: {e}")
                 self.logger.error(f"Could not save data to {outfile}")
-        
+
         if self.ref:
             try:
-                outfile = f'global_time_series_gregory_plot_ref_ERA5_CERES.nc'
+                outfile = 'global_time_series_gregory_plot_ref_ERA5_CERES.nc'
                 xr.Dataset({'ts_mean': self.ref_ts_mean, 'ts_std': self.ref_ts_std,
                             'toa_mean': self.ref_toa_mean, 'toa_std': self.ref_toa_std}).to_netcdf(os.path.join(outdir, outfile), mode='w')
             except Exception as e:

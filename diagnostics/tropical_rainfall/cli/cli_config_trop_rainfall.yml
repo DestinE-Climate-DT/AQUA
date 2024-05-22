@@ -1,3 +1,6 @@
+rebuild_output: False
+machine: lumi             # The machine/environment where the analysis is run
+
 data:
   model:  "IFS-NEMO"         # Name of the climate model used
   exp:    "ssp370"          # Experiment identifier
@@ -16,9 +19,6 @@ class_attributes:
   width_of_bin: 0.5       # Width of each bin in the histogram, in mm/day
   model_variable: 'mtpr'  # Model variable to be analyzed
   new_unit:       'mm/day' # Unit for the model variable
-
-rebuild_output: False
-machine: lumi             # The machine/environment where the analysis is run
 
 plot:
   factor: null            # The factor by which to adjust bin widths
@@ -42,7 +42,7 @@ mswep:
   s_year:  1990           # Start year for analysis, 'null' means it will be set dynamically
   f_year:  2020           # Final year for analysis, 'null' means it will be set dynamically
   auto: False             # will be set dynamically
-  factor: 10              # The factor by which to adjust bin widths
+  factor: null              # The factor by which to adjust bin widths
   color: 'tab:red'        # Color for the plot
 
 era5:

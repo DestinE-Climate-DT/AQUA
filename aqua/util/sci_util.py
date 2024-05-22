@@ -109,6 +109,12 @@ def check_coordinates(lon=None, lat=None,
 
     if lat:
         lat_min, lat_max = lat
+
+        if lat_min is None and lat_max is None:
+            logger.info('lat_min and lat_max are None, setting them to default values')
+            lat_min = default["lat_min"]
+            lat_max = default["lat_max"]
+
         if lat_min > lat_max:
             # Swap values
             lat = [lat_max, lat_min]
@@ -123,6 +129,11 @@ def check_coordinates(lon=None, lat=None,
 
     if lon:
         lon_min, lon_max = lon
+
+        if lon_min is None and lon_max is None:
+            logger.info('lon_min and lon_max are None, setting them to default values')
+            lon_min = default["lon_min"]
+            lon_max = default["lon_max"]
         # if lon_min > lon_max:
         #     # Swap values
         #     lon = [lon_max, lon_min]

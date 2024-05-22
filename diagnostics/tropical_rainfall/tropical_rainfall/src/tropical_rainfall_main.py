@@ -87,10 +87,7 @@ class MainClass:
         self.path_to_netcdf = self.tools.get_netcdf_path() if path_to_netcdf is None else path_to_netcdf
         self.path_to_pdf = self.tools.get_pdf_path() if path_to_pdf is None else path_to_pdf
 
-        if width_of_bin is None:
-            self.width_of_bin = self.precipitation_rate_units_converter(0.05, old_unit='mm/day', new_unit=self.new_unit)
-        else:
-            self.width_of_bin = width_of_bin
+        self.width_of_bin = width_of_bin
 
     def class_attributes_update(self, trop_lat: Union[float, None] = None, s_time: Union[str, int, None] = None,
                                 f_time: Union[str, int, None] = None, s_year: Union[int, None] = None,
@@ -221,49 +218,22 @@ class MainClass:
             data = data[self.model_variable]
         except (TypeError, KeyError):
             pass
-        if 'xarray' in str(type(data)) and 'units' in data.attrs:
-            if data.units == self.new_unit:
+
+        if 'xarray' in str(type(data)):
+            if 'units' in data.attrs and data.units == self.new_unit:
                 return data
-
-        if old_unit is not None:
-            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(old_unit)
-        elif not isinstance(data, (float, int, np.ndarray)) and old_unit is None:
-            from_mass_unit, from_space_unit, from_time_unit = self.tools.unit_splitter(data.units)
-            old_unit = data.units
-        _,   to_space_unit,   to_time_unit = self.tools.unit_splitter(self.new_unit)
-
-        length_units = {'m', 'cm', 'mm', 'in', 'ft'}
-        time_units = {'year', 'month', 'day', 'hr', 'min', 's', 'ms'}
-
-        # Validate the compatibility of units for conversion
-        if from_space_unit not in length_units or from_time_unit not in time_units:
-            self.logger.warning(f"Cannot convert from {from_space_unit} {from_time_unit}. Incompatible unit for precipitation rate conversion.")
-            return data
-        elif to_space_unit not in length_units or to_time_unit not in time_units:
-            self.logger.warning(f"Cannot convert to {new_unit}. Incompatible unit for precipitation rate conversion.")
-            return data
-        else:
-            if old_unit == 'kg m**-2 s**-1':
-                data = 0.001 * data
-                data = self.tools.convert_length(data,   from_space_unit, to_space_unit)
-                data = self.tools.convert_time(data,     from_time_unit,  to_time_unit)
-            elif from_mass_unit is None and self.new_unit == 'kg m**-2 s**-1':
-                data = self.tools.convert_length(data,   from_space_unit, 'm')
-                data = self.tools.convert_time(data,     from_time_unit,  's')
-                data = 1000 * data
-            else:
-                data = self.tools.convert_length(data,   from_space_unit, to_space_unit)
-                data = self.tools.convert_time(data,     from_time_unit,  to_time_unit)
-            if 'xarray' in str(type(data)):
-                data.attrs['units'] = self.new_unit
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                history_update = str(current_time)+' the units of precipitation are converted from ' + \
-                    str(data.units) + ' to ' + str(self.new_unit) + ';\n '
-                if 'history' not in data.attrs:
-                    data.attrs['history'] = ' '
-                history_attr = data.attrs['history'] + history_update
-                data.attrs['history'] = history_attr
-            return data 
+            if old_unit is None:
+                old_unit = data.units
+            data.attrs['units'] = self.new_unit
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            history_update = str(current_time)+' the units of precipitation are converted from ' + \
+                str(data.units) + ' to ' + str(self.new_unit) + ';\n '
+            if 'history' not in data.attrs:
+                data.attrs['history'] = ' '
+            history_attr = data.attrs['history'] + history_update
+            data.attrs['history'] = history_attr
+        data = self.tools.convert_units(value=data, from_unit=old_unit, to_unit=self.new_unit) 
+        return data
 
     def latitude_band(self, data: xr.Dataset, trop_lat: Optional[Union[int, float]] = None) -> xr.Dataset:
         """
@@ -1395,6 +1365,7 @@ class MainClass:
 
     def plot_of_average(self, data: xr.Dataset = None, ymax: int = 12, fontsize: int = None, pad: int = 15, save: bool = True,
                         trop_lat: float = None, get_mean: bool = True, get_median: bool = False, legend: str = '_Hidden',
+                        projection: bool = False,
                         figsize: int = None, linestyle: str = None, maxticknum: int = 12, color: str = 'tab:blue',
                         model_variable: str = None, ylogscale: bool = False, xlogscale: bool = False, loc: str = 'upper right',
                         add: figure.Figure = None, fig: figure.Figure = None, plot_title: str = None,
@@ -1477,6 +1448,7 @@ class MainClass:
         return self.plots.plot_of_average(data=data, trop_lat=self.trop_lat, ylabel=ylabel, coord=coord, fontsize=fontsize,
                                           pad=pad, y_lim_max=y_lim_max, legend=legend, figsize=figsize, linestyle=linestyle,
                                           maxticknum=maxticknum, color=color, ylogscale=ylogscale, xlogscale=xlogscale,
+                                          projection=projection,
                                           loc=loc, add=add, fig=fig, plot_title=plot_title, path_to_pdf=path_to_pdf,
                                           save=save, pdf_format=pdf_format)
 

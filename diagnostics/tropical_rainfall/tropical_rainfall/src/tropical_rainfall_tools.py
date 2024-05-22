@@ -7,7 +7,8 @@ import pandas as pd
 import xarray as xr
 from datetime import datetime
 from typing import Union
-from aqua.util import ConfigPath
+from aqua.util import ConfigPath, load_multi_yaml
+from aqua.reader.fixer import FixerMixin
 from aqua.logger import log_configure
 import yaml
 from os.path import isfile, join, exists, isdir
@@ -475,173 +476,29 @@ class ToolsClass:
         self.logger.info(f'The time value for selection is: {time_selection}')
         return time_selection
 
-    def convert_length(self, value, from_unit, to_unit):
-        """ Function to convert length units
-
+    def convert_units(self, value, from_unit, to_unit):
+        """
+        Convert a length measurement from one unit to another.
+        
         Args:
-            value (float, xarray):          The value to be converted
-            from_unit (str):                The unit of the value to be converted
-            to_unit (str):                  The unit to be converted to
+            value (float): The numerical value of the length measurement to be converted.
+            from_unit (str): The unit of the original length measurement (e.g., 'm', 'cm', 'mm').
+            to_unit (str): The desired unit for the converted length (e.g., 'cm', 'in', 'ft').
 
         Returns:
-            float/xarray:                   The converted value
+            float: The converted length value in the specified unit, accounting for
+            the factor and offset needed for the conversion.
         """
-        conversion_factors = {
-            'm': {
-                'm':  1,
-                'cm': 100,
-                'mm': 1000,
-                'in': 39.3701,
-                'ft': 3.28084
-            },
-            'cm': {
-                'm':  0.01,
-                'cm': 1,
-                'mm': 10,
-                'in': 0.393701,
-                'ft': 0.0328084
-            },
-            'mm': {
-                'm':  0.001,
-                'cm': 0.1,
-                'mm': 1,
-                'in': 0.0393701,
-                'ft': 0.00328084
-            },
-            'in': {
-                'm':  0.0254,
-                'cm': 2.54,
-                'mm': 25.4,
-                'in': 1,
-                'ft': 0.0833333
-            },
-            'ft': {
-                'm':  0.3048,
-                'cm': 30.48,
-                'mm': 304.8,
-                'in': 12,
-                'ft': 1
-            }
-        }
+        fix = FixerMixin()
+        fix.logger = self.logger
+        _, fix.fixer_folder, _, _  = (ConfigPath().get_reader_filenames())
+        fix.fixes_dictionary = load_multi_yaml(fix.fixer_folder)
 
-        if from_unit not in conversion_factors or to_unit not in conversion_factors:
-            print("Invalid unit. Supported units: m, cm, mm, in, ft.")
-            return None
+        factor, offset = fix.convert_units(from_unit, to_unit)
 
-        conversion_factor = conversion_factors[from_unit][to_unit]
-        converted_value = value * conversion_factor
+        converted_value = (value * factor) + offset
 
         return converted_value
-
-    def convert_time(self, value, from_unit, to_unit):
-        """ Function to convert time units
-
-        Args:
-            value (float, xarray):          The value to be converted
-            from_unit (str):                The unit of the value to be converted
-            to_unit (str):                  The unit to be converted to
-
-        Returns:
-            float/xarray:                   The converted value
-        """
-        conversion_factors = {
-            'year': {
-                'year':  1,
-                'month': 12,
-                'day':   365,
-                'hr':    8760,
-                'min':   525600,
-                's':     31536000,
-                'ms':    3.1536e+10
-            },
-            'month': {
-                'year':  0.0833333,
-                'month': 1,
-                'day':   30.4167,
-                'hr':    730.001,
-                'min':   43800,
-                's':     2.628e+6,
-                'ms':    2.628e+9
-            },
-            'day': {
-                'year':  0.00273973,
-                'month': 0.0328549,
-                'day':   1,
-                'hr':    24,
-                'min':   1440,
-                's':     86400,
-                'ms':    8.64e+7
-            },
-            'hr': {
-                'year':  0.000114155,
-                'month': 0.00136986,
-                'day':   0.0416667,
-                'hr':    1,
-                'min':   60,
-                's':     3600,
-                'ms':    3.6e+6
-            },
-            'min': {
-                'year':  1.90132e-6,
-                'month': 2.28311e-5,
-                'day':   0.000694444,
-                'hr':    0.0166667,
-                'min':   1,
-                's':     60,
-                'ms':    60000
-            },
-            's': {
-                'year':  3.17098e-8,
-                'month': 3.80517e-7,
-                'day':   1.15741e-5,
-                'hr':    0.000277778,
-                'min':   0.0166667,
-                's':     1,
-                'ms':    1000
-            },
-            'ms': {
-                'year':  3.16888e-11,
-                'month': 3.80266e-10,
-                'day':   1.15741e-8,
-                'hr':    2.77778e-7,
-                'min':   1.66667e-5,
-                's':     0.001,
-                'ms':    1
-            }
-        }
-
-        if from_unit not in conversion_factors or to_unit not in conversion_factors:
-            print("Invalid unit. Supported units: year, month, day, hr, min, s, ms.")
-            return None
-
-        conversion_factor = conversion_factors[from_unit][to_unit]
-        conversion_factor = 1/conversion_factor
-        converted_value = value * conversion_factor
-
-        return converted_value
-
-    def unit_splitter(self, unit):
-        """ Function to split units into space and time units
-
-        Args:
-            unit (str):             The unit to be split
-
-        Returns:
-            tuple:                  The space and time units
-        """
-        filtered_unit = list(
-            filter(None, re.split(r'\s+|/+|\*\*-1+|\*\*-2', unit)))
-        try:
-            mass_unit, space_unit, time_unit = filtered_unit
-        except ValueError:
-            try:
-                mass_unit = None
-                space_unit, time_unit = filtered_unit
-            except ValueError:
-                mass_unit = None
-                space_unit = filtered_unit[0]
-                time_unit = None #'day'
-        return mass_unit, space_unit, time_unit
 
     def get_local_time_decimal(self, utc_decimal_hour, longitude):
         # Each degree of longitude corresponds to 4 minutes of time difference
@@ -672,15 +529,19 @@ class ToolsClass:
             if 'path' not in value:
                 print(f"Error: 'path' key is missing in the entry with key {key}")
 
-        # Select a seaborn palette
-        palette = sns.color_palette("husl", len(loaded_dict))
+        # Define the number of entries
+        num_entries = len(loaded_dict)
+        
+        # Generate a palette starting at a hue past red (e.g., starting at 30 degrees out of 360)
+        palette = sns.husl_palette(n_colors=num_entries, h=0.25) 
 
-        # Loop through the dictionary and assign colors
+        # Assign colors to dictionary entries
         for i, (key, value) in enumerate(loaded_dict.items()):
             loaded_dict[key]["data"] = self.open_dataset(path_to_netcdf=value["path"])
             loaded_dict[key]["color"] = palette[i]
 
         return loaded_dict
+
 
     def add_colors_to_dict(self, loaded_dict: dict = None) -> Union[dict, None]:
         """
@@ -696,11 +557,17 @@ class ToolsClass:
         if not isinstance(loaded_dict, dict):
             self.logger.error("The provided object must be a 'dict' type.")
             return None
-        # Select a seaborn palette
-        palette = sns.color_palette("husl", len(loaded_dict))
+        
+        # Use a custom palette excluding red hues
+        num_entries = len(loaded_dict)
+        # Exclude red by setting hue range to avoid red (hue near 0)
+        palette = sns.husl_palette(n_colors=num_entries, h=0.25)
+        # You can also use other palettes like 'viridis', 'Blues', or 'Greens' depending on your needs
+
         # Loop through the dictionary and assign colors
         for i, (key, value) in enumerate(loaded_dict.items()):
             loaded_dict[key]["color"] = palette[i]
+
         return loaded_dict
 
     def time_interpreter(self, dataset):

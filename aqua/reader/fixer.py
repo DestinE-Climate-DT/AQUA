@@ -436,6 +436,7 @@ class FixerMixin():
             data = log_history(data, f"Coordinates adjusted to {src_datamodel} by fixer")
 
         # Extra coordinate handling
+        data = self._fix_dims(data)
         data = self._fix_coord(data)
 
         return data
@@ -686,6 +687,39 @@ class FixerMixin():
                     log_history(data[coord], f"Coordinate {src_coord} renamed to {coord} by fixer")
                 else:
                     self.logger.warning("Coordinate %s not found", coord)
+
+        return data
+    
+    def _fix_dims(self, data: xr.Dataset):
+        """
+        Other than the data_model we can apply other fixes to the dimensions
+        reading them from the fixes file, in the dims section.
+
+        Arguments:
+            data (xr.Dataset):  input dataset to process
+
+        Returns:
+            The processed input dataset
+        """
+        if self.fixes is None:
+            return data
+
+        dims_fix = self.fixes.get("dims", None)
+
+        if dims_fix:
+            dims = list(dims_fix.keys())
+            self.logger.debug("Dimensions to be checked: %s", dims)
+
+            for dim in dims:
+                src_dim = dims_fix[dim].get("source", None)
+                
+
+                if src_dim and src_dim in data.dims:
+                    data = data.rename_dims({src_dim: dim})
+                    self.logger.debug("Dimension %s renamed to %s", src_dim, dim)
+                    log_history(data, f"Dimension {src_dim} renamed to {dim} by fixer")
+                else:
+                    self.logger.warning("Dimension %s not found", dim)
 
         return data
 

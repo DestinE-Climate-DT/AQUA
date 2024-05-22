@@ -139,14 +139,14 @@ The idea of the regridder is first to generate the weights for the interpolation
 then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already
 existent and stored in a directory specified in the ``config/machine/<machine-name>/catalog.yaml`` file.
-A list of predefined target grids (only regular lon-lat for now) is available in the ``config/aqua-grids.yaml`` file.
+A list of predefined target grids (only regular lon-lat for now) is available in the ``config/grids/default.yaml`` file.
 For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, etc.
 
 .. note::
     The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
     centered between 90 and -90 degrees is sometimes used in the field. If you need sucha a grid please add an additional definition
-    to the ``config/aqua-grids.yaml`` file with a different grid name (for example ``r100a``).
+    to the ``config/grids`` folder with a different grid name (for example ``r100a``).
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
@@ -264,6 +264,9 @@ Here we show an example of a fixer file, including all the possible options:
         documentation-fix:
             parent: documentation-to-merge
             data_model: ifs
+            dims:
+                cells:
+                    source: cells-to-rename
             coords:
                 time:
                     source: time-to-rename
@@ -303,6 +306,8 @@ different sections of the fixer file.
   In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it. 
 - **data_model**: the name of the data model for coordinates. (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough.
+  (See :ref:`coord-fix`).
+- **dims**: extra dimensions handling if data model is not flexible enough. 
   (See :ref:`coord-fix`).
 - **decumulation**: 
     - If only ``deltat`` is specified, all the variables that are considered flux variables
@@ -360,8 +365,8 @@ The fixer can adopt a common *coordinate data model*
 If this data model is not appropriate for a specific source,
 it is possible to specify a different one in the catalogue.
 
-If the data model coordinate treatment is not enough to fix the coordinates,
-it is possible to specify a custom fix in the catalogue in the **coords** block
+If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
+it is possible to specify a custom fix in the catalogue in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
 For example, if the longitude coordinate is called ``longitude`` instead of ``lon``,
 it is possible to specify a fix like:
@@ -418,6 +423,9 @@ Some options includes:
 
 - ``degree``: this will define with an integer the order of the polynominial fit. Default is 1, i.e. linear Detrending
 - ``skipna==True``: removing the NaN from the fit. Default is True. 
+
+.. warning::
+    Detrending might lead to incorrect results if there is not an equal amount of time elements (e.g. same amount of months or days) in the dataset.
 
 
 Spatial Averaging

@@ -24,10 +24,3 @@ Welcome to AQUA's documentation!
    troubleshooting_faq/index
    contributing
    references_acknowledgments
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

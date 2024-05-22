@@ -1,12 +1,14 @@
 #!/bin/bash
-TGTDIR=/pfs/lustrep3/projappl/project_465000454/data/AQUA/grids/NEMO2
+TGTDIR=/pfs/lustrep3/projappl/project_465000454/data/AQUA/grids/NEMO
 grid=$1
 
 
 if [[ $grid == eORCA12 ]] ; then
 	inputfile=/pfs/lustrep3/scratch/project_465000454/pool/data/IFS/inputs_de_48r1/nemo/V40/eORCA12_Z75/common/mesh_mask.nc
-elif [[ $grid = eORCA1 ]] ; then
+elif [[ $grid == eORCA1 ]] ; then
 	inputfile=/pfs/lustrep4/users/padavini/mesh_mask.nc
+elif [[ $grid == eORCA025 ]] ; then
+	inputfile=/pfs/lustrep3/scratch/project_465000454/models/IFS/inputs/inputs_de_48r1/nemo/V40/eORCA025_Z75/common/mesh_mask.nc
 else
 	echo 'wrong grid'
 	exit 1

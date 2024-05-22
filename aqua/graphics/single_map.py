@@ -61,7 +61,8 @@ def plot_single_map(data: xr.DataArray,
         transform_first (bool, optional): If True, transform the data before
                                           plotting. Defaults to False.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
-        dpi (int, optional):         Dots per inch. Defaults to 100.
+        dpi (int, optional):         Dots per inch. Defaults to 100 for pcolormesh
+                                     and 300 for contour plots.
         model (str, optional):       Model name. Defaults to None.
         exp (str, optional):         Experiment name. Defaults to None.
         filename (str, optional):    Filename. Defaults to 'map'.

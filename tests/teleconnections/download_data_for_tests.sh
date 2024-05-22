@@ -1,6 +1,6 @@
 #!/bin/bash
 
-file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/teleconnections/AQUA_tests_teleconnectionsv3.tar.gz?temp_url_sig=105683cbf36e457ca48d0db5d2b5325dcfc9af9c&temp_url_expires=2024-08-17T15:13:24Z"
+file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/teleconnections/AQUA_tests_teleconnectionsv3.tar.gz?temp_url_sig=01710bd3c8491923fb683e097c3b31f858cf8425&temp_url_expires=2027-02-02T15:42:23Z"
 file_path="AQUA_tests_teleconnectionsv3.tar.gz"
 
 if [ ! -f "$file_path" ]; then

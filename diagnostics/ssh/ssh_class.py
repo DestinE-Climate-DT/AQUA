@@ -166,7 +166,7 @@ class sshVariability():
                 
                 # Add a colorbar for each subplot
                 cbar = fig.colorbar(contf, ax=ax, orientation='vertical', shrink=0.9)
-                cbar.set_label('SSH Variability (mm)')
+                cbar.set_label('SSH Variability (m)')
 
 
         if len(ssh_data_dict) < len(axes):
@@ -235,7 +235,7 @@ class sshVariability():
                 ax.set_title(f"{model_name_letters} - Difference from AVISO")
                 # Add a colorbar for each subplot
                 cbar = fig.colorbar(contf, ax=ax, orientation='vertical', shrink=0.9)
-                cbar.set_label('SSH Variability Difference (mm)')
+                cbar.set_label('SSH Variability Difference (m)')
 
         # if len(ssh_data_dict) < len(axes):
         #     for j in range(len(ssh_data_dict), len(axes)):
@@ -279,7 +279,7 @@ class sshVariability():
                 
             # Add a colorbar for each subplot
             # cbar = fig.colorbar(contf, ax=ax, orientation='vertical', shrink=0.9)
-            # cbar.set_label('SSH Variability (mm)')
+            # cbar.set_label('SSH Variability (m)')
 
             # Save the figure after each iteration
             #save_path = config.get("output_directory", "")  # Retrieve the save path from the config

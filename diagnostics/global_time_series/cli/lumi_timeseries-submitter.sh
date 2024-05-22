@@ -5,7 +5,7 @@
 #SBATCH --error=timeseries_%j.err
 #SBATCH --account=project_465000454
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=128
 #SBATCH --time=00:29:00
 #SBATCH --mem=0
 set -e
@@ -15,7 +15,10 @@ set -e
 
 scriptpy="$AQUA/diagnostics/global_time_series/cli/cli_global_time_series.py"
 config="$AQUA/diagnostics/global_time_series/cli/config_time_series_atm.yaml"
-loglevel="INFO"
+loglevel="DEBUG"
+workers=32
+model="IFS-NEMO"
+exp="ssp370"
 
 # run the diagnostics
-python $scriptpy --config $config -l $loglevel
+python $scriptpy --config $config -l $loglevel -n $workers --model $model --exp $exp

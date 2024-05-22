@@ -9,11 +9,12 @@ data:
 
 diagnostic_attributes:
   variables_no_plev: ['2t']
-  variables_with_plev: []
+  variables_with_plev: ['u']
   plev: null # You can specify a pressure level here
   statistic: "mean" # Valid options are: 'mean', 'max', 'min', 'diff', and 'std'.
-  seasonal_bias: True
-  compare_datasets_plev: False
+  seasonal_bias: False
+  seasons: False
+  compare_datasets_plev: True
   plot_map_with_stats: False
   start_date1: "2020-01-01"
   end_date1: "2037-12-31"
@@ -21,7 +22,7 @@ diagnostic_attributes:
   end_date2: "2004-12-31"
 
 path:
-  path_to_output: "/scratch/project_465000454/susayed/aqua_output/deliverable_d370733/atmglobalmean/IFS_proj_hist"
+  path_to_output: "/work/bb1153/b382257/aqua_output/deliverable_d370733/atmglobalmean/"
 
 # Here you can specify the colorbar limits for each variable
 # If you don't specify them, the colorbar limits will be automatically calculated
@@ -48,8 +49,11 @@ compare_datasets_plev:
     vmin: -20
     vmax: 20
   u:
-    vmin: -50
-    vmax: 50
+    vmin: -18
+    vmax: 18
   q:
     vmin: -0.002
     vmax: 0.002
+    
+  plev_min: 1000
+  plev_max: 100000

@@ -1,0 +1,14 @@
+sources:
+  monthly:
+    description: ESA-CCI-L4 monthly data
+    driver: netcdf
+    metadata:
+      source_grid_name: lon-lat
+      fixer_name: ESA-CCI-destine-v1
+    args:
+      urlpath: 
+      - '{{DATA_PATH}}/ESA-CCI-L4/mon/analysed_sst/ESA-CCI-L4_*_analysed_sst.nc'
+      - '{{DATA_PATH}}/ESA-CCI-L4/mon/sea_ice_fraction/ESA-CCI-L4_*_sea_ice_fraction.nc'
+      chunks: {}
+      xarray_kwargs:
+        decode_times: True

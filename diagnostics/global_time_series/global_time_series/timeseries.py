@@ -36,7 +36,7 @@ class Timeseries():
                  monthly_std=True, annual_std=True,
                  std_startdate=None, std_enddate=None,
                  plot_kw={'ylim': {}}, longname=None,
-                 expand=True,
+                 units=None, expand=True,
                  save=True,
                  outdir='./',
                  outfile=None,
@@ -61,6 +61,7 @@ class Timeseries():
             std_enddate (str): End date for standard deviation. Default is "2020-12-31".
             plot_kw (dict): Additional keyword arguments passed to the plotting function.
             longname (str): Long name of the variable. Default is None and logname attribute is used.
+            units (str): Units of the variable. Default is None and units attribute is used.
             expand (bool): Expand the reference range. Default is True.
             save (bool): Save the figure. Default is True.
             outdir (str): Output directory. Default is "./".
@@ -108,6 +109,7 @@ class Timeseries():
 
         self.plot_kw = plot_kw
         self.longname = longname
+        self.units = units
 
         self.save = save
         if self.save is False:
@@ -156,6 +158,11 @@ class Timeseries():
                         self.ref_mon.attrs['long_name'] = self.longname
                     if self.ref_ann is not None:
                         self.ref_ann.attrs['long_name'] = self.longname
+                if self.units is not None:
+                    if self.ref_mon is not None:
+                        self.ref_mon.attrs['units'] = self.units
+                    if self.ref_ann is not None:
+                        self.ref_ann.attrs['units'] = self.units
             except NoObservationError:
                 self.plot_ref = False
                 self.logger.warning('Reference data not found, skipping reference data')
@@ -218,6 +225,9 @@ class Timeseries():
                     if self.longname is not None:
                         data_mon.attrs['long_name'] = self.longname
                         self.logger.debug(f"Long name updated to: {self.longname}")
+                    if self.units is not None:
+                        data_mon.attrs['units'] = self.units
+                        self.logger.debug(f"Units updated to: {self.units}")
                     self.data_mon.append(data_mon)
                 else:
                     self.logger.warning(f"No monthly data found for {model} {self.exps[i]} {self.sources[i]}")
@@ -232,6 +242,9 @@ class Timeseries():
                     if self.longname is not None:
                         data_ann.attrs['long_name'] = self.longname
                         self.logger.debug(f"Long name updated to: {self.longname}")
+                    if self.units is not None:
+                        data_ann.attrs['units'] = self.units
+                        self.logger.debug(f"Units updated to: {self.units}")
                     self.data_annual.append(data_ann)
                 else:
                     self.logger.warning(f"No annual data found for {model} {self.exps[i]} {self.sources[i]}")
@@ -317,7 +330,13 @@ class Timeseries():
         self.logger.debug(f"Outfile: {self.outfile}")
         fig.savefig(os.path.join(outfig, self.outfile))
 
-        description = f"Time series of the global mean of {self.var}"
+        description = "Time series of the global mean of"
+        if self.monthly:
+            description += f" {self.data_annual[0].attrs['long_name']}"
+        elif self.annual:
+            description += f" {self.data_annual[0].attrs['long_name']}"
+        else:
+            description += f" {self.var}"
         description += f" from {time_to_string(self.startdate)} to {time_to_string(self.enddate)}"
         for i, model in enumerate(self.models):
             description += f" for {model} {self.exps[i]}"
@@ -403,21 +422,23 @@ class Timeseries():
                 self.logger.info("Expanding reference range with a seasonal cycle")
                 self.expanding_ref_range = True
 
-                if startdate > self.startdate:
-                    self.logger.debug("Adding a seasonal cycle to the start of the reference data")
-                    ref_mon_loop = loop_seasonalcycle(data=self.ref_mon,
-                                                      startdate=self.startdate,
-                                                      enddate=startdate,
-                                                      freq='MS')
-                    self.ref_mon = xr.concat([ref_mon_loop, self.ref_mon], dim='time')
+                # TODO: startdate has to be rounded to the first of the month
+                # if startdate > self.startdate:
+                #     self.logger.debug("Adding a seasonal cycle to the start of the reference data")
+                #     ref_mon_loop = loop_seasonalcycle(data=self.ref_mon,
+                #                                       startdate=self.startdate,
+                #                                       enddate=startdate,
+                #                                       freq='MS')
+                #     self.ref_mon = xr.concat([ref_mon_loop, self.ref_mon], dim='time')
 
                 if enddate < self.enddate:
                     self.logger.debug("Adding a seasonal cycle to the end of the reference data")
                     ref_mon_loop = loop_seasonalcycle(data=self.ref_mon,
                                                       startdate=enddate,
                                                       enddate=self.enddate,
-                                                      freq='MS')
+                                                      freq='MS', loglevel=self.loglevel)
                     self.ref_mon = xr.concat([self.ref_mon, ref_mon_loop], dim='time')
+                    self.ref_mon = self.ref_mon.sortby('time')
 
             self.ref_mon = self.ref_mon.sel(time=slice(self.startdate, self.enddate))
 
@@ -432,21 +453,23 @@ class Timeseries():
                 self.logger.info("Expanding reference range with a band of the reference data")
                 self.expanding_ref_range = True
 
-                if startdate > self.startdate:
-                    self.logger.debug("Adding a band to the start of the reference data")
-                    ref_ann_loop = loop_seasonalcycle(data=self.ref_ann,
-                                                      startdate=self.startdate,
-                                                      enddate=startdate,
-                                                      freq='YS')
-                    self.ref_ann = xr.concat([ref_ann_loop, self.ref_ann], dim='time')
+                # TODO: startdate has to be rounded to the center of the year (month=7)
+                # if startdate > self.startdate:
+                #     self.logger.debug("Adding a band to the start of the reference data")
+                #     ref_ann_loop = loop_seasonalcycle(data=self.ref_ann,
+                #                                       startdate=self.startdate,
+                #                                       enddate=startdate,
+                #                                       freq='YS')
+                #     self.ref_ann = xr.concat([ref_ann_loop, self.ref_ann], dim='time')
 
                 if enddate < self.enddate:
                     self.logger.debug("Adding a band to the end of the reference data")
                     ref_ann_loop = loop_seasonalcycle(data=self.ref_ann,
                                                       startdate=enddate,
                                                       enddate=self.enddate,
-                                                      freq='YS')
+                                                      freq='YS', loglevel=self.loglevel)
                     self.ref_ann = xr.concat([self.ref_ann, ref_ann_loop], dim='time')
+                    self.ref_ann = self.ref_ann.sortby('time')
 
             self.ref_ann = self.ref_ann.sel(time=slice(self.startdate, self.enddate))
 

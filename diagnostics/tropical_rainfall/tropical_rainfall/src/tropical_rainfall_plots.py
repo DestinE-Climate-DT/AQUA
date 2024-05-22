@@ -243,6 +243,7 @@ class PlottingClass:
 
     def plot_of_average(self, data: Union[list, xr.DataArray] = None, trop_lat: Optional[float] = None, ylabel: str = '',
                         coord: Optional[str] = None, fontsize: Optional[int] = None, pad: int = 15,
+                        projection: bool = False,
                         y_lim_max: Optional[float] = None, number_of_axe_ticks: Optional[int] = None,
                         legend: str = '_Hidden', figsize: Optional[int] = None, linestyle: Optional[str] = None,
                         maxticknum: int = 12, color: str = 'tab:blue', ylogscale: Optional[bool] = None,
@@ -284,66 +285,61 @@ class PlottingClass:
         # make a plot with different y-axis using second axis object
         labels_int = data[coord].values
 
-        if 'Dataset' in str(type(data)):
-            if fig is not None:
-                ax1, ax2, ax3, ax4, ax5, ax_twin_5 = fig[1], fig[2], fig[3], fig[4], fig[5], fig[6]
-                fig = fig[0]
-                axs = [ax1, ax2, ax3, ax4, ax5]
+        if fig is not None:
+            ax1, ax2, ax3, ax4, ax5, ax_twin_5 = fig[1], fig[2], fig[3], fig[4], fig[5], fig[6]
+            fig = fig[0]
+            axs = [ax1, ax2, ax3, ax4, ax5]
 
-            elif add is None and fig is None:
-                fig = plt.figure(figsize=(10*self.figsize, 11*self.figsize), layout='constrained')
-                gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 2.5])
-                if coord == 'lon':
-                    ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
-                    ax2 = fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree())
-                    ax3 = fig.add_subplot(gs[1, 0], projection=ccrs.PlateCarree())
-                    ax4 = fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree())
-                    ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
-                    ax_twin_5 = ax5.twinx()
-                else:
-                    ax1 = fig.add_subplot(gs[0, 0])
-                    ax2 = fig.add_subplot(gs[0, 1])
-                    ax3 = fig.add_subplot(gs[1, 0])
-                    ax4 = fig.add_subplot(gs[1, 1])
-                    ax5 = fig.add_subplot(gs[2, :])
-                    ax_twin_5 = None
-                axs = [ax1, ax2, ax3, ax4, ax5, ax_twin_5]
-            elif add is not None:
-                fig = add
-                ax1, ax2, ax3, ax4, ax5, ax_twin_5 = add
-                axs = [ax1, ax2, ax3, ax4, ax5]
-            titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
-            i = -1
-            for one_season in [data.DJF, data.MAM, data.JJA, data.SON, data.Yearly]:
-                i += 1
-                axs[i].set_title(titles[i], fontsize=self.fontsize+1)
-                # Latitude labels
-                if coord == 'lon':
-                    axs[i].set_xlabel('Longitude', fontsize=self.fontsize-2)
-                    axs[i].set_ylabel('Latitude', fontsize=self.fontsize-2)
-                elif coord == 'lat':
-                    axs[i].set_xlabel('Latitude', fontsize=self.fontsize-2)
+        elif add is None and fig is None:
+            fig = plt.figure(figsize=(10*self.figsize, 11*self.figsize), layout='constrained')
+            gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 2.5])
+            if projection:
+                ax1 = fig.add_subplot(gs[0, 0], projection=ccrs.PlateCarree())
+                ax2 = fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree())
+                ax3 = fig.add_subplot(gs[1, 0], projection=ccrs.PlateCarree())
+                ax4 = fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree())
+                ax5 = fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree())
+                ax_twin_5 = ax5.twinx()
+            else:
+                ax1 = fig.add_subplot(gs[0, 0])
+                ax2 = fig.add_subplot(gs[0, 1])
+                ax3 = fig.add_subplot(gs[1, 0])
+                ax4 = fig.add_subplot(gs[1, 1])
+                ax5 = fig.add_subplot(gs[2, :])
+                ax_twin_5 = None
+            axs = [ax1, ax2, ax3, ax4, ax5, ax_twin_5]
+        elif add is not None:
+            fig = add
+            ax1, ax2, ax3, ax4, ax5, ax_twin_5 = add
+            axs = [ax1, ax2, ax3, ax4, ax5]
+        titles = ["DJF", "MAM", "JJA", "SON", "Yearly"]
+        i = -1
+        for one_season in [data.DJF, data.MAM, data.JJA, data.SON, data.Yearly]:
+            i += 1
+            axs[i].set_title(titles[i], fontsize=self.fontsize+1)
+            # Latitude labels
+            if coord == 'lon':
+                axs[i].set_xlabel('Longitude', fontsize=self.fontsize-2)
+                axs[i].set_ylabel('Latitude', fontsize=self.fontsize-2)
+            elif coord == 'lat':
+                axs[i].set_xlabel('Latitude', fontsize=self.fontsize-2)
 
-                plt.yscale('log') if self.ylogscale else None
-                plt.xscale('log') if self.xlogscale else None
+            plt.yscale('log') if self.ylogscale else None
+            plt.xscale('log') if self.xlogscale else None
 
-                if coord == 'lon':
-                    # twin object for two different y-axis on the sample plot
+            if coord == 'lon':              
+                if projection:
+                    # twin object for two different y-axis on the sample plot  
                     ax_span = axs[i].twinx()
-                    if trop_lat < 90:
-                        ax_span.axhspan(-trop_lat, trop_lat, alpha=0.05, color='tab:red')
-                        axs[i].coastlines(alpha=0.5, color='grey')
-                    else:
-                        axs[i].coastlines(alpha=0.5, color='k')
-                    ax_span.set_ylim([-90, 90])
-                    ax_span.set_xticks([])
-                    ax_span.set_yticks([])
-                    axs[i].set_xticks(np.arange(-180, 181, 360/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
+                    axs[i].coastlines(alpha=0.5, color='grey')
                     axs[i].xaxis.set_major_formatter(cticker.LongitudeFormatter())
-
+                    
                     # Latitude labels
                     axs[i].set_yticks(np.arange(-90, 91, 180/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
                     axs[i].yaxis.set_major_formatter(cticker.LatitudeFormatter())
+                    ax_span.set_ylim([-90, 90])
+                    ax_span.set_xticks([])
+                    ax_span.set_yticks([])
 
                     if i < 4:
                         ax_twin = axs[i].twinx()
@@ -351,79 +347,44 @@ class PlottingClass:
                         ax_twin.plot(one_season.lon - 180, one_season, color=color, label=legend, linestyle=self.linestyle)
                         ax_twin.set_ylim([0, y_lim_max])
                         ax_twin.set_ylabel(ylabel, fontsize=self.fontsize-3)
+                        
                     else:
                         ax_twin_5.set_frame_on(True)
                         ax_twin_5.plot(one_season.lon - 180, one_season, color=color,  label=legend, linestyle=self.linestyle)
                         ax_twin_5.set_ylim([0, y_lim_max])
                         ax_twin_5.set_ylabel(ylabel, fontsize=self.fontsize-3)
                         axs[i].set_xlabel('Longitude', fontsize=self.fontsize-3)
-
+                    axs[i].set_xticks(np.arange(-180, 181, 360/self.number_of_axe_ticks), crs=ccrs.PlateCarree())
                 else:
-                    axs[i].plot(one_season.lat, one_season, color=color, label=legend, linestyle=self.linestyle)
+                    axs[i].plot(one_season.lon - 180, one_season, color=color, label=legend, linestyle=self.linestyle)
                     axs[i].set_ylim([0, y_lim_max])
                     axs[i].set_ylabel(ylabel, fontsize=self.fontsize-3)
-                    axs[i].set_xlabel('Latitude', fontsize=self.fontsize-3)
-
-                axs[i].grid(True)
-            if coord == 'lon':
-                if legend != '_Hidden':
-                    ax_twin_5.legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
-                if plot_title is not None:
-                    plt.suptitle(plot_title, fontsize=self.fontsize+2)
+                    axs[i].set_xlabel('Longitude', fontsize=self.fontsize-3)
             else:
-                if legend != '_Hidden':
-                    ax5.legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
-                if plot_title is not None:
-                    plt.suptitle(plot_title, fontsize=self.fontsize+2)
-        elif 'DataArray' in str(type(data)):
-            if fig is not None:
-                fig, ax = fig
-            elif add is None and fig is None:
-                fig, ax = plt.subplots(figsize=(8*self.figsize, 5*self.figsize))
-            elif add is not None:
-                fig, ax = add
-            if data.size == 1:
-                plt.axhline(y=float(data.values), color=color, label=legend, linestyle=self.linestyle)
-            else:
-                if coord == 'time':
-                    plt.scatter(labels_int, data, color=color, label=legend, linestyle=self.linestyle)
-                else:
-                    plt.plot(labels_int, data, color=color, label=legend, linestyle=self.linestyle)
+                axs[i].plot(one_season.lat, one_season, color=color, label=legend, linestyle=self.linestyle)
+                axs[i].set_ylim([0, y_lim_max])
+                axs[i].set_ylabel(ylabel, fontsize=self.fontsize-3)
+                axs[i].set_xlabel('Latitude', fontsize=self.fontsize-3)
 
-            plt.gca().xaxis.set_major_locator(plt.MaxNLocator(maxticknum))
-            plt.gca().tick_params(axis='both',   which='major',    pad=10)
-            plt.xlim([min(labels_int),    max(labels_int)])
-            plt.grid(True)
-            if coord == 'time':
-                plt.xlabel('Timestep index', fontsize=self.fontsize-3)
-                if data['time.year'][0].values == data['time.year'][-1].values:
-                    plt.xlabel(
-                        str(data['time.year'][0].values),    fontsize=self.fontsize-3)
-                else:
-                    plt.xlabel(str(data['time.year'][0].values)+' - '+str(data['time.year'][-1].values),
-                               fontsize=self.fontsize-3)
-            elif coord == 'lat':
-                plt.xlabel('Latitude', fontsize=self.fontsize-3)
-            elif coord == 'lon':
-                plt.xlabel('Longitude', fontsize=self.fontsize-3)
-            plt.ylabel(ylabel, fontsize=self.fontsize-3)
-
-            if plot_title is not None:
-                plt.title(plot_title, fontsize=self.fontsize+2, pad=15)
-
+            axs[i].grid(True)
+        if coord == 'lon':
             if legend != '_Hidden':
-                plt.legend(loc=loc, fontsize=self.fontsize-2, ncol=2)
-
-            plt.yscale('log') if self.ylogscale else None
-            plt.xscale('log') if self.xlogscale else None
+                if projection:
+                    ax_twin_5.legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
+                else:
+                    axs[4].legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
+            if plot_title is not None:
+                plt.suptitle(plot_title, fontsize=self.fontsize+2)
+        else:
+            if legend != '_Hidden':
+                ax5.legend(loc=loc, fontsize=self.fontsize-3, ncol=2)
+            if plot_title is not None:
+                plt.suptitle(plot_title, fontsize=self.fontsize+2)
 
         if save and isinstance(path_to_pdf, str):
             path_to_pdf = self.savefig(path_to_pdf, self.pdf_format)
 
-        if 'Dataset' in str(type(data)):
-            return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5, path_to_pdf]
-        else:
-            return [fig,  ax, path_to_pdf]
+        return [fig,  ax1, ax2, ax3, ax4, ax5, ax_twin_5, path_to_pdf]
 
     def plot_seasons_or_months(self, data: xr.DataArray, cbarlabel: Optional[str] = None, seasons: Optional[list] = None,
                                months: Optional[list] = None, cmap: str = 'coolwarm', save: bool = True,

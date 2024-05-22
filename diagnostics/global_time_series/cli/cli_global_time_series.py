@@ -73,6 +73,7 @@ def get_plot_options(config: dict = None,
         std_enddate = plot_options.get("std_enddate", None)
         plot_kw = plot_options.get("plot_kw", {})
         longname = plot_options.get("longname", None)
+        units = plot_options.get("units", None)
         expand = plot_options.get("expand", True)
     else:
         monthly = config["timeseries_plot_params"]["default"].get("monthly", True)
@@ -90,9 +91,10 @@ def get_plot_options(config: dict = None,
         std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", None)
         plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", {})
         longname = None
+        units = None
         expand = config["timeseries_plot_params"]["default"].get("expand", True)
     return monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, enddate, \
-        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, expand
+        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, units, expand
 
 
 if __name__ == '__main__':
@@ -147,7 +149,7 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} time series")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, expand = get_plot_options(config, var)
+                plot_kw, longname, units, expand = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=False,
@@ -166,6 +168,7 @@ if __name__ == '__main__':
                             std_startdate=std_startdate,
                             std_enddate=std_enddate,
                             longname=longname,
+                            units=units,
                             expand=expand,
                             plot_kw=plot_kw,
                             outdir=outputdir,
@@ -188,7 +191,7 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} time series")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, expand = get_plot_options(config, var)
+                plot_kw, longname, units, expand = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=True,
@@ -208,6 +211,7 @@ if __name__ == '__main__':
                             std_enddate=std_enddate,
                             plot_kw=plot_kw,
                             longname=longname,
+                            units=units,
                             expand=expand,
                             outdir=outputdir,
                             loglevel=loglevel)
@@ -272,7 +276,7 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} seasonal cycle")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, _ = get_plot_options(config, var)
+                plot_kw, longname, units, _ = get_plot_options(config, var)
 
             sc = SeasonalCycle(var=var,
                                formula=False,
@@ -288,6 +292,8 @@ if __name__ == '__main__':
                                std_enddate=std_enddate,
                                plot_kw=plot_kw,
                                outdir=outputdir,
+                               longname=longname,
+                               units=units,
                                loglevel=loglevel)
             try:
                 sc.run()
@@ -299,4 +305,42 @@ if __name__ == '__main__':
                 logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
             except Exception as e:
                 logger.error(f"Error plotting {var} seasonal cycle: {e}")
+
+    if "seasonal_cycle_formulae" in config:
+        logger.info("Plotting seasonal cycle formulae")
+
+        for var in config["seasonal_cycle_formulae"]:
+            logger.info(f"Plotting {var} seasonal cycle")
+            monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
+                enddate, monthly_std, annual_std, std_startdate, std_enddate, \
+                plot_kw, longname, units, _ = get_plot_options(config, var)
+
+            sc = SeasonalCycle(var=var,
+                               formula=True,
+                               models=models_list,
+                               exps=exp_list,
+                               sources=source_list,
+                               regrid=regrid,
+                               plot_ref=plot_ref,
+                               plot_ref_kw=plot_ref_kw,
+                               startdate=startdate,
+                               enddate=enddate,
+                               std_startdate=std_startdate,
+                               std_enddate=std_enddate,
+                               plot_kw=plot_kw,
+                               outdir=outputdir,
+                               longname=longname,
+                               units=units,
+                               loglevel=loglevel)
+            try:
+                sc.run()
+            except NotEnoughDataError as e:
+                logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
+            except NoDataError as e:
+                logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
+            except NoObservationError as e:
+                logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
+            except Exception as e:
+                logger.error(f"Error plotting {var} seasonal cycle: {e}")
+
     logger.info("Global Time Series is terminated.")

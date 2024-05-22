@@ -1,6 +1,5 @@
 [run]
 omit = 
    tests/*
-   aqua/docker/*
    aqua/gribber/*
    aqua/lra_generator/opa_generator.py

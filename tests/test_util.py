@@ -106,4 +106,13 @@ class TestFileIsComplete:
         result = file_is_complete(valid_with_nan_file)
         assert result is True
 
+# Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
 
+# def test_flip_time():
+#     """Test the flip_time function"""
+#     time = np.arange(0, 10)
+#     data = xr.DataArray(np.random.rand(10, 3, 4), dims=("time", "lat", "lon"))
+#     data = data.assign_coords(time=time)
+#     flipped_data = flip_time(data)
+#     assert flipped_data.time.values[0] == 9
+#     assert flipped_data.time.values[-1] == 0

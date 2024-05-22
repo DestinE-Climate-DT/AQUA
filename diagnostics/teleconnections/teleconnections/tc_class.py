@@ -103,10 +103,13 @@ class Teleconnection():
         self.logger.debug("Frequency: %s", self.freq)
 
         # Teleconnection variables
-        self.telecname = telecname
-        avail_telec = ['NAO', 'ENSO']
-        if self.telecname not in avail_telec:
-            raise ValueError("telecname must be one of {}".format(avail_telec))
+        avail_telec = ['NAO', 'ENSO', 'MJO']
+        if telecname in avail_telec:
+            self.telecname = telecname
+            if self.telecname == 'MJO':
+                raise NotImplementedError('MJO teleconnection not implemented yet')
+        else:
+            raise ValueError('telecname must be one of {}'.format(avail_telec))
 
         self._load_namelist(configdir=configdir, interface=interface)
 

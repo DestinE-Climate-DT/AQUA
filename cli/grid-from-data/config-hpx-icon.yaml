@@ -11,7 +11,6 @@ nested: True # otherwise ring
 # These are extra info:
 # model name for saving the grid
 model_name: icon
-3d: True # 2d or 3d
 # tmp folder for the grid generation
 tmp: /pfs/lustrep3/scratch/project_465000454/padavini
 # target folder for the grid generated

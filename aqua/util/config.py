@@ -80,18 +80,24 @@ class ConfigPath():
         Extract the filenames for the reader for catalog, regrid and fixer
 
         Returns:
-            Four strings for the path of the catalog, regrid, fixer and config files
+            Four strings for the path of the catalog, fixer, regrid and config files
         """
 
+        # Build the template dictionary
+        definitions = {'machine': self.machine, 'configdir': self.configdir}
+
         if os.path.exists(self.config_file):
-            base = load_yaml(self.config_file)
-            catalog_file = base['reader']['catalog'].format(machine=self.machine,
-                                                            configdir=self.configdir)
+            base = load_yaml(infile=self.config_file, definitions=definitions, jinja=True)
+            catalog_file = base['reader']['catalog']
             if not os.path.exists(catalog_file):
                 raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}')
-            fixer_folder = base['reader']['fixer'].format(machine=self.machine,
-                                                          configdir=self.configdir)
+            fixer_folder = base['reader']['fixer']
             if not os.path.exists(fixer_folder):
-                raise FileNotFoundError(f'Cannot find catalog file in {fixer_folder}')
+                raise FileNotFoundError(f'Cannot find the fixer folder in {fixer_folder}')
+            grids_folder = base['reader']['regrid']
+            if not os.path.exists(grids_folder):
+                raise FileNotFoundError(f'Cannot find the regrid folder in {grids_folder}')
+        else:
+            raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
 
-        return catalog_file, fixer_folder, self.config_file
+        return catalog_file, fixer_folder, grids_folder, self.config_file

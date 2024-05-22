@@ -18,7 +18,7 @@ try:
     gsv_available = True
 except RuntimeError:
     gsv_available = False
-    gsv_error_cause = "FDB5 binary library not present on system on outdated"
+    gsv_error_cause = "FDB5 binary library not present on system or outdated"
 except KeyError:
     gsv_available = False
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
@@ -29,17 +29,10 @@ class GSVSource(base.DataSource):
     name = 'gsv'
     version = '0.0.2'
     partition_access = True
-    timeaxis = None
-    chk_start_idx = None
-    chk_start_date = None
-    chk_end_idx = None
-    chk_end_date = None
-    chk_size = None
 
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
     dask_access = False  # Flag if dask has been requested
-    timeaxis = None  # Used for dask access
 
     def __init__(self, request, data_start_date, data_end_date, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
@@ -73,6 +66,8 @@ class GSVSource(base.DataSource):
         """
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
+        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
+        self.logger.debug("Init of the GSV source class")
 
         if not gsv_available:
             raise ImportError(gsv_error_cause)
@@ -93,6 +88,16 @@ class GSVSource(base.DataSource):
         # set the timestyle
         self.timestyle = timestyle
 
+        self.timeshift = timeshift
+        self.itime = 0  # position of time dim
+
+        if not var:  # if no var provided keep the default in the catalogue
+            self._var = request["param"]
+        else:
+            self._var = var
+
+        self._kwargs = kwargs
+
         if data_start_date == 'auto' or data_end_date == 'auto':
             self.logger.debug('Autoguessing of the FDB start and end date enabled.')
             if self.timestyle == 'yearmonth':
@@ -104,9 +109,8 @@ class GSVSource(base.DataSource):
         if not enddate:
             enddate = data_end_date
 
-
         if self.timestyle != "yearmonth":
-            offset = int(request["step"])  # optional initial offset for steps (in timesteps)
+            offset = int(self._request["step"])  # optional initial offset for steps (in timesteps)
 
             # special for 6h: set offset startdate if needed
             startdate = add_offset(data_start_date, startdate, offset, timestep)
@@ -121,17 +125,7 @@ class GSVSource(base.DataSource):
         if chunking_time.upper() == "S":  # special case: time chunking is single saved frame
             chunking_time = savefreq
 
-        self.timeshift = timeshift
-        self.itime = 0  # position of time dim
-
         self.data_startdate, self.data_starttime = split_date(data_start_date)
-
-        if not var:  # if no var provided keep the default in the catalogue
-            self._var = request["param"]
-        else:
-            self._var = var
-
-        self._kwargs = kwargs
 
         if "levelist" in self._request:
             levelist = self._request["levelist"]
@@ -157,8 +151,6 @@ class GSVSource(base.DataSource):
                     self.onelevel = True  # If yes we can afford to read only one level
             else:
                 self.logger.warning("A speedup of data retrieval could be achieved by specifying the levels keyword in metadata.")
-        
-        self.get_eccodes_shortname = init_get_eccodes_shortname()
 
         self.data_start_date = data_start_date
         self.data_end_date = data_end_date
@@ -180,6 +172,9 @@ class GSVSource(base.DataSource):
                 if not isinstance(levelist, list): levelist = [levelist]
                 if len(levelist) <= self.chunking_vertical:
                     self.chunking_vertical = None
+                    self.chk_vert = None
+                    self.ntimechunks = self._npartitions
+                    self.nlevelchunks = None
                 else:
                     self.chk_vert = [levelist[i:i+self.chunking_vertical] for i in range(0, len(levelist), self.chunking_vertical)]
                     self.ntimechunks = self._npartitions
@@ -187,8 +182,61 @@ class GSVSource(base.DataSource):
                     self._npartitions = self._npartitions*len(self.chk_vert)
         else:
             self.chunking_vertical = None  # no vertical chunking
+            self.chk_vert = None
+            self.ntimechunks = self._npartitions
+            self.nlevelchunks = None
+
+        self.get_eccodes_shortname = init_get_eccodes_shortname()  # Can't pickle this, so we need to reinitialize it
 
         super(GSVSource, self).__init__(metadata=metadata)
+
+    def __getstate__(self):
+        """
+        This helps to pickle variables which were added later, after initialization of the class.
+        These are all self variables needed by get_partition().
+        """
+
+        return {
+            'data_startdate': self.data_startdate,
+            'data_starttime': self.data_starttime,
+            'chk_start_idx': self.chk_start_idx,
+            'chk_end_idx': self.chk_end_idx,
+            'chk_start_date': self.chk_start_date,
+            'chk_end_date': self.chk_end_date,
+            'chunking_vertical': self.chunking_vertical,
+            'chk_vert': self.chk_vert,
+            '_request': self._request,
+            'timestyle': self.timestyle,
+            'self.fdbhome': self.fdbhome,
+            'self.fdbpath': self.fdbpath,
+            'self.eccodes_path': self.eccodes_path,
+            '_var': self._var,
+            'timeshift': self.timeshift,
+            'gsv_log_level': self.gsv_log_level
+        }
+
+    def __setstate__(self, state):
+        """
+        This helps to restore from pickle variables which were added later after initialization.
+        These are all self variables needed by get_partition().
+        """
+
+        self.data_startdate = state['data_startdate']
+        self.data_starttime = state['data_starttime']
+        self.chk_start_idx = state['chk_start_idx']
+        self.chk_end_idx = state['chk_end_idx']
+        self.chk_start_date = state['chk_start_date']
+        self.chk_end_date = state['chk_end_date']
+        self.chunking_vertical = state['chunking_vertical']
+        self.chk_vert = state['chk_vert']
+        self.timestyle = state['timestyle']
+        self.fdbhome = state['self.fdbhome']
+        self.fdbpath = state['self.fdbpath']
+        self.eccodes_path = state['self.eccodes_path']
+        self._var = state['_var']
+        self.timeshift = state['timeshift']
+        self._request = state['_request']
+        self.gsv_log_level = state['gsv_log_level']
 
     def _get_schema(self):
         """
@@ -326,19 +374,13 @@ class GSVSource(base.DataSource):
             if self.eccodes_path and (self.eccodes_path != eccodes.codes_definition_path()):
                 eccodes.codes_context_delete()  # flush old definitions in cache
                 eccodes.codes_set_definitions_path(self.eccodes_path)
+        
+        gsv = GSVRetriever(logging_level=self.gsv_log_level)
 
-        # for some reason this is needed here and not in init
-        gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
-        gsv = GSVRetriever(logging_level=gsv_log_level)
-
-        self.logger.debug('Request %s', request)
         dataset = gsv.request_data(request)
 
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)
-
-        # Log history
-        log_history(dataset, "Dataset retrieved by GSV interface")
 
         return dataset
 
@@ -393,10 +435,9 @@ class GSVSource(base.DataSource):
         coords['time'] = self.timeaxis
 
         ds = xr.Dataset()
-
+        
         for var in self._var:
             # Create a dask array from a list of delayed get_partition calls
-
             if not self.chunking_vertical:
                 dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
                 darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
@@ -415,6 +456,8 @@ class GSVSource(base.DataSource):
                               dims=self._da.dims,
                               coords=coords)
             
+            log_history(da, "Dataset retrieved by GSV interface")
+
             ds[shortname] = da
 
         ds.attrs.update(self._ds.attrs)

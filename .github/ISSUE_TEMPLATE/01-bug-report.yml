@@ -18,7 +18,9 @@ body:
       - Leonardo
       - Lumi
       - MN4
+      - MN5
       - CI
+      - Atos
       - Others
     validations:
       required: true
@@ -29,12 +31,12 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v0.8.1
       - v0.8
       - v0.7.3
       - v0.7.2
       - v0.7.1
       - v0.7
-      - v0.6.x
       - older
     validations:
       required: true
@@ -52,6 +54,11 @@ body:
       label: Code to reproduce the issue
       description: Please copy and paste any relevant code. This will be automatically formatted into code, so no need for backticks.
       render: python
+  - type: textarea
+    id: error
+    attributes:
+      label: Error messages
+      description: Please copy and paste any error messages you received.
   - type: dropdown
     id: contributor
     attributes:

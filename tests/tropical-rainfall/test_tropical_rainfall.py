@@ -116,7 +116,7 @@ def histogram_output(retrieved_dataarray):
     if 'mtpr' in data.name:
         diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=1 - 1*10**(-6), loglevel='debug')
     elif '2t' in data.name:
-        diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=0.5, loglevel='debug')
+        diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=0.5, new_unit='K', loglevel='debug')
     hist = diag.histogram(data, trop_lat=90)
     return hist
 

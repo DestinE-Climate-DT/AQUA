@@ -8,7 +8,7 @@ models:
 outputdir: "./"
 
 # This is the list of variables that will be plotted as timeseries
-timeseries: ['2t', 'mtpr', 'mer', 'msl',
+timeseries: ['2t', 'mer', 'msl',
              'tcc', 'lcc', 'mcc', 'hcc',
              'mslhf', #Mean surface latent heat flux
              'msshf', #Mean surface sensible heat flux
@@ -19,7 +19,7 @@ timeseries: ['2t', 'mtpr', 'mer', 'msl',
              'mtnlwrf', #Mean top net long-wave radiation flux
              'mtnswrf' #Mean top net short-wave radiation flux
              ]
-timeseries_formulae: ['mtnlwrf+mtnswrf']
+timeseries_formulae: ['mtnlwrf+mtnswrf', '86400*mtpr']
 
 gregory:
   ts: '2t'
@@ -41,3 +41,10 @@ timeseries_plot_params:
     std_enddate: '2020-12-31'
   mtnlwrf+mtnswrf:
     longname: "Net top radiation" # This is to override title and ylabel
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
+  86400*mtpr:
+    longname: "Precipitation" # This is to override title and ylabel
+    units: "mm/day" # This is to override units
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
