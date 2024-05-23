@@ -266,9 +266,12 @@ class Timeseries():
         if self.data_mon == [] and self.data_annual == []:
             raise NoDataError("No data found")
 
-    def plot(self):
+    def plot(self, cftime=False):
         """
         Call an external function using the data to plot
+
+        Args:
+            cftime (bool): Use cftime for time axis. Default is False.
         """
         self.logger.info("Plotting the timeseries")
 
@@ -302,7 +305,8 @@ class Timeseries():
                                  std_annual_data=self.ref_ann_std,
                                  ref_label=ref_label,
                                  data_labels=data_labels,
-                                 title=title)
+                                 title=title,
+                                 cftime=cftime)
 
         if self.save:
             self.save_pdf(fig, ref_label)

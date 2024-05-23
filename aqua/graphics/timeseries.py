@@ -15,6 +15,7 @@ def plot_timeseries(monthly_data=None,
                     std_annual_data=None,
                     data_labels: list = None,
                     ref_label: str = None,
+                    cftime=False,
                     loglevel: str = 'WARNING',
                     **kwargs):
     """
@@ -31,6 +32,7 @@ def plot_timeseries(monthly_data=None,
         std_annual_data (xr.DataArray): standard deviation of the reference annual data
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
+        cftime (bool): if True, use cftime for time axis
         loglevel (str): logging level
 
     Keyword Arguments:
@@ -48,6 +50,9 @@ def plot_timeseries(monthly_data=None,
                   "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf",
                   "#00bb62", "#f9c410", "#fb4865", "#645ccc"]
 
+    if cftime:
+        logger.debug("Converting time axis to cftime")
+
     if monthly_data is not None:
         if isinstance(monthly_data, xr.DataArray):
             monthly_data = [monthly_data]
@@ -55,6 +60,8 @@ def plot_timeseries(monthly_data=None,
             color = color_list[i]
             try:
                 mon_data = monthly_data[i]
+                if cftime:
+                    mon_data = mon_data.convert_calendar("noleap")
                 if data_labels:
                     label = data_labels[i]
                     label += ' monthly'
@@ -69,6 +76,8 @@ def plot_timeseries(monthly_data=None,
             color = color_list[i]
             try:
                 ann_data = annual_data[i]
+                if cftime:
+                    ann_data = ann_data.convert_calendar("noleap")
                 if data_labels:
                     label = data_labels[i]
                     label += ' annual'
@@ -80,6 +89,8 @@ def plot_timeseries(monthly_data=None,
 
     if ref_monthly_data is not None:
         try:
+            if cftime:
+                ref_monthly_data = ref_monthly_data.convert_calendar("noleap")
             if ref_label:
                 ref_label_mon = ref_label + ' monthly'
             else:
@@ -96,6 +107,8 @@ def plot_timeseries(monthly_data=None,
 
     if ref_annual_data is not None:
         try:
+            if cftime:
+                ref_annual_data = ref_annual_data.convert_calendar("noleap")
             if ref_label:
                 ref_label_ann = ref_label + ' annual'
             else:
