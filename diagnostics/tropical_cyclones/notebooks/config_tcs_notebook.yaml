@@ -1,17 +1,15 @@
 # experiment
 dataset:
   model: "IFS-NEMO"
-  #exp: "tco2559-ng5-cycle3"
-  #exp: "tco1279-orca025-cycle3"
   exp: "historical-1990"
-  source2d: "hourly-hpz7-atm2d" #"2D_1h_native"
+  source2d: "hourly-hpz10-atm2d" #"2D_1h_native"
   source3d: "hourly-hpz10-atm3d" #"3D_1h_native"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
-  tmpdir: '/scratch/project_465000454/pghinassi/tc_test/tmpdir'
-  fulldir: '/scratch/project_465000454/pghinassi/tc_test/fulldir'
-  plotdir: "/scratch/project_465000454/pghinassi/tc_test/Figures/"
+  tmpdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/tmpdir"
+  fulldir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/fulldir"
+  plotdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/Figures/"
 
 # log level
 setup:

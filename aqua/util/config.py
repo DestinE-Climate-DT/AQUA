@@ -38,20 +38,22 @@ class ConfigPath():
 
         configdirs = []
 
-        # if AQUA is defined
-        aquadir = os.environ.get('AQUA')
-        if aquadir:
-            configdirs.append(os.path.join(aquadir, 'config'))
+        # Check first if AQUA_CONFIG is defined
+        aquaconfigdir = os.environ.get('AQUA_CONFIG')
+        if aquaconfigdir:
+            configdirs.append(aquaconfigdir)
 
-        # the predefined configdirs is in the main folder of the AQUA repository
-        configdirs.extend([os.path.dirname(__file__) + "/../../config"])
-
-        # if the home is defined
+        # Then if the home is defined
         homedir = os.environ.get('HOME')
         if homedir:
-            configdirs.append(os.path.join(homedir, '.aqua', 'config'))
+            configdirs.append(os.path.join(homedir, '.aqua'))
 
-        # autosearch
+        # Finally for developers if AQUA is defined
+        aquadir = os.environ.get('AQUA')
+        if aquadir:
+            configdirs.append(os.path.join(aquadir, 'config'))        
+
+        # Autosearch for the config folder
         for configdir in configdirs:
             if os.path.exists(os.path.join(configdir, self.filename)):
                 return configdir

@@ -46,6 +46,15 @@ jobs:
         run: |
           ./tests/tropical-rainfall/download_data_for_tests.sh
 
+      - name: Set up AQUA
+        run: |
+          # Initialize the AQUA catalogue in the $HOME/.aqua folder
+          aqua -vv install
+          # Add the ci/cd catalogue
+          aqua -vv add ci
+          # Double check the catalogues
+          aqua -vv list
+
       - name: Run tropical-rainfall tests
         run: |
           pytest -v -m tropical_rainfall

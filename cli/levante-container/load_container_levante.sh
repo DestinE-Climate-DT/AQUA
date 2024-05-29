@@ -12,10 +12,43 @@ else
     # Your subsequent commands here
 fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-AQUA_container="/work/bb1153/b382289/container/AQUA/aqua_v0.8.1.sif"
+AQUA_container="/work/bb1153/b382289/container/AQUA/aqua_v0.8.2.sif"
 
-log_message $next_level_msg_type "Do you want to use your local AQUA (y/n): "
-read user_defined_aqua
+# Simple command line parsing
+user_defined_aqua="ask"
+script=""
+cmd="shell"
+help=0
+
+while [ $# -gt 0 ] ; do
+        case $1 in
+                -y) user_defined_aqua="y" ; shift 1 ;;
+                -n) user_defined_aqua="n" ; shift 1 ;;
+                -e) cmd="exec"; script="bash $2" ; shift 2 ;;
+                -c) cmd="exec"; script=$2 ; shift 2 ;;
+                -h) help=1 ; shift 1 ;;
+                *) shift 1 ;;
+        esac
+done
+
+if [ "$help" -eq 1 ]; then
+    cat << END
+Loads the AQUA container in LUMI or runs a script in the container
+
+Options:
+    -y          use the AQUA variable from your current machine
+    -n          use the AQUA variable from the container
+    -e SCRIPT   execute a script in the container
+    -c CMD      run a command in the container
+    -h          show this help message 
+END
+    exit 0
+fi
+
+if [ "$user_defined_aqua" == "ask" ] ; then
+    log_message $next_level_msg_type "Do you want to use your local AQUA (y/n): "
+    read user_defined_aqua
+fi
 
 if [[ "$user_defined_aqua" = "yes" || "$user_defined_aqua" = "y" || "$user_defined_aqua" = "Y" ]]; then
     # Check if AQUA is set and the file exists 
@@ -36,11 +69,13 @@ log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
 module load singularity
 
-singularity shell \
+singularity $cmd \
     --cleanenv \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
     --bind /work/bb1153 \
-    $AQUA_container
+    --bind /pool/data/ICDC/atmosphere/ceres_ebaf/ \
+    $AQUA_container $script
+

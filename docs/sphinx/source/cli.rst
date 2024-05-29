@@ -87,10 +87,128 @@ so that the script can be used in a batch job or in a workflow.
     It is possible to run only a subset of the diagnostics by modifying the script itself,
     where arrays with atmospheric and oceanic diagnostics are defined.
 
+
+.. _aqua_web:
+
+Automatic uploading of figures and documentation to aqua-web
+------------------------------------------------------------
+
+AQUA figures produced by the analysis can be uploaded to the [aqua-web](https://github.com/DestinE-Climate-DT/aqua-web)
+repository to publish them automatically on a dedicated website. The same site is used to host the documentation.
+Two scripts in the ``cli/aqua-web`` folder are available to push figures or documentation to aqua-web.
+
+Basic usage
+^^^^^^^^^^^
+
+.. code-block:: bash
+
+    # to generate and push the documentation to aqua-web
+    ./make_push_docs.py 
+
+    # to collect the figures from a directory $INDIR  figures to aqua-web
+    INDIR=/path/to/figures_root
+    MODELEXP=IFS-NEMO/historical-1990 # the subfolder of INDIR where the figures are stored (also model/exp pair for aqua-web)
+    
+    python ./make_push_figures.py $INDIR $MODELEXP # to collect the figures and push them to aqua-web
+
+Instead of a MODEL/EXPERIMENT pair, it is possible to specify
+an experiment list in a text file, in the same format as the one used by the :ref:`submit-aqua-web` script.
+
+.. note::
+    The user running the script must have the right to push to the aqua-web repository and must have
+    set up the ssh keys to access the repository.
+
+.. _submit-aqua-web:
+
+Multiple experiment analysis submitter
+--------------------------------------
+
+A wrapper containing to facilitate automatic submission of analysis of multiple experiments
+in parallel and possible pushing to AQUA Explorer. This is used to implement overnight updates to AQUA Explorer.
+
+Basic usage
+^^^^^^^^^^^
+
+.. code-block:: bash
+
+    python ./submit-aqua-web.py EXPLIST
+
+This will read a text file EXPLIST containing a list of models/experiments in the format
+
+.. code-block:: rst
+
+    # List of experiments to analyze in the format
+    # model exp [source]
+
+    IFS-NEMO  ssp370  lra-r100-monthly
+    IFS-NEMO historical-1990
+    ICON historical-1990
+    ICON ssp370
+
+A sample file ``aqua-web.experiment.list`` is provided in the source code of AQUA.
+Specifying the source is optional ('lra-r100-monthly' is the default).
+
+Before using the script you will need to specify details for SLURM and other options
+in the configuration file ``config.aqua-web.yaml``. This file is searched in the same directories as 
+other AQUA configuration files or in the current directory as last resort.
+
+It is possible to run the analysis on a single experiment specifying model, experiment and source
+with the arguments ``-m``, ``-e`` and ``-s`` respectively.
+
+If run without arguments, the script will run the analysis on the default 
+experiments specified in the list.
+
+Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
+
+Options
+^^^^^^^
+
+.. option:: -c <config>, --config <config>
+
+    The configuration file to use. Default is ``config.aqua-web.yaml``.
+
+.. option:: -m <model>, --model <model>
+
+    Specify a single model to be processed (alternative to specifying the experiment list).
+
+.. option:: -e <exp>, --exp <exp>
+
+    Experiment to be processed.
+
+.. option:: -s <source>, --source <source>
+
+    Source to be processed.
+
+.. option:: -r, --serial
+
+    Run in serial mode (only one core). This is passed to the ``aqua-analysis.sh`` script.
+
+.. option:: -x <max>, --max <max>
+
+    Maximum number of jobs to submit without dependency.
+
+.. option:: -t <template>, --template <template>
+
+    Template jinja file for slurm job. Default is ``aqua-web.job.j2``.
+
+.. option:: -d, --dry
+
+    Perform a dry run for debugging (no job submission). Sets also ``loglevel`` to 'debug'.
+
+.. option:: -l <loglevel>, --loglevel <loglevel>
+
+    Logging level.
+
+.. option:: -p, --push
+    
+    Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
+
+
 .. _fdb-catalog-generator:
 
 Catalog entry generator for FDB sources
 ---------------------------------------
+
 A tool which streamlines the process of adding new experiments to the catalog.
 It exploits the capabilities of the Jinja package to obtain a cleaner and more flexible code.
 Users can easily customize their experiments by updating the ``config.tmpl`` file, with the experiment's specific details.
@@ -251,26 +369,5 @@ Basic usage:
     ./generate_weights.py -c weights_config.yaml
 
 
-.. _aqua_web:
 
-Automatic uploading of figures and documentation to aqua-web
-------------------------------------------------------------
 
-AQUA figures produced by the analysis can be uploaded to the [aqua-web](https://github.com/DestinE-Climate-DT/aqua-web)
-repository to publish them automatically on a dedicated website. The same site is used to host the documentation.
-Two scripts in the ``cli/aqua-web`` folder are available to push figures or documentation to aqua-web.
-
-Basic usage:
-
-.. code-block:: bash
-
-    # to generate and push the documentation to aqua-web
-    ./make_push_docs.py 
-
-    # to collect the figures from a directory $INDIR  figures to aqua-web
-    INDIR=/path/to/figures_root
-    MODELEXP=IFS-NEMO/historical-1990 # the subfolder of INDIR where the figures are stored (also model/exp pair for aqua-web)
-    ./make_push_figures.py $INDIR IFS-NEMO/historical-1990 # to collect the figures and push them to aqua-web
-
-The user running the script must have the right to push to the aqua-web repository and must have
-set up the ssh keys to access the repository.

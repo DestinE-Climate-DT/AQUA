@@ -54,7 +54,7 @@ dependencies = [
     "sparse",
     "xarray",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v1.4.0"
+    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v1.5.1"
 ]
 
 [project.optional-dependencies]
@@ -86,6 +86,9 @@ all = [
     # diagnostics
     "aqua[ecmean]"
 ]
+
+[project.scripts]
+aqua = "aqua.main:main"
 
 [project.urls]
 homepage = "https://aqua-web-contbuild.2.rahtiapp.fi"

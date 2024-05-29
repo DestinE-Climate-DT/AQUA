@@ -33,7 +33,7 @@ The above command will create a file called aqua\_\ |version|\.sif in the curren
 
 .. note::
    If you want to use a different version of AQUA, you can change the tag in the above command.
-   For example, to use version 0.5, you can use ``aqua:0.5``.
+   For example, to use version 0.7, you can use ``aqua:0.7``.
 
 Load the container
 ------------------
@@ -49,6 +49,9 @@ or analogue for Docker.
 Anyway, you may want to bind some folders to the container to access your data and scripts or
 to define some environment variables.
 
+Load container script
+^^^^^^^^^^^^^^^^^^^^^
+
 AQUA provides scripts to use the AQUA container (updated to the last release) with Singularity on LUMI and Levante.
 These contain also bindings to the commonly used folders on the machine but they can be easily adapted to other platforms.
 The scripts are located in the ``cli/lumi-container`` and ``cli/levante-container`` folders.
@@ -59,6 +62,29 @@ The scripts are (for LUMI, but same in the Levante folder):
 - **slurm_job_container.sh**: A template for a Slurm script to use the AQUA container on LUMI.
   This is useful to run batch jobs on LUMI using the AQUA container, but it can be easily adapted to
   any platform using Slurm. By default it opens a Jupyter Lab server on the computational node.
+
+The script can be called and will guide the user to load the container in an interactive way.
+Otherwise some options can be passed to the script to avoid the interactive mode, for example in a batch job.
+
+.. option:: -y
+
+   Load the container with the local version of AQUA found in the ``$AQUA`` environment variable.
+
+.. option:: -n
+
+   Load the container with the container version of AQUA.
+
+.. option:: -e <script>
+
+   Execute a script in the container after loading it.
+
+.. option:: -c <command>
+
+   Execute a command in the container after loading it.
+
+.. option:: -h
+   
+   Show the help message.
 
 .. _pat:
 
@@ -129,7 +155,7 @@ This will provide a server URL like: ``http://nodeurl:<port>/lab?token=random_to
 - Open the Jupyter Lab URL in your browser. It will launch Jupyter Lab. Choose the **Python 3 (ipykernel)** kernel for the AQUA environment.
 
 .. note::
-    Using the load_container_lumi.sh script will launch the Jupyter Lab server on the node where the script is executed.
+    Using the ``load_container_lumi.sh`` script will launch the Jupyter Lab server on the node where the script is executed.
     You may want to use a computational node to run the Jupyter Lab server, especially if you are running a large notebook.
     This can be achieved by requiring a computational node and then running the Jupyter Lab server on that node or 
     by using the Slurm script to run the Jupyter Lab server (you can find an example in the Slurm script itself).

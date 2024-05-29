@@ -12,13 +12,46 @@ else
     # Your subsequent commands here
 fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.8.1.sif"
+AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.8.2.sif"
 FDB5_CONFIG_FILE="/scratch/project_465000454/igonzalez/fdb-long/config.yaml"
 GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
 GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
 
-log_message $next_level_msg_type "Do you want to use your local AQUA (y/n): "
-read user_defined_aqua
+# Simple command line parsing
+user_defined_aqua="ask"
+script=""
+cmd="shell"
+help=0
+
+while [ $# -gt 0 ] ; do
+        case $1 in
+                -y) user_defined_aqua="y" ; shift 1 ;;
+                -n) user_defined_aqua="n" ; shift 1 ;;
+                -e) cmd="exec"; script="bash $2" ; shift 2 ;;
+                -c) cmd="exec"; script=$2 ; shift 2 ;;
+                -h) help=1 ; shift 1 ;;
+                *) shift 1 ;;
+        esac
+done
+
+if [ "$help" -eq 1 ]; then
+    cat << END
+Loads the AQUA container in LUMI or runs a script in the container
+
+Options:
+    -y          use the AQUA variable from your current machine
+    -n          use the AQUA variable from the container
+    -e SCRIPT   execute a script in the container
+    -c CMD      run a command in the container
+    -h          show this help message 
+END
+    exit 0
+fi
+
+if [ "$user_defined_aqua" == "ask" ] ; then
+    log_message $next_level_msg_type "Do you want to use your local AQUA (y/n): "
+    read user_defined_aqua
+fi
 
 if [[ "$user_defined_aqua" = "yes" || "$user_defined_aqua" = "y" || "$user_defined_aqua" = "Y" ]]; then
     # Check if AQUA is set and the file exists 
@@ -37,7 +70,7 @@ fi
 
 log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
-singularity shell \
+singularity $cmd \
     --cleanenv \
     --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
     --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
@@ -46,12 +79,18 @@ singularity shell \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
+    --bind /pfs/lustrep1/ \
+    --bind /pfs/lustrep2/ \
     --bind /pfs/lustrep3/ \
+    --bind /pfs/lustrep4/ \
+    --bind /pfs/lustrep3/scratch/ \
     --bind /users/lrb_465000454_fdb/ \
+    --bind /flash/project_465000454 \
     --bind /projappl/ \
     --bind /project \
     --bind /scratch/ \
-    $AQUA_container
+    $AQUA_container $script
+
 # Run this script in LUMI in VSCode 
 
 # For different FDB config files, export specific FDB5_CONFIG_FILE.

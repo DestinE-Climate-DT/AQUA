@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#SBATCH --job-name={{ job_name }}
+#SBATCH --partition={{ partition }}
+#SBATCH --account={{ account }}
+#SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node={{ ntasks_per_node }}
+#SBATCH --time={{ time }}
+#SBATCH --error={{ logdir_error }}/{{ error }}
+#SBATCH --output={{ logdir_output }}/{{ output }}
+
+model={{ model }}
+exp={{ exp }}
+source={{ source }}
+
+export AQUA={{ aquadir }}
+export OUTDIR={{ outdir }}
+
+cd $OUTDIR
+
+if [[ "{{ push }}" == "false" ]]; then
+    bash $AQUA/cli/aqua-analysis/aqua-analysis.sh -l debug -a $model -o $model -e $exp -s $source -d $OUTDIR {{ parallel }}
+else
+    bash $AQUA/cli/aqua-web/push_analysis.sh $OUTDIR {{ explist }}
+fi

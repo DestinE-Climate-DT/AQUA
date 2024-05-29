@@ -15,6 +15,10 @@ How to create a new source and add new data is documented in the next sections.
 - Finally, to exploit the regridding functionalities, you will also need to verify the grid is available in the ``config/grids`` folder 
   or to add it (see :ref:`grid_definition`).
 
+.. note::
+    A method to add new catalogues to the configuration folder has been developed.
+    You can find more information in the :ref:`aqua-add` section.
+
 .. _file-based-sources:
 
 File-based sources

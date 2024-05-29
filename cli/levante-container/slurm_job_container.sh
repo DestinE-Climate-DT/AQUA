@@ -11,7 +11,7 @@
 set -e
 
 # export AQUA = PATH_TO_AQUA_repo
-AQUA_container="/work/bb1153/b382289/container/AQUA/aqua_v0.8.1.sif"
+AQUA_container="/work/bb1153/b382289/container/AQUA/aqua_v0.8.2.sif"
 
 module load singularity
 
@@ -21,6 +21,7 @@ singularity exec \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
+    --bind /pool/data/ICDC/atmosphere/ceres_ebaf/ \
     --bind /work/bb1153 \
     $AQUA_container \
     bash -c \

@@ -35,53 +35,53 @@ Installation can be done using `mamba <https://mamba.readthedocs.io/en/latest/>`
 Containers and tools specific to the machines used in the project are available.
 Please refer to the :ref:`installation` section for more information.
 
-Set up environment variables
-----------------------------
+.. _initialization:
 
-To work with the AQUA package it is strongly recommended to set up an environment variable
-to specify the path to the AQUA package. This can be done by adding the following line to
-your `.bashrc` or `.bash_profile` file:
+Catalogue Installation
+----------------------
+
+After the package has been installed, or the container has been loaded, the AQUA catalogue needs to be set up.
+This means to set up the configuration file and the catalogue, with a copy or a link to the necessary files.
+This needs to be done only once, unless catalogues or fix and grid files are added or need to be updated/removed.
+
+.. note::
+  A more complete description of the available commands can be found in the :ref:`aqua-console` section.
+
+Set up the configuration folder
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The configuration folder contains configuration files and the catalogues added to the AQUA package.
+To set up the configuration folder, run the following command:
 
 .. code-block:: bash
 
-    export AQUA=/path/to/aqua
+    aqua install
 
-This will allow you to use the AQUA package from any location on the system and will make
-clear for the code where to find the AQUA catalogue.
+This command will create the configuration folder in the ``$HOME/.aqua`` directory and it will copy there the essential files.
+Check the :ref:`aqua-init` section for more information.
 
-Set up the configuration file
------------------------------
+Add a catalogue
+^^^^^^^^^^^^^^^
 
-A configuration file is available to specify the parameters for the AQUA package.
-This is a YAML file located in `config/config-aqua.yaml`.
+A catalogue is a folder containing the YAML files that describe the data available in the catalogue.
 
-The configuration file is used to specify the following parameters:
+.. note::
+  At the actual state of the AQUA package, the catalogues coincide with the machines.
+  This means that you will need to install only the catalogue of the machine you are working on.
 
-- **machine**: the machine on which the code is running. This is used to specify the
-  location of the AQUA catalogue and the location of the data. Default is ``lumi``.
-  Other options are ``ci`` and ``levante``. Custom machines can be defined (see :ref:`new-machine`).
-- **reader**: this block contains catalogue, fixes and grids location.
-  These paths are required to be inside the AQUA repository,
-  so these paths should not be changed unless strictly necessary.
-  Refer to :ref:`add-data` for more information.
-- **cdo**: location of the CDO executable. By default this option is not needed, since CDO is required in the ``environment.yml`` file
-  and provided by conda.
+To add a catalogue, run the following command:
 
-The configuration folder has this structure:
+.. code-block:: bash
 
-.. code-block:: text
+    aqua add <catalog>
 
-    ├── config
-    │   ├── data_models
-    │   ├── fixes
-    │   ├── grids
-    │   └── machines
-    │       ├── lumi
-    │       │   ├── catalog 
-    │       │   └── catalog.yaml
-    │       ├── levante
-    │       └── ...
-    ├── config-aqua.yaml
+For example, to add the catalogue of the machine ``lumi``, run:
+
+.. code-block:: bash
+
+    aqua add lumi
+
+This command will copy the catalogue folder to the configuration folder.
 
 Set up Jupyter kernel
 ---------------------

@@ -9,6 +9,11 @@ AQUA is developed and tested with Python 3.12 and it supports Python 3.9 and lat
 We recommend using Mamba, a package manager for conda-forge, for the installation process.
 However, you can also use Conda, the default package manager for Anaconda.
 
+.. note ::
+    Soon AQUA will be available on the PyPI repository, so you will be able to install it with pip.
+    The installation process will be updated accordingly.
+    Some dependencies are not available in the PyPI repository, so mamba or conda are recommended for the installation process.
+
 Prerequisites
 -------------
 
