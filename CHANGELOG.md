@@ -9,6 +9,7 @@ Unreleased in the current development version:
 
 AQUA core complete list:
 - OutputNamer Class: Comprehensive Naming Scheme and Metadata Support (#998)
+- Modifying the machine setup in the weights submitter (#1188)
 
 ## [v0.9]
 
