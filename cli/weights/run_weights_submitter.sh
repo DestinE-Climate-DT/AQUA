@@ -17,38 +17,78 @@ fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 aqua=$AQUA
 
-# Read and log the machine name from the YAML configuration file
-log_message "Reading machine name from YAML"
-machine=$(python -c "
+# Read configuration values from the YAML file using a single Python script
+config_json=$(python - <<EOF
+import yaml
+import json
+
 try:
-    import yaml
-    with open('$AQUA/config/config-aqua.yaml') as f:
+    with open('$AQUA/cli/weights/weights_config.yml') as f:
         config = yaml.safe_load(f)
-        print(config['machine'])
+        machine = config.get('machine', 'Error: Machine not found')
+        compute_resources = config.get('compute_resources', {})
+        nproc = compute_resources.get('nproc', 'Error: nproc not found')
+        nodes = compute_resources.get('nodes', 'Error: nodes not found')
+        walltime = compute_resources.get('walltime', 'Error: walltime not found')
+        memory = compute_resources.get('memory', 'Error: memory not found')
+        lumi_version = compute_resources.get('lumi_version', 'Error: lumi_version not found')
+        account = compute_resources.get('account', {}).get(machine, f'Error: account not found for {machine}')
+        partition = compute_resources.get('partition', {}).get(machine, f'Error: partition not found for {machine}')
+        run_on_sunday = compute_resources.get('run_on_sunday', 'Error: run_on_sunday not found')
+
+        result = {
+            'machine': machine,
+            'nproc': nproc,
+            'nodes': nodes,
+            'walltime': walltime,
+            'memory': memory,
+            'lumi_version': lumi_version,
+            'account': account,
+            'partition': partition,
+            'run_on_sunday': run_on_sunday
+        }
+
+        print(json.dumps(result))
+
 except Exception as e:
-    print('Error:', e)
-")
-if [[ $machine == Error:* ]]; then
-    log_message ERROR "Error reading machine name: ${machine#Error: }"
+    print(json.dumps({'error': str(e)}))
+EOF
+)
+
+# Log the raw JSON output for debugging
+log_message DEBUG "Raw JSON output: $config_json"
+
+# Parse the JSON output using jq
+machine=$(echo $config_json | jq -r '.machine')
+nproc=$(echo $config_json | jq -r '.nproc')
+nodes=$(echo $config_json | jq -r '.nodes')
+walltime=$(echo $config_json | jq -r '.walltime')
+memory=$(echo $config_json | jq -r '.memory')
+lumi_version=$(echo $config_json | jq -r '.lumi_version')
+account=$(echo $config_json | jq -r '.account')
+partition=$(echo $config_json | jq -r '.partition')
+run_on_sunday=$(echo $config_json | jq -r '.run_on_sunday')
+error=$(echo $config_json | jq -r '.error')
+
+# Check for errors
+if [[ -n $error && $error != "null" ]]; then
+    log_message ERROR "Failed to read from weights_config.yml: $error"
     exit 1
 fi
+
+# Log the machine name
 log_message INFO "Machine Name: $machine"
 
-# Read configuration values like number of processes, nodes, etc., from another YAML file
-read -r nproc nodes walltime memory lumi_version account partition run_on_sunday < <(python -c "
-try:
-    import yaml
-    with open('$AQUA/cli/weights/weights_config.yml') as f:
-        config = yaml.safe_load(f)['compute_resources']
-        print(config['nproc'], config['nodes'], config['walltime'], config['memory'], config['lumi_version'], \
-        config['account']['$machine'], config['partition']['$machine'], config['run_on_sunday'])
-except Exception as e:
-    print('Error:', e)
-")
-if [[ $nproc == Error:* ]]; then
-    log_message ERROR "Failed to read compute resources from weights_config.yml: ${nproc#Error: }"
-    exit 1
-fi
+# Check for errors in other configuration values
+for var in nproc nodes walltime memory lumi_version account partition run_on_sunday; do
+    if [[ ${!var} == Error:* ]]; then
+        log_message ERROR "Failed to read compute resources from weights_config.yml: ${!var#Error: }"
+        exit 1
+    fi
+done
+
+# Log the configuration values
+log_message INFO "nproc: $nproc, nodes: $nodes, walltime: $walltime, memory: $memory, lumi_version: $lumi_version, account: $account, partition: $partition, run_on_sunday: $run_on_sunday"
 
 # Set the job's start time based on 'run_on_sunday' flag
 if [ "$run_on_sunday" == "True" ]; then
