@@ -1,33 +1,40 @@
-from .tropical_rainfall_main import MainClass
+from .tropical_rainfall_histograms import HistogramClass
+from .tropical_rainfall_zonal_mean import ZonalMeanClass
+from .tropical_rainfall_daily_variability import DailyVariabilityClass
+from .tropical_rainfall_extra import ExtraFunctionalityClass
 
-# Full import
-methods_to_import = [method for method in dir(MainClass) if callable(getattr(MainClass, method))
-                     and not method.startswith("__")]
+# Combine methods from all classes
+methods_to_import = []
+classes_to_import = [HistogramClass, ZonalMeanClass, DailyVariabilityClass, ExtraFunctionalityClass]
 
-# Reduced import will shorten the documentation.
-# methods_to_import = ['histogram', 'merge_list_of_histograms', 'histogram_plot', 'average_into_netcdf',
-#                    'plot_of_average', 'plot_bias', 'plot_seasons_or_months', 'seasonal_or_monthly_mean',
-#                    'map', 'get_95percent_level', 'seasonal_095level_into_netcdf', 'add_UTC_DataAaray',
-#                    'daily_variability_plot']
-
-
+for cls in classes_to_import:
+    methods_to_import.extend(
+        method for method in dir(cls) if callable(getattr(cls, method)) and not method.startswith("__")
+    )
+    
 class MetaClass(type):
     def __new__(cls, name, bases, dct):
         if 'import_methods' in dct:
-            methods_to_import = [method for method in dir(MainClass) if
-                                 callable(getattr(MainClass, method)) and not method.startswith("__")]
-            for method_name in methods_to_import:
-                dct[method_name] = getattr(MainClass, method_name)
-            if 'class_attributes_update' in dct:
-                def class_attributes_update(self, **kwargs):
-                    attribute_names = ['trop_lat', 's_time', 'f_time', 's_year', 'f_year', 's_month',
-                                    'f_month', 'num_of_bins', 'first_edge', 'width_of_bin', 'bins',
-                                    'model_variable', 'new_unit']
+            classes_to_import = [HistogramClass, ZonalMeanClass, DailyVariabilityClass, ExtraFunctionalityClass]
+            
+            # Combine methods from all classes
+            for import_cls in classes_to_import:
+                methods_to_import = [
+                    method for method in dir(import_cls) if callable(getattr(import_cls, method)) and not method.startswith("__")
+                ]
+                for method_name in methods_to_import:
+                    dct[method_name] = getattr(import_cls, method_name)
+                    
+            # Define a method to combine attributes from all classes
+            def class_attributes_update(self, **kwargs):
+                for import_cls in classes_to_import:
+                    attribute_names = [attr for attr in dir(import_cls) if not callable(getattr(import_cls, attr)) and not attr.startswith("__")]
                     for attr_name in attribute_names:
                         if attr_name in kwargs and kwargs[attr_name] is not None:
                             setattr(self, attr_name, kwargs[attr_name])
-                            setattr(self.main, attr_name, kwargs[attr_name])
-                        else:
-                            pass
-                dct['class_attributes_update'] = class_attributes_update
+                            for cls_instance in self.classes_instances:
+                                if hasattr(cls_instance, attr_name):
+                                    setattr(cls_instance, attr_name, kwargs[attr_name])
+            dct['class_attributes_update'] = class_attributes_update
+
         return super(MetaClass, cls).__new__(cls, name, bases, dct)

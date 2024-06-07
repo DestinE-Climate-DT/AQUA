@@ -8,7 +8,11 @@ from aqua.logger import log_configure
 
 from .src.tropical_rainfall_tools import ToolsClass
 from .src.tropical_rainfall_plots import PlottingClass
-from .src.tropical_rainfall_main import MainClass
+from .src.tropical_rainfall_histograms import HistogramClass
+from .src.tropical_rainfall_zonal_mean import ZonalMeanClass
+from .src.tropical_rainfall_daily_variability import DailyVariabilityClass
+from .src.tropical_rainfall_extra import ExtraFunctionalityClass
+from .src.tropical_rainfall_main import TropicalPrecipitationDataManager
 from .src.tropical_rainfall_meta import MetaClass
 
 from importlib import resources
@@ -51,7 +55,7 @@ number_of_bar_ticks = ToolsClass().get_config_value(config, 'plot_attributes', '
 
 class Tropical_Rainfall(metaclass=MetaClass):
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
-
+    #import_methods = True
     def __init__(self,
                  trop_lat: Optional[float] = trop_lat,
                  s_time: Union[str, int, None] = s_time,
@@ -109,15 +113,44 @@ class Tropical_Rainfall(metaclass=MetaClass):
         self.path_to_netcdf = self.tools.get_netcdf_path() if path_to_netcdf is None else path_to_netcdf
         self.path_to_pdf = self.tools.get_pdf_path() if path_to_pdf is None else path_to_pdf
 
-        self.main = MainClass(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
+        self.datamanager = TropicalPrecipitationDataManager(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
                               s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month,
                               num_of_bins=self.num_of_bins, first_edge=self.first_edge,
                               width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
                               path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
-
-        self.precipitation_rate_units_converter = self.main.precipitation_rate_units_converter
+        """
+        self.historgams = HistogramClass(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
+                              s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month,
+                              num_of_bins=self.num_of_bins, first_edge=self.first_edge,
+                              width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
+                              path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
+        
+        self.histogram = HistogramClass(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
+                              s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month,
+                              num_of_bins=self.num_of_bins, first_edge=self.first_edge,
+                              width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
+                              path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
+        self.zonal_mean = ZonalMeanClass(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
+                              s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month,
+                              num_of_bins=self.num_of_bins, first_edge=self.first_edge,
+                              width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
+                              path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
+        self.daily_variability = DailyVariabilityClass(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
+                              s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month,
+                              num_of_bins=self.num_of_bins, first_edge=self.first_edge,
+                              width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
+                              path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
+        
+        self.extra_functionality = ExtraFunctionalityClass(trop_lat=self.trop_lat, s_time=self.s_time, f_time=self.f_time,
+                              s_year=self.s_year, f_year=self.f_year, s_month=self.s_month, f_month=self.f_month,
+                              num_of_bins=self.num_of_bins, first_edge=self.first_edge,
+                              width_of_bin=None, bins=self.bins, new_unit=self.new_unit, model_variable=self.model_variable,
+                              path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
+        """
+        #self.classes_instances = [self.histogram, self.zonal_mean, self.daily_variability, self.extra_functionality]
+        #self.precipitation_rate_units_converter = self.datamanager.precipitation_rate_units_converter
         self.width_of_bin = width_of_bin
-        self.main.width_of_bin = self.width_of_bin
+        #self.historgams.width_of_bin = self.width_of_bin
 
         self.plots = PlottingClass(pdf_format=pdf_format, figsize=figsize, linewidth=linewidth,
                                    fontsize=fontsize, smooth=smooth, step=step, color_map=color_map,
@@ -131,4 +164,4 @@ class Tropical_Rainfall(metaclass=MetaClass):
     def import_methods(self):
         pass
 
-#Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__
+#Tropical_Rainfall.class_attributes_update.__doc__ = TropicalPrecipitationDataManager.class_attributes_update.__doc__
