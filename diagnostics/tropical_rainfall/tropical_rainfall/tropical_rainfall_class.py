@@ -12,7 +12,7 @@ from .src.tropical_rainfall_histograms import HistogramClass
 from .src.tropical_rainfall_zonal_mean import ZonalMeanClass
 from .src.tropical_rainfall_daily_variability import DailyVariabilityClass
 from .src.tropical_rainfall_extra import ExtraFunctionalityClass
-from .src.tropical_rainfall_main import TropicalPrecipitationDataManager
+from .src.tropical_rainfall_data_manager import TropicalPrecipitationDataManager
 from .src.tropical_rainfall_meta import MetaClass
 
 from importlib import resources

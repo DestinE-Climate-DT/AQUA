@@ -5,7 +5,7 @@ from aqua.logger import log_configure
 
 from .tropical_rainfall_plots import PlottingClass
 from .tropical_rainfall_tools import ToolsClass
-from .tropical_rainfall_main import TropicalPrecipitationDataManager
+from .tropical_rainfall_data_manager import TropicalPrecipitationDataManager
 
 class DailyVariabilityClass: 
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
