@@ -1,4 +1,43 @@
 #!/bin/bash
+
+# Function to get the installation path of a Python package
+get_python_package_path() {
+    local package_name=$1
+    local package_path=$(python -c "
+import os
+import importlib
+
+def get_python_package_path(package_name):
+    try:
+        package = importlib.import_module(package_name)
+        package_path = os.path.dirname(package.__file__)
+        print(package_path)
+    except ImportError as e:
+        print(f'Error: {str(e)}')
+        sys.exit(1)
+
+package_name = \"$package_name\"
+get_python_package_path(package_name)
+")
+    echo "Package path found: '$package_path'"
+    echo $package_path
+}
+
+# Package name to look for
+PACKAGE_NAME="aqua"
+
+# Get the path to the Python package
+AQUA=$(get_python_package_path $PACKAGE_NAME)
+
+echo "AQUA path: '$AQUA'"
+
+if [[ -z "$AQUA" ]]; then
+    echo -e "\033[0;31mError: The path to the Python package could not be determined."
+    exit 1  # Exit with status 1 to indicate an error
+else
+    echo -e "\033[0;32mThe path to the Python package is: '$AQUA'\033[0m"
+fi
+
 # Check if AQUA is set and the file exists
 if [[ -z "$AQUA" ]]; then
     echo -e "\033[0;31mError: The AQUA environment variable is not defined."
