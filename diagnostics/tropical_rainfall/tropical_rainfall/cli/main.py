@@ -11,7 +11,7 @@ from aqua.util import load_yaml, dump_yaml
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from tropical_rainfall.cli.parser import parse_arguments
-from tropical_rainfall import __path__ as pypath
+from tropical_rainfall import Tropical_Rainfall
 
 class TropicalRainfallConsole():
     """Class for TropicalRainfallConsole, the Tropical Rainfall command line interface for
@@ -20,7 +20,6 @@ class TropicalRainfallConsole():
     def __init__(self):
         """The main Tropical Rainfall command line interface"""
 
-        self.pypath = pypath[0]
         self.configpath = None
         self.logger = None
 
@@ -99,29 +98,20 @@ class TropicalRainfallConsole():
         """
         self.configpath = path
         if not os.path.exists(path):
-            self.logger.info(f"Creating directory: {path}")
             os.makedirs(path, exist_ok=True)
         else:
             if not os.path.isdir(path):
                 self.logger.error("Path chosen is not a directory")
                 sys.exit(1)
 
-        # Correctly determine the project root and path to the default configuration file
-        script_dir = os.path.dirname(__file__)
-        project_root = os.path.abspath(os.path.join(script_dir, '..', '..', '..'))
-        default_config_file = os.path.join(project_root, 'diagnostics', 'tropical_rainfall', 'config', 'config-tropical-rainfall.yml')
-        config_file = os.path.join(path, 'config-tropical-rainfall.yml')
-
-        self.logger.info(f"Script directory: {script_dir}")
-        self.logger.info(f"Project root directory: {project_root}")
-        self.logger.info(f"Default config file path: {default_config_file}")
-        self.logger.info(f"Target config file path: {config_file}")
-
         # Ensure the target directory exists before copying the configuration file
-        target_dir = os.path.dirname(config_file)
+        target_dir = os.path.dirname(path)
         if not os.path.exists(target_dir):
             self.logger.info(f"Creating target directory: {target_dir}")
             os.makedirs(target_dir, exist_ok=True)
+
+        default_config_file = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config-tropical-rainfall.yml')
+        config_file = os.path.join(path, 'config-tropical-rainfall.yml')
 
         if not os.path.exists(config_file):
             if os.path.exists(default_config_file):
@@ -143,23 +133,20 @@ class TropicalRainfallConsole():
             if 'HOME' in os.environ:
                 link = os.path.join(os.environ['HOME'], '.tropical_rainfall')
                 if os.path.exists(link):
-                    self.logger.warning(f"Removing the content of {link}")
+                    self.logger.warning('Removing the content of %s', link)
                     if os.path.islink(link):
                         os.unlink(link)
                     else:
                         shutil.rmtree(link)
-                self.logger.info(f"Creating symlink from {link} to {path}")
                 os.symlink(path, link)
             else:
-                self.logger.error("$HOME not found. Cannot create a link to the installation path")
-                self.logger.warning(f"Tropical Rainfall will be installed in {path}, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable")
+                self.logger.error('$HOME not found. Cannot create a link to the installation path')
+                self.logger.warning('Tropical Rainfall will be installed in %s, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable', path)
         else:
-            self.logger.warning(f"Tropical Rainfall will be installed in {path}, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable")
+            self.logger.warning('Tropical Rainfall will be installed in %s, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable', path)
 
         # Set the environment variable
         os.environ['TROPICAL_RAINFALL_CONFIG'] = self.configpath
-        self.logger.info(f"TROPICAL_RAINFALL_CONFIG environment variable set to {self.configpath}")
-
 
     def add_config(self, args):
         """Add a new configuration file to Tropical Rainfall
