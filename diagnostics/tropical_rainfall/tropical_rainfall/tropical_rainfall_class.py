@@ -13,8 +13,8 @@ from .src.tropical_rainfall_meta import MetaClass
 
 from importlib import resources
 full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
-config = ToolsClass().get_config()
-machine = ToolsClass().get_machine()
+config = ToolsClass().get_config(full_path_to_config)
+machine = "lumi" #ToolsClass().get_machine()
 
 loglevel = ToolsClass().get_config_value(config, 'loglevel', default='WARNING')
 trop_lat = ToolsClass().get_config_value(config, 'class_attributes', 'trop_lat', default=10)
