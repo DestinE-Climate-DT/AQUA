@@ -5,17 +5,33 @@
 """
 from typing import Union, Optional
 from aqua.logger import log_configure
-
+import os
 from .src.tropical_rainfall_tools import ToolsClass
 from .src.tropical_rainfall_plots import PlottingClass
 from .src.tropical_rainfall_main import MainClass
 from .src.tropical_rainfall_meta import MetaClass
 
-from importlib import resources
-full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
-config = ToolsClass().get_config(full_path_to_config)
-machine = "lumi" #ToolsClass().get_machine()
+#from importlib import resources
+#full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
+#config = ToolsClass().get_config(full_path_to_config)
+#machine = "lumi" #ToolsClass().get_machine()
 
+
+# Get the configuration directory from the environment variable
+config_dir = os.getenv('TROPICAL_RAINFALL_CONFIG', os.path.expanduser('~/.tropical_rainfall'))
+
+# Load the configuration file from the config directory
+full_path_to_config = os.path.join(config_dir, "config-tropical-rainfall.yml")
+try:
+    config = ToolsClass().get_config(full_path_to_config)
+except FileNotFoundError:
+    raise FileNotFoundError(f"The configuration file '{full_path_to_config}' does not exist.")
+except Exception as e:
+    raise RuntimeError(f"An error occurred while loading the configuration file: {e}")
+
+machine = "lumi" # ToolsClass().get_machine()
+
+                                         
 loglevel = ToolsClass().get_config_value(config, 'loglevel', default='WARNING')
 trop_lat = ToolsClass().get_config_value(config, 'class_attributes', 'trop_lat', default=10)
 num_of_bins = ToolsClass().get_config_value(config, 'class_attributes', 'num_of_bins', default=1000)
@@ -53,6 +69,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
     """This class is a minimal version of the Tropical Precipitation Diagnostic."""
 
     def __init__(self,
+                 config_file: str = 'config-tropical-rainfall.yml',
                  trop_lat: Optional[float] = trop_lat,
                  s_time: Union[str, int, None] = s_time,
                  f_time: Union[str, int, None] = f_time,
@@ -104,7 +121,8 @@ class Tropical_Rainfall(metaclass=MetaClass):
 
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Trop. Rainfall')
-        self.tools = ToolsClass(loglevel=loglevel)
+        self.config_file = config_file
+        self.tools = ToolsClass(config_file=self.config_file, loglevel=self.loglevel)
 
         self.path_to_netcdf = self.tools.get_netcdf_path() if path_to_netcdf is None else path_to_netcdf
         self.path_to_pdf = self.tools.get_pdf_path() if path_to_pdf is None else path_to_pdf

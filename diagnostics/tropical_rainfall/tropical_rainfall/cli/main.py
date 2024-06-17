@@ -11,10 +11,7 @@ from aqua.util import load_yaml, dump_yaml
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from tropical_rainfall.cli.parser import parse_arguments
-from tropical_rainfall import __path__ as pypath  # Add this line
-
-# folder used for reading/storing configs
-config_folder = 'configs'
+from tropical_rainfall import __path__ as pypath
 
 class TropicalRainfallConsole():
     """Class for TropicalRainfallConsole, the Tropical Rainfall command line interface for
@@ -25,18 +22,11 @@ class TropicalRainfallConsole():
 
         self.pypath = pypath[0]
         self.configpath = None
-        self.configfile = 'config-tropical-rainfall.yml'
         self.logger = None
 
         self.command_map = {
             'init': self.init,
-            'add': self.add,
-            'remove': self.remove,
-            'set': self.set,
-            'uninstall': self.uninstall,
-            'list': self.list,
-            'update': self.update,
-            # Add other commands if necessary
+            'add_config': self.add_config,
         }
 
     def execute(self):
@@ -73,6 +63,9 @@ class TropicalRainfallConsole():
             self._config_home()
         else:
             self._config_path(args.path)
+        
+        # Set the environment variable
+        os.environ['TROPICAL_RAINFALL_CONFIG'] = self.configpath
 
     def _config_home(self):
         """Configure the Tropical Rainfall installation folder, by default inside $HOME"""
@@ -84,8 +77,7 @@ class TropicalRainfallConsole():
                 os.makedirs(path, exist_ok=True)
             else:
                 self.logger.warning('Tropical Rainfall already installed in %s', path)
-                check = query_yes_no(f"Do you want to overwrite Tropical Rainfall installation in {path}. "
-                                     "You will lose all configurations installed.", "no")
+                check = query_yes_no(f"Do you want to overwrite Tropical Rainfall installation in {path}. You will lose all configurations installed.", "no")
                 if not check:
                     sys.exit()
                 else:
@@ -95,6 +87,9 @@ class TropicalRainfallConsole():
         else:
             self.logger.error('$HOME not found. Please specify a path where to install Tropical Rainfall and define TROPICAL_RAINFALL_CONFIG as environment variable')
             sys.exit(1)
+        
+        # Set the environment variable
+        os.environ['TROPICAL_RAINFALL_CONFIG'] = self.configpath
 
     def _config_path(self, path):
         """Define the Tropical Rainfall installation folder when a path is specified
@@ -104,73 +99,99 @@ class TropicalRainfallConsole():
         """
         self.configpath = path
         if not os.path.exists(path):
+            self.logger.info(f"Creating directory: {path}")
             os.makedirs(path, exist_ok=True)
         else:
             if not os.path.isdir(path):
                 self.logger.error("Path chosen is not a directory")
                 sys.exit(1)
 
+        # Correctly determine the project root and path to the default configuration file
+        script_dir = os.path.dirname(__file__)
+        project_root = os.path.abspath(os.path.join(script_dir, '..', '..', '..'))
+        default_config_file = os.path.join(project_root, 'diagnostics', 'tropical_rainfall', 'config', 'config-tropical-rainfall.yml')
+        config_file = os.path.join(path, 'config-tropical-rainfall.yml')
+
+        self.logger.info(f"Script directory: {script_dir}")
+        self.logger.info(f"Project root directory: {project_root}")
+        self.logger.info(f"Default config file path: {default_config_file}")
+        self.logger.info(f"Target config file path: {config_file}")
+
+        # Ensure the target directory exists before copying the configuration file
+        target_dir = os.path.dirname(config_file)
+        if not os.path.exists(target_dir):
+            self.logger.info(f"Creating target directory: {target_dir}")
+            os.makedirs(target_dir, exist_ok=True)
+
+        if not os.path.exists(config_file):
+            if os.path.exists(default_config_file):
+                self.logger.info(f"Copying default config file from {default_config_file} to {config_file}")
+                try:
+                    shutil.copy(default_config_file, config_file)
+                    self.logger.info(f"Configuration file created at {config_file}")
+                except Exception as e:
+                    self.logger.error(f"Failed to copy the configuration file: {e}")
+                    sys.exit(1)
+            else:
+                self.logger.error(f"Default configuration file not found at {default_config_file}")
+                sys.exit(1)
+        else:
+            self.logger.info(f"Configuration file already exists at {config_file}")
+
         check = query_yes_no(f"Do you want to create a link in the $HOME/.tropical_rainfall to {path}", "yes")
         if check:
             if 'HOME' in os.environ:
                 link = os.path.join(os.environ['HOME'], '.tropical_rainfall')
                 if os.path.exists(link):
-                    self.logger.warning('Removing the content of %s', link)
-                    shutil.rmtree(link)
+                    self.logger.warning(f"Removing the content of {link}")
+                    if os.path.islink(link):
+                        os.unlink(link)
+                    else:
+                        shutil.rmtree(link)
+                self.logger.info(f"Creating symlink from {link} to {path}")
                 os.symlink(path, link)
             else:
-                self.logger.error('$HOME not found. Cannot create a link to the installation path')
-                self.logger.warning('Tropical Rainfall will be installed in %s, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable', path)
+                self.logger.error("$HOME not found. Cannot create a link to the installation path")
+                self.logger.warning(f"Tropical Rainfall will be installed in {path}, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable")
         else:
-            self.logger.warning('Tropical Rainfall will be installed in %s, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable', path)
+            self.logger.warning(f"Tropical Rainfall will be installed in {path}, but please remember to define TROPICAL_RAINFALL_CONFIG environment variable")
 
-    def add(self, args):
-        """Placeholder for the 'add' command
+        # Set the environment variable
+        os.environ['TROPICAL_RAINFALL_CONFIG'] = self.configpath
+        self.logger.info(f"TROPICAL_RAINFALL_CONFIG environment variable set to {self.configpath}")
 
-        Args:
-            args (argparse.Namespace): arguments from the command line
-        """
-        self.logger.info('Adding something...')
 
-    def remove(self, args):
-        """Placeholder for the 'remove' command
+    def add_config(self, args):
+        """Add a new configuration file to Tropical Rainfall
 
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        self.logger.info('Removing something...')
+        if self.configpath is None:
+            self.logger.error("Configuration path is not set. Please run init command first.")
+            return
+        config_name = os.path.basename(args.config_name)
+        config_src = os.path.abspath(args.config_name)
+        config_dst = os.path.join(self.configpath, config_name)
 
-    def set(self, args):
-        """Placeholder for the 'set' command
+        if not os.path.exists(config_src):
+            self.logger.error(f"The configuration file {config_src} does not exist.")
+            return
 
-        Args:
-            args (argparse.Namespace): arguments from the command line
-        """
-        self.logger.info('Setting something...')
+        shutil.copy(config_src, config_dst)
+        self.logger.info(f"Configuration file {config_name} added to {self.configpath}.")
 
-    def uninstall(self, args):
-        """Placeholder for the 'uninstall' command
+        # Update pyproject.toml to include the new configuration file
+        pyproject_path = os.path.join(self.pypath, 'pyproject.toml')
+        with open(pyproject_path, 'r') as file:
+            pyproject_data = file.readlines()
 
-        Args:
-            args (argparse.Namespace): arguments from the command line
-        """
-        self.logger.info('Uninstalling something...')
-
-    def list(self, args):
-        """Placeholder for the 'list' command
-
-        Args:
-            args (argparse.Namespace): arguments from the command line
-        """
-        self.logger.info('Listing something...')
-
-    def update(self, args):
-        """Placeholder for the 'update' command
-
-        Args:
-            args (argparse.Namespace): arguments from the command line
-        """
-        self.logger.info('Updating something...')
+        with open(pyproject_path, 'w') as file:
+            for line in pyproject_data:
+                file.write(line)
+                if line.strip().startswith('tropical_rainfall ='):
+                    file.write(f'    "{config_name}",\n')
+        self.logger.info(f"pyproject.toml updated with the new configuration file {config_name}.")
 
 def main():
     """Tropical Rainfall main installation tool"""

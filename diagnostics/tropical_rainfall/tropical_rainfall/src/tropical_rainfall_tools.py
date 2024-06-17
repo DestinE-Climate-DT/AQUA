@@ -13,12 +13,9 @@ from aqua.logger import log_configure
 import yaml
 from os.path import isfile, join, exists, isdir
 from dateutil.relativedelta import relativedelta
-
 from calendar import monthrange
 from collections import defaultdict
-
 from importlib import resources
-full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
 
 regrid_dict = {
     'r250': {'deg': 2.5},
@@ -31,18 +28,18 @@ regrid_dict = {
     'r005': {'deg': 0.05}
 }
 
-
 class ToolsClass:
-
-    def __init__(self, loglevel: str = 'WARNING'):
+    def __init__(self, config_file: str = None, loglevel: str = 'WARNING'):
         """
         Initialize the class.
-
-        Args:
-            loglevel (str, optional): The log level to be set. Defaults to 'WARNING'.
         """
+        if config_file:
+            self.config_file = config_file
+        else:
+            # Default to 'config-tropical-rainfall.yml'
+            self.config_file = 'config-tropical-rainfall.yml'
         self.loglevel = loglevel
-        self.logger = log_configure(self.loglevel, 'Tools Func.')
+        self.logger = log_configure(self.loglevel, 'Tropical Rainfall Tools')
 
     def split_time(self, time_str: str) -> str:
         """
@@ -72,13 +69,12 @@ class ToolsClass:
         """
         return ConfigPath().catalog
 
-    def get_netcdf_path(self, configname: str = full_path_to_config) -> tuple:
+    def get_netcdf_path(self) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
 
         Args:
             self: The instance of the class.
-            configname (str): The name of the YAML configuration file.
 
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
@@ -87,10 +83,10 @@ class ToolsClass:
             FileNotFoundError: If the specified configuration file does not exist.
         """
         root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
-        config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
+        config_path = os.path.join(root_folder, self.config_file)  # Construct the absolute path to the config file
         if not os.path.exists(config_path):
-            self.logger.error(f"The configuration file '{configname}' does not exist.")
-            raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
+            self.logger.error(f"The configuration file '{self.config_file}' does not exist.")
+            raise FileNotFoundError(f"The configuration file '{self.config_file}' does not exist.")
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
@@ -165,13 +161,12 @@ class ToolsClass:
         adjusted_ds.attrs['history'] = history_attr
         return adjusted_ds
 
-    def get_pdf_path(self, configname: str = full_path_to_config) -> tuple:
+    def get_pdf_path(self) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
 
         Args:
             self: The instance of the class.
-            configname (str): The name of the YAML configuration file.
 
         Returns:
             tuple: A tuple containing the paths to the netCDF file, PDF file, and mean file, respectively.
@@ -180,10 +175,10 @@ class ToolsClass:
             FileNotFoundError: If the specified configuration file does not exist.
         """
         root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
-        config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
+        config_path = os.path.join(root_folder, self.config_file)  # Construct the absolute path to the config file
         if not os.path.exists(config_path):
-            self.logger.error(f"The configuration file '{configname}' does not exist.")
-            raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
+            self.logger.error(f"The configuration file '{self.config_file}' does not exist.")
+            raise FileNotFoundError(f"The configuration file '{self.config_file}' does not exist.")
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
@@ -200,64 +195,25 @@ class ToolsClass:
         self.logger.info(f"PDF folder: {path_to_pdf}")
         return path_to_pdf
 
-    def get_config(self, configname: str = full_path_to_config):
-        """
-        Load an entire configuration file based on the specified configuration name.
-
-        Args:
-            self: The instance of the class.
-            configname (str): The name of the YAML configuration file.
-
-        Returns:
-            dict or None: The configuration data loaded from the specified YAML file, or None if an error
-                          occurs during the loading process.
-
-        Raises:
-            FileNotFoundError: If the specified configuration file does not exist.
-            Exception: If an unexpected error occurs during the loading process.
-        """
-        root_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get the root folder
-        config_path = os.path.join(root_folder, configname)  # Construct the absolute path to the config file
-        if not os.path.exists(config_path):
-            self.logger.error(f"The configuration file '{configname}' does not exist.")
-            raise FileNotFoundError(f"The configuration file '{configname}' does not exist.")
-        try:
-            with open(config_path, 'r') as file:
-                config = yaml.safe_load(file)
-        except FileNotFoundError as e:
-            # Handle FileNotFoundError exception
-            self.logger.error(f"An unexpected error occurred: {e}")
-            raise e
-        except Exception as e:
-            # Handle other exceptions
-            self.logger.error(f"An unexpected error occurred: {e}")
-            config = None
+    def get_config(self, config_file):
+        """Load the configuration from a YAML file."""
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(f"Configuration file '{config_file}' not found.")
+        
+        with open(config_file, 'r') as file:
+            config = yaml.safe_load(file)
+        
         return config
 
-    def get_config_value(self, config, key, *keys, default=None):
-        """
-        Retrieve the value from the configuration dictionary based on the provided key(s).
-
-        Args:
-            config (dict): The configuration dictionary to retrieve the value from.
-            key (str): The first key to access the nested dictionary.
-            *keys (str): Additional keys to access further nested dictionaries.
-            default: The default value to return if the key(s) are not found in the configuration dictionary.
-
-        Returns:
-            The value corresponding to the provided key(s) if found, otherwise the default value.
-
-        Examples:
-            loglevel = get_config_value(config, 'loglevel', default='WARNING')
-            trop_lat = get_config_value(config, 'class_attributes', 'trop_lat', default=10)
-        """
+    def get_config_value(self, config, *keys, default=None):
+        """Retrieve a nested configuration value."""
+        value = config
         try:
-            value = config[key]
-            for k in keys:
-                value = value[k]
-            return value
-        except (KeyError, TypeError):
+            for key in keys:
+                value = value[key]
+        except KeyError:
             return default
+        return value
 
     def open_dataset(self, path_to_netcdf: str) -> object:
         """
