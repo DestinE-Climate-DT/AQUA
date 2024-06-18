@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """ The tropical rainfall module"""
 
 from .src.tropical_rainfall_tools import ToolsClass

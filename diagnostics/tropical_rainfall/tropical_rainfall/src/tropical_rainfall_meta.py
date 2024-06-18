@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from .tropical_rainfall_main import MainClass
 
 # Full import

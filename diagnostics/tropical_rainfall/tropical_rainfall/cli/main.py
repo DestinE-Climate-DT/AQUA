@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+'''
+Tropical Rainfall command line main functions
+'''
+
 import os
 import shutil
 import sys
@@ -96,9 +102,9 @@ def query_yes_no(question, default="yes"):
     valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
     if default is None:
         prompt = " [y/n] "
-    elif default == "yes":
+    elif default is "yes":
         prompt = " [Y/n] "
-    elif default == "no":
+    elif default is "no":
         prompt = " [y/N] "
     else:
         raise ValueError(f"invalid default answer: {default}")

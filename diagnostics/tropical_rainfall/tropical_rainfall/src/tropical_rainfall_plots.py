@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.gridspec import GridSpec

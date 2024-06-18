@@ -8,7 +8,7 @@ version = "0.0.1"
 description = "A Python package for analyzing tropical rainfall data."
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [{ name = "Natalia Nazarova", email = "natalia.nazarova@polito.it" }]
-keywords = ["climate", "meteorology", "rainfall", "data-analysis"]
+keywords = ["climate", "rainfall", "data-analysis"]
 classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
@@ -17,6 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Atmospheric Science"
 ]
 license = {text = "MIT License"}
@@ -26,6 +28,7 @@ dependencies = [
 ]
 
 [tool.setuptools.package-data]
+platforms = ["any"]
 tropical_rainfall = ["config/config-tropical-rainfall.yml"]
 
 [project.scripts]

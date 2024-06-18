@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """The module contains Tropical Precipitation Diagnostic:
 
 .. moduleauthor:: AQUA team <natalia.nazarova@polito.it>
