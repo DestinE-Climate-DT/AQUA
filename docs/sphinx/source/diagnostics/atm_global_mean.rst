@@ -4,7 +4,7 @@ Atmospheric Global Mean Biases Diagnostic
 Description
 -----------
 
-The tool provides a flexible approach to analyze and visualize 2D biases for multiple atmospheric fields. It primarily focuses on comparing the fields with ERA5 data in different seasons to identify areas of significant biases. The tool supports the analysis of variables such as surface temperature, winds, temperature, and moisture along different pressure levels. The data this diagnostic uses to demonstrate the functions is the nextGEMS cycle 3 data, but any data from the catalogue can be passed to the function. For accessing the data the Low Resolution Archive (LRA) is used. The file atm_global_mean.py contains the functions analyze the data and plot biases of the models.
+The tool provides a flexible approach to analyze and visualize 2D biases for multiple atmospheric fields. It primarily focuses on comparing the fields with ERA5 data in different seasons to identify areas of significant biases. The tool supports the analysis of variables such as surface temperature, winds, temperature, and moisture along different pressure levels. The data this diagnostic uses to demonstrate the functions is the nextGEMS cycle 3 data, but any data from the catalog can be passed to the function. For accessing the data the Low Resolution Archive (LRA) is used. The file atm_global_mean.py contains the functions analyze the data and plot biases of the models.
 
 Structure
 ---------
@@ -36,7 +36,7 @@ Import the necessary functions from the ``AQUA`` framework and import the ``atm_
 
 .. code-block:: python
 
-  from aqua import Reader, catalogue, inspect_catalogue
+  from aqua import Reader, catalog, inspect_catalog
   from atm_global_mean import seasonal_bias
   
 To run the diagnostic via the cli simply execute the following:

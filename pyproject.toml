@@ -53,7 +53,7 @@ dependencies = [
     "sparse",
     "xarray",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v1.5.2"
+    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.0.3"
 ]
 
 [project.optional-dependencies]

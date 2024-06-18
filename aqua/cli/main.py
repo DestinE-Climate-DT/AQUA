@@ -12,9 +12,9 @@ from aqua.util import load_yaml, dump_yaml, load_multi_yaml
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from aqua.cli.parser import parse_arguments
-from aqua.util.util import HiddenPrints
+from aqua.util.util import HiddenPrints, to_list
 from aqua import __path__ as pypath
-from aqua import catalogue
+from aqua import catalog
 
 # folder used for reading/storing catalogs
 catpath = 'catalogs'
@@ -329,10 +329,10 @@ class AquaConsole():
         else:
             self._add_catalog_default(args.catalog)
 
-        # verify that the new catalog is compatible with AQUA, loading it with catalogue()
+        # verify that the new catalog is compatible with AQUA, loading it with catalog()
         try:
             with HiddenPrints():
-                catalogue()
+                catalog()
         except Exception as e:
             self.remove(args)
             self.logger.error('Current catalog is not compatible with AQUA, removing it for safety!')
@@ -385,7 +385,7 @@ class AquaConsole():
                 self.logger.error('Available catalogs are: %s', os.listdir(f'{self.aquapath}/{catpath}'))
                 sys.exit(1)
         else:
-            self.logger.error("Catalog %s already installed in %s, please consider `aqua update`.",
+            self.logger.error("Catalog %s already installed in %s, please consider `aqua update` or `aqua set`",
                               catalog, cdir)
             sys.exit(1)
 
@@ -420,7 +420,22 @@ class AquaConsole():
 
         self.logger.info('Setting catalog name to %s', catalog)
         cfg = load_yaml(self.configfile)
-        cfg['catalog'] = catalog
+        if cfg['catalog'] is None:
+            self.logger.debug('No catalog previously installed: setting catalog name to %s', catalog)
+            cfg['catalog'] = catalog
+        else:
+            if catalog not in to_list(cfg['catalog']):
+                self.logger.debug('Adding catalog %s to the existing list %s', catalog, cfg['catalog'])
+                cfg['catalog'] = [catalog] + to_list(cfg['catalog'])
+            else:
+                if isinstance(cfg['catalog'], list):
+                    other_catalogs = [x for x in to_list(cfg['catalog']) if x != catalog]
+                    self.logger.debug('Catalog %s is already there, setting it as first entry before %s', catalog, other_catalogs)
+                    cfg['catalog'] = [catalog] + other_catalogs
+                else:
+                    self.logger.debug('Catalog %s is already there, but is the only installed', catalog)
+                    cfg['catalog'] = catalog
+    
         dump_yaml(self.configfile, cfg)
 
     def remove(self, args):
@@ -439,10 +454,27 @@ class AquaConsole():
                 os.unlink(cdir)
             else:
                 shutil.rmtree(cdir)
+            self._clean_catalog(args.catalog)
         else:
             self.logger.error('Catalog %s is not installed in %s, cannot remove it',
                               args.catalog, cdir)
             sys.exit(1)
+
+    def _clean_catalog(self, catalog):
+            
+        """
+        Remove catalog from the configuration file
+        """
+
+        cfg = load_yaml(self.configfile)
+        if isinstance(cfg['catalog'], str):
+            cfg['catalog'] = None
+        else:
+            cfg['catalog'].remove(catalog)
+        self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
+        dump_yaml(self.configfile, cfg)
+
+
 
     def remove_file(self, args):
         """Add a personalized file to the fixes/grids folder

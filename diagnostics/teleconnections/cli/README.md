@@ -75,7 +75,7 @@ NAO:
 ## Computational requirements
 
 The diagnostic require to have the correct environment loaded.
-It requires in order to produce all the figures if `--ref` is set the ERA5 reanalysis data in the catalogue, as `model=ERA5`, `exp=era5`, `source=monthly`.
+It requires in order to produce all the figures if `--ref` is set the ERA5 reanalysis data in the catalog, as `model=ERA5`, `exp=era5`, `source=monthly`.
 We provide a slurm script to run the diagnostic but the execution on a low resolution archive is very fast and an interactive session is sufficient.
 
 Please note that a wrapper to execute all the diagnostics is provided in the `cli/aqua-analysis` folder.

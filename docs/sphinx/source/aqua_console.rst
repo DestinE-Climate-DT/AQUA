@@ -1,9 +1,9 @@
 .. _aqua-console:
 
-Configuration and Catalogue manager
+Configuration and catalog manager
 ===================================
 
-Since ``v0.9`` the possibility to manage where the configuration and catalogue files are stored has been added.
+Since ``v0.9`` the possibility to manage where the configuration and catalog files are stored has been added.
 This is based on a command line interface which can also handle fixes and grids files. 
 Here we give a brief overview of the features.
 If you are a developer, you may want to read the :ref:`dev-notes` section.
@@ -55,6 +55,10 @@ By default, this will be ``$HOME/.aqua``. It is possible to specify from where t
 It is also possible to ask for an editable installation, so that only links are created, ideal for developers, 
 which can keep their catalog or fixes files under version control.
 
+.. option:: machine
+
+    The name of the machine where you are installing. It is an optional argument to simplify analysis on specific system as levante or lumi.
+
 .. option:: --path, -p <path>
 
     The folder where the configuration file is copied to. Default is ``$HOME/.aqua``.
@@ -72,24 +76,25 @@ which can keep their catalog or fixes files under version control.
 
 .. _aqua-add:
 
-aqua add <catalogue>
+aqua add <catalog>
 --------------------
 
-This command adds a catalogue to the list of available catalogues.
-It will copy the catalogue folder and files to the destination folder.
+This command adds a catalog to the list of available catalogs.
+It will copy the catalog folder and files to the destination folder.
 As before, it is possible to specify if symbolic links have to be created
-and it is possible to install extra catalogues not present in the AQUA release.
+and it is possible to install extra catalogs not present in the AQUA release.
+Multiple catalogs can be installed with multiple calls to `aqua add`
 
 .. option:: catalog
 
-    The name of the catalogue to be added.
+    The name of the catalog to be added.
     It can be also a path pointing to a specific folder where an AQUA compatible catalog can be found
     This is a mandatory field.
 
 .. option:: --editable, -e <path>
 
-    It installs the catalogue based on the path given.
-    It will create a symbolic link to the catalogue folder.
+    It installs the catalog based on the path given.
+    It will create a symbolic link to the catalog folder.
     This is very recommended for developers. Please read the :ref:`dev-notes` section.
 
 .. _aqua-list:
@@ -97,8 +102,8 @@ and it is possible to install extra catalogues not present in the AQUA release.
 aqua list
 ---------
 
-This command lists the available catalogues in the installation folder.
-It will show also if a catalogue is installed in editable mode.
+This command lists the available catalogs in the installation folder.
+It will show also if a catalog is installed in editable mode.
 
 .. option:: --all, -a
 
@@ -106,10 +111,10 @@ It will show also if a catalogue is installed in editable mode.
 
 .. _aqua-update:
 
-aqua update <catalogue>
+aqua update <catalog>
 -----------------------
 
-This command will check if there is a new version of the catalogue available and update it.
+This command will check if there is a new version of the catalog available and update it by overwriting the current installation.
 
 .. warning::
 
@@ -117,30 +122,26 @@ This command will check if there is a new version of the catalogue available and
 
 .. _aqua-remove:
 
-aqua remove <catalogue>
+aqua remove <catalog>
 -----------------------
 
-It removes a catalogue from the list of available catalogues.
-This means that the catalogue folder will be removed from the installation folder or the link will be deleted
-if the catalogue is installed in editable mode.
+It removes a catalog from the list of available catalogs.
+This means that the catalog folder will be removed from the installation folder or the link will be deleted
+if the catalog is installed in editable mode.
 
 .. _aqua-set:
 
-aqua set <catalogue>
+aqua set <catalog>
 --------------------
 
-This command sets the default catalogue to be used.
-
-.. warning::
-    At the actual stage of development, the catalogue coincide with a machine.
-    This command is then setting the machine name to be used in the configuration file.
+This command sets the default main catalog to be used. 
 
 .. _aqua-uninstall:
 
 aqua uninstall
 --------------
 
-This command removes the configuration and catalogue files from the installation folder.
+This command removes the configuration and catalog files from the installation folder.
 If the installation was done in editable mode, only the links will be removed.
 
 .. note::

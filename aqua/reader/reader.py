@@ -2,15 +2,10 @@
 
 import os
 import re
-
 import types
 import shutil
-import intake
 import intake_esm
-
 import xarray as xr
-
-# from metpy.units import units, DimensionalityError
 
 import smmregrid as rg
 
@@ -24,7 +19,7 @@ from .streaming import Streaming
 from .fixer import FixerMixin
 from .regrid import RegridMixin
 from .timmean import TimmeanMixin
-from .reader_utils import check_catalog_source, group_shared_dims, set_attrs
+from .reader_utils import group_shared_dims, set_attrs
 from .reader_utils import configure_masked_fields
 
 # default spatial dimensions and vertical coordinates
@@ -47,7 +42,8 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
     instance = None  # Used to store the latest instance of the class
 
-    def __init__(self, model=None, exp=None, source=None, fix=True,
+    def __init__(self, model=None, exp=None, source=None, catalog=None,
+                 fix=True,
                  regrid=None, regrid_method=None,
                  areas=True, datamodel=None,
                  streaming=False, stream_generator=False,
@@ -60,9 +56,11 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         `config/config.yaml` to identify the required data.
 
         Args:
-            model (str, optional): Model ID. Defaults to "ICON".
-            exp (str, optional): Experiment ID. Defaults to "tco2559-ng5".
-            source (str, optional): Source ID. Defaults to None.
+            model (str): Model ID. Mandatory
+            exp (str): Experiment ID. Mandatory.
+            source (str): Source ID. Mandatory
+            catalog (str, optional): Catalog where to search for the triplet.  Default to None will allow for autosearch in 
+                                     the installed catalogs. 
             regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
             regrid_method (str, optional): CDO Regridding regridding method. Read from grid configuration.
                                            If not specified anywhere, using "ycon".
@@ -79,14 +77,14 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                                       Defaults to log_level_default of loglevel().
             nproc (int,optional): Number of processes to use for weights generation. Defaults to 4.
             aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
-                                         Defaults to None (using default from catalogue, recommended).
+                                         Defaults to None (using default from catalog, recommended).
             chunks (str or dict, optional): chunking to be used for GSV access.
-                                            Defaults to None (using default from catalogue, recommended).
+                                            Defaults to None (using default from catalog, recommended).
                                             If it is a string time chunking is assumed.
                                             If it is a dictionary the keys 'time' and 'vertical' are looked for.
                                             Time chunking can be one of S (step), 10M, 15M, 30M, h, 1h, 3h, 6h, D, 5D, W, M, Y.
                                             Vertical chunking is expressed as the number of vertical levels to be used.
-            **kwargs: Arbitrary keyword arguments to be passed as parameters to the catalogue entry.
+            **kwargs: Arbitrary keyword arguments to be passed as parameters to the catalog entry.
                       'zoom', meant for HEALPix grid, is a predefined one which will allow for multiple gridname definition   
 
         Returns:
@@ -101,6 +99,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         self.exp = exp
         self.model = model
+        self.source = source
         self.regrid_method = regrid_method
         self.nproc = nproc
         self.vert_coord = None
@@ -134,11 +133,11 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         self.sample_data = None #used to avoid multiple calls of retrieve_plain
 
         # define configuration file and paths
-        Configurer = ConfigPath()
+        Configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
         self.configdir = Configurer.configdir
         self.machine = Configurer.get_machine()
         self.config_file = Configurer.config_file
-        self.catalog_file, self.machine_file = Configurer.get_catalog_filenames()
+        self.cat, self.catalog_file, self.machine_file = Configurer.deliver_intake_catalog(catalog=catalog, model=model, exp=exp, source=source)
         self.fixer_folder, self.grids_folder = Configurer.get_reader_filenames()
 
 
@@ -147,11 +146,12 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         
         # access the catalog
-        self.cat = intake.open_catalog(self.catalog_file)
+        #self.cat = intake.open_catalog(self.catalog_file)
 
         # check source existence
-        self.source = check_catalog_source(self.cat, self.model, self.exp,
-                                           source, name="catalog")
+        #self.source = check_catalog_source(self.cat, self.model, self.exp,
+        #                                   source, name="catalog")
+        
 
         # load the catalog
         self.esmcat = self.cat[self.model][self.exp][self.source](**kwargs, **intake_vars)
@@ -512,7 +512,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         Arguments:
             var (str, list): the variable(s) to retrieve. Defaults to None. If None, all variables are retrieved.
-            level (list, float, int): Levels to be read, overriding default in catalogue source (only for FDB) .
+            level (list, float, int): Levels to be read, overriding default in catalog source (only for FDB) .
             startdate (str): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             history (bool): If you want to add to the metadata history information about retrieve. Defaults to True.
@@ -546,7 +546,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                     loadvar = metadata.get('variables')
                     
                     if loadvar is None:
-                        loadvar = [self.esmcat._request['param']]  # retrieve var from catalogue
+                        loadvar = [self.esmcat._request['param']]  # retrieve var from catalog
         
                     if not isinstance(loadvar, list):
                         loadvar = [loadvar]
@@ -562,7 +562,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         fiter = False
         ffdb = False
-        # If this is an ESM-intake catalogue use first dictionary value,
+        # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
             data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
@@ -1018,12 +1018,12 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         """
         Read fdb data. Returns an iterator or dask array.
         Args:
-            esmcat (intake catalogue): the intake catalogue to read
+            esmcat (intake catalog): the intake catalog to read
             var (str): the shortname of the variable to retrieve
             startdate (str): a starting date and time in the format YYYYMMDD:HHTT
             enddate (str): an ending date and time in the format YYYYMMDD:HHTT
             dask (bool): return directly a dask array instead of an iterator
-            level (list, float, int): level to be read, overriding default in catalogue
+            level (list, float, int): level to be read, overriding default in catalog
         Returns:
             An xarray.Dataset or an iterator over datasets
         """
@@ -1046,7 +1046,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                 self.logger.warning("Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value")
     
         if dask:
-            if chunks:  # if the chunking or aggregation option is specified override that from the catalogue
+            if chunks:  # if the chunking or aggregation option is specified override that from the catalog
                 data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
                               chunks=chunks, logging=True, loglevel=self.loglevel).to_dask()
             else:
@@ -1150,7 +1150,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             if "fixer_name" in metadata.keys():
                 print("  Fixer name is %s" % metadata["fixer_name"])
             else:
-                # TODO: to be removed when all the catalogues are updated
+                # TODO: to be removed when all the catalogs are updated
                 print("  Fixes: %s" % self.fixes)
 
         if self.dst_grid_name:

@@ -1,7 +1,0 @@
-lumi:
-  paths:
-    grids: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids
-    weights: /pfs/lustrep3/projappl/project_465000454/data/AQUA/weights
-    areas: /pfs/lustrep3/projappl/project_465000454/data/AQUA/areas
-  intake:
-    LRA_LUMI: /pfs/lustrep3/projappl/project_465000454/data/AQUA/datasets

@@ -40,8 +40,8 @@ class GSVSource(base.DataSource):
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
                  loglevel='WARNING', **kwargs):
         """
-        Initializes the GSVSource class. These are typically specified in the catalogue entry,
-        but can also be specified upon accessing the catalogue.
+        Initializes the GSVSource class. These are typically specified in the catalog entry,
+        but can also be specified upon accessing the catalog.
 
         Args:
             request (dict): Request dictionary
@@ -60,8 +60,8 @@ class GSVSource(base.DataSource):
                                       Defaults to "h".
             startdate (str, optional): Start date for request. Defaults to None.
             enddate (str, optional): End date for request. Defaults to None.
-            var (str, optional): Variable ID. Defaults to those in the catalogue.
-            metadata (dict, optional): Metadata read from catalogue. Contains path to FDB.
+            var (str, optional): Variable ID. Defaults to those in the catalog.
+            metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
@@ -97,7 +97,7 @@ class GSVSource(base.DataSource):
         self.timeshift = timeshift
         self.itime = 0  # position of time dim
 
-        if not var:  # if no var provided keep the default in the catalogue
+        if not var:  # if no var provided keep the default in the catalog
             self._var = request["param"]
         else:
             self._var = var
@@ -165,7 +165,7 @@ class GSVSource(base.DataSource):
         self.bridge_end_date = read_bridge_end_date(bridge_end_date)  # HACK
         
         if self.bridge_end_date and not self.fdbpath_bridge and not self.fdbhome_bridge:
-            raise ValueError('Bridge end date requested but FDB path not specified in catalogue.')
+            raise ValueError('Bridge end date requested but FDB path not specified in catalog.')
 
         if self.bridge_end_date == "complete" or not self.bridge_end_date or (
                 self.bridge_end_date and
@@ -563,7 +563,7 @@ class GSVSource(base.DataSource):
         """
 
         if not self.fdbpath and not self.fdbpath:
-            raise ValueError('Automatic dates requested but FDB path not specified in catalogue.')
+            raise ValueError('Automatic dates requested but FDB path not specified in catalog.')
 
         yaml = YAML() 
   
@@ -589,7 +589,7 @@ class GSVSource(base.DataSource):
         datesel.sort()
 
         if len(datesel) == 0:
-            raise ValueError('Auto date selection in catalogue but no valid dates found in FDB')
+            raise ValueError('Auto date selection in catalog but no valid dates found in FDB')
         else:
             if start_date == 'auto':
                 start_date = datesel[0] + 'T0000'

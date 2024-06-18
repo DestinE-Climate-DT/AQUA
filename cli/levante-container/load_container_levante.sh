@@ -12,7 +12,8 @@ else
     # Your subsequent commands here
 fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-AQUA_container="/work/bb1153/b382289/container/AQUA/aqua-v0.9.1.sif"
+AQUA_container="/work/bb1153/b382289/container/AQUA/aqua-v0.10.sif"
+GRID_DEFINITION_PATH="/work/bb1153/b382321/grid_definitions"
 
 # Simple command line parsing
 user_defined_aqua="ask"

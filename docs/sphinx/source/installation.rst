@@ -123,22 +123,30 @@ If you do not agree, you will need to call ``load_aqua.sh`` manually every time 
 .. note ::
     If you encounter any issues with the installation script, please refer to the :ref:`faq` section.
 
+.. _installation-levante:
+
 Installation on Levante HPC at DKRZ
 -----------------------------------
 
 You can follow the mamba installation process described in the previous section.
-
-The only issue regards the availability of the FDB5 binary library (``libfdb5.so``) since
-at the moment a specific module for levante seems not to be available.
-
-You can either compile your own copy and then make it available (download the source code from ``https://github.com/ecmwf/fdb``),
-or you can use our precompiled version by setting
+In order to use the FDB access, you need to load the FDB5 binary library (``libfdb5.so``).
+At the moment a specific module for levante seems not to be available, so you can either compile your own copy and then make it available
+(download the source code from ``https://github.com/ecmwf/fdb``), or you can use our precompiled version by setting
 
 .. code-block:: bash
 
     export LD_LIBRARY_PATH=/work/bb1153/b382075/aqua/local/lib:$LD_LIBRARY_PATH 
     
 in ``.bash_profile`` and in ``.bashrc`` in your home directory.
+
+The GSV package will also require, in order to correctly decode the unstructured grid, an environment variable to be set:
+
+.. code-block:: bash
+
+    export GRID_DEFINITION_PATH=/work/bb1153/b382321/grid_definitions
+
+This path is the one where the grid definitions are stored, and it is necessary for the GSV package to work correctly.
+Also in this case, you can set the environment variable in your ``.bash_profile`` and in ``.bashrc`` in your home directory.
 
 Installation and use of the AQUA container
 ------------------------------------------

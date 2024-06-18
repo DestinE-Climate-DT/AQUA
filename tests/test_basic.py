@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from aqua import Reader, catalogue
+from aqua import Reader, catalog
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
@@ -26,12 +26,12 @@ class TestAqua:
         except ImportError:
             assert False, "Module {} could not be imported".format(module_name)
 
-    def test_aqua_catalogue(self):
+    def test_aqua_catalog(self):
         """
-        Test if the catalogue function returns a non-empty list
+        Test if the catalog function returns a non-empty list
         """
-        catalog = catalogue()
-        assert len(catalog) > 0
+        cat = catalog()
+        assert len(cat) > 0
 
     def test_reader_init(self):
         """
@@ -77,7 +77,7 @@ class TestAqua:
 
     def test_catalog_override(self):
         """
-        Test the compact catalogue override functionality
+        Test the compact catalog override functionality
         """
         reader = Reader(model="IFS", exp="test-tco79", source="short_override",
                         loglevel=loglevel)

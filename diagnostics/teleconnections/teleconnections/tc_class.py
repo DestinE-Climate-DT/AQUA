@@ -18,7 +18,7 @@ import pandas as pd
 
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.reader import Reader, inspect_catalogue
+from aqua.reader import Reader, inspect_catalog
 from aqua.util import ConfigPath, create_folder
 from teleconnections.index import station_based_index, regional_mean_anomalies
 from teleconnections.plots import index_plot
@@ -407,8 +407,8 @@ class Teleconnection():
         self.catalog = aqua_config.catalog
         self.logger.debug("Catalog: %s", self.catalog)
 
-        # Check that the data is available in the catalogue
-        if inspect_catalogue(model=self.model, exp=self.exp,
+        # Check that the data is available in the catalog
+        if inspect_catalog(model=self.model, exp=self.exp,
                              source=self.source,
                              verbose=False) is False:
             raise NoDataError('Data not available')

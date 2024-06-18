@@ -1,7 +1,0 @@
-default:
-  paths: 
-    grids: ./AQUA_tests/grids
-    weights: ./AQUA_tests/weights
-    areas: ./AQUA_tests/weights
-  intake:
-    TEST_PATH: ./AQUA_tests/models

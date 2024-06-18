@@ -41,7 +41,7 @@ stitch:
   n_days_freq: 30 # run stitch nodes (tracks computation) and save tracks every n days
   n_days_ext: 2  # n of days to extend time boundaries not to miss tracks which may start/end before/after the chosen n of days
 
-# path to orography in case file (in case var is not found in the catalogue)
+# path to orography in case file (in case var is not found in the catalog)
 orography:
   file_path: "/users/pghinass/orography/IFS-NEMO/historical-1990/"
   file_name: "orography_r100.nc"

@@ -10,7 +10,7 @@ The Reader class
 ----------------
 
 The ``Reader`` class provides AQUA access to data, developed to offer a centralized common data access point.
-AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogues, 
+AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogs, 
 and delivers xarray objects.
 On top of data access, the ``Reader`` is also able to perform multiple operations on the data:
 interpolation and regridding, spatial and temporal averaging and metadata correction. 
@@ -40,11 +40,11 @@ specifically an ``xarray.Dataset``, where only the metadata are loaded in memory
     on top of the NetCDF format, to `significantly improve the performance <https://ui.adsabs.harvard.edu/abs/2021AGUFMIN15A..08P/abstract>`_
     of the data access.
 
-Catalogue Exploration
+catalog Exploration
 ^^^^^^^^^^^^^^^^^^^^^
 
-To check what is available in the catalogue, we can use the ``inspect_catalogue()`` function.
-Three hierarchical layer structures describe each dataset.
+To check what is available in the catalog, we can use the ``inspect_catalog()`` function.
+Three hierarchical layer structures (e.g AQUA triplet) describe each dataset.
 At the top level, there are *models* (keyword ``model``) (e.g., ICON, IFS-NEMO, IFS-FESOM, etc.). 
 Each model has different *experiments* (keyword ``exp``) and each experiment can have different *sources* (keyword ``source``).
 
@@ -52,17 +52,17 @@ Calling, for example:
 
 .. code-block:: python
 
-    from aqua import inspect_catalogue
-    inspect_catalogue(model='CERES')
+    from aqua import inspect_catalog
+    inspect_catalog(model='CERES')
 
-will return experiments available in the catalogue for model CERES.
+will return experiments available in the catalog for model CERES.
 
 .. warning::
-    The ``inspect_catalogue()`` and the ``Reader`` are based on the catalog and AQUA path configuration.
+    The ``inspect_catalog()`` and the ``Reader`` are based on the catalog and AQUA path configuration.
     If you don't find a source you're expecting, please check these are correctly set (see :ref:`getting_started`).
 
-If you want to have a complete overview of the sources available in the catalogue, you can use the ``catalogue()`` function.
-This will return a list of all the sources available in the catalogue, listed by model and experiment.
+If you want to have a complete overview of the sources available in the catalog, you can use the ``catalog()`` function.
+This will return a list of all the sources available in the catalog, listed by model and experiment.
 
 Reader basic usage
 ^^^^^^^^^^^^^^^^^^
@@ -75,6 +75,10 @@ The basic call to the ``Reader`` is:
     from aqua import Reader
     reader = Reader(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly')
     data = reader.retrieve()
+
+.. note::
+    If multiple catalog are installed, a browsing will be done to search for the required triplet.
+    In case you want to speed up the process, you can point to a specific catalog with the `catalog` keyword. 
 
 This will return a ``Reader`` object that can be used to access the data.
 The ``retrieve()`` method will return an ``xarray.Dataset`` to be used for further processing.
@@ -105,7 +109,7 @@ Please check the :ref:`iterators` section for more details.
 
 .. note::
     Dask access to data is available also for FDB data.
-    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalogue,
+    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalog,
     we suggest to read the :ref:`FDB_dask` section.
 
 Regrid and interpolation capabilities
@@ -138,7 +142,8 @@ Concept
 The idea of the regridder is first to generate the weights for the interpolation and
 then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already
-existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/catalog.yaml`` file.
+existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/machine.yaml`` file. 
+This can have a `default` argument but can also specific for each machine you are working on. 
 A list of predefined target grids (only regular lon-lat for now) is available in the ``config/grids/default.yaml`` file.
 For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, etc.
 
@@ -203,8 +208,8 @@ By default, fixes files with the name of the model or the name of the DestinE pr
 
 If you need to develop your own, fixes can be specified in two different ways:
 
-- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalogue entry.
-  This represents fixes that have a common nickname which can be used in multiple sources when defining the catalogue.
+- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalog source entry.
+  This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog.
   There is the possibility of specifing a **parent** fix so that a fix can be re-used with minor corrections,
   merging small changes to a larger ``fixer_name``.
 - Using the source-based definition.
@@ -363,10 +368,10 @@ Data Model and Coordinates Correction
 The fixer can adopt a common *coordinate data model*
 (default is the CDS data model).
 If this data model is not appropriate for a specific source,
-it is possible to specify a different one in the catalogue.
+it is possible to specify a different one in the catalog source.
 
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
-it is possible to specify a custom fix in the catalogue in the **coords** or **dims** blocks
+it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
 For example, if the longitude coordinate is called ``longitude`` instead of ``lon``,
 it is possible to specify a fix like:

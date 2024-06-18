@@ -1,40 +1,25 @@
 #!/bin/bash
-
-#SBATCH -A project_465000454
-#SBATCH --cpus-per-task=1
-#SBATCH -n q
-#SBATCH -t 00:30:00 #change the wallclock
-#SBATCH -J aqua_jupyter
-#SBATCH --output=output_%j.out
-#SBATCH --error=output_%j.err
-#SBATCH -p debug    #change the partition
+#SBATCH --exclusive
+#SBATCH --time 10:00:00
+#SBATCH --job-name graphcast_nb
+#SBATCH --output jupyter-notebook-%J.out
+#SBATCH --error jupyter-notebook-%J.err
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=40
+#SBATCH --account=bsc32
+#SBATCH --qos acc_bsces
 
 AQUA_path=$AQUA
-AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.10.sif
-FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml
-GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
-GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
-
+# If you don't have access to ehpc01, use the below bsc32 path
+# AQUA_container="/gpfs/projects/bsc32/DestinE/containers/aqua/aqua_0.9.2.sif"
+AQUA_container="/gpfs/projects/ehpc01/containers/aqua_0.10.sif"
 # singularity shell can be an option depending on the requirement
 singularity exec \
     --cleanenv \
-    --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
-    --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
-    --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA_path \
     --env AQUA=$AQUA_path \
-    --bind /pfs/lustrep1/ \
-    --bind /pfs/lustrep2/ \
-    --bind /pfs/lustrep3/ \
-    --bind /pfs/lustrep4/ \
-    --bind /pfs/lustrep3/scratch/ \
-    --bind /appl/local/climatedt/ \
-    --bind /flash/project_465000454 \
-    --bind /projappl/ \
-    --bind /project \
-    --bind /scratch/ \
     $AQUA_container \
     bash -c \
     ' 

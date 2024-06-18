@@ -53,7 +53,7 @@ def check_variable_name(data, loglevel= "WARNING"):
         if var in var_list:
             required_vars.append(var)
     if required_vars != []:
-        logger.debug("This are the variables %s available for the diags in the catalogue.", required_vars)
+        logger.debug("This are the variables %s available for the diags in the catalog.", required_vars)
         data = data[required_vars]
         logger.debug("Selected this variables")
         for var in required_vars:
@@ -64,7 +64,7 @@ def check_variable_name(data, loglevel= "WARNING"):
                 data = data.rename({var: "avg_thetao"})
                 logger.debug("renaming %s as avg_thetao", var)
     else:
-        raise ValueError("Required variable avg_so and avg_thetao is not available in the catalogue")
+        raise ValueError("Required variable avg_so and avg_thetao is not available in the catalog")
     vertical_coord = find_vert_coord(data)[0]
     data = data.rename({vertical_coord: "lev"})
     data = kelvin_to_celsius(data, "avg_thetao")

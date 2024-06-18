@@ -6,12 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
+
+## [v0.10]
+
+Main changes are:
+1. The catalog is externalized and AQUA supports multiple catalogs. It is now mandatory to use the aqua console to add a new catalog to the AQUA installation.
+
+AQUA core complete list:
+- Catalog is externalized to a separate repository (#1200)
+- AQUA is now capable of accessing multiple catalogs at the same time (#1205)
+- MN5 container for AQUA (#1213)
+
+## [v0.9.2]
+
+Main changes are:
+1. The `aqua-config.yaml` file is replaced by a template to be installed. The aqua console is now mandatory to use aqua.
+2. `$AQUA` removed from the `Configdir()` autosearch, an installation with the aqua console is mandatory to use aqua.
+3. AQUA cli command to provide the installation path with `--path` option. This can substitute the `$AQUA` variable in scripts.
+4. The catalog file is now split into `machine.yaml` and `catalog.yaml` to support machine dependency of data path and intake variables as kwargs into each catalog.
+
+AQUA core complete list:
+- More detailed documentation for Levante and Lumi installation (#1210)
 - `aqua-config.yaml` replaced by a template to be installed on each machine (#1203)
 - `$AQUA` removed from the `Configdir()` autosearch (#1208)
 - AQUA cli command to provide the installation path with `--path` option (#1193)
 - Restructure of the `machine` and `catalog` instances to support a catalog based development (#1186)
 - AQUA installation via command line support a machine specification `aqua install lumi` (#1186)
 - Introduction of `machine.yaml` file to support machine dependency of data path and intake variables as kwargs into each catalog (#1186)
+- Removing all the AQUA catalogs from the repo, now using https://github.com/DestinE-Climate-DT/Climate-DT-catalog (#1200)
 
 ## [v0.9.1]
 
@@ -64,7 +86,7 @@ Main changes are:
 
 AQUA core complete list:
 - Tco399-eORCA025 control, historical and scenario runs added to Lumi catalog (#1070)
-- ESA-CCI-L4 dataset added for Lumi and Levante catalogues (#1090)
+- ESA-CCI-L4 dataset added for Lumi and Levante catalogs (#1090)
 - Various fixes to the documentation (#1106)
 - Fixer for dimensions is now available (#1050)
 
@@ -87,7 +109,7 @@ AQUA core complete list:
 - Support for Python 3.12 (#1052)
 - Extending pytests (#1053)
 - More efficient use of `_retrieve_plain` for acessing sample data (#1048)
-- Introducing the catalogue structure for Leonardo HPC (#1049)
+- Introducing the catalog structure for Leonardo HPC (#1049)
 - Introducing an rsync script between LUMI and levante for grids (#1044)
 - Introducing a basic jinja-based catalog entry generator (#853)
 - Adapt NextGEMS sources and fixes to the final DestinE governance (#1008, #1035)
@@ -112,7 +134,7 @@ AQUA diagnostics complete list:
 ## [v0.7.3]
 
 Main changes are:
-1. IFS-FESOM NextGEMS4 and storylines simulations available in the catalogue
+1. IFS-FESOM NextGEMS4 and storylines simulations available in the catalog
 2. Vertical chunking for GSV intake access
 3. FDB monthly average data access is available
 4. kwargs parsing of reader arguments (e.g. allowing for zoom and ensemble support)
@@ -135,9 +157,9 @@ AQUA diagnostics complete list:
 ## [v0.7.2]
 
 Main changes are:
-1. `mtpr` is used for precipitation in all the catalogue entries
+1. `mtpr` is used for precipitation in all the catalog entries
 2. LRA CLI support for parallel SLURM submission and other improvements
-3. ICON production simulations available in the catalogue
+3. ICON production simulations available in the catalog
 4. `detrend()` method is available in the `Reader` class
 5. All the diagnostics have dask support in their CLI
 
@@ -172,7 +194,7 @@ AQUA diagnostic complete list:
 Main changes are:
 1. Complete update of the timeseries diagnostic
 2. LRA CLI for parallel SLURM submission
-3. SSP370 production scenario for IFS-NEMO available in the catalogue
+3. SSP370 production scenario for IFS-NEMO available in the catalog
 
 AQUA core complete list:
 - Plot timeseries is now a framework function (#907)
@@ -210,7 +232,7 @@ Complete list:
 - Experiments `a0gg` and `a0jp` added to the IFS-NEMO catalog, and removal of `historical-1990-dev-lowres` (#889)
 - Updated notebooks to ensure consistency across different machines by using observational datasets, and included a demo of aqua components for Lumi (#868)
 - Scripts for pushing figures and docs to aqua-web (#880)
-- Fixed catalogue for historical-1990-dev-lowres source (#888, #895)
+- Fixed catalog for historical-1990-dev-lowres source (#888, #895)
 - data_models src files are now in the aqua/data_models folder, with minor modifications (#884)
 - Warning options based on the `loglevel` (#852)
 - Timeseries: formula bugfix and annual plot only for complete years (#876)
@@ -272,13 +294,13 @@ Main changes are:
 2. New fixes that targets the DestinE updated Data Governance
 
 Complete list:
-- IFS-FESOM historical-1990-dev-lowres with new data governance added to the catalogue (#770)
+- IFS-FESOM historical-1990-dev-lowres with new data governance added to the catalog (#770)
 - AtmoGlobalMean diagnostic improvements (#722)
 - Teleconnections diagnostic improvements (#722)
 - Read only one level for retrieving 3D array metadata, select single level for retrieve (#713)
-- IFS-FESOM historical-1990-dev-lowres with new data governance added to the catalogue
-- Fix mismatch between var argument and variables specified in catalogue for FDB (#761)
-- Compact catalogues using yaml override syntax (#752)
+- IFS-FESOM historical-1990-dev-lowres with new data governance added to the catalog
+- Fix mismatch between var argument and variables specified in catalog for FDB (#761)
+- Compact catalogs using yaml override syntax (#752)
 - Fix loading source grid file before smmregrid weight generation (#756)
 
 ## [v0.5.2-beta]
@@ -303,7 +325,7 @@ Complete list:
 - Change fixer_name to fixer_name (#703)
 - Reorganization of logging calls (#700)
 - Accessor to use functions and reader methods as if they were methods of xarray objects (#716)
-- Suggestions are printed if a model/exp/source is not found while inspecting the catalogue (#721)
+- Suggestions are printed if a model/exp/source is not found while inspecting the catalog (#721)
 - Improvements in the single map plot function (#717)
 - Minor metadata fixes (logger newline and keep "GRIB_" in attrs) (#715)
 - LRA fix now correctly aggregating monthly data to yearly when a full year is available (#696)
@@ -315,12 +337,12 @@ Complete list:
 ## [v0.5.1]
 
 Main changes are:
-1. A new `Reader` method `info()` is available to print the catalogue information
+1. A new `Reader` method `info()` is available to print the catalog information
 2. Grids are now stored online and a tool to deploy them on the `cli` folder is available
 
 Complete list:
 - Fix attributes of DataArrays read from FDB (#686)
-- Reader.info() method to print the catalogue information (#683)
+- Reader.info() method to print the catalog information (#683)
 - Simpler reader init() by reorganizing the calls to areas and regrid weights configuration and loading (#682)
 - Optional autosearch for vert_coord (#682)
 - plot_single_map adapted to different coordinate names and bugfixes (#680)
@@ -349,7 +371,7 @@ Complete list:
 - Cleaner mask treatment (Revision of mask structure in the reader #617)
 - Fldmean fix if only one dimension is present for area selection (#640)
 - Adding higher frequency ERA5 data on Levante and Lumi (#628)
-- regrid.yaml files are removed, grid infos are now in the catalogue metadata (#520, #622, #643)
+- regrid.yaml files are removed, grid infos are now in the catalog metadata (#520, #622, #643)
 - Load all available variables in FDB xarray/dask access (#619)
 - Lint standard and enforced in CI (#616)
 - Reader init split with methods (#523)
@@ -384,17 +406,17 @@ Complete list:
 - Orography for tempest extremes TCs detection and update TCs CLI (Orography threshold included and CLI update #404)
 - Improvement of performance indices CLI (Update of ECmean CLI #528)
 - Fix to allow reading a list of multiple variables from FDB (#545)
-- Further improvement of function to inspect the catalogue (#533)
+- Further improvement of function to inspect the catalog (#533)
 - Custom exceptions for AQUA (#518)
 - Speed up of the `retrieve_plain` method (#524)
 - Update documention for adding new data and setting up the container (Increase documentation coverage #519)
 - CLI wrapper for the state-of-the-art diagnostics analysis (#517, #527, #525, #530, #534, #536, #539, #548, #549, #559)
 - Refactor the regrid.yaml as grid-based instead of experiment-based (#291)
 - aqua_common environment simplified and updated (#498)
-- Update available variables in FDB catalogues on lumi (#514)
+- Update available variables in FDB catalogs on lumi (#514)
 - Solve reversed latitudes bug for fixed data (#510)
 - Switch to legacy eccodes tables based on intake source metadata (#493)
-- Add GPM IMERG precipitation data to the catalogue on levante (#505)
+- Add GPM IMERG precipitation data to the catalog on levante (#505)
 - Fix ocean3d diagnostic colorbars not being symmetric when missing values are present (#504) 
 - FDB NEMO test access to data (#488)
 - Xarray dask access to FDB (#476)
@@ -423,7 +445,7 @@ Complete list:
 - Tests missing failure fix (Fix #436 CI workflow passes even if some tests fail #452)
 - FDB/GSV access to IFS control and historical simulations (#434, #458)
 - Climatology support restored in the Reader (Fix for climatology #445)
-- Improvement function to inspect the catalogue (Inspect_catalogue improvement #446)
+- Improvement function to inspect the catalog (Inspect_catalog improvement #446)
 - Minor improvements of the gribber (Fix gribber fdb #427)
 - Allow the LRA generator to work with generators and so with FDB (LRA from fdb on mafalda #430)
 - Fixes only on selected variables (Fixer updates #428)
@@ -505,14 +527,16 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 
 
 - Low resolution archive documentation
-- Fixed a bug in the `Gribber` class that was not reading the correct yaml catalogue file
+- Fixed a bug in the `Gribber` class that was not reading the correct yaml catalog file
 
 ## v0.1-alpha
 
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.9.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.10...HEAD
+[v0.10]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.9.2...v0.10
+[v0.9.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.9.1...v0.9.2
 [v0.9.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.9...v0.9.1
 [v0.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.8.2...v0.9
 [v0.8.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.8.1...v0.8.2

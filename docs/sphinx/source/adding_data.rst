@@ -7,7 +7,7 @@ To add new data the 3-level hierarchy on which AQUA is based, i.e. **model** - *
 specific files must be created within the catalog.
 How to create a new source and add new data is documented in the next sections.
 
-- To add your data to AQUA, you have to provide an ``intake`` catalogue that describes your data,
+- To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data. 
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
@@ -16,7 +16,7 @@ How to create a new source and add new data is documented in the next sections.
   or to add it (see :ref:`grid_definition`).
 
 .. note::
-    A method to add new catalogues to the configuration folder has been developed.
+    A method to add new catalogs to the configuration folder has been developed.
     You can find more information in the :ref:`aqua-add` section.
 
 .. _file-based-sources:
@@ -35,7 +35,7 @@ Let's imagine we have a dataset called ``yearly_SST`` that consists of the follo
 - coordinate variables are ``lat`` and ``lon``, and the time variable is ``time``, all one dimensional
 - data located on the LUMI machine
 
-We will create a catalogue entry that will describe this dataset.
+We will create a catalog entry that will describe this dataset.
 The catalog name will be ``yearly_SST``.
 
 The additional entry in this file will look like this:
@@ -48,7 +48,7 @@ The additional entry in this file will look like this:
         args:
           path: "{{CATALOG_DIR}}/yearly_SST/main.yaml"
 
-The first step is to add this catalogue to the ``config/catalogs/lumi/catalog.yaml`` file.  
+The first step is to add this catalog to the ``config/catalogs/lumi/catalog.yaml`` file.  
 This will create the ``model`` entry within the catalog that can be used later by the ``Reader()``.
 
 .. note::
@@ -71,7 +71,7 @@ We finally need to define the specific experiment file that we linked in the ``m
 using the ``yearly_SST.yaml`` file and saving it in the ``config/catalogs/lumi/catalog/yearly_SST`` directory
 (that we should create first if missing).
 
-The most straightforward intake catalogue describing our dataset will look like this: 
+The most straightforward intake catalog describing our dataset will look like this: 
 
 .. code-block:: yaml
 
@@ -114,8 +114,8 @@ You can add fixes to your dataset by following examples in the ``config/fixes/``
 .. note::
 
     If you want to add a Zarr or GRIB source the syntax may be slightly different,
-    but the general structure of the catalogue will be the same.
-    You can find examples in the existing catalogue or more information on the 
+    but the general structure of the catalog will be the same.
+    You can find examples in the existing catalog or more information on the 
     `intake <https://intake.readthedocs.io/en/stable/>`_ and
     `intake-xarray <https://intake-xarray.readthedocs.io/en/latest/>`_ documentation.
 
@@ -167,14 +167,14 @@ Some of the parameters are here described:
 
 .. option:: request
 
-    - The ``request`` entry in the intake catalogue primarily serves as a template for making data requests,
+    - The ``request`` entry in the intake catalog primarily serves as a template for making data requests,
       following the standard MARS-style syntax used by the GSV retriever. 
     - The ``date`` parameter will be automatically overwritten by the appropriate ``data_start_date``.
       For the ``step`` parameter, when using ``timestyle: step``, setting it to a value other than 0
       signals that the initial steps are missing. 
       This is particularly useful for data sets with irregular step intervals, such as 6-hourly output.
     
-    This documentation provides an overview of the key parameters used in the catalogue, helping users better understand how to configure their data requests effectively.
+    This documentation provides an overview of the key parameters used in the catalog, helping users better understand how to configure their data requests effectively.
 
 .. option:: data_start_date
 
@@ -383,13 +383,13 @@ A standard `lon-lat` grid is defined for basic interpolation and can be used for
 as long as the ``space_coord`` are ``lon`` and ``lat``.
 
 
-Compact catalogues with YAML override
+Compact catalogs with YAML override
 -------------------------------------
 
-In order to avoid having to write the same catalogue entry for each source,
-in AQUA we can use the YAML override functionality also for the intake catalogues.
+In order to avoid having to write the same catalog entry for each source,
+in AQUA we can use the YAML override functionality also for the intake catalogs.
 This allows to write the full rquest information only for a first 
-base catalogue source and then define the following ones as copies of the first,
+base catalog source and then define the following ones as copies of the first,
 overriding only the keys that are different.
 
 For example, let's imagine that we have a first source called ``hourly-native``

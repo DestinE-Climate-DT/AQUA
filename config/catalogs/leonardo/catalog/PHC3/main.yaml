@@ -1,6 +1,0 @@
-sources:
- phc3:
-    description: PHC3 Polar science center Hydrographic Climatology
-    driver: yaml_file_cat
-    args:
-      path: "{{CATALOG_DIR}}/phc3.yaml"

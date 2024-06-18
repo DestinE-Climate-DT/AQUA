@@ -12,10 +12,9 @@ else
     # Your subsequent commands here
 fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.10.sif"
-FDB5_CONFIG_FILE="/scratch/project_465000454/igonzalez/fdb-long/config.yaml"
-GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
-GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
+# If you don't have access to ehpc01, use the below bsc32 path
+# AQUA_container="/gpfs/projects/bsc32/DestinE/containers/aqua/aqua_0.9.2.sif"
+AQUA_container="/gpfs/projects/ehpc01/containers/aqua_0.10.sif"
 
 # Simple command line parsing
 user_defined_aqua="ask"
@@ -72,23 +71,10 @@ log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
 singularity $cmd \
     --cleanenv \
-    --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
-    --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
-    --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
-    --bind /pfs/lustrep1/ \
-    --bind /pfs/lustrep2/ \
-    --bind /pfs/lustrep3/ \
-    --bind /pfs/lustrep4/ \
-    --bind /pfs/lustrep3/scratch/ \
-    --bind /appl/local/climatedt/ \
-    --bind /flash/project_465000454 \
-    --bind /projappl/ \
-    --bind /project \
-    --bind /scratch/ \
     $AQUA_container $script
 
 # Run this script in LUMI in VSCode 

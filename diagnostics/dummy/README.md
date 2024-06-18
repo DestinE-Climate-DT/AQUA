@@ -14,7 +14,7 @@ This list all the files you will find in the dummy diagnostic example. This fold
 
     - **notebooks/**: contains notebooks with examples of how to use the diagnostic. Two different examples are provided, making use of the two different test classes (see below in the Code section)
 
-    - **data/**: contains data for the tests if needed. Please do not commit large files to git. You can add data to the `.gitignore` file if needed. Make always use of the `Reader` class and functions available in the framework to load data. If you need to add data to the catalogue, please contact the AQUA team.
+    - **data/**: contains data for the tests if needed. Please do not commit large files to git. You can add data to the `.gitignore` file if needed. Make always use of the `Reader` class and functions available in the framework to load data. If you need to add data to the catalog, please contact the AQUA team.
 
     - **cli/**: contains the command line interface for your diagnostic. This should be a python executable script, which can be configured from an external yaml file and used to run the diagnostic on one or more experiments without the need of using a specific notebook. If you computation is heavy so that this cannot be done on a login node, please provide also a batch job that can be submitted to SLURM. 
 
@@ -22,7 +22,7 @@ This list all the files you will find in the dummy diagnostic example. This fold
 
 - **tests/**
 
-  - **dummy/**: contains tests for the diagnostic. Please add tests for all the functions you add to the diagnostic. Please load data that are needed for the tests not in the git. You may need to add data to the catalogue for the `ci` catalog. If you need to add data to this catalogue, please contact the AQUA team. Tests run with a github action when you push to the repository in a pull request to the main branch. Note that the workflow file is in the `.github` folder. Modify it accordingly to your diagnostic and uncomment the lines to run the tests when you are ready. Please keep in mind that the suggested way to proceed is based on the creation of a `@pytest.mark.yourdiag` marker so that you can select only the test that you need in the workflow (see the workflow example). This marker has to be added in the `pytest.ini` file.  
+  - **dummy/**: contains tests for the diagnostic. Please add tests for all the functions you add to the diagnostic. Please load data that are needed for the tests not in the git. You may need to add data to the catalog for the `ci` catalog. If you need to add data to this catalog, please contact the AQUA team. Tests run with a github action when you push to the repository in a pull request to the main branch. Note that the workflow file is in the `.github` folder. Modify it accordingly to your diagnostic and uncomment the lines to run the tests when you are ready. Please keep in mind that the suggested way to proceed is based on the creation of a `@pytest.mark.yourdiag` marker so that you can select only the test that you need in the workflow (see the workflow example). This marker has to be added in the `pytest.ini` file.  
 
 - **docs/sphinx/sorce/diagnostics/dummy.rts**: contains the documentation for the diagnostic. Please add documentation for all the functions you add to the diagnostic. The documentation is built with sphinx.
 
