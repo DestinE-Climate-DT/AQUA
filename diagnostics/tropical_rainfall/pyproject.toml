@@ -26,14 +26,10 @@ dependencies = [
 ]
 
 [tool.setuptools.package-data]
-platforms = ["any"]
-tropical_rainfall = ["config-tropical-rainfall.yml"]
+tropical_rainfall = ["config/config-tropical-rainfall.yml"]
 
 [project.scripts]
 tropical_rainfall = "tropical_rainfall.cli.main:main"
 
-[tool.setuptools.dynamic]
-version = { attr = "tropical_rainfall.__version__" }
-
 [tool.setuptools.packages]
-find={}
+find = {}

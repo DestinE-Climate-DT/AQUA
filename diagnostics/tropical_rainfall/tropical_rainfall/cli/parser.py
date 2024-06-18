@@ -23,8 +23,8 @@ def parse_arguments():
     parser.add_argument('-vv', '--very_verbose', action='store_true',
                         help='Increase verbosity of the output to DEBUG loglevel')
 
-    use_config_parser = subparsers.add_parser("use_config", description='Use a new configuration file for Tropical Rainfall')
-    use_config_parser.add_argument('config_file_path', metavar="CONFIG_FILE_PATH", type=str,
+    add_config_parser = subparsers.add_parser("add_config", description='Add and use a new configuration file for Tropical Rainfall')
+    add_config_parser.add_argument('config_file_path', metavar="CONFIG_FILE_PATH", type=str, nargs='?',
                                    help="Path to the configuration file")
 
     parser_dict = {

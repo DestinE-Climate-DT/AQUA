@@ -37,7 +37,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
             if not os.path.exists(config_file):
                 config_file = os.path.join(os.path.dirname(__file__), 'config', 'config-tropical-rainfall.yml')
                 if not os.path.exists(config_file):
-                    raise FileNotFoundError(f"No configuration file found. Please use 'tropical_rainfall use_config' to set one.")
+                    raise FileNotFoundError(f"No configuration file found. Please use 'tropical_rainfall add_config' to set one.")
 
         self.config_file = config_file
 

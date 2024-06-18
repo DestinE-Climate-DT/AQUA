@@ -14,7 +14,7 @@ class TropicalRainfallConsole:
         self.logger = None
 
         self.command_map = {
-            'use_config': self.use_config,
+            'add_config': self.add_config,
         }
 
     def execute(self):
@@ -36,28 +36,43 @@ class TropicalRainfallConsole:
         else:
             method(args)
 
-    def use_config(self, args):
-        """Use a new configuration file for Tropical Rainfall
+    def add_config(self, args):
+        """Add and use a new configuration file for Tropical Rainfall
 
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        self.logger.info('Using new configuration file for Tropical Rainfall')
+        self.logger.info('Adding new configuration file for Tropical Rainfall')
 
-        config_name = os.path.basename(args.config_file_path)
-        config_src = os.path.abspath(args.config_file_path)
-        config_dst = os.path.join(pypath[0], 'config', 'current_config.yml')
-
+        if args.config_file_path:
+            config_name = os.path.basename(args.config_file_path)
+            config_src = os.path.abspath(args.config_file_path)
+        else:
+            config_name = 'config-tropical-rainfall.yml'
+            config_src = os.path.join(pypath[0], 'config', config_name)
+            os.makedirs(os.path.join(pypath[0], 'config'), exist_ok=True)
+            shutil.copy(os.path.join(pypath[0], config_name), config_src)
+        
+        self.logger.debug(f"Source config file path: {config_src}")
         if not os.path.exists(config_src):
             self.logger.error(f"The configuration file {config_src} does not exist.")
             sys.exit(1)
-
+            
+        config_dst = os.path.join(pypath[0], 'config', 'current_config.yml')
+        self.logger.debug(f"Destination config file path: {config_dst}")
         target_dir = os.path.dirname(config_dst)
+        
         if not os.path.exists(target_dir):
+            self.logger.debug(f"Creating target directory: {target_dir}")
             os.makedirs(target_dir, exist_ok=True)
 
+        # Always replace the existing current_config.yml
+        if os.path.exists(config_dst):
+            self.logger.debug(f"Removing existing config file: {config_dst}")
+            os.remove(config_dst)
+
         shutil.copy(config_src, config_dst)
-        self.logger.info(f"New configuration file {config_name} copied to {config_dst}")
+        self.logger.info(f"Configuration file {config_name} copied to {config_dst}")
 
         self.recompile_package()
 
