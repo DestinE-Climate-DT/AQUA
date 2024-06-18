@@ -7,6 +7,7 @@ AQUA command line main functions
 import os
 import shutil
 import sys
+import subprocess
 from aqua.util import load_yaml, dump_yaml, load_multi_yaml
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
@@ -34,6 +35,9 @@ class AquaConsole():
 
         self.command_map = {
             'install': self.install,
+            'enable': {
+                'tropical_rainfall': self.enable_tropical_rainfall,
+            },
             'add': self.add,
             'remove': self.remove,
             'set': self.set,
@@ -51,10 +55,11 @@ class AquaConsole():
         }
 
     def execute(self):
-        """parse AQUA class and run the required command"""
+        """Parse AQUA class and run the required command"""
 
         parser_dict = parse_arguments()
-        args = parser_dict['main'].parse_args(sys.argv[1:])
+        parser = parser_dict['main']
+        args = parser.parse_args(sys.argv[1:])
 
         # Set the log level
         if args.very_verbose or (args.verbose and args.very_verbose):
@@ -66,17 +71,17 @@ class AquaConsole():
         self.logger = log_configure(loglevel, 'AQUA')
 
         command = args.command
-        method = self.command_map.get(command, parser_dict['main'].print_help)
+        method = self.command_map.get(command, parser.print_help)
         if command not in self.command_map:
-            parser_dict['main'].print_help()
+            parser.print_help()
         else:
-            # nested map
+            # Handle nested commands
             if isinstance(self.command_map[command], dict):
-                if args.nested_command:
-                    self.command_map[command][args.nested_command](args)
+                if hasattr(args, 'nested_command') and args.nested_command:
+                    nested_method = self.command_map[command].get(args.nested_command, parser_dict[command].print_help)
+                    nested_method(args)
                 else:
                     parser_dict[command].print_help()
-            # default
             else:
                 method(args)
 
@@ -520,6 +525,22 @@ class AquaConsole():
                 self.logger.error("Existing files in the %s folder are not compatible", kind)
             self.logger.error(e)
             return False
+        
+    def enable_tropical_rainfall(self, args):
+        """Enable Tropical Rainfall package
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self.logger.info('Enabling Tropical Rainfall package')
+
+        # Use pip to install the tropical_rainfall package
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "diagnostics/tropical_rainfall/"])
+            self.logger.info('Tropical Rainfall package enabled successfully')
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to enable Tropical Rainfall package: {e}")
+            sys.exit(1)
 
 
 def main():

@@ -4,11 +4,9 @@
 AQUA command line parser
 '''
 
-
 import argparse
 from aqua import __version__ as version
 from aqua import __path__ as pypath
-
 
 def parse_arguments():
     """Parse arguments for AQUA console"""
@@ -44,7 +42,7 @@ def parse_arguments():
 
     # extra parsers arguments
     install_parser.add_argument('machine', nargs='?', metavar="MACHINE_NAME", default=None,
-                                help="Machine on which install AQUA")
+                                help="Machine on which to install AQUA")
     install_parser.add_argument('-p', '--path', type=str, metavar="AQUA_TARGET_PATH",
                                 help='Path where to install AQUA. Default is $HOME/.aqua')
     install_parser.add_argument('-e', '--editable', type=str, metavar="AQUA_SOURCE_PATH",
@@ -65,15 +63,22 @@ def parse_arguments():
     list_parser.add_argument("-a", "--all", action="store_true",
                              help="Print also all the installed fixes, grids and data_models")
 
+    # Parser for the enable command
+    enable_parser = subparsers.add_parser("enable", description='Enable a package')
+    enable_subparsers = enable_parser.add_subparsers(dest='nested_command', help='Packages to enable')
+
+    # Subparser for the tropical_rainfall command
+    enable_tropical_rainfall_parser = enable_subparsers.add_parser("tropical_rainfall", description='Enable Tropical Rainfall package')
+
     # create a dictionary to simplify the call
     parser_dict = {
         'main': parser,
         'fixes': parser_fixes,
-        'grids': parser_grids
+        'grids': parser_grids,
+        'enable': enable_parser
     }
 
     return parser_dict
-
 
 def file_subparser(main_parser, name):
     """Compact subparsers for file handling - fixes and grids"""
