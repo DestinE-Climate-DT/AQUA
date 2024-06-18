@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
-Tropical Rainfall command line main functions
-'''
-
 import os
 import shutil
 import sys
@@ -57,17 +53,18 @@ class TropicalRainfallConsole:
             config_name = 'config-tropical-rainfall.yml'
             config_src = os.path.join(pypath[0], 'config', config_name)
             os.makedirs(os.path.join(pypath[0], 'config'), exist_ok=True)
-            shutil.copy(os.path.join(pypath[0], config_name), config_src)
-        
+            if not os.path.exists(config_src):
+                shutil.copy(os.path.join(pypath[0], config_name), config_src)
+
         self.logger.debug(f"Source config file path: {config_src}")
         if not os.path.exists(config_src):
             self.logger.error(f"The configuration file {config_src} does not exist.")
             sys.exit(1)
-            
+
         config_dst = os.path.join(pypath[0], 'config', 'current_config.yml')
         self.logger.debug(f"Destination config file path: {config_dst}")
         target_dir = os.path.dirname(config_dst)
-        
+
         if not os.path.exists(target_dir):
             self.logger.debug(f"Creating target directory: {target_dir}")
             os.makedirs(target_dir, exist_ok=True)
@@ -102,10 +99,10 @@ def query_yes_no(question, default="yes"):
     valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
     if default is None:
         prompt = " [y/n] "
-    elif default is "yes":
-        prompt = " [Y/n] "
+    elif default == "yes":
+        prompt is " [Y/n] "
     elif default is "no":
-        prompt = " [y/N] "
+        prompt is " [y/N] "
     else:
         raise ValueError(f"invalid default answer: {default}")
 
