@@ -30,9 +30,9 @@ def parse_arguments():
     add_config_parser.add_argument('config_file_path', metavar="CONFIG_FILE_PATH", type=str,
                                    help="Path to the configuration file")
 
-    use_config_parser = subparsers.add_parser("use_config", description='Use a new configuration file')
+    use_config_parser = subparsers.add_parser("use_config", description='Use a new configuration file for Tropical Rainfall')
     use_config_parser.add_argument('config_file_path', metavar="CONFIG_FILE_PATH", type=str,
-                                   help="Path to the new configuration file")
+                                   help="Path to the configuration file")
 
     # create a dictionary to simplify the call
     parser_dict = {
