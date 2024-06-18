@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-'''
-Tropical Rainfall command line main functions
-'''
-
 import os
 import shutil
 import sys
@@ -11,7 +5,7 @@ from aqua.util import load_yaml, dump_yaml
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from tropical_rainfall.cli.parser import parse_arguments
-from tropical_rainfall import Tropical_Rainfall
+from tropical_rainfall import __path__ as pypath
 
 class TropicalRainfallConsole():
     """Class for TropicalRainfallConsole, the Tropical Rainfall command line interface for
@@ -26,6 +20,7 @@ class TropicalRainfallConsole():
         self.command_map = {
             'init': self.init,
             'add_config': self.add_config,
+            'use_config': self.use_config,
         }
 
     def execute(self):
@@ -154,22 +149,22 @@ class TropicalRainfallConsole():
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        if self.configpath is None:
-            self.logger.error("Configuration path is not set. Please run init command first.")
-            return
-        config_name = os.path.basename(args.config_name)
-        config_src = os.path.abspath(args.config_name)
-        config_dst = os.path.join(self.configpath, config_name)
+        config_name = os.path.basename(args.config_file_path)
+        config_src = os.path.abspath(args.config_file_path)
+        config_dst = os.path.join(pypath[0], 'config', config_name)
 
         if not os.path.exists(config_src):
             self.logger.error(f"The configuration file {config_src} does not exist.")
             return
 
+        if not os.path.exists(os.path.dirname(config_dst)):
+            os.makedirs(os.path.dirname(config_dst))
+
         shutil.copy(config_src, config_dst)
-        self.logger.info(f"Configuration file {config_name} added to {self.configpath}.")
+        self.logger.info(f"Configuration file {config_name} added to {config_dst}.")
 
         # Update pyproject.toml to include the new configuration file
-        pyproject_path = os.path.join(self.pypath, 'pyproject.toml')
+        pyproject_path = os.path.join(pypath[0], 'pyproject.toml')
         with open(pyproject_path, 'r') as file:
             pyproject_data = file.readlines()
 
@@ -179,6 +174,47 @@ class TropicalRainfallConsole():
                 if line.strip().startswith('tropical_rainfall ='):
                     file.write(f'    "{config_name}",\n')
         self.logger.info(f"pyproject.toml updated with the new configuration file {config_name}.")
+
+        # Recompile or reload the package if necessary
+        self.recompile_package()
+
+    def use_config(self, args):
+        """Use a new configuration file for Tropical Rainfall
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self.logger.info('Using new configuration file for Tropical Rainfall')
+
+        config_name = os.path.basename(args.config_file_path)
+        config_src = os.path.abspath(args.config_file_path)
+        config_dst = os.path.join(pypath[0], 'config', 'current_config.yml')
+
+        if not os.path.exists(config_src):
+            self.logger.error(f"The configuration file {config_src} does not exist.")
+            sys.exit(1)
+
+        # Ensure the target directory exists before copying the configuration file
+        target_dir = os.path.dirname(config_dst)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir, exist_ok=True)
+
+        # Copy the new configuration file to the target directory
+        shutil.copy(config_src, config_dst)
+        self.logger.info(f"New configuration file {config_name} copied to {config_dst}")
+
+        # Recompile or reload the package if necessary
+        self.recompile_package()
+
+    def recompile_package(self):
+        """Recompile the package to ensure new configurations are recognized."""
+        try:
+            import importlib
+            import tropical_rainfall
+            importlib.reload(tropical_rainfall)
+            self.logger.info("Package recompiled successfully.")
+        except Exception as e:
+            self.logger.error(f"Failed to recompile the package: {e}")
 
 def main():
     """Tropical Rainfall main installation tool"""
