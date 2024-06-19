@@ -6,8 +6,9 @@ import pytest
 import sys
 from aqua.util import load_yaml, dump_yaml, get_arg, query_yes_no, create_folder
 from aqua.logger import log_configure
-from tropical_rainfall.cli.parser import parse_arguments
+from aqua import __path__ as aqua_pypath
 from tropical_rainfall import __path__ as pypath
+from tropical_rainfall.cli.parser import parse_arguments
 
 class TropicalRainfallConsole:
     """Class for TropicalRainfallConsole, the Tropical Rainfall command line interface for initialization and configuration management"""
@@ -109,9 +110,12 @@ class TropicalRainfallConsole:
             args (argparse.Namespace): arguments from the command line
         """
         self.logger.info('Running tests for Tropical Rainfall package')
-        test_args = ["-v", "-m", "tropical_rainfall"]
-        if args.test_folder:
-            test_args.append(args.test_folder)
+
+        # Get the .aqua configuration directory
+        aqua_path = os.path.join(aqua_pypath[0], 'config')
+        test_folder = os.path.join(aqua_path, 'tests') if not args.test_folder else args.test_folder
+
+        test_args = ["-v", "-m", "tropical_rainfall", test_folder]
         result = pytest.main(test_args)
         if result == 0:
             self.logger.info("All tests passed successfully")
