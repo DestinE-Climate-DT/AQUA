@@ -35,9 +35,8 @@ class AquaConsole():
 
         self.command_map = {
             'install': self.install,
-            'enable': {
-                'tropical_rainfall': self.enable_tropical_rainfall,
-            },
+            'enable': {'tropical_rainfall': self.enable_tropical_rainfall,},
+            'disable': {'tropical_rainfall': self.disable_tropical_rainfall,},
             'add': self.add,
             'remove': self.remove,
             'set': self.set,
@@ -608,10 +607,41 @@ class AquaConsole():
                 self.logger.error(f"Failed to enable Tropical Rainfall package: {e}")
                 sys.exit(1)
 
+    def disable_tropical_rainfall(self, args):
+        """Disable Tropical Rainfall package
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()  # Ensure configpath is set
+
+        dest_path = os.path.join(self.configpath, 'tropical_rainfall')
+        if os.path.exists(dest_path):
+            if os.path.islink(dest_path):
+                self.logger.debug(f"Removing symbolic link at {dest_path}")
+                os.unlink(dest_path)
+            elif os.path.isdir(dest_path):
+                self.logger.debug(f"Removing directory at {dest_path}")
+                shutil.rmtree(dest_path)
+            else:
+                self.logger.error(f"Unknown file type at {dest_path}")
+                sys.exit(1)
+            self.logger.info('Tropical Rainfall package disabled successfully')
+        else:
+            self.logger.warning('Tropical Rainfall package is not enabled')
+
+        # Uninstall the package using pip
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", "tropical_rainfall"])
+            self.logger.info('Tropical Rainfall package uninstalled successfully')
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to uninstall Tropical Rainfall package: {e}")
+            sys.exit(1)
+
+
 
 
 def main():
     """AQUA main installation tool"""
     aquacli = AquaConsole()
     aquacli.execute()
-

@@ -37,3 +37,25 @@ def test_enable_tropical_rainfall(monkeypatch, tmpdir):
     # Test accessing the path command
     result = subprocess.run(["tropical_rainfall", "--path"], capture_output=True, text=True)
     assert "tropical_rainfall" in result.stdout, "Path command should return the tropical_rainfall path"
+
+def test_disable_tropical_rainfall(monkeypatch, tmpdir):
+    """Test disabling the tropical_rainfall package"""
+    # First, ensure the package is enabled
+    if not is_package_installed("tropical_rainfall"):
+        source_path = tmpdir.mkdir("tropical_rainfall_source")
+        enable_args = ["aqua", "enable", "tropical_rainfall", "--editable", str(source_path)]
+        monkeypatch.setattr("sys.argv", enable_args)
+        console = AquaConsole()
+        console.execute()
+
+    # Mock sys.argv to simulate command-line arguments for disabling
+    disable_args = ["aqua", "disable", "tropical_rainfall"]
+    monkeypatch.setattr("sys.argv", disable_args)
+
+    # Instantiate and execute the AquaConsole to disable the package
+    console = AquaConsole()
+    console.execute()
+
+    # Verify the tropical_rainfall command is no longer accessible
+    result = subprocess.run(["tropical_rainfall", "--path"], capture_output=True, text=True)
+    assert result.returncode != 0, "tropical_rainfall command should not be accessible after disabling"

@@ -73,12 +73,20 @@ def parse_arguments():
                                                  help='Enable Tropical Rainfall in editable mode from the source path')
     enable_tropical_rainfall_parser.add_argument('-t', '--target', metavar="TROPICAL_RAINFALL_TARGET_PATH", type=str,
                                                  help='Target path for the Tropical Rainfall package if not using editable mode')
+    # Subparser for the disable command
+    disable_parser = subparsers.add_parser("disable", description='Disable a package')
+    disable_subparsers = disable_parser.add_subparsers(dest='nested_command', help='Packages to disable')
+
+    # Subparser for the tropical_rainfall command under disable
+    disable_tropical_rainfall_parser = disable_subparsers.add_parser("tropical_rainfall", description='Disable Tropical Rainfall package')
+
     # create a dictionary to simplify the call
     parser_dict = {
         'main': parser,
         'fixes': parser_fixes,
         'grids': parser_grids,
-        'enable': enable_parser
+        'enable': enable_parser,
+        'disable': disable_parser,
     }
 
     return parser_dict
