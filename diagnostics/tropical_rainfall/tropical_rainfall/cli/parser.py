@@ -14,7 +14,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser(prog='tropical_rainfall', description='Tropical Rainfall command line tool')
     subparsers = parser.add_subparsers(dest='command', help='Available Tropical Rainfall commands')
 
-    # Parser for the tropical_rainfall main command
     parser.add_argument('--version', action='version',
                         version=f'%(prog)s v{version}', help="show Tropical Rainfall version number and exit.")
     parser.add_argument('--path', action='version', version=f'{pypath[0]}',
@@ -24,8 +23,6 @@ def parse_arguments():
     parser.add_argument('-vv', '--very_verbose', action='store_true',
                         help='Increase verbosity of the output to DEBUG loglevel')
 
-    # List of the subparsers with actions
-    # Corresponding to the different tropical_rainfall commands available (see command map)
     init_parser = subparsers.add_parser("init", description='Initialize Tropical Rainfall configuration')
     init_parser.add_argument('-p', '--path', type=str, metavar="TROPICAL_RAINFALL_TARGET_PATH",
                              help='Path where to install Tropical Rainfall. Default is $HOME/.tropical_rainfall')
@@ -36,9 +33,13 @@ def parse_arguments():
     add_config_parser.add_argument('config_file_path', metavar="CONFIG_FILE_PATH", type=str,
                                    help="Path to the configuration file")
 
-    # create a dictionary to simplify the call
+    run_tr_parser = subparsers.add_parser("run_cli", description='Run Tropical Rainfall CLI')
+    run_tr_parser.add_argument('--nproc', type=int, default=1, help="Number of processes to use for analysis")
+    run_tr_parser.add_argument('--config_file', type=str, help="Path to the CLI configuration file")
+
     parser_dict = {
         'main': parser
     }
 
     return parser_dict
+

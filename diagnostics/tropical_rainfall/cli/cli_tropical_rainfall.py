@@ -11,8 +11,9 @@ def main():
     args = parse_arguments(sys.argv[1:])
     validate_arguments(args)
 
-    config = load_configuration(get_arg(args, 'config',
-                                        f'{aqua_path}/diagnostics/tropical_rainfall/cli/cli_config_trop_rainfall.yml'))
+    config_file = get_arg(args, 'config', f'{aqua_path}/diagnostics/tropical_rainfall/cli/cli_config_trop_rainfall.yml')
+
+    config = load_configuration(config_file)
 
     trop_rainfall_cli = Tropical_Rainfall_CLI(config, args)
     trop_rainfall_cli.calculate_histogram_by_months()
@@ -20,7 +21,7 @@ def main():
     trop_rainfall_cli.daily_variability()
     trop_rainfall_cli.plot_daily_variability()
     trop_rainfall_cli.average_profiles()
-    
 
 if __name__ == '__main__':
     main()
+

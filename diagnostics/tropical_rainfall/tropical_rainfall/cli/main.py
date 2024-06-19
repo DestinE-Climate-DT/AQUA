@@ -3,7 +3,7 @@
 import os
 import shutil
 import sys
-from aqua.util import load_yaml, dump_yaml
+from aqua.util import load_yaml, dump_yaml, get_arg
 from aqua.logger import log_configure
 from tropical_rainfall.cli.parser import parse_arguments
 from tropical_rainfall import __path__ as pypath
@@ -17,6 +17,7 @@ class TropicalRainfallConsole:
 
         self.command_map = {
             'add_config': self.add_config,
+            'run_cli': self.run_cli,
         }
 
     def execute(self):
@@ -38,6 +39,29 @@ class TropicalRainfallConsole:
         else:
             method(args)
 
+    def run_cli(self, args):
+        """Run Tropical Rainfall CLI with the specified configuration file
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        nproc = args.nproc if args.nproc else 1
+        config_file = args.config_file if args.config_file else os.path.join(pypath[0], 'cli', 'cli_config_trop_rainfall.yml')
+
+        if not os.path.exists(config_file):
+            self.logger.error(f"The configuration file {config_file} does not exist.")
+            sys.exit(1)
+
+        cmd = f"python3 diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py --config={config_file} --nproc={nproc}"
+        self.logger.info(f"Running Tropical Rainfall CLI with {nproc} processes using config {config_file}")
+
+        result = os.system(cmd)
+        if result != 0:
+            self.logger.error("Tropical Rainfall CLI execution failed")
+            sys.exit(result)
+        else:
+            self.logger.info("Tropical Rainfall CLI executed successfully")
+
     def add_config(self, args):
         """Add and use a new configuration file for Tropical Rainfall
 
@@ -53,8 +77,7 @@ class TropicalRainfallConsole:
             config_name = 'config-tropical-rainfall.yml'
             config_src = os.path.join(pypath[0], 'config', config_name)
             os.makedirs(os.path.join(pypath[0], 'config'), exist_ok=True)
-            if not os.path.exists(config_src):
-                shutil.copy(os.path.join(pypath[0], config_name), config_src)
+            shutil.copy(os.path.join(pypath[0], config_name), config_src)
 
         self.logger.debug(f"Source config file path: {config_src}")
         if not os.path.exists(config_src):
@@ -100,9 +123,9 @@ def query_yes_no(question, default="yes"):
     if default is None:
         prompt = " [y/n] "
     elif default == "yes":
-        prompt is " [Y/n] "
-    elif default is "no":
-        prompt is " [y/N] "
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
     else:
         raise ValueError(f"invalid default answer: {default}")
 
@@ -115,3 +138,4 @@ def query_yes_no(question, default="yes"):
             return valid[choice]
         else:
             print("Please respond with 'yes' or 'no' (or 'y' or 'n').")
+
