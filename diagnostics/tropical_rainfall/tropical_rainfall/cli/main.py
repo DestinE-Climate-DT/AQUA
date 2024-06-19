@@ -3,7 +3,7 @@
 import os
 import shutil
 import sys
-from aqua.util import load_yaml, dump_yaml, get_arg
+from aqua.util import load_yaml, dump_yaml, get_arg, query_yes_no
 from aqua.logger import log_configure
 from tropical_rainfall.cli.parser import parse_arguments
 from tropical_rainfall import __path__ as pypath
@@ -116,26 +116,4 @@ def main():
     """Tropical Rainfall main installation tool"""
     trcli = TropicalRainfallConsole()
     trcli.execute()
-
-def query_yes_no(question, default="yes"):
-    """Ask a yes/no question via input() and return their answer."""
-    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError(f"invalid default answer: {default}")
-
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = input().lower()
-        if default is not None and choice == "":
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            print("Please respond with 'yes' or 'no' (or 'y' or 'n').")
 

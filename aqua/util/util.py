@@ -346,3 +346,36 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+def query_yes_no(question, default="yes"):
+    # from stackoverflow
+    """Ask a yes/no question via input() and return their answer.
+
+    Args:
+        question (str): the question to be asked to the user
+        default (str): the default answer if the user just hits <Enter>.
+                       It must be "yes" (the default), "no" or None (meaning
+                       an answer is required of the user).
+
+    Returns:
+        bool: True for yes, False for no
+    """
+    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError(f"invalid default answer: {default}")
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == "":
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            print("Please respond with 'yes' or 'no' (or 'y' or 'n').")

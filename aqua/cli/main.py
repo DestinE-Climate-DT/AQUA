@@ -10,7 +10,7 @@ import sys
 import subprocess
 from aqua.util import load_yaml, dump_yaml, load_multi_yaml
 from aqua.logger import log_configure
-from aqua.util import ConfigPath
+from aqua.util import ConfigPath, query_yes_no
 from aqua.cli.parser import parse_arguments
 from aqua.util.util import HiddenPrints, to_list
 from aqua import __path__ as pypath
@@ -614,36 +614,3 @@ def main():
     aquacli = AquaConsole()
     aquacli.execute()
 
-
-def query_yes_no(question, default="yes"):
-    # from stackoverflow
-    """Ask a yes/no question via input() and return their answer.
-
-    Args:
-        question (str): the question to be asked to the user
-        default (str): the default answer if the user just hits <Enter>.
-                       It must be "yes" (the default), "no" or None (meaning
-                       an answer is required of the user).
-
-    Returns:
-        bool: True for yes, False for no
-    """
-    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError(f"invalid default answer: {default}")
-
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = input().lower()
-        if default is not None and choice == "":
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            print("Please respond with 'yes' or 'no' (or 'y' or 'n').")
