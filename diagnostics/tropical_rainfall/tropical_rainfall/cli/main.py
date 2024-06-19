@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
+import pytest
 import sys
 from aqua.util import load_yaml, dump_yaml, get_arg, query_yes_no, create_folder
 from aqua.logger import log_configure
@@ -18,6 +19,7 @@ class TropicalRainfallConsole:
         self.command_map = {
             'add_config': self.add_config,
             'run_cli': self.run_cli,
+            'test': self.run_tests,  # Add new test command
         }
 
     def execute(self):
@@ -99,6 +101,23 @@ class TropicalRainfallConsole:
         self.logger.info(f"Configuration file {config_name} copied to {config_dst}")
 
         self.recompile_package()
+
+    def run_tests(self, args):
+        """Run tests for the Tropical Rainfall package
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self.logger.info('Running tests for Tropical Rainfall package')
+        test_args = ["-v", "-m", "tropical_rainfall"]
+        if args.test_folder:
+            test_args.append(args.test_folder)
+        result = pytest.main(test_args)
+        if result == 0:
+            self.logger.info("All tests passed successfully")
+        else:
+            self.logger.error("Some tests failed")
+        sys.exit(result)
 
     def recompile_package(self):
         """Recompile the package to ensure new configurations are recognized."""

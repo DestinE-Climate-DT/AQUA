@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Tropical Rainfall command line parser
-"""
-
 import argparse
 from tropical_rainfall import __version__ as version
 from tropical_rainfall import __path__ as pypath
@@ -19,9 +13,9 @@ def parse_arguments():
     parser.add_argument('--path', action='version', version=f'{pypath[0]}',
                         help="show Tropical Rainfall installation path and exit")
     parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Increase verbosity of the output to INFO loglevel')
+                        help='Increase verbosity of the output to INFO log level')
     parser.add_argument('-vv', '--very_verbose', action='store_true',
-                        help='Increase verbosity of the output to DEBUG loglevel')
+                        help='Increase verbosity of the output to DEBUG log level')
 
     init_parser = subparsers.add_parser("init", description='Initialize Tropical Rainfall configuration')
     init_parser.add_argument('-p', '--path', type=str, metavar="TROPICAL_RAINFALL_TARGET_PATH",
@@ -37,9 +31,11 @@ def parse_arguments():
     run_tr_parser.add_argument('--nproc', type=int, default=1, help="Number of processes to use for analysis")
     run_tr_parser.add_argument('--config_file', type=str, help="Path to the CLI configuration file")
 
+    test_parser = subparsers.add_parser("test", description='Run tests for the Tropical Rainfall package')
+    test_parser.add_argument('test_folder', nargs='?', default='tests', help="Folder containing the tests (default: 'tests')")
+
     parser_dict = {
         'main': parser
     }
 
     return parser_dict
-
