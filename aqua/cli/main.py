@@ -557,7 +557,7 @@ class AquaConsole():
                 self.logger.error("Existing files in the %s folder are not compatible", kind)
             self.logger.error(e)
             return False
-        
+
     def enable_tropical_rainfall(self, args):
         """Enable Tropical Rainfall package
 
@@ -566,13 +566,47 @@ class AquaConsole():
         """
         self.logger.info('Enabling Tropical Rainfall package')
 
-        # Use pip to install the tropical_rainfall package
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "diagnostics/tropical_rainfall/"])
-            self.logger.info('Tropical Rainfall package enabled successfully')
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Failed to enable Tropical Rainfall package: {e}")
-            sys.exit(1)
+        self._check()  # Ensure configpath is set
+
+        if args.editable:
+            self.logger.info('Installing Tropical Rainfall package in editable mode')
+            source_path = os.path.abspath(args.editable)
+            if not os.path.exists(source_path):
+                self.logger.error(f"The source path {source_path} does not exist.")
+                sys.exit(1)
+
+            # Link the source directory to the destination
+            dest_path = os.path.join(self.configpath, 'tropical_rainfall')
+            if os.path.exists(dest_path):
+                if os.path.islink(dest_path):
+                    self.logger.info(f"Removing existing symbolic link at {dest_path}")
+                    os.unlink(dest_path)
+                elif os.path.isdir(dest_path):
+                    self.logger.info(f"Removing existing directory at {dest_path}")
+                    shutil.rmtree(dest_path)
+                else:
+                    self.logger.error(f"Unknown file type at {dest_path}")
+                    sys.exit(1)
+
+            os.symlink(source_path, dest_path)
+            self.logger.info(f"Tropical Rainfall package linked from {source_path} to {dest_path}")
+
+            # Add the source path to PYTHONPATH
+            if 'PYTHONPATH' in os.environ:
+                os.environ['PYTHONPATH'] = f"{source_path}:{os.environ['PYTHONPATH']}"
+            else:
+                os.environ['PYTHONPATH'] = source_path
+
+            self.logger.info('Tropical Rainfall package enabled successfully in editable mode')
+        else:
+            # Use pip to install the tropical_rainfall package
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "diagnostics/tropical_rainfall/"])
+                self.logger.info('Tropical Rainfall package enabled successfully')
+            except subprocess.CalledProcessError as e:
+                self.logger.error(f"Failed to enable Tropical Rainfall package: {e}")
+                sys.exit(1)
+
 
 
 def main():
