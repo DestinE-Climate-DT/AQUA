@@ -3,7 +3,7 @@
 import os
 import shutil
 import sys
-from aqua.util import load_yaml, dump_yaml, get_arg, query_yes_no
+from aqua.util import load_yaml, dump_yaml, get_arg, query_yes_no, create_folder
 from aqua.logger import log_configure
 from tropical_rainfall.cli.parser import parse_arguments
 from tropical_rainfall import __path__ as pypath
@@ -76,7 +76,7 @@ class TropicalRainfallConsole:
         else:
             config_name = 'config-tropical-rainfall.yml'
             config_src = os.path.join(pypath[0], 'config', config_name)
-            os.makedirs(os.path.join(pypath[0], 'config'), exist_ok=True)
+            create_folder(os.path.join(pypath[0], 'config'))
             shutil.copy(os.path.join(pypath[0], config_name), config_src)
 
         self.logger.debug(f"Source config file path: {config_src}")
@@ -88,9 +88,7 @@ class TropicalRainfallConsole:
         self.logger.debug(f"Destination config file path: {config_dst}")
         target_dir = os.path.dirname(config_dst)
 
-        if not os.path.exists(target_dir):
-            self.logger.debug(f"Creating target directory: {target_dir}")
-            os.makedirs(target_dir, exist_ok=True)
+        create_folder(target_dir)
 
         # Always replace the existing current_config.yml
         if os.path.exists(config_dst):
@@ -116,4 +114,3 @@ def main():
     """Tropical Rainfall main installation tool"""
     trcli = TropicalRainfallConsole()
     trcli.execute()
-
