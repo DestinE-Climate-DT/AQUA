@@ -2,9 +2,7 @@
 import pytest
 # import numpy as np
 import xarray
-
 import re
-
 from os import listdir
 from os.path import isfile, join
 from os import remove
@@ -12,7 +10,6 @@ from os import remove
 from aqua import Reader
 from aqua.util import create_folder
 
-import os
 try:
     from tropical_rainfall import Tropical_Rainfall
 except ModuleNotFoundError:
@@ -24,35 +21,13 @@ approx_rel = 1e-4
 @pytest.mark.tropical_rainfall
 @pytest.fixture
 def retrieved_dataarray():
-    if os.getenv('INPUT_ARG') is None:
-        data = Reader(model="IFS", exp="test-tco79", source="long")
-        retrieved = data.retrieve()
-        try:
-            retrieved_array = retrieved['mtpr']*86400
-        except KeyError:
-            retrieved_array = retrieved['2t']
-        return retrieved_array.isel(time=slice(10, 11))
-
-    elif str(os.getenv('INPUT_ARG')) == 'levante':
-        """reader_levante """
-        data = Reader(model="ICON", exp="historical-1990", source="lra-r100-monthly")
-        retrieved = data.retrieve()
-        try:
-            retrieved_array = retrieved['mtpr']*86400
-        except KeyError:
-            retrieved_array = retrieved['2t']
-        return retrieved_array.isel(time=slice(10, 11))
-
-    elif str(os.getenv('INPUT_ARG')) == 'lumi':
-        """reader_levante """
-        data = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly")
-        retrieved = data.retrieve()
-        try:
-            retrieved_array = retrieved['mtpr']*86400
-        except KeyError:
-            retrieved_array = retrieved['2t']
-        return retrieved_array.isel(time=slice(10, 11))
-
+    data = Reader(model="IFS", exp="test-tco79", source="long")
+    retrieved = data.retrieve()
+    try:
+        retrieved_array = retrieved['mtpr']
+    except KeyError:
+        retrieved_array = retrieved['2t']
+    return retrieved_array.isel(time=slice(10, 11))
 
 @pytest.mark.tropical_rainfall
 def test_module_import():
