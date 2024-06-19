@@ -71,6 +71,8 @@ def parse_arguments():
     enable_tropical_rainfall_parser = enable_subparsers.add_parser("tropical_rainfall", description='Enable Tropical Rainfall package')
     enable_tropical_rainfall_parser.add_argument('-e', '--editable', metavar="TROPICAL_RAINFALL_SOURCE_PATH", type=str,
                                                  help='Enable Tropical Rainfall in editable mode from the source path')
+    enable_tropical_rainfall_parser.add_argument('-t', '--target', metavar="TROPICAL_RAINFALL_TARGET_PATH", type=str,
+                                                 help='Target path for the Tropical Rainfall package if not using editable mode')
     # create a dictionary to simplify the call
     parser_dict = {
         'main': parser,

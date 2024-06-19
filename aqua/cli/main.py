@@ -590,8 +590,19 @@ class AquaConsole():
             self.logger.info('Tropical Rainfall package enabled successfully in editable mode')
         else:
             # Use pip to install the tropical_rainfall package
+            target_path = args.target if args.target else os.path.join(self.pypath, '..', 'diagnostics', 'tropical_rainfall')
+            target_path = os.path.abspath(target_path)
+
+            if not os.path.exists(target_path):
+                self.logger.error(f"The target path {target_path} does not exist.")
+                sys.exit(1)
+
+            if not any(os.path.isfile(os.path.join(target_path, f)) for f in ['setup.py', 'pyproject.toml']):
+                self.logger.error(f"The target path {target_path} is not installable. Neither 'setup.py' nor 'pyproject.toml' found.")
+                sys.exit(1)
+
             try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "diagnostics/tropical_rainfall/"])
+                subprocess.check_call([sys.executable, "-m", "pip", "install", target_path])
                 self.logger.info('Tropical Rainfall package enabled successfully')
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"Failed to enable Tropical Rainfall package: {e}")
