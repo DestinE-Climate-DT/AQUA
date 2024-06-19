@@ -182,3 +182,66 @@ This is useful if new external grids are created and need to be added to the lis
 .. option:: -e, --editable
 
     It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
+
+.. _tropical_rainfall-console:
+
+Tropical Rainfall enabling and setup
+====================================
+
+- :ref:`tropical_rainfall-enable`
+- :ref:`tropical_rainfall-add_config`
+- :ref:`tropical_rainfall-run_cli`
+- :ref:`tropical_rainfall-test`
+
+.. _tropical_rainfall-enable:
+
+aqua enable tropical_rainfall
+-----------------------------
+
+This command enables the Tropical Rainfall package.
+
+.. option:: --editable <source_path>
+
+    The path to the Tropical Rainfall source directory.
+    This is a mandatory field for editable mode.
+
+.. _tropical_rainfall-add_config:
+
+tropical_rainfall add_config [config_file_path]
+-----------------------------------------------
+
+This command adds a new configuration file to the Tropical Rainfall package.
+
+.. option:: [config_file_path]
+
+    The path to the configuration file to be added.
+    This is not a mandatory field. By default, the command will use the default configuration 
+    file located in the Tropical Rainfall package directory.
+
+.. _tropical_rainfall-run_cli:
+
+tropical_rainfall run_cli --config_file <config_file_path>
+----------------------------------------------------------
+
+This command runs the Tropical Rainfall CLI with the specified configuration file and number of processes.
+
+.. option:: --config_file <config_file_path>
+
+    The path to the CLI configuration file.
+
+.. option:: --nproc <number_of_processes>
+
+    The number of processes to use for analysis.
+    If not provided, the default is 1.
+
+.. _tropical_rainfall-test:
+
+tropical_rainfall test [test_folder]
+------------------------------------
+
+This command runs the tests for the Tropical Rainfall package.
+
+.. option:: [test_folder]
+
+    The folder containing the tests.
+    If not provided, the default `.aqua/tests` folder will be used.
