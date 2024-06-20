@@ -4,6 +4,7 @@ from aqua.util import get_arg
 from src.tropical_rainfall_utils import parse_arguments, validate_arguments, load_configuration
 from src.tropical_rainfall_cli_class import Tropical_Rainfall_CLI
 from tropical_rainfall import __path__ as pypath
+from aqua import __path__ as aqua_pypath
 
 def main():
     """Main function to orchestrate the tropical rainfall CLI operations."""
@@ -15,7 +16,9 @@ def main():
         validate_arguments(args)
 
         # Determine the configuration file path
-        config_file = get_arg(args, 'config', os.path.join(pypath[0], 'cli', 'cli_config_trop_rainfall.yml'))
+
+        config_file = get_arg(args, 'config',
+                              os.path.join(aqua_pypath[0], '..', 'diagnostics', 'tropical_rainfall', 'cli', 'cli_config_trop_rainfall.yml'))
 
         # Load the configuration from the file
         config = load_configuration(config_file)

@@ -55,7 +55,13 @@ class TropicalRainfallConsole:
             self.logger.error(f"The configuration file {config_file} does not exist.")
             sys.exit(1)
 
-        cmd = f"python3 diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py --config={config_file} --nproc={nproc}"
+        # Correct path to the CLI script within aqua/diagnostic/tropical_rainfall/cli/
+        cli_script = os.path.join(aqua_pypath[0], 'diagnostics', 'tropical_rainfall', 'cli', 'cli_tropical_rainfall.py')
+        if not os.path.exists(cli_script):
+            self.logger.error(f"The CLI script {cli_script} does not exist.")
+            sys.exit(1)
+
+        cmd = f"python3 {cli_script} --config={config_file} --nproc={nproc}"
         self.logger.info(f"Running Tropical Rainfall CLI with {nproc} processes using config {config_file}")
 
         result = os.system(cmd)
