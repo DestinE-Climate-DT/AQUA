@@ -16,10 +16,10 @@ from aqua.cli.parser import parse_arguments
 from aqua.util.util import HiddenPrints, to_list
 from aqua import __path__ as pypath
 from aqua import catalog
+from tropical_rainfall.cli.main import TropicalRainfallConsole  # Import the TropicalRainfallConsole
 
 # folder used for reading/storing catalogs
 catpath = 'catalogs'
-
 
 class AquaConsole():
     """Class for AquaConsole, the AQUA command line interface for
@@ -50,7 +50,8 @@ class AquaConsole():
             'grids': {
                 'add': self.grids_add,
                 'remove': self.remove_file
-            }
+            },
+            'tropical_rainfall': self.tropical_rainfall
         }
 
     def execute(self):
@@ -546,6 +547,13 @@ class AquaConsole():
                 self.logger.error("Existing files in the %s folder are not compatible", kind)
             self.logger.error(e)
             return False
+
+    def tropical_rainfall(self, args):
+        """Handle Tropical Rainfall commands"""
+        loglevel = 'DEBUG' if args.very_verbose else 'INFO' if args.verbose else 'WARNING'
+        tr_console = TropicalRainfallConsole(loglevel)
+        if args.nested_command == 'add_config':
+            tr_console.add_config(args)
 
 
 def main():

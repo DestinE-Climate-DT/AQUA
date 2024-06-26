@@ -4,7 +4,6 @@
 AQUA command line parser
 '''
 
-
 import argparse
 from aqua import __version__ as version
 from aqua import __path__ as pypath
@@ -20,7 +19,7 @@ def parse_arguments():
     parser.add_argument('--version', action='version',
                         version=f'%(prog)s v{version}', help="show AQUA version number and exit.")
     parser.add_argument('--path', action='version', version=f'{pypath[0]}',
-                        help="show AQUA installation path and exit")
+                        help="SSSSSHOW AQUA installation path and exit")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Increase verbosity of the output to INFO loglevel')
     parser.add_argument('-vv', '--very-verbose', action='store_true',
@@ -41,6 +40,13 @@ def parse_arguments():
     # subparsers for grids and fixes
     parser_grids = file_subparser(subparsers, 'grids')
     parser_fixes = file_subparser(subparsers, 'fixes')
+
+    # Tropical Rainfall subparsers
+    parser_tropical_rainfall = subparsers.add_parser("tropical_rainfall", description='Tropical Rainfall related commands')
+    tropical_subparsers = parser_tropical_rainfall.add_subparsers(dest='nested_command')
+
+    tropical_add_parser = tropical_subparsers.add_parser('add_config', help='Add a Tropical Rainfall configuration file')
+    tropical_add_parser.add_argument('config_file_path', help='Path to the Tropical Rainfall configuration file')
 
     # extra parsers arguments
     install_parser.add_argument('machine', nargs='?', metavar="MACHINE_NAME", default=None,
@@ -69,7 +75,8 @@ def parse_arguments():
     parser_dict = {
         'main': parser,
         'fixes': parser_fixes,
-        'grids': parser_grids
+        'grids': parser_grids,
+        'tropical_rainfall': parser_tropical_rainfall
     }
 
     return parser_dict
