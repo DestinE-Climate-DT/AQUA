@@ -3,6 +3,7 @@
 import xarray as xr
 import aqua
 
+#TEST
 
 # For now not distinguishing between dataarray and dataset methods
 @xr.register_dataset_accessor("aqua")
