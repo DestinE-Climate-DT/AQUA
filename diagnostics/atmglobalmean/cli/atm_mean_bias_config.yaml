@@ -1,0 +1,38 @@
+data:
+  model:  "IFS-NEMO"
+  exp:    "historical-1990"
+  source: "lra-r100-monthly"
+
+  model_obs:  "ERA5"
+  exp_obs:    "era5"
+  source_obs: "monthly"
+
+diagnostic_attributes:
+  variables: ['mtpr', '2t', 'msl', 'mtpr', 'mtnlwrf', 't', 'u', 'v', 'q']
+  plev: null # You can specify a pressure level here
+  seasons: True
+  seasons_stat: 'mean'
+  compare_datasets_plev: True
+  vertical: True
+  startdate_data: "1990-01-01"
+  enddate_data: "1998-11-01"
+  startdate_obs: "1990-01-01" 
+  enddate_obs: "2020-12-31"
+
+path:
+  path_to_output: "./"
+
+# Here you can specify the colorbar limits for each variable
+# If you don't specify them, the colorbar limits will be automatically calculated
+# based on the data.
+
+vertical_plev:
+  t:
+    vmin: -20
+    vmax: 20
+  u:
+    vmin: -50
+    vmax: 50
+  q:
+    vmin: -0.002
+    vmax: 0.002
