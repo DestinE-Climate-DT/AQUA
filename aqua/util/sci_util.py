@@ -215,3 +215,49 @@ def _lon_360_to_180(lon: float):
     if lon > 180:
         lon = - 360 + lon
     return lon
+
+
+def select_season(xr_data: xr.DataArray or xr.Dataset, season: str):
+    """
+    Select a season from a xarray.DataArray or xarray.Dataset.
+    Available seasons are:
+    - DJF: December-January-February
+    - JFM: January-February-March
+    - FMA: February-March-April
+    - MAM: March-April-May
+    - AMJ: April-May-June
+    - MJJ: May-June-July
+    - JJA: June-July-August
+    - JAS: July-August-September
+    - ASO: August-September-October
+    - SON: September-October-November
+    - OND: October-November-December
+    - NDJ: November-December-January
+
+    Args:
+        xr_data (xarray.DataArray or xarray.Dataset): input data
+        season (str):                                 season to be selected
+
+    Returns:
+        (xarray.DataArray or xarray.Dataset): selected season
+    """
+    triplet_months = {
+        'DJF': [12, 1, 2],
+        'JFM': [1, 2, 3],
+        'FMA': [2, 3, 4],
+        'MAM': [3, 4, 5],
+        'AMJ': [4, 5, 6],
+        'MJJ': [5, 6, 7],
+        'JJA': [6, 7, 8],
+        'JAS': [7, 8, 9],
+        'ASO': [8, 9, 10],
+        'SON': [9, 10, 11],
+        'OND': [10, 11, 12],
+        'NDJ': [11, 12, 1]
+    }
+
+    if season in triplet_months:
+        selected_months = triplet_months[season]
+        return xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
+    else:
+        raise ValueError("Invalid season abbreviation. Please use one of the provided abbreviations.")
