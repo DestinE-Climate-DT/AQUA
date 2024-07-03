@@ -3,6 +3,7 @@
 # or if you really want to use conda
 # conda env create -f environment.yml
 
+#TRIGGERING THE TESTS
 name: aqua
 channels:
   - conda-forge
