@@ -97,9 +97,6 @@ fixer_name:
             2t: 
                 source: mean2t
                 grib: true
-            avg_tos:
-                source: sst
-                grib: true
             mtpr: # https://codes.ecmwf.int/grib/param-db/235055
                 source: mtpr
                 grib: True
