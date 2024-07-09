@@ -65,64 +65,78 @@ def inspect_catalog(catalog_name=None, model=None, exp=None, source=None, verbos
         KeyError: If the input specifications are incorrect.
     """
     
-    cat = catalog(catalog_name=catalog_name, verbose=False)
+    
 
-    if catalog_name is None:
-        catalog_name = ConfigPath().catalog
+    if catalog_name is not None:
+        catalog_names = [catalog_name]
+    else: # we browse the list of catalogs in the config directory
+        catalog_names = ConfigPath().catalog_available
 
-    if model and exp and not source:
-        if is_in_cat(cat, model, exp, None):
-            if verbose:
-                print(f"Sources available in catalog {catalog_name} for model {model} and exp {exp}:")
-            return list(cat[model][exp].keys())
-    elif model and not exp:
-        if is_in_cat(cat, model, None, None):
-            if verbose:
-                print(f"Experiments available in catalog {catalog_name} for model {model}:")
-            return list(cat[model].keys())
-    elif not model:
+    for cat_name in catalog_names:
         if verbose:
-            print(f"Models available in catalog {catalog_name}:")
-        return list(cat.keys())
+            print(f"Catalog: {cat_name}")
+        cat = catalog(catalog_name=cat_name, verbose=False)
 
-    elif model and exp and source:
-        # Check if variables can be explored
-        # Added a try/except to avoid the KeyError when the source is not in the catalog
-        # because model or exp are not in the catalog
-        # This allows to always have a True/False or var list return
-        # when model/exp/source are provided
-        try:
-            if is_in_cat(cat, model, exp, source):
-                # Ok, it exists, but does it have metadata?
-                try:
-                    vars = cat[model][exp][source].metadata['variables']
-                    if verbose:
-                        print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
-                    return vars
-                except KeyError:
-                    return True
-        except KeyError:
-            pass  # go to return False
-
-    if verbose:
-        print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalog.")
-        if model:
+        if model and exp and not source:
+            if is_in_cat(cat, model, exp, None):
+                if verbose:
+                    print(f"Sources available in catalog {cat_name} for model {model} and exp {exp}:")
+                    print(list(cat[model][exp].keys()))
+                # return list(cat[model][exp].keys())
+        elif model and not exp:
             if is_in_cat(cat, model, None, None):
-                if exp:
-                    if is_in_cat(cat, model, exp, None):
-                        print(f"Available sources for model {model} and exp {exp}:")
-                        return list(cat[model][exp].keys())
+                if verbose:
+                    print(f"Experiments available in catalog {cat_name} for model {model}:")
+                    print(list(cat[model].keys()))
+                # return list(cat[model].keys())
+        elif not model:
+            if verbose:
+                print(f"Models available in catalog {cat_name}:")
+                print(list(cat.keys()))
+            # return list(cat.keys())
+
+        elif model and exp and source:
+            # Check if variables can be explored
+            # Added a try/except to avoid the KeyError when the source is not in the catalog
+            # because model or exp are not in the catalog
+            # This allows to always have a True/False or var list return
+            # when model/exp/source are provided
+            try:
+                if is_in_cat(cat, model, exp, source):
+                    # Ok, it exists, but does it have metadata?
+                    try:
+                        vars = cat[model][exp][source].metadata['variables']
+                        if verbose:
+                            print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
+                        return vars
+                    except KeyError:
+                        return True
+            except KeyError:
+                pass  # go to return False
+
+        if verbose:
+            print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalog {cat_name}.")
+            if model:
+                if is_in_cat(cat, model, None, None):
+                    if exp:
+                        if is_in_cat(cat, model, exp, None):
+                            print(f"Available sources for model {model} and exp {exp} in catalog {cat_name}:")
+                            print(list(cat[model][exp].keys()))
+                            # return list(cat[model][exp].keys())
+                        else:
+                            print(f"Experiment {exp} is not available for model {model}.")
+                            print(f"Available experiments for model {model} in catalog {cat_name}:")
+                            print(list(cat[model].keys()))
+                            # return list(cat[model].keys())
                     else:
-                        print(f"Experiment {exp} is not available for model {model}.")
                         print(f"Available experiments for model {model}:")
-                        return list(cat[model].keys())
+                        print(list(cat[model].keys()))
+                        # return list(cat[model].keys())
                 else:
-                    print(f"Available experiments for model {model}:")
-                    return list(cat[model].keys())
-            else:
-                print(f"Model {model} is not available.")
-                print("Available models:")
-                return list(cat.keys())
+                    print(f"Model {model} is not available.")
+                    print("Available models:")
+                    print(list(cat.keys()))
+                    # return list(cat.keys())
 
     return False
 
