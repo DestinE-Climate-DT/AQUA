@@ -1,21 +1,23 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-# For setuptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
-[project]
+# Main configuration file for Poetry
+[tool.poetry]
 name = "aqua"
-dynamic = ["version"]
-authors = [
-    {name = "The AQUA team", email = "p.davini@isac.cnr.it"}
-]
-description = "AQUA; a model evaluation framework for high-resolution climate model simulations"
+version = "0.10.3"
+description = "Application for Quality assessment and Uncertainity quAntification"
+authors = ["Paolo Davini <p.davini@isac.cnr.it>",
+           "Matteo Nurisso <m.nurisso@isac.cnr.it>", 
+           "Jost Von Hardenberg <jost.hardenberg@polito.it>",
+           "Silvia Caprioli <silvia.caprioli@polito.it>",
+           "Natalia Nazarova <natalia.nazarova@polito.it>"]
 readme = "README.md"
-keywords = [
-    "diagnostics"
-]
-license = {text = "Private"}
-requires-python = ">=3.9"
+homepage = "https://aqua-web-climatedt.2.rahtiapp.fi"
+repository = "https://github.com/DestinE-Climate-DT/AQUA/"
+documentation = "https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html"
+packages = [{include = "aqua"}, {include = "aqua_diagnostics"}]
+keywords = ["climate", "quality assessment", "uncertainty quantification"]
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -29,124 +31,47 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
-dependencies = [
-    "cartopy",
-    "cfgrib",
-    "dask",
-    "dask_jobqueue",
-    "docker",
-    "gribscan",
-    "ecCodes",
-    "pandas",
-    "intake==0.7.0",
-    "intake-esm",
-    "intake-xarray",
-    "jinja2",
-    "matplotlib",
-    "metpy",
-    "numpy",
-    "pydantic<2.5.3", # NOTE: pydantic 2.5.3 has a bug that breaks tests
-    "pypdf",
-    "pyYAML",
-    "ruamel.yaml",
-    "smmregrid",
-    "sparse",
-    "xarray",
-    "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.2.0"
-]
+include = ["cli", "tests"]
 
-[project.optional-dependencies]
-docs = [
-    "sphinx",
-    "sphinx-rtd-theme"
-]
-notebooks = [
-    "ipykernel",
-    "healpy"
-]
-tests = [
-    "pytest",
-    "pytest-cov",
-    "coverage[toml]",
-    "pandoc",
-    "pycobertura"
-]
-# Here we list the packages that are required for each diagnostic
-# The syntax is "aqua[diagnostic_name]"
-# If a diagnostic is missing it means that it needs no extra dependencies
-ecmean = [
-    "ECmean4"
-]
-all = [
-    "aqua[docs]",
-    "aqua[notebooks]",
-    "aqua[tests]",
-    # diagnostics
-    "aqua[ecmean]"
-]
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 
-[project.scripts]
+# Dependencies:
+[tool.poetry.dependencies]
+python = "^3.8" # python >= 3.8
+cartopy = "*"
+cfgrib = "*"
+dask = "*"
+dask_jobqueue = "*"
+docker = "*"
+#ECmean4 = "*"
+ecCodes = "*"
+gribscan = "*"
+intake = "0.7.0"
+intake-esm = "*"
+intake-xarray = "*"
+IPython = "*"
+jinja2 = "*"
+matplotlib = "*"
+metpy = "*"
+numpy = "*"
+pandas = "*"
+poetry = "*"
+pydantic = "<2.5.3"
+pypdf = "*"
+pyYAML = "*"
+ruamel-yaml = "*" # ruamel.yaml, changed because of poetry
+smmregrid = "^0.0.6"
+sparse = "*"
+xarray = "*"
+pyfdb = {git = "https://github.com/ecmwf/pyfdb.git", rev = "0.0.3"}
+gsv = {git = "https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git", rev = "v2.2.0"}
+# Dependencies extra:
+[tool.poetry.extras]
+docs = ["sphinx", "sphinx-rtd-theme"]
+notebooks = ["ipykernel, healpy"]
+tests = ["pytest", "pytest-cov", "coverage[toml]", "pandoc", "pycobertura"]
+
+# Entry points:
+[tool.poetry.scripts]
 aqua = "aqua.cli.main:main"
-
-[project.urls]
-homepage = "https://aqua-web-climatedt.2.rahtiapp.fi"
-documentation = "https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html"
-repository = "https://github.com/DestinE-Climate-DT/AQUA/"
-issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
-
-[tool.setuptools.package-data]
-platforms = [
-    "any"
-]
-
-[tool.setuptools.packages]
-find = {}
-
-[tool.setuptools.dynamic]
-version = {attr = "aqua.__version__"}
-
-[tool.pytest.ini_options]
-addopts = "-v --cov=aqua --cov-config=.coveragerc"
-testpaths = [
-    "tests"
-]
-markers = [
-    "aqua: mark test as AQUA framework",
-    "slow: tests which are slow",
-    "sbatch: tests which require sbatch",
-    "graphics: tests which deal with graphics",
-    "gsv: mark test that requires ECMWF FDB libraries",
-    # beginning of diagnostic tests
-    "dummy: mark test for dummy diagnostic",
-    "teleconnections: mark test for teleconnections diagnostic",
-    "tropical_rainfall: mark test for tropical_rainfall diagnostic"
-]
-
-# This appears to be the correct configuration, but for some reason
-# pytest-cov doesn't appear to be reading this? We are passing some
-# options via the command-line for now, but this needs to be fixed.
-# Ref: https://github.com/pytest-dev/pytest-cov/issues/390
-[tool.coverage.run]
-branch = true
-command_line = '-m pytest tests'
-source = ["aqua"]
-omit = ["tests/*"]
-
-[tool.coverage.report]
-show_missing = true
-ignore_errors = true
-exclude_lines = [
-  "pragma: no cover",
-  "def __repr__",
-  "def __str__",
-  "raise AssertionError",
-  "raise NotImplementedError",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-  "if typing.TYPE_CHECKING:"
-]
-
-[tool.coverage.html]
-show_contexts = true
-directory = "coverage/html"
