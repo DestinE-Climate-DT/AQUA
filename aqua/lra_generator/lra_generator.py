@@ -58,7 +58,7 @@ class LRAgenerator():
                                      LRA, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
-            outdir (string):         Where the LRA is
+            outdir (string):         Root directory where to store the LRa
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
@@ -158,24 +158,35 @@ class LRAgenerator():
         self.fix = fix
         self.logger.info('Fixing data: %s', self.fix)
 
+        # root LRA directory
+        self.outdir = outdir
+
         # for data reading from FDB
         self.last_record = None
         self.check = False
-
-        # Create LRA folder
-        self.outdir = os.path.join(outdir, self.catalog, self.model, self.exp, self.resolution)
-
-        if self.frequency:
-            self.outdir = os.path.join(self.outdir, self.frequency)
-
-        create_folder(self.outdir, loglevel=self.loglevel)
-        create_folder(self.tmpdir, loglevel=self.loglevel)
 
         # Initialize variables used by methods
         self.data = None
         self.cluster = None
         self.client = None
         self.reader = None
+        self.lradir = None
+
+    def define_lra_folder(self):
+
+        """Creates and defines the output and tmp folder if necessary"""
+
+        # Create LRA folder
+        if self.lradir is None:
+
+            if self.catalog is None:
+                raise ValueError('You must define which catalog you are using')
+        
+            self.lradir = os.path.join(self.outdir, self.catalog, self.model, self.exp, self.resolution)
+
+            if self.frequency:
+                self.lradir = os.path.join(self.lradir, self.frequency)
+
 
     def retrieve(self):
         """
@@ -214,6 +225,10 @@ class LRAgenerator():
         """
         self.logger.info('Generating LRA data...')
 
+        self.define_lra_folder()
+        create_folder(self.tmpdir, loglevel=self.loglevel)
+        create_folder(self.lradir, loglevel=self.loglevel)
+
         # Set up dask cluster
         self._set_dask()
 
@@ -225,7 +240,7 @@ class LRAgenerator():
             self._write_var(self.var)
                 
         self.logger.info('Move tmp files to output directory')
-        move_tmp_files(self.tmpdir, self.outdir)
+        move_tmp_files(self.tmpdir, self.lradir)
             
         # Cleaning
         self.data.close()
@@ -239,10 +254,13 @@ class LRAgenerator():
         Create an entry in the catalog for the LRA
         """
 
+        # get lradir
+        self.define_lra_folder()
+
         entry_name = f'lra-{self.resolution}-{self.frequency}'
         self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
 
-        urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
+        urlpath = os.path.join(self.lradir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
 
         self.logger.info('Fully expanded urlpath %s', urlpath)
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -342,11 +360,13 @@ class LRAgenerator():
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
 
+        self.define_lra_folder()
+
         filestring = f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc'
         if tmp:
             filename = os.path.join(self.tmpdir, filestring)
         else:
-            filename = os.path.join(self.outdir, filestring)
+            filename = os.path.join(self.lradir, filestring)
 
         if (year is not None) and (month is None):
             filename = filename.replace("*", str(year))
@@ -527,7 +547,7 @@ class LRAgenerator():
                     # we can later add a retry
                     if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', tmpfile)
-                    move_tmp_files(self.tmpdir, self.outdir)
+                    move_tmp_files(self.tmpdir, self.lradir)
                 del month_data
             del year_data
             if self.definitive:

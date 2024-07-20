@@ -1,9 +1,9 @@
 import os
 import shutil
-import glob
 import pytest
 import xarray as xr
 from aqua import LRAgenerator
+from aqua.util import create_folder
 
 loglevel = "DEBUG"
 
@@ -22,8 +22,8 @@ class TestLRA():
     def test_definitive_false(self, lra_arguments):
         """Test the LRA generator with definitive = False"""
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
-                            outdir=outdir, tmpdir=tmpdir, resolution='r100',
+        test = LRAgenerator(model=model, exp=exp, source=source, catalog='ci',
+                            var=var, outdir=outdir, tmpdir=tmpdir, resolution='r100',
                             frequency='monthly', loglevel=loglevel)
         test.retrieve()
         test.generate_lra()
@@ -108,9 +108,12 @@ class TestLRA():
         resolution='r100'
         frequency='monthly'
         year = 2022
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(model=model, exp=exp, source=source, var=var, catalog='ci',
                         outdir=outdir, tmpdir=tmpdir, resolution=resolution,
                         frequency=frequency, loglevel=loglevel)
+        test.define_lra_folder()
+        create_folder(test.tmpdir)
+        create_folder(test.lradir)
 
         # Create temporary files for each month of the year
         for month in range(1, 13):
@@ -119,6 +122,7 @@ class TestLRA():
             with xr.Dataset() as ds:
                 ds[var] = xr.DataArray([0], dims=['time'], coords={'time': [f'{year}-{month:02d}-01']})
                 ds.to_netcdf(filename)
+
 
         test._concat_var_year(var, year)
         outfile = test.get_filename(var, year)
