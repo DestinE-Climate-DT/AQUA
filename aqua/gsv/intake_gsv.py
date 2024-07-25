@@ -241,9 +241,9 @@ class GSVSource(base.DataSource):
         else:
             self.chunking_vertical = None  # no vertical chunking
 
-        self._switch_eccodes()
+        # self._switch_eccodes()
 
-        self.get_eccodes_shortname = init_get_eccodes_shortname()  # Can't pickle this, so we need to reinitialize it
+        self.get_eccodes_shortname = init_get_eccodes_shortname(definition_path=self.eccodes_path)  # Can't pickle this, so we need to reinitialize it
 
         super(GSVSource, self).__init__(metadata=metadata)
 
@@ -452,7 +452,7 @@ class GSVSource(base.DataSource):
             if self.fdbpath:  # if fdbpath provided, use it, since we are creating a new gsv
                 os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
 
-        self._switch_eccodes()
+        # self._switch_eccodes()
 
         # this is needed here and not in init because each worker spawns a new environment
         gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())

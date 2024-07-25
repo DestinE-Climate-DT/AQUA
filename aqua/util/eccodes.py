@@ -26,12 +26,13 @@ from aqua.exceptions import NoEcCodesShortNameError
 #     return yaml.load(text)
 
 
-def read_eccodes_def(filename):
+def read_eccodes_def(filename, definition_path=None):
     """
     Reads an ecCodes definition file and returns its keys as a list.
 
     Parameters:
         filename (str): The name of the ecCodes definition file to read.
+        definition_path (str): The path to the ecCodes definitions. If None, the default path is used.
 
     Returns:
         A list containing the keys of the ecCodes definition file.
@@ -47,7 +48,10 @@ def read_eccodes_def(filename):
                    'ecmwf': []
                }}
 
-    fn_eccodes = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
+    if definition_path is None:
+        fn_eccodes = eccodes.codes_definition_path().split(':')[0]  # LUMI fix, take only first
+    else:
+        fn_eccodes = definition_path
 
     # WMO lists
     fn = os.path.join(fn_eccodes, 'grib2', filename)
@@ -72,13 +76,13 @@ def read_eccodes_def(filename):
 
 
 # Define this as a closure to avoid reading twice the same file
-def _init_get_eccodes_attr():
-    shortname = read_eccodes_def("shortName.def")
-    paramid = read_eccodes_def("paramId.def")
-    name = read_eccodes_def("name.def")
-    cfname = read_eccodes_def("cfName.def")
-    cfvarname = read_eccodes_def("cfVarName.def")
-    units = read_eccodes_def("units.def")
+def _init_get_eccodes_attr(definition_path=None):
+    shortname = read_eccodes_def("shortName.def", definition_path=definition_path)
+    paramid = read_eccodes_def("paramId.def", definition_path=definition_path)
+    name = read_eccodes_def("name.def", definition_path=definition_path)
+    cfname = read_eccodes_def("cfName.def", definition_path=definition_path)
+    cfvarname = read_eccodes_def("cfVarName.def", definition_path=definition_path)
+    units = read_eccodes_def("units.def", definition_path=definition_path)
 
     def _get_eccodes_attr(sn, loglevel='WARNING'):
         """
@@ -86,6 +90,7 @@ def _init_get_eccodes_attr():
 
         Args:
             shortname(str): the shortname to search
+            definition_path(str, opt): the path to the eccodes definitions
             loglevel (str): the loggin level
         Returns:
             A dictionary containing param, long_name, units, short_name
@@ -136,18 +141,19 @@ get_eccodes_attr = _init_get_eccodes_attr()
 
 
 # Define this as a closure to avoid reading twice the same file
-def init_get_eccodes_shortname():
+def init_get_eccodes_shortname(definition_path=None):
     """
     Recover eccodes shorthname from a given paramid
 
     Args:
+        definition_path(str, opt): the path to the eccodes definitions
         var(str, int): the variable name (a short_name or a paramid)
 
     Returns:
         A string containing the short_name
     """
-    shortname = read_eccodes_def("shortName.def")
-    paramid = read_eccodes_def("paramId.def")
+    shortname = read_eccodes_def("shortName.def", definition_path=definition_path)
+    paramid = read_eccodes_def("paramId.def", definition_path=definition_path)
 
     def _get_eccodes_shortname(var):
         """
