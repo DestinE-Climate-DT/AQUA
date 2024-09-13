@@ -38,7 +38,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
-      FDB5_CONFIG_FILE: /app/config.yaml
+      FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
@@ -77,7 +77,7 @@ jobs:
       # building Rust applications, this one is for installing tools with Cargo).
       - name: Install htmlq
         if: ${{ env.COVERAGE_ENABLED }}
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3.1.0
         with:
           crate: htmlq
           cache-key: cargo-coverage
@@ -87,7 +87,7 @@ jobs:
           environment-file: environment.yml 
           environment-name: aqua
           cache-downloads: true
-          cache-environment: false
+          cache-environment: true
           condarc: |
             channels:
               - conda-forge
@@ -115,7 +115,7 @@ jobs:
           # FDB for GSV
           rm -rf /app/
           cp -r ./AQUA_tests/fdb/ /app/
-          cat /app/config.yaml
+          cat /app/etc/fdb/config.yaml
           mkdir -pv /app/localroot/
           cd /app/
           fdb-write sample_test_data.grib
@@ -129,11 +129,11 @@ jobs:
           grib_dump test.grib
       - name: Set up AQUA
         run: |
-          # Initialize the AQUA catalogue in the $HOME/.aqua folder
+          # Initialize the AQUA catalog in the $HOME/.aqua folder
           aqua -vv install
-          # Add the ci/cd catalogue
+          # Add the ci/cd catalog
           aqua -vv add ci
-          # Double check the catalogues
+          # Double check the catalogs
           aqua -vv list
       - name: Run tests
         # NOTE: We could gain a few seconds in the build, if needed,

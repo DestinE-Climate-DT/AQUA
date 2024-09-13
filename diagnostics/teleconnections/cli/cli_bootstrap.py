@@ -43,6 +43,8 @@ def parse_arguments(cli_args):
                         help='log level [default: WARNING]')
 
     # This arguments will override the configuration file if provided
+    parser.add_argument('--catalog', type=str, help='catalog name',
+                        required=False)
     parser.add_argument('--model', type=str, help='model name',
                         required=False)
     parser.add_argument('--exp', type=str, help='experiment name',
@@ -140,6 +142,7 @@ if __name__ == '__main__':
     # first model/exp/source combination
     models = config['models']
 
+    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
     models[0]['source'] = get_arg(args, 'source', models[0]['source'])
@@ -152,6 +155,7 @@ if __name__ == '__main__':
         seasons = config[telec].get('seasons', None)
 
         ref_config = config['reference'][0]
+        catalog_ref = ref_config.get('catalog', 'obs')
         model_ref = ref_config.get('model', 'ERA5')
         exp_ref = ref_config.get('exp', 'era5')
         source_ref = ref_config.get('source', 'monthly')
@@ -163,6 +167,7 @@ if __name__ == '__main__':
         try:
             tc_ref = Teleconnection(telecname=telec,
                                     configdir=configdir,
+                                    catalog=catalog_ref,
                                     model=model_ref, exp=exp_ref, source=source_ref,
                                     regrid=regrid, freq=freq,
                                     months_window=months_window,
@@ -238,6 +243,7 @@ if __name__ == '__main__':
         # Model evaluation
         logger.debug('Models to be evaluated: %s', models)
         for mod in models:
+            catalog = mod['catalog']
             model = mod['model']
             exp = mod['exp']
             source = mod['source']
@@ -253,6 +259,7 @@ if __name__ == '__main__':
             try:
                 tc = Teleconnection(telecname=telec,
                                     configdir=configdir,
+                                    catalog=catalog,
                                     model=model, exp=exp, source=source,
                                     regrid=regrid, freq=freq,
                                     months_window=months_window,

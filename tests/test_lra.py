@@ -1,9 +1,8 @@
 import os
 import shutil
-import glob
 import pytest
 import xarray as xr
-from aqua import LRAgenerator
+from aqua import LRAgenerator, Reader
 
 loglevel = "DEBUG"
 
@@ -30,7 +29,7 @@ class TestLRA():
         assert os.path.isdir(os.path.join(os.getcwd(), outdir,
                                           "IFS/test-tco79/r100/monthly"))
         
-    # defintiiive = True with or without dask
+    # defintiive = True with or without dask
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, lra_arguments, nworkers):
         """Test the LRA generator with definitive = True"""
@@ -53,24 +52,46 @@ class TestLRA():
         assert pytest.approx(file['2t'][0, 1, 1].item()) == 248.0704
         shutil.rmtree(os.path.join(os.getcwd(), outdir))
 
+    # test with definitive = True and  catalog netcdf and zarr entry
+    def test_zarr_entry(self, lra_arguments):
+        """
+        Test the LRA generator with definitive = True
+        but with create zarr archive
+        """
+        model, exp, source, var, outdir, tmpdir = lra_arguments
+        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+                            outdir=outdir, tmpdir=tmpdir,
+                            resolution='r100', frequency='monthly', nproc= 1,
+                            loglevel=loglevel, definitive=True)
+        test.retrieve()
+        test.generate_lra()
+        test.create_catalog_entry()
+        test.create_zarr_entry()
+        reader1 = Reader(model=model, exp=exp, source='lra-r100-monthly')
+        reader2 = Reader(model=model, exp=exp, source='lra-r100-monthly-zarr')
+        data1 = reader1.retrieve()
+        data2 = reader2.retrieve()
+        assert data1.equals(data2)
+        shutil.rmtree(os.path.join(os.getcwd(), tmpdir))    
 
-    # test with definitive = False but with dask init and catalog generator
-    def test_dask_entry(self, lra_arguments):
+
+    # test with definitive = True and overwrite=True but with dask init
+    def test_dask_overwrite(self, lra_arguments):
         """
         Test the LRA generator with definitive = False
         but with dask init and catalog generator
         """
         model, exp, source, var, outdir, tmpdir = lra_arguments
         test = LRAgenerator(model=model, exp=exp, source=source, var=var,
-                            outdir=outdir, tmpdir=tmpdir,
+                            outdir=outdir, tmpdir=tmpdir, overwrite=True,
+                            definitive=True,
                             resolution='r100', frequency='monthly', nproc=2,
                             loglevel=loglevel)
         test.retrieve()
         test.generate_lra()
-        test.create_catalog_entry()
         assert os.path.isdir(os.path.join(os.getcwd(), outdir,
                                           "IFS/test-tco79/r100/monthly"))
-
+        shutil.rmtree(os.path.join(os.getcwd(), outdir))
         shutil.rmtree(os.path.join(os.getcwd(), tmpdir))
 
     

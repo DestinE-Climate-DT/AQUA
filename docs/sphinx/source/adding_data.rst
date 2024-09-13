@@ -4,10 +4,10 @@ Adding new data
 ===============
 
 To add new data the 3-level hierarchy on which AQUA is based, i.e. **model** - **exp** - **source**, must be respected so that 
-specific files must be created within the catalog of a specific machine.
+specific files must be created within the catalog.
 How to create a new source and add new data is documented in the next sections.
 
-- To add your data to AQUA, you have to provide an ``intake`` catalogue that describes your data,
+- To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data. 
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
@@ -16,7 +16,7 @@ How to create a new source and add new data is documented in the next sections.
   or to add it (see :ref:`grid_definition`).
 
 .. note::
-    A method to add new catalogues to the configuration folder has been developed.
+    A method to add new catalogs to the configuration folder has been developed.
     You can find more information in the :ref:`aqua-add` section.
 
 .. _file-based-sources:
@@ -35,7 +35,7 @@ Let's imagine we have a dataset called ``yearly_SST`` that consists of the follo
 - coordinate variables are ``lat`` and ``lon``, and the time variable is ``time``, all one dimensional
 - data located on the LUMI machine
 
-We will create a catalogue entry that will describe this dataset.
+We will create a catalog entry that will describe this dataset.
 The catalog name will be ``yearly_SST``.
 
 The additional entry in this file will look like this:
@@ -48,7 +48,7 @@ The additional entry in this file will look like this:
         args:
           path: "{{CATALOG_DIR}}/yearly_SST/main.yaml"
 
-The first step is to add this catalogue to the ``config/machines/lumi/catalog.yaml`` file.  
+The first step is to add this catalog to the ``config/catalogs/lumi/catalog.yaml`` file.  
 This will create the ``model`` entry within the catalog that can be used later by the ``Reader()``.
 
 .. note::
@@ -68,10 +68,10 @@ corresponding to the same model, can be added aside of this):
           path: "{{CATALOG_DIR}}/yearly_SST.yaml"
 
 We finally need to define the specific experiment file that we linked in the ``main.yaml``,
-using the ``yearly_SST.yaml`` file and saving it in the ``config/machines/lumi/catalog/yearly_SST`` directory
+using the ``yearly_SST.yaml`` file and saving it in the ``config/catalogs/lumi/catalog/yearly_SST`` directory
 (that we should create first if missing).
 
-The most straightforward intake catalogue describing our dataset will look like this: 
+The most straightforward intake catalog describing our dataset will look like this: 
 
 .. code-block:: yaml
 
@@ -114,8 +114,8 @@ You can add fixes to your dataset by following examples in the ``config/fixes/``
 .. note::
 
     If you want to add a Zarr or GRIB source the syntax may be slightly different,
-    but the general structure of the catalogue will be the same.
-    You can find examples in the existing catalogue or more information on the 
+    but the general structure of the catalog will be the same.
+    You can find examples in the existing catalog or more information on the 
     `intake <https://intake.readthedocs.io/en/stable/>`_ and
     `intake-xarray <https://intake-xarray.readthedocs.io/en/latest/>`_ documentation.
 
@@ -133,33 +133,43 @@ We report here an example and we later describe the different elements.
 .. code-block:: yaml
 
     sources:
-        hourly-native:
+        hourly-hpz7-atm2d:
             args:
-                request:
-                    domain: g
-                    class: rd
-                    expver: a06x
-                    type: fc
-                    stream: lwda
-                    date: 19500101
-                    time: '0000'
-                    param: 2t
-                    levtype: sfc
-                    step: 0
-                data_start_date: 19500101T0000
-                data_end_date: 19591231T2300
-                chunks: D  # Default time chunk size
-                savefreq: h  # at what frequency are data saved
-                timestep: h  # base timestep for step timestyle
-                timestyle: step  # variable date or variable step
-            description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
-            2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
-            2d(168), skt(235), chnk(148). See fix yaml for derived vars.
+            bridge_end_date: complete
+            request:
+                class: d1
+                dataset: climate-dt
+                activity: ScenarioMIP
+                experiment: SSP3-7.0
+                generation: 1
+                model: IFS-NEMO
+                realization: 1
+                resolution: standard
+                expver: '0001'
+                type: fc
+                stream: clte
+                date: 20210101
+                time: '0000'
+                param: 167
+                levtype: sfc
+                step: 0
+            data_start_date: 20200101T0000
+            data_end_date: 20391231T2300
+            chunks: D  # Default time chunk size
+            savefreq: h  # at what frequency are data saved
+            timestep: h  # base timestep for step timestyle
+            timestyle: date  # variable date or variable step
+            metadata: &metadata-default
+            fdb_home: '{{ FDB_PATH }}'
+            fdb_home_bridge: '{{ FDB_PATH }}/databridge'
+            eccodes_path: '{{ ECCODES_PATH }}/eccodes-2.32.5/definitions'
+            variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
+                187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
+                180, 181, 182, 212, 228]
+            source_grid_name: hpz7-nested
+            fixer_name: ifs-destine-v1
+            description: hourly 2D atmospheric data on healpix grid (zoom=7, h128).
             driver: gsv
-            metadata: 
-                fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-CONTROL_1950_DEVCON.yaml
-                eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
-                variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'chnk']
 
 This is a source entry from the FDB of one of the AQUA control simulation from the IFS model. 
 The source name is ``hourly-native``, because is suggesting that the catalog is made hourly data at the native model resolution.
@@ -167,14 +177,14 @@ Some of the parameters are here described:
 
 .. option:: request
 
-    - The ``request`` entry in the intake catalogue primarily serves as a template for making data requests,
+    - The ``request`` entry in the intake catalog primarily serves as a template for making data requests,
       following the standard MARS-style syntax used by the GSV retriever. 
     - The ``date`` parameter will be automatically overwritten by the appropriate ``data_start_date``.
       For the ``step`` parameter, when using ``timestyle: step``, setting it to a value other than 0
       signals that the initial steps are missing. 
       This is particularly useful for data sets with irregular step intervals, such as 6-hourly output.
     
-    This documentation provides an overview of the key parameters used in the catalogue, helping users better understand how to configure their data requests effectively.
+    This documentation provides an overview of the key parameters used in the catalog, helping users better understand how to configure their data requests effectively.
 
 .. option:: data_start_date
 
@@ -190,6 +200,13 @@ Some of the parameters are here described:
 .. option:: data_end_date
 
     As above, it tells AQUA when to stop reading from the FDB and it can be set to ``auto`` too (only if ``timestyle`` is 'date').
+
+.. option:: bridge_end_date
+
+    This optional date is used for cases where part of the data are on the HPC FDB and part on the databridge.
+    This is the first date/time (included) from which data are still on the HPC. Before all data are assumed to be on the databridge.
+    If set to "complete" then all data are assumed to be on the bridge.
+    It can also be set to a filename, from which to read the date of the data which were last wiped from the HPC (in YYYYMMDD format).
 
 .. option:: chunks
 
@@ -269,7 +286,10 @@ Some of the parameters are here described:
 
     This includes important supplementary information:
 
-    - ``fdb_path``: the path of the FDB configuration file (mandatory)
+    - ``fdb_home``: the path to where the FDB data are stored
+    - ``fdb_path``: the path of the FDB configuration file (deprecated, use only if config.yaml is in a not standard place)
+    - ``fdb_home_bridge``: FDB_HOME for bridge access
+    - ``fdb_path_bridge``: the path of the FDB configuration file for bridge access (deprecated, use only if needed)
     - ``eccodes_path``: the path of the eccodes version used for the encoding/decoding of the FDB
     - ``variables``: a list of variables available in the fdb.
     - ``source_grid_name``: the grid name defined in aqua-grids.yaml to be used for areas and regridding
@@ -284,6 +304,10 @@ Some of the parameters are here described:
 
     For FDB sources the ``metadata`` section contains very important informations that are used to
     retrieve the correct variables and levels.
+
+.. warning::
+
+    Please notice that the recent version of ecCodes used by AQUA (>= 2.36.0) is not compatible anymore with definition files from earlier versions (<2.34.0). For this reason we point now to older definition files which have been 'fixed' to keep working. The CLI tool to create such fixed definition files (``fix_eccodes.sh``) is available.
 
 Regridding capabilities
 -----------------------
@@ -373,13 +397,13 @@ A standard `lon-lat` grid is defined for basic interpolation and can be used for
 as long as the ``space_coord`` are ``lon`` and ``lat``.
 
 
-Compact catalogues with YAML override
+Compact catalogs with YAML override
 -------------------------------------
 
-In order to avoid having to write the same catalogue entry for each source,
-in AQUA we can use the YAML override functionality also for the intake catalogues.
+In order to avoid having to write the same catalog entry for each source,
+in AQUA we can use the YAML override functionality also for the intake catalogs.
 This allows to write the full rquest information only for a first 
-base catalogue source and then define the following ones as copies of the first,
+base catalog source and then define the following ones as copies of the first,
 overriding only the keys that are different.
 
 For example, let's imagine that we have a first source called ``hourly-native``
@@ -461,17 +485,17 @@ members, and we want to described this in the catalog. This is something intake 
                     domain: g
                     class: rd
                     expver: a06x
-                    realization: {{ realization }}
+                    realization: '{{ realization }}'
 
                     ...
                    
                 driver: gsv
                 parameters:
                     realization:
-                        allowed: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+                        allowed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
                         description: realization member
-                        type: str
-                        default: '1'
+                        type: int
+                        default: 1
 
 This can be later accessed via the reader providing an extra argument, or kwargs in python jargon, which define the realization
 

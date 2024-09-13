@@ -81,3 +81,8 @@ grids:
   nemo-multiIO-r025-3d:
     path:
       level: '{{ grids }}/lonlat/nemo-multiIO-r025-3d.nc'
+  nemo-multiIO-r100:
+    path: '{{ grids }}/lonlat/nemo-multiIO-r100.nc'
+  nemo-multiIO-r100-3d:
+    path:
+      level: '{{ grids }}/lonlat/nemo-multiIO-r100-3d.nc'

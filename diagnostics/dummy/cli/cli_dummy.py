@@ -3,7 +3,7 @@
 '''
 AQUA dummy diagnositc command line interface.
 Check that the imports are correct and the requested model is available in the
-Reader catalogue.
+Reader catalog.
 '''
 import os
 import sys
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         reader_atm.retrieve()
     except Exception as e:
         logger.error('Failed to retrieve atm data: {}'.format(e))
-        logger.critical('Check that the atmospheric model is available in the Reader catalogue.')
+        logger.critical('Check that the atmospheric model is available in the Reader catalog.')
         reader_atm = None
 
     try:
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         reader_oce.retrieve()
     except Exception as e:
         logger.error('Failed to retrieve oce data: {}'.format(e))
-        logger.critical('Check that the oceanic model is available in the Reader catalogue.')
+        logger.critical('Check that the oceanic model is available in the Reader catalog.')
         reader_oce = None
 
     if reader_atm is None and reader_oce is None:

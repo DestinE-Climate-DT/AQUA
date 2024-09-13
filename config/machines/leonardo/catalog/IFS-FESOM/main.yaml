@@ -1,7 +1,0 @@
-sources:
-  placeholder:
-    description: placeholder entry
-    driver: yaml_file_cat
-    args:
-      path: '{{CATALOG_DIR}}/placeholder.yaml'
-  

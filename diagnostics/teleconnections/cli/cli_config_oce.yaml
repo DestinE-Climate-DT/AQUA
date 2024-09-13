@@ -5,7 +5,7 @@ teleconnections:
 # Interface file, found in config folder
 interface: 'teleconnections-destine'
 
-# The first is overwritten if the script with the flags --model, --exp, --source
+# The first is overwritten if the script with the flags --catalog, --model, --exp, --source
 # Extra keyword arguments for the models are:
 # regrid: null
 # freq: null
@@ -14,14 +14,16 @@ interface: 'teleconnections-destine'
 # If you want to use native data, you have to set these parameters
 # for each model.
 models:
-  - model: 'IFS-NEMO'
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'lra-r100-monthly'
 
 # Reference is analyzed if --ref is passed to the script
 # The same extra keyword arguments as for the models can be used.
 reference:
-  - model: 'ERA5'
+  - catalog: 'obs'
+    model: 'ERA5'
     exp: 'era5'
     source: 'monthly'
 

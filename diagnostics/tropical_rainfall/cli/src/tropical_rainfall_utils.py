@@ -71,14 +71,14 @@ def load_configuration(file_path):
     config = load_yaml(file_path)
     return config
 
-def adjust_year_range_based_on_dataset(full_dataset, start_year=None, final_year=None):
+def adjust_year_range_based_on_dataset(dataset, start_year=None, final_year=None):
     """
     Adjusts the start and end years for processing based on the dataset's time range and optional user inputs.
     """
     # Extract the first and last year from the dataset's time dimension
     try:
-        first_year_in_dataset = full_dataset['time'].dt.year.values[0]
-        last_year_in_dataset = full_dataset['time'].dt.year.values[-1]
+        first_year_in_dataset = dataset['time'].dt.year.values[0]
+        last_year_in_dataset = dataset['time'].dt.year.values[-1]
     except AttributeError:
         raise ValueError("The dataset must have a 'time' dimension with datetime64 data.")
 

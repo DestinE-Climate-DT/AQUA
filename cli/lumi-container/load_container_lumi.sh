@@ -12,8 +12,7 @@ else
     # Your subsequent commands here
 fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.8.2.sif"
-FDB5_CONFIG_FILE="/scratch/project_465000454/igonzalez/fdb-long/config.yaml"
+AQUA_container="/project/project_465000454/containers/aqua/aqua-v0.11.3.sif"
 GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
 GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
 
@@ -72,7 +71,6 @@ log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
 singularity $cmd \
     --cleanenv \
-    --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
     --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
@@ -84,7 +82,8 @@ singularity $cmd \
     --bind /pfs/lustrep3/ \
     --bind /pfs/lustrep4/ \
     --bind /pfs/lustrep3/scratch/ \
-    --bind /users/lrb_465000454_fdb/ \
+    --bind /appl/local/climatedt/ \
+    --bind /appl/local/destine/ \
     --bind /flash/project_465000454 \
     --bind /projappl/ \
     --bind /project \

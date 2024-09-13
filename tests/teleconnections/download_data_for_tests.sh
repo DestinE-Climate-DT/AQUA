@@ -13,5 +13,5 @@ else
     echo "File already exists."
 fi
 
-cp ./config/config-aqua.yaml ./config/config-aqua.yaml.bak
-sed -i "/^machine:/c\\machine: ci" "./config/config-aqua.yaml"
+#cp ./config/config-aqua.yaml ./config/config-aqua.yaml.bak
+#sed -i "/^catalog:/c\\catalog: ci" "./config/config-aqua.yaml"

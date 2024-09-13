@@ -5,8 +5,11 @@ target:
   outdir: /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA
   tmpdir: /pfs/lustrep3/projappl/project_465000454/padavini/tmp
 
-configdir: '../../config/'
 loglevel: INFO
+
+# Set to True if lra-r100-monthly-zarr should be created and checked
+zarr: False
+verify_zarr: False
 
 slurm:
   partition: small
@@ -15,51 +18,7 @@ slurm:
   time: 10:00:00
   mem: 256GB
 
-catalog:
-  IFS-NEMO:
-    a1al:
-      hourly-hpz7-atm2d:
-        workers: 24
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
-          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
-      hourly-hpz7-atm3d:
-        workers: 16
-        vars: ['q', 't', 'u', 'v']
-      daily-hpz7-oce2d:
-        workers: 32
-        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
-      daily-hpz7-oce3d:
-        workers: 16
-        vars: ['avg_thetao', 'avg_so']
-    a16z:
-      hourly-hpz7-atm2d:
-        workers: 24
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
-          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
-      hourly-hpz7-atm3d:
-        workers: 16
-        vars: ['q', 't', 'u', 'v']
-      daily-hpz7-oce2d:
-        workers: 32
-        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
-      daily-hpz7-oce3d:
-        workers: 16
-        vars: ['avg_thetao', 'avg_so']
-    a18j:
-      hourly-hpz7-atm2d:
-        workers: 24
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
-          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
-      hourly-hpz7-atm3d:
-        workers: 16
-        vars: ['q', 't', 'u', 'v']
-      daily-hpz7-oce2d:
-        workers: 32
-        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
-      daily-hpz7-oce3d:
-        workers: 16
-        vars: ['avg_thetao', 'avg_so']
-
+data:
   ICON:
     historical-1990:
       hourly-hpz10-atm2d:
@@ -91,48 +50,107 @@ catalog:
         workers: 10
         vars: ['avg_thetao', 'avg_so']
 
-  IFS-FESOM:
-    story-2017-control:
-      hourly-hpz7-atm2d:
-        workers: 24
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+  IFS-NEMO:
+    control-1990:
+      hourly-hpz10-atm2d:
+        workers: 16
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
-      hourly-hpz7-atm3d:
-        workers: 16
+      hourly-hpz10-atm3d:
+        workers: 6
         vars: ['q', 't', 'u', 'v']
-      daily-hpz7-oce2d:
-        workers: 32
+      daily-hpz10-oce2d:
+        workers: 12
         vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
-      daily-hpz7-oce3d:
-        workers: 16
+      daily-hpz10-oce3d:
+        workers: 3
         vars: ['avg_thetao', 'avg_so']
+    # a1al:
+    #   hourly-hpz7-atm2d:
+    #     workers: 24
+    #     vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+    #       'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+    #   hourly-hpz7-atm3d:
+    #     workers: 16
+    #     vars: ['q', 't', 'u', 'v']
+    #   daily-hpz7-oce2d:
+    #     workers: 32
+    #     vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+    #   daily-hpz7-oce3d:
+    #     workers: 16
+    #     vars: ['avg_thetao', 'avg_so']
+    # a16z:
+    #   hourly-hpz7-atm2d:
+    #     workers: 24
+    #     vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+    #       'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+    #   hourly-hpz7-atm3d:
+    #     workers: 16
+    #     vars: ['q', 't', 'u', 'v']
+    #   daily-hpz7-oce2d:
+    #     workers: 32
+    #     vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+    #   daily-hpz7-oce3d:
+    #     workers: 16
+    #     vars: ['avg_thetao', 'avg_so']
+    # a18j:
+    #   hourly-hpz7-atm2d:
+    #     workers: 24
+    #     vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+    #       'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+    #   hourly-hpz7-atm3d:
+    #     workers: 16
+    #     vars: ['q', 't', 'u', 'v']
+    #   daily-hpz7-oce2d:
+    #     workers: 32
+    #     vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+    #   daily-hpz7-oce3d:
+    #     workers: 16
+    #     vars: ['avg_thetao', 'avg_so']
+          #    hs3l-historical-1990:
+          #      monthly-hpz7-atm2d:
+          #        workers: 24
+          #        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+          #          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+          #      monthly-hpz7-atm3d:
+          #        workers: 16
+          #        vars: ['q', 't', 'u', 'v']
+          #    hs3l-control-1990:
+          #      monthly-hpz7-atm2d:
+          #        workers: 24
+          #      vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+          #       'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+          #      monthly-hpz7-atm3d:
+          #     workers: 16
+          #  vars: ['q', 't', 'u', 'v']
 
-    story-2017-historical:
-      hourly-hpz7-atm2d:
-        workers: 24
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
-          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
-      hourly-hpz7-atm3d:
-        workers: 16
-        vars: ['q', 't', 'u', 'v']
-      daily-hpz7-oce2d:
-        workers: 32
-        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
-      daily-hpz7-oce3d:
-        workers: 16
-        vars: ['avg_thetao', 'avg_so']
+  # IFS-FESOM:
+  #   story-2017-control:
+  #     hourly-hpz7-atm2d:
+  #       workers: 24
+  #       vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+  #         'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+  #     hourly-hpz7-atm3d:
+  #       workers: 16
+  #       vars: ['q', 't', 'u', 'v']
+  #     daily-hpz7-oce2d:
+  #       workers: 32
+  #       vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+  #     daily-hpz7-oce3d:
+  #       workers: 16
+  #       vars: ['avg_thetao', 'avg_so']
 
-    story-2017-T2K:
-      hourly-hpz7-atm2d:
-        workers: 24
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
-          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
-      hourly-hpz7-atm3d:
-        workers: 16
-        vars: ['q', 't', 'u', 'v']
-      daily-hpz7-oce2d:
-        workers: 32
-        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
-      daily-hpz7-oce3d:
-        workers: 16
-        vars: ['avg_thetao', 'avg_so']
+  #   story-2017-T2K:
+  #     hourly-hpz7-atm2d:
+  #       workers: 24
+  #       vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf', 
+  #         'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+  #     hourly-hpz7-atm3d:
+  #       workers: 16
+  #       vars: ['q', 't', 'u', 'v']
+  #     daily-hpz7-oce2d:
+  #       workers: 32
+  #       vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+  #     daily-hpz7-oce3d:
+  #       workers: 16
+  #       vars: ['avg_thetao', 'avg_so']

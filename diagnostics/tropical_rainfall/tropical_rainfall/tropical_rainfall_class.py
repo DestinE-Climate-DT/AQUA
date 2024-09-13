@@ -5,6 +5,7 @@
 """
 from typing import Union, Optional
 from aqua.logger import log_configure
+from aqua.util import ConfigPath
 
 from .src.tropical_rainfall_tools import ToolsClass
 from .src.tropical_rainfall_plots import PlottingClass
@@ -14,7 +15,7 @@ from .src.tropical_rainfall_meta import MetaClass
 from importlib import resources
 full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
 config = ToolsClass().get_config()
-machine = ToolsClass().get_machine()
+machine = ConfigPath().get_machine()
 
 loglevel = ToolsClass().get_config_value(config, 'loglevel', default='WARNING')
 trop_lat = ToolsClass().get_config_value(config, 'class_attributes', 'trop_lat', default=10)

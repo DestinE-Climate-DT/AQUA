@@ -82,8 +82,8 @@ To run the test suite, navigate to the root directory of the project and run the
 
     ./download_data_for_tests.sh
 
-This will download the data needed for the tests and change the machine name in the ``config/config-aqua.yaml`` to ``ci``. 
-Remember to change it to your machine name after the tests are finished.
+This will download the data needed for the tests and change the catalog name in the ``config/config-aqua.yaml`` to ``ci``. 
+Remember to change it to your catalog name after the tests are finished.
 
 Then, run the following command:
 

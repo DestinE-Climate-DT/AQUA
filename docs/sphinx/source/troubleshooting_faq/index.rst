@@ -9,5 +9,6 @@ This section answers frequently asked questions and addresses common issues that
    :maxdepth: 2
 
    faq_installation
+   faq_gsv_missing_grids
    faq_plot_single_map
    faq_cite

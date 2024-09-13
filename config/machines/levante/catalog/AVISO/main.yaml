@@ -1,6 +1,0 @@
-sources:
- ssh-L4:
-    description: AVISO Sea Surface Height L4 product and derived variables
-    driver: yaml_file_cat
-    args:
-      path: "{{CATALOG_DIR}}/ssh-L4.yaml"

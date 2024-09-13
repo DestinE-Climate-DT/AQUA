@@ -1,0 +1,22 @@
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  fixer_name: False
+  catalog: climate-dt-phase1
+
+paths:
+  outdir: %HPCROOTDIR%/tmp
+  tmpdir: %HPCROOTDIR%/tmp
+  opadir: %HPCROOTDIR%/tmp
+  #configdir: '%HPCROOTDIR%/%PROJECT.PROJECT_DESTINATION%/aqua/config'
+
+options:  
+  loglevel: INFO
+
+# all the variable listed here will be processed by the LRA creator
+data:
+  %AQUA.MODEL%:
+    %AQUA.EXP%: 
+      %AQUA.SOURCE%:
+        vars: [%AQUA.VARS%]

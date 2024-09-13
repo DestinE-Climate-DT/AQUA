@@ -1,9 +1,10 @@
-"""Test for timmean method"""
+"""Test for some of the utils"""
 
 import pytest
 import datetime
 import xarray as xr
 import numpy as np
+import pandas as pd
 from aqua.util import extract_literal_and_numeric, file_is_complete
 
 @pytest.fixture

@@ -15,8 +15,8 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     Function to extract CERES data for further analysis + create global means
 
     Args:
-        exp (str):   Input experiment to be selected from the catalogue.
-        source (str): Input source to be selected from the catalogue.
+        exp (str):   Input experiment to be selected from the catalog.
+        source (str): Input source to be selected from the catalog.
         fix (bool):  If True, apply the fix to the CERES data. Default is True.
         level (str): Input level (either 'toa' or 'sfc'). Defaults to 'toa'
         variable_names (dict): Dictionary containing variable names mapping. Defaults for toa and sfc are:
@@ -122,9 +122,9 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
     Function to extract Model output data for further analysis and create global means.
 
     Args:
-        model (str):   Input model to be selected from the catalogue.
-        exp (str):     Input experiment to be selected from the catalogue.
-        source (str):  Input source to be selected from the catalogue.
+        model (str):   Input model to be selected from the catalog.
+        exp (str):     Input experiment to be selected from the catalog.
+        source (str):  Input source to be selected from the catalog.
         fix (bool):    If True, apply the fix to the model data. Default is False.
         loglevel (str): The log level for the logger. Default is 'WARNING'.
         start_date (str): Start date of the time range to select (format: 'YYYY-MM-DD').

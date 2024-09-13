@@ -18,8 +18,7 @@ try:
 except ModuleNotFoundError:
     print("The module tropical_rainfall.py is not found.")
 
-approx_rel = 1e-4
-
+approx_rel = 1e-4 #
 
 @pytest.mark.tropical_rainfall
 @pytest.fixture

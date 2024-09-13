@@ -6,7 +6,7 @@ job_name: aqua-web
 partition: small
 nodes: 1
 ntasks_per_node: 128
-time: 02:00:00
+time: 04:00:00
 logdir_error: /pfs/lustrep3/projappl/project_465000454/jvonhar/log/
 logdir_output: /pfs/lustrep3/projappl/project_465000454/jvonhar/log/
 aquadir: /pfs/lustrep3/projappl/project_465000454/jvonhar/AQUA
@@ -14,6 +14,7 @@ outdir: /pfs/lustrep3/projappl/project_465000454/jvonhar/aqua-analysis/output
 config: config.aqua-web.yaml
 template: aqua-web.job.j2
 
+catalog: climatedt-phase1
 model: IFS-NEMO
 exp: historical
 source: lra-r100-monthly

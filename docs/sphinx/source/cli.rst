@@ -28,38 +28,42 @@ All the diagnostic logfiles will be saved in this main folder, while the diagnos
 named after the diagnostic name.
 Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
 
+The exact list of diagnostics to run and technical details of the analysis
+(such as the nuber of cpu cores to be used for each diagnostic) 
+are specified in the configuration file ``config.aqua-analysis.yaml``. 
+
 Additional options
 ^^^^^^^^^^^^^^^^^^
 
 Some options are available to launch the script without having to modify the script itself,
 so that the script can be used in a batch job or in a workflow.
 
-.. option:: -a <model>, --model_atm <model>
+.. option:: -m <model>
 
-    The atmospheric model to use.
-
-.. option:: -o <model>, --model_oce <model>
-
-    The oceanic model to use.
+    The  model to use.
 
 .. option:: -e <exp>, --exp <exp>
 
     The experiment to use.
 
-.. option:: -s <source>, source <source>
+.. option:: -s <source>, --source <source>
 
     The source to use.
+
+.. option:: -c <catalog>, --catalog <catalog>
+
+    The catalog to use.
+    Default is using the catalog currently defined by the AQUA console.
+
+.. option:: -f <config>, --config <source>
+
+    The config file to use.
 
 .. option:: -d <dir>, --outputdir <dir>
 
     The output directory to use.
     Default is ``$AQUA/cli/aqua-analysis/output``.
     Prefer to use an absolute path.
-
-.. option:: -m <machine>, --machine <machine>
-
-    The machine to use.
-    Default is ``lumi``.
 
 .. option:: -l <loglevel>, --loglevel <loglevel>
 
@@ -80,7 +84,6 @@ so that the script can be used in a batch job or in a workflow.
     A predefined number of workers is used for each diagnostic, set in the script itself.
     For ecmean the multiprocessing option is used.
     
-
 .. note ::
 
     By default the script will run all the state-of-the-art diagnostics available in AQUA.
@@ -102,21 +105,38 @@ Basic usage
 
 .. code-block:: bash
 
-    # to generate and push the documentation to aqua-web
-    ./make_push_docs.py 
+    bash push-analysis.sh [OPTIONS] INDIR EXPS
 
-    # to collect the figures from a directory $INDIR  figures to aqua-web
-    INDIR=/path/to/figures_root
-    MODELEXP=IFS-NEMO/historical-1990 # the subfolder of INDIR where the figures are stored (also model/exp pair for aqua-web)
-    
-    python ./make_push_figures.py $INDIR $MODELEXP # to collect the figures and push them to aqua-web
+This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
+``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
+``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
+or a text file containing a list of experiments in the format "catalog model experiment".
 
-Instead of a MODEL/EXPERIMENT pair, it is possible to specify
-an experiment list in a text file, in the same format as the one used by the :ref:`submit-aqua-web` script.
+Additional options
+^^^^^^^^^^^^^^^^^^
 
-.. note::
-    The user running the script must have the right to push to the aqua-web repository and must have
-    set up the ssh keys to access the repository.
+.. option:: -b <branch>, --branch <branch>
+
+    The branch to push to (optional, default is ``main``).
+
+.. option:: -u <user>, --user <user>
+
+    Credentials (in the format username:PAT) to create an automatic PR for the branch (optional).
+    If this is option is specified and a branch is used, then an automatic PR is generated.
+
+.. option:: -m <message>, --message <message>
+
+    Description of the automatic PR (optional, is generated automatically by default). 
+
+.. option:: -t <title>, --title <title>
+
+    Title for the automatic PR (optional).
+
+Another script is used to upload the documentation to the aqua-web repository.
+
+.. code-block:: bash
+
+    bash make_push_docs.py 
 
 .. _submit-aqua-web:
 
@@ -204,27 +224,6 @@ Options
     Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
 
 
-.. _fdb-catalog-generator:
-
-Catalog entry generator for FDB sources
----------------------------------------
-
-A tool which streamlines the process of adding new experiments to the catalog.
-It exploits the capabilities of the Jinja package to obtain a cleaner and more flexible code.
-Users can easily customize their experiments by updating the ``config.tmpl`` file, with the experiment's specific details.
-The script is available in the ``cli/fdb-catalog-generator`` folder.
-Basic usage:
-
-.. code-block:: bash
-
-    ./catalog-jinja-generator.py -c config.tmpl -j ifs-nemo-default.j2 -l INFO
-
-
-.. warning::
-
-    Please note that currently only one Jinja template is available (``ifs-nemo-default.j2`` for IFS-NEMO), but it is possible to add more templates in the future.
-
-
 .. _benchmarker:
 
 Benchmarker
@@ -234,18 +233,6 @@ A tool to benchmark the performance of the AQUA analysis tools. The tool is avai
 It runs a few selected methods for multiple times and report the durations of multiple execution: it has to be run in batch mode with 
 the associated jobscript in order to guarantee robust results. 
 It will be replaced in future by more robust performance machinery.
-
-.. _gribber:
-
-GRIB catalog generator
-----------------------
-
-A tool building on Gribscan, aiming at creating compact catalog entries through JSON files for massive GRIB archives.
-A script in the ``cli/gribber`` folder is available.
-
-.. warning ::
-
-    This tool is currently deprecated, it might be removed in the future.
 
 
 .. _grids-from-data:
@@ -368,6 +355,20 @@ Basic usage:
 
     ./generate_weights.py -c weights_config.yaml
 
+ecCodes fixer
+-------------
 
+In order to be able to read data written with recent versions of ecCodes,
+AQUA needs to use a very recent version of the binary and of the definition files.
+Data written with earlier versions of ecCodes should instead be read using previous definition files.
+AQUA solves this problem by switching on the fly the definition path for ecCodes, as specified in the source catalog entry. 
+Starting from version 2.34.0 of ecCodes older definitions are not compatible anymore.
+As a fix we create copies of the original older definion files with the addition/change of 5 files (``stepUnits.def`` and 4 files including it).
+A CLI script (``eccodes/fix_eccodes.sh``) is available to create such 'fixed' definition files.
 
+.. warning::
 
+    This change is necessary since AQUA v0.11.1.
+    Please notice that this also means that earlier versions of the ecCodes binary will not work using these 'fixed' definition files.
+    If you are planning to use older versions of AQUA (with older versions of ecCodes) you should not use these 'fixed' definition files
+    and you may need to modify the ecCodes path in the catalog entries.

@@ -16,10 +16,10 @@ This is a YAML file called ``config-aqua.yaml`` and is located in the configurat
 
 The configuration file is used to specify the following parameters:
 
-- **machine**: the machine on which the code is running. This is used to specify the
-  location of the AQUA catalogue and the location of the data. Default is ``lumi``.
-  Other options are ``ci`` and ``levante``. Custom machines can be defined (see :ref:`_new-catalogue`).
-- **reader**: this block contains catalogue, fixes and grids location.
+- **catalog**: the catalog on which the AQUA will run. This is used to specify the
+  location of the AQUA catalog and the location of the data. Default is ``lumi``.
+  Other options are ``ci`` and ``levante``. Custom catalogs can be defined (see :ref:`new-catalog`).
+- **reader**: this block contains catalog, fixes and grids location.
   These paths are required to be inside the AQUA repository,
   so these paths should not be changed unless strictly necessary.
   Refer to :ref:`add-data` for more information.
@@ -34,77 +34,73 @@ The configuration folder has this structure:
     │   ├── data_models
     │   ├── fixes
     │   ├── grids
-    │   └── machines
+    │   └── catalogs
     │       ├── lumi
     │       │   ├── catalog 
     │       │   └── catalog.yaml
+    │       │   └── machine.yaml
     │       ├── levante
     │       └── ...
     ├── config-aqua.yaml
 
-.. note::
-  The machine depencency in files and folders will be removed in future versions of AQUA.
 
-.. _new-catalogue:
+.. _new-catalog:
 
-Adding a new catalogue
+Adding a new catalog
 ----------------------
 
-.. warning::
 
-    The machine depencency in configuration files will be removed in the next release.
-    If you want to add a new machine, please follow the instructions below, but be aware
-    of the changes we are introducing in the section :ref:`aqua-console`.
-
-.. Change the machine name
-.. ^^^^^^^^^^^^^^^^^^^^^^^
-
-.. Let's assume that the new machine to configure is called ``new_machine``.
-.. The first step is to change the machine name in the ``config-aqua.yaml`` file,
-.. which is located in the ``$AQUA/config`` directory.
-
-.. .. code-block:: yaml
-
-..     machine: new_machine
-
-Creation of the catalogue folder
+Creation of the catalog folder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To add a new machine to the AQUA catalogue we need to create a
-new folder that will contain the configuration files for the new machine.
+To add a new catalog to the AQUA catalog we need to create a
+new folder that will contain the configuration files.
 
 You can create the folder where you prefer and then add it to the
-available catalogues with the ``aqua add`` command (see :ref:`aqua-add`).
-This will copy or link the required files, allowing to have your custom catalogue
+available catalogs with the ``aqua add`` command (see :ref:`aqua-add`).
+This will copy or link the required files, allowing to have your custom catalog
 folder under version control if needed.
 
 .. code-block:: bash
 
-    cd /path/of/your/catalogue
-    mkdir new_catalogue
+    cd /path/of/your/catalog
+    mkdir new_catalog
 
-This will contain the ``catalog.yaml`` file, which is the main file for the machine configuration.
+A machine specific file ``machine.yaml`` need to be created as a first step. This will include the path 
+where the grids, weights and areas produced by AQUA will be stored. A default can be provided to be used in 
+whatsoever machine where AQUA is installed, but also machine specific paths can be defined
 
 .. code-block:: yaml
 
-    paths:
-        grids: /path/to/aqua/data/grids
-        weights: /path/to/aqua/data/weights
-        areas: /path/to/aqua/data/areas
+    default: 
+        paths:
+            grids: /path/to/aqua/data/grids
+            weights: /path/to/aqua/data/weights
+            areas: /path/to/aqua/data/areas
+    myhpc: 
+        paths:
+            grids: /path/to/aqua/data/grids
+            weights: /path/to/aqua/data/weights
+            areas: /path/to/aqua/data/areas
+
+
+Then, you will need to create the the ``catalog.yaml`` file, which is the main file for the catalog configuration.
+
+.. code-block:: yaml
 
     sources:
         my-model:
-            description: New model for a new machine
+            description: New model for a new catalog
             driver: yaml_file_cat
             args:
                 path: "{{CATALOG_DIR}}/catalog/my-model/main.yaml"
 
 In this example we're adding just one model, called ``my-model``.
 
-Populating the catalogue
+Populating the catalog
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Let's assume that the new catalogue has a new model called ``my-model`` defined before.
+Let's assume that the new catalog has a new model called ``my-model`` defined before.
 Let's create a new experiment with a new source for this model.
 
 The file ``main.yaml`` should be created in the ``catalog/my-model`` directory.
@@ -123,18 +119,18 @@ Finally we can create the file ``my-exp.yaml`` in the same directory.
 This is the file that will describe all the sources for the new experiment.
 More informations about how to add them can be found in the :ref:`add-data` section.
 
-Adding the catalogue to the AQUA package
+Adding the catalog to the AQUA package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since ``v0.8.2`` the AQUA package has an entry point script that will allow to add a new catalogue to the AQUA package.
+Since ``v0.9`` the AQUA package has an entry point script that will allow to add a new catalog to the AQUA package.
 This is done with the ``aqua add`` command.
 
 .. code-block:: bash
 
-    aqua add new_catalogue -e /path/to/your/catalogue/new_catalogue
+    aqua add new_catalog -e /path/to/your/catalog/new_catalog
 
 .. note::
-    This command will create a symbolic link to the new catalogue in the ``$AQUA/config/machines`` directory.
+    This command will create a symbolic link to the new catalog in the ``$AQUA/config/catalogs`` directory.
     See the :ref:`aqua-add` section for more information.
 
 Download of grids
@@ -150,7 +146,7 @@ Please refer to the section :ref:`grids-downloader` for more details.
 Dask access to FDB or GSV
 --------------------------
 
-If an appropriate entry has been created in the catalogue, the reader can also read data from a FDB/GSV source. 
+If an appropriate entry has been created in the catalog, the reader can also read data from a FDB/GSV source. 
 The request is transparent to the user (no apparent difference to other data sources) in the call.
 
 .. code-block:: python
@@ -163,8 +159,8 @@ like all other data sources.
 This is performed by an intake driver for FDB which has been specifically developed from scratch inside AQUA.
 
 In the case of FDB access specifying the variable is compulsory,
-but a list can be provided and it is done for the FDB sources available in the catalogue.
-If not specified, the default variable defined in the catalogue is used.
+but a list can be provided and it is done for the FDB sources available in the catalog.
+If not specified, the default variable defined in the catalog is used.
 
 .. warning::
 
@@ -173,7 +169,7 @@ If not specified, the default variable defined in the catalogue is used.
 An optional keyword, which in general we do **not** recommend to specify for dask access, is ``chunks``,
 which specifies the chunk size for dask access.
 Values could be ``D``, ``M``, ``Y`` etc. (in pandas notation) to specify daily, monthly and yearly aggregation.
-It is best to use the default, which is already specified in the catalogue for each data source.
+It is best to use the default, which is already specified in the catalog for each data source.
 This default is based on the memory footprint of single grib message, so for example for IFS-NEMO dative data
 we use ``D`` for Tco2559 (native) and "1deg" streams, ``Y`` for monthly 2D data and ``M`` for 3D monthly data.
 In any case, if you use multiprocessing and run into memory troubles for your workers, you may wish to decrease
@@ -385,7 +381,7 @@ Then, the user can cancel the particular job as:
 
 .. warning::
 
-It is potentially dangerous to cancel all your jobs. Always prefer to cancel jobs with the Job_ID.
+    It is potentially dangerous to cancel all your jobs. Always prefer to cancel jobs with the Job_ID.
 
 
 Modifying and Adding Machine Configurations in YAML
@@ -419,27 +415,27 @@ To modify existing configurations or add new machines, edit the ``.aqua/aqua/slu
 Developer notes
 ---------------
 
-The standard setup of AQUA is thought to be used in a conda environment by users who are not going to modify under version control the downloaded catalogues.
+The standard setup of AQUA is thought to be used in a conda environment by users who are not going to modify under version control the downloaded catalogs.
 For this reason we suggest to install the AQUA configuration files in the ``$HOME/.aqua``. 
-Anyway, this configuration could be not ideal if you're creating a new catalogue or modifying an existing one and you want to keep it under version control.
+Anyway, this configuration could be not ideal if you're creating a new catalog or modifying an existing one and you want to keep it under version control.
 For this reason the following steps are suggested to set up the AQUA package in a developer environment.
 
 Set up environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since ``v0.8.2`` the AQUA package has an entry point script that can be used to copy the configuration files
-and the catalogue to an external directory (see :ref:`aqua-init` and :ref:`aqua-console`).
+Since ``v0.9`` the AQUA package has an entry point script that can be used to copy the configuration files
+and the catalog to an external directory (see :ref:`aqua-install` and :ref:`aqua-console`).
 
 By default the configuration files are stored in the ``$HOME/.aqua`` directory.
-Same for the catalogue, which is stored in the ``$HOME/.aqua/machines`` directory.
+Same for the catalog, which is stored in the ``$HOME/.aqua/catalogs`` directory.
 This has been done to make the package more user-friendly, expecially when installing the package
 from a conda environment or from a pip package.
 
-A developer may want to keep the configuration files and the catalogues in a different directory,
-for this reason the ``aqua init`` command can be used to copy the configuration files and the catalogue
-to a different directory. For more information see the :ref:`aqua-init` section.
+A developer may want to keep the configuration files and the catalogs in a different directory,
+for this reason the ``aqua init`` command can be used to copy the configuration files and the catalog
+to a different directory. For more information see the :ref:`aqua-install` section.
 
-If you're using a custom directory to store the configuration files and the catalogue it is recommended
+If you're using a custom directory to store the configuration files and the catalog it is recommended
 to set up an environment variable to specify the path to the AQUA package.
 This can be done by adding the following line to your `.bashrc` or `.bash_profile` file:
 
@@ -447,16 +443,16 @@ This can be done by adding the following line to your `.bashrc` or `.bash_profil
 
     export AQUA_CONFIG=/path/to/config_files
 
-This will make clear for the code where to find the AQUA catalogue and the configuration files.
+This will make clear for the code where to find the AQUA catalog and the configuration files.
 
 .. note::
     It is temporalily possible to set the environment variable ``AQUA`` to specify the path of the source code,
     so that the entire new aqua entry point can be superseeded by the old method.
     This will be removed in the next release.
 
-Add new catalogues as developer
+Add new catalogs as developer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you're adding a new catalogue or modifying an existing one it is recommended to use the old method to set up the AQUA package
-or to add the catalogue with the editable option.
+If you're adding a new catalog or modifying an existing one it is recommended to use the old method to set up the AQUA package
+or to add the catalog with the editable option.
 Please refer to the :ref:`aqua-add` section for more information.

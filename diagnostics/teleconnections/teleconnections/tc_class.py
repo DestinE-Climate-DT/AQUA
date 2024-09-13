@@ -18,7 +18,7 @@ import pandas as pd
 
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.reader import Reader, inspect_catalogue
+from aqua.reader import Reader, inspect_catalog
 from aqua.util import ConfigPath, create_folder
 from teleconnections.index import station_based_index, regional_mean_anomalies
 from teleconnections.plots import index_plot
@@ -33,6 +33,7 @@ class Teleconnection():
 
     def __init__(self, model: str, exp: str, source: str,
                  telecname: str,
+                 catalog=None,
                  configdir=None, aquaconfigdir=None,
                  interface='teleconnections-destine',
                  regrid=None, freq=None,
@@ -48,6 +49,7 @@ class Teleconnection():
             source (str):                   Source name.
             telecname (str):                Teleconnection name.
                                             See documentation for available teleconnections.
+            catalog (str, optional):        Name of the catalog that contains the data
             configdir (str, optional):      Path to diagnostics configuration folder.
             aquaconfigdir (str, optional):  Path to AQUA configuration folder.
             interface (str, optional):      Interface filename. Defaults to 'teleconnections-destine'.
@@ -78,6 +80,7 @@ class Teleconnection():
         self.logger = log_configure(self.loglevel, 'Teleconnection')
 
         # Reader variables
+        self.catalog = catalog
         self.model = model
         self.exp = exp
         self.source = source
@@ -86,14 +89,13 @@ class Teleconnection():
         self.enddate = enddate
 
         # Load AQUA config and check that the data is available
-        self.machine = None
         self.aquaconfigdir = aquaconfigdir
         self._aqua_config()
 
         self.regrid = regrid
         if self.regrid is None:
             self.logger.info('No regrid will be performed, be sure that the data is '
-                                'already at low resolution')
+                             'already at low resolution')
         self.logger.debug("Regrid resolution: %s", self.regrid)
 
         self.freq = freq
@@ -403,14 +405,15 @@ class Teleconnection():
         Raises:
             NoDataError: If the data is not available.
         """
-        aqua_config = ConfigPath(configdir=self.aquaconfigdir)
-        self.machine = aqua_config.machine
-        self.logger.debug("Machine: %s", self.machine)
 
-        # Check that the data is available in the catalogue
-        if inspect_catalogue(model=self.model, exp=self.exp,
-                             source=self.source,
-                             verbose=False) is False:
+        aqua_config = ConfigPath(catalog=self.catalog, configdir=self.aquaconfigdir)
+        self.catalog = aqua_config.catalog
+        self.logger.debug("Catalog: %s", self.catalog)
+
+        # Check that the data is available in the catalog
+        if inspect_catalog(catalog_name=self.catalog, model=self.model, exp=self.exp,
+                           source=self.source,
+                           verbose=False) is False:
             raise NoDataError('Data not available')
 
     def _load_figs_options(self, savefig=False, outputfig=None):
@@ -494,7 +497,7 @@ class Teleconnection():
             **kwargs: Keyword arguments to be passed to the reader.
         """
 
-        self.reader = Reader(model=self.model, exp=self.exp, source=self.source,
+        self.reader = Reader(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                              regrid=self.regrid, loglevel=self.loglevel, **kwargs)
         self.logger.info('Reader initialized')
 

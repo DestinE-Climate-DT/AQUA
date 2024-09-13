@@ -1,0 +1,70 @@
+fixer_name:
+    ifs-multio-cycle3:
+        # for this exp we have a lot of output from MultI/O, already decumulated and
+        # averaged monthly, so default is without decumulation
+        vars:
+            mtpr:
+                src_units: m s**-1
+                source: tp
+                grib: true
+            cprate:
+                src_units: m s**-1
+                source: cp
+                grib: true
+                units: kg m**-2 s**-1
+            mlsprt:
+                src_units: m s**-1
+                source: lsp
+                grib: true
+                units: kg m**-2 s**-1 
+            mer:
+                src_units: m s**-1
+                source: e
+                grib: true
+            esrate:
+                src_units: m s**-1
+                source: es
+                grib: true
+                units: kg m**-2 s**-1 
+            mrort:
+                src_units: m s**-1
+                source: ro
+                grib: true
+                units: kg m**-2 s**-1
+            msr:
+                src_units: m s**-1
+                source: sf
+                grib: true
+                units: kg m**-2 s**-1
+            mslhf:
+                src_units: W/m2
+                source: slhf
+                grib: true
+            msshf:
+                src_units: W/m2
+                source: sshf
+                grib: true
+            msnswrf:
+                src_units: W/m2
+                source: ssr
+                grib: true
+            msdwswrf:
+                src_units: W/m2
+                source: ssrd
+                grib: true
+            msnlwrf:
+                src_units: W/m2
+                source: str
+                grib: true
+            msdwlwrf:
+                src_units: W/m2
+                source: strd
+                grib: true
+            mtnswrf:
+                src_units: W/m2
+                source: tsr
+                grib: true
+            mtnlwrf:
+                src_units: W/m2
+                source: ttr
+                grib: true  

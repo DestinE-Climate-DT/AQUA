@@ -1,0 +1,128 @@
+fixer_name:
+    IFS-default:
+        data_model: ifs
+        deltat: 3600
+        jump: month
+        vars:
+            mtpr:
+                source: tp
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            cprate:
+                source: cp
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mlsprt:
+                source: lsp
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mer:
+                source: e
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            esrate:
+                source: es
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mrort:
+                source: ro
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            msr:
+                source: sf
+                grib: true
+                decumulate: true
+                src_units: m
+                units: kg m**-2 s**-1
+            mslhf:
+                source: slhf
+                grib: true
+                decumulate: true
+            msshf:
+                source: sshf
+                grib: true
+                decumulate: true
+            msnswrf:
+                source: ssr
+                grib: true
+                decumulate: true
+            msdwswrf:
+                source: ssrd
+                grib: true
+                decumulate: true    
+            msnlwrf:
+                source: str
+                grib: true
+                decumulate: true
+            msdwlwrf:
+                source: strd
+                grib: true
+                decumulate: true
+            mtnswrf:
+                source: tsr
+                grib: true
+                decumulate: true
+            mtnlwrf:
+                source: ttr
+                grib: true
+                decumulate: true         
+            var172045:  # if the variable has no short name we can use its paramId
+                source: smlt
+                grib: true
+                decumulate: true
+            metss:
+                source: ewss
+                grib: true
+                decumulate: true  
+            mntss: 
+                source: nsss
+                grib: true
+                decumulate: true
+            msror:  # a very recent version of eccodes is needed for this one
+                source: sro
+                grib: true
+                decumulate: true 
+            lcc:
+                source: lcc
+                grib: true
+                src_units: frac
+                units: frac
+            10u:
+                source: 10u
+                grib: true
+                src_units: m s-1
+                units: m s-1
+            10v:
+                source: 10v
+                grib: true
+                src_units: m s-1
+                units: m s-1
+            2d: 
+                source: 2d
+                grib: true
+                src_units: K
+                units: K
+            2t: 
+                source: 2t
+                grib: true
+                src_units: K
+                units: K
+
+    ifs-control:
+        parent: IFS-default
+        method: merge
+        vars:
+            mtpr:
+                source: tprate

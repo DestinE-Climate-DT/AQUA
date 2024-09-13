@@ -39,15 +39,15 @@ timeseries_plot_params:
     annual: True
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
-    expand: False
+    extend: False
   mtnlwrf+mtnswrf:
     longname: "Mean top net radiation" # This is to override title and ylabel
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
-    expand: False
+    extend: False
   86400*mtpr:
     longname: "Precipitation" # This is to override title and ylabel
     units: "mm/day" # This is to override units
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
-    expand: False
+    extend: False

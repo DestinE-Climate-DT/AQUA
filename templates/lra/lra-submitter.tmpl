@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH --partition=<partition>
+#SBATCH --job-name=<job_name>
+#SBATCH --output=<job_name>_%j.out
+#SBATCH --error=<job_name>_%j.err
+#SBATCH --account=<account>
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --time=08:00:00
+#SBATCH --mem=200G 
+set -e
+
+# find mamba/conda (to be refined)
+whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+source $whereconda/etc/profile.d/conda.sh
+
+# activate conda environment
+conda activate aqua
+
+# set the number of dask workers
+# should be equal to the number of the total tasks available
+workers=8
+
+# run the Python script
+# -c to specify the configuration file
+# -f to use the fixer on data
+# -d to perform a dry run (to check generated lra)
+# -o to overwrite existing lra
+# -l to set the log level (default is WARNING)
+aqua lra --config config_lra.yml -w ${workers} -d -l INFO

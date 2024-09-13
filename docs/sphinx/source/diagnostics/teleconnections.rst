@@ -78,7 +78,7 @@ This can be simply done with the following code:
 
     from teleconnections import Teleconnections
 
-    tc = Teleconnection(model='ICON', exp='ssp370', source='lra-r100-monthly', telecname='NAO')
+    tc = Teleconnection(catalog='climatedt-phase1', model='ICON', exp='ssp370', source='lra-r100-monthly', telecname='NAO')
     tc.run()
 
 This will run the diagnostic for the NAO teleconnection with the ICON model, ssp370 experiment and lra-r100-monthly source.
@@ -114,6 +114,7 @@ CLI options
 
 The CLI accepts the following arguments:
 
+- ``--catalog``: the catalog to analyze.
 - ``--model``: the model to analyze.
 - ``--exp``: the experiment to analyze.
 - ``--source``: the source to analyze.

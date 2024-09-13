@@ -10,15 +10,13 @@
 #SBATCH -p debug    #change the partition
 
 AQUA_path=$AQUA
-AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.8.2.sif
-FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-long/config.yaml
+AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.11.3.sif
 GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
 GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
 
 # singularity shell can be an option depending on the requirement
 singularity exec \
     --cleanenv \
-    --env FDB5_CONFIG_FILE=$FDB5_CONFIG_FILE \
     --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
     --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
@@ -30,7 +28,8 @@ singularity exec \
     --bind /pfs/lustrep3/ \
     --bind /pfs/lustrep4/ \
     --bind /pfs/lustrep3/scratch/ \
-    --bind /users/lrb_465000454_fdb/ \
+    --bind /appl/local/climatedt/ \
+    --bind /appl/local/destine/ \
     --bind /flash/project_465000454 \
     --bind /projappl/ \
     --bind /project \

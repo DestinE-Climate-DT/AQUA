@@ -1,0 +1,67 @@
+models:
+  IFS:
+    test-tco79:
+      short:
+        method: replace
+        data_model: ifs
+        vars:
+            2t:
+                source: 2t
+                attributes: 
+                    mickey: 'mouse'
+    test-fdb:
+        fdb-levels:
+            method: replace
+        fdb-nolevels:
+            method: replace
+    # this should be exactly the same but we have tprate without decumulation already in the fdb       
+    control-1990-nemo-dev:
+        hourly-1deg:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+        hourly-native:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+        monthly-1deg-2d:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+
+    historical-1990-fesom-dev:
+        hourly-1deg:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+        hourly-native:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+        monthly-1deg-2d:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+
+    historical-1990-nemo-dev:
+        hourly-1deg:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+        hourly-native:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate
+        monthly-1deg-2d:
+            method: merge
+            vars:
+                mtpr:
+                    source: tprate

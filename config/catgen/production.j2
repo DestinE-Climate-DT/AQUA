@@ -1,0 +1,41 @@
+{{source}}:
+    args:
+      request:
+        class: d1
+        dataset: climate-dt
+        activity: {{ activity }}  # To be overwritten by workflow/config file
+        experiment: {{ experiment }}  # To be overwritten by workflow/config file
+        generation: 1  # To be overwritten by workflow/config file
+        model: {{ model }}
+        realization: 1  # To be overwritten by workflow/config file
+        resolution: {{ resolution }}
+        expver: {{ expver }}  # To be overwritten by workflow/config file
+        type: fc
+        stream: clte
+        date: {{ data_start_date }}  # To be overwritten by workflow/config file
+        time: {{ time }}
+        param: {{ param }}
+        levtype: {{ levtype }}
+        {% if levelist != None %}
+        levelist: {{ levelist }}
+        {% endif %}
+        step: 0
+      data_start_date: {{ data_start_date }}T0000
+      data_end_date: auto
+      chunks: {{ chunks }}
+      savefreq: {{ savefreq }}
+      timestep: h
+      timestyle: date
+    description: {{ description }}
+    driver: gsv
+    metadata:
+        fdb_home: {{ fdb_home }}
+        eccodes_path: {{ eccodes_path }}
+        {% if levels != None %}
+        levels: {{ levels }}
+        {% endif %}
+        variables: {{ variables }}
+        source_grid_name: {{ grid }}
+        fixer_name: {{ fixer_name }}
+
+        

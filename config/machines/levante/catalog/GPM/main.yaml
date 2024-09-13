@@ -1,6 +1,0 @@
-sources:
-  imerg:
-    description: Integrated Multi-satellitE Retrievals for GPM
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/imerg.yaml"

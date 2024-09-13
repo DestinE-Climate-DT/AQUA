@@ -8,7 +8,7 @@ for identifying required data and calculating weights based on various parameter
 import os
 import sys
 import argparse
-from aqua import Reader, inspect_catalogue
+from aqua import Reader, inspect_catalog
 from aqua.logger import log_configure
 from aqua.util import load_yaml, get_arg
 import subprocess
@@ -36,9 +36,9 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='Weights Generator CLI')
     parser.add_argument('--config', type=str, default=args.config)
 
-    parser.add_argument('--catalogue', action='store_true', required=False,
+    parser.add_argument('--catalog', action='store_true', required=False,
                         help='calculate the weights for entire catalog',
-                        default=config['catalogue'])
+                        default=config['catalog'])
     parser.add_argument('-l', '--loglevel', type=str, required=False,
                         help='log level',
                         default=config['loglevel'])
@@ -80,7 +80,7 @@ def validate_config(logger=None, args=None):
         ValueError: If any configuration validation fails.
     """
     validations = {
-        'catalogue': (bool, None),
+        'catalog': (bool, None),
         'rebuild': (bool, None),
         'loglevel': (str, None),
         'model': (list, None),
@@ -99,13 +99,13 @@ def validate_config(logger=None, args=None):
                 message += f" and no less than {min_value}"
             raise ValueError(message)
 
-def validate_models(logger=None, full_catalogue=None, models=None, experiments=None, sources=None, resolutions=None):
+def validate_models(logger=None, full_catalog=None, models=None, experiments=None, sources=None, resolutions=None):
     """
     Validate the models and exit if necessary.
 
     Args:
         logger (Logger): The logger object for logging messages.
-        full_catalogue (bool): Flag to indicate processing the full catalogue.
+        full_catalog (bool): Flag to indicate processing the full catalog.
         models (list): List of model IDs.
         experiments (list): List of experiment IDs.
         sources (list): List of source IDs.
@@ -115,7 +115,7 @@ def validate_models(logger=None, full_catalogue=None, models=None, experiments=N
         1: If the required input parameters are not provided.
     """
 
-    if full_catalogue:
+    if full_catalog:
         models, experiments, sources = [], [], []
     else:
         models = ensure_list(models)
@@ -123,11 +123,11 @@ def validate_models(logger=None, full_catalogue=None, models=None, experiments=N
         sources = ensure_list(sources)
         resolutions = ensure_list(resolutions)
 
-    if not full_catalogue and (not models or not experiments or not sources):
+    if not full_catalog and (not models or not experiments or not sources):
         logger.error("If you do not want to generate weights for the entire catalog, "
                      "you must provide non-empty lists of models, experiments, and sources.")
         sys.exit(1)
-    elif full_catalogue:
+    elif full_catalog:
         logger.info("The weights will be generated for the entire catalog.")
     else:
         logger.info("The weights will be generated for the specified models, experiments, and sources.")
@@ -174,7 +174,7 @@ def calculate_weights(logger=None, model=None, exp=None, source=None, regrid=Non
     except Exception as e:
         logger.error(f"An unexpected error occurred for source {model} {exp} {source} {regrid} {zoom}: {e}")
 
-def generate_weights(logger=None, full_catalogue=None, resolutions=None, models=None, experiments=None, sources=None,
+def generate_weights(logger=None, full_catalog=None, resolutions=None, models=None, experiments=None, sources=None,
                      nproc=None, zoom_max=None, rebuild=None):
     """
     Generate weights based on provided parameters.
@@ -184,7 +184,7 @@ def generate_weights(logger=None, full_catalogue=None, resolutions=None, models=
 
     Args:
         logger (Logger): Logger for logging the process.
-        full_catalogue (bool): Flag to process the full catalogue.
+        full_catalog (bool): Flag to process the full catalog.
         resolutions (list): List of resolutions.
         models (list): List of model IDs.
         experiments (list): List of experiment IDs.
@@ -196,9 +196,9 @@ def generate_weights(logger=None, full_catalogue=None, resolutions=None, models=
     logger.info("Weight generation is started.")
     
     for reso in resolutions:
-        for model in models or inspect_catalogue():
-            for exp in experiments or inspect_catalogue(model=model):
-                for source in sources or inspect_catalogue(model=model, exp=exp):
+        for model in models or inspect_catalog():
+            for exp in experiments or inspect_catalog(model=model):
+                for source in sources or inspect_catalog(model=model, exp=exp):
                     for zoom in range(zoom_max):
                         calculate_weights(logger=logger, model=model, exp=exp, source=source, regrid=reso, zoom=zoom,
                                           nproc=nproc, rebuild=rebuild)
@@ -232,10 +232,10 @@ def main():
     """
     args = parse_arguments(sys.argv[1:])
     logger = log_configure(log_name='Weights Generator', log_level=args.loglevel)
-    validate_models(logger=logger, full_catalogue=args.catalogue, models=args.model, experiments=args.exp,
+    validate_models(logger=logger, full_catalog=args.catalog, models=args.model, experiments=args.exp,
                            sources=args.source, resolutions=args.resolution)
     validate_config(logger=logger, args=args)
-    generate_weights(logger=logger, full_catalogue=args.catalogue, resolutions=args.resolution, models=args.model,
+    generate_weights(logger=logger, full_catalog=args.catalog, resolutions=args.resolution, models=args.model,
                      experiments=args.exp, sources=args.source, nproc=args.nproc, zoom_max=args.zoom_max, rebuild=args.rebuild)
     if args.resubmit:
         resubmit_job(logger=logger)

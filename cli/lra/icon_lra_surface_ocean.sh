@@ -1,15 +1,17 @@
 #!/bin/bash
-# Check if AQUA is set and the file exists
-if [[ -z "$AQUA" ]]; then
-    echo -e "\033[0;31mError: The AQUA environment variable is not defined."
-    echo -e "\x1b[38;2;255;165;0mPlease define the AQUA environment variable with the path to your 'AQUA' directory."
-    echo -e "For example: export AQUA=/path/to/aqua\033[0m"
+
+# define the aqua installation path
+AQUA=$(aqua --path)/..
+
+echo $AQUA
+if [ ! -d $AQUA ]; then
+    echo -e "\033[0;31mError: AQUA is not installed."
+    echo -e "\x1b[38;2;255;165;0mPlease install AQUA with aqua install command"
     exit 1  # Exit with status 1 to indicate an error
-else
-    source "${AQUA}/cli/util/logger.sh"
-    log_message INFO "Sourcing logger.sh from: ${AQUA}/cli/util/logger.sh"
-    # Your subsequent commands here
 fi
+
+source "$AQUA/cli/util/logger.sh"
+log_message DEBUG "Sourcing logger.sh from: $AQUA/cli/util/logger.sh"
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 
 # This script will create the avg_tos files from the avg_thetao files,

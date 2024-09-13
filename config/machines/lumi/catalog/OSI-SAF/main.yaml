@@ -1,6 +1,0 @@
-sources:
-  osi-450:
-    description: OSI-450 data
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/osi-450.yaml"

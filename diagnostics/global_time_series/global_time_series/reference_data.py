@@ -11,14 +11,14 @@ from aqua.util import eval_formula
 xr.set_options(keep_attrs=True)
 
 
-def get_reference_ts_gregory(ts_name='2t', ts_ref={'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'},
+def get_reference_ts_gregory(ts_name='2t', ts_ref={'catalog': 'obs', 'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'},
                              startdate='1980-01-01', enddate='2010-12-31', loglevel='WARNING'):
     """Retrieve ts reference data for Gregory plot.
 
     Parameters:
         ts_name (str): variable name for 2m temperature, default is '2t'.
         ts_ref (dict): dictionary with model, exp and source for 2m temperature,
-                       default is {'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}.
+                       default is {'catalog': 'obs', 'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}.
         startdate (str): start date for reference data, default is '1980-01-01'.
         enddate (str): end date for reference data, default is '2010-12-31'.
         loglevel (str): Logging level. Default is WARNING.
@@ -39,7 +39,8 @@ def get_reference_ts_gregory(ts_name='2t', ts_ref={'model': 'ERA5', 'exp': 'era5
     logger.debug(f"Retrieving reference data for {ts_name} from {ts_ref['model']} {ts_ref['exp']} {ts_ref['source']}.")
 
     try:
-        reader_ts = Reader(ts_ref['model'], ts_ref['exp'], ts_ref['source'],
+        reader_ts = Reader(catalog=ts_ref['catalog'], model=ts_ref['model'],
+                           exp=ts_ref['exp'], source=ts_ref['source'],
                            startdate=startdate, enddate=enddate, loglevel=loglevel)
 
         data_ts = reader_ts.retrieve(var=ts_name)
@@ -55,21 +56,21 @@ def get_reference_ts_gregory(ts_name='2t', ts_ref={'model': 'ERA5', 'exp': 'era5
         logger.debug(f"Mean: {ts_mean}, Std: {ts_std}")
     except Exception as e:
         logger.debug(f"Error: {e}")
-        logger.error(f"Failed to retrieve {ts_name} from {ts_ref['model']} {ts_ref['exp']}.")
+        logger.error(f"Failed to retrieve {ts_name} from {ts_ref['catalog']} {ts_ref['model']} {ts_ref['exp']}.")
         raise NoObservationError("No reference data available.") from e
 
     return ts_mean, ts_std
 
 
 def get_reference_toa_gregory(toa_name=['mtnlwrf', 'mtnswrf'],
-                              toa_ref={'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'},
+                              toa_ref={'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'},
                               startdate='2001-01-01', enddate='2020-12-31', loglevel='WARNING'):
     """Retrieve toa reference data for Gregory plot.
 
     Parameters:
         toa_name (list): list of variable names for net radiation at TOA, default is ['mtnlwrf', 'mtnswrf'].
         toa_ref (dict): dictionary with model, exp and source for net radiation at TOA,
-                        default is {'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}.
+                        default is {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}.
         startdate (str): start date for reference data, default is '2001-01-01'.
         enddate (str): end date for reference data, default is '2020-12-31'.
         loglevel (str): Logging level. Default is WARNING.
@@ -87,10 +88,11 @@ def get_reference_toa_gregory(toa_name=['mtnlwrf', 'mtnswrf'],
         logger.info(f"Reference data will be retrieved rom {startdate} to {enddate}.")
     else:
         logger.debug("Reference data will be retrieved for the full period.")
-    logger.debug(f"Retrieving reference data for {toa_name} from {toa_ref['model']} {toa_ref['exp']} {toa_ref['source']}.")
+    logger.debug(f"Retrieving reference data for {toa_name} from {toa_ref['catalog']} {toa_ref['model']} {toa_ref['exp']} {toa_ref['source']}.") # noqa
 
     try:
-        reader_toa = Reader(toa_ref['model'], toa_ref['exp'], toa_ref['source'],
+        reader_toa = Reader(catalog=toa_ref['catalog'], model=toa_ref['model'],
+                            exp=toa_ref['exp'], source=toa_ref['source'],
                             startdate=startdate, enddate=enddate, loglevel=loglevel)
         data_toa = reader_toa.retrieve(var=toa_name)
         data_toa = data_toa[toa_name[0]] + data_toa[toa_name[1]]
@@ -105,32 +107,34 @@ def get_reference_toa_gregory(toa_name=['mtnlwrf', 'mtnswrf'],
         logger.debug(f"Mean: {toa_mean}, Std: {toa_std}")
     except Exception as e:
         logger.debug(f"Error: {e}")
-        logger.error(f"Failed to retrieve {toa_name} from {toa_ref['model']} {toa_ref['exp']}.")
+        logger.error(f"Failed to retrieve {toa_name} from {toa_ref['catalog']} {toa_ref['model']} {toa_ref['exp']}.")
         raise NoObservationError("No reference data available.") from e
 
     return toa_mean, toa_std
 
 
 def get_reference_timeseries(var, formula=False,
-                             model='ERA5', exp='era5', source='monthly',
+                             catalog=None,
+                             model=None, exp=None, source=None,
                              startdate=None, enddate=None,
                              std_startdate=None, std_enddate=None,
                              regrid=None,
                              monthly=True, annual=True,
                              monthly_std=True, annual_std=True,
-                             loglevel='WARNING'):
+                             loglevel='WARNING',
+                             **kwargs):
     """
     Get reference data for a given variable.
-    Default is ERA5 monthly data.
     By default it retrieve monthly and annual mean and standard deviation
 
     Parameters:
         var (str or list): Variable(s) name to retrieve. List if it is a formula
         formula (bool, opt): If True, try to derive the variable from other variables.
                              Default is False.
-        model (str, opt): Model ID. Default is ERA5.
-        exp (str, opt): Experiment ID. Default is era5.
-        source (str, opt): Source ID. Default is monthly.
+        catalog (str, opt): Catalog ID. Default is None.
+        model (str): Model ID.
+        exp (str): Experiment ID.
+        source (str): Source ID.
         startdate (str, opt): Start date. Default is None.
         enddate (str, opt): End date. Default is None.
         std_startdate (str, opt): Start date for standard deviation.
@@ -143,6 +147,7 @@ def get_reference_timeseries(var, formula=False,
         monthly_std (bool, opt): Compute monthly standard deviation. Default is True.
         annual_std (bool, opt): Compute annual standard deviation. Default is True.
         loglevel (str, opt): Logging level. Default is WARNING.
+        **kwargs: Additional arguments. In particular lon_limits and lat_limits for area selection.
 
     Returns:
         tuple: (monthly_data, monthly_std, annual_data, annual_std)
@@ -152,7 +157,7 @@ def get_reference_timeseries(var, formula=False,
     """
     logger = log_configure(loglevel, 'get_reference_data')
 
-    logger.debug(f"Reference data: {model} {exp} {source}")
+    logger.debug(f"Reference data: {catalog} {model} {exp} {source}")
 
     start_retrieve, end_retrieve = _start_end_dates(startdate=startdate, enddate=enddate,
                                                     start_std=std_startdate, end_std=std_enddate)
@@ -160,14 +165,14 @@ def get_reference_timeseries(var, formula=False,
     logger.debug(f"Retrieve std from {std_startdate} to {std_enddate}")
 
     try:  # Retrieving the entire timespan since we need two periods for standard deviation and time series
-        reader = Reader(model=model, exp=exp, source=source, regrid=regrid,
+        reader = Reader(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
                         startdate=start_retrieve, enddate=end_retrieve, loglevel=loglevel)
     except Exception as e:
         raise NoObservationError("Could not retrieve reference data. No plot will be drawn.") from e
 
     if formula:  # We retrieve all variables
         data = reader.retrieve()
-    else:
+    else:  # We retrieve only the variable of interest
         data = reader.retrieve(var=var)
 
     # Monthly data
@@ -181,9 +186,9 @@ def get_reference_timeseries(var, formula=False,
         if monthly:
             data_mon = data.sel(time=slice(start_retrieve, end_retrieve))
             if formula:
-                data_mon = reader.fldmean(eval_formula(var, data_mon))
+                data_mon = reader.fldmean(eval_formula(var, data_mon), **kwargs)
             else:
-                data_mon = reader.fldmean(data_mon)
+                data_mon = reader.fldmean(data_mon, **kwargs)
                 data_mon = data_mon[var]
         else:
             data_mon = None
@@ -192,9 +197,9 @@ def get_reference_timeseries(var, formula=False,
             data_mon_std = data.sel(time=slice(std_startdate, std_enddate))
             if formula:
                 logger.debug(f"Computing monthly std for a formula {var}")
-                data_mon_std = reader.fldmean(eval_formula(var, data_mon_std)).groupby("time.month").std()
+                data_mon_std = reader.fldmean(eval_formula(var, data_mon_std), **kwargs).groupby("time.month").std()
             else:
-                data_mon_std = reader.fldmean(data_mon_std).groupby("time.month").std()
+                data_mon_std = reader.fldmean(data_mon_std, **kwargs).groupby("time.month").std()
                 data_mon_std = data_mon_std[var]
         else:
             data_mon_std = None
@@ -210,9 +215,9 @@ def get_reference_timeseries(var, formula=False,
         if annual:
             data_ann = data.sel(time=slice(start_retrieve, end_retrieve))
             if formula:
-                data_ann = reader.fldmean(eval_formula(var, data_ann))
+                data_ann = reader.fldmean(eval_formula(var, data_ann), **kwargs)
             else:
-                data_ann = reader.fldmean(data_ann)
+                data_ann = reader.fldmean(data_ann, **kwargs)
                 data_ann = data_ann[var]
         else:
             data_ann = None
@@ -220,9 +225,9 @@ def get_reference_timeseries(var, formula=False,
         if annual_std:
             data_ann_std = data.sel(time=slice(std_startdate, std_enddate))
             if formula:
-                data_ann_std = reader.fldmean(eval_formula(var, data_ann_std)).std()
+                data_ann_std = reader.fldmean(eval_formula(var, data_ann_std), **kwargs).std()
             else:
-                data_ann_std = reader.fldmean(data_ann_std).std()
+                data_ann_std = reader.fldmean(data_ann_std, **kwargs).std()
                 data_ann_std = data_ann_std[var]
         else:
             data_ann_std = None

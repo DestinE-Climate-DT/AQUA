@@ -12,7 +12,7 @@ users - diagnostics developers or climate researchers interested in accessing mo
 For this reason, whatever object accessed by AQUA is delivered as a `xarray <https://docs.xarray.dev/en/stable/>`_ object.
 The package is built around a few core concepts:
 
-- **Data reading and preprocessing**: Data are exposed through `intake <https://intake.readthedocs.io/en/stable/>`_ catalogues 
+- **Data reading and preprocessing**: Data are exposed through `intake <https://intake.readthedocs.io/en/stable/>`_ catalogs 
   and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects. 
   This allows us to easily read and preprocess data from various sources, including local files, remote servers, 
   and cloud storage, from climate models and observational datasets.
@@ -28,8 +28,8 @@ The package is built around a few core concepts:
 - **Diagnostics**: most importantly, AQUA includes a set of built-in diagnostic tools,
   and it allows users to create custom diagnostics as well.
 
-Installation
-------------
+Python installation
+-------------------
 
 Installation can be done using `mamba <https://mamba.readthedocs.io/en/latest/>`_.
 Containers and tools specific to the machines used in the project are available.
@@ -37,51 +37,58 @@ Please refer to the :ref:`installation` section for more information.
 
 .. _initialization:
 
-Catalogue Installation
-----------------------
+Catalog installation
+--------------------
 
-After the package has been installed, or the container has been loaded, the AQUA catalogue needs to be set up.
-This means to set up the configuration file and the catalogue, with a copy or a link to the necessary files.
-This needs to be done only once, unless catalogues or fix and grid files are added or need to be updated/removed.
+After the package has been installed, or the container has been loaded, the AQUA catalog needs to be set up.
+This means to set up the configuration file and the catalog, with a copy or a link to the necessary files.
+This needs to be done only once, unless catalogs or fix and grid files are added or need to be updated/removed.
 
 .. note::
   A more complete description of the available commands can be found in the :ref:`aqua-console` section.
 
+The following paragraphs cover the fundamental steps.
+
 Set up the configuration folder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The configuration folder contains configuration files and the catalogues added to the AQUA package.
-To set up the configuration folder, run the following command:
+The configuration folder contains configuration files and the catalogs added to the AQUA package.
+To set up the configuration folder, run the following shell command:
 
 .. code-block:: bash
 
     aqua install
 
 This command will create the configuration folder in the ``$HOME/.aqua`` directory and it will copy there the essential files.
-Check the :ref:`aqua-init` section for more information.
+Check the :ref:`aqua-install` section for more information.
 
-Add a catalogue
+.. warning::
+
+    If you are using some Climate-DT machine as lumi, please use the full installation with ``aqua install lumi``
+
+Add a catalog
 ^^^^^^^^^^^^^^^
 
-A catalogue is a folder containing the YAML files that describe the data available in the catalogue.
+A catalog is a folder containing the YAML files that inform AQUA on the data available. The catalog are derived from `intake <https://intake.readthedocs.io/en/stable/>`_ .
 
-.. note::
-  At the actual state of the AQUA package, the catalogues coincide with the machines.
-  This means that you will need to install only the catalogue of the machine you are working on.
-
-To add a catalogue, run the following command:
+To add a catalog, run the following command:
 
 .. code-block:: bash
 
     aqua add <catalog>
 
-For example, to add the catalogue of the machine ``lumi``, run:
+For example, to add the catalog for ``climatedt-phase1``, run:
 
 .. code-block:: bash
 
-    aqua add lumi
+    aqua add climatedt-phase1
 
-This command will copy the catalogue folder to the configuration folder.
+This command will copy the catalog folder to the configuration folder. Please notice that will operate fetching the catalog 
+
+.. caution:: 
+
+  You will need an internet connection available since the catalog are fetched from the `Climate-DT GitHub repository <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_ .
+
 
 Set up Jupyter kernel
 ---------------------
@@ -115,14 +122,14 @@ temperature data to 1°x1° grid, plot a timestep of it and
 then calculate the mean global temperature time series on the original grid.
 This can be done in a few lines of code and using a Jupyter notebook.
 
-Let's start with retrieving the data from the catalogue.
+Let's start with retrieving the data from the catalog.
 
 .. code-block:: python
 
     from aqua import Reader
 
 We then instantiate the reader object.
-To access a catalogue entry, a three layer structure is used: ``model``, ``exp`` and ``source``.
+To access a catalog entry, a three layer structure is used: ``model``, ``exp`` and ``source``.
 While doing so we specify the target grid to which we want to interpolate the data
 and we turn on fixing of the data, so that the data are delivered in a common format.
 Notice that ``fix=True`` is the default option, so we could have omitted it.
@@ -132,7 +139,7 @@ Notice that ``fix=True`` is the default option, so we could have omitted it.
     reader = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
                     regrid='r100', fix=True)
 
-This will create a reader object that will allow us to access the data from the catalogue.
+This will create a reader object that will allow us to access the data from the catalog.
 Data are not retrieved yet at this stage and eventually we can specify variables and time range while accessing the data.
 
 We now retrieve the data.

@@ -9,8 +9,8 @@ channels:
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   - python>=3.9
-  - cdo>=2.2.0 #for healpix support
-  - ecCodes>=2.31.0,<2.34 # see issue #252, #634, #870
+  - cdo>=2.2.0,<=2.4.0 #for healpix support
+  - eccodes>=2.31.0,<2.34.0
   - pandas      
   - pandoc
   - pip
@@ -18,3 +18,4 @@ dependencies:
   - tempest-extremes # for TCs
   - xesmf # for ECmean
   - intake-esm
+  - imagemagick

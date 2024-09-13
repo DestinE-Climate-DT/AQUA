@@ -69,7 +69,7 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
         sbatch_cmd.append('--dependency=afterany:'+ str(dependency))
 
     # Add script command
-    sbatch_cmd.append('./cli_lra_generator.py')
+    sbatch_cmd.append('aqua lra')
     sbatch_cmd.append('--config')
     sbatch_cmd.append(yaml_file)
     sbatch_cmd.append('--model')
@@ -135,17 +135,16 @@ if __name__ == '__main__':
 
     # loading the usual configuration file
     config = load_yaml(config_file)
-
     slurm = config.get('slurm', {})
 
     # sbatch looping
     COUNT = 0 # to count job
     jobid = None
     PARENT_JOB = None # to define the parent job for dependency
-    for model in config['catalog'].keys():
-        for exp in config['catalog'][model].keys():
-            for source in config['catalog'][model][exp].keys():
-                varnames = config['catalog'][model][exp][source]['vars']
+    for model in config['data'].keys():
+        for exp in config['data'][model].keys():
+            for source in config['data'][model][exp].keys():
+                varnames = config['data'][model][exp][source]['vars']
                 for varname in varnames:
                     if (COUNT % int(parallel)) == 0 and COUNT != 0:
                         print('Updating parent job to' + jobid)

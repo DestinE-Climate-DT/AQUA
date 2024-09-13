@@ -54,13 +54,14 @@ class Submitter():
         # Parse the output to check if the job name is in the list
         return job_name in output
 
-    def submit_sbatch(self, model, exp, source=None, dependency=None):
+    def submit_sbatch(self, catalog, model, exp, source=None, dependency=None):
         """
         Submit a sbatch script with basic options
 
         args:
+            catalog: catalog for experiment
             model: model to be processed
-            exp: exp to be processed
+            exp: experiment to be processed
             source: source to be processed
             dependency: jobid on which dependency of slurm is built
 
@@ -72,6 +73,10 @@ class Submitter():
         with open(self.config, 'r', encoding='utf-8') as file:
             definitions = yaml.load(file)
 
+        if catalog:
+            definitions['catalog'] = catalog
+        else:
+            catalog = definitions['catalog']
         if model:
             definitions['model'] = model
         else:
@@ -239,6 +244,8 @@ def parse_arguments(arguments):
                         help='yaml configuration file')
     parser.add_argument('-m', '--model', type=str,
                         help='model to be processed')
+    parser.add_argument('-k', '--catalog', type=str,
+                        help='catalog for experiment')
     parser.add_argument('-e', '--exp', type=str,
                         help='experiment to be processed')
     parser.add_argument('-s', '--source', type=str,
@@ -267,6 +274,7 @@ if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
 
+    catalog = get_arg(args, 'catalog', None)
     model = get_arg(args, 'model', None)
     exp = get_arg(args, 'exp', None)
     source = get_arg(args, 'source', None)
@@ -295,7 +303,7 @@ if __name__ == '__main__':
                 if not line or line.startswith('#'):
                     continue
     
-                model, exp, *source = re.split(r',|\s+|\t+', line.strip())  # split by comma, space, tab
+                catalog, model, exp, *source = re.split(r',|\s+|\t+', line.strip())  # split by comma, space, tab
 
                 if len(source) == 0:
                     source = None
@@ -306,13 +314,13 @@ if __name__ == '__main__':
 
                 count = count + 1
                 
-                jobid = submitter.submit_sbatch(model, exp, source=source, dependency=parent_job)
+                jobid = submitter.submit_sbatch(catalog, model, exp, source=source, dependency=parent_job)
                 jobid_list.append(jobid)
     
         if push:
             submitter.submit_push(jobid_list, listfile)     
 
     else:
-        jobid = submitter.submit_sbatch(model, exp, source=source, dependency=parent_job)
+        jobid = submitter.submit_sbatch(catalog, model, exp, source=source, dependency=parent_job)
         if push:
             submitter.submit_push([jobid], f'{model}/{exp}') 
