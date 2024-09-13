@@ -1,123 +1,164 @@
 import pytest
-import xarray as xr
-import numpy as np
-from pypdf import PdfReader
+import os
 
 from aqua import Reader
-from aqua.util.graphics import add_cyclic_lon, plot_box, minmax_maps
-from aqua.util import cbar_get_label, evaluate_colorbar_limits, add_pdf_metadata
-from aqua.graphics import plot_single_map
+from aqua.graphics import plot_single_map, plot_single_map_diff
+from aqua.graphics import plot_timeseries, plot_seasonalcycle
+from aqua.graphics import plot_maps
 
-loglevel = 'DEBUG'
-
-
-@pytest.fixture()
-def da():
-    """Create a test DataArray"""
-    lon_values = np.linspace(0, 360, 36)  # Longitude values
-    lat_values = np.linspace(-90, 90, 18)  # Latitude values
-    data = np.random.rand(18, 36)  # Example data
-    return xr.DataArray(data, dims=['lat', 'lon'], coords={'lon': lon_values, 'lat': lat_values})
+loglevel = "DEBUG"
 
 
 @pytest.mark.graphics
-def test_add_cyclic_lon(da):
-    """Test the add_cyclic_lon function"""
-    old_da = da.copy()
-    new_da = add_cyclic_lon(da)
+class TestMaps:
+    """Basic tests for the Single map functions"""
+    def setup_method(self):
+        reader = Reader(model="FESOM", exp="test-pi", source="original_2d",
+                        regrid="r200", fix=False, loglevel=loglevel)
+        self.data = reader.retrieve(var='sst')
 
-    # Assertions to test the function
-    assert isinstance(new_da, xr.DataArray), "Output should be an xarray.DataArray"
-    assert 'lon' in new_da.coords, "Output should have a 'lon' coordinate"
-    assert 'lat' in new_da.coords, "Output should have a 'lat' coordinate"
-    assert np.allclose(new_da.lat, old_da.lat), "Latitude values should be equal"
-    assert np.allclose(new_da.isel(lon=-1).values, old_da.isel(lon=0).values), \
-           "First and last longitude values should be equal"
-    assert new_da.shape == (18, 37), "Output shape is incorrect"
+    def test_plot_single_map(self):
+        """
+        Test the plot_single_map function
+        """
+        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        fig, ax = plot_single_map(data=plot_data,
+                                  save=True,
+                                  nlevels=5,
+                                  vmin=-2.0,
+                                  vmax=30.0,
+                                  outputdir='tests/figures/',
+                                  cmap='viridis',
+                                  gridlines=True,
+                                  display=False,
+                                  return_fig=True,
+                                  title='Test plot',
+                                  cbar_label='Sea surface temperature [°C]',
+                                  dpi=100,
+                                  model='FESOM',
+                                  exp='test-pi',
+                                  filename='test_single_map',
+                                  format='png',
+                                  nxticks=5,
+                                  nyticks=5,
+                                  loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        # Check the file was created
+        assert os.path.exists('tests/figures/test_single_map.png')
+
+    def test_plot_single_map_diff(self):
+        """
+        Test the plot_single_map_diff function
+        """
+        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
+        fig, ax = plot_single_map_diff(data=plot_data,
+                                       data_ref=plot_data2,
+                                       save=True,
+                                       nlevels=5,
+                                       vmin_fill=-5.0,
+                                       vmax_fill=5.0,
+                                       sym=False,
+                                       vmin_contour=-2.0,
+                                       vmax_contour=30.0,
+                                       outputdir='tests/figures/',
+                                       cmap='viridis',
+                                       gridlines=True,
+                                       display=False,
+                                       return_fig=True,
+                                       title='Test plot',
+                                       cbar_label='Sea surface temperature [°C]',
+                                       dpi=100,
+                                       model='FESOM',
+                                       exp='test-pi',
+                                       filename='test_single_map_diff',
+                                       format='png',
+                                       nxticks=5,
+                                       nyticks=5,
+                                       loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        # Check the file was created
+        assert os.path.exists('tests/figures/test_single_map_diff.png')
+    
+    def test_maps(self):
+        """Test plot_maps function"""
+        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
+        fig, ax = plot_maps(maps=[plot_data,plot_data2],
+                            save=True,
+                            figsize=(16, 6),
+                            nlevels=5,
+                            vmin=-2, vmax=30,
+                            sym=False,
+                            outputdir='tests/figures/',
+                            cmap='viridis',
+                            gridlines=True,
+                            title='Test plot',
+                            cbar_label='Sea surface temperature [°C]',
+                            dpi=100,
+                            filename='test_maps',
+                            format='png',
+                            nxticks=5,
+                            nyticks=6,
+                            loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        # Check the file was created
+        assert os.path.exists('tests/figures/test_maps.png')
 
 
 @pytest.mark.graphics
-def test_plot_box():
-    """Test the plot box function"""
-    num_rows, num_cols = plot_box(10)
-    assert num_rows == 3, "Number of rows should be 3"
-    assert num_cols == 4, "Number of columns should be 4"
+class TestTimeseries:
+    """Basic tests for the Timeseries functions"""
 
-    num_rows, num_cols = plot_box(1)
-    assert num_rows == 1, "Number of rows should be 1"
-    assert num_cols == 1, "Number of columns should be 1"
+    def setup_method(self):
+        model = 'IFS'
+        exp = 'test-tco79'
+        source = 'teleconnections'
+        var = 'skt'
+        self.reader = Reader(model=model, exp=exp, source=source, fix=True)
+        data = self.reader.retrieve(var=var)
 
-    num_rows, num_cols = plot_box(3)
-    assert num_rows == 2, "Number of rows should be 2"
-    assert num_cols == 2, "Number of columns should be 2"
+        self.t1 = data[var].isel(lat=1, lon=1)
+        self.t2 = data[var].isel(lat=10, lon=10)
 
-    with pytest.raises(ValueError):
-        plot_box(0)
+    def test_plot_timeseries(self):
+        t1_yearly = self.reader.timmean(self.t1, freq='YS', center_time=True)
+        t2_yearly = self.reader.timmean(self.t2, freq='YS', center_time=True)
 
+        data_labels = ['t1', 't2']
 
-@pytest.mark.graphics
-def test_minmax_maps(da):
-    """Test the minmax_maps function"""
-    # Create a list of DataArrays
-    maps = [da, da + 1, da + 2]
+        fig, ax = plot_timeseries(monthly_data=[self.t1, self.t2], annual_data=[t1_yearly, t2_yearly],
+                                  title='Temperature at two locations',
+                                  data_labels=data_labels)
 
-    # Test the function
-    min_val, max_val = minmax_maps(maps)
+        assert fig is not None
+        assert ax is not None
 
-    assert min_val < max_val, "Minimum value should be less than maximum value"
-    for i in range(len(maps)):
-        assert min_val <= maps[i].min().values, "Minimum value should be less than minimum value of the map"
-        assert max_val >= maps[i].max().values, "Maximum value should be greater than maximum value of the map"
+        fig.savefig('tests/figures/test_timeseries.png')
 
+        # Check the file was created
+        assert os.path.exists('tests/figures/test_timeseries.png')
 
-@pytest.mark.graphics
-def test_label():
-    """Test the cbar_get_label function"""
-    # Retrieve data
-    reader = Reader(model='IFS', exp='test-tco79', source='short', loglevel=loglevel)
-    ds = reader.retrieve()
-    da = ds['2t']
+    def test_plot_seasonalcycle(self):
+        t1_seasonal = self.t1.groupby('time.month').mean('time')
+        t2_seasonal = self.t2.groupby('time.month').mean('time')
 
-    # Test cbar_get_label function
-    label = cbar_get_label(da, loglevel=loglevel)
-    # assert label is a string
-    assert isinstance(label, str), "Colorbar label should be a string"
-    assert label == '2t [K]', "Colorbar label is incorrect"
+        fig, ax = plot_seasonalcycle(data=t1_seasonal, ref_data=t2_seasonal,
+                                     title='Seasonal cycle of temperature at two locations',
+                                     data_labels='t1',
+                                     ref_label='t2',
+                                     loglevel=loglevel)
 
-    # Test the function with a custom label
-    label = cbar_get_label(da, cbar_label='Temperature', loglevel=loglevel)
-    assert label == 'Temperature', "Colorbar label is incorrect"
+        assert fig is not None
+        assert ax is not None
 
-    # Test the cbar limits function with sym=False
-    vmin, vmax = evaluate_colorbar_limits(da, sym=False)
-    assert vmin < vmax, "Minimum value should be less than maximum value"
-    assert vmin == 232.79393005371094, "Minimum value is incorrect"
-    assert vmax == 310.61033630371094, "Maximum value is incorrect"
+        fig.savefig('tests/figures/test_seasonalcycle.png')
 
-    # Test the cbar limits function with sym=True
-    vmin, vmax = evaluate_colorbar_limits(da, sym=True)
-    assert vmin < vmax, "Minimum value should be less than maximum value"
-    assert vmin == -310.61033630371094, "Minimum value is incorrect"
-    assert vmax == 310.61033630371094, "Maximum value is incorrect"
-
-
-@pytest.mark.graphics
-def test_pdf_metadata():
-    """Test the add_pdf_metadata function"""
-    # Generate a test figure from a random xarray DataArray
-    da = xr.DataArray(np.random.rand(18, 36), dims=['lat', 'lon'], coords={'lon': np.linspace(0, 360, 36),
-                                                                          'lat': np.linspace(-90, 90, 18)})
-    plot_single_map(da, title='Test', save=True, filename='test', format='pdf', loglevel=loglevel)
-
-    # Test the function
-    add_pdf_metadata(filename='./test.pdf', metadata_value='Test',
-                     metadata_name='/Test description', loglevel=loglevel)
-    add_pdf_metadata(filename='./test.pdf', metadata_value='Test caption',
-                     loglevel=loglevel)
-
-    # Open the PDF and check the metadata
-    pdf_reader = PdfReader("./test.pdf")
-    metadata = pdf_reader.metadata
-
-    assert metadata['/Test description'] == 'Test', "Old metadata should be kept"
-    assert metadata['/Description'] == 'Test caption', "Description should be added to metadata"
+        # Check the file was created
+        assert os.path.exists('tests/figures/test_seasonalcycle.png')

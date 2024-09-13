@@ -1,20 +1,26 @@
 .. _add-data:
+
 Adding new data
 ===============
 
 To add new data the 3-level hierarchy on which AQUA is based, i.e. **model** - **exp** - **source**, must be respected so that 
-specific files must be created within the catalog of a specific machine.
+specific files must be created within the catalog.
 How to create a new source and add new data is documented in the next sections.
 
-- To add your data to AQUA, you have to provide an ``intake`` catalogue that describes your data,
+- To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data. 
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
-- Finally, to exploit of the regridding functionalities, you will also need to configure the machine-dependent
-  ``regrid.yaml``. 
+- Finally, to exploit the regridding functionalities, you will also need to verify the grid is available in the ``config/grids`` folder 
+  or to add it (see :ref:`grid_definition`).
+
+.. note::
+    A method to add new catalogs to the configuration folder has been developed.
+    You can find more information in the :ref:`aqua-add` section.
 
 .. _file-based-sources:
+
 File-based sources
 ------------------
 
@@ -29,7 +35,7 @@ Let's imagine we have a dataset called ``yearly_SST`` that consists of the follo
 - coordinate variables are ``lat`` and ``lon``, and the time variable is ``time``, all one dimensional
 - data located on the LUMI machine
 
-We will create a catalogue entry that will describe this dataset.
+We will create a catalog entry that will describe this dataset.
 The catalog name will be ``yearly_SST``.
 
 The additional entry in this file will look like this:
@@ -42,8 +48,11 @@ The additional entry in this file will look like this:
         args:
           path: "{{CATALOG_DIR}}/yearly_SST/main.yaml"
 
-The first step is to add this catalogue to the ``config/machines/lumi/catalog.yaml`` file.  
+The first step is to add this catalog to the ``config/catalogs/lumi/catalog.yaml`` file.  
 This will create the ``model`` entry within the catalog that can be used later by the ``Reader()``.
+
+.. note::
+    Sources are built using intake, which means that they can exploit of the built-in Jinja2 template replacamente as done in the example above with `{{CATALOG_DIR}}`
 
 Then we will need to create the ``exp`` entry, which will be included in the ``main.yaml``.
 In our case, the ``main.yaml`` file will look like this (but many other experiments,
@@ -59,10 +68,10 @@ corresponding to the same model, can be added aside of this):
           path: "{{CATALOG_DIR}}/yearly_SST.yaml"
 
 We finally need to define the specific experiment file that we linked in the ``main.yaml``,
-using the ``yearly_SST.yaml`` file and saving it in the ``config/machines/lumi/catalog/yearly_SST`` directory
+using the ``yearly_SST.yaml`` file and saving it in the ``config/catalogs/lumi/catalog/yearly_SST`` directory
 (that we should create first if missing).
 
-The most straightforward intake catalogue describing our dataset will look like this: 
+The most straightforward intake catalog describing our dataset will look like this: 
 
 .. code-block:: yaml
 
@@ -105,12 +114,13 @@ You can add fixes to your dataset by following examples in the ``config/fixes/``
 .. note::
 
     If you want to add a Zarr or GRIB source the syntax may be slightly different,
-    but the general structure of the catalogue will be the same.
-    You can find examples in the existing catalogue or more information on the 
+    but the general structure of the catalog will be the same.
+    You can find examples in the existing catalog or more information on the 
     `intake <https://intake.readthedocs.io/en/stable/>`_ and
     `intake-xarray <https://intake-xarray.readthedocs.io/en/latest/>`_ documentation.
 
 .. _FDB-based-sources:
+
 FDB-based sources
 -----------------
 
@@ -123,33 +133,43 @@ We report here an example and we later describe the different elements.
 .. code-block:: yaml
 
     sources:
-        hourly-native:
+        hourly-hpz7-atm2d:
             args:
-                request:
-                    domain: g
-                    class: rd
-                    expver: a06x
-                    type: fc
-                    stream: lwda
-                    date: 19500101
-                    time: '0000'
-                    param: 2t
-                    levtype: sfc
-                    step: 0
-                data_start_date: 19500101T0000
-                data_end_date: 19591231T2300
-                aggregation: D  # Default aggregation / chunk size
-                savefreq: h  # at what frequency are data saved
-                timestep: h  # base timestep for step timestyle
-                timestyle: step  # variable date or variable step
-            description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
-            2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
-            2d(168), skt(235), chnk(148). See fix yaml for derived vars.
+            bridge_end_date: complete
+            request:
+                class: d1
+                dataset: climate-dt
+                activity: ScenarioMIP
+                experiment: SSP3-7.0
+                generation: 1
+                model: IFS-NEMO
+                realization: 1
+                resolution: standard
+                expver: '0001'
+                type: fc
+                stream: clte
+                date: 20210101
+                time: '0000'
+                param: 167
+                levtype: sfc
+                step: 0
+            data_start_date: 20200101T0000
+            data_end_date: 20391231T2300
+            chunks: D  # Default time chunk size
+            savefreq: h  # at what frequency are data saved
+            timestep: h  # base timestep for step timestyle
+            timestyle: date  # variable date or variable step
+            metadata: &metadata-default
+            fdb_home: '{{ FDB_PATH }}'
+            fdb_home_bridge: '{{ FDB_PATH }}/databridge'
+            eccodes_path: '{{ ECCODES_PATH }}/eccodes-2.32.5/definitions'
+            variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
+                187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
+                180, 181, 182, 212, 228]
+            source_grid_name: hpz7-nested
+            fixer_name: ifs-destine-v1
+            description: hourly 2D atmospheric data on healpix grid (zoom=7, h128).
             driver: gsv
-            metadata: 
-                fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-CONTROL_1950_DEVCON.yaml
-                eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
-                variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'chnk']
 
 This is a source entry from the FDB of one of the AQUA control simulation from the IFS model. 
 The source name is ``hourly-native``, because is suggesting that the catalog is made hourly data at the native model resolution.
@@ -157,14 +177,14 @@ Some of the parameters are here described:
 
 .. option:: request
 
-    - The ``request`` entry in the intake catalogue primarily serves as a template for making data requests,
+    - The ``request`` entry in the intake catalog primarily serves as a template for making data requests,
       following the standard MARS-style syntax used by the GSV retriever. 
     - The ``date`` parameter will be automatically overwritten by the appropriate ``data_start_date``.
       For the ``step`` parameter, when using ``timestyle: step``, setting it to a value other than 0
       signals that the initial steps are missing. 
       This is particularly useful for data sets with irregular step intervals, such as 6-hourly output.
     
-    This documentation provides an overview of the key parameters used in the catalogue, helping users better understand how to configure their data requests effectively.
+    This documentation provides an overview of the key parameters used in the catalog, helping users better understand how to configure their data requests effectively.
 
 .. option:: data_start_date
 
@@ -181,25 +201,45 @@ Some of the parameters are here described:
 
     As above, it tells AQUA when to stop reading from the FDB and it can be set to ``auto`` too (only if ``timestyle`` is 'date').
 
-.. option:: aggregation
+.. option:: bridge_end_date
 
-    The aggregation parameter is essential, whether you are using Dask or a generator.
+    This optional date is used for cases where part of the data are on the HPC FDB and part on the databridge.
+    This is the first date/time (included) from which data are still on the HPC. Before all data are assumed to be on the databridge.
+    If set to "complete" then all data are assumed to be on the bridge.
+    It can also be set to a filename, from which to read the date of the data which were last wiped from the HPC (in YYYYMMDD format).
+
+.. option:: chunks
+
+    The chunks parameter is essential, whether you are using Dask or a generator.
     It determines the size of the chunk loaded in memory at each iteration. 
 
     When using a generator, it corresponds to the chunk size loaded into memory during each iteration.
-    For Dask, it signifies the size of each chunk used by Dask's parallel processing.
+    For Dask, it controls the size of each chunk used by Dask's parallel processing.
 
-    The choice of aggregation value is crucial as it strikes a balance between memory consumption and
+    The choice of the chunks value is crucial as it strikes a balance between memory consumption and
     distributing enough work to each worker when Dask is utilized with multiple cores. 
     In most cases, the default values in the catalog have been thoughtfully chosen through experimentation.
 
-    For instance, an aggregation value of ``D`` (for daily) works well for hourly-native data because it
+    For instance, an chunks value of ``D`` (for daily) works well for hourly-native data because it
     occupies approximately 1.2GB in memory.
     Increasing it beyond this limit may lead to memory issues. 
 
-    It is possible to choose a smaller aggregation value, but keep in mind that each worker has its own overhead,
+    It is possible to choose a smaller chunks value, but keep in mind that each worker has its own overhead,
     and it is usually more efficient to retrieve as much data as possible from the FDB for each worker.
-    There is also a consideration to rename this parameter to "chunksize."
+
+    By the ``chunks`` argument is a string and refers to time-chunking.
+    In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
+    by passing a dictionary to chunks with the keys ``time`` and ``vertical``. 
+    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maxmimum number of vertical levels
+    in each chunk.
+
+    An example would be:
+
+.. code-block:: yaml
+
+    chunks:
+      time: D  # Default time chunk size
+      vertical: 3  # Three vertical levels in each chunk
 
 .. option:: timestep
 
@@ -221,20 +261,24 @@ Some of the parameters are here described:
 
 .. option:: timestyle
 
-    The timestyle parameter can be set to either ``step`` or ``date``.
-    It determines how data is written in the FDB. 
+    The timestyle parameter can be set to either ``step``, ``date`` or ``yearmonth`` according to the FDB schema.
+    Indeed, it determines how the time axis data is written in the FDB. 
 
-    The recent examples have used ``step``, which involves specifying a fixed date (e.g., 19500101) and time (e.g., 0000)
-    in the request.
-    Time is then identified by the step in the request.
+    The above examples have used ``step``, which involves specifying a fixed ``date`` (e.g., 19500101) and ``time`` (e.g., 0000)
+    in the request. Time axis is then identified by the ``step`` in the request.
 
-    Alternatively, when timestyle is set to ``date``, you can directly specify both date and time in the request,
+    Alternatively, when timestyle is set to ``date``, you can directly specify both ``date`` and ``time`` in the request,
     and ``step`` is always set to 0.
+
+    Finally, when using the ``yearmonth`` timestyle you do not have to set neither time, step, and date in the request.
+    On the contrary, the ``year`` and ``month`` keys need to be specified. The FDB module will then build the corresponding
+    request. 
+
+    Please note that it is very important to know which timestyle has been used in the FDB before creating the request
 
 .. option:: timeshift
 
     Timeshift is a boolean parameter used exclusively for shifting the date of monthly data back by one month.
-    Without this shift, data for January would have a date like ``19500201T0000``.
 
     Implementing this correctly in a general case can be quite complex, so it was decided to implement only the monthly shift.
 
@@ -242,7 +286,10 @@ Some of the parameters are here described:
 
     This includes important supplementary information:
 
-    - ``fdb_path``: the path of the FDB configuration file (mandatory)
+    - ``fdb_home``: the path to where the FDB data are stored
+    - ``fdb_path``: the path of the FDB configuration file (deprecated, use only if config.yaml is in a not standard place)
+    - ``fdb_home_bridge``: FDB_HOME for bridge access
+    - ``fdb_path_bridge``: the path of the FDB configuration file for bridge access (deprecated, use only if needed)
     - ``eccodes_path``: the path of the eccodes version used for the encoding/decoding of the FDB
     - ``variables``: a list of variables available in the fdb.
     - ``source_grid_name``: the grid name defined in aqua-grids.yaml to be used for areas and regridding
@@ -257,6 +304,10 @@ Some of the parameters are here described:
 
     For FDB sources the ``metadata`` section contains very important informations that are used to
     retrieve the correct variables and levels.
+
+.. warning::
+
+    Please notice that the recent version of ecCodes used by AQUA (>= 2.36.0) is not compatible anymore with definition files from earlier versions (<2.34.0). For this reason we point now to older definition files which have been 'fixed' to keep working. The CLI tool to create such fixed definition files (``fix_eccodes.sh``) is available.
 
 Regridding capabilities
 -----------------------
@@ -283,22 +334,23 @@ In our case, we will need to add the following metadata to the ``yearly_SST.yaml
         metadata:
             source_grid_name: lon-lat
 
+.. _grid_definition:
 
 Grid definitions
 ----------------
 
-As mentioned above, AQUA has some predefined grids available in ``config/aqua-grids.yaml``:
-here below we provide some information on the grid key so that it might me possibile define new grids.
+As mentioned above, AQUA has some predefined grids available in the ``config/grids`` folder.
+Here below we provide some information on the grid key so that it might me possibile define new grids.
 As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 .. code-block:: yaml
 
     icon-healpix:
         path:
-            2d: $grids/HealPix/icon_hpx{zoom}_atm_2d.nc   # this is the default 2d grid
-            2dm: $grids/HealPix/icon_hpx{zoom}_oce_2d.nc  # this is an additional and optional 2d grid used if data are masked
-            depth_full: $grids/HealPix/icon_hpx{zoom}_oce_depth_full.nc
-            depth_half: $grids/HealPix/icon_hpx{zoom}_oce_depth_half.nc
+            2d: '{{grids}}/HealPix/icon_hpx{zoom}_atm_2d.nc'   # this is the default 2d grid
+            2dm: '{{grids}}/HealPix/icon_hpx{zoom}_oce_2d.nc'  # this is an additional and optional 2d grid used if data are masked
+            depth_full: '{{grids}}/HealPix/icon_hpx{zoom}_oce_depth_full.nc'
+            depth_half: '{{grids}}/HealPix/icon_hpx{zoom}_oce_depth_half.nc'
         masked:   # This is the attribute used to distinguish variables which should go into the masked category
             component: ocean
         space_coord: ["cell"]
@@ -307,10 +359,17 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
     tco1279:
         path: 
-            2d: $grids/IFS/tco1279_grid.nc
-            2dm: $grids/IFS/tco1279_grid_masked.nc
+            2d: '{{grids}}/IFS/tco1279_grid.nc'
+            2dm: '{{grids}}/IFS/tco1279_grid_masked.nc'
         masked_vars: ["ci", "sst"]
         vert_coord: ["2d", "2dm"]
+
+.. note::
+
+    Two kinds of template replacament are available in the files contained in the ``config/grids`` folder. The Jinja formatting ``{{ var }}`` is used to set
+    variables as path that comes from the ``catalog.yaml`` file. The default python formatting ``{}`` is used for file structure which comes
+    Reader arguments, as model, experiment or any other kwargs the user might set. Please pay attention to which one you are using in your files.
+    In the future we will try to uniform this towards the Jinja formatting.
 
 
 - **path**: Path to the grid data file, can be a single file if the grid is 2d,
@@ -338,13 +397,13 @@ A standard `lon-lat` grid is defined for basic interpolation and can be used for
 as long as the ``space_coord`` are ``lon`` and ``lat``.
 
 
-Compact catalogues with YAML override
+Compact catalogs with YAML override
 -------------------------------------
 
-In order to avoid having to write the same catalogue entry for each source,
-in AQUA we can use the YAML override functionality also for the intake catalogues.
+In order to avoid having to write the same catalog entry for each source,
+in AQUA we can use the YAML override functionality also for the intake catalogs.
 This allows to write the full rquest information only for a first 
-base catalogue source and then define the following ones as copies of the first,
+base catalog source and then define the following ones as copies of the first,
 overriding only the keys that are different.
 
 For example, let's imagine that we have a first source called ``hourly-native``
@@ -362,7 +421,7 @@ that is defined as:
             [ ... other request parameters ... ]
         data_start_date: 19900101T0000
         data_end_date: 19941231T2300
-        aggregation: D  
+        chunks: D  
         [ ... other keys ... ]
         metadata: &metadata-default
             fdb_path: [ ... some path to the FDB ... ]
@@ -406,6 +465,56 @@ the ones that are explicitly overridden.
 
 .. This will open all the sources available and will regrid them. It can take a while and can be memory intensive, so it would be 
 .. safer to not launch it from notebook. 
+
+
+Intake capabilities and kwargs data access
+------------------------------------------
+
+Intake ships a template replacement capabilities based on Jinja2 which is able to "compress" multiple sources. 
+This is combined by the capacity of AQUA of elaborating extra arguments which goes beyond the classical model-exp-source hierarchy
+For example, we could assume we have a FDB source as the one above. However, this sources is made by multiple ensemble
+members, and we want to described this in the catalog. This is something intake can easily handle with the Jinja `{{ }}`` syntax.
+
+
+.. code-block:: yaml
+
+    sources:
+        hourly-native:
+            args:
+                request:
+                    domain: g
+                    class: rd
+                    expver: a06x
+                    realization: '{{ realization }}'
+
+                    ...
+                   
+                driver: gsv
+                parameters:
+                    realization:
+                        allowed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                        description: realization member
+                        type: int
+                        default: 1
+
+This can be later accessed via the reader providing an extra argument, or kwargs in python jargon, which define the realization
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="control-1950-devcon", source="hourly-native", realization=5)
+    data = reader.retrieve(var='2t')
+
+This will load the realizaiton number 5 of my experiment above. Of course, if we do not specify the realization in the `Reader()`
+call a default will be provided, so in the case above the number 1 will be loaded. 
+
+This capacity can be tuned to multiple features according to source characteristics, and will be further expaned in the future.
+
+.. warning::
+
+    Some kwargs might have an impact on the resolution of the data, and consequently on the grid file name and format. An example is the `zoom` key used for some ICON data. 
+    In this case, AQUA will modify the file templates accordingly. If this modication is required or not can be controlled through the
+    variable ``default_weights_areas_parameters`` in the reader.py module. This is a test feature and will be expanded in the future. 
+
 
 
 DE_340 source syntax convention

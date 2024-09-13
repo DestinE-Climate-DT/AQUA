@@ -1,8 +1,0 @@
-fixer_name:  
-    OSI-SAF-default:
-        data_model: false  # Do not attempt to fix coordinates
-        vars:
-            # Automatic conversion to destination grib units
-            avg_siconc:  # siconc
-                source: ice_conc
-                grib: true

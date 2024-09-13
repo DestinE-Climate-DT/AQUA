@@ -60,6 +60,7 @@ If you have suggestions for improvements, want to help maintain the documentatio
 please create an issue on the GitHub repository and/or submit a pull request with your proposed changes.
 
 .. _tests:
+
 Testing
 -------
 
@@ -81,8 +82,8 @@ To run the test suite, navigate to the root directory of the project and run the
 
     ./download_data_for_tests.sh
 
-This will download the data needed for the tests and change the machine name in the ``config/config-aqua.yaml`` to ``ci``. 
-Remember to change it to your machine name after the tests are finished.
+This will download the data needed for the tests and change the catalog name in the ``config/config-aqua.yaml`` to ``ci``. 
+Remember to change it to your catalog name after the tests are finished.
 
 Then, run the following command:
 
@@ -92,6 +93,11 @@ Then, run the following command:
 
 This will run the basic test suite and print the results to the terminal.
 Have a look at the ``tests`` directory for more tests.
+
+.. note::
+   The ``-m aqua`` flag is used to run only the tests that are marked with the ``aqua`` marker.
+   More markers are available such as ``slow`` and ``graphics``.
+   To run the graphics tests, you will need to download the teleconnections data by running the ``tests/teleconnections/download_data_for_tests.sh`` script.
 
 Writing Tests
 ^^^^^^^^^^^^^

@@ -12,7 +12,7 @@ channels:
   - conda-forge
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
-  - python>=3.9,<3.11
+  - python>=3.9
 # these below are required for running the dummy diagnostic
   # - dummy-package
 # these are pip-based since it provides more recent versions or packages unavailable on conda-forge

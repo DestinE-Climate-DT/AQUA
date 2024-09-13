@@ -5,25 +5,25 @@ teleconnections:
 # Interface file, found in config folder
 interface: 'teleconnections-destine'
 
-# The first is overwritten if the script with the flags --model, --exp, --source
+# The first is overwritten if the script with the flags --catalog, --model, --exp, --source
 # Extra keyword arguments for the models are:
 # regrid: null
 # freq: null
-# zoom: null
 # These are all null (None) by default because we're assuming
 # data are monthly and already regridded to a 1deg grid.
 # If you want to use native data, you have to set these parameters
 # for each model.
 models:
-  - model: 'IFS-NEMO'
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'lra-r100-monthly'
 
-# Reference are analyzed if --ref is passed to the script
-# This can be a list of models if needed.
+# Reference is analyzed if --ref is passed to the script
 # The same extra keyword arguments as for the models can be used.
-references:
-  - model: 'ERA5'
+reference:
+  - catalog: 'obs'
+    model: 'ERA5'
     exp: 'era5'
     source: 'monthly'
 
@@ -32,13 +32,7 @@ references:
 # Structure of the output directory:
 # outputdir
 # ├── pdf
-# │   ├── NAO
-# │   ├── ENSO
-# │   └── ...
-# ├── netcdf
-# |   ├── NAO
-# |   ├── ENSO
-# |   └── ...
+# └── netcdf
 outputdir: './output' # common output directory for figures and netcdf files
 
 # Configdir for the teleconnections
@@ -49,3 +43,4 @@ NAO:
   months_window: 3
   full_year: false
   seasons: ['DJF', 'JJA'] # to analyse additionally to the full data
+  cbar_range: [-5, 5] # colorbar range for the regression figures

@@ -4,7 +4,6 @@ source: lra-r100-monthly
 
 outputdir: ./output
 
-
 select_time : False # keep it True, if you want to activate time_range
 time_range:
   start_year : 1991
@@ -12,27 +11,20 @@ time_range:
 
 ocean_drift:
   regions:
+    - Global Ocean
     - Indian Ocean
     - Pacific Ocean
     - Atlantic Ocean
     - Arctic Ocean
     - Southern Ocean
-    - Labrador Sea
-    # - labrador sea
-    # - irminger sea
-    # - ross sea
-    # - weddell Sea
-    # - gin sea
-  # custom_region:
-  #   - [lat_s: -30, lat_n: 30, lon_w: 100, lon_e: 300]
-    # - [lat_s: 0, lat_n: 30, lon_w: 100, lon_e: 150]
 
+    
 ocean_circulation: #specify region and climatology time
   regions:
-    labrador sea : DJF
-    irminger sea : DJF
-    # ross sea : JJA
-    # weddell Sea : JJA
-    # gin sea : DJF
+    Labrador Sea : DJF
+    Irminger Sea : DJF
+    Ross Sea : JJA
+    Weddell Sea : JJA
+    Gin Sea : DJF
 
 compare_model_with_obs: True

@@ -5,10 +5,9 @@ model:
   name: ClimateDT
 
 dirs:
-  exp: /pfs/lustrep3/projappl/project_465000454/data/AQUA/diagnostics/ecmean
-  clm: /users/padavini/AQUA/diagnostics/ecmean/ECmean4/ecmean/climatology
-  tab: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean/output/YAML
-  fig: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean/output/PDF
+  exp: '../data/' 
+  tab: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean_new/output/YAML
+  fig: /pfs/lustrep3/projappl/project_465000454/padavini/ecmean_new/output/PDF
 
 global:
   atm_vars: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,
@@ -32,4 +31,3 @@ PI:
   regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
   seasons: ['ALL', 'DJF', 'JJA']
   resolution: r360x180
-

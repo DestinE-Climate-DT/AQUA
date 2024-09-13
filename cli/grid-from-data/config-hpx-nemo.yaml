@@ -1,8 +1,9 @@
 # These are needed for the AQUA retrieve
 model: IFS-NEMO
-exp: historical-1990
-source: daily-hpxstd-oce2d
-var: avg_sos
+exp: a16z
+source: daily-hpz7-oce3d
+var: avg_so
+resolution: eORCA025 #input oceanic resolution: different NEMO grids will have different LSM
 
 # These are needed for grid conversion with CDO
 zoom: 7
@@ -11,8 +12,7 @@ nested: True # otherwise ring
 # These are extra info:
 # model name for saving the grid
 model_name: nemo
-3d: False # 2d or 3d
 # tmp folder for the grid generation
-tmp: /scratch/project_465000454/nurissom/healpix_grid_generation
+tmp: /pfs/lustrep3/scratch/project_465000454/padavini
 # target folder for the grid generated
-tgt: /scratch/project_465000454/nurissom/healpix_grid_generation
+tgt: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids/HealPix

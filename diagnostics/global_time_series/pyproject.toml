@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# For setiptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+[project]
+name = "global_time_series"
+dynamic = ["version"]
+authors = [
+    {name = "Nurisso Matteo", email = "m.nurisso@isac.cnr.it"},
+    {name = "Lukas Kluft", email = "lukas.kluft@mpimet.mpg.de"}
+]
+description = "Global time series diagnostic"
+readme = "README.md"
+keywords = ["timeseries", "climate", "gregory"]
+license = {text = "Private"}
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Science/Research",
+    "Operative System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython"
+]
+dependencies = [
+    "dask",
+    "matplotlib",
+    "xarray"
+]
+
+[tool.setuptools.package-data]
+platforms = [
+    "any"
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools.dynamic]
+version = {attr = "global_time_series.__version__"}

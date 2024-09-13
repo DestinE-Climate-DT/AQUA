@@ -1,8 +1,10 @@
-"""Test for timmean method"""
+"""Test for some of the utils"""
 
 import pytest
+import datetime
 import xarray as xr
 import numpy as np
+import pandas as pd
 from aqua.util import extract_literal_and_numeric, file_is_complete
 
 @pytest.fixture
@@ -25,16 +27,50 @@ def test_extract_literal_and_numeric(test_text):
 class TestFileIsComplete:
     """The File is Complete testing class"""
 
+
     @pytest.fixture
     def sample_netcdf(self, tmp_path):
+        """Create a sample Dataset and its file"""
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        data.to_netcdf(filename)
+        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i) for i in range(3)]
+        data = data.assign_coords(time=time_values)
+        data.name = "sample_data"
+        dataset = xr.Dataset({"sample_data": data})
+        dataset.to_netcdf(filename)
         return filename
-
+    
     def test_file_is_complete_existing_file(self, sample_netcdf):
         result = file_is_complete(sample_netcdf)
         assert result is True
+
+    @pytest.mark.parametrize("mindate,expected_result", [("2023-12-31", False), ("2025-01-01", True)])
+    def test_file_is_complete_full_nan_with_mindate(self, tmp_path, mindate, expected_result):
+        filename = tmp_path / "sample_netcdf.nc"
+        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i) for i in range(3)]
+        data = data.assign_coords(time=time_values)
+        data.name = "sample_data"
+        data[:,:,:] = np.nan
+        dataset = xr.Dataset({"sample_data": data})
+        dataset["sample_data"].attrs["mindate"] = mindate
+        dataset.to_netcdf(filename)
+        result = file_is_complete(filename, loglevel='info')
+        assert result == expected_result
+    
+    @pytest.mark.parametrize("mindate,expected_result", [("2023-12-31", False), ("2024-02-01", True)])
+    def test_file_is_complete_partial_nan_with_mindate(self, tmp_path, mindate, expected_result):
+        filename = tmp_path / "sample_netcdf.nc"
+        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i*40) for i in range(3)]
+        data = data.assign_coords(time=time_values)
+        data.name = "sample_data"
+        data[0,:,:] = np.nan
+        dataset = xr.Dataset({"sample_data": data})
+        dataset["sample_data"].attrs["mindate"] = mindate
+        dataset.to_netcdf(filename)
+        result = file_is_complete(filename, loglevel='info')
+        assert result == expected_result
 
     def test_file_is_complete_nonexistent_file(self, tmp_path):
         non_existent_file = tmp_path / "non_existent.nc"
@@ -70,3 +106,14 @@ class TestFileIsComplete:
         data.to_netcdf(valid_with_nan_file)
         result = file_is_complete(valid_with_nan_file)
         assert result is True
+
+# Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
+
+# def test_flip_time():
+#     """Test the flip_time function"""
+#     time = np.arange(0, 10)
+#     data = xr.DataArray(np.random.rand(10, 3, 4), dims=("time", "lat", "lon"))
+#     data = data.assign_coords(time=time)
+#     flipped_data = flip_time(data)
+#     assert flipped_data.time.values[0] == 9
+#     assert flipped_data.time.values[-1] == 0

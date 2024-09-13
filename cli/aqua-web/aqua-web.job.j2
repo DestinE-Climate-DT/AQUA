@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH --job-name={{ job_name }}
+#SBATCH --partition={{ partition }}
+#SBATCH --account={{ account }}
+#SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node={{ ntasks_per_node }}
+#SBATCH --time={{ time }}
+#SBATCH --error={{ logdir_error }}/{{ error }}
+#SBATCH --output={{ logdir_output }}/{{ output }}
+
+model={{ model }}
+exp={{ exp }}
+source={{ source }}
+
+export OUTDIR={{ outdir }}
+export AQUA={{ aquadir }}
+
+cd $OUTDIR
+
+unset SINGULARITY_BIND  # Lumi specific fix for singularity
+
+bash $AQUA/cli/lumi-container/load_container_lumi.sh -y <<EOF
+#!/bin/bash
+if [[ "{{ push }}" == "false" ]]; then
+    bash $AQUA/cli/aqua-analysis/aqua-analysis.sh -l debug -m $model -e $exp -s $source -d $OUTDIR/{{ catalog }} {{ parallel }}
+else
+    bash $AQUA/cli/aqua-web/push_analysis.sh $OUTDIR {{ explist }}
+fi
+EOF

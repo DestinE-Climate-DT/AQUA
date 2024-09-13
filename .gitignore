@@ -9,6 +9,10 @@ __pycache__/
 *.err
 *.out
 *.bal
+*.log
+
+# configuration
+config/config-aqua.yaml
 
 # documentation
 docs/sphinx/build/*
@@ -22,6 +26,8 @@ docs/sphinx/build/*
 AQUA_tests/
 AQUA_tests.tar.gz
 AQUA_testsv2.tar.gz
+AQUA_testsv3.tar.gz
+AQUA_testsv4.tar.gz
 *.bak
 
 # coverage and vscode

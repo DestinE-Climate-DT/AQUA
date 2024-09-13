@@ -4,5 +4,3 @@ dummy:
   source: monthly
   var: msl
   regrid: r100
-
-loglevel: INFO

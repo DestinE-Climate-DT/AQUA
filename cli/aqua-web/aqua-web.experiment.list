@@ -1,0 +1,7 @@
+# List of experiments to analyze in the format
+# model exp [source]
+
+IFS-NEMO  ssp370
+IFS-NEMO historical-1990
+ICON historical-1990
+ICON ssp370

@@ -113,12 +113,12 @@ Example Plot(s)
 .. figure:: figures/tropical_cyclones1.png
     :width: 10cm
 
-    Pressure in the vicinity of a tropical cyclone (from the IFStco1279-orca025-cycle3 simulation).
+    Module of wind in the vicinity of a tropical cyclone following its trajectory (from the nextGEMS IFStco1279-orca025-cycle3 simulation).
 
 .. figure:: figures/tropical_cyclones2.png
     :width: 10cm
     
-    Example of TCs trajectories computed in the IFS simulation tco1279-orca025-cycle3.
+    Example of TCs trajectories computed from the nextGEMS IFS simulation tco1279-orca025-cycle3. Note the extratropical cyclone identifided offshore the East Coast of the US which might have been erroneously classified as tropical by the TempestExtremes algorithm.
 
 
 Available demo notebooks

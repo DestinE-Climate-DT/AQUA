@@ -8,9 +8,11 @@ channels:
   - conda-forge
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
-  - python>=3.9,<3.12
-  - cdo>=2.2.0 #for healpix support
-  - eccodes>=2.31.0,<2.34.0 # see issue #252, #634, #870
+  - python>=3.9
+  - cdo>=2.2.0,<=2.4.0 #for healpix support
+  # for eccodes see issues #252, #634, #870, #1282
+  # PR #36 catalog repo
+  - eccodes>=2.36.0
   - pandas      
   - pandoc
   - pip
@@ -18,10 +20,14 @@ dependencies:
   - tempest-extremes # for TCs
   - xesmf # for ECmean
   - intake-esm
+  - imagemagick
   - pip:
+    - -e ./diagnostics/global_time_series/ # pip install -e of global_time_series
     - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
+    - -e ./diagnostics/seaice/ # pip install -e of seaice
     - -e ./diagnostics/teleconnections/ # pip install -e of teleconnections
     - -e ./diagnostics/tropical_cyclones/ # pip install -e of tropical cyclones
+    - -e ./diagnostics/tropical_rainfall/ # pip install -e of tropical_rainfall
     # pip install -e of AQUA itself
     - -e .[all]
     

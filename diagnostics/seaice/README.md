@@ -22,7 +22,7 @@ The SIE is defined as the areal integral of all ocean grid cells that contain at
 
 To install this diagnostic you can use conda.
 
-No more environments than the regular AQUA ones (located in `./environment.yml`) are needed.
+No more environments than the regular AQUA ones (located in `./environment.yaml`) are needed.
 Refer to the AQUA documentation for more information.
 
 ## Data requirements

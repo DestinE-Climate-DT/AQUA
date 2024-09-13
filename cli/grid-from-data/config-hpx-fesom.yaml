@@ -1,0 +1,17 @@
+# These are needed for the AQUA retrieve
+model: IFS-FESOM
+exp: test
+source: hourly-hpz5-oce3d
+var: avg_uoe
+
+# These are needed for grid conversion with CDO
+zoom: 5
+nested: True # otherwise ring
+
+# These are extra info:
+# model name for saving the grid
+model_name: fesom
+# tmp folder for the grid generation
+tmp: /projappl/project_465000454/sunnyjal/FESOM/grids
+# target folder for the grid generated
+tgt: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids/HealPix

@@ -1,4 +1,4 @@
-Core Components
+The AQUA Reader
 ===============
 
 Here we describe the core components of the AQUA library.
@@ -10,7 +10,7 @@ The Reader class
 ----------------
 
 The ``Reader`` class provides AQUA access to data, developed to offer a centralized common data access point.
-AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogues, 
+AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogs, 
 and delivers xarray objects.
 On top of data access, the ``Reader`` is also able to perform multiple operations on the data:
 interpolation and regridding, spatial and temporal averaging and metadata correction. 
@@ -40,11 +40,11 @@ specifically an ``xarray.Dataset``, where only the metadata are loaded in memory
     on top of the NetCDF format, to `significantly improve the performance <https://ui.adsabs.harvard.edu/abs/2021AGUFMIN15A..08P/abstract>`_
     of the data access.
 
-Catalogue Exploration
+Catalog exploration
 ^^^^^^^^^^^^^^^^^^^^^
 
-To check what is available in the catalogue, we can use the ``inspect_catalogue()`` function.
-Three hierarchical layer structures describe each dataset.
+To check what is available in the catalog, we can use the ``inspect_catalog()`` function.
+Three hierarchical layer structures (e.g AQUA triplet) describe each dataset.
 At the top level, there are *models* (keyword ``model``) (e.g., ICON, IFS-NEMO, IFS-FESOM, etc.). 
 Each model has different *experiments* (keyword ``exp``) and each experiment can have different *sources* (keyword ``source``).
 
@@ -52,17 +52,17 @@ Calling, for example:
 
 .. code-block:: python
 
-    from aqua import inspect_catalogue
-    inspect_catalogue(model='CERES')
+    from aqua import inspect_catalog
+    inspect_catalog(model='CERES')
 
-will return experiments available in the catalogue for model CERES.
+will return experiments available in the catalog for model CERES.
 
 .. warning::
-    The ``inspect_catalogue()`` and the ``Reader`` are based on the machine and AQUA path configuration.
+    The ``inspect_catalog()`` and the ``Reader`` are based on the catalog and AQUA path configuration.
     If you don't find a source you're expecting, please check these are correctly set (see :ref:`getting_started`).
 
-If you want to have a complete overview of the sources available in the catalogue, you can use the ``catalogue()`` function.
-This will return a list of all the sources available in the catalogue, listed by model and experiment.
+If you want to have a complete overview of the sources available in the catalog, you can use the ``catalog()`` function.
+This will return a list of all the sources available in the catalog, listed by model and experiment.
 
 Reader basic usage
 ^^^^^^^^^^^^^^^^^^
@@ -76,6 +76,10 @@ The basic call to the ``Reader`` is:
     reader = Reader(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly')
     data = reader.retrieve()
 
+.. note::
+    If multiple catalog are installed, a browsing will be done to search for the required triplet.
+    In case you want to speed up the process, you can point to a specific catalog with the `catalog` keyword. 
+
 This will return a ``Reader`` object that can be used to access the data.
 The ``retrieve()`` method will return an ``xarray.Dataset`` to be used for further processing.
 
@@ -88,6 +92,16 @@ If some information about the data is needed, it is possible to use the ``info()
 .. warning::
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.
     If you're retrieving data from many sources, please instantiate a new ``Reader`` for each source.
+
+
+Since version v0.10, multiple catalogs are supported. AQUA is designed to browse all the sources to match the triplet requested
+by the users, but things can be speed up if we target a specific catalog. This can be done by passing the ``catalog`` kwargs. 
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly', catalog='climatedt-phase1')
+    data = reader.retrieve()
 
 Dask and Iterator access
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -105,7 +119,7 @@ Please check the :ref:`iterators` section for more details.
 
 .. note::
     Dask access to data is available also for FDB data.
-    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalogue,
+    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalog,
     we suggest to read the :ref:`FDB_dask` section.
 
 Regrid and interpolation capabilities
@@ -138,15 +152,16 @@ Concept
 The idea of the regridder is first to generate the weights for the interpolation and
 then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already
-existent and stored in a directory specified in the ``config/machine/<machine-name>/catalog.yaml`` file.
-A list of predefined target grids (only regular lon-lat for now) is available in the ``config/aqua-grids.yaml`` file.
+existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/machine.yaml`` file. 
+This can have a `default` argument but can also specific for each machine you are working on. 
+A list of predefined target grids (only regular lon-lat for now) is available in the ``config/grids/default.yaml`` file.
 For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, etc.
 
 .. note::
     The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
     centered between 90 and -90 degrees is sometimes used in the field. If you need sucha a grid please add an additional definition
-    to the ``config/aqua-grids.yaml`` file with a different grid name (for example ``r100a``).
+    to the ``config/grids`` folder with a different grid name (for example ``r100a``).
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
@@ -182,6 +197,7 @@ Users can also change the unit of the vertical coordinate.
     interp = field.aqua.vertinterp(levels=[830, 835], units='hPa', method='linear')
 
 .. _fixer:
+
 Fixer functionalities
 ---------------------
 
@@ -202,8 +218,8 @@ By default, fixes files with the name of the model or the name of the DestinE pr
 
 If you need to develop your own, fixes can be specified in two different ways:
 
-- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalogue entry.
-  This represents fixes that have a common nickname which can be used in multiple sources when defining the catalogue.
+- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalog source entry.
+  This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog.
   There is the possibility of specifing a **parent** fix so that a fix can be re-used with minor corrections,
   merging small changes to a larger ``fixer_name``.
 - Using the source-based definition.
@@ -220,7 +236,8 @@ If you need to develop your own, fixes can be specified in two different ways:
     ``fixer_name`` called ``<MODEL_NAME>-default``.
 
 Please note that the ``default.yaml`` is reserved to define a few of useful tools:
-- the default ``data_model``(See :ref:`coord-fix`).
+
+- the default ``data_model`` (See :ref:`coord-fix`).
 - the list of units that should be added to the default MetPy unit list. 
 - A series of nicknames (``shortname``) for units to be replaced in the fixes yaml file.
 
@@ -242,6 +259,7 @@ The fixer performs a range of operations on data:
   If there is an extra time unit, it will assume that division by the timestep is needed. 
 
 .. _fix-structure:
+
 Fix structure
 ^^^^^^^^^^^^^
 
@@ -261,6 +279,9 @@ Here we show an example of a fixer file, including all the possible options:
         documentation-fix:
             parent: documentation-to-merge
             data_model: ifs
+            dims:
+                cells:
+                    source: cells-to-rename
             coords:
                 time:
                     source: time-to-rename
@@ -284,6 +305,7 @@ Here we show an example of a fixer file, including all the possible options:
                     src_units: J m-2 # Overruling source units
                     decumulate: true  # Test decumulation
                     units: "{radiation_flux}" # overruling units
+                    mindate: 1990-09-01T00:00 # setting to NaN all data before this date
                     attributes:
                         # assigning a long_name
                         long_name: Mean top net thermal radiation flux doubled
@@ -300,9 +322,14 @@ different sections of the fixer file.
 - **data_model**: the name of the data model for coordinates. (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough.
   (See :ref:`coord-fix`).
+- **dims**: extra dimensions handling if data model is not flexible enough. 
+  (See :ref:`coord-fix`).
 - **decumulation**: 
-    - If only ``deltat`` is specified, all the variables that are considered flux variables
-      will be divided by the ``deltat``. This is done automatically based on target and source units.
+    - If only ``deltat`` is specified, all the variables that are considered as cumulated flux variables 
+      (i.e. that present a time unit mismatch from the source to target units) will be divided
+      by ``deltat``. This is done automatically based on the values of target and source units.
+      ``deltat`` can be an integer in seconds, or alternatively a string with `monthly`: in this case
+      each flux variable will be divided by the number of seconds of each month.
     - If additionally ``decumulate: true`` is specified for a specific variable,
       a time derivative of the variable will be computed.
       This is tipically done for cumulated fluxes for the IFS model, that are cumulated on a period longer
@@ -313,6 +340,7 @@ different sections of the fixer file.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
 
 .. _metadata-fix:
+
 Metadata Correction
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -339,35 +367,51 @@ Then, extra keys can be then specified for `each` variable to allow for further 
 - **decumulate**: if set to ``True``, activate the decumulation of the variables
 - **attributes**: with this key, it is possible to define a dictionary of attributes to be modified. 
   Please refer to the above example to see the possible implementation. 
+- **mindate**: used to set to NaN all data before a specified date. 
+  This is useful when dealing with data that are not available for the whole period of interest or which are partially wrong.
 
 .. warning ::
     Recursive fixes (i.e. fixes of fixes) cannot be implemented. For example, it is not possibile to derive a variable from a derived variable
 
 .. _coord-fix:
-Data Model and Coordinates Correction
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data Model and Coordinates/Dimensions Correction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The fixer can adopt a common *coordinate data model*
 (default is the CDS data model).
 If this data model is not appropriate for a specific source,
-it is possible to specify a different one in the catalogue.
+it is possible to specify a different one in the catalog source.
 
-If the data model coordinate treatment is not enough to fix the coordinates,
-it is possible to specify a custom fix in the catalogue in the **coords** block
+If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
+it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
 For example, if the longitude coordinate is called ``longitude`` instead of ``lon``,
 it is possible to specify a fix like:
 
 .. code-block:: yaml
 
-    lon:
-        source: longitude
+    coords: 
+        lon:
+            source: longitude
 
 This will rename the coordinate to ``lon``.
 
 .. note::
     When possible, prefer a **data model** treatment of coordinates and use the **coords**
     block as second option.
+
+Similarly, if units are ill-defined in the dataset, it is possible to override them with the same fixer structure. 
+Of course, this feature is valid only for **coords**:
+
+.. code-block:: yaml
+
+    coords: 
+        level:
+            tgt_units: m
+
+.. warning::
+    Please keep in mind that coordinate units is simply an override of the attribute. It won't make any assumption on the source units and will not convert it accordingly.
 
 Time Aggregation
 ----------------
@@ -389,6 +433,31 @@ Some extra options are available:
   (for example, verify  that all the record from each month are available before doing the time mean).
 - ``center_time=True``: this flag will center the time coordinate on the mean time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
+
+Detrending
+----------
+
+For some analysis, removing from the data a linear trend can be helpful to highlight the internal variability.
+The ``detrend`` method can be used as a high-level wrapper of xarray functionalities to achieve this goal.
+
+.. code-block:: python
+
+    reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
+    data = reader.retrieve()
+    daily = reader.detrend(data['2t'], dim='time')
+
+In this way, linear trend is removed from each grid point of the original dataset along the time dimension. 
+Other dimension can be targeted too, although with limited physical meaning. 
+Of course, it can be used in collaboration with temporal and spatial averaging. Higher order polynominial fits are available too.
+
+Some options includes:
+
+- ``degree``: this will define with an integer the order of the polynominial fit. Default is 1, i.e. linear Detrending
+- ``skipna==True``: removing the NaN from the fit. Default is True. 
+
+.. warning::
+    Detrending might lead to incorrect results if there is not an equal amount of time elements (e.g. same amount of months or days) in the dataset.
+
 
 Spatial Averaging
 -----------------
@@ -418,6 +487,7 @@ It is also possible to apply a regional section to the domain before performing 
     described in the :ref:`fixer` section.
 
 .. _time-selection:
+
 Time selection
 --------------
 
@@ -433,6 +503,7 @@ immediatly only a chunck of data.
     overview of the behaviour of the Reader with these options.
 
 .. _lev-selection:
+
 Level selection
 ---------------
 
@@ -456,6 +527,7 @@ but an index for NEMO data in the FDB archive).
     the section :ref:`lev-selection-regrid`.
 
 .. _streaming:
+
 Streaming of data
 -----------------
 
@@ -510,6 +582,7 @@ We can do operations with them by iterating on the generator object like:
         # Do something with the data
 
 .. _accessors:
+
 Accessors
 ---------
 
@@ -592,8 +665,12 @@ The description of this feature is provided in the section :ref:`slurm`.
 Graphic tools
 -------------
 
-The aqua.graphics module provides a simple function to easily plot a map of a variable.
-A function called ``plot_single_map`` is provided with many options to customize the plot.
+The *aqua.graphics* module provides a set of simple functions to easily plot the result of analysis done within AQUA.
+
+Single map
+^^^^^^^^^^
+
+A function called ``plot_single_map()`` is provided with many options to customize the plot.
 
 The function takes as input an xarray.DataArray, with a single timestep to be selected
 before calling the function. The function will then plot the map of the variable and,
@@ -619,4 +696,83 @@ This will produce the following plot:
     :align: center
     :width: 100%
 
-    Example of the above code.
+Single map with differences
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A function called ``plot_single_map_diff()`` is provided with many options to customize the plot.
+
+The function is built as an expansion of the ``plot_single_map()`` function, so that arguments and options are similar.
+The function takes as input two xarray.DataArray, with a single timestep.
+
+The function will plot as colormap or contour filled map the difference between the two input DataArray (the first one minus the second one).
+Additionally a contour line map is plotted with the first input DataArray, to show the original data.
+
+.. figure:: figures/teleconnections_ENSO_correlation_IFS-NEMO_ssp370_lra-r100-monthly_ERA5.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_single_map_diff()`` output done with the :ref:`teleconnections`.
+    The map shows the correlation for the ENSO teleconnection between IFS-NEMO scenario run and ERA5 reanalysis.
+
+Time series
+^^^^^^^^^^^
+
+A function called ``plot_timeseries()`` is provided with many options to customize the plot.
+The function is built to plot time series of a single variable,
+with the possibility to plot multiple lines for different models and a special line for a reference dataset.
+The reference dataset can have a representation of the uncertainty over time.
+
+By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`global_timeseries` diagnostic.
+
+The function takes as data input:
+
+- **monthly_data**: a (list of) xarray.DataArray, each one representing the monthly time series of a model.
+- **annual_data**: a (list of) xarray.DataArray, each one representing the annual time series of a model.
+- **ref_monthly_data**: a xarray.DataArray representing the monthly time series of the reference dataset.
+- **ref_annual_data**: a xarray.DataArray representing the annual time series of the reference dataset.
+- **std_monthly_data**: a xarray.DataArray representing the monthly values of the standard deviation of the reference dataset.
+- **std_annual_data**: a xarray.DataArray representing the annual values of the standard deviation of the reference dataset.
+
+The function will automatically plot what is available, so it is possible to plot only monthly or only yearly time series, with or without a reference dataset.
+
+.. figure:: figures/timeseries_example_plot.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_timeseries()`` output done with the :ref:`global_timeseries`.
+    The plot shows the global mean 2 meters temperature time series for the IFS-NEMO scenario and the ERA5 reference dataset.
+
+Seasonal cycle
+^^^^^^^^^^^^^^
+
+A function called ``plot_seasonalcycle()`` is provided with many options to customize the plot.
+
+The function takes as data input:
+
+- **data**: a xarray.DataArray representing the seasonal cycle of a variable.
+- **ref_data**: a xarray.DataArray representing the seasonal cycle of the reference dataset.
+- **std_data**: a xarray.DataArray representing the standard deviation of the seasonal cycle of the reference dataset.
+
+The function will automatically plot what is available, so it is possible to plot only the seasonal cycle, with or without a reference dataset.
+
+.. figure:: figures/seasonalcycle_example_plot.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_seasonalcycle()`` output done with the :ref:`global_timeseries`.
+    The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.
+
+Multiple maps
+^^^^^^^^^^^^^
+
+A function called ``plot_maps()`` is provided with many options to customize the plot.
+The function takes as input a list of xarray.DataArray, each one representing a map.
+It is built to plot multiple maps in a single figure, with a shared colorbar.
+This can be userdefined or evaluated automatically.
+Figsize can be adapted and the number of plots and their position is automatically evaluated.
+
+.. figure:: figures/maps_example.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_maps()`` output.

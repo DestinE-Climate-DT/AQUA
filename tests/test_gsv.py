@@ -2,6 +2,8 @@ import pytest
 import types
 import xarray as xr
 
+from dask.distributed import LocalCluster, Client
+
 from aqua.gsv.intake_gsv import GSVSource, gsv_available
 from aqua import Reader
 
@@ -43,7 +45,7 @@ class TestGsv():
         """Simplest test, to check that we can create it correctly."""
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           aggregation="S", var='167', metadata=None)
+                           chunks="S", var='167', metadata=None)
         assert source is not None
 
     @pytest.mark.parametrize('gsv', [{'request': {
@@ -72,7 +74,7 @@ class TestGsv():
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", aggregation="D",
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", chunks="D",
                         stream_generator=True, loglevel=loglevel)
         data = reader.retrieve(startdate='20080101T1200', enddate='20080101T1200', var='t')
         assert isinstance(data, types.GeneratorType), 'Reader does not return iterator'
@@ -128,6 +130,18 @@ class TestGsv():
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
+    def test_reader_3d_chunks(self) -> None:
+        """Testing 3D access with vertical chunking"""
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels-chunks", loglevel=loglevel)
+        data = reader.retrieve()
+
+        # can read second level
+        assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
+
+        data = reader.retrieve(level=[900, 800])  # Read only two levels
+        assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
+
     def test_reader_auto(self) -> None:
         """
         Reading from a datasource using new operational schema and auto dates
@@ -142,3 +156,22 @@ class TestGsv():
         assert data.tcc.isel(time=0).values.mean() == pytest.approx(0.6530221138649116)
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(0.6679689864974151)
 
+    def test_reader_dask(self) -> None:
+        """
+        Reading in parallel with a dask cluster
+        """
+
+        cluster = LocalCluster(threads_per_worker=1, n_workers=2)
+        client = Client(cluster)
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+        data = reader.retrieve()
+        # Test if the correct dates have been found
+        assert "1990-01-01T00:00" in str(data.time[0].values)
+        assert "1990-01-01T23:00" in str(data.time[-1].values)
+        # Test if the data can actually be read and contain the expected values
+        assert data.tcc.isel(time=0).values.mean() == pytest.approx(0.6530221138649116)
+        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(0.6679689864974151)
+
+        client.shutdown()
+        cluster.close()

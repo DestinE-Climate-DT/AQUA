@@ -3,17 +3,19 @@
 
 set -e # Exit immediately if a command exits with a non-zero status.
 
-# Check if AQUA is set and the file exists
-if [[ -z "$AQUA" ]]; then
-    echo -e "\033[0;31mError: The AQUA environment variable is not defined."
-    echo -e "\x1b[38;2;255;165;0mPlease define the AQUA environment variable with the path to your 'AQUA' directory."
-    echo -e "For example: export AQUA=/path/to/aqua\033[0m"
+# define the aqua installation path
+AQUA=$(aqua --path)/..
+
+echo $AQUA
+if [ ! -d $AQUA ]; then
+    echo -e "\033[0;31mError: AQUA is not installed."
+    echo -e "\x1b[38;2;255;165;0mPlease install AQUA with aqua install command"
     exit 1  # Exit with status 1 to indicate an error
-else
-    source "$AQUA/cli/util/logger.sh"
-    log_message INFO "Sourcing logger.sh from: $AQUA/cli/util/logger.sh"
-    # Your subsequent commands here
 fi
+
+source "$AQUA/cli/util/logger.sh"
+log_message DEBUG "Sourcing logger.sh from: $AQUA/cli/util/logger.sh"
+
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 aqua=$AQUA
 
@@ -38,7 +40,7 @@ log_message INFO "Machine Name: $machine"
 read -r nproc nodes walltime memory lumi_version account partition run_on_sunday < <(python -c "
 try:
     import yaml
-    with open('$AQUA/cli/weights/config/weights_config.yml') as f:
+    with open('$AQUA/cli/weights/weights_config.yml') as f:
         config = yaml.safe_load(f)['compute_resources']
         print(config['nproc'], config['nodes'], config['walltime'], config['memory'], config['lumi_version'], \
         config['account']['$machine'], config['partition']['$machine'], config['run_on_sunday'])

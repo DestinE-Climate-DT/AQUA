@@ -8,7 +8,7 @@ data:
   zoom_max: 10          # Maximum zoom level
 
 rebuild: False          # Flag to indicate whether to rebuild data
-catalogue: True         # Flag to use the entire catalogue or not
+catalog: True         # Flag to use the entire catalog or not
 loglevel: 'WARNING'     # Logging level
 
 compute_resources:

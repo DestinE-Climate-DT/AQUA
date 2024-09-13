@@ -12,6 +12,8 @@ import xarray as xr
 from aqua.logger import log_configure
 from teleconnections.tools import lon_180_to_360, wgt_area_mean
 
+xr.set_options(keep_attrs=True)
+
 
 def station_based_index(field: xr.DataArray,
                         namelist: dict,
@@ -130,6 +132,7 @@ def regional_mean_index(field, namelist, telecname, months_window=3,
     # 7. -- Drop NaNs --
     logger.debug('Dropping NaNs')
     field_mean = field_mean.dropna(dim='time')
+    field_mean = field_mean.rename('index')
 
     logger.debug('Index evaluated')
     return field_mean
@@ -181,6 +184,7 @@ def regional_mean_anomalies(field, namelist, telecname, months_window=3,
 
     field_mean_an = field_mean_an.rolling(time=months_window,
                                           center=True).mean(skipna=True)
+    field_mean_an = field_mean_an.rename('index')
 
     logger.debug('Index evaluated')
     return field_mean_an

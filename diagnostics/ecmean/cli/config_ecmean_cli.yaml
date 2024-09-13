@@ -1,15 +1,18 @@
 dataset:
-  model_atm: IFS-NEMO
-  model_oce: IFS-NEMO
+  catalog: null #optional, not necessary
+  model: IFS-NEMO
   exp: historical-1990
-  atm_vars: ['2t', 'mtpr', 'msl', 'mer', 'metss', 'mntss', 'u', 'v', 't', 'q']
+  atm_vars: ['2t', 'mtpr', 'msl', 'mer', 'metss', 'mntss', 'tcc', 'msr',
+    'mtnswrf', 'mtnlwrf', 'msnswrf', 'msnlwrf', 'msshf', 'mslhf',
+    'u', 'v', 't', 'q']
   oce_vars: ['avg_tos', 'avg_siconc', 'avg_sos']
+  year1: null #if you want to select some specific years, otherwise use the entire dataset
+  year2: null
 
 compute:
   numproc: 1
 
 setup:
-  loglevel: 'WARNING'
   interface_file: '../config/interface_AQUA_destine-v1.yml'
   config_file: '../config/ecmean_config_destine-v1.yml'
   outputdir: '../output'

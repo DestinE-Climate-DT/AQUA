@@ -3,7 +3,7 @@
 '''
 AQUA dummy diagnositc command line interface.
 Check that the imports are correct and the requested model is available in the
-Reader catalogue.
+Reader catalog.
 '''
 import os
 import sys
@@ -36,30 +36,31 @@ if __name__ == '__main__':
     print('Running check setup CLI')
     args = parse_arguments(sys.argv[1:])
 
-    # change the current directory to the one of the CLI so that relative path works
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    if os.getcwd() != dname:
-        os.chdir(dname)
-        print(f'Moving from current directory to {dname} to run!')
-
-    # Checking imports
     try:
         from aqua.__init__ import __version__ as aqua_version
         from aqua import Reader
         from aqua.logger import log_configure
         from aqua.util import get_arg, load_yaml
+
+        loglevel = get_arg(args, 'loglevel', 'WARNING')
+        logger = log_configure(log_name='Setup check', log_level=loglevel)
     except ImportError:
         print('Failed to import aqua. Check that you have installed aqua.')
-        print('If you have installed aqua, check that you have activated the conda environment.')
+        print("If you're using a conda environment, check that you have activated it.")
+        print("If you're using a container, check that you have started it.")
         sys.exit(1)
     except Exception as e:
         print('Failed to import aqua: {}'.format(e))
         sys.exit(1)
-    else:
-        loglevel = get_arg(args, 'loglevel', 'WARNING')
-        logger = log_configure(log_name='Setup check', log_level=loglevel)
-        logger.info('Running aqua version {}'.format(aqua_version))
+
+    logger.info('Running aqua version {}'.format(aqua_version))
+
+    # change the current directory to the one of the CLI so that relative path works
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    if os.getcwd() != dname:
+        os.chdir(dname)
+        logger.info(f'Moving from current directory to {dname} to run!')
 
     file = get_arg(args, 'config', 'dummy_config.yaml')
     logger.info('Reading configuration from {}'.format(file))
@@ -77,7 +78,7 @@ if __name__ == '__main__':
         reader_atm.retrieve()
     except Exception as e:
         logger.error('Failed to retrieve atm data: {}'.format(e))
-        logger.critical('Check that the atmospheric model is available in the Reader catalogue.')
+        logger.critical('Check that the atmospheric model is available in the Reader catalog.')
         reader_atm = None
 
     try:
@@ -86,7 +87,7 @@ if __name__ == '__main__':
         reader_oce.retrieve()
     except Exception as e:
         logger.error('Failed to retrieve oce data: {}'.format(e))
-        logger.critical('Check that the oceanic model is available in the Reader catalogue.')
+        logger.critical('Check that the oceanic model is available in the Reader catalog.')
         reader_oce = None
 
     if reader_atm is None and reader_oce is None:
@@ -100,4 +101,4 @@ if __name__ == '__main__':
             logger.critical('Only atmospheric data is available. Check that the oceanic model name is correct.')
             sys.exit(3)
 
-    logger.info('Check complete, diagnostics can run!')
+    logger.info('Check is terminated, diagnostics can run!')

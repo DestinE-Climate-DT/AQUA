@@ -1,0 +1,37 @@
+grids:
+  # ICON oceanic healpix
+  icon-hpz10-nested:
+    space_coord: ["ncells"]
+    path: '{{ grids }}/HealPix/icon_hpz10_nested_oce.nc'
+  icon-hpz10-nested-3d:
+    path:
+      level: '{{ grids }}/HealPix/icon_hpz10_nested_oce_level.nc'
+
+  #ICON
+  R02B08:
+    path: '{{ grids }}/ICON/icon_grid_0033_R02B08_G.nc'
+    space_coord: ["cell"]
+    extra: -selname,cell_index
+  R02B09:
+    path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
+    space_coord: ["cell"]
+    extra: -selname,cell_index
+  # R02B09_oce:  #not working!!! wrong vert coordinates?
+  #   path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
+  #   space_coord: ["cell"]
+  #   extra: -selname,cell_index
+  #   vert_coord: ["depth_half", "depth_full"]
+  icon-R02B09-intaketest: 
+      path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
+      extra: -selname,cell_index
+      space_coord: ["ncells"]
+  icon-healpix:
+    path:
+      2d: '{{ grids }}/HealPix_old/icon_hpx{zoom}_atm_2d.nc'   # this is the default 2d grid
+      2dm: '{{ grids }}/HealPix_old/icon_hpx{zoom}_oce_2d.nc'  # this is an additional and optional 2d grid used if data are masked
+      depth_full: '{{ grids }}/HealPix_old/icon_hpx{zoom}_oce_depth_full.nc'
+      depth_half: '{{ grids }}/HealPix_old/icon_hpx{zoom}_oce_depth_half.nc'
+    masked:   # This is the attribute used to distinguish variables which should go into the masked category
+      component: ocean
+    space_coord: ["cell"]
+    vert_coord: ["depth_half", "depth_full"]

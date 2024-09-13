@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH --partition=debug
+#SBATCH --job-name=benchmarker
+#SBATCH --output=log-bench_%j.out
+#SBATCH --error=log-bench_%j.err
+#SBATCH --account=project_465000454
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --time=00:20:00
+#SBATCH --mem=200G 
+set -e
+
+# set the number of dask workers
+# should be equal to the number of the total tasks available
+workers=8
+
+# overwrite option with short dataset
+./cli_benchmarker.py -w ${workers}
+

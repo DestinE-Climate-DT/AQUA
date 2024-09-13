@@ -147,23 +147,13 @@ class TCs(DetectNodes, StitchNodes):
 
 
         # loop to simulate streaming
-        while len(np.unique(self.data2d.time.dt.day)) == streamstep_n:
-            self.data_retrieve()
+        while len(np.unique(self.data2d.time.dt.day)) == streamstep_n:   
             self.logger.warning(
                 "New streaming from %s to %s", pd.to_datetime(self.stream_startdate), pd.to_datetime(self.stream_enddate))
-            timecheck = (self.data2d.time.values[-1] > pd.to_datetime(tdict['time']['enddate']))
 
-            if timecheck:
-                self.stream_enddate = self.data2d.time.values[-1]
-                self.logger.warning(
-                    'Modifying the last stream date %s', self.stream_enddate)
-
-            # call to Tempest DetectNodes
+            # retrieve data and call to Tempest DetectNodes
+            self.data_retrieve()
             self.detect_nodes_zoomin()
-
-            if timecheck:
-                self.logger.debug("Last chunk of data: breaking the loop")
-                break
 
             # add one hour since time ends at 23
             dayspassed = (np.datetime64(self.stream_enddate) + np.timedelta64(1, 'h') - np.datetime64(last_run_stitch)) / np.timedelta64(1, 'D')
@@ -176,16 +166,8 @@ class TCs(DetectNodes, StitchNodes):
                 self.logger.warning(
                     'Running stitch nodes from %s to %s', pd.to_datetime(last_run_stitch), pd.to_datetime(end_run_stitch))
                 self.stitch_nodes_zoomin(startdate=pd.to_datetime(last_run_stitch), enddate=pd.to_datetime(end_run_stitch),
-                                         n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
+                                        n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
                 last_run_stitch = copy.deepcopy(end_run_stitch)
-
-        # end of the loop for the last chunk of data
-
-        end_run_stitch = np.datetime64(tdict['time']['enddate'])
-        self.logger.warning(
-            'Running stitch nodes from %s to %s',  pd.to_datetime(np.datetime64(last_run_stitch)), pd.to_datetime(end_run_stitch))
-        self.stitch_nodes_zoomin(startdate=pd.to_datetime(last_run_stitch), enddate=pd.to_datetime(end_run_stitch),
-                                 n_days_freq=tdict['stitch']['n_days_freq'], n_days_ext=tdict['stitch']['n_days_ext'])
 
     def catalog_init(self):
         """
@@ -236,6 +218,22 @@ class TCs(DetectNodes, StitchNodes):
                                          regrid=self.highgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
+
+        elif self.model in 'ICON':
+            self.varlist2d = ['msl', '10u', '10v']
+            self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.varlist3d = ['z']
+            self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                         regrid=self.highgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
         else:
             raise ValueError(f'Model {self.model} not supported')
 
@@ -251,29 +249,36 @@ class TCs(DetectNodes, StitchNodes):
             None
         """
 
-        if reset_stream:
-            self.reader2d.reset_stream()
-            self.reader3d.reset_stream()
-            self.reader_fullres.reset_stream()
-
         # now retrieve 2d and 3d data needed
-        else:
-            self.data2d = self.reader2d.retrieve(var=self.varlist2d)
-            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
-            self.fullres = self.reader_fullres.retrieve(var=self.var2store)
 
+        self.data2d = self.reader2d.retrieve(var=self.varlist2d)
+        self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
+        self.fullres = self.reader_fullres.retrieve(var=self.var2store)
+        
+        # in case data2d is empty, we reached the end of the data
+        if isinstance(self.data2d, type(None)):
+            self.logger.warning("End of data/streaming")
+            raise SystemExit
 
         if self.streaming:
             self.stream_enddate = self.data2d.time[-1].values
             self.stream_startdate = self.data2d.time[0].values
+
             
         #if orography is provided in a file access it without reader
             
         if self.orography:
             self.logger.info("orography retrieved from file")
             self.orog = xr.open_dataset(self.orography_file)
-            #rename var for detect nodes
-            self.orog = self.orog.rename({'z': 'zs'})
+            if self.model == "IFS" or self.model == "IFS-NEMO":
+                #rename var for detect nodes
+                self.logger.info(f"orography file for {self.model} is {self.orography_file}")
+                self.orog = self.orog.rename({'z': 'zs'})
+            elif self.model == "ICON":
+                self.logger.info(f"orography file for {self.model} is {self.orography_file}")
+                self.orog = self.orog.rename({'oromea': 'zs'})
+            else:
+                raise ValueError(f'Orography variable of {self.model} not recognised!')
 
 
 

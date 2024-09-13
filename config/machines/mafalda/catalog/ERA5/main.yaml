@@ -1,6 +1,0 @@
-sources:
-  fdb:
-    description: ERA5 data on fdb
-    driver: yaml_file_cat
-    args:
-        path: "{{CATALOG_DIR}}/fdb.yaml"

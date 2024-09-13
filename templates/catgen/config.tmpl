@@ -1,0 +1,28 @@
+# this is a template file for the FDB catalog generator
+# please copy to a correspondent yaml file
+
+repos:
+  data-portfolio_path: /users/caprioli/data-portfolio
+  Climate-DT-catalog_path: /users/caprioli/Climate-DT-catalog
+
+portfolio: production  #Experiment configuration: production (production/develop/lowres), reduced (intermediate)
+catalog_dir: lumi-phase2  #the folder in Climate-DT-catalog where the catalog entry will be stored
+
+# AQUA definitions
+model: IFS-NEMO
+exp: to10
+fixer_name: ifs-destine-v1
+
+# Request/experiment definitions
+activity: highresmip
+experiment:  cont
+expver: 0001
+
+# info on the experiment
+data_start_date: '19900101'
+ocean_grid: eORCA1
+description: 'FDB IFS/NEMO test run' 
+
+# paths
+fdb_home: /gpfs/scratch/ehpc01/experiments/t01o/fdb/HEALPIX_grids
+eccodes_path: /gpfs/projects/ehpc01/models/ifs-nemo/DE_CY48R1.0_climateDT_20240523/make/marenostrum5-intel/source/eccodes/definitions

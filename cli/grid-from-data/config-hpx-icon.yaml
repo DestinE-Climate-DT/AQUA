@@ -1,0 +1,17 @@
+# These are needed for the AQUA retrieve
+model: ICON
+exp: historical-1990
+source: daily-hpz10-oce3d
+var: avg_so
+
+# These are needed for grid conversion with CDO
+zoom: 10
+nested: True # otherwise ring
+
+# These are extra info:
+# model name for saving the grid
+model_name: icon
+# tmp folder for the grid generation
+tmp: /pfs/lustrep3/scratch/project_465000454/padavini
+# target folder for the grid generated
+tgt: /pfs/lustrep3/projappl/project_465000454/data/AQUA/grids/HealPix

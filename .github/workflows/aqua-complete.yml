@@ -1,0 +1,126 @@
+name: AQUA monthly tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 1 5 * *" #run every fifth day of the month at 1AM UTC
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # NOTE: We must take care with the shell value here. We have steps
+    #       with mutiline YAML strings. 
+    #       These get converted into shell scripts.
+    #       If execute as ``bash -l fail_first_command.sh``
+    #       then it would fail the first command but run the second
+    #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
+    #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
+    #       We removed the noprofile and norc so we have pytest set by Conda in our PATH.
+    # NOTE2: login should be kept becuse the action micromamba/setup-micromamba
+    #        writes the environment activation script in the .bashrc file.
+    shell: bash -l -eo pipefail {0}
+jobs:
+  aqua_test:
+    # NOTE: this option can be uncommented to run the job only when
+    #       a pull request contains a label with the name "Run Tests" or "Ready to Merge".
+    env:
+      # You can disable coverage by changing this to false. You can
+      # also add other Python versions to the matrix, pinning the
+      # coverage job to be executed only on certain versions.
+      DEBIAN_FRONTEND: noninteractive
+      GRID_DEFINITION_PATH: /tmp
+      # This is needed for the FDB tests.
+      FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
+    runs-on: ubuntu-latest
+    # This option applies to the individual job of a matrix.
+    continue-on-error: false
+    container:
+      # To run FDB tests we need to use a Docker image with FDB installed.
+      image: ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua:ubuntu-docker
+      credentials:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user root
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    strategy:
+      # This option applies to all jobs in the matrix.
+      # If true, the entire matrix will stop running when one of the jobs fails.
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      # The FDB docker image does not have git and other dependencies
+      - name: Install GH Actions dependencies
+        run: |
+          # Ubuntu dependencies (Git, curl, ...)
+          apt-get update && \
+            apt-get install -y \
+              cargo \
+              curl \
+              git \
+              rustc
+      - name: Set up Micromamba
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml 
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          condarc: |
+            channels:
+              - conda-forge
+          create-args: >-
+            python=${{ matrix.python-version }}
+      - name: List Pip packages
+        run: |
+          pip freeze
+      - name: Install Flake8
+        run: |
+          python -m pip install flake8
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
+      - name: Download and set up tests
+        run: |
+          ./download_data_for_tests.sh
+          ./tests/teleconnections/download_data_for_tests.sh
+      - name: Set up FDB
+        run: |
+          export
+          # FDB for GSV
+          rm -rf /app/
+          cp -r ./AQUA_tests/fdb/ /app/
+          cat /app/etc/fdb/config.yaml
+          mkdir -pv /app/localroot/
+          cd /app/
+          fdb-write sample_test_data.grib
+          fdb-write sample_test_data_d1.grib
+          ls -l /app/localroot
+          # The fdb-list command is a good smoke test.
+          fdb-list class=ea,expver=0001
+          # But the fdb-read using a request is more like what pyfdb does.
+          # When it fails, the test.grib file will have 0 (zero) messages.
+          fdb-read sample_test_data_fdb_request test.grib
+          grib_dump test.grib
+      - name: Set up AQUA
+        run: |
+          # Initialize the AQUA catalog in the $HOME/.aqua folder
+          aqua -vv install
+          # Add the ci/cd catalog
+          aqua -vv add ci
+          # Double check the catalogs
+          aqua -vv list
+      - name: Run tests
+        run: |
+          # Produce the HTML report. Defaults to writing in htmlcov/index.html.
+          pytest -m "aqua or slow or gsv or graphics"
