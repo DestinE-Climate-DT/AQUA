@@ -604,7 +604,7 @@ class MainClass:
             path_to_netcdf = path_to_netcdf + 'trop_rainfall_' + name_of_file + '.nc'
 
             if os.path.exists(path_to_netcdf):
-                self.logger.info(f"File {path_to_netcdf} already exists. Set `rebuild=True` if you want to update it.")
+                self.logger.warning(f"File {path_to_netcdf} already exists. Set `rebuild=True` if you want to update it.")
                 if rebuild:
                     try:
                         # Attempt to remove the file (make sure you have permissions)
@@ -1269,7 +1269,7 @@ class MainClass:
                 coord = i
             return data.median(coord)
 
-    def average_into_netcdf(self, data: xr.Dataset, glob: bool = False, preprocess: bool = True,
+    def average_into_netcdf(self, dataset: xr.Dataset, glob: bool = False, preprocess: bool = True,
                             model_variable: str = None, coord: str = 'lat', trop_lat: float = None,
                             get_mean: bool = True, get_median: bool = False, s_time: str = None,
                             f_time: str = None, s_year: str = None, f_year: str = None, s_month: str = None,
@@ -1279,12 +1279,12 @@ class MainClass:
         Function to plot the mean or median value of the variable in a Dataset.
 
         Args:
-            data (xarray.Dataset): The Dataset.
+            dataset (xarray.Dataset): The Dataset.
             glob (bool, optional): If True, the value is calculated for all latitudes and longitudes. Defaults to False.
             preprocess (bool, optional): If True, the Dataset is preprocessed. Defaults to True.
             model_variable (str, optional): The variable of the Dataset. Defaults to 'mtpr'.
             coord (str, optional): The coordinate of the Dataset. Defaults to 'time'.
-            trop_lat (float, optional): The maximumal and minimal tropical latitude values in the Dataset. Defaults to None.
+            trop_lat (float, optional): The maximum and minimum tropical latitude values in the Dataset. Defaults to None.
             get_mean (bool, optional): The flag to calculate the mean of the variable. Defaults to True.
             get_median (bool, optional): The flag to calculate the median of the variable. Defaults to False.
             s_time (str, optional): The starting time of the Dataset. Defaults to None.
@@ -1309,59 +1309,59 @@ class MainClass:
             path_to_netcdf = self.path_to_netcdf+'mean/'
 
         if preprocess:
-            data_with_final_grid = self.preprocessing(data, preprocess=preprocess,
-                                                      model_variable=self.model_variable, trop_lat=self.trop_lat,
-                                                      s_time=self.s_time, f_time=self.f_time, s_year=self.s_year,
-                                                      f_year=self.f_year, s_month=None, f_month=None, dask_array=False,
-                                                      new_unit=self.new_unit)
+            dataset_with_final_grid = self.preprocessing(dataset, preprocess=preprocess,
+                                                         model_variable=self.model_variable, trop_lat=self.trop_lat,
+                                                         s_time=self.s_time, f_time=self.f_time, s_year=self.s_year,
+                                                         f_year=self.f_year, s_month=None, f_month=None, dask_array=False,
+                                                         new_unit=self.new_unit)
 
         if get_mean:
             if seasons_bool:
-                data_average = self.seasonal_or_monthly_mean(data, preprocess=preprocess,
-                                                             seasons_bool=seasons_bool, model_variable=self.model_variable,
-                                                             trop_lat=self.trop_lat, new_unit=self.new_unit, coord=coord)
+                dataset_average = self.seasonal_or_monthly_mean(dataset, preprocess=preprocess,
+                                                                seasons_bool=seasons_bool, model_variable=self.model_variable,
+                                                                trop_lat=self.trop_lat, new_unit=self.new_unit, coord=coord)
 
-                seasonal_average = data_average[0].to_dataset(name="DJF")
-                seasonal_average["MAM"], seasonal_average["JJA"] = data_average[1], data_average[2]
-                seasonal_average["SON"], seasonal_average["Yearly"] = data_average[3], data_average[4]
+                seasonal_average = dataset_average[0].to_dataset(name="DJF")
+                seasonal_average["MAM"], seasonal_average["JJA"] = dataset_average[1], dataset_average[2]
+                seasonal_average["SON"], seasonal_average["Yearly"] = dataset_average[3], dataset_average[4]
             else:
-                data_average = self.mean_along_coordinate(data, preprocess=preprocess, glob=glob,
-                                                          model_variable=self.model_variable, trop_lat=trop_lat,
-                                                          coord=coord, s_time=self.s_time, f_time=self.f_time,
-                                                          s_year=self.s_year, f_year=self.f_year,
-                                                          s_month=self.s_month, f_month=self.f_month)
+                dataset_average = self.mean_along_coordinate(dataset, preprocess=preprocess, glob=glob,
+                                                             model_variable=self.model_variable, trop_lat=trop_lat,
+                                                             coord=coord, s_time=self.s_time, f_time=self.f_time,
+                                                             s_year=self.s_year, f_year=self.f_year,
+                                                             s_month=self.s_month, f_month=self.f_month)
         if get_median:
-            data_average = self.median_along_coordinate(data, preprocess=preprocess, glob=glob,
-                                                        model_variable=self.model_variable, trop_lat=self.trop_lat,
-                                                        coord=coord, s_time=self.s_time, f_time=self.f_time,
-                                                        s_year=self.s_year, f_year=self.f_year, s_month=self.s_month,
-                                                        f_month=self.f_month)
+            dataset_average = self.median_along_coordinate(dataset, preprocess=preprocess, glob=glob,
+                                                           model_variable=self.model_variable, trop_lat=self.trop_lat,
+                                                           coord=coord, s_time=self.s_time, f_time=self.f_time,
+                                                           s_year=self.s_year, f_year=self.f_year, s_month=self.s_month,
+                                                           f_month=self.f_month)
 
         s_month, f_month = None, None
         self.class_attributes_update(s_month=s_month, f_month=f_month)
         if seasons_bool:
-            seasonal_average.attrs = data_with_final_grid.attrs
-            seasonal_average = self.grid_attributes(
-                data=data_with_final_grid, mtpr_dataset=seasonal_average)
+            seasonal_average.attrs = dataset_with_final_grid.attrs
+            seasonal_average = self.grid_attributes(data=dataset_with_final_grid, mtpr_dataset=seasonal_average)
             for variable in ('DJF', 'MAM', 'JJA', 'SON', 'Yearly'):
-                seasonal_average[variable].attrs = data_with_final_grid.attrs
-                seasonal_average = self.grid_attributes(
-                    data=data_with_final_grid, mtpr_dataset=seasonal_average, variable=variable)
+                seasonal_average[variable].attrs = dataset_with_final_grid.attrs
+                seasonal_average = self.grid_attributes(data=dataset_with_final_grid,
+                                                        mtpr_dataset=seasonal_average, variable=variable)
             average_dataset = seasonal_average
         else:
-            data_average.attrs = data_with_final_grid.attrs
-            data_average = self.grid_attributes(
-                data=data_with_final_grid,      mtpr_dataset=data_average)
-            average_dataset = data_average
+            dataset_average.attrs = dataset_with_final_grid.attrs
+            dataset_average = self.grid_attributes(data=dataset_with_final_grid, mtpr_dataset=dataset_average)
+            average_dataset = dataset_average
 
         if average_dataset.time_band == []:
             raise Exception('Time band is empty')
 
         if isinstance(path_to_netcdf, str) and name_of_file is not None:
-            return self.dataset_to_netcdf(
-                average_dataset, path_to_netcdf=path_to_netcdf, name_of_file=name_of_file+'_'+str(coord))
+            remaining_coord = 'lon' if coord == 'lat' else 'lat'
+            filename = f"{name_of_file}_along_{remaining_coord}"
+            return self.dataset_to_netcdf(average_dataset, path_to_netcdf=path_to_netcdf, name_of_file=filename)
         else:
             return average_dataset
+
 
     def plot_of_average(self, data: xr.Dataset = None, ymax: int = 12, fontsize: int = None, pad: int = 15, save: bool = True,
                         trop_lat: float = None, get_mean: bool = True, get_median: bool = False, legend: str = '_Hidden',

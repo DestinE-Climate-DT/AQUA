@@ -80,7 +80,7 @@ install_aqua() {
   log_message INFO "Environment has been cleaned up."
 
   # load modules
-  module load LUMI/22.08
+  module load LUMI/23.09
   module load lumi-container-wrapper
   log_message INFO "Modules have been loaded."
   
@@ -136,35 +136,22 @@ else
   fi
 fi
 
-# check if load_aqua_file exist and clean it
-if [ -f "$load_aqua_file" ]; then
-  log_message $next_level_msg_type "Existing ${load_aqua_file} found. Would you like to remove it? Safer to say yes (y/n) " 
-  read -n 1 -r
-  echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm $load_aqua_file
-    log_message INFO "Existing ${load_aqua_file} removed."
-  elif [[ $REPLY =~ ^[Nn]$ ]]; then
-    log_message INFO "Keeping the old $load_aqua_file"
-  else
-    log_message ERROR "Invalid response. Please enter 'y' or 'n'."
-  fi
-fi
+create_aqua_file() {
+  # Create a new file
+  touch $load_aqua_file
 
-if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/C'  "~/load_aqua.sh" ; then
-#if [ ! -f $load_aqua_file ] ; then
   echo '# Use ClimateDT paths' >> $load_aqua_file
-  echo 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/C' >> $load_aqua_file
+  echo 'module use /project/project_465000454/software/23.09/modules/C' >> $load_aqua_file
 
   echo '# Load modules' >> $load_aqua_file
-  echo 'module purge' >> $load_aqua_file
-  echo 'module load ecCodes/2.33.0-cpeCray-23.03' >> $load_aqua_file
-  echo 'module load fdb/5.11.111-cpeCray-23.03' >> $load_aqua_file
-  echo 'module load eckit/1.25.0-cpeCray-23.03' >> $load_aqua_file
-  echo 'module load metkit/1.11.0-cpeCray-23.03' >> $load_aqua_file
+  # Removed, see issue #1195
+  # echo 'module purge' >> $load_aqua_file
+  echo 'module load fdb/5.12.1-cpeCray-23.09' >> $load_aqua_file
+  # These are loaded automatically with the fdb module
+  # echo 'module load eckit/1.26.3-cpeCray-23.09' >> $load_aqua_file
+  # echo 'module load metkit/1.11.14-cpeCray-23.09' >> $load_aqua_file
+  # echo 'module load eccodes/2.36.0-cpeCray-23.09' >> $load_aqua_file
     
-  # Config FDB: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
-  echo 'export FDB5_CONFIG_FILE=/scratch/project_465000454/igonzalez/fdb-test/config.yaml' >>  $load_aqua_file
   log_message INFO "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 
   # Config GSV: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
@@ -182,8 +169,27 @@ if ! grep -q 'module use /project/project_465000454/devaraju/modules/LUMI/23.03/
   echo "# AQUA installation path" >>  $load_aqua_file
   echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >>  $load_aqua_file
   log_message INFO "export PATH has been added to .bashrc. Please run 'source $load_aqua_file' to load the new configuration."
+}
+
+# check if load_aqua_file exist and clean it
+if [ -f "$load_aqua_file" ]; then
+  log_message $next_level_msg_type "Existing ${load_aqua_file} found. Would you like to remove it? Safer to say yes (y/n) " 
+  read -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    rm $load_aqua_file
+    log_message INFO "Existing ${load_aqua_file} removed."
+
+    # Creating the new file
+    create_aqua_file
+  elif [[ $REPLY =~ ^[Nn]$ ]]; then
+    log_message WARNING "Keeping the old $load_aqua_file file. Please make sure it is up to date."
+  else
+    log_message ERROR "Invalid response. Please enter 'y' or 'n'."
+  fi
 else
-  log_message WARNING "A $(basename $load_aqua_file) is already available in your home. Nothing to add!"
+  # Creating the new file
+  create_aqua_file
 fi
 
 # ask if you want to add this to the bash profile
@@ -208,7 +214,7 @@ while true; do
       break
       ;;
     [Nn])
-      log_message ERROR "source load_aqua.sh not added to .bash_profile"
+      log_message WARNING "source load_aqua.sh not added to .bash_profile"
       break
       ;;
     *)
@@ -217,4 +223,4 @@ while true; do
   esac
 done
 
-log_message WARNING "AQUA environment has been installed, please remember to to run aqua install and aqua add lumi"
+log_message WARNING "AQUA environment has been installed, please remember to to run 'aqua install' and 'aqua add lumi'"

@@ -65,6 +65,10 @@ def check_variable_name(data, loglevel= "WARNING"):
                 logger.debug("renaming %s as avg_thetao", var)
     else:
         raise ValueError("Required variable avg_so and avg_thetao is not available in the catalog")
+    #HACK
+    if "level" in data:
+        if data['level'].attrs['units'] == 'NEMO model layers':
+            data['level'].attrs['units'] = 'm'
     vertical_coord = find_vert_coord(data)[0]
     data = data.rename({vertical_coord: "lev"})
     data = kelvin_to_celsius(data, "avg_thetao")

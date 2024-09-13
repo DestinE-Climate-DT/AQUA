@@ -1,0 +1,82 @@
+fixer_name:  
+  # EN4
+  EN4-default:
+    data_model: false
+    vars:
+      avg_thetao:
+        source: thetao 
+        grib: true
+      avg_so:
+        src_units: psu
+        source: so
+        grib: true
+        units: psu
+  
+  # GPM
+  GPM-default:
+    data_model: cf
+    vars:
+        # Automatic conversion to destination grib units
+        mtpr:
+            source: precipitationCal
+            grib: true
+
+  # MSWEP
+  MSWEP-default:
+    data_model: cf
+    vars:
+        # Automatic conversion to destination grib units
+        mtpr:
+            source: precipitation
+            grib: true
+
+  # OSI-SAF
+  OSI-SAF-default:
+    data_model: false  # Do not attempt to fix coordinates
+    vars:
+        # Automatic conversion to destination grib units
+        avg_siconc:  # siconc
+            source: ice_conc
+            grib: true
+
+  # PHC3
+  PHC3-default:
+    data_model: false
+    vars:
+      avg_thetao:
+        src_units: C
+        source: temp
+        grib: true
+      avg_so:
+        src_units: psu
+        source: salt
+        grib: true
+        units: psu
+
+  #PSC
+  PSC-default:
+    data_model: False
+
+  # GIOMAS and PIOMAS
+  GIOMAS:
+    data_model: false  # Do not attempt to fix coordinates
+    delete: [latitude, longitude]
+    vars:
+      avg_sivol:  # avg_sivol - average sea ice volume [m3/m2]
+          source: sivol
+          grib: true
+      sftof:
+          source: sftof
+          src_units: frac
+          units: frac
+  PIOMAS:
+    data_model: false  # Do not attempt to fix coordinates
+    delete: [latitude, longitude]
+    vars:
+      avg_sivol:  # avg_sivol - average sea ice volume [m3/m2]
+          source: sivol
+          grib: true
+      sftof:
+          source: sftof
+          src_units: frac
+          units: frac

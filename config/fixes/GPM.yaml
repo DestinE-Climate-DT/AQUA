@@ -1,8 +1,0 @@
-fixer_name:  
-    GPM-default:
-        data_model: cf
-        vars:
-            # Automatic conversion to destination grib units
-            mtpr:
-                source: precipitationCal
-                grib: true

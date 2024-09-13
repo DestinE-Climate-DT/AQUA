@@ -12,7 +12,7 @@
 AQUA_path=$AQUA
 # If you don't have access to ehpc01, use the below bsc32 path
 # AQUA_container="/gpfs/projects/bsc32/DestinE/containers/aqua/aqua_0.9.2.sif"
-AQUA_container="/gpfs/projects/ehpc01/containers/aqua_0.10.2.sif"
+AQUA_container="/gpfs/projects/ehpc01/containers/AQUA/aqua_0.11.3.sif"
 # singularity shell can be an option depending on the requirement
 singularity exec \
     --cleanenv \

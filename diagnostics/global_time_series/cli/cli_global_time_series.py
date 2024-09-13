@@ -31,6 +31,8 @@ def parse_arguments(args):
                         required=False, help="loglevel")
 
     # These will override the first one in the config file if provided
+    parser.add_argument("--catalog", type=str,
+                        required=False, help="catalog name")
     parser.add_argument("--model", type=str,
                         required=False, help="model name")
     parser.add_argument("--exp", type=str,
@@ -74,7 +76,7 @@ def get_plot_options(config: dict = None,
         plot_kw = plot_options.get("plot_kw", {})
         longname = plot_options.get("longname", None)
         units = plot_options.get("units", None)
-        expand = plot_options.get("expand", True)
+        extend = plot_options.get("extend", True)
     else:
         monthly = config["timeseries_plot_params"]["default"].get("monthly", True)
         annual = config["timeseries_plot_params"]["default"].get("annual", True)
@@ -92,9 +94,9 @@ def get_plot_options(config: dict = None,
         plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", {})
         longname = None
         units = None
-        expand = config["timeseries_plot_params"]["default"].get("expand", True)
+        extend = config["timeseries_plot_params"]["default"].get("extend", True)
     return monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, enddate, \
-        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, units, expand
+        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, units, extend
 
 
 if __name__ == '__main__':
@@ -125,17 +127,20 @@ if __name__ == '__main__':
     config = load_yaml(file)
 
     models = config['models']
+    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
     models[0]['source'] = get_arg(args, 'source', models[0]['source'])
 
     logger.debug("Analyzing models:")
+    catalogs_list = []
     models_list = []
     exp_list = []
     source_list = []
 
     for model in models:
-        logger.debug(f"  - {model['model']} {model['exp']} {model['source']}")
+        logger.debug(f"  - {model['catalog']} {model['model']} {model['exp']} {model['source']}")
+        catalogs_list.append(model['catalog'])
         models_list.append(model['model'])
         exp_list.append(model['exp'])
         source_list.append(model['source'])
@@ -149,10 +154,11 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} time series")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, units, expand = get_plot_options(config, var)
+                plot_kw, longname, units, extend = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=False,
+                            catalogs=catalogs_list,
                             models=models_list,
                             exps=exp_list,
                             sources=source_list,
@@ -169,7 +175,7 @@ if __name__ == '__main__':
                             std_enddate=std_enddate,
                             longname=longname,
                             units=units,
-                            expand=expand,
+                            extend=extend,
                             plot_kw=plot_kw,
                             outdir=outputdir,
                             loglevel=loglevel)
@@ -191,10 +197,11 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} time series")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, units, expand = get_plot_options(config, var)
+                plot_kw, longname, units, extend = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=True,
+                            catalogs=catalogs_list,
                             models=models_list,
                             exps=exp_list,
                             sources=source_list,
@@ -212,7 +219,7 @@ if __name__ == '__main__':
                             plot_kw=plot_kw,
                             longname=longname,
                             units=units,
-                            expand=expand,
+                            extend=extend,
                             outdir=outputdir,
                             loglevel=loglevel)
             try:
@@ -242,7 +249,8 @@ if __name__ == '__main__':
         toa_std_start = config_gregory.get("toa_std_start", "2001-01-01")
         toa_std_end = config_gregory.get("toa_std_end", "2020-12-31")
 
-        gp = GregoryPlot(models=models_list,
+        gp = GregoryPlot(catalogs=catalogs_list,
+                         models=models_list,
                          exps=exp_list,
                          sources=source_list,
                          monthly=monthly,
@@ -280,6 +288,7 @@ if __name__ == '__main__':
 
             sc = SeasonalCycle(var=var,
                                formula=False,
+                               catalogs=catalogs_list,
                                models=models_list,
                                exps=exp_list,
                                sources=source_list,
@@ -317,6 +326,7 @@ if __name__ == '__main__':
 
             sc = SeasonalCycle(var=var,
                                formula=True,
+                               catalogs=catalogs_list,
                                models=models_list,
                                exps=exp_list,
                                sources=source_list,

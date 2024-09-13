@@ -4,7 +4,7 @@ Automatic Standardized File Naming
 Class Overview
 --------------
 
-The ``OutputNamer`` class is designed to manage output file naming conventions for scientific data.
+The ``OutputSaver`` class is designed to manage output file naming conventions for scientific data.
 It supports generating filenames for various types of file (e.g., NetCDF, PDF, PNG) with metadata integration to enhance data management and traceability.
 The class ensures consistent and descriptive filenames, facilitating better data management and reproducibility.
 
@@ -15,28 +15,44 @@ Attributes
 - **model** (*str*): Model used in the diagnostic.
 - **exp** (*str*): Experiment identifier.
 - **diagnostic_product** (*str, optional*): Product of the diagnostic analysis.
+- **catalog** (*str, optional*): Catalog where to search for the triplet. By default, the `catalog` is the catalog name at the top of the list in `.aqua/config-aqua.yaml`. For more information on how to set the default catalog, read the section :ref:`aqua-set`.
 - **loglevel** (*str, optional*): Log level for the class's logger. Default is 'WARNING'.
 - **default_path** (*str, optional*): Default path where files will be saved. Default is '.'.
 - **rebuild** (*bool, optional*): Flag indicating whether to rebuild existing files. If set to True, existing files with the same name will be overwritten. Default is True.
 
 .. note::
-    The ``OutputNamer`` class automatically includes the current date and time when saving files as metadata ``date_saved``.
+    The ``OutputSaver`` class automatically includes the current date and time when saving files as metadata ``date_saved``.
     This ensures each file has a timestamp indicating when it was generated.
 
-Usage Examples
---------------
+Default Catalog Setup
+---------------------
 
-Initializing the OutputNamer Class
+The ``OutputSaver`` class includes a `catalog` attribute to specify the catalog used for generating filenames.
+By default, the `catalog` is the catalog name at the top of the list in `.aqua/config-aqua.yaml`. For more information on how to set the default catalog, read the section :ref:`aqua-set`.
+
+This setup ensures that if multiple `model`, `exp` are found in multiple catalogs, the first one found in the selected default catalog will be used.
+
+If a different catalog is needed, it can be specified during the initialization of the ``OutputSaver`` class. For example, to use a different catalog, you can pass it as an argument during initialization.
+
+Example Usage
+-------------
+
+Initializing the OutputSaver Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following example demonstrates how to initialize the ``OutputNamer`` class:
+The following example demonstrates how to initialize the ``OutputSaver`` class:
 
 .. code-block:: python
 
-    from aqua.util import OutputNamer
+    from aqua.util import OutputSaver
 
-    names = OutputNamer(diagnostic='tropical_rainfall', model='MSWEP', exp='past',
-                        loglevel='debug', default_path='.')
+    # Initializing with the system-defined default catalog
+    names = OutputSaver(diagnostic='tropical_rainfall', model='MSWEP', exp='past',
+                        loglevel='DEBUG', default_path='.')
+
+    # Initializing with a specified catalog 'lumi-phase2'
+    names_with_catalog = OutputSaver(diagnostic='tropical_rainfall', model='MSWEP', exp='past',
+                                     catalog='lumi-phase2', loglevel='DEBUG', default_path='.')
 
 Generating a Filename for a NetCDF File
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -47,17 +63,22 @@ This and the following methods return the generated filename as a string, to be 
 .. code-block:: python
 
     netcdf_filename = names.generate_name(diagnostic_product='mean', suffix='nc')
+    # Output: 'tropical_rainfall.mean.MSWEP.past.<default_catalog>.nc'
+
+    netcdf_filename_with_catalog = names_with_catalog.generate_name(diagnostic_product='mean', suffix='nc')
+    # Output: 'tropical_rainfall.mean.MSWEP.past.lumi-phase2.nc'
 
 Generating a Filename with Flexible Date Inputs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example demonstrates generating a filename with flexible date inputs and the 'ym' time precision:
+This example demonstrates generating a filename with flexible date inputs and the 'ym' time precision, including a second dataset with a different catalog:
 
 .. code-block:: python
 
     filename = names.generate_name(var='mtpr', model_2='ERA5', exp_2='era5',
-                                   time_start='1990-01', time_end='1990-02',
-                                   time_precision='ym', area='indian_ocean')
+                                   time_start='1990-01-01', time_end='1990-02-28',
+                                   time_precision='ym', area='indian_ocean', catalog_2='lumi-phase3')
+    # Output: 'tropical_rainfall.<diagnostic_product>.mtpr.MSWEP.past.<default_catalog>.ERA5.era5.lumi-phase3.indian_ocean.199001-199002.nc'
 
 Saving a NetCDF File with Metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -74,7 +95,7 @@ Here is an example of saving a NetCDF file with metadata. The metadata includes 
     # Define metadata for the NetCDF file
     metadata = {
         'title': 'Testing the saving of NetCDF files',
-        'author': 'OutputNamer',
+        'author': 'OutputSaver',
         'description': 'Demonstrating netCDF Metadata Addition'
     }
 
@@ -84,7 +105,7 @@ Here is an example of saving a NetCDF file with metadata. The metadata includes 
 
 .. note::
 
-    If the ``history`` metadata field is provided, the ``OutputNamer`` class will append
+    If the ``history`` metadata field is provided, the ``OutputSaver`` class will append
     the current message to the existing history.
 
 Saving a PDF Plot with Metadata
@@ -103,9 +124,9 @@ This example demonstrates saving a PDF plot with metadata. The metadata includes
     # Define metadata for the PDF file
     metadata = {
         '/Title': 'Sample PDF',
-        '/Author': 'OutputNamer',
+        '/Author': 'OutputSaver',
         '/Subject': 'Demonstrating PDF Metadata Addition',
-        '/Keywords': 'PDF, OutputNamer, Metadata'
+        '/Keywords': 'PDF, OutputSaver, Metadata'
     }
 
     # Save the PDF with metadata

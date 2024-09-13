@@ -196,6 +196,14 @@ class TestAquaConsole():
             run_aqua(['remove', 'pippo'])
             assert excinfo.value.code == 1
 
+        # create a test for LRA
+        with pytest.raises(ValueError, match="ERROR: lra_config.yaml not found: you need to have this configuration file!"):
+            run_aqua(['lra'])
+
+        # create a test for catgen
+        with pytest.raises(ValueError, match="ERROR: config.yaml not found: you need to have this configuration file!"):
+            run_aqua(['catgen', '--config', 'config.yaml'])
+
         # remove catalog
         run_aqua(['remove', 'ci'])
         assert not os.path.exists(os.path.join(mydir, '.aqua/catalogs/ci'))
@@ -210,6 +218,50 @@ class TestAquaConsole():
         # uninstall and say yes
         run_aqua_console_with_input(['uninstall'], 'yes')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
+
+    def test_console_lra(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input): 
+        """Test for running the LRA via the console"""
+
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        # aqua install
+        run_aqua(['install'])
+        run_aqua(['add', 'ci'])
+
+        # create fake config file
+        lratest = os.path.join(mydir, 'faketrip.yaml')
+        dump_yaml(lratest,{
+                'target': {
+                    'resolution': 'r200',
+                    'frequency': 'monthly'
+                },
+                'paths': {
+                    'outdir': os.path.join(mydir, 'lra_test'),
+                    'tmpdir': os.path.join(mydir, 'tmp')
+                },
+                'options': {
+                    'loglevel': 'INFO'
+                },
+                'data': {
+                    'IFS': {
+                        'test-tco79': {
+                            'long': {'vars': '2t'} 
+                        }
+                    }
+                }
+            }
+        )
+
+        # run the LRA and verify that at least one file exist
+        run_aqua(['lra', '--config', lratest, '-w', '1', '-d'])
+        path = os.path.join(os.path.join(mydir, 'lra_test'),
+                            "IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_202002.nc")
+        assert os.path.isfile(path)
+        
+        # remove aqua
+        run_aqua_console_with_input(['uninstall'], 'yes')
+
 
     def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,

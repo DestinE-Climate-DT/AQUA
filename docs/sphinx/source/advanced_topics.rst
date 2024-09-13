@@ -71,6 +71,7 @@ where the grids, weights and areas produced by AQUA will be stored. A default ca
 whatsoever machine where AQUA is installed, but also machine specific paths can be defined
 
 .. code-block:: yaml
+
     default: 
         paths:
             grids: /path/to/aqua/data/grids

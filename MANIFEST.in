@@ -1,0 +1,4 @@
+# MANIFEST.in to include the data files in the distributed package
+graft config
+graft templates
+graft cli

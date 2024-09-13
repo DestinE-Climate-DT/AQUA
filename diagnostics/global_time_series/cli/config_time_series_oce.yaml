@@ -1,8 +1,9 @@
 # The first model in this block can be overridden
 # in the command line by using:
-# --model, --exp, --source, --outputdir
+# --model, --exp, --source, --outputdir, --catalog
 models:
-  - model: 'IFS-NEMO'
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'ssp370'
     source: 'lra-r100-monthly'
 outputdir: "./"

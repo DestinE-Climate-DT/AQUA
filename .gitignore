@@ -27,6 +27,7 @@ AQUA_tests/
 AQUA_tests.tar.gz
 AQUA_testsv2.tar.gz
 AQUA_testsv3.tar.gz
+AQUA_testsv4.tar.gz
 *.bak
 
 # coverage and vscode

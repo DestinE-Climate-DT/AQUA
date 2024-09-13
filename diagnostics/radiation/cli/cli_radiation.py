@@ -11,9 +11,21 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description='Radiation Budget Diagnostic CLI')
     parser.add_argument('-c', '--config', type=str, help='yaml configuration file')
     parser.add_argument('-n', '--nworkers', type=int, help='number of dask distributed workers')
-    parser.add_argument('--outputdir', type=str, help='output directory', required=False)
     parser.add_argument('--loglevel', '-l', type=str, help='loglevel', required=False)
     parser.add_argument('--variables', nargs='+', help='List of variables to be plotted', required=False)
+
+    # These will override the first one in the config file if provided
+    parser.add_argument("--catalog", type=str,
+                        required=False, help="catalog name")
+    parser.add_argument("--model", type=str,
+                        required=False, help="model name")
+    parser.add_argument("--exp", type=str,
+                        required=False, help="experiment name")
+    parser.add_argument("--source", type=str,
+                        required=False, help="source name")
+    parser.add_argument("--outputdir", type=str,
+                        required=False, help="output directory")
+
     return parser.parse_args(args)
 
 if __name__ == '__main__':
@@ -42,24 +54,38 @@ if __name__ == '__main__':
         client = Client(cluster)
         logger.info(f"Running with {nworkers} dask distributed workers.")
 
+    # Load configuration file
     file = get_arg(args, 'config', 'config/radiation_config.yml')
-    logger.info('Reading configuration yaml file..')
+    logger.info(f"Reading configuration file {file}")
     config = load_yaml(file)
 
-    exp_ceres = config['data']['exp_ceres']
-    source_ceres = config['data']['source_ceres']
-    path_to_output = get_arg(args, 'outputdir', config['path']['path_to_output'])
-    outputdir = os.path.join(path_to_output, 'netcdf/') if path_to_output else None
-    outputfig = os.path.join(path_to_output, 'pdf/') if path_to_output else None
+    models = config['models']
+    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
+    models[0]['model'] = get_arg(args, 'model', models[0]['model'])
+    models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
+    models[0]['source'] = get_arg(args, 'source', models[0]['source'])
 
-    logger.debug(f"outputdir: {outputdir}")
-    logger.debug(f"outputfig: {outputfig}")
+    outputdir = get_arg(args, "outputdir", config["outputdir"])
+
+    logger.debug("Analyzing models:")
+    catalogs_list = []
+    models_list = []
+    exp_list = []
+    source_list = []
+
+    exp_ceres = config['exp_ceres']
+    source_ceres = config['source_ceres']
+
+    output_nc = os.path.join(outputdir, 'netcdf/') if outputdir else None
+    output_pdf = os.path.join(outputdir, 'pdf/') if outputdir else None
+
+    logger.debug(f"output_nc: {output_nc}")
+    logger.debug(f"output_pdf: {output_pdf}")
 
     box_plot_bool = config['diagnostic_attributes']['box_plot']
     bias_maps_bool = config['diagnostic_attributes']['bias_maps']
     time_series_bool = config['diagnostic_attributes']['time_series']
 
-    models = config.get('data', {}).get('models', [])
 
     try:
             ceres = process_ceres_data(
@@ -68,26 +94,24 @@ if __name__ == '__main__':
                 fix=True,
                 loglevel=loglevel
             )
-
+            
     except Exception as e:
         logger.warning(f"No observation data found: {e}")
         
-    all_model_data = []  # Initialize a list to store all model datasets
-
-    for model_entry in models:
+    for model in models:
+        logger.debug(f"  - {model['catalog']} {model['model']} {model['exp']} {model['source']}")
         try:
             model_data = process_model_data(
-                model=model_entry['model'],
-                exp=model_entry['exp'],
-                source=model_entry['source'],
-                fix=model_entry.get('fix', True),
-                start_date=model_entry.get('start_date'),
-                end_date=model_entry.get('end_date'),
+                model=model['model'],
+                exp=model['exp'],
+                source=model['source'],
+                fix=model.get('fix', True),
+                start_date=model.get('start_date'),
+                end_date=model.get('end_date'),
                 loglevel=loglevel
             )
-            all_model_data.append(model_data)
-    
-            datasets = [ceres] + all_model_data
+            models_list.append(model_data)
+            datasets = [ceres] + models_list
         except Exception as e:
             logger.error(f"No model data found: {e}")
             continue
@@ -98,8 +122,8 @@ if __name__ == '__main__':
         try:
             boxplot_model_data(
                 datasets=datasets,
-                outputdir=outputdir,
-                outputfig=outputfig,
+                outputdir=output_nc,
+                outputfig=output_pdf,
                 loglevel=loglevel,
                 variables=variables
             )
@@ -112,13 +136,13 @@ if __name__ == '__main__':
         variables = get_arg(args, 'variables', bias_maps_vars)
         for var in variables:
             try:
-                for model_data in all_model_data:  # Iterate over all model datasets
+                for model in models_list:  # Iterate over all model datasets
                     plot_mean_bias(
-                        model=model_data,
+                        model=model,
                         var=var,
                         ceres=ceres,
-                        outputdir=outputdir,
-                        outputfig=outputfig,
+                        outputdir=output_nc,
+                        outputfig=output_pdf,
                         loglevel=loglevel
                     )
                 logger.info(
@@ -130,10 +154,10 @@ if __name__ == '__main__':
     if time_series_bool:
         try:
             plot_model_comparison_timeseries(
-                models=all_model_data,
+                models=models_list,
                 ceres=ceres,
-                outputdir=outputdir,
-                outputfig=outputfig,
+                outputdir=output_nc,
+                outputfig=output_pdf,
                 loglevel=loglevel
             )
             logger.info("The time series bias plot with various models and CERES was created and saved.")

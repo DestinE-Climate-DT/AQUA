@@ -28,8 +28,8 @@ The package is built around a few core concepts:
 - **Diagnostics**: most importantly, AQUA includes a set of built-in diagnostic tools,
   and it allows users to create custom diagnostics as well.
 
-Installation
-------------
+Python installation
+-------------------
 
 Installation can be done using `mamba <https://mamba.readthedocs.io/en/latest/>`_.
 Containers and tools specific to the machines used in the project are available.
@@ -37,8 +37,8 @@ Please refer to the :ref:`installation` section for more information.
 
 .. _initialization:
 
-catalog Installation
-----------------------
+Catalog installation
+--------------------
 
 After the package has been installed, or the container has been loaded, the AQUA catalog needs to be set up.
 This means to set up the configuration file and the catalog, with a copy or a link to the necessary files.
@@ -47,11 +47,13 @@ This needs to be done only once, unless catalogs or fix and grid files are added
 .. note::
   A more complete description of the available commands can be found in the :ref:`aqua-console` section.
 
+The following paragraphs cover the fundamental steps.
+
 Set up the configuration folder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The configuration folder contains configuration files and the catalogs added to the AQUA package.
-To set up the configuration folder, run the following command:
+To set up the configuration folder, run the following shell command:
 
 .. code-block:: bash
 
@@ -67,11 +69,7 @@ Check the :ref:`aqua-install` section for more information.
 Add a catalog
 ^^^^^^^^^^^^^^^
 
-A catalog is a folder containing the YAML files that describe the data available in the catalog.
-
-.. note::
-  At the actual state of the AQUA package, the catalogs coincide with the machines on which you are working.
-  This means that you will need to install only the catalog of the machine you are working on.
+A catalog is a folder containing the YAML files that inform AQUA on the data available. The catalog are derived from `intake <https://intake.readthedocs.io/en/stable/>`_ .
 
 To add a catalog, run the following command:
 
@@ -79,13 +77,18 @@ To add a catalog, run the following command:
 
     aqua add <catalog>
 
-For example, to add the catalog of ``lumi``, run:
+For example, to add the catalog for ``climatedt-phase1``, run:
 
 .. code-block:: bash
 
-    aqua add lumi
+    aqua add climatedt-phase1
 
-This command will copy the catalog folder to the configuration folder.
+This command will copy the catalog folder to the configuration folder. Please notice that will operate fetching the catalog 
+
+.. caution:: 
+
+  You will need an internet connection available since the catalog are fetched from the `Climate-DT GitHub repository <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_ .
+
 
 Set up Jupyter kernel
 ---------------------

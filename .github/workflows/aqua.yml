@@ -38,7 +38,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
-      FDB5_CONFIG_FILE: /app/config.yaml
+      FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
@@ -115,7 +115,7 @@ jobs:
           # FDB for GSV
           rm -rf /app/
           cp -r ./AQUA_tests/fdb/ /app/
-          cat /app/config.yaml
+          cat /app/etc/fdb/config.yaml
           mkdir -pv /app/localroot/
           cd /app/
           fdb-write sample_test_data.grib

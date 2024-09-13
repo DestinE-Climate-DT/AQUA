@@ -1,0 +1,44 @@
+# templates for LRA generation. Please modify everything between {{ }} according to your configuration
+
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  catalog: {{ catalog }}
+
+paths:
+  outdir: { {outputdir }}
+  tmpdir: {{ tmpdir }}
+
+options: 
+  # loglevel
+  loglevel: INFO
+  # Set to True if lra-r100-monthly-zarr should be created and checked
+  zarr: False
+  verify_zarr: False
+
+# sbatch job definitions
+slurm:
+  partition: {{ partition }}
+  username: {{ usename }}
+  account: {{ project }}
+  time: {{ walltime }}
+  mem: {{ memory }}
+
+data:
+  ICON:
+    historical-1990:
+      hourly-hpz10-atm2d:
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
+           'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
+        workers: 12  #this defines the workers for this source
+      hourly-hpz10-atm3d:
+        vars: ['q', 't', 'u', 'v']
+        workers: 6 #this defines the workers for this source
+      daily-hpz10-oce2d:
+        workers: 16 #this defines the workers for this source
+        vars: ['avg_sithick', 'avg_siconc']
+      daily-hpz10-oce3d:
+        workers: 10 #this defines the workers for this source
+        vars: ['avg_thetao', 'avg_so']
+        

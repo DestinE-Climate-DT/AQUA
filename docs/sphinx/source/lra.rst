@@ -1,3 +1,5 @@
+.. _lra:
+
 Low Resolution Archive
 ======================
 
@@ -31,33 +33,47 @@ The only difference is that a specific source must be defined, following the syn
 
     LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg resolution) and at ``monthly`` or ``daily`` frequency. 
 
+.. note ::
+    Since version v0.11 the LRA access is granted not only with usual NetCDF files but also with Zarr reference files.
+    This is possible by setting ``source="lra-r100-monthly-zarr"`` in the Reader initialization. This will allow for faster access to the data.
+    Please notice this access is experimental and could not work with some specific experiment.
+
+
 Generation of the LRA
 ---------------------
 
 Given the character of the computation required, the standard approach is to use the LRA through a command line 
-interface (CLI) which is available in ``cli/lra/cli_lra_generator.py``
+interface (CLI) which is available from the console with the subcommand ``aqua lra``
 
-The configuration of the CLI is done via a YAML file that can be build from the ``lumi_lra_config.tmpl`` or ``levante_lra_config.tmpl`` 
-templates, which include the target resolution, the target frequency, the temporary directory and the 
-directory where you want to store the obtained LRA.
+The configuration of the CLI is done via a YAML file that can be build from the ``lra_config.tmpl``, available in the ``.aqua/templates/lra`` folder after the installation.
+This includes the target resolution, the target frequency, the temporary directory and the directory where you want to store the obtained LRA.
 
-Most importantly, you have to edit the entries of the ``catalog`` dictionary, which follows the model-exp-source 3-level hierarchy.
+Most importantly, you have to edit the entries of the ``data`` dictionary, which follows the model-exp-source 3-level hierarchy.
 On top of that you must specify the variables you want to produce under the ``vars`` key.
+
+.. caution::
+    Catalog detection is done automatically by the code. 
+    However, if you have triplets with same name in two different catalog, you should also specify the catalog name in the configuration file.
+
 
 Usage
 ^^^^^
 
 .. code-block:: python
 
-    ./cli_lra_generator.py
+    aqua lra <options>
 
 Options: 
+
+.. option:: -c CONFIG, --config CONFIG
+
+    Set up a specific configuration file
 
 .. option:: -d, --definitive
 
     Run the code and produce the data (a dry-run will take place if this flag is missing)
 
-.. option:: -f, --fixer
+.. option:: -f, --fix
 
     Set up the Reader fixing capabilities (default: True)
 
@@ -69,10 +85,6 @@ Options:
 
     Set up the logging level.
 
-.. option:: -c CONFIG, --config CONFIG
-
-    Set up a specific configuration file (default: lra_config.yaml).
-
 .. option:: -o, --overwrite
 
     Overwrite LRA existing data (default: WARNING).
@@ -81,6 +93,12 @@ Options:
 
     Enable a single chunk run to produce the html dask performance report. Dask should be activated.
 
+.. option:: -a, --autosubmit
+
+    This enables the ClimateDT workflow LRA generator, which also implies slightly different options. Use it only when necessary. 
+    It is made to work from OPA output and then process them to fix and standardize it via the LRA.
+    A template configuration file ``.aqua/templates/lra/workflow_lra.tmpl`` is included in the folder. 
+
 
 Please note that this options override the ones available in the configuration file. 
 
@@ -88,12 +106,12 @@ A basic example usage can thus be:
 
 .. code-block:: python
 
-    ./cli_lra_generator.py -c lra_config.yaml -d -w 4
+    aqua lra -c lra_config.yaml -d -w 4
 
 .. warning ::
 
     Keep in mind that this script is ideally submitted via batch to a HPC node, 
-    so that a template for SLURM is also available in the same directory (``lra-submitter.tmpl``). 
+    so that a template for SLURM is also available in the same directory (``.aqua/templates/lra/lra-submitter.tmpl``). 
     Be aware that although the computation is split among different months, the memory consumption of loading very big data
     is a limiting factor, so that unless you have very fat node it is unlikely you can use more than 16 workers.
 
@@ -115,19 +133,7 @@ A basic example usage can thus be:
 
 This will launch the `definitive` writing of the LRA, using 4 workers per node and a maximum of 4 concurrent SLURM jobs at the same time.
 
-.. note ::
-    Please consider that this script will call both SLURM and the standard `cli_lra_generator.py`, so that modification to the latter will influence this. 
-
 .. warning ::
     Use this script with caution since it will submit very rapidly tens of job to the SLURM scheduler!
 
-Workflow LRA tool
-^^^^^^^^^^^^^^^^^
-
-Due to integration with workflow, another LRA CLI tool is available to generate the LRA in a more complex environment accessing data from the GSV
-The script, named ``cli_lra_workflow.py`` is the LRA generator used within the DE_340 workflow. 
-It is made to work from OPA output and then process them to fix and standardize it.
-Please refer to AQUA team or workflow developers to get more information on how to use this tool.
-A template configuration file ``workflow_lra.tmpl`` is included in the folder. 
-The usage is the same as the main LRA generator script discussed above since it builts on the same `LRAGenerator` class. 
     

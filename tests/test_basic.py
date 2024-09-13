@@ -16,7 +16,7 @@ def reader_instance():
 class TestAqua:
     """Basic tests for AQUA"""
 
-    @pytest.mark.parametrize("module_name", ["aqua"])
+    @pytest.mark.parametrize("module_name", ["aqua", "aqua_diagnostics"])
     def test_aqua_import(self, module_name):
         """
         Test if the aqua module is imported correctly

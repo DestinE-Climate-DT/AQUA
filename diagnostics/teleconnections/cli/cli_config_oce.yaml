@@ -14,7 +14,7 @@ interface: 'teleconnections-destine'
 # If you want to use native data, you have to set these parameters
 # for each model.
 models:
-  - catalog: 'climatedt-phase1'
+  - catalog: null
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'lra-r100-monthly'

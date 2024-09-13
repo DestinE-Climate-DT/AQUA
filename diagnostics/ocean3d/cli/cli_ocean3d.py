@@ -96,7 +96,7 @@ class Ocean3DCLI:
             
         self.data["catalog_data"] = check_variable_name(self.data["catalog_data"])
 
-        if self.config["compare_model"]:
+        if self.config["compare_model"]== True:
             self.data["obs_data"] = load_obs_data(model='EN4', exp='en4', source='monthly')
         self.data["obs_data"] = check_variable_name(self.data["obs_data"])
         

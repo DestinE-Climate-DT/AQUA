@@ -133,33 +133,43 @@ We report here an example and we later describe the different elements.
 .. code-block:: yaml
 
     sources:
-        hourly-native:
+        hourly-hpz7-atm2d:
             args:
-                request:
-                    domain: g
-                    class: rd
-                    expver: a06x
-                    type: fc
-                    stream: lwda
-                    date: 19500101
-                    time: '0000'
-                    param: 2t
-                    levtype: sfc
-                    step: 0
-                data_start_date: 19500101T0000
-                data_end_date: 19591231T2300
-                chunks: D  # Default time chunk size
-                savefreq: h  # at what frequency are data saved
-                timestep: h  # base timestep for step timestyle
-                timestyle: step  # variable date or variable step
-            description: hourly data on native grid TCo1279 (about 10km). Contains tprate(260048),
-            2t(167), 10u(165), 10v(166), 100u(228246), 100v(228247), sr(173), blh(159),
-            2d(168), skt(235), chnk(148). See fix yaml for derived vars.
+            bridge_end_date: complete
+            request:
+                class: d1
+                dataset: climate-dt
+                activity: ScenarioMIP
+                experiment: SSP3-7.0
+                generation: 1
+                model: IFS-NEMO
+                realization: 1
+                resolution: standard
+                expver: '0001'
+                type: fc
+                stream: clte
+                date: 20210101
+                time: '0000'
+                param: 167
+                levtype: sfc
+                step: 0
+            data_start_date: 20200101T0000
+            data_end_date: 20391231T2300
+            chunks: D  # Default time chunk size
+            savefreq: h  # at what frequency are data saved
+            timestep: h  # base timestep for step timestyle
+            timestyle: date  # variable date or variable step
+            metadata: &metadata-default
+            fdb_home: '{{ FDB_PATH }}'
+            fdb_home_bridge: '{{ FDB_PATH }}/databridge'
+            eccodes_path: '{{ ECCODES_PATH }}/eccodes-2.32.5/definitions'
+            variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
+                187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
+                180, 181, 182, 212, 228]
+            source_grid_name: hpz7-nested
+            fixer_name: ifs-destine-v1
+            description: hourly 2D atmospheric data on healpix grid (zoom=7, h128).
             driver: gsv
-            metadata: 
-                fdb_path: /pfs/lustrep3/scratch/project_465000454/pool/data/EXPERIMENTS/fdb-config-CONTROL_1950_DEVCON.yaml
-                eccodes_path: /projappl/project_465000454/jvonhar/aqua/eccodes/eccodes-2.30.0/definitions
-                variables: ['tprate', '2t', '10u', '10v', '100u', '100v', 'sr', 'blh', '2d', 'skt', 'chnk']
 
 This is a source entry from the FDB of one of the AQUA control simulation from the IFS model. 
 The source name is ``hourly-native``, because is suggesting that the catalog is made hourly data at the native model resolution.
@@ -276,10 +286,10 @@ Some of the parameters are here described:
 
     This includes important supplementary information:
 
-    - ``fdb_path``: the path of the FDB configuration file (mandatory)
-    - ``fdb_home``: the path to where the FDB data are stored (optional)
-    - ``fdb_path_bridge``: the path of the FDB configuration file for bridge access (optional)
-    - ``fdb_home_bridge``: FDB_HOME for bridge access (optional)
+    - ``fdb_home``: the path to where the FDB data are stored
+    - ``fdb_path``: the path of the FDB configuration file (deprecated, use only if config.yaml is in a not standard place)
+    - ``fdb_home_bridge``: FDB_HOME for bridge access
+    - ``fdb_path_bridge``: the path of the FDB configuration file for bridge access (deprecated, use only if needed)
     - ``eccodes_path``: the path of the eccodes version used for the encoding/decoding of the FDB
     - ``variables``: a list of variables available in the fdb.
     - ``source_grid_name``: the grid name defined in aqua-grids.yaml to be used for areas and regridding
@@ -294,6 +304,10 @@ Some of the parameters are here described:
 
     For FDB sources the ``metadata`` section contains very important informations that are used to
     retrieve the correct variables and levels.
+
+.. warning::
+
+    Please notice that the recent version of ecCodes used by AQUA (>= 2.36.0) is not compatible anymore with definition files from earlier versions (<2.34.0). For this reason we point now to older definition files which have been 'fixed' to keep working. The CLI tool to create such fixed definition files (``fix_eccodes.sh``) is available.
 
 Regridding capabilities
 -----------------------

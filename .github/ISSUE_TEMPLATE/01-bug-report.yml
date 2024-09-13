@@ -29,8 +29,17 @@ body:
       label: catalog
       description: Which catalog are you using?
       options:
-      - ClimateDT
-      - Others
+      - ci
+      - climatedt-phase1
+      - leonardo
+      - levante
+      - lumi-phase1
+      - lumi-phase2
+      - mn5-phase2
+      - nextgems3
+      - nextgems4
+      - obs
+      - Others (specify)
     validations:
       required: true
   - type: dropdown
@@ -40,11 +49,11 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
-      - v0.10.2
-      - v0.10.1
-      - v0.10
-      - v0.9.*
-      - v0.8.*
+      - v0.11.3
+      - v0.11.2
+      - v0.11.1
+      - v0.11
+      - v0.10.*
       - older
     validations:
       required: true

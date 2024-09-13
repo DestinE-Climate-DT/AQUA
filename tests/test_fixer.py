@@ -119,6 +119,14 @@ def test_fixer_ifs_coords():
     assert 'timepippo' in data.coords
     assert 'cellspippo' in data.dims
 
+@pytest.mark.aqua
+def test_fixer_fesom_coords():
+    """Check with fixer_name and coords block"""
+
+    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", loglevel=loglevel)
+    data = reader.retrieve()
+    assert 'level' in data.coords
+    assert 'a lot of water' in data.level.attrs['units']
 
 @pytest.mark.aqua
 def test_fixer_fesom_names():
