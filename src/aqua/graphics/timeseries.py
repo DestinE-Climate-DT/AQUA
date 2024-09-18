@@ -46,8 +46,8 @@ def plot_timeseries(monthly_data=None,
     logger = log_configure(loglevel, 'PlotTimeseries')
 
     config = ConfigPath().configdir
-    style_dir = os.path.join(config, 'config', 'style')
-    if style:
+    style_dir = os.path.join(config, 'styles')
+    if style is not None:
         try:
             plt.style.use(os.path.join(style_dir, style, '.mplstyle'))
         except OSError:
