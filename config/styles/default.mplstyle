@@ -1,37 +1,33 @@
-# Set figure size and DPI
-figure.figsize: 8, 6
-figure.dpi: 100
-
-# Set font properties
-font.size: 12
+# Seaborn common parameters
+# .15 = dark_gray
+# .8 = light_gray
+text.color: .15
+axes.labelcolor: .15
+legend.frameon: False
+legend.numpoints: 1
+legend.scatterpoints: 1
+xtick.direction: out
+ytick.direction: out
+xtick.color: .15
+ytick.color: .15
+axes.axisbelow: True
 font.family: sans-serif
-font.sans-serif: Arial
+grid.linestyle: -
+lines.solid_capstyle: round
 
-# Set line properties
-lines.linewidth: 2
-lines.linestyle: -
-lines.marker: o
-lines.markersize: 6
-
-# Set axes properties
-axes.titlesize: 14
-axes.labelsize: 12
+# Seaborn darkgrid parameters
 axes.grid: True
-axes.linewidth: 1
-axes.spines.top: False
-axes.spines.right: False
+axes.facecolor: EAEAF2
+axes.edgecolor: white
+axes.linewidth: 0
+grid.color: white
+xtick.major.size: 0
+ytick.major.size: 0
+xtick.minor.size: 0
+ytick.minor.size: 0
 
-# Set grid properties
-grid.linestyle: --
-grid.linewidth: 0.5
-
-# Set legend properties
-legend.fontsize: 10
-legend.loc: best
-
-# Set color cycle for plots
-axes.prop_cycle: cycler('color', ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
-
-# Save figure settings
-savefig.dpi: 300
-savefig.format: png
+# Custom
+font.sans-serif: Overpass, Helvetica, Helvetica Neue, Arial, Liberation Sans, DejaVu Sans, Bitstream Vera Sans, sans-serif
+axes.prop_cycle: cycler('color', ["#1898e0", "#8bcd45", "#f89e13", "#d24493", "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf", "#00bb62", "#f9c410", "#fb4865", "#645ccc"])
+figure.facecolor: fefeff
+savefig.facecolor: fefeff
