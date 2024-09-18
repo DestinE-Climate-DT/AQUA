@@ -1,0 +1,37 @@
+# Set figure size and DPI
+figure.figsize: 8, 6
+figure.dpi: 100
+
+# Set font properties
+font.size: 12
+font.family: sans-serif
+font.sans-serif: Arial
+
+# Set line properties
+lines.linewidth: 2
+lines.linestyle: -
+lines.marker: o
+lines.markersize: 6
+
+# Set axes properties
+axes.titlesize: 14
+axes.labelsize: 12
+axes.grid: True
+axes.linewidth: 1
+axes.spines.top: False
+axes.spines.right: False
+
+# Set grid properties
+grid.linestyle: --
+grid.linewidth: 0.5
+
+# Set legend properties
+legend.fontsize: 10
+legend.loc: best
+
+# Set color cycle for plots
+axes.prop_cycle: cycler('color', ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
+
+# Save figure settings
+savefig.dpi: 300
+savefig.format: png
