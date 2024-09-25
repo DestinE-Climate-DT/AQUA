@@ -115,7 +115,7 @@ jobs:
       - name: Set up AQUA
         run: |
           # Initialize the AQUA catalog in the $HOME/.aqua folder
-          aqua -vv install
+          aqua -vv install github
           # Add the ci/cd catalog
           aqua -vv add ci
           # Double check the catalogs

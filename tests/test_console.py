@@ -12,7 +12,7 @@ from aqua import __path__ as pypath
 from aqua.cli.diagnostic_config import diagnostic_config
 
 testfile = 'testfile.txt'
-
+machine = 'github'
 
 def set_args(args):
     """Helper function to simulate command line arguments"""
@@ -138,12 +138,12 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install'])
+        run_aqua(['install', machine])
         assert os.path.isdir(os.path.join(mydir, '.aqua'))
         assert os.path.isfile(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
 
         # do it twice!
-        run_aqua_console_with_input(['-vv', 'install'], 'yes')
+        run_aqua_console_with_input(['-vv', 'install', machine], 'yes')
         assert os.path.exists(os.path.join(mydir, '.aqua'))
         for folder in ['fixes', 'data_models', 'grids']:
             assert os.path.isdir(os.path.join(mydir, '.aqua', folder))
@@ -186,8 +186,12 @@ class TestAquaConsole():
             run_aqua(['-v', 'add', 'ci'])
             assert excinfo.value.code == 1
 
+        # update the installation files
+        run_aqua(['-v', 'update'])
+        assert os.path.isdir(os.path.join(mydir, '.aqua/fixes'))
+
         # update a catalog
-        run_aqua(['-v', 'update', 'ci'])
+        run_aqua(['-v', 'update', '-c', 'ci'])
         assert os.path.isdir(os.path.join(mydir, '.aqua/catalogs/ci'))
 
         # remove non-existing catalog
@@ -226,7 +230,7 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install'])
+        run_aqua(['install', machine])
         run_aqua(['add', 'ci'])
 
         # create fake config file
@@ -284,7 +288,7 @@ class TestAquaConsole():
             assert excinfo.value.code == 1
 
         # a new install
-        run_aqua(['install'])
+        run_aqua(['install', machine])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
 
         # add catalog with editable option
@@ -366,7 +370,7 @@ class TestAquaConsole():
         set_home(mydir)
 
         # Run aqua install
-        run_aqua(['install'])
+        run_aqua(['install', machine])
 
         # Verify the configuration files were copied correctly
         assert verify_config_files(os.path.join(mydir, '.aqua'), diagnostic_config)
@@ -379,7 +383,7 @@ class TestAquaConsole():
 
         # check unexesting installation
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua_console_with_input(['-v', 'install', '-p', 'environment.yml'], 'yes')
+            run_aqua_console_with_input(['-v', 'install', machine, '-p', 'environment.yml'], 'yes')
             assert excinfo.value.code == 1
 
         # install from path with grids
@@ -391,7 +395,7 @@ class TestAquaConsole():
         # assert not os.path.exists(os.path.join(mydir,'.aqua'))
 
         # install from path
-        run_aqua_console_with_input(['-v', 'install', '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
+        run_aqua_console_with_input(['-v', 'install', machine, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
         assert os.path.exists(os.path.join(mydir, 'vicesindaco'))
 
         # uninstall everything again
@@ -406,32 +410,32 @@ class TestAquaConsole():
 
         # check unexesting installation
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(['-vv', 'install', '-e', '.'])
+            run_aqua(['-vv', 'install', machine, '-e', '.'])
             assert excinfo.value.code == 1
 
         # install from path with grids
-        run_aqua(['-vv', 'install', '--editable', 'config'])
+        run_aqua(['-vv', 'install', machine, '--editable', 'config'])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
         for folder in ['fixes', 'data_models', 'grids']:
             assert os.path.islink(os.path.join(mydir, '.aqua', folder))
         assert os.path.isdir(os.path.join(mydir, '.aqua', 'catalogs'))
 
         # install from path in editable mode
-        run_aqua_console_with_input(['-vv', 'install', '--editable', 'config',
-                                     '--path', os.path.join(mydir, 'vicesindaco')], 'yes')
+        run_aqua_console_with_input(['-vv', 'install', machine, '--editable', 'config',
+                                     '--path', os.path.join(mydir, 'vicesindaco2')], 'yes')
         assert os.path.islink(os.path.join(mydir, '.aqua'))
         run_aqua_console_with_input(['uninstall'], 'yes')
 
         # install from path in editable mode but withoyt aqua link
-        run_aqua_console_with_input(['-vv', 'install', '--editable', 'config',
-                                     '--path', os.path.join(mydir, 'vicesindaco')], 'no')
+        run_aqua_console_with_input(['-vv', 'install', machine, '--editable', 'config',
+                                     '--path', os.path.join(mydir, 'vicesindaco1')], 'no')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
-        assert os.path.isdir(os.path.join(mydir, 'vicesindaco', 'catalogs'))
+        assert os.path.isdir(os.path.join(mydir, 'vicesindaco1', 'catalogs'))
 
         # uninstall everything again, using AQUA_CONFIG env variable
-        os.environ['AQUA_CONFIG'] = os.path.join(mydir, 'vicesindaco')
+        os.environ['AQUA_CONFIG'] = os.path.join(mydir, 'vicesindaco1')
         run_aqua_console_with_input(['uninstall'], 'yes')
-        assert not os.path.exists(os.path.join(mydir, 'vicesindaco'))
+        assert not os.path.exists(os.path.join(mydir, 'vicesindaco1'))
         del os.environ['AQUA_CONFIG']
 
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
@@ -444,7 +448,7 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install'])
+        run_aqua(['install', machine])
         run_aqua(['add', 'ci'])
         run_aqua(['add', 'ciccio', '-e', 'AQUA_tests/catalog_copy'])
         run_aqua(['list', '-a'])
@@ -456,6 +460,12 @@ class TestAquaConsole():
         assert 'IFS.yaml' in out
         assert 'HealPix.yaml' in out
         assert 'ifs2cds.json' in out
+
+        run_aqua(['avail'])
+        out, _ = capfd.readouterr()
+
+        assert 'climatedt-phase1' in out
+        assert 'lumi-phase1' in out
 
         # uninstall everything again
         run_aqua_console_with_input(['uninstall'], 'yes')
@@ -471,11 +481,12 @@ class TestAquaConsole():
 
         # check unexesting installation
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(['install'])
+            run_aqua(['install', machine])
             assert excinfo.value.code == 1
 
         # install from path without home
-        run_aqua_console_with_input(['-v', 'install', '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
+        shutil.rmtree(os.path.join(mydir, 'vicesindaco'))
+        run_aqua_console_with_input(['-v', 'install', machine, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
         assert os.path.isdir(os.path.join(mydir, 'vicesindaco'))
         assert os.path.isfile(os.path.join(mydir, 'vicesindaco', 'config-aqua.yaml'))
         assert not os.path.exists(os.path.join(mydir, '.aqua'))

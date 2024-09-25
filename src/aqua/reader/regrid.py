@@ -342,12 +342,14 @@ class RegridMixin():
         streaming = self.streaming
         startdate = self.startdate
         enddate = self.enddate
+        preproc = self.preproc
         self.fix = False
         self.aggregation = None
         self.chunks = None
         self.streaming = False
         self.startdate = None
         self.enddate = None
+        self.preproc = None
         data = self.retrieve(sample=True, history=False, *args, **kwargs)
         self.aggregation = aggregation
         self.chunks = chunks
@@ -355,6 +357,7 @@ class RegridMixin():
         self.streaming = streaming
         self.startdate = startdate
         self.enddate = enddate
+        self.preproc = preproc
 
         if isinstance(data, types.GeneratorType):
             data = next(data)

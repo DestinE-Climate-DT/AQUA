@@ -116,7 +116,7 @@ class GSVSource(base.DataSource):
             enddate = data_end_date
 
         if self.timestyle != "yearmonth":
-            offset = int(self._request["step"])  # optional initial offset for steps (in timesteps)
+            offset = int(self._request.get("step", 0))  # optional initial offset for steps (in timesteps)
 
             # special for 6h: set offset startdate if needed
             startdate = add_offset(data_start_date, startdate, offset, timestep)

@@ -7,7 +7,7 @@ Set up the configuration file
 -----------------------------
 
 A configuration file is available to specify the parameters for the AQUA package.
-This is a YAML file called ``config-aqua.yaml`` and is located in the configuration folder.
+This is a YAML file called ``config-aqua.yaml`` and is located in the installation folder, which usually is ``$HOME/.aqua``.
 
 .. warning::
   All the details of the configuration file are now handled during the installation process
@@ -16,15 +16,16 @@ This is a YAML file called ``config-aqua.yaml`` and is located in the configurat
 
 The configuration file is used to specify the following parameters:
 
+- **machine**: the machine on which the AQUA will run. This is used to specify the
+  location of the grids, weights and areas produced by AQUA.
+  By default no machine is set. You will need to specify the machine you want to use while installing AQUA (see :ref:`aqua-install`).
 - **catalog**: the catalog on which the AQUA will run. This is used to specify the
-  location of the AQUA catalog and the location of the data. Default is ``lumi``.
-  Other options are ``ci`` and ``levante``. Custom catalogs can be defined (see :ref:`new-catalog`).
+  location of the AQUA catalog and the location of the data.
+  By default no catalog is set. You will need to specify the catalog you want to use (see :ref:`aqua-add`).
 - **reader**: this block contains catalog, fixes and grids location.
   These paths are required to be inside the AQUA repository,
   so these paths should not be changed unless strictly necessary.
   Refer to :ref:`add-data` for more information.
-- **cdo**: location of the CDO executable. By default this option is not needed, since CDO is required in the ``environment.yml`` file
-  and provided by conda.
 
 The configuration folder has this structure:
 
@@ -35,11 +36,11 @@ The configuration folder has this structure:
     │   ├── fixes
     │   ├── grids
     │   └── catalogs
-    │       ├── lumi
+    │       ├── climatedt-phase1
     │       │   ├── catalog 
     │       │   └── catalog.yaml
     │       │   └── machine.yaml
-    │       ├── levante
+    │       ├── obs
     │       └── ...
     ├── config-aqua.yaml
 
@@ -198,7 +199,7 @@ In that case the next block of data can be read from the iterator with ``next()`
 or with a loop iterating over ``data``. The result of these operations is in turn a regular xarray.Dataset containg the data.
 Since this is a data stream the user should also specify the desired initial time and the final time (the latter can be omitted and will default to the end of the dataset).
 When using an iterator it is possible to specify the size of the data blocks read at each iteration with the ``aggregation`` keyword
-(``M`` is month, ``D``is day etc.). 
+(``M`` is month, ``D`` is day etc.). 
 The default is ``S`` (step), i.e. single saved timesteps are read at each iteration.
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
@@ -239,6 +240,26 @@ the regridder is still able to deal with this situation using the information in
     If level selection was performed at the ``retrieve()`` stage this is not a problem,
     since in that case the vertical level information is preserved by producing 3D variables
     with a single vertical level.
+
+Reader prepocessing option
+--------------------------
+
+The reader has a preprocessing option that can be used to apply a function to the data before it is retrieved.
+This can be useful to apply a function to the data before it is read, to quickly apply some function that is not available in the Reader class.
+
+In order to use this option, the user must pass a function as ``preproc`` keyword while instantiating the Reader.
+
+.. code-block:: python
+
+    def my_preproc(data):
+        return data * 2
+
+    reader = Reader(model="IFS", exp="control-1990", source="lra-r100-monthly", preproc=my_preproc)
+    data = reader.retrieve(var='2t')
+
+.. note::
+    There is not yet a way to define a preproc function in the catalog, so it must be passed as a keyword argument.
+    This is a feature that will be added in the future, if needed.
 
 .. _slurm:
 

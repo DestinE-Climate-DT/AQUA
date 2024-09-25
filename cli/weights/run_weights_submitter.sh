@@ -4,7 +4,7 @@
 set -e # Exit immediately if a command exits with a non-zero status.
 
 # define the aqua installation path
-AQUA=$(aqua --path)/..
+AQUA=$(aqua --path)/../..
 
 echo $AQUA
 if [ ! -d $AQUA ]; then

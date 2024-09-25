@@ -10,7 +10,7 @@ set -e
 # and you're connected to the machine from which you're copying the grids
 
 # define the aqua installation path
-AQUA=$(aqua --path)/..
+AQUA=$(aqua --path)/../..
 
 echo $AQUA
 if [ ! -d $AQUA ]; then
