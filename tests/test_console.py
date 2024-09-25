@@ -14,6 +14,7 @@ from aqua.cli.diagnostic_config import diagnostic_config
 testfile = 'testfile.txt'
 machine = 'github'
 
+
 def set_args(args):
     """Helper function to simulate command line arguments"""
     sys.argv = ['aqua'] + args
@@ -84,6 +85,7 @@ def run_aqua():
         aquacli.execute()
     return _run_aqua_console
 
+
 def verify_config_files(base_dir, diagnostic_config):
     """
     Verify that the configuration files were copied correctly.
@@ -145,7 +147,7 @@ class TestAquaConsole():
         # do it twice!
         run_aqua_console_with_input(['-vv', 'install', machine], 'yes')
         assert os.path.exists(os.path.join(mydir, '.aqua'))
-        for folder in ['fixes', 'data_models', 'grids']:
+        for folder in ['fixes', 'data_models', 'grids', 'styles']:
             assert os.path.isdir(os.path.join(mydir, '.aqua', folder))
 
         # add two catalogs
@@ -262,10 +264,9 @@ class TestAquaConsole():
         path = os.path.join(os.path.join(mydir, 'lra_test'),
                             "IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_202002.nc")
         assert os.path.isfile(path)
-        
+
         # remove aqua
         run_aqua_console_with_input(['uninstall'], 'yes')
-
 
     def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,
