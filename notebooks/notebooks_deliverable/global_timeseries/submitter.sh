@@ -14,9 +14,11 @@ whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
 source $whereconda/etc/profile.d/conda.sh
 conda activate aqua
 
-configfile="${AQUA}/diagnostics/global_time_series/deliverable/config_deliverable.yaml"
+submitter.sh
+
+configfile="${AQUA}/notebooks/notebooks_deliverable/global_timeseries/config_deliverable.yaml"
 scriptfile="${AQUA}/diagnostics/global_time_series/cli/cli_global_time_series.py"
-outputdir="${AQUA}/diagnostics/global_time_series/deliverable/output"
+outputdir="./output"
 workers=8
 
 echo "Running the global time series diagnostic with $workers workers"

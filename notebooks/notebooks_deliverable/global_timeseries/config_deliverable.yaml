@@ -2,17 +2,21 @@
 # in the command line by using:
 # --model, --exp, --source, --outputdir
 models:
-  - model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'lra-r100-monthly'
-  - model: 'IFS-NEMO'
+  - catalog: climatedt-phase1
+    model: 'IFS-NEMO'
     exp: 'ssp370'
     source: 'lra-r100-monthly'
-  - model: 'ICON'
+  - catalog: climatedt-phase1
+    model: 'ICON'
+    exp: 'ssp370'
+    source: 'lra-r100-monthly'
+  - catalog: climatedt-phase1
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'lra-r100-monthly'
-  - model: 'ICON'
-    exp: 'ssp370'
+  - catalog: climatedt-phase1
+    model: 'ICON'
+    exp: 'historical-1990'
     source: 'lra-r100-monthly'
 outputdir: "./"
 
