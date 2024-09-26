@@ -16,7 +16,7 @@ AQUA core complete list:
 - AQUA console revisiting, adding `avail` method and `update` method (#1346)
 - AQUA install now requires mandatory machine name (#1346)
 - Fix to make keyword step optional in request (#1360)
-- CDO maximum version pinning to 2.4.0 removed (#1362) 
+- CDO maximum version pinning to 2.4.0 removed (#1362)
 
 AQUA diagnostic complete list:
 
