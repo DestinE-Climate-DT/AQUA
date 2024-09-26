@@ -16,7 +16,7 @@ grid.linestyle: -
 lines.solid_capstyle: round
 
 # Seaborn darkgrid parameters
-axes.grid: True
+axes.grid: False
 axes.facecolor: EAEAF2
 axes.edgecolor: white
 axes.linewidth: 0
