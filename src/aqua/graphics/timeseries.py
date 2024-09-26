@@ -2,11 +2,10 @@
 Function to plot timeseries and reference data,
 both with monthly and annual aggregation options
 """
-import os
 import xarray as xr
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
-from aqua.util import ConfigPath
+from .styles import ConfigStyle
 
 
 def plot_timeseries(monthly_data=None,
@@ -34,6 +33,8 @@ def plot_timeseries(monthly_data=None,
         std_annual_data (xr.DataArray): standard deviation of the reference annual data
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
+        style (str): style to use for the plot.
+                     By default the schema specified in the configuration file is used.
         loglevel (str): logging level
 
     Keyword Arguments:
@@ -44,19 +45,7 @@ def plot_timeseries(monthly_data=None,
         fig, ax (tuple): tuple containing the figure and axis objects
     """
     logger = log_configure(loglevel, 'PlotTimeseries')
-
-    config = ConfigPath().configdir
-    style_dir = os.path.join(config, 'styles')
-    if style is not None:
-        try:
-            plt.style.use(os.path.join(style_dir, style, '.mplstyle'))
-        except OSError:
-            try:
-                plt.style.use(style)
-            except OSError as e:
-                logger.debug(f"Error loading style: {e}")
-    else:
-        plt.style.use(os.path.join(style_dir, 'default.mplstyle'))
+    ConfigStyle(style=style, loglevel=loglevel)
 
     fig_size = kwargs.get('figsize', (10, 5))
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
@@ -139,6 +128,7 @@ def plot_seasonalcycle(data=None,
                        data_labels: list = None,
                        ref_label: str = None,
                        grid=True,
+                       style: str = None,
                        loglevel: str = 'WARNING',
                        **kwargs):
     """
@@ -151,6 +141,8 @@ def plot_seasonalcycle(data=None,
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
         grid (bool): if True, plot grid
+        style (str): style to use for the plot.
+                     By default the schema specified in the configuration file is used.
         loglevel (str): logging level
 
     Keyword Arguments:
@@ -161,6 +153,8 @@ def plot_seasonalcycle(data=None,
         fig, ax (tuple): tuple containing the figure and axis objects
     """
     logger = log_configure(loglevel, 'PlotSeasonalCycle')
+    ConfigStyle(style=style, loglevel=loglevel)
+
     fig_size = kwargs.get('figsize', (6, 4))
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
 

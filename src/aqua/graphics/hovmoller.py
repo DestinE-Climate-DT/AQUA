@@ -9,6 +9,7 @@ import xarray as xr
 
 from aqua.util import create_folder, evaluate_colorbar_limits
 from aqua.logger import log_configure
+from .styles import ConfigStyle
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
@@ -24,6 +25,7 @@ def plot_hovmoller(data: xr.DataArray,
                    nlevels=8, cbar_label=None,
                    outputdir='.', filename='hovmoller.pdf',
                    display=True, return_fig=False,
+                   style=None,
                    loglevel: str = "WARNING",
                    **kwargs):
     """"
@@ -54,6 +56,8 @@ def plot_hovmoller(data: xr.DataArray,
                                     Default is True
         display (bool, optional):   If True, display the figure. Defaults to True.
         return_fig (bool, optional): If True, return the figure (fig, ax). Defaults to False.
+        style (str,opt):        style to use for the plot.
+                                If not provided, it will be read from the configuration file.
         loglevel (str,opt):     log level for the logger,
                                 default is 'WARNING'
 
@@ -66,6 +70,7 @@ def plot_hovmoller(data: xr.DataArray,
         fig, ax: tuple with the figure and axes
     """
     logger = log_configure(log_level=loglevel, log_name='Hovmoller')
+    ConfigStyle(loglevel=loglevel)
 
     # Check if data is a DataArray
     if not isinstance(data, xr.DataArray):
@@ -77,7 +82,7 @@ def plot_hovmoller(data: xr.DataArray,
     dim_max = data.coords[dim].max()
     dim_min = np.round(dim_min, 0)
     dim_max = np.round(dim_max, 0)
-    
+
     data_mean = data.mean(dim=dim)
 
     # Create figure and axes
@@ -169,7 +174,7 @@ def plot_hovmoller(data: xr.DataArray,
             logger.warning('Could not find a label for the colorbar')
 
     fig.colorbar(im, cax=cbar_ax, orientation='horizontal',
-                label=cbar_label)
+                 label=cbar_label)
 
     # Save the figure
     if save:

@@ -19,6 +19,7 @@ from aqua.util import create_folder, check_coordinates
 from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
 from aqua.util import cbar_get_label, set_map_title
 from aqua.util import coord_names, set_ticks, ticks_round
+from .styles import ConfigStyle
 
 
 def plot_single_map(data: xr.DataArray,
@@ -30,6 +31,7 @@ def plot_single_map(data: xr.DataArray,
                     cmap='RdBu_r',
                     gridlines=False,
                     display=True,
+                    style=None,
                     return_fig=False,
                     loglevel='WARNING',
                     **kwargs):
@@ -53,6 +55,8 @@ def plot_single_map(data: xr.DataArray,
         cmap (str, optional):      Colormap. Defaults to 'RdBu_r'.
         gridlines (bool, optional): If True, plot gridlines. Defaults to False.
         display (bool, optional):  If True, display the figure. Defaults to True.
+        style (str, optional):     Style to use for the plot.
+                                   If not provided, it will be read from the configuration file.
         return_fig (bool, optional): If True, return the figure (fig, ax). Defaults to False.
         loglevel (str, optional):  Log level. Defaults to 'WARNING'.
 
@@ -81,6 +85,7 @@ def plot_single_map(data: xr.DataArray,
         ValueError: If data is not a DataArray.
     """
     logger = log_configure(loglevel, 'plot_single_map')
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # We load in memory the data, to avoid problems with dask
     logger.info("Loading data in memory")
