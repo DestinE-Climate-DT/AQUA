@@ -6,21 +6,23 @@ from aqua.logger import log_configure
 from .yaml import load_yaml
 from .util import to_list
 
+
 class ConfigPath():
     """
-    A class to manage the configuration path and directory robustly, including 
+    A class to manage the configuration path and directory robustly, including
     handling and browsing across multiple catalogs.
 
     Attributes:
         filename (str): The name of the configuration file. Defaults to 'config-aqua.yaml'.
-        configdir (str): The directory where the configuration file is located. 
+        configdir (str): The directory where the configuration file is located.
                          If not provided, it is determined by the `get_config_dir` method.
-        catalog (str): The first catalog from the list of available catalogs, or None if 
+        catalog (str): The first catalog from the list of available catalogs, or None if
                        no catalogs are available.
+        loglevel (str): The logging level. Default is 'WARNING'.
     """
 
     def __init__(self, configdir=None, filename='config-aqua.yaml',
-                 catalog=None, loglevel='warning'):
+                 catalog=None, loglevel='WARNING'):
 
         # set up logger
         self.logger = log_configure(log_level=loglevel, log_name='ConfigPath')
@@ -41,8 +43,6 @@ class ConfigPath():
             self.catalog_available = to_list(catalog)
         self.logger.debug('Available catalogs are %s', self.catalog_available)
 
-
-        
         # set the catalog as the first available and get all configurations
         if self.catalog_available is None:
             self.logger.warning('No available catalogs found')
@@ -55,11 +55,10 @@ class ConfigPath():
             self.base_available = self.get_base()
             self.logger.debug('Default catalog will be %s', self.catalog)
             self.catalog_file, self.machine_file = self.get_catalog_filenames(self.catalog)
-        
+
         # get also info on machine on init
         self.machine = self.get_machine()
 
-        
     def get_config_dir(self):
         """
         Return the path to the configuration directory,
@@ -106,17 +105,17 @@ class ConfigPath():
             base = load_yaml(self.config_file)
             if 'catalog' not in base:
                 raise KeyError(f'Cannot find catalog information in {self.config_file}')
-            
+
             # particular case of an empty list
             if not base['catalog']:
                 return None
 
             self.logger.debug('Catalog found in %s file are %s', self.config_file, base['catalog'])
             return base['catalog']
-        
+
         raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
 
-    def browse_catalogs(self, model:str, exp:str, source:str):
+    def browse_catalogs(self, model: str, exp: str, source: str):
         """
         Given a triplet of model-exp-source, browse all catalog installed catalogs
 
@@ -143,47 +142,45 @@ class ConfigPath():
                     self.logger.info('%s_%s_%s triplet found in in %s!', model, exp, source, catalog)
                     success.append(catalog)
                 else:
-                    fail[catalog] = f'In catalog {catalog} when looking for {model}_{exp}_{source} triplet I could not find the {level}. Available alternatives are {avail}'
+                    fail[catalog] = f'In catalog {catalog} when looking for {model}_{exp}_{source} triplet I could not find the {level}. Available alternatives are {avail}' # noqa
             return success, fail
-        
+
         raise KeyError('Need to defined the triplet model, exp and source')
-    
+
     def deliver_intake_catalog(self, model, exp, source, catalog=None):
         """
-        Given a triplet of model-exp-source (and possibly a specific catalog), browse the catalog 
+        Given a triplet of model-exp-source (and possibly a specific catalog), browse the catalog
         and check if the triplet can be found
 
         Returns:
           The intake catalog and the associated catalog and machine file
 
         """
-        
         matched, failed = self.browse_catalogs(model=model, exp=exp, source=source)
         if not matched:
             for _, value in failed.items():
                 self.logger.error(value)
             raise KeyError('Cannot find the triplet in any catalog. Check logger error for hints on possible typos')
-        
+
         if catalog is not None:
             self.catalog = catalog
         else:
-            if len(matched)>1:
+            if len(matched) > 1:
                 self.logger.warning('Multiple triplets found in %s, setting %s as the default', matched, matched[0])
             self.catalog = matched[0]
-            
+
         self.logger.debug('Final catalog to be used is %s', self.catalog)
         self.catalog_file, self.machine_file = self.get_catalog_filenames(self.catalog)
         return intake.open_catalog(self.catalog_file), self.catalog_file, self.machine_file
-    
+
     def get_machine_info(self):
         """
         This extract the information related to the machine from the catalog-dependent machine file
-        
-        Returns: 
+
+        Returns:
             machine_paths: the dictionary with the paths
             intake_vars: the dictionary for the intake catalog variables
         """
-        
         # loading the grid defintion file
         machine_file = load_yaml(self.machine_file)
 
@@ -195,16 +192,15 @@ class ConfigPath():
                 machine_paths = machine_file['default']
             else:
                 raise KeyError(f'Cannot find machine paths for {self.machine}, regridding and areas feature will not work')
-        
+
         # extract potential intake variables
         if 'intake' in machine_paths:
             intake_vars = machine_paths['intake']
         else:
             intake_vars = {}
-        
+
         return machine_paths, intake_vars
 
-      
     def get_base(self):
         """
         Get all the possible base configurations available
@@ -216,9 +212,9 @@ class ConfigPath():
                 definitions = {'catalog': catalog, 'configdir': self.configdir}
                 base[catalog] = load_yaml(infile=self.config_file, definitions=definitions, jinja=True)
             return base
-        
+
         raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
-        
+
     def get_machine(self):
         """
         Extract the name of the machine from the configuration file
@@ -240,9 +236,9 @@ class ConfigPath():
                 self.logger.debug('Machine is %s, trying to self detect', self.machine)
                 self.machine = self._auto_detect_machine()
             return self.machine
-        
+
         raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
-    
+
     def _auto_detect_machine(self):
         """Tentative method to identify the machine from the hostname"""
 
@@ -283,7 +279,7 @@ class ConfigPath():
         catalog_file = self.base_available[catalog]['reader']['catalog']
         self.logger.debug('Catalog file is %s', catalog_file)
         if not os.path.exists(catalog_file):
-            raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}. Did you install it with "aqua add {catalog}"?')
+            raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}. Did you install it with "aqua add {catalog}"?') # noqa
         machine_file = self.base_available[catalog]['reader']['machine']
         self.logger.debug('Machine file is %s', machine_file)
         if not os.path.exists(machine_file):
@@ -308,8 +304,8 @@ class ConfigPath():
         if not os.path.exists(grids_folder):
             raise FileNotFoundError(f'Cannot find the regrid folder in {grids_folder}')
 
-
         return fixer_folder, grids_folder
+
 
 def scan_catalog(cat, model=None, exp=None, source=None):
     """
