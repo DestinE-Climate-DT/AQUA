@@ -1,0 +1,47 @@
+# experiment
+dataset:
+  model: "IFS-NEMO"
+  exp: "historical-1990"
+  source2d: "hourly-hpz10-atm2d" #"2D_1h_native"
+  source3d: "hourly-hpz10-atm3d" #"3D_1h_native"
+
+# folders for regridded data, temprorary and stored high res data
+paths: 
+  tmpdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/tmpdir"
+  fulldir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/fulldir"
+  plotdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/Figures/"
+
+# log level
+setup:
+  loglevel: 'WARNING'
+
+# grid on which operate
+grids:
+  lowgrid: 'r100'
+  highgrid: 'r010'
+
+# variables to stored 
+varlist: ['msl', '10u', '10v', 'mtpr']
+
+# temporal definition (date format: YYYYMMDD)
+time: 
+  startdate: '19900701'
+  enddate: '19911231'
+  frequency: '6h'
+
+stream:
+  streamstep: "10D" # n of days for streaming (check reader args options, IMPORTANT: must be specified in days, "D")
+
+# detect nodes options
+detect:
+  boxdim: 10    # dimension of lat/lon box to save data in the vicinity of the TCs centres (in degrees)
+
+# stich nodes options
+stitch:
+  n_days_freq: 30 # run stitch nodes (tracks computation) and save tracks every n days
+  n_days_ext: 2  # n of days to extend time boundaries not to miss tracks which may start/end before/after the chosen n of days
+
+# path to orography in case file (in case var is not found in the catalog)
+orography:
+  file_path: "/users/pghinass/orography/IFS-NEMO/historical-1990/"
+  file_name: "orography_r100.nc"

@@ -1,0 +1,53 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir
+models:
+  - model: 'IFS-NEMO'
+    exp: 'historical-1990'
+    source: 'lra-r100-monthly'
+  - model: 'IFS-NEMO'
+    exp: 'ssp370'
+    source: 'lra-r100-monthly'
+  - model: 'ICON'
+    exp: 'historical-1990'
+    source: 'lra-r100-monthly'
+  - model: 'ICON'
+    exp: 'ssp370'
+    source: 'lra-r100-monthly'
+outputdir: "./"
+
+# This is the list of variables that will be plotted as seasonal cycles
+timeseries: ['2t']
+timeseries_formulae: ['86400*mtpr', 'mtnlwrf+mtnswrf']
+seasonal_cycle_formulae: ['86400*mtpr']
+
+gregory:
+  ts: '2t'
+  toa: ['mtnlwrf', 'mtnswrf']
+  monthly: False
+  annual: True
+
+timeseries_plot_params:
+# These are options that specify how the data is plotted
+# Default values are used if the variable that is being
+# plotted is not specified here.
+# If you need specific options for a variable, you can
+# add it here.
+  default:
+    plot_ref: True
+    monthly: True
+    annual: True
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
+    expand: False
+  mtnlwrf+mtnswrf:
+    longname: "Mean top net radiation" # This is to override title and ylabel
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
+    expand: False
+  86400*mtpr:
+    longname: "Precipitation" # This is to override title and ylabel
+    units: "mm/day" # This is to override units
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'
+    expand: False
