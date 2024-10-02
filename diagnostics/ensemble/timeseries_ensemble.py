@@ -64,8 +64,9 @@ class Ensemble_timeseries():
         self.outfile = outfile
         self.dataset_mean = None
         self.dataset_std = None
-
-
+        self.timeseries = None
+        self.data_label = None
+        
     def run(self):
         self.retrieve_data()
         self.plot()
@@ -75,44 +76,33 @@ class Ensemble_timeseries():
         self.logger.debug("Retrieving data")
         self.dataset_mean = []
         self.dataset_std = []
-        dataset = []
+        self.timeseries = []
+        self.data_label = []
         # You don't want to concatenate inside the loop -- that would make your code run in quadratic time: https://stackoverflow.com/questions/33435953/is-it-possible-to-append-to-an-xarray-dataseti
 
         for i, model in enumerate(self.models):
             #self.logger.info(f'Retrieving data for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}')
             self.logger.info(f'Retrieving data for {model} {self.exps[i]} {self.sources[i]}')
-            i_model = model;i_exp=self.exps[i];i_source=self.sources[i];istart=self.startdate;iend=self.enddate;var=self.var
+            i_model = model;i_exp=self.exps[i];i_source=self.sources[i];istart=self.startdate;iend=self.enddate
             #print('Data Reader: ', i_model,' ',i_exp,' ',i_source,' ',istart,iend)
-            #try:
-            #    reader = Reader(model=i_model,exp=i_exp,source=i_source,startdate=istart,enddate=iend,areas=False)
-            #    #reader = Reader(model=model,exp=self.exps[i],source=self.sources[i],startdate=self.startdate,enddate=self.enddate,area=False)
-            #    data = reader.retrieve(self.var)
-            #    dataset.append(data)
-            #except Exception as e:
-            #    self.logger.debug(f'Error while retrieving: {e}')
-            #    #self.logger.warning(f'No data found for {self.catalog[i]} {model} {self.exps[i]} {self.sources[i]}')
-            #    self.logger.warning(f'No data found for {model} {self.exps[i]} {self.sources[i]}')
-        #combined_dataset = xr.concat(dataset,dim='Ensemble')
-        #self.dataset_mean = combined_dataset[self.var].mean(dim='Ensemble')
-        #self.dataset_std = combined_dataset[self.var].std(dim='Ensemble')
-
             try:
                 reader = Reader(model=i_model,exp=i_exp,source=i_source,startdate=istart,enddate=iend,areas=False)
                 #reader = Reader(model=model,exp=self.exps[i],source=self.sources[i],startdate=self.startdate,enddate=self.enddate,area=False)
-                data = reader.retrieve(var)
-                dataset.append(data)
+                data = reader.retrieve(self.var)
+                self.timeseries.append(data)
+                self.data_label.append(str(i_exp))
             except Exception as e:
                 self.logger.debug(f'Error while retrieving: {e}')
                 #self.logger.warning(f'No data found for {self.catalog[i]} {model} {self.exps[i]} {self.sources[i]}')
                 self.logger.warning(f'No data found for {model} {self.exps[i]} {self.sources[i]}')
-        combined_dataset = xr.concat(dataset,dim='Ensemble')
-        self.dataset_mean = combined_dataset[var].mean(dim='Ensemble')
-        self.dataset_std = combined_dataset[var].std(dim='Ensemble')
+        combined_dataset = xr.concat(self.timeseries,dim='Ensemble')
+        self.dataset_mean = combined_dataset[self.var].mean(dim='Ensemble')
+        self.dataset_std = combined_dataset[self.var].std(dim='Ensemble')
 
         # Clean up
         del reader
         del data
-        del dataset
+        #del dataset
         del combined_dataset
         gc.collect()
         
@@ -129,17 +119,21 @@ class Ensemble_timeseries():
     def plot(self):
         fig, ax = plt.subplots(1, 1)
         self.logger.info('Plotting the timeseries')
-        data_labels = []
+        data_label = self.data_label
+        ###### Only works with one var from the config file
         var = self.var[0]
         data_mean = self.dataset_mean
         data_mean = data_mean[var]
         data_std = self.dataset_std
         data_std = data_std[var]
+        timeseries_data = self.timeseries
         #self.dataset_mean[self.var].plot(ax=ax)
-        data_mean.plot(ax=ax)
-        ax.fill_between(data_mean.time, data_mean -2.*data_std,data_mean +2.*data_std,facecolor='grey',alpha=0.25)
+        data_mean.plot(ax=ax,label='multimodel-mean')
+        ax.fill_between(data_mean.time, data_mean -2.*data_std,data_mean +2.*data_std,facecolor='grey',alpha=0.25,label='+-std')
+        for i in range(len(data_label)):
+            timeseries_data[i][var].plot(ax=ax,label=data_label[i])
         #data_mean.plot(ax=ax)
-        
+        ax.legend(fontsize='small') 
         ax.figure.savefig('ens.png')
         #    return fig,ax
 
