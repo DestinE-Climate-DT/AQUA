@@ -117,6 +117,7 @@ class Ensemble_timeseries():
             raise NoDataError('No data found')
 
     def plot(self):
+        plt.rcParams["figure.figsize"] =  (10, 5)
         fig, ax = plt.subplots(1, 1)
         self.logger.info('Plotting the timeseries')
         data_label = self.data_label
