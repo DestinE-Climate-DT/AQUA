@@ -1,0 +1,25 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+
+# This yaml file will only have either annual or monthly
+models:
+  - model: 'aqua-timeseries'
+    #catalog: 'diagnosis'
+    exp: 'aqua-timeseries-IFS-NEMO'
+    source: '1D-t2m-mon'
+  - model: 'aqua-timeseries'
+    #catalog: 'diagnosis'
+    exp: 'aqua-timeseries-ERA5'
+    source: '1D-t2m-mon'
+
+outputdir: "/work/ab0995/a270260/test_01/ens_test"
+
+# This is the list of variables that will be plotted as timeseries
+timeseries: ['2t']
+
+
+timeseries_plot_params:
+  default:
+    startdate: '1990-01-01'
+    enddate: '2000-12-31'
