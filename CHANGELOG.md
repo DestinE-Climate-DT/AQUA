@@ -9,10 +9,16 @@ Unreleased in the current development version:
 
 AQUA core complete list:
 
+- Mixed updates to support data for NextGEMS cycle4 hackathon (#1375)
 - Preprocess functionality added to the `Reader` class (#1298)
 - The AQUAthon material has been moved under the `notebooks` folder (#1342)
 - `aqua` source code has been moved to the `src` folder (#1332)
 - A diagnostic module, called `aqua.diagnostics`, has been created under the `src` folder (#1332, #1341)
+- LRA generator tool support for multiple relizations (#1357, #1375)
+- LRA generator requires `catalog` as a mandatory argument (#1357)
+- AQUA console revisiting, adding `avail` method and `update` method (#1346)
+- AQUA install now requires mandatory machine name (#1346)
+- Fix to make keyword step optional in request (#1360)
 
 AQUA diagnostic complete list:
 

@@ -13,7 +13,7 @@ from aqua.util import load_multi_yaml, files_exist
 from aqua.util import ConfigPath, area_selection
 from aqua.logger import log_configure, log_history
 from aqua.util import flip_lat_dir, find_vert_coord
-from aqua.exceptions import NoDataError
+from aqua.exceptions import NoDataError, NoRegridError
 import aqua.gsv
 
 from .streaming import Streaming
@@ -198,12 +198,13 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
             if self.src_grid_name is not None:
                 self.logger.info('Grid metadata is %s', self.src_grid_name)
+                self.dst_grid_name = regrid
+                # configure all the required elements
+                self._configure_coords(cfg_regrid)
             else: 
-                self.logger.warning('Grid metadata is not defined. Regridding capabilities might not work.')
-            self.dst_grid_name = regrid
-
-            # configure all the required elements
-            self._configure_coords(cfg_regrid)
+                self.logger.warning('Grid metadata is not defined. Disabling regridding and areas capabilities.')
+                areas = False
+                regrid = None
 
         # generate source areas
         if areas:
@@ -568,7 +569,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         if isinstance(data, xr.Dataset) and self.fix:
             for var in data.data_vars:
                 if not hasattr(data[var], 'units'):
-                    self.logger.error('Variable %s has no units!', var)
+                    self.logger.warning('Variable %s has no units!', var)
 
         if not fiter:  # This is not needed if we already have an iterator
             if self.streaming:
@@ -632,6 +633,9 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
+
+        if self.dst_grid_name is None:
+            raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
 
         if isinstance(data, types.GeneratorType):
             return self._regridgen(data)

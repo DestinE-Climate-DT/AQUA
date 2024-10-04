@@ -1,3 +1,4 @@
+# More info on ICON here: https://easy.gems.dkrz.de/Processing/healpix/index.html
 grids:
   # ICON oceanic healpix
   icon-hpz10-nested:
@@ -8,11 +9,11 @@ grids:
       level: '{{ grids }}/HealPix/icon_hpz10_nested_oce_level.nc'
 
   #ICON
-  R02B08:
+  R02B08: # ICON grid R02B08, corresponding to 10km resolution
     path: '{{ grids }}/ICON/icon_grid_0033_R02B08_G.nc'
     space_coord: ["cell"]
     extra: -selname,cell_index
-  R02B09:
+  R02B09: # ICON grid R02B09, corresponding to 5km resolution
     path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
     space_coord: ["cell"]
     extra: -selname,cell_index
@@ -25,12 +26,22 @@ grids:
       path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
       extra: -selname,cell_index
       space_coord: ["ncells"]
-  icon-healpix:
+  icon-R02B08-hp-nested: # NG4, from ICON grid R02B08, corresponding to 10km resolution, 72 depth_full levels
     path:
-      2d: '{{ grids }}/HealPix_old/icon_hpx{zoom}_atm_2d.nc'   # this is the default 2d grid
-      2dm: '{{ grids }}/HealPix_old/icon_hpx{zoom}_oce_2d.nc'  # this is an additional and optional 2d grid used if data are masked
-      depth_full: '{{ grids }}/HealPix_old/icon_hpx{zoom}_oce_depth_full.nc'
-      depth_half: '{{ grids }}/HealPix_old/icon_hpx{zoom}_oce_depth_half.nc'
+      2d: '{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc'   # this is the default 2d grid
+      2dm: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce.nc'  # this is an additional and optional 2d grid used if data are masked
+      depth_full: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_full.nc'
+      depth_half: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_half.nc'
+    masked:   # This is the attribute used to distinguish variables which should go into the masked category
+      component: ocean
+    space_coord: ["cell"]
+    vert_coord: ["depth_half", "depth_full"]
+  icon-R02B09-hp-nested: # NG3, from ICON grid R02B09, corresponding to 5km resolution, 128 depth_full levels
+    path:
+      2d: '{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc'   # this is the default 2d grid
+      2dm: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce.nc'  # this is an additional and optional 2d grid used if data are masked
+      depth_full: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_full.nc'
+      depth_half: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_half.nc'
     masked:   # This is the attribute used to distinguish variables which should go into the masked category
       component: ocean
     space_coord: ["cell"]

@@ -257,7 +257,7 @@ In order to use this option, the user must pass a function as ``preproc`` keywor
     reader = Reader(model="IFS", exp="control-1990", source="lra-r100-monthly", preproc=my_preproc)
     data = reader.retrieve(var='2t')
 
-.. info::
+.. note::
     There is not yet a way to define a preproc function in the catalog, so it must be passed as a keyword argument.
     This is a feature that will be added in the future, if needed.
 

@@ -1,7 +1,7 @@
 .. _aqua-console:
 
 Configuration and catalog manager
-===================================
+=================================
 
 Since ``v0.9`` the possibility to manage where the configuration and catalog files are stored has been added.
 This is based on a command line interface which can also handle fixes and grids files. 
@@ -12,6 +12,7 @@ The entry point for the console is the command ``aqua``.
 It has the following subcommands:
 
 - :ref:`aqua-install`
+- :ref:`aqua-avail`
 - :ref:`aqua-add`
 - :ref:`aqua-remove`
 - :ref:`aqua-set`
@@ -21,6 +22,7 @@ It has the following subcommands:
 - :ref:`aqua-fixes`
 - :ref:`aqua-grids`
 - :ref:`aqua-lra`
+- :ref:`fdb-catalog-generator`
 
 The main command has some options listed below:
 
@@ -72,13 +74,9 @@ Optional arguments are:
 
 .. option:: machine-name
 
-    The name of the machine where you are installing.
-    It is an optional argument that will set the machine name of the configuration file.
-
-.. warning::
-    If not provided, the machine name will be left to ``auto``, where each time the 
-    configuration file is loaded, the machine name will be set trying to guess the machine name.
-    This can bring to some issues if the machine name is not correctly guessed.
+    The name of the machine where you are installing. **It is a mandatory argument.**
+    Even if you are working on your local machine, always define it (even a random name would suffice!)
+    Setting machine to `lumi`, `levante` or `MN5` is fundamental to use AQUA on these platforms.
 
 .. option:: --path, -p <path>
 
@@ -94,11 +92,6 @@ Optional arguments are:
 
 .. warning::
     The editable mode requires a path to the ``AQUA/config`` folder, not to the main AQUA folder.
-
-.. _aqua-install-diagnostics:
-
-aqua install of diagnostics
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition to the general configuration file, ``aqua install`` supports copying and linking configuration files 
 for different diagnostics.
@@ -124,10 +117,20 @@ specified in the ``diagnostic_config.py``. For example, the structure might look
 
 This structure ensures that all configuration files are neatly organized and easily accessible for each diagnostic type.
 
+.. note::
+    The configuration files for each diagnostic will be copied or linked with the same philosophy as the general configuration files.
+
+.. _aqua-avail:
+
+aqua avail
+----------
+
+This simple command will print all the available catalogs on the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
+
 .. _aqua-add:
 
 aqua add <catalog>
---------------------
+------------------
 
 This command adds a catalog to the list of available catalogs.
 It will copy the catalog folder and files to the destination folder.
@@ -138,7 +141,7 @@ and it is possible to install extra catalogs not present in the AQUA release.
     Since version ``v0.10`` the catalog is detached from the AQUA repository and
     it is available `here <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
 
-Multiple catalogs can be installed with multiple calls to `aqua add`.
+Multiple catalogs can be installed with multiple calls to ``aqua add``.
 By default the catalog will be downloaded from the external Climate-DT catalog repository,
 if a matching catalog is found. As shown below, it is possible to specify a local path
 and install the catalog from there.
@@ -158,7 +161,7 @@ and install the catalog from there.
 .. _aqua-remove:
 
 aqua remove <catalog>
------------------------
+---------------------
 
 It removes a catalog from the list of available catalogs.
 This means that the catalog folder will be removed from the installation folder or the link will be deleted
@@ -172,7 +175,7 @@ if the catalog is installed in editable mode.
 .. _aqua-set:
 
 aqua set <catalog>
---------------------
+------------------
 
 This command sets the default main catalog to be used.
 Since it is possible to have multiple catalogs installed and accessible at the same time, 
@@ -204,21 +207,23 @@ aqua list
 This command lists the available catalogs in the installation folder.
 It will show also if a catalog is installed in editable mode.
 
-.. option:: --all, -a
+.. option:: -a, -all
 
     This will show also all the fixes, grids and data models installed
 
 .. _aqua-update:
 
-aqua update <catalog>
------------------------
+aqua update
+-----------
 
-This command will check if there is a new version of the catalog available and update it by overwriting the current installation.
+This command will update all the fixes, grids and various configuration files from the local copy of the AQUA repository. 
+It is very useful if you pull a new version of AQUA and want to update your local confiugration and you are not in editable mode. 
 
-.. warning::
+.. option:: -c, --catalog
 
+    This command will check if there is a new version of the catalog available and update it by overwriting the current installation.
     This will work only for catalogs installed from the Climate-DT repository.
-    If the catalog is installed in editable mode, it will be enough to update the linked folders.
+    If the catalog is installed in editable mode, this command will not work.
 
 
 .. _aqua-fixes:
@@ -257,17 +262,19 @@ This is useful if new external grids are created and need to be added to the lis
 
     It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
 
-aqua lra -c <config_file> <lra-options>
------------------------------------
+.. _aqua-lra:
 
-This subcommand launch the LRA generation based on the LRA tool
-For full description of the LRA generator functionalities, please refer to the :ref:`_lra` section.
-In most of cases, it is better to embed this tool within a batch job
+aqua lra -c <config_file> <lra-options>
+---------------------------------------
+
+This subcommand launch the LRA generation based on the LRA tool.
+For full description of the LRA generator functionalities, please refer to the :ref:`lra` section.
+In most of cases, it is better to embed this tool within a batch job.
 
 .. _fdb-catalog-generator:
 
 aqua catgen -c <config_file> -p <portfolio>
---------------------------------------------------------
+-------------------------------------------
 
 This subcommand launch the source catalog entry generator, specifically for FDB sources part of the ClimateDT experiments.
 This simplifies the process of adding new experiments to the catalog, based on the data-portfolio structure of the Destination Earth ClimateDT. 
@@ -280,11 +287,11 @@ It exploits the capabilities of the Jinja2 package to obtain a cleaner and more 
 
 .. option:: -p <portfolio>, --portfolio <portfolio>  
 
-    The data portfolio to be used. At moment `production` and `reduced` are supported.
+    The data portfolio to be used. At moment ``production`` and ``reduced`` are supported.
 
 .. option:: -l <loglevel>, --loglevel <loglevel>
 
-    The logging level, following the python standards
+    The logging level, following the python standards.
     
 Basic usage
 ^^^^^^^^^^^
@@ -294,5 +301,5 @@ To add a new experiment to the catalog, follow these steps:
 1. Clone the two repositories, `DestinE-ClimateDT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog/tree/main>`_ and `data-portfolio <https://earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio>`_, to your preferred location.
 2. Create your own ``config.yaml`` file with the details of your simulation, including the paths of the cloned repositories. A template is provided in ``.aqua/templates/catgen``
 3. Run the command ``aqua catgen -p production -c config.yaml``, where the ``-p`` argument can be either ``production`` or ``reduced`` to specify the Jinja2 template to be used.
-4. The catalog entry will be created in the appropriate location in the DestinE-ClimateDT-catalog folder as defined by the configuration file.
+4. The catalog entry will be created in the appropriate location in the ``DestinE-ClimateDT-catalog`` folder as defined by the configuration file.
 

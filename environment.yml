@@ -12,7 +12,6 @@ dependencies:
   - cdo>=2.2.0,<=2.4.0 #for healpix support
   # for eccodes see issues #252, #634, #870, #1282
   # PR #36 catalog repo
-  - eccodes>=2.36.0
   - pandas      
   - pandoc
   - pip

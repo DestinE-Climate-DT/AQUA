@@ -30,10 +30,11 @@ def parse_arguments():
     # Corresponding to the different aqua commands available (see command map)
     install_parser = subparsers.add_parser("install", description='Install AQUA configuration files')
     catalog_add_parser = subparsers.add_parser("add", description='Add a catalog in the current AQUA installation')
-    catalog_update_parser = subparsers.add_parser("update", description='Update a catalog in the current AQUA installation')
+    catalog_update_parser = subparsers.add_parser("update", description='Update the current AQUA installation')
     catalog_remove_parser = subparsers.add_parser("remove", description='Remove a catalog in the current AQUA installation')
     set_parser = subparsers.add_parser("set", description="Set an installed catalog as the predefined in config-aqua.yaml")
     list_parser = subparsers.add_parser("list", description="List the currently installed AQUA catalogs")
+    subparsers.add_parser("avail", description='List the ClimateDT available catalogs on GitHub')
 
     # subparser for other AQUA commands as they are importing the parser from their code
     lra_subparser = subparsers.add_parser("lra", description="Low Resolution Archive generator")
@@ -50,7 +51,7 @@ def parse_arguments():
     parser_fixes = file_subparser(subparsers, 'fixes')
 
     # extra parsers arguments
-    install_parser.add_argument('machine', nargs='?', metavar="MACHINE_NAME", default=None,
+    install_parser.add_argument('machine', metavar="MACHINE_NAME",
                                 help="Machine on which install AQUA")
     install_parser.add_argument('-p', '--path', type=str, metavar="AQUA_TARGET_PATH",
                                 help='Path where to install AQUA. Default is $HOME/.aqua')
@@ -67,7 +68,10 @@ def parse_arguments():
 
     set_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be used in AQUA")
 
-    catalog_update_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be updated")
+    catalog_update_parser.add_argument('-c', '--catalog', type=str,
+                                       help='Update a catalog')
+    #catalog_update_parser.add_argument("-a", "--all", action="store_true",
+    #                         help="Print also all the installed fixes, grids and data_models")
 
     list_parser.add_argument("-a", "--all", action="store_true",
                              help="Print also all the installed fixes, grids and data_models")

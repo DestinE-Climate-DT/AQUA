@@ -31,3 +31,10 @@ class NoObservationError(Exception):
     def __init__(self, message="No observation available"):
         self.message = message
         super().__init__(self.message)
+
+class NoRegridError(Exception):
+    """Exception raised when no regrid is available"""
+
+    def __init__(self, message="No regrid available"):
+        self.message = message
+        super().__init__(self.message)
