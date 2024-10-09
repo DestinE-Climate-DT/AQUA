@@ -27,17 +27,3 @@ If you have to generate weights, please consider the possibility to use a comput
 :::info
 The notebooks with working examples are available in your AQUA repository and specifically in the folder $AQUA/notebooks/aquathon/plenary
 :::
-
-## :interrobang: Issues 
-
-Feel free to modify this paragraph with possible questions you have about the regrid tools:
-
-:::danger
-- issue: ...
-:::
-
-
-## Next module
-
-:house_with_garden: [To the homepage](https://siili.rahtiapp.fi/SG2E5GTnT5mIDpB7v2bxKA#)
-:rocket: [To the next module](https://siili.rahtiapp.fi/xRnmHRp_QI-rf2umyrOSBQ#)

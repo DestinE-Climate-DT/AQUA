@@ -46,9 +46,8 @@ aqua add obs
 However, quite often we want to link our files instead of copying them, because maybe we're working on data that are going to be updated often. Let's then use the catalog repository that we cloned for this purpose.
 
 ```bash
-aqua add climatedt-phase1 -e /path/to/catalog/repo/catalogs/climatedt-phase1
-
-aqua add nextgems4 -e /path/to/catalog/repo/catalogs/nextgems4
+aqua add nextgems3
+aqua add nextgems4
 ```
 
 As for the install, the `-e` flag will link the selected catalog instead of copying the files.
@@ -77,8 +76,8 @@ Let's try to do a little exercise with the ERA5 data and the IFS-NEMO historical
 
 You can open this two entries:
 
-- catalog='obs', model='IFS-NEMO', exp= 'historical-1990', source='lra-r100-monthly'
-- catalog='climatedt-phase1', model='ERA5', exp='era5', source='monthly'
+- catalog='nextgems4', model='IFS-FESOM', exp= 'historical-1990', source='lra-r100-monthly'
+- catalog='obs', model='ERA5', exp='era5', source='monthly'
 
 Both the sources are regular lon-lat grids, so we can compute for the two easily the global mean temperature (`var=2t`) and plot a time series of it. Can you do it for the period 1990-2005 with the usage of the Reader to retrieve the data and the xarray functionalities for the analysis?
 
@@ -99,7 +98,7 @@ Both the sources are regular lon-lat grids, so we can compute for the two easily
 
     # Instantiate the Reader and retrieve the data
     reader1 = Reader(catalog='obs', model='ERA5', exp='era5', source='monthly')
-    reader2 = Reader(catalog='climatedt-phase1', model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly')
+    reader2 = Reader(catalog='nextgems4', model='IFS-FESOM', exp='historical-1990', source='lra-r100-monthly')
 
     data1 = reader1.retrieve(var='2t', startdate='1990-01-01', enddate='2010-12-31')
     data2 = reader2.retrieve(var='2t', startdate='1990-01-01', enddate='2010-12-31')
@@ -120,22 +119,8 @@ Both the sources are regular lon-lat grids, so we can compute for the two easily
     # Plot the timeseries
     plt.figure()
     timeseries1.plot(label='ERA5')
-    timeseries2.plot(label='IFS-NEMO')
+    timeseries2.plot(label='IFS-FESOM')
 
     plt.legend()
     plt.show()
 </details>
-
-
-## :interrobang: Issues 
-
-Feel free to modify this paragraph with possible questions you have about the aqua console:
-
-:::danger
-- issue: ...
-:::
-
-## Next module
-
-:house_with_garden: [To the homepage](https://siili.rahtiapp.fi/SG2E5GTnT5mIDpB7v2bxKA#)
-:rocket: [To the next module](https://siili.rahtiapp.fi/lZlFi14YRYyNFK7uYZ5UjA#)
