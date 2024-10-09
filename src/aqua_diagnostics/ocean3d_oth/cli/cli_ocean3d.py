@@ -56,6 +56,7 @@ class Ocean3DCLI:
 
         self.logger.debug(f"Configuration file: {self.ocean3d_config_dict}")
 
+        self.config["catalog"] = self.get_arg('catalog', self.ocean3d_config_dict['catalog'])
         self.config["model"] = self.get_arg('model', self.ocean3d_config_dict['model'])
         self.config["exp"] = self.get_arg('exp', self.ocean3d_config_dict['exp'])
         self.config["source"] = self.get_arg('source', self.ocean3d_config_dict['source'])
@@ -78,15 +79,16 @@ class Ocean3DCLI:
         #     self.config["custom_region"] = self.get_value_with_default(self.ocean3d_config_dict,"custom_region", [])
 
     def data_retrieve(self):
+        catalog = self.config["catalog"]
         model = self.config["model"]
         exp = self.config["exp"]
         source = self.config["source"]
         self.logger.info(f"Reader selecting for model={model}, exp={exp}, source={source}")
 
-        reader = Reader(model=model, exp=exp, source=source,
+        reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
                         fix=True, loglevel=self.loglevel)
         
-        self.logger.info(f"data retrieved for model={model}, exp={exp}, source={source}")
+        self.logger.info(f"data retrieved for catalog= {catalog}, model={model}, exp={exp}, source={source}")
         
         if self.config["select_time"] == True:
             self.data["catalog_data"] = reader.retrieve(startdate= str(self.config["start_year"]),
@@ -110,6 +112,7 @@ class Ocean3DCLI:
         lon_e = kwargs.get("lon_e", None)
 
         o3d_request = {
+                    "catalog": self.config["catalog"],
                     "model": self.config["model"],
                     "exp": self.config["exp"],
                     "source": self.config["source"],
@@ -233,6 +236,7 @@ def parse_arguments(args):
                         help='log level [default: WARNING]')
 
     # This arguments will override the configuration file is provided
+    parser.add_argument('--catalog', type=str, help='catalog name')
     parser.add_argument('--model', type=str, help='Model name')
     parser.add_argument('--exp', type=str, help='Experiment name')
     parser.add_argument('--source', type=str, help='Source name')
