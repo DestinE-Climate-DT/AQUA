@@ -19,7 +19,7 @@ cd $OUTDIR
 
 unset SINGULARITY_BIND  # Lumi specific fix for singularity
 
-bash $AQUA/cli/lumi-container/load_container_lumi.sh -y <<EOF
+bash $AQUA/cli/lumi-container/load_container_lumi.sh -n <<EOF
 #!/bin/bash
 if [[ "{{ push }}" == "false" ]]; then
     bash $AQUA/cli/aqua-analysis/aqua-analysis.sh -l debug -m $model -e $exp -s $source -d $OUTDIR/{{ catalog }} {{ parallel }}
