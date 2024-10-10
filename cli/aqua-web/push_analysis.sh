@@ -11,10 +11,14 @@ collect_figures() {
 
     indir="$1/$2"
     dstdir="./content/pdf/$2"
+    wipe=$3
 
     # erase content and copy all files to content
-    git rm -r $dstdir
-    mkdir -p $dstdir
+    if [ "$wipe" -eq 1 ]; then
+        log_message INFO "Wiping destination directory $dstdir"
+        git rm -r $dstdir
+        mkdir -p $dstdir
+    fi
 
     find $indir -name "*.pdf"  -exec cp {} $dstdir/ \;
 
@@ -61,6 +65,7 @@ print_help() {
     echo "  -u, --user USER:PAT    credentials (in the format "username:PAT") to create an automatic PR for the branch (optional)"
     echo "  -m, --message MESSAGE  message for the automatic PR (optional)"
     echo "  -t, --title TITLE      title for the automatic PR (optional)"
+    echo "  -w, --wipe             wipe the destination directory before copying the images"
 #    echo "  -r, --repository REPO  specify a local copy of the aqua-web repository"
 }
 
@@ -74,6 +79,7 @@ branch=""
 repository=""
 user=""
 message=""
+wipe=0
 while [[ $# -gt 2 ]]; do
   case "$1" in
     -h|--help)
@@ -95,6 +101,10 @@ while [[ $# -gt 2 ]]; do
     -t|--title)
         title="$2"
         shift 2
+        ;;
+    -w|--wipe)
+        wipe=1
+        shift
         ;;
     # -r|--repository)
     #     repository="$2"
@@ -176,13 +186,13 @@ if [ -f "$exps" ]; then
         experiment=$(echo "$line" | awk '{print $3}')
 
         log_message INFO "Collect figures for $catalog/$model/$experiment and converting to png"
-        collect_figures "$1" "$catalog/$model/$experiment"
+        collect_figures "$1" "$catalog/$model/$experiment" $wipe
         convert_pdf_to_png "$catalog/$model/$experiment"
         description="$description|$catalog|$experiment|$model|\n"
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"
-    collect_figures "$indir" "$exps"
+    collect_figures "$indir" "$exps" $wipe
     convert_pdf_to_png "$exps"
     description="$description|${exps//\//|}|\n"
 fi
