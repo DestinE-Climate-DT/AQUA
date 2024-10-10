@@ -206,3 +206,19 @@ fixer_name:
                     valid_min: 0
                     valid_max: 1400
                     positive: down
+
+    eobs-destine-v1:
+        data_model: false
+        deltat: 86400 # precipitation on daily basis
+        coords:
+            lat:
+                source: latitude
+            lon:
+                source: longitude
+        vars:
+            2t:
+                source: tg
+                grib: true
+            mtpr:
+                source: rr
+                grib: true
