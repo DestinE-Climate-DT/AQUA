@@ -46,7 +46,7 @@ Can you reproduce the result of the exercise 1, but making use of AQUA built-in 
     from aqua.graphics import plot_timeseries
 
     reader_era5 = Reader(catalog='obs', model='ERA5', exp='era5', source='monthly')
-    reader_ifs_fesom = Reader(catalog='nexxtgems4', model='IFS-FESOM', exp='historical-1990', source='lra-r100-monthly')
+    reader_ifs_fesom = Reader(catalog='nextgems4', model='IFS-FESOM', exp='historical-1990', source='lra-r100-monthly')
 
     data_era5 = reader_era5.retrieve(var='2t', startdate='1990-01-01', enddate='2005-12-31')
     data_ifs_fesom = reader_ifs_fesom.retrieve(var='2t', startdate='1990-01-01', enddate='2005-12-31')

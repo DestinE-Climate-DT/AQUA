@@ -43,7 +43,9 @@ To add the observations, for example:
 aqua add obs
 ```
 
-However, quite often we want to link our files instead of copying them, because maybe we're working on data that are going to be updated often. Let's then use the catalog repository that we cloned for this purpose.
+However, it is possible to link our files, because we're working with a developer version of the catalog or we're working on a new catalog. AQUA has the possibility to add new catalogs not part of the official repository, in order to support other projects.
+
+Let's add the other catalogs used in the session:
 
 ```bash
 aqua add nextgems3
