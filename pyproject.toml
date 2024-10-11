@@ -38,8 +38,9 @@ dependencies = [
     "cfgrib",
     "dask",
     "dask_jobqueue",
-    "eccodes<2.37.0",
+    "eccodes==2.38.0",
     "docker",
+    "gcsfs", # Google Cloud Storage File System
     "gribscan",
     "pandas",
     "intake==0.7.0", # Version 2 is not yet compatible with intake-xarray
@@ -58,6 +59,7 @@ dependencies = [
     "xarray",
     "kerchunk",
     "h5py",
+    "fastparquet",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
     "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.6.0"
 ]

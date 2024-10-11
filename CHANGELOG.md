@@ -9,16 +9,28 @@ Unreleased in the current development version:
 
 AQUA core complete list:
 
+AQUA diagnostic complete list:
+
+## [v0.12]
+
+Main changes are:
+1. AQUA installation now requires a mandatory machine name.
+2. The `aqua` source code has been moved to the `src` folder. The change is transparent to the user.
+3. A diagnostic module, called `aqua.diagnostics`, is under development. The module is not yet active, diagnostics are still available with the previous structure.
+
+AQUA core complete list:
+
+- Mixed updates to support data for NextGEMS cycle4 hackathon (#1375)
 - Preprocess functionality added to the `Reader` class (#1298)
 - The AQUAthon material has been moved under the `notebooks` folder (#1342)
 - `aqua` source code has been moved to the `src` folder (#1332)
 - A diagnostic module, called `aqua.diagnostics`, has been created under the `src` folder (#1332, #1341)
+- LRA generator tool support for multiple relizations (#1357, #1375)
+- LRA generator requires `catalog` as a mandatory argument (#1357)
 - AQUA console revisiting, adding `avail` method and `update` method (#1346)
 - AQUA install now requires mandatory machine name (#1346)
 - Fix to make keyword step optional in request (#1360)
 - CDO maximum version pinning to 2.4.0 removed (#1362)
-
-AQUA diagnostic complete list:
 
 ## [v0.11.3]
 
@@ -651,7 +663,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.3...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12...HEAD
+[v0.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.3...v0.12
 [v0.11.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.2...v0.11.3
 [v0.11.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.1...v0.11.2
 [v0.11.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11...v0.11.1

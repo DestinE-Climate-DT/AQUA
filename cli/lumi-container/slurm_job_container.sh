@@ -10,7 +10,7 @@
 #SBATCH -p debug    #change the partition
 
 AQUA_path=$AQUA
-AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.11.3.sif
+AQUA_container=/project/project_465000454/containers/aqua/aqua_0.12.sif
 GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
 GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
 

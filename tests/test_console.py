@@ -238,7 +238,8 @@ class TestAquaConsole():
         dump_yaml(lratest,{
                 'target': {
                     'resolution': 'r200',
-                    'frequency': 'monthly'
+                    'frequency': 'monthly',
+                    'catalog': 'ci'
                 },
                 'paths': {
                     'outdir': os.path.join(mydir, 'lra_test'),
@@ -260,7 +261,7 @@ class TestAquaConsole():
         # run the LRA and verify that at least one file exist
         run_aqua(['lra', '--config', lratest, '-w', '1', '-d'])
         path = os.path.join(os.path.join(mydir, 'lra_test'),
-                            "IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_202002.nc")
+                            "ci/IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_202002.nc")
         assert os.path.isfile(path)
         
         # remove aqua

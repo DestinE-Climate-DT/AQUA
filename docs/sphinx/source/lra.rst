@@ -93,6 +93,10 @@ Options:
 
     Enable a single chunk run to produce the html dask performance report. Dask should be activated.
 
+.. option:: --only-catalog
+
+    Will generate/update only the catalog entry for the LRA, without running the code for generating the LRA itself
+
 .. option:: -a, --autosubmit
 
     This enables the ClimateDT workflow LRA generator, which also implies slightly different options. Use it only when necessary. 
