@@ -4,14 +4,14 @@
 
 # This yaml file will only have either annual or monthly
 models_monthly:
-#  - model: 'aqua-timeseries'
-#    #catalog: 'diagnosis'
-#    exp: 'IFS-NEMO-hist'
-#    source: 't2m-mon'
-#  - model: 'aqua-timeseries'
-#    #catalog: 'diagnosis'
-#    exp: 'IFS-FESOM-hist'
-#    source: 't2m-mon'
+  - model: 'aqua-timeseries'
+    #catalog: 'diagnosis'
+    exp: 'IFS-NEMO-hist'
+    source: 't2m-mon'
+  - model: 'aqua-timeseries'
+    #catalog: 'diagnosis'
+    exp: 'IFS-FESOM-hist'
+    source: 't2m-mon'
 
 models_annual:
   - model: 'aqua-timeseries'
@@ -43,8 +43,8 @@ timeseries: ['2t']
 timeseries_plot_params:
   monthly_startdate: 
   monthly_enddate: 
-  #annual_startdate: 
-  #annual_enddate: 
+  annual_startdate: 
+  annual_enddate: 
   #monthly_startdate: '1990-01-01'
   #monthly_enddate: '2000-12-31'
   #annual_startdate: '1991-01-01'

@@ -33,8 +33,8 @@ def parse_arguments(args):
                         required=False, help="loglevel")
 
     # These will override the first one in the config file if provided
-    parser.add_argument("--catalog", type=str,
-                        required=False, help="catalog name")
+    #parser.add_argument("--catalog", type=str,
+    #                    required=False, help="catalog name")
     parser.add_argument("--model", type=str,
                         required=False, help="model name")
     parser.add_argument("--exp", type=str,
@@ -43,17 +43,17 @@ def parse_arguments(args):
                         required=False, help="source name")
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
-
     return parser.parse_args(args)
 
 def get_plot_options(config: dict = None, var: str = None):
     plot_options = config["timeseries_plot_params"].get(var)
-    #regrid = plot_options.get("regrid", False)
-    startdate = config["timeseries_plot_params"]["default"].get("startdate", None)
-    enddate = config["timeseries_plot_params"]["default"].get("enddate", None)
-    plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", {})
+    mon_startdate = config["timeseries_plot_params"].get("monthly_startdate", None)
+    mon_enddate = config["timeseries_plot_params"].get("monthly_enddate", None)
+    ann_startdate = config["timeseries_plot_params"].get("annual_startdate",None)
+    ann_enddate = config["timeseries_plot_params"].get("annual_enddate",None)
+    plot_kw = config["timeseries_plot_params"].get("plot_kw", {})
     units = None
-    return startdate,enddate,plot_kw,units
+    return mon_startdate,mon_enddate,ann_startdate,ann_enddate,plot_kw,units
 
 if __name__ == '__main__':
 
@@ -82,36 +82,46 @@ if __name__ == '__main__':
     logger.info(f"Reading configuration file {file}")
     config = load_yaml(file)
 
-    models = config['models']
-    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
-    models[0]['model'] = get_arg(args, 'model', models[0]['model'])
-    models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
-    models[0]['source'] = get_arg(args, 'source', models[0]['source'])
+    mon_model = config['models_monthly']
+    mon_model_list = [] 
+    mon_exp_list = [] 
+    mon_source_list = []
+    mon_model[0]['model'] = get_arg(args, 'model', mon_model[0]['model'])
+    mon_model[0]['exp'] = get_arg(args,'exp',mon_model[0]['exp'])
+    mon_model[0]['source'] = get_arg(args,'source',mon_model[0]['source'])
+    for model in mon_model:
+        mon_model_list.append(model['model'])
+        mon_exp_list.append(model['exp'])
+        mon_source_list.append(model['source'])        
 
+    ann_model = config['models_annual']
+    ann_model_list = [] 
+    ann_exp_list = [] 
+    ann_source_list = []
+    ann_model[0]['model'] = get_arg(args, 'model',ann_model[0]['model'])
+    ann_model[0]['exp'] = get_arg(args,'exp',ann_model[0]['exp'])
+    ann_model[0]['source'] = get_arg(args,'source',ann_model[0]['source'])
+    for model in ann_model:
+        ann_model_list.append(model['model'])
+        ann_exp_list.append(model['exp'])
+        ann_source_list.append(model['source'])        
+
+    ref_mon = config['reference_model_monthly']
+    ref_mon_dict = {'models':ref_mon[0]['model'],'exps':ref_mon[0]['exp'],'sources':ref_mon[0]['source']}
+    
+    ref_ann = config['reference_model_annual']
+    ref_ann_dict = {'models':ref_ann[0]['model'],'exps':ref_ann[0]['exp'],'sources':ref_ann[0]['source']}
+    
     logger.debug("Analyzing models:")
-    catalogs_list = []
-    models_list = []
-    exps_list = []
-    sources_list = []
-
-    for model in models:
-        logger.debug(f"  - {model['catalog']} {model['model']} {model['exp']} {model['source']}")
-        catalogs_list.append(model['catalog'])
-        models_list.append(model['model'])
-        exps_list.append(model['exp'])
-        sources_list.append(model['source'])
-
+    
     outputdir = get_arg(args, "outputdir", config["outputdir"])
-
+    
     if "timeseries" in config:
         var = config['timeseries']
         logger.info(f"Plotting {var} timeseries")
-        startdate,enddate,plot_kw,units = get_plot_options(config,var)
-        print("here!!!!!! ",startdate, var)
+        mon_startdate,mon_enddate,ann_startdate,ann_enddate,plot_kw,units = get_plot_options(config,var)
 
-        #ts = Ensemble_timeseries(var=var,catalogs=catalogs_list,models=models_list,exps=exps_list,sources=sources_list,startdate=startdate,enddate=enddate,loglevel=loglevel)
-        ts = Ensemble_timeseries(var=var,models=models_list,exps=exps_list,sources=sources_list,startdate=startdate,enddate=enddate,loglevel=loglevel)
-
+        ts = Ensemble_timeseries(var=var,mon_model=mon_model_list,mon_exp=mon_exp_list,mon_source=mon_source_list,ann_model=ann_model_list,ann_exp=ann_exp_list,ann_source=ann_source_list,ref_mon_dict=ref_mon_dict,ref_ann_dict=ref_ann_dict,mon_startdate=mon_startdate,mon_enddate=mon_enddate,ann_startdate=ann_startdate,ann_enddate=ann_enddate,plot_kw=plot_kw,outdir=outputdir,loglevel=loglevel)
         try:
             ts.run()
         except Exception as e:
