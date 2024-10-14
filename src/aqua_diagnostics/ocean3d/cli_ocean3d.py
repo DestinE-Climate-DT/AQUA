@@ -209,7 +209,8 @@ class Ocean3DCLI:
         self.logger.info("Running ocean3d diagnostic...")
 
         # Read configuration file
-        file = self.get_arg('config', 'config.yaml')
+        file = self.get_arg('config', '~/.aqua/diagnostics/ocean3d/cli/config.yaml')
+        file = os.path.expanduser(file)
         self.logger.info('Reading configuration yaml file..')
 
         self.ocean3d_config_process(file)
