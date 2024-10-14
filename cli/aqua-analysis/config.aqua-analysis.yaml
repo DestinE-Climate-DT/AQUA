@@ -17,30 +17,29 @@ job:
     #                                              on the number of concurrent threads, like a login node.
 
     max_threads: 0  # Set to the desired maximum number of threads, or leave it as 0 for no limit
-    loglevel: "WARNING" # DEBUG, IN FO, WARNING, ERROR, CRITICAL
+    loglevel: "WARNING" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
     # Run a dummy analysis to test the configuration and the presence of needed data
     run_dummy: false
     
     # Default output directory for the analysis. Can be overridden by the command line arguments
-    outputdir: "${AQUA}/cli/aqua-analysis/output" 
+    outputdir: "./output" 
 
     # Default values, overriden from command line arguments
     # catalog: "lumi"  # The catalog to use for the analysis, usually defined elsewhere
-    model: "IFS-NEMO"
-    exp: "historical-1990"
-    source: "lra-r100-monthly"
-
-    script_path_base: "${AQUA}/diagnostics"  # Base directory for the diagnostic scripts
+    model: "ICON"
+    exp: "ngc4008"
+    source: "lra-r100-monthly-zarr"
 
 diagnostics:
 
   # List of diagnostics to run
-  run: ["tropical_rainfall", "global_time_series_atm", "seasonal_cycles",
-        "radiation", "teleconnections_atm", "atmglobalmean",
-        "global_time_series_oce", "teleconnections_oce", "ocean3d_drift",
-        "ocean3d_circulation", "seaice_extent", "seaice_conc",
-        "seaice_volume", "seaice_thick", "ecmean"]
+  run: ["global_time_series_atm"]
+  # run: ["tropical_rainfall", "global_time_series_atm", "seasonal_cycles",
+  #       "radiation", "teleconnections_atm", "atmglobalmean",
+  #       "global_time_series_oce", "teleconnections_oce", "ocean3d_drift",
+  #       "ocean3d_circulation", "seaice_extent", "seaice_conc",
+  #       "seaice_volume", "seaice_thick", "ecmean"]
 
   # List of diagnostics
 
@@ -55,8 +54,8 @@ diagnostics:
   atmglobalmean:
     nworkers: 16
   global_time_series_atm:
-    script_path: "global_time_series/cli/cli_global_time_series.py"
-    extra: "--config ${AQUA}/diagnostics/global_time_series/cli/config_time_series_atm.yaml"
+    script_path: "diagnostics/global_time_series/cli/cli_global_time_series.py"
+    config: "AQUA_CONFIG/global_time_series/config_time_series_atm.yaml"
     nworkers: 16
     outname: global_time_series
   global_time_series_oce:
