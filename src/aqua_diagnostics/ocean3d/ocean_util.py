@@ -104,9 +104,9 @@ def process_region_config(regions_yaml):
         return regions_yaml
 
 def predefined_regions(region, loglevel= "WARNING"):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
     processed_region = region.replace(" ", "").replace("_","").replace("-","").lower()
-    regions_yaml = f"{current_dir}/../config/regions.yaml"
+    regions_yaml = f"~/.aqua/diagnostics/ocean3d/regions.yaml"
+    regions_yaml = os.path.expanduser(regions_yaml)
     regions_dict = load_yaml(regions_yaml)
     try:
         regions_dict = process_region_config(regions_dict["regions"])

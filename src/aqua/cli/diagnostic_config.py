@@ -47,18 +47,23 @@ diagnostic_config = {
     ],
     'ocean3d': [
         {
+            'config_file': 'regions.yaml',
+            'source_path': 'config/diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d/'
+        },
+        {
             'config_file': 'config.circulation.yaml',
-            'source_path': 'diagnostics/ocean3d/cli',
+            'source_path': 'config/diagnostics/ocean3d/cli',
             'target_path': 'diagnostics/ocean3d/cli'
         },
         {
             'config_file': 'config.drift.yaml',
-            'source_path': 'diagnostics/ocean3d/cli',
+            'source_path': 'config/diagnostics/ocean3d/cli',
             'target_path': 'diagnostics/ocean3d/cli'
         },
         {
             'config_file': 'config.yaml',
-            'source_path': 'diagnostics/ocean3d/cli',
+            'source_path': 'config/diagnostics/ocean3d/cli',
             'target_path': 'diagnostics/ocean3d/cli'
         }
     ],
