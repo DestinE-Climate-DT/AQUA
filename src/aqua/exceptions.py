@@ -1,6 +1,14 @@
 """Module for custom exceptions used in AQUA"""
 
 
+class DiagnosticError(Exception):
+    """Exception raised when diagnostic is not available"""
+
+    def __init__(self, message="Diagnostic failed"):
+        self.message = message
+        super().__init__(self.message)
+
+
 class NoDataError(Exception):
     """Exception raised when there is no data available"""
 

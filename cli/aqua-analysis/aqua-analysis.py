@@ -1,15 +1,15 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
-import sys
 import subprocess
 import argparse
-from aqua.exceptions import NoDiagnosticError, NoDataError, SetupCheckerFailed
+from aqua.exceptions import NoDiagnosticError, NoDataError
+from aqua.exceptions import DiagnosticError, SetupCheckerFailed
 from aqua.logger import log_configure
 from aqua.util import load_yaml, create_folder, ConfigPath
 from aqua.cli import AquaConsole
 
 
-def run_command(cmd: str, *, log_file: str = None, logger=None) -> int:
+def run_command(cmd: str, log_file: str = None, logger=None) -> int:
     """
     Run a system command and capture the exit code, redirecting output to the specified log file.
 
@@ -30,8 +30,7 @@ def run_command(cmd: str, *, log_file: str = None, logger=None) -> int:
             process = subprocess.run(cmd, shell=True, stdout=log, stderr=log, text=True)
             return process.returncode
     except Exception as e:
-        logger.error(f"Error running command {cmd}: {e}")
-        raise
+        raise DiagnosticError(f"Error running command {cmd}: {e}")
 
 
 def run_diagnostic(diagnostic: str, *, script_path: str, extra_args: str, loglevel: str, logger, logfile: str):
@@ -88,37 +87,43 @@ def get_args():
 
 def get_aqua_paths(args, logger):
     """
-    Get both the AQUA path and the AQUA config path.
+    Get the AQUA source path and the AQUA analysis config path and the installation folder path.
 
     Args:
         args: Command-line arguments.
         logger: Logger instance for logging messages.
 
     Returns:
-        tuple: AQUA path and configuration path.
+        tuple: AQUA path and analysis configuration path and installation folder path.
     """
     try:
+        # AQUA source path
         aqua_path = os.path.join(AquaConsole().aquapath, "..")
         logger.debug(f"AQUA path: {aqua_path}")
 
+        config_console = ConfigPath()
+        aqua_configdir = config_console.get_config_dir()
+        logger.debug(f"AQUA config directory: {aqua_configdir}")
+
+        # AQUA analysis config path
         std_config_path = os.path.join(aqua_path, "cli/aqua-analysis/config.aqua-analysis.yaml")
-        aqua_config = os.path.expandvars(args.config) if args.config and args.config.strip() else std_config_path
+        aqua_analysis_config = os.path.expandvars(args.config) if args.config and args.config.strip() else std_config_path
 
-        if not os.path.exists(aqua_config):
-            logger.error(f"Config file {aqua_config} not found.")
-            raise FileNotFoundError(f"Config file {aqua_config} not found.")
+        if not os.path.exists(aqua_analysis_config):
+            logger.error(f"Config file {aqua_analysis_config} not found.")
+            raise FileNotFoundError(f"Config file {aqua_analysis_config} not found.")
 
-        logger.info(f"AQUA analysis config file: {aqua_config}")
-        return aqua_path, aqua_config
+        logger.info(f"AQUA analysis config file: {aqua_analysis_config}")
+        return aqua_path, aqua_analysis_config, aqua_configdir
     except Exception as e:
-        raise Exception(f"Error getting AQUA path or config: {e}")
+        raise Exception(f"Error getting AQUA path, aqua-analysis config file or installation directory: {e}")
 
 
 def run_diagnostic_func(diagnostic: str = None, parallel: bool = False,
                         config : str = None, catalog : str = None,
                         model : str = None, exp : str = None, source : str = None,
                         output_dir : str = None, loglevel : str = 'WARNING', logger = None,
-                        aqua_config_path : str = None, aqua_path : str = None):
+                        aqua_analysis_config_path : str = None, aqua_path : str = None):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
 
@@ -133,7 +138,7 @@ def run_diagnostic_func(diagnostic: str = None, parallel: bool = False,
         output_dir (str): Directory to save output.
         loglevel (str): Log level for the diagnostic.
         logger: Logger instance for logging messages.
-        aqua_config_path (str): Path to the diagnostics configuration files.
+        aqua_analysis_config_path (str): Path to the diagnostics configuration files.
         aqua_path (str): Path to the AQUA repository.
     """
     diagnostic_config = config.get('diagnostics', {}).get(diagnostic)
@@ -147,8 +152,8 @@ def run_diagnostic_func(diagnostic: str = None, parallel: bool = False,
     extra_args = diagnostic_config.get('extra', "")
 
     if config_file is not None:
-        if 'AQUA_CONFIG' in config_file:
-            config_file = config_file.replace('AQUA_CONFIG', aqua_path)
+        if 'aqua_analysis_config' in config_file:
+            config_file = config_file.replace('aqua_analysis_config', aqua_path)
             logger.debug(f"Config file: {config_file}")
         extra_args += f" --config {config_file}"
 
@@ -195,9 +200,9 @@ def main():
     args = get_args()
     logger = log_configure('WARNING', 'AQUA Analysis')
 
-    aqua_path, aqua_config_path = get_aqua_paths(args=args, logger=logger)  # Get the AQUA path here
-    os.environ['AQUA'] = aqua_path
-    config = load_yaml(aqua_config_path)
+    aqua_path, aqua_analysis_config_path, aqua_config_path = get_aqua_paths(args=args, logger=logger)  # Get the AQUA path here
+
+    config = load_yaml(aqua_analysis_config_path)
     loglevel = args.loglevel or config.get('job', {}).get('loglevel', "WARNING")
     logger = log_configure(loglevel, 'AQUA Analysis')
 
@@ -262,7 +267,7 @@ def main():
                 loglevel=loglevel,
                 logger=logger,
                 aqua_path=aqua_path,
-                aqua_config_path=aqua_config_path
+                aqua_analysis_config_path=aqua_analysis_config_path
             ))
 
         for future in as_completed(futures):
