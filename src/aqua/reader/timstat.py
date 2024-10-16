@@ -90,7 +90,7 @@ class TimStatMixin():
         resample_freq = frequency_string_to_pandas(freq)
 
         if 'time' not in data.dims:
-            raise ValueError(f'Time dimension not found in the input data. Cannot compute time statistic {stat}')
+            raise ValueError(f'Time dimension not found in the input data. Cannot compute tim{stat} statistic')
             
         # Get original frequency (for history)
         if len(data.time) > 1:
