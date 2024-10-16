@@ -56,13 +56,13 @@ grids:
 # specific grid and cell_area file must be created
 # a script /cli/grids-from.data/multIO-from-ifs.py is available
 # this is used in nextgems but should not be required in the future
-  multio-r025s:
+  multio-r025s-unstructured:
     space_coord: ["value"]
     vert_coord: ["2d"]
     path: '{{ grids }}/IFS/ifs-multiIO-r025s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r025s.nc'
     cellarea_var: cell_area
-  multio-r100s:
+  multio-r100s-unstructured:
     space_coord: ["value"]
     vert_coord: ["2d"]
     path: '{{ grids }}/IFS/ifs-multiIO-r100s.nc'
