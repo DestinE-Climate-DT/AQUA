@@ -45,13 +45,25 @@ grids:
   ifs-interpolated: 
     path: '{{ grids }}/IFS/ifs_interpolated5400x2700.nc'
     space_coord: ["lon", "lat"]
-  multio-r025:
-    space_coord: ["value"]
-    vert_coord: ["2d"]
-    extra: -setgrid,{{ grids }}/IFS/grid_lonlat_025.txt
-    cellareas: '{{ grids }}/IFS/cellarea_unstructured_025.nc'
-    cellarea_var: cell_area
   ifs-healpix:
     space_coord: ["ncells"]
     vert_coord: ["2d"]
     path: '{{ grids }}/HealPix_old/ifs_hpx10.nc'
+
+# IFS multIO grids
+# these are regular grids (staggered,like r100s=r360x181) 
+# but they are stored as unstructured in the original source
+# specific grid and cell_area file must be created
+# a script /cli/grids-from.data/multIO-from-ifs.py is available
+  multio-r025s:
+    space_coord: ["value"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/IFS/ifs-multiIO-r025s.nc'
+    cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r025s.nc'
+    cellarea_var: cell_area
+  multio-r100s:
+    space_coord: ["value"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/IFS/ifs-multiIO-r100s.nc'
+    cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r100s.nc'
+    cellarea_var: cell_area
