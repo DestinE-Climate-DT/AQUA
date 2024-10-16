@@ -108,22 +108,11 @@ class TimStatMixin():
         try:
             # Resample to the desired frequency
             resample_data = data.resample(time=resample_freq)
-            if stat == 'mean':
-                self.logger.info('Resampling to %s frequency and computing average...', 
-                                 str(resample_freq))
-                out = resample_data.mean()
-            elif stat == 'max':
-                self.logger.info('Resampling to %s frequency and computing maximum ...', 
-                                 str(resample_freq))
-                out = resample_data.max()
-            elif stat == 'min':
-                self.logger.info('Resampling to %s frequency and computing minimum ...', 
-                                 str(resample_freq))
-                out = resample_data.min()
-            elif stat == 'std':
-                self.logger.info('Resampling to %s frequency and computing standard deviation...', 
-                                 str(resample_freq))
-                out = resample_data.std()
+
+            # compact call, equivalent of "out = resample_data.mean()""
+            if stat in ['mean', 'std', 'max', 'min']:
+                self.logger.info(f'Resampling to %s frequency and computing {stat}...', str(resample_freq))
+                out = getattr(resample_data, stat)()
             else:
                 raise KeyError(f'{stat} is not a statistic supported by AQUA')
         except ValueError as exc:
