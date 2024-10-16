@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AQUA command line tool to create an multio grid file from IFS
+AQUA command line tool to create a multio UNSTRUCTURED grid file from IFS
 """
 import argparse
 import sys
