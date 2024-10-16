@@ -433,6 +433,9 @@ time averaging, minimum, maximum and standard deviation at a given time frequenc
 
 Data have now been averaged at the desired daily timescale. Similarly operations can be performed with others methods.
 
+.. warning::
+    If you do not specify the `freq` argument, the statistical operation will be operated on the entire dataset!
+
 Some extra options are available:
 
 - ``exclude_incomplete=True``: this flag will remove averaged chunks which are not complete
