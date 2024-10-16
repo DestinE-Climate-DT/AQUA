@@ -7,5 +7,5 @@ aggregation: D
 year: 2025
 
 loglevel: WARNING
-outputdir: /work/bb1153/b382289/nextgems_analysis/ETCCDI/SU
-index: su
+outputdir: /work/bb1153/b382289/nextgems_analysis/ETCCDI/ID
+index: id
