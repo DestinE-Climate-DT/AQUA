@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+The script computes ETCCDI indices based on daily statistics values.
+"""
 import argparse
 import os
 import sys
