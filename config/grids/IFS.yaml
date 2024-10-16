@@ -48,7 +48,7 @@ grids:
   multio-r025:
     space_coord: ["value"]
     vert_coord: ["2d"]
-    extra: -setgrid,'{{ grids }}/IFS/grid_lonlat_025.txt
+    extra: -setgrid,{{ grids }}/IFS/grid_lonlat_025.txt
     cellareas: '{{ grids }}/IFS/cellarea_unstructured_025.nc'
     cellarea_var: cell_area
   ifs-healpix:
