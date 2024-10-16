@@ -55,6 +55,7 @@ grids:
 # but they are stored as unstructured in the original source
 # specific grid and cell_area file must be created
 # a script /cli/grids-from.data/multIO-from-ifs.py is available
+# this is used in nextgems but should not be required in the future
   multio-r025s:
     space_coord: ["value"]
     vert_coord: ["2d"]
