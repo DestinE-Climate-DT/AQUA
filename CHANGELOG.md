@@ -9,6 +9,7 @@ Unreleased in the current development version:
 
 AQUA core complete list:
 - Fix using AQUA container for submit-aqua-web, do not wipe old figures by default (#1387)
+- New `timstat` module which opens complement `timmean()` with `timmax()`, `timmin()` and `timstd()` methods (#1391)
 
 AQUA diagnostic complete list:
 

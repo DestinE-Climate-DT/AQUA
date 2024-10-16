@@ -19,7 +19,7 @@ class TestTimmean():
     @pytest.mark.parametrize('var', ['2t', 'ttr'])
     def test_timmean_monthly(self, reader, data, var):
         """Timmean test for monthly aggregation"""
-        avg = reader.timmean(data[var], freq='monthly')
+        avg = reader.timean(data[var], freq='monthly')
         nmonths = len(np.unique(data.time.dt.month))
         unique, counts = np.unique(avg.time.dt.month, return_counts=True)
         assert avg.shape == (nmonths, 9, 18)
@@ -29,7 +29,7 @@ class TestTimmean():
     @pytest.mark.parametrize('var', ['2t', 'ttr'])
     def test_timmean_monthly_exclude_incomplete(self, reader, data, var):
         """Timmean test for monthly aggregation with excluded incomplete chunks"""
-        avg = reader.timmean(data[var], freq='monthly', exclude_incomplete=True)
+        avg = reader.timstat(data[var], stat='mean', freq='monthly', exclude_incomplete=True)
         unique, counts = np.unique(avg.time.dt.month, return_counts=True)
         assert avg.shape == (6, 9, 18)
         assert len(unique) == 6
@@ -38,7 +38,7 @@ class TestTimmean():
     @pytest.mark.parametrize('var', ['2t', 'ttr'])
     def test_timmean_daily(self, reader, data, var):
         """Timmean test for daily aggregation"""
-        avg = reader.timmean(data[var], freq='daily')
+        avg = reader.timmax(data[var], freq='daily')
         unique, counts = np.unique(avg.time.dt.day, return_counts=True)
         assert avg.shape == (197, 9, 18)
         assert len(unique) == 31
@@ -49,7 +49,7 @@ class TestTimmean():
     def test_timmean_yearly_exclude_incomplete(self, reader):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
         data = reader.retrieve(var='ttr')
-        avg = reader.timmean(data, freq='yearly', exclude_incomplete=True)
+        avg = reader.timmin(data, freq='yearly', exclude_incomplete=True)
         assert avg['ttr'].shape == (0, 9, 18)
 
     def test_timmean_yearly_center_time(self, reader):
@@ -69,7 +69,7 @@ class TestTimmean():
     def test_timmean_daily_center_time(self, reader):
         """Timmean test for daily aggregation with center_time=True and exclude_incomplete=True"""
         data = reader.retrieve(var='2t')
-        avg = reader.timmean(data, freq='daily', center_time=True, exclude_incomplete=True)
+        avg = reader.timstd(data, freq='daily', center_time=True, exclude_incomplete=True)
         assert avg['2t'].shape == (197, 9, 18)
         assert avg['2t'].time[1].values == np.datetime64('2020-01-21T12:00:00.000000000')
 
