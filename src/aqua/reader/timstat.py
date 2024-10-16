@@ -20,6 +20,36 @@ class TimStatMixin():
                      time_bounds=time_bounds, center_time=center_time)
 
     
+    def timmax(self, data, freq=None, exclude_incomplete=False,
+                time_bounds=False, center_time=False):
+        """
+        Exposed method for time maximum statistic
+        """
+    
+        return self.timstat(data, stat='max', freq=freq, exclude_incomplete=exclude_incomplete,
+                     time_bounds=time_bounds, center_time=center_time)
+
+
+    def timmin(self, data, freq=None, exclude_incomplete=False,
+                time_bounds=False, center_time=False):
+        """
+        Exposed method for time maximum statistic
+        """
+    
+        return self.timstat(data, stat='min', freq=freq, exclude_incomplete=exclude_incomplete,
+                     time_bounds=time_bounds, center_time=center_time)
+    
+
+    def timstd(self, data, freq=None, exclude_incomplete=False,
+                time_bounds=False, center_time=False):
+        """
+        Exposed method for time standard deviation statistic
+        """
+    
+        return self.timstat(data, stat='std', freq=freq, exclude_incomplete=exclude_incomplete,
+                     time_bounds=time_bounds, center_time=center_time)
+
+    
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
@@ -79,8 +109,21 @@ class TimStatMixin():
             # Resample to the desired frequency
             resample_data = data.resample(time=resample_freq)
             if stat == 'mean':
-                self.logger.info('Resampling and averaging to %s frequency...', str(resample_freq))
+                self.logger.info('Resampling to %s frequency and computing average...', 
+                                 str(resample_freq))
                 out = resample_data.mean()
+            elif stat == 'max':
+                self.logger.info('Resampling to %s frequency and computing maximum ...', 
+                                 str(resample_freq))
+                out = resample_data.max()
+            elif stat == 'min':
+                self.logger.info('Resampling to %s frequency and computing minimum ...', 
+                                 str(resample_freq))
+                out = resample_data.min()
+            elif stat == 'std':
+                self.logger.info('Resampling to %s frequency and computing standard deviation...', 
+                                 str(resample_freq))
+                out = resample_data.std()
             else:
                 raise KeyError(f'{stat} is not a statistic supported by AQUA')
         except ValueError as exc:
@@ -104,8 +147,7 @@ class TimStatMixin():
         if np.any(np.isnat(out.time)):
             raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
 
-        if stat == 'mean':
-            out = log_history(out, f"resampled from frequency {self.orig_freq}h to frequency {freq} by AQUA timmean")
+        out = log_history(out, f"resampled from frequency {self.orig_freq}h to frequency {freq} by AQUA tim{stat}")
 
         # Add a variable to create time_bounds
         if time_bounds:
@@ -118,7 +160,7 @@ class TimStatMixin():
                 raise ValueError('Resampling cannot produce output for all time_bnds step!')
             log_history(out, f"time_bnds added by by AQUA time {stat}")
 
-        out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
+        out.aqua.set_default(self) # accessor linking
 
         return out
     
