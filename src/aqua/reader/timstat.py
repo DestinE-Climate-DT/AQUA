@@ -13,7 +13,7 @@ class TimStatMixin():
     def timmean(self, data, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
-        Exposed method for time averaging statistic
+        Exposed method for time averaging statistic. Wrapper for timstat()
         """
     
         return self.timstat(data, stat='mean', freq=freq, exclude_incomplete=exclude_incomplete,
@@ -23,7 +23,7 @@ class TimStatMixin():
     def timmax(self, data, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
-        Exposed method for time maximum statistic
+        Exposed method for time maximum statistic. Wrapper for timstat()
         """
     
         return self.timstat(data, stat='max', freq=freq, exclude_incomplete=exclude_incomplete,
@@ -33,7 +33,7 @@ class TimStatMixin():
     def timmin(self, data, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
-        Exposed method for time maximum statistic
+        Exposed method for time maximum statistic. Wrapper for timstat()
         """
     
         return self.timstat(data, stat='min', freq=freq, exclude_incomplete=exclude_incomplete,
@@ -43,7 +43,7 @@ class TimStatMixin():
     def timstd(self, data, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
-        Exposed method for time standard deviation statistic
+        Exposed method for time standard deviation statistic. Wrapper for timstat()
         """
     
         return self.timstat(data, stat='std', freq=freq, exclude_incomplete=exclude_incomplete,
@@ -53,12 +53,13 @@ class TimStatMixin():
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
-        Perform daily, monthly and yearly averaging.
+        Perform daily, monthly and yearly time statistics.
         Wrapper for _timstat function, which is called differently if data is a generator or not.
 
         Arguments:
             data (xr.Dataset):  the input xarray.Dataset
-            stat (string):      the statistical operation to be performed (mean is default)
+            stat (string):      the statistical operation to be performed ('mean' is default)
+                                supported also 'min', 'max' and 'std'
             freq (str):         the frequency of the time averaging.
                                 Valid values are monthly, daily, yearly. Defaults to None.
             exclude_incomplete (bool):  Check if averages is done on complete chunks, and remove from the output
@@ -84,7 +85,7 @@ class TimStatMixin():
     def _timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                  time_bounds=False, center_time=False):
         """
-        Perform daily, monthly and yearly averaging.
+        Perform daily, monthly and yearly time statistics.
         See timstat for more details.
         """
         resample_freq = frequency_string_to_pandas(freq)
@@ -154,6 +155,9 @@ class TimStatMixin():
         return out
     
     def center_time_axis(self, avg_data, resample_freq):
+        """
+        Move the time axis of the averaged data toward the center of the averaging period
+        """
 
         # decipher the frequency
         literal, numeric = extract_literal_and_numeric(resample_freq) 
