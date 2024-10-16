@@ -84,11 +84,49 @@ if __name__ == '__main__':
     outputdir = get_arg(args, "outputdir", config.get("outputdir"))
     create_folder(outputdir, loglevel=loglevel)
 
-    var = config.get("var", "2t")
-    aggregation = config.get("aggregation", "D")
+    aggregation = config.get("aggregation", None)
 
     index = config.get("index", "unknown")
     logger.info(f"ETCCDI index: {index}")
+
+    if index == "su":
+        logger.info("ETCCDI index: Summer days")
+        var = '2t'
+        if aggregation is None:
+            aggregation = 'D'
+        condition = 273.15 + 25 # 25 degree Celsius
+        condition_sign = 'bigger_than'
+        statistic = 'max'
+        cmap = 'Blues'
+    elif index == "fd":
+        logger.info("ETCCDI index: Frost days")
+        var = '2t'
+        if aggregation is None:
+            aggregation = 'D'
+        condition = 273.15 # 0 degree Celsius
+        condition_sign = 'smaller_than'
+        statistic = 'min'
+        cmap = 'Blues'
+    elif index == "id":
+        logger.info("ETCCDI index: Ice days")
+        var = '2t'
+        if aggregation is None:
+            aggregation = 'D'
+        condition = 273.15
+        condition_sign = 'smaller_than'
+        statistic = 'max'
+        cmap = 'Blues'
+    elif index == "tr":
+        logger.info("ETCCDI index: Tropical nights")
+        var = '2t'
+        if aggregation is None:
+            aggregation = 'D'
+        condition = 273.15 + 20
+        condition_sign = 'bigger_than'
+        statistic = 'min'
+        cmap = 'Blues'
+    else:
+        raise ValueError("Index is not known. Please provide the index in the configuration file.")
 
     year = config.get("year", None)
     if year is None:
@@ -115,7 +153,7 @@ if __name__ == '__main__':
                 logger.info(f"New month: {new_month}")
 
                 # Save the result. If overwriting is enabled, the file will be overwritten
-                etccdi_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{month}.nc")
+                etccdi_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}_{month}.nc")
 
                 if os.path.exists(etccdi_filename) and not overwrite:
                     logger.info(f"File {etccdi_filename} exists. Skip saving.")
@@ -131,34 +169,44 @@ if __name__ == '__main__':
                 etccdi = None
                 month = new_month
 
-            # Find the maximum daily value
-            max_daily = data[var].max(dim='time')
+            # Evaluate the statistic
+            if statistic == 'max':
+                statistic_daily = data[var].max(dim='time')
+            elif statistic == 'min':
+                statistic_daily = data[var].min(dim='time')
+            else:
+                raise ValueError("Statistic is not supported.")
 
             if save_statistic:
-                max_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_max_daily_{data.time.values[0]}.nc")
+                statistic_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{statistic}_daily_{data.time.values[0]}.nc")
 
-                if os.path.exists(max_filename) and not overwrite:
-                    logger.info(f"File {max_filename} exists. Skip saving.")
-                elif os.path.exists(max_filename) and overwrite:
-                    logger.warning(f"File {max_filename} exists. Overwriting.")
-                    os.remove(max_filename)
-                    max_daily.to_netcdf(max_filename)
+                if os.path.exists(statistic_filename) and not overwrite:
+                    logger.info(f"File {statistic_filename} exists. Skip saving.")
+                elif os.path.exists(statistic_filename) and overwrite:
+                    logger.warning(f"File {statistic_filename} exists. Overwriting.")
+                    os.remove(statistic_filename)
+                    statistic_daily.to_netcdf(statistic_filename)
                 else:
-                    max_daily.to_netcdf(max_filename)
+                    statistic_daily.to_netcdf(statistic_filename)
 
-            # Set True for days with maximum daily value > 25 + 273.15 K
-            hot_days = xr.where(max_daily > 25 + 273.15, 1, 0)
+            # Set 1 if the condition is met
+            if condition_sign == 'bigger_than':
+                condition_days = xr.where(statistic_daily > condition, 1, 0)
+            elif condition_sign == 'smaller_than':
+                condition_days = xr.where(statistic_daily < condition, 1, 0)
+            else:
+                raise ValueError("Condition sign is not supported.")
 
             # Sum the number of hot days in the year
             if etccdi is None:
-                etccdi = hot_days
+                etccdi = condition_days
             else:
-                etccdi += hot_days
+                etccdi += condition_days
         else:
             logger.info("No more data to retrieve.")
             # Save final month
             if etccdi is not None:
-                etccdi_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{month}.nc")
+                etccdi_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}_{month}.nc")
 
                 if os.path.exists(etccdi_filename) and not overwrite:
                     logger.info(f"File {etccdi_filename} exists. Skip saving.")
@@ -177,8 +225,8 @@ if __name__ == '__main__':
     index_res = None
     for i in range(1, 13):
         try:
-            res = xr.open_mfdataset(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc"))
-            logger.debug(f"Opening {model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc")
+            res = xr.open_mfdataset(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}_{i}.nc"))
+            logger.debug(f"Opening file {model}_{exp}_{source}_{var}_{index}ETCCDI_{year}_{i}.ncc")
         except FileNotFoundError:
             raise FileNotFoundError(f"File {model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc not found.")
         res = res[var]
@@ -187,7 +235,7 @@ if __name__ == '__main__':
         else:
             index_res += res
 
-    etccdi_final_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}.nc")
+    etccdi_final_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}.nc")
     if os.path.exists(etccdi_final_filename) and not overwrite:
         logger.info(f"File {etccdi_final_filename} exists. Skip saving.")
     elif os.path.exists(etccdi_final_filename) and overwrite:
@@ -201,7 +249,7 @@ if __name__ == '__main__':
 
     # Produce the plot
     title = f"{model} {exp} {index}ETCCDI {year}"
-    hp.mollview(index_res, title=title, flip='geo', nest=True, unit='days', cmap='Blues')
-    filename_fig = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}.png")
+    hp.mollview(index_res, title=title, flip='geo', nest=True, unit='days', cmap=cmap)
+    filename_fig = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}.png")
     plt.savefig(filename_fig)
     logger.info(f"Plot saved to {filename_fig}")
