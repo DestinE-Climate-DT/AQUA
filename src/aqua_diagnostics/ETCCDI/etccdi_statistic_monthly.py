@@ -93,42 +93,42 @@ if __name__ == '__main__':
     index = config.get("index", "unknown")
     logger.info(f"ETCCDI index: {index}")
 
-    if index == "su":
-        logger.info("ETCCDI index: Summer days")
+    if index == "txx":
+        logger.info("ETCCDI index: Monthly maximum value of daily maximum temperature")
         var = '2t'
         if aggregation is None:
             aggregation = 'D'
-        condition = 273.15 + 25 # 25 degree Celsius
-        condition_sign = 'bigger_than'
-        statistic = 'max'
-        cmap = 'Blues'
-    elif index == "fd":
-        logger.info("ETCCDI index: Frost days")
+        daily_statistic = 'max'
+        monthly_statistic = 'max'
+        cmap = 'Reds'
+        units = 'K'
+    elif index == "tnx":
+        logger.info("ETCCDI index: Monthly maximum value of daily minimum temperature")
         var = '2t'
         if aggregation is None:
             aggregation = 'D'
-        condition = 273.15 # 0 degree Celsius
-        condition_sign = 'smaller_than'
-        statistic = 'min'
-        cmap = 'Blues'
-    elif index == "id":
-        logger.info("ETCCDI index: Ice days")
+        daily_statistic = 'min'
+        monthly_statistic = 'max'
+        cmap = 'Reds'
+        units = 'K'
+    elif index == "txn":
+        logger.info("ETCCDI index: Monthly minimum value of daily maximum temperature")
         var = '2t'
         if aggregation is None:
             aggregation = 'D'
-        condition = 273.15
-        condition_sign = 'smaller_than'
-        statistic = 'max'
-        cmap = 'Blues'
-    elif index == "tr":
-        logger.info("ETCCDI index: Tropical nights")
+        daily_statistic = 'max'
+        monthly_statistic = 'min'
+        cmap = 'Reds'
+        units = 'K'
+    elif index == "tnn":
+        logger.info("ETCCDI index: Monthly minimum value of daily minimum temperature")
         var = '2t'
         if aggregation is None:
             aggregation = 'D'
-        condition = 273.15 + 20
-        condition_sign = 'bigger_than'
-        statistic = 'min'
-        cmap = 'Blues'
+        daily_statistic = 'min'
+        monthly_statistic = 'min'
+        cmap = 'Reds'
+        units = 'K'
     else:
         raise ValueError("Index is not known. Please provide the index in the configuration file.")
 
@@ -174,15 +174,16 @@ if __name__ == '__main__':
                 month = new_month
 
             # Evaluate the statistic
-            if statistic == 'max':
+            if daily_statistic == 'max':
                 statistic_daily = data[var].max(dim='time')
-            elif statistic == 'min':
+            elif daily_statistic == 'min':
                 statistic_daily = data[var].min(dim='time')
             else:
                 raise ValueError("Statistic is not supported.")
 
             if save_statistic:
-                statistic_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{statistic}_daily_{data.time.values[0]}.nc")
+                statistic_filename = os.path.join(outputdir,
+                                                  f"{model}_{exp}_{source}_{var}_{daily_statistic}_daily_{data.time.values[0]}.nc")
 
                 if os.path.exists(statistic_filename) and not overwrite:
                     logger.info(f"File {statistic_filename} exists. Skip saving.")
@@ -193,19 +194,16 @@ if __name__ == '__main__':
                 else:
                     statistic_daily.to_netcdf(statistic_filename)
 
-            # Set 1 if the condition is met
-            if condition_sign == 'bigger_than':
-                condition_days = xr.where(statistic_daily > condition, 1, 0)
-            elif condition_sign == 'smaller_than':
-                condition_days = xr.where(statistic_daily < condition, 1, 0)
-            else:
-                raise ValueError("Condition sign is not supported.")
-
-            # Sum the number of hot days in the year
+            # Compute the monthly statistic
             if etccdi is None:
-                etccdi = condition_days
-            else:
-                etccdi += condition_days
+                etccdi = statistic_daily
+            else: # Take the max, cell by cell, between etccdi and statistic_daily
+                if monthly_statistic == 'max':
+                    etccdi = xr.where(etccdi > statistic_daily, etccdi, statistic_daily)
+                elif monthly_statistic == 'min':
+                    etccdi = xr.where(etccdi < statistic_daily, etccdi, statistic_daily)
+                else:
+                    raise ValueError("Monthly statistic is not supported.")
         else:
             logger.info("No more data to retrieve.")
             # Save final month
@@ -237,7 +235,12 @@ if __name__ == '__main__':
         if index_res is None:
             index_res = res
         else:
-            index_res += res
+            if monthly_statistic == 'max':
+                index_res = xr.where(index_res > res, index_res, res)
+            elif monthly_statistic == 'min':
+                index_res = xr.where(index_res < res, index_res, res)
+            else:
+                raise ValueError("Monthly statistic is not supported.")
 
     etccdi_final_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}.nc")
     if os.path.exists(etccdi_final_filename) and not overwrite:
@@ -253,7 +256,7 @@ if __name__ == '__main__':
 
     # Produce the plot
     title = f"{model} {exp} {index}ETCCDI {year}"
-    hp.mollview(index_res, title=title, flip='geo', nest=True, unit='days', cmap=cmap)
+    hp.mollview(index_res, title=title, flip='geo', nest=True, unit=units, cmap=cmap)
     filename_fig = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}.png")
     plt.savefig(filename_fig)
     logger.info(f"Plot saved to {filename_fig}")
