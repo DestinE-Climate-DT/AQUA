@@ -1,0 +1,15 @@
+catalog: nextgems4
+model: IFS-FESOM
+exp: ssp370
+source: 2D_hourly_healpix512
+
+var: 2t
+res: null
+freq: null
+aggregation: D
+startdate: '20480101'
+enddate: '20481231'
+
+loglevel: WARNING
+outputdir: /work/bb1153/b382289/nextgems_analysis/ETCCDI/SU
+index: SU
