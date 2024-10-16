@@ -50,12 +50,12 @@ class TestTimmean():
         """Time operations provide robust values"""
 
         data = reader.retrieve(var='2t')
-        min = reader.timmin(data['2t'], freq='daily')
-        max = reader.timmax(data['2t'], freq='daily')
+        minval = reader.timmin(data['2t'], freq='daily')
+        maxval = reader.timmax(data['2t'], freq='daily')
         avg = reader.timmean(data['2t'], freq='daily')
         
-        assert (min <= avg).all()
-        assert (avg <= max).all()
+        assert (minval <= avg).all()
+        assert (avg <= maxval).all()
 
     def test_timmin_yearly_exclude_incomplete(self, reader):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
