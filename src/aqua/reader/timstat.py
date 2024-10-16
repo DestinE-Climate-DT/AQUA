@@ -8,16 +8,27 @@ from aqua.util import extract_literal_and_numeric
 from aqua.logger import log_history
 
 
-class TimmeanMixin():
+class TimStatMixin():
 
     def timmean(self, data, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
         """
+        Exposed method for time averaging statistic
+        """
+    
+        return self.timstat(data, stat='mean', freq=freq, exclude_incomplete=exclude_incomplete,
+                     time_bounds=time_bounds, center_time=center_time)
+
+    
+    def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
+                time_bounds=False, center_time=False):
+        """
         Perform daily, monthly and yearly averaging.
-        Wrapper for _timmean function, which is called differently if data is a generator or not.
+        Wrapper for _timstat function, which is called differently if data is a generator or not.
 
         Arguments:
             data (xr.Dataset):  the input xarray.Dataset
+            stat (string):      the statistical operation to be performed (mean is default)
             freq (str):         the frequency of the time averaging.
                                 Valid values are monthly, daily, yearly. Defaults to None.
             exclude_incomplete (bool):  Check if averages is done on complete chunks, and remove from the output
@@ -29,27 +40,27 @@ class TimmeanMixin():
             A xarray.Dataset containing the time averaged data.
         """
         if isinstance(data, types.GeneratorType):
-            return self._timmeangen(data, freq=freq, exclude_incomplete=exclude_incomplete,
+            return self._timstatgen(data, freq=freq, stat=stat, exclude_incomplete=exclude_incomplete,
                                     time_bounds=time_bounds, center_time=center_time)
         else:
-            return self._timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
+            return self._timstat(data, freq=freq, stat=stat, exclude_incomplete=exclude_incomplete,
                                  time_bounds=time_bounds, center_time=center_time)
 
-    def _timmeangen(self, data, **kwargs):
-        """Call the timmean function for iterators"""
+    def _timstatgen(self, data, **kwargs):
+        """Call the timstat function for iterators"""
         for ds in data:
-            yield self._timmean(ds, **kwargs)
+            yield self._timstat(ds, **kwargs)
 
-    def _timmean(self, data, freq=None, exclude_incomplete=False,
+    def _timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                  time_bounds=False, center_time=False):
         """
         Perform daily, monthly and yearly averaging.
-        See timmean for more details.
+        See timstat for more details.
         """
         resample_freq = frequency_string_to_pandas(freq)
 
         if 'time' not in data.dims:
-            raise ValueError('Time dimension not found in the input data. Cannot compute timmean.')
+            raise ValueError(f'Time dimension not found in the input data. Cannot compute time statistic {stat}')
             
         # Get original frequency (for history)
         if len(data.time) > 1:
@@ -66,8 +77,12 @@ class TimmeanMixin():
 
         try:
             # Resample to the desired frequency
-            self.logger.info('Resampling to %s frequency...', str(resample_freq))
-            out = data.resample(time=resample_freq).mean()
+            resample_data = data.resample(time=resample_freq)
+            if stat == 'mean':
+                self.logger.info('Resampling and averaging to %s frequency...', str(resample_freq))
+                out = resample_data.mean()
+            else:
+                raise KeyError(f'{stat} is not a statistic supported by AQUA')
         except ValueError as exc:
             raise ValueError('Cant find a frequency to resample, aborting!') from exc
 
@@ -89,7 +104,8 @@ class TimmeanMixin():
         if np.any(np.isnat(out.time)):
             raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
 
-        out = log_history(out, f"resampled from frequency {self.orig_freq}h to frequency {freq} by AQUA timmean")
+        if stat == 'mean':
+            out = log_history(out, f"resampled from frequency {self.orig_freq}h to frequency {freq} by AQUA timmean")
 
         # Add a variable to create time_bounds
         if time_bounds:
@@ -100,7 +116,7 @@ class TimmeanMixin():
             out = xr.merge([out, time_bnds])
             if np.any(np.isnat(out.time_bnds)):
                 raise ValueError('Resampling cannot produce output for all time_bnds step!')
-            log_history(out, "time_bnds added by by AQUA timmean")
+            log_history(out, f"time_bnds added by by AQUA time {stat}")
 
         out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 

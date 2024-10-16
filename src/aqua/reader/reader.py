@@ -19,7 +19,7 @@ import aqua.gsv
 from .streaming import Streaming
 from .fixer import FixerMixin
 from .regrid import RegridMixin
-from .timmean import TimmeanMixin
+from .timstat import TimStatMixin
 from .reader_utils import group_shared_dims, set_attrs
 from .reader_utils import configure_masked_fields
 
@@ -38,7 +38,7 @@ default_weights_areas_parameters = ['zoom']
 xr.set_options(keep_attrs=True)
 
 
-class Reader(FixerMixin, RegridMixin, TimmeanMixin):
+class Reader(FixerMixin, RegridMixin, TimStatMixin):
     """General reader for climate data."""
 
     instance = None  # Used to store the latest instance of the class
