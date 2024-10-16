@@ -2,6 +2,7 @@
 import argparse
 import os
 import sys
+import dask
 from dask.distributed import Client, LocalCluster
 import matplotlib.pyplot as plt
 import xarray as xr
@@ -43,6 +44,8 @@ def parse_argument(args):
     parser.add_argument("--save", type=bool,
                         required=False, help="save the statistic",
                         default=False)
+    parser.add_argument('-o', '--overwrite', action="store_true",
+                        help='overwrite existing output')
 
     return parser.parse_args(args)
 
@@ -57,12 +60,15 @@ if __name__ == '__main__':
 
     nworkers = get_arg(args, 'nworkers', None)
     save_statistic = get_arg(args, 'save', False)
+    overwrite = get_arg(args, 'overwrite', False)
 
     # Dask distributed cluster
     if nworkers:
         cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
         client = Client(cluster)
         logger.info(f"Running with {nworkers} dask distributed workers.")
+    else:
+        dask.config.set(scheduler='synchronous')
 
     # Load configuration file
     file = get_arg(args, "config", "config.yaml")
@@ -79,31 +85,24 @@ if __name__ == '__main__':
     create_folder(outputdir, loglevel=loglevel)
 
     var = config.get("var", "2t")
-
-    res = config.get("res", None)
-    freq = config.get("freq", None)
     aggregation = config.get("aggregation", "D")
 
     index = config.get("index", "unknown")
     logger.info(f"ETCCDI index: {index}")
 
-    startdate = config.get("startdate", None)
-    enddate = config.get("enddate", None)
-    logger.debug(f"Start date: {startdate}, End date: {enddate}")
-
-    if not startdate and not enddate:
-        logger.warning("No startdate and enddate provided. Using the first and last date in the catalog.")
+    year = config.get("year", None)
+    if year is None:
+        raise ValueError("Year is not provided in the configuration file.")
+    startdate = f"{year}0101"
+    enddate = f"{year}1231"
 
     reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                    regrid=res, loglevel=loglevel,
+                    loglevel=loglevel,
                     startdate=startdate, enddate=enddate,
                     streaming=True, aggregation=aggregation)
     
-    # Initial date (shape is YYYYMMDD)
-    year = startdate[0:4]
     month = int(startdate[4:6])
     logger.info(f"Analysis of year: {year}")
-    logger.debug(f"Initial month: {month}")
     
     etccdi = None
     while (etccdi is None or data is not None):
@@ -115,9 +114,20 @@ if __name__ == '__main__':
             if new_month != month:
                 logger.info(f"New month: {new_month}")
 
-                # Save the result
-                etccdi.to_netcdf(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{month}.nc"))
-                logger.info(f"ETCCDI index saved to {outputdir}")
+                # Save the result. If overwriting is enabled, the file will be overwritten
+                etccdi_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{month}.nc")
+
+                if os.path.exists(etccdi_filename) and not overwrite:
+                    logger.info(f"File {etccdi_filename} exists. Skip saving.")
+                elif os.path.exists(etccdi_filename) and overwrite:
+                    logger.warning(f"File {etccdi_filename} exists. Overwriting.")
+                    os.remove(etccdi_filename)
+                    etccdi.to_netcdf(etccdi_filename)
+                    logger.info(f"ETCCDI index saved to {outputdir}")
+                else:
+                    etccdi.to_netcdf(etccdi_filename)
+                    logger.info(f"ETCCDI index saved to {outputdir}")
+
                 etccdi = None
                 month = new_month
 
@@ -125,8 +135,16 @@ if __name__ == '__main__':
             max_daily = data[var].max(dim='time')
 
             if save_statistic:
-                max_daily.to_netcdf(os.path.join(outputdir,
-                                                 f"{model}_{exp}_{source}_{var}_max_daily_{data.time.values[0]}.nc"))
+                max_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_max_daily_{data.time.values[0]}.nc")
+
+                if os.path.exists(max_filename) and not overwrite:
+                    logger.info(f"File {max_filename} exists. Skip saving.")
+                elif os.path.exists(max_filename) and overwrite:
+                    logger.warning(f"File {max_filename} exists. Overwriting.")
+                    os.remove(max_filename)
+                    max_daily.to_netcdf(max_filename)
+                else:
+                    max_daily.to_netcdf(max_filename)
 
             # Set True for days with maximum daily value > 25 + 273.15 K
             hot_days = xr.where(max_daily > 25 + 273.15, 1, 0)
@@ -140,27 +158,50 @@ if __name__ == '__main__':
             logger.info("No more data to retrieve.")
             # Save final month
             if etccdi is not None:
-                etccdi.to_netcdf(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{month}.nc"))
-                logger.info(f"ETCCDI index saved to {outputdir}")
+                etccdi_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{month}.nc")
+
+                if os.path.exists(etccdi_filename) and not overwrite:
+                    logger.info(f"File {etccdi_filename} exists. Skip saving.")
+                elif os.path.exists(etccdi_filename) and overwrite:
+                    logger.warning(f"File {etccdi_filename} exists. Overwriting.")
+                    os.remove(etccdi_filename)
+                    etccdi.to_netcdf(etccdi_filename)
+                    logger.info(f"ETCCDI index saved to {outputdir}")
+                else:
+                    etccdi.to_netcdf(etccdi_filename)
+                    logger.info(f"ETCCDI index saved to {outputdir}")
             break
 
     # Producing the final result
+    logger.info("Producing the final results")
     index_res = None
     for i in range(1, 13):
-        res = xr.open_mfdataset(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc"))
-        logger.debug(f"Opening {model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc")
+        try:
+            res = xr.open_mfdataset(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc"))
+            logger.debug(f"Opening {model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File {model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}_{i}.nc not found.")
         res = res[var]
-    if index_res is None:
-        index_res = res
-    else:
-        index_res += res
+        if index_res is None:
+            index_res = res
+        else:
+            index_res += res
 
-    index_res.to_netcdf(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}.nc"))
-    logger.info(f"ETCCDI final index saved to {outputdir}")
+    etccdi_final_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}.nc")
+    if os.path.exists(etccdi_final_filename) and not overwrite:
+        logger.info(f"File {etccdi_final_filename} exists. Skip saving.")
+    elif os.path.exists(etccdi_final_filename) and overwrite:
+        logger.warning(f"File {etccdi_final_filename} exists. Overwriting.")
+        os.remove(etccdi_final_filename)
+        index_res.to_netcdf(etccdi_final_filename)
+        logger.info(f"ETCCDI final index saved to {outputdir}")
+    else:
+        index_res.to_netcdf(etccdi_final_filename)
+        logger.info(f"ETCCDI final index saved to {outputdir}")
 
     # Produce the plot
-    title = f"{model} {exp} ETCCDI {index} {year}"
+    title = f"{model} {exp} {index}ETCCDI {year}"
     hp.mollview(index_res, title=title, flip='geo', nest=True, unit='days', cmap='Blues')
-    plt.savefig(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}.png"))
-
-    
+    filename_fig = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_ETCCDI_{index}_{year}.png")
+    plt.savefig(filename_fig)
+    logger.info(f"Plot saved to {filename_fig}")

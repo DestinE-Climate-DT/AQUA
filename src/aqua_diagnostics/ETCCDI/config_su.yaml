@@ -7,8 +7,7 @@ var: 2t
 res: null
 freq: null
 aggregation: D
-startdate: '20480101'
-enddate: '20481231'
+year: 2025
 
 loglevel: WARNING
 outputdir: /work/bb1153/b382289/nextgems_analysis/ETCCDI/SU
