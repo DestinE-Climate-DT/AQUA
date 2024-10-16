@@ -417,19 +417,21 @@ Of course, this feature is valid only for **coords**:
 .. warning::
     Please keep in mind that coordinate units is simply an override of the attribute. It won't make any assumption on the source units and will not convert it accordingly.
 
-Time Aggregation
-----------------
+Time Statistics
+---------------
 
-Input data may not be available at the desired time frequency. It is possible to perform time averaging at a given
-frequency by using the ``timmean`` method. 
+Input data may not be available at the desired time frequency. It is possible to perform time statistics, including
+time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``timstat()`` method and its sibilings
+`timmean()`, `timmin()`, `timmax()` and `timstd()`. 
 
 .. code-block:: python
 
     reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
     data = reader.retrieve()
     daily = reader.timmean(data, freq='daily')
+    # alternatively: daily = reader.timstat(data, stat='mean', freq='daily')
 
-Data have now been averaged at the desired daily timescale.
+Data have now been averaged at the desired daily timescale. Similarly operations can be performed with others methods.
 
 Some extra options are available:
 
@@ -437,6 +439,7 @@ Some extra options are available:
   (for example, verify  that all the record from each month are available before doing the time mean).
 - ``center_time=True``: this flag will center the time coordinate on the mean time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
+
 
 Detrending
 ----------
