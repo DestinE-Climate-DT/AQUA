@@ -16,7 +16,7 @@ def data(reader):
 @pytest.mark.aqua
 class TestTimmean():
 
-    @pytest.mark.parametrize('var', ['2t', 'ttr'])
+    @pytest.mark.parametrize('var', ['ttr'])
     def test_timmean_monthly(self, reader, data, var):
         """Timmean test for monthly aggregation"""
         avg = reader.timmean(data[var], freq='monthly')
@@ -25,6 +25,12 @@ class TestTimmean():
         assert avg.shape == (nmonths, 9, 18)
         assert len(unique) == nmonths
         assert all(counts == counts[0])
+
+    @pytest.mark.parametrize('var', ['2t'])
+    def test_timstd_allperiod(self, reader, data, var):
+        """Timstd test for entire data period"""
+        avg = reader.timstd(data[var])
+        assert avg.shape == (9, 18)
 
     @pytest.mark.parametrize('var', ['2t', 'ttr'])
     def test_timstat_monthly_exclude_incomplete(self, reader, data, var):
@@ -102,7 +108,7 @@ class TestTimmean():
     def test_timmean_invalid_frequency(self, reader):
         """Test for timmean method with an invalid frequency"""
         data = reader.retrieve(var='2t')
-        with pytest.raises(ValueError, match=r'Cant find a frequency to resample, aborting!'):
+        with pytest.raises(ValueError, match=r'Cant find a frequency to resample, using resample_freq=invalid not work, aborting!'):
             reader.timmean(data, freq='invalid')
 
     def test_timstd_error(self, reader):

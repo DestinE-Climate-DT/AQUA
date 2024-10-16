@@ -86,6 +86,12 @@ class TimStatMixin():
         """
         resample_freq = frequency_string_to_pandas(freq)
 
+        # disabling all options if total averaging is selected
+        if resample_freq is None:
+            exclude_incomplete = False
+            center_time = False
+            time_bnds = False
+
         if 'time' not in data.dims:
             raise ValueError(f'Time dimension not found in the input data. Cannot compute tim{stat} statistic')
 
@@ -102,21 +108,28 @@ class TimStatMixin():
                 self.logger.warning('Disabling exclude incomplete since it cannot work if we have a single tstep!')
                 exclude_incomplete = False
 
-        try:
-            # Resample to the desired frequency
-            resample_data = data.resample(time=resample_freq)
+        # if we have a frequency
+        if resample_freq is not None:
+            try:
+                # Resample to the desired frequency
+                resample_data = data.resample(time=resample_freq)
+            except ValueError as exc:
+                raise ValueError(f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
+            
+        # if frequency is undefined, meaning that we operate on the entire set
+        else:
+            resample_data = data
 
-            # compact call, equivalent of "out = resample_data.mean()""
-            if stat in ['mean', 'std', 'max', 'min']:
-                self.logger.info(f'Resampling to %s frequency and computing {stat}...', str(resample_freq))
-                out = getattr(resample_data, stat)()
-            else:
-                raise KeyError(f'{stat} is not a statistic supported by AQUA')
-        except ValueError as exc:
-            raise ValueError('Cant find a frequency to resample, aborting!') from exc
+        # compact call, equivalent of "out = resample_data.mean()""
+        if stat in ['mean', 'std', 'max', 'min']:
+            self.logger.info(f'Resampling to %s frequency and computing {stat}...', str(resample_freq))
+            # use the kwargs to feed the time dimension to define the method and its options
+            extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
+            out = getattr(resample_data, stat)(**extra_kwargs)
+        else:
+            raise KeyError(f'{stat} is not a statistic supported by AQUA')
 
         if exclude_incomplete:
-
             self.logger.info('Checking if incomplete chunks has been produced...')
             boolean_mask = check_chunk_completeness(data,
                                                     resample_frequency=resample_freq,
@@ -130,8 +143,9 @@ class TimStatMixin():
             out = self.center_time_axis(out, resample_freq)
 
         # Check time is correct
-        if np.any(np.isnat(out.time)):
-            raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
+        if resample_freq is not None:
+            if np.any(np.isnat(out.time)):
+                raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
 
         out = log_history(out, f"resampled from frequency {self.orig_freq}h to frequency {freq} by AQUA tim{stat}")
 
