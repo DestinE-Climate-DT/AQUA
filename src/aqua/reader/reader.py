@@ -571,6 +571,21 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
                 if not hasattr(data[var], 'units'):
                     self.logger.warning('Variable %s has no units!', var)
 
+        # Check if the time axis is using cftime
+        if isinstance(data, xr.Dataset):
+            try:
+                if 'use_cftime' in self.esmcat.xarray_kwargs:
+                    cftime = self.esmcat.xarray_kwargs['use_cftime']
+                else:
+                    cftime = False
+            except AttributeError:
+                cftime = False
+    
+            if cftime:
+                data = data.assign_attrs({'use_cftime': 1})
+                for var in data.data_vars:
+                    data[var] = data[var].assign_attrs({'use_cftime': 1})
+
         if not fiter:  # This is not needed if we already have an iterator
             if self.streaming:
                 if self.stream_generator:

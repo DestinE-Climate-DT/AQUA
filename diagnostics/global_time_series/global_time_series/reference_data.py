@@ -2,6 +2,7 @@
 Functions to retrieve reference data for global time series diagnostics.
 """
 import xarray as xr
+
 from aqua import Reader
 from aqua.logger import log_configure
 from aqua.exceptions import NoObservationError

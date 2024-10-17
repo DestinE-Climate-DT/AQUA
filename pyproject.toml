@@ -49,6 +49,7 @@ dependencies = [
     "jinja2",
     "matplotlib",
     "metpy",
+    "nc-time-axis",
     "numpy",
     "pydantic",
     "pypdf",
