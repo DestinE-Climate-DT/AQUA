@@ -146,6 +146,10 @@ This will return an ``xarray.Dataset`` with the data lazily regridded to the tar
 We can then use the ``data_r`` object for further processing and the data
 will be loaded in memory only when necessary, allowing for further subsetting and processing.
 
+The default regrid method is ``ycon`` which is a conservative regrid method.
+If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
+following the CDO convention.
+
 Concept
 ^^^^^^^
 
@@ -160,8 +164,8 @@ For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, e
 .. note::
     The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
-    centered between 90 and -90 degrees is sometimes used in the field. If you need sucha a grid please add an additional definition
-    to the ``config/grids`` folder with a different grid name (for example ``r100a``).
+    centered between 90 and -90 degrees is sometimes used in the field and it is available in AQUA with the convention of adding
+    an s to the corresponding convention defined above (e.g. ``r100s`` ).
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
