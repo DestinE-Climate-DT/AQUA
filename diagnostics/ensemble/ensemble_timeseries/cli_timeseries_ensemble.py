@@ -16,7 +16,7 @@ from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.logger import log_configure
 #from global_time_series import Timeseries, GregoryPlot, SeasonalCycle
 
-from timeseries_ensemble import Ensemble_timeseries 
+from timeseries_ensemble import ensemble_timeseries 
 
 
 def parse_arguments(args):
@@ -46,14 +46,20 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 def get_plot_options(config: dict = None, var: str = None):
-    plot_options = config["timeseries_plot_params"].get(var)
     mon_startdate = config["timeseries_plot_params"].get("monthly_startdate", None)
     mon_enddate = config["timeseries_plot_params"].get("monthly_enddate", None)
     ann_startdate = config["timeseries_plot_params"].get("annual_startdate",None)
     ann_enddate = config["timeseries_plot_params"].get("annual_enddate",None)
-    plot_kw = config["timeseries_plot_params"].get("plot_kw", {})
-    units = None
-    return mon_startdate,mon_enddate,ann_startdate,ann_enddate,plot_kw,units
+    figure_size = config["timeseries_plot_params"].get("figure_size",None)
+    plot_std = config["timeseries_plot_params"].get("plot_std",None)
+    plot_label = config["timeseries_plot_params"].get("plot_label",None)
+    ref_mon_label = config["timeseries_plot_params"].get("ref_mon_label",None)
+    ref_ann_label = config["timeseries_plot_params"].get("ref_ann_label",None)
+    label_ncol = config["timeseries_plot_params"].get("label_ncol",None)
+    label_size = config["timeseries_plot_params"].get("label_size",None)
+    pdf_save = config["timeseries_plot_params"].get("pdf_save",None)
+    units = config["timeseries_plot_params"].get("units",None)
+    return mon_startdate,mon_enddate,ann_startdate,ann_enddate,figure_size,plot_std,plot_label,ref_mon_label,ref_ann_label,label_ncol,label_size,pdf_save,units
 
 if __name__ == '__main__':
 
@@ -93,7 +99,7 @@ if __name__ == '__main__':
         for model in mon_model:
             mon_model_list.append(model['model'])
             mon_exp_list.append(model['exp'])
-            mon_source_list.append(model['source'])        
+            mon_source_list.append(model['source'])
 
     ann_model = config['models_annual']
     ann_model_list = [] 
@@ -106,32 +112,31 @@ if __name__ == '__main__':
         for model in ann_model:
             ann_model_list.append(model['model'])
             ann_exp_list.append(model['exp'])
-            ann_source_list.append(model['source'])        
+            ann_source_list.append(model['source'])
+    var = config['timeseries']
+    logger.info(f"Plotting {var} timeseries")
+    mon_startdate,mon_enddate,ann_startdate,ann_enddate,figure_size,plot_std,plot_label,ref_mon_label,ref_ann_label,label_ncol,label_size,pdf_save,units = get_plot_options(config,var)
+
 
     ref_mon = config['reference_model_monthly']
     if ref_mon == None: 
         ref_mon_dict={}
     else: 
-        ref_mon_dict = {'model':ref_mon[0]['model'],'exp':ref_mon[0]['exp'],'source':ref_mon[0]['source']}
+        ref_mon_dict = {'model':ref_mon[0]['model'],'exp':ref_mon[0]['exp'],'source':ref_mon[0]['source'],'ref_mon_label':ref_mon_label}
     
     ref_ann = config['reference_model_annual']
     if ref_ann == None:
         ref_ann_dict={} 
     else: 
-        ref_ann_dict = {'model':ref_ann[0]['model'],'exp':ref_ann[0]['exp'],'source':ref_ann[0]['source']}
+        ref_ann_dict = {'model':ref_ann[0]['model'],'exp':ref_ann[0]['exp'],'source':ref_ann[0]['source'],'ref_ann_label':ref_ann_label}
     
     logger.debug("Analyzing models:")
     
     outputdir = get_arg(args, "outputdir", config["outputdir"])
     
-    if "timeseries" in config:
-        var = config['timeseries']
-        logger.info(f"Plotting {var} timeseries")
-        mon_startdate,mon_enddate,ann_startdate,ann_enddate,plot_kw,units = get_plot_options(config,var)
-
-        ts = Ensemble_timeseries(var=var,mon_model=mon_model_list,mon_exp=mon_exp_list,mon_source=mon_source_list,ann_model=ann_model_list,ann_exp=ann_exp_list,ann_source=ann_source_list,ref_mon_dict=ref_mon_dict,ref_ann_dict=ref_ann_dict,mon_startdate=mon_startdate,mon_enddate=mon_enddate,ann_startdate=ann_startdate,ann_enddate=ann_enddate,plot_kw=plot_kw,outdir=outputdir,save=True,loglevel=loglevel)
-        try:
-            ts.run()
-        except Exception as e:
-            logger.error(f'Error plotting {var} timeseries: {e}')
+    ts = ensemble_timeseries(var=var,mon_model=mon_model_list,mon_exp=mon_exp_list,mon_source=mon_source_list,ann_model=ann_model_list,ann_exp=ann_exp_list,ann_source=ann_source_list,ref_mon_dict=ref_mon_dict,ref_ann_dict=ref_ann_dict,mon_startdate=mon_startdate,mon_enddate=mon_enddate,ann_startdate=ann_startdate,ann_enddate=ann_enddate,figure_size=figure_size,plot_std=plot_std,plot_label=plot_label,label_ncol=label_ncol,label_size=label_size,outdir=outputdir,pdf_save=pdf_save,loglevel=loglevel)
+    try:
+        ts.run()
+    except Exception as e:
+        logger.error(f'Error plotting {var} timeseries: {e}')
 

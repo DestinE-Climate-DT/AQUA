@@ -18,6 +18,7 @@ models_annual:
     #catalog: 'diagnosis'
     exp: 'IFS-NEMO-hist'
     source: 't2m-ann'
+    label: 'IFS-NEMO-hist-ann'
   - model: 'aqua-timeseries'
     #catalog: 'diagnosis'
     exp: 'IFS-FESOM-hist'
@@ -43,12 +44,17 @@ timeseries: ['2t']
 timeseries_plot_params:
   monthly_startdate: 
   monthly_enddate: 
-  annual_startdate: 
-  annual_enddate: 
   #monthly_startdate: '1990-01-01'
   #monthly_enddate: '2000-12-31'
   #annual_startdate: '1991-01-01'
   #annual_enddate: '2000-12-31'
-  
-
+  ref_mon_label: 'ERA5 Monthly'
+  ref_ann_label: 'ERA5 Annual'
+  figure_size: [10,5]
+  plot_std: True
+  plot_label: True
+  label_ncol: 4
+  label_size: 7.5 
+  unit:
+  pdf_save: True
   
