@@ -53,8 +53,8 @@ def check_variable_name(data, loglevel= "WARNING"):
         if var in var_list:
             required_vars.append(var)
     if required_vars != []:
-        logger.debug("This are the variables %s available for the diags in the catalogue.", required_vars)
-        # data = data[required_vars]
+        logger.debug("This are the variables %s available for the diags in the catalog.", required_vars)
+        data = data[required_vars]
         logger.debug("Selected this variables")
         for var in required_vars:
             if 'avg_so' in var.lower() or 'soce' in var.lower():
@@ -64,7 +64,11 @@ def check_variable_name(data, loglevel= "WARNING"):
                 data = data.rename({var: "avg_thetao"})
                 logger.debug("renaming %s as avg_thetao", var)
     else:
-        raise ValueError("Required variable avg_so and avg_thetao is not available in the catalogue")
+        raise ValueError("Required variable avg_so and avg_thetao is not available in the catalog")
+    #HACK
+    if "level" in data:
+        if data['level'].attrs['units'] == 'NEMO model layers':
+            data['level'].attrs['units'] = 'm'
     vertical_coord = find_vert_coord(data)[0]
     data = data.rename({vertical_coord: "lev"})
     data = kelvin_to_celsius(data, "avg_thetao")
@@ -307,27 +311,27 @@ def load_obs_data(model='EN4', exp='en4', source='monthly', loglevel= "WARNING")
     return den4
 
 
-def crop_obs_overlap_time(mod_data, obs_data, loglevel= "WARNING"):
+def crop_obs_overlap_time(data1, data2, loglevel= "WARNING"):
     """
     Crop the observational data to the overlapping time period with the model data.
 
     Parameters:
-        mod_data (xarray.Dataset): Model data.
-        obs_data (xarray.Dataset): Observational data.
+        data1 (xarray.Dataset): data1.
+        data2 (xarray.Dataset): data2.
 
     Returns:
         xarray.Dataset: Observational data cropped to the overlapping time period with the model data.
     """
     logger = log_configure(loglevel, 'crop_obs_overlap_time')
-    mod_data_time = mod_data.time
-    obs_data_time = obs_data.time
+    data1_time = data1.time
+    data2_time = data2.time
     common_time = xr.DataArray(np.intersect1d(
-        mod_data_time, obs_data_time), dims='time')
+        data1_time, data2_time), dims='time')
     if len(common_time) > 0:
-        obs_data = obs_data.sel(time=common_time)
+        data2 = data2.sel(time=common_time)
         logger.debug(
             "selected the overlaped time of the obs data compare to the model")
-    return obs_data
+    return data2
 
 
 def data_time_selection(data, time, loglevel= "WARNING"):
@@ -534,17 +538,21 @@ def split_ocean3d_req(self, o3d_request, loglevel= "WARNING"):
     Returns:
         None
     """
-    logger = log_configure(loglevel, 'split_ocean3d_req')
     self.data = o3d_request.get('data')
     self.model = o3d_request.get('model')
     self.exp = o3d_request.get('exp')
     self.source = o3d_request.get('source')
+    self.obs_data = o3d_request.get('obs_data', None)
+    self.time = o3d_request.get('time', None)
     self.region = o3d_request.get('region', None)
     self.lat_s = o3d_request.get('lat_s', None)
     self.lat_n = o3d_request.get('lat_n', None)
     self.lon_w = o3d_request.get('lon_w', None)
     self.lon_e = o3d_request.get('lon_e', None)
+    self.customise_level = o3d_request.get('customise_level', None)
+    self.levels = o3d_request.get('levels', None)
+    self.overlap = o3d_request.get('overlap', None)
     self.output = o3d_request.get('output')
-    self.output_dir = o3d_request.get('output_dir')
+    self.output_dir = o3d_request.get('output_dir', None)
     self.loglevel= o3d_request.get('loglevel',"WARNING")
     return self

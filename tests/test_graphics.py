@@ -4,12 +4,13 @@ import os
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
+from aqua.graphics import plot_maps
 
 loglevel = "DEBUG"
 
 
 @pytest.mark.graphics
-class TestSingleMap:
+class TestMaps:
     """Basic tests for the Single map functions"""
     def setup_method(self):
         reader = Reader(model="FESOM", exp="test-pi", source="original_2d",
@@ -82,6 +83,33 @@ class TestSingleMap:
 
         # Check the file was created
         assert os.path.exists('tests/figures/test_single_map_diff.png')
+    
+    def test_maps(self):
+        """Test plot_maps function"""
+        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
+        fig, ax = plot_maps(maps=[plot_data,plot_data2],
+                            save=True,
+                            figsize=(16, 6),
+                            nlevels=5,
+                            vmin=-2, vmax=30,
+                            sym=False,
+                            outputdir='tests/figures/',
+                            cmap='viridis',
+                            gridlines=True,
+                            title='Test plot',
+                            cbar_label='Sea surface temperature [°C]',
+                            dpi=100,
+                            filename='test_maps',
+                            format='png',
+                            nxticks=5,
+                            nyticks=6,
+                            loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        # Check the file was created
+        assert os.path.exists('tests/figures/test_maps.png')
 
 
 @pytest.mark.graphics

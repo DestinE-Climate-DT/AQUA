@@ -12,7 +12,7 @@ and please include also the following acknowledgements:
 .. code-block:: bibtex
 
    @software{AQUA,
-     author       = {Matteo Nurisso, Silvia Caprioli, Natalia Nazarova, Paolo Ghinassi, Paolo Davini, Jost von Hardenberg, Supriyo Ghosh, Nikolay Koldunov, Susan Sayed, Tanvi Sharma, Lukas Kluft, François Massonnet, Bruno P. Kinoshita, Pablo Ortega},
+     author       = {Matteo Nurisso, Silvia Caprioli, Jost von Hardenberg, Paolo Ghinassi, Supriyo Ghosh,  Bruno P. Kinoshita, Lukas Kluft, Nikolay Koldunov, François Massonnet, Natalia Nazarova, Pablo Ortega, Susan Sayed, Tanvi Sharma, Jaleena Sunny and Paolo Davini},
      title        = {AQUA: A Python Framework for High-Resolution Climate Model Diagnostics},
      year         = {2024},
      publisher    = {GitHub},

@@ -5,11 +5,17 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import xarray as xr
+from datetime import datetime
 from typing import Union
-from aqua.util import ConfigPath
+from aqua.util import ConfigPath, load_multi_yaml
+from aqua.reader.fixer import FixerMixin
 from aqua.logger import log_configure
 import yaml
 from os.path import isfile, join, exists, isdir
+from dateutil.relativedelta import relativedelta
+
+from calendar import monthrange
+from collections import defaultdict
 
 from importlib import resources
 full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
@@ -53,19 +59,6 @@ class ToolsClass:
             time_str = '-'.join(parts[:len(parts)])
         return time_str
 
-    def get_machine(self):
-        """
-        Retrieves the machine information from the ConfigPath instance.
-
-        Returns:
-            str: The machine information retrieved from the ConfigPath object.
-
-        Raises:
-            SomeException: If the ConfigPath object is not properly initialized or if there is an issue with
-                        retrieving the machine information.
-        """
-        return ConfigPath().machine
-
     def get_netcdf_path(self, configname: str = full_path_to_config) -> tuple:
         """
         Load paths from a YAML configuration file based on the specified configuration name.
@@ -88,7 +81,7 @@ class ToolsClass:
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
-            machine = ConfigPath().machine
+            machine = ConfigPath().get_machine()
             path_to_netcdf = data[machine]['path_to_netcdf']
         except FileNotFoundError as e:
             # Handle FileNotFoundError exception
@@ -100,6 +93,64 @@ class ToolsClass:
             path_to_netcdf = None
         self.logger.info(f"NetCDF folder: {path_to_netcdf}")
         return path_to_netcdf
+
+    def adjust_bins(self, ds, factor):
+        """
+        Adjusts the histogram bins by a specified factor, recalculating the center of each bin based on the assumption
+        that the first bin center is (center_of_bin - 0.5 * width). If factor is None, the function returns a copy of the 
+        dataset unchanged.
+
+        Args:
+            ds (xarray.Dataset): The dataset containing the histogram.
+            factor (float or None): The factor by which to adjust bin widths. Values > 1 increase bin width, 
+                                    values < 1 decrease it. None leaves the bin width and counts unchanged.
+
+        Returns:
+            xarray.Dataset: A new dataset with adjusted 'counts' and possibly 'center_of_bin' if factor is not None.
+        """
+        if factor is None:
+            # If factor is None, return a copy of the original dataset
+            return ds.copy()
+
+        if factor <= 0:
+            raise ValueError("Factor must be positive.")
+
+        original_width = ds.width.values[0]  # Assuming uniform width for all bins
+        new_width = original_width * factor
+        original_centers = ds.center_of_bin.values
+        
+        # Calculate new bin centers based on the adjusted first bin center
+        new_centers = np.array([original_centers[0] - 0.5 * original_width + (0.5 * new_width) + i * new_width for i in range(len(original_centers))])
+
+        # If the factor is meant to decrease bin size, this might result in more bins than originally
+        if factor < 1:
+            additional_bins = int((original_centers[-1] - new_centers[-1]) / new_width)
+            for i in range(1, additional_bins + 1):
+                new_centers = np.append(new_centers, new_centers[-1] + new_width)
+        
+        # Linear interpolation for counts
+        new_counts = np.interp(new_centers, original_centers, ds.counts.values, left=0, right=0)
+
+        # Create the adjusted dataset
+        adjusted_ds = xr.Dataset({
+            'counts': ('center_of_bin', new_counts),
+        }, coords={
+            'center_of_bin': ('center_of_bin', new_centers),
+            'width': ('center_of_bin', np.full(len(new_centers), new_width)),
+        })
+
+        # Preserve global attributes
+        adjusted_ds.attrs = ds.attrs.copy()
+        adjusted_ds.counts.attrs = ds.counts.attrs.copy()
+        adjusted_ds.center_of_bin.attrs = ds.center_of_bin.attrs.copy()
+        
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        history_update = str(current_time)+f" the histogram bins adjusted by a specified factor {factor} ;\n "
+        if 'history' not in adjusted_ds.attrs:
+            adjusted_ds.attrs['history'] = ' '
+        history_attr = adjusted_ds.attrs['history'] + history_update
+        adjusted_ds.attrs['history'] = history_attr
+        return adjusted_ds
 
     def get_pdf_path(self, configname: str = full_path_to_config) -> tuple:
         """
@@ -123,7 +174,7 @@ class ToolsClass:
         try:
             with open(config_path, 'r') as file:
                 data = yaml.safe_load(file)
-            machine = ConfigPath().machine
+            machine = ConfigPath().get_machine()
             path_to_pdf = data[machine]['path_to_pdf']
         except FileNotFoundError as e:
             # Handle FileNotFoundError exception
@@ -195,31 +246,44 @@ class ToolsClass:
         except (KeyError, TypeError):
             return default
 
-    def open_dataset(self, path_to_netcdf: str) -> object:
+    def open_dataset(self, path_to_netcdf: str) -> xr.Dataset:
         """
-        Function to load a histogram dataset from a file using pickle.
+        Function to load a dataset from a NetCDF file.
 
         Args:
             path_to_netcdf (str): The path to the dataset file.
 
         Returns:
-            object: The loaded histogram dataset.
+            xr.Dataset: The loaded dataset.
 
         Raises:
             FileNotFoundError: If the specified dataset file is not found.
+            ValueError: If the dataset file cannot be opened with the available backends.
         """
+        self.logger.debug(f"Opening dataset from path: {path_to_netcdf}")
+        
+        if not os.path.exists(path_to_netcdf):
+            self.logger.error(f"File does not exist: {path_to_netcdf}")
+            raise FileNotFoundError(f"File does not exist: {path_to_netcdf}")
+        
         try:
-            dataset = xr.open_dataset(path_to_netcdf)
+            dataset = xr.open_dataset(path_to_netcdf, engine='netcdf4')
             return dataset
-        except FileNotFoundError:
-            raise FileNotFoundError(
-                "The specified dataset file was not found.")
+        except FileNotFoundError as e:
+            self.logger.error(f"File not found: {path_to_netcdf}")
+            raise FileNotFoundError(f"The specified dataset file was not found: {path_to_netcdf}")
+        except ValueError as e:
+            self.logger.error(f"Error opening dataset with available backends: {e}")
+            raise ValueError(f"Failed to open dataset at {path_to_netcdf}: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error opening dataset: {e}")
+            raise
 
     def select_files_by_year_and_month_range(self, path_to_histograms: str, start_year: int = None, end_year: int = None,
-                                             start_month: int = None, end_month: int = None) -> list:
+                                             start_month: int = None, end_month: int = None, flag: str = None) -> list:
         """
-        Select files within a specific year and optional month range from a given directory.
-        If no year range is provided, return all files sorted alphabetically.
+        Select files within a specific year and optional month range from a given directory that also contain a certain flag in their filename.
+        If no year range is provided, return all files sorted alphabetically that match the flag condition.
 
         Args:
             path_to_histograms (str): Directory path containing the histogram files.
@@ -227,26 +291,33 @@ class ToolsClass:
             end_year (int, optional): End year of the range (inclusive). Defaults to None.
             start_month (int, optional): Start month of the range (inclusive). Defaults to None.
             end_month (int, optional): End month of the range (inclusive). Defaults to None.
+            flag (str, optional): A specific flag to look for in the filenames. Defaults to None.
 
         Returns:
-            list: A list of file paths matching the specified year and month range or all files if no year range is specified.
+            list: A list of file paths matching the specified year, month range, and flag or all files if no year range is specified and match the flag condition.
         """
         files = [join(path_to_histograms, f) for f in os.listdir(path_to_histograms) if isfile(join(path_to_histograms, f))]
         files.sort()
-        if start_year is None and end_year is None:
-            # If no year range is provided, return all files sorted alphabetically
+        if start_year is None and end_year is None and flag is None:
+            # If no year range and flag are provided, return all files sorted alphabetically
             return files
 
         selected_files = []
         for file_path in files:
             # Extract the year and month from the filename
             date_match = re.search(r'(\d{4})-(\d{2})-\d{2}T', file_path)
-            if date_match:
+            # Check if flag is present in the filename if a flag is specified
+            flag_present = flag is None or flag in file_path
+            if date_match and flag_present:
                 year, month = map(int, date_match.groups())
                 # Check if the year and optionally month falls within the specified range
-                if (start_year is None or start_year <= year) and (end_year is None or year <= end_year) and (not start_month or start_month <= month <= (end_month or 12)):
+                if ((start_year is None or start_year <= year) and 
+                    (end_year is None or year <= end_year) and 
+                    (not start_month or start_month <= month <= (end_month or 12))):
                     selected_files.append(file_path)
                 elif start_year is None and end_year is None:
+                    # This line seems to be redundant in the context of flag checking,
+                    # since it's already handled by the flag_present check.
                     selected_files.append(file_path)
         return selected_files
 
@@ -405,173 +476,31 @@ class ToolsClass:
         self.logger.info(f'The time value for selection is: {time_selection}')
         return time_selection
 
-    def convert_length(self, value, from_unit, to_unit):
-        """ Function to convert length units
-
+    def convert_units(self, value, from_unit, to_unit):
+        """
+        Convert a length measurement from one unit to another.
+        
         Args:
-            value (float, xarray):          The value to be converted
-            from_unit (str):                The unit of the value to be converted
-            to_unit (str):                  The unit to be converted to
+            value (float): The numerical value of the length measurement to be converted.
+            from_unit (str): The unit of the original length measurement (e.g., 'm', 'cm', 'mm').
+            to_unit (str): The desired unit for the converted length (e.g., 'cm', 'in', 'ft').
 
         Returns:
-            float/xarray:                   The converted value
+            float: The converted length value in the specified unit, accounting for
+            the factor and offset needed for the conversion.
         """
-        conversion_factors = {
-            'm': {
-                'm':  1,
-                'cm': 100,
-                'mm': 1000,
-                'in': 39.3701,
-                'ft': 3.28084
-            },
-            'cm': {
-                'm':  0.01,
-                'cm': 1,
-                'mm': 10,
-                'in': 0.393701,
-                'ft': 0.0328084
-            },
-            'mm': {
-                'm':  0.001,
-                'cm': 0.1,
-                'mm': 1,
-                'in': 0.0393701,
-                'ft': 0.00328084
-            },
-            'in': {
-                'm':  0.0254,
-                'cm': 2.54,
-                'mm': 25.4,
-                'in': 1,
-                'ft': 0.0833333
-            },
-            'ft': {
-                'm':  0.3048,
-                'cm': 30.48,
-                'mm': 304.8,
-                'in': 12,
-                'ft': 1
-            }
-        }
+        fix = FixerMixin()
+        fix.logger = self.logger
 
-        if from_unit not in conversion_factors or to_unit not in conversion_factors:
-            print("Invalid unit. Supported units: m, cm, mm, in, ft.")
-            return None
+        fix.fixer_folder, _ = (ConfigPath().get_reader_filenames())
+        fix.fixes_dictionary = load_multi_yaml(fix.fixer_folder)
 
-        conversion_factor = conversion_factors[from_unit][to_unit]
-        converted_value = value * conversion_factor
+        conversion = fix.convert_units(from_unit, to_unit)
+        factor = conversion.get('factor', 1)
+        offset = conversion.get('offset', 0)
 
+        converted_value = (value * factor) + offset
         return converted_value
-
-    def convert_time(self, value, from_unit, to_unit):
-        """ Function to convert time units
-
-        Args:
-            value (float, xarray):          The value to be converted
-            from_unit (str):                The unit of the value to be converted
-            to_unit (str):                  The unit to be converted to
-
-        Returns:
-            float/xarray:                   The converted value
-        """
-        conversion_factors = {
-            'year': {
-                'year':  1,
-                'month': 12,
-                'day':   365,
-                'hr':    8760,
-                'min':   525600,
-                's':     31536000,
-                'ms':    3.1536e+10
-            },
-            'month': {
-                'year':  0.0833333,
-                'month': 1,
-                'day':   30.4167,
-                'hr':    730.001,
-                'min':   43800,
-                's':     2.628e+6,
-                'ms':    2.628e+9
-            },
-            'day': {
-                'year':  0.00273973,
-                'month': 0.0328549,
-                'day':   1,
-                'hr':    24,
-                'min':   1440,
-                's':     86400,
-                'ms':    8.64e+7
-            },
-            'hr': {
-                'year':  0.000114155,
-                'month': 0.00136986,
-                'day':   0.0416667,
-                'hr':    1,
-                'min':   60,
-                's':     3600,
-                'ms':    3.6e+6
-            },
-            'min': {
-                'year':  1.90132e-6,
-                'month': 2.28311e-5,
-                'day':   0.000694444,
-                'hr':    0.0166667,
-                'min':   1,
-                's':     60,
-                'ms':    60000
-            },
-            's': {
-                'year':  3.17098e-8,
-                'month': 3.80517e-7,
-                'day':   1.15741e-5,
-                'hr':    0.000277778,
-                'min':   0.0166667,
-                's':     1,
-                'ms':    1000
-            },
-            'ms': {
-                'year':  3.16888e-11,
-                'month': 3.80266e-10,
-                'day':   1.15741e-8,
-                'hr':    2.77778e-7,
-                'min':   1.66667e-5,
-                's':     0.001,
-                'ms':    1
-            }
-        }
-
-        if from_unit not in conversion_factors or to_unit not in conversion_factors:
-            print("Invalid unit. Supported units: year, month, day, hr, min, s, ms.")
-            return None
-
-        conversion_factor = conversion_factors[from_unit][to_unit]
-        conversion_factor = 1/conversion_factor
-        converted_value = value * conversion_factor
-
-        return converted_value
-
-    def unit_splitter(self, unit):
-        """ Function to split units into space and time units
-
-        Args:
-            unit (str):             The unit to be split
-
-        Returns:
-            tuple:                  The space and time units
-        """
-        filtered_unit = list(
-            filter(None, re.split(r'\s+|/+|\*\*-1+|\*\*-2', unit)))
-        try:
-            mass_unit, space_unit, time_unit = filtered_unit
-        except ValueError:
-            try:
-                mass_unit = None
-                space_unit, time_unit = filtered_unit
-            except ValueError:
-                mass_unit = None
-                space_unit = filtered_unit[0]
-                time_unit = None #'day'
-        return mass_unit, space_unit, time_unit
 
     def get_local_time_decimal(self, utc_decimal_hour, longitude):
         # Each degree of longitude corresponds to 4 minutes of time difference
@@ -602,15 +531,19 @@ class ToolsClass:
             if 'path' not in value:
                 print(f"Error: 'path' key is missing in the entry with key {key}")
 
-        # Select a seaborn palette
-        palette = sns.color_palette("husl", len(loaded_dict))
+        # Define the number of entries
+        num_entries = len(loaded_dict)
+        
+        # Generate a palette starting at a hue past red (e.g., starting at 30 degrees out of 360)
+        palette = sns.husl_palette(n_colors=num_entries, h=0.25) 
 
-        # Loop through the dictionary and assign colors
+        # Assign colors to dictionary entries
         for i, (key, value) in enumerate(loaded_dict.items()):
             loaded_dict[key]["data"] = self.open_dataset(path_to_netcdf=value["path"])
             loaded_dict[key]["color"] = palette[i]
 
         return loaded_dict
+
 
     def add_colors_to_dict(self, loaded_dict: dict = None) -> Union[dict, None]:
         """
@@ -626,11 +559,17 @@ class ToolsClass:
         if not isinstance(loaded_dict, dict):
             self.logger.error("The provided object must be a 'dict' type.")
             return None
-        # Select a seaborn palette
-        palette = sns.color_palette("husl", len(loaded_dict))
+        
+        # Use a custom palette excluding red hues
+        num_entries = len(loaded_dict)
+        # Exclude red by setting hue range to avoid red (hue near 0)
+        palette = sns.husl_palette(n_colors=num_entries, h=0.25)
+        # You can also use other palettes like 'viridis', 'Blues', or 'Greens' depending on your needs
+
         # Loop through the dictionary and assign colors
         for i, (key, value) in enumerate(loaded_dict.items()):
             loaded_dict[key]["color"] = palette[i]
+
         return loaded_dict
 
     def time_interpreter(self, dataset):
@@ -836,6 +775,114 @@ class ToolsClass:
 
         return merged_time_band
 
+    def parse_filename_to_datetime(self, filename):
+        """
+        Extracts datetimes from the filename, accommodating both single and range date formats.
+        """
+        pattern = r"(\d{4}-\d{2}-\d{2}T\d{2})_?(\d{4}-\d{2}-\d{2}T\d{2})?(?:_\d+H)?\.nc"
+        match = re.search(pattern, filename)
+        if match:
+            start_time_str, end_time_str = match.groups()
+            start_time = datetime.strptime(start_time_str, "%Y-%m-%dT%H")
+            end_time = datetime.strptime(end_time_str, "%Y-%m-%dT%H") if end_time_str else start_time
+            return start_time, end_time
+        else:
+            raise ValueError(f"Time information not found in filename: {filename}")
+
+    def check_time_continuity(self, filenames, freq='M'):
+        """
+        Checks if the time coordinate is continuous for the given filenames and frequency.
+        """
+        filenames = [os.path.basename(file) for file in filenames]
+        times = [self.parse_filename_to_datetime(filename) for filename in filenames]
+        times.sort(key=lambda x: x[0])  # Sort by start time
+
+        for i in range(len(times) - 1):
+            current_start_time, current_end_time = times[i]
+            next_start_time, _ = times[i + 1]
+
+            if freq == 'M':  # Monthly data
+                expected_next_start = current_end_time + relativedelta(months=+1)
+                expected_next_start = expected_next_start.replace(day=1, hour=0)  # Adjust for the end of the month
+            elif '3H' in freq:  # 3-hourly data
+                expected_next_start = current_end_time + relativedelta(hours=+3)
+            else:
+                self.logger.warning(f"Unsupported frequency: {freq}")
+                continue
+
+            if next_start_time != expected_next_start:
+                self.logger.error(f"Discontinuity found: Expected {expected_next_start}, got {next_start_time}")
+                return False
+            else:
+                self.logger.debug(f"Continuity confirmed: {next_start_time} follows {expected_next_start}")
+
+        self.logger.info("Continuity of time coordinates confirmed for all files.")
+        return True
+
+    
+    def check_incomplete_months(self, files):
+        filenames = [os.path.basename(file) for file in files]
+        for file in filenames:
+            # Updated regex to accommodate both filename patterns
+            match = re.search(r"(\d{4})-(\d{2})-(\d{2})T\d{2}(?:_(\d{4})-(\d{2})-(\d{2})T\d{2})?_?(?:\dH)?\.nc", file)
+            if match:
+                start_year, start_month, start_day, end_year, end_month, end_day = match.groups()
+
+                if end_year and end_month and end_day:
+                    # If the file has an end date, use it to check completeness
+                    start_date = datetime(int(start_year), int(start_month), int(start_day))
+                    end_date = datetime(int(end_year), int(end_month), int(end_day))
+
+                    # Calculate the last day of the end month
+                    last_day = monthrange(end_date.year, end_date.month)[1]
+
+                    # If the end date is before the last day of the month, it's incomplete
+                    if end_date < datetime(int(end_year), int(end_month), last_day):
+                        self.logger.debug(f"The month {end_year}-{end_month} may be incomplete.")
+            else:
+                self.logger.warning(f"Could not match the file name format: {file}.")
+
+        return files
+
+    def check_and_remove_incomplete_months(self, files):
+        filenames = [os.path.basename(file) for file in files]
+        complete_files_by_month = defaultdict(list)
+        incomplete_files_by_month = defaultdict(list)
+
+        # Adjusted regex to match both file name formats
+        for file, full_path in zip(filenames, files):
+            match = re.search(r"(\d{4})-(\d{2})-(\d{2})T\d{2}(?:_(\d{4})-(\d{2})-(\d{2})T\d{2})?_?(?:\dH)?\.nc", file)
+            if match:
+                start_year, start_month, start_day, end_year, end_month, end_day = match.groups()
+
+                if end_year and end_month and end_day:
+                    # Handle files with both start and end timestamps
+                    end_date = datetime(int(end_year), int(end_month), int(end_day))
+                    last_day = monthrange(int(end_year), int(end_month))[1]
+                    if int(end_day) == last_day:  # Complete file
+                        complete_files_by_month[f"{start_year}-{start_month}"].append(full_path)
+                    else:  # Incomplete file
+                        incomplete_files_by_month[f"{start_year}-{start_month}"].append(full_path)
+                else:
+                    # Assuming files with a single date are complete month summaries
+                    # Add additional checks here if needed
+                    complete_files_by_month[f"{start_year}-{start_month}"].append(full_path)
+            else:
+                self.logger.error(f"Could not match the file name format: {file}")
+
+        # Logic to prioritize complete months and prepare the final list of files
+        final_files = []
+        for month, paths in complete_files_by_month.items():
+            final_files.extend(paths)
+            if month in incomplete_files_by_month:
+                self.logger.warning(f"Warning: Removing incomplete records for {month} because a complete month file is present.")
+
+        for month, paths in incomplete_files_by_month.items():
+            if month not in complete_files_by_month:
+                final_files.extend(paths)
+
+        return final_files
+
     def sanitize_attributes(self, ds, max_attr_length=500):
         """
         Sanitize dataset attributes by truncating long values.
@@ -1014,3 +1061,56 @@ class ToolsClass:
             for i in _names:
                 _size *= data[i].size
         return _size
+
+    def format_time(self, time_band: str) -> str:
+        """
+        Extract the dates from the time_band string and format them as 'year-month-day'.
+
+        Args:
+            time_band (str): The input time_band string.
+
+        Returns:
+            str: The formatted date string.
+        """
+        # Find all datetime parts and format them
+        formatted_time_band = re.sub(r'(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}\.\d+', r'\1-\2-\3', time_band)
+        return formatted_time_band
+    
+    def format_lat_band(self, dataset) -> str:
+        """
+        Format the latitude band information from a dataset.
+
+        Args:
+            dataset: The dataset containing the latitude band information.
+
+        Returns:
+            str: A formatted string describing the latitude band.
+        """
+        lat_band_values = dataset.lat_band.split(', ')
+        lat_band_str = f"The latitude band is from {lat_band_values[0]} to {lat_band_values[1]}"
+        if len(lat_band_values) > 2:
+            lat_band_str += f" with a frequency of {lat_band_values[2].split('=')[1]}"
+        return lat_band_str
+
+    def verify_lat_band(sel, model_dataset, comparison_dataset, dataset_name, logger):
+        """
+        Verify that the latitude band of a comparison dataset matches the latitude band of the model dataset.
+
+        Args:
+            model_dataset: The model dataset containing the reference latitude band.
+            comparison_dataset: The dataset to be compared.
+            dataset_name: The name of the comparison dataset.
+            logger: The logger instance for logging messages.
+
+        Returns:
+            bool: True if the latitude bands match, False otherwise.
+        """
+        def check_lat_band(model_lat_band, comparison_lat_band, dataset_name):
+            if model_lat_band != comparison_lat_band:
+                logger.error(f"Latitude bands do not match between model and {dataset_name} data. Aborting comparison.")
+                return False
+            return True
+
+        if comparison_dataset is not None:
+            return check_lat_band(model_dataset.lat_band, comparison_dataset.lat_band, dataset_name)
+        return True  # If comparison_dataset is None, consider it as a match

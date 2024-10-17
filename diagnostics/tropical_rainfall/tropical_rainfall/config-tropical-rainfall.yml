@@ -9,10 +9,10 @@ levante:
 
 class_attributes:
   trop_lat:    15
-  num_of_bins: 1000
+  num_of_bins: 5000
   first_edge:   0
   bins: 0
-  width_of_bin: 0.05 # in [mm/day]
+  width_of_bin: 0.5 # in [mm/day]
   model_variable: 'mtpr'
   new_unit:       'mm/day'
   loglevel:       'WARNING'

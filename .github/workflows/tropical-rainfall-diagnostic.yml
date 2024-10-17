@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
     defaults:
       run:
         shell: bash -l {0}
@@ -30,10 +30,11 @@ jobs:
       - name: Setup Micromamba with diagnostic environment
         uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-version: '1.5.10-0'
           environment-file: environment.yml
           environment-name: tropical-rainfall
           cache-downloads: true
-          cache-environment: true
+          cache-environment: false
           condarc: |
             channels:
               - numba
@@ -45,6 +46,15 @@ jobs:
       - name: Download and setup dummy-diagnostic tests
         run: |
           ./tests/tropical-rainfall/download_data_for_tests.sh
+
+      - name: Set up AQUA
+        run: |
+          # Initialize the AQUA catalog in the $HOME/.aqua folder
+          aqua -vv install
+          # Add the ci/cd catalog
+          aqua -vv add ci
+          # Double check the catalogs
+          aqua -vv list
 
       - name: Run tropical-rainfall tests
         run: |

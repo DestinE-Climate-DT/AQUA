@@ -149,6 +149,7 @@ if __name__ == '__main__':
             var_attributes = config['seasonal_bias'].get(var_name, {})
             vmin = var_attributes.get('vmin', None)
             vmax = var_attributes.get('vmax', None)
+            seasons = config['diagnostic_attributes'].get('seasons', None)
             logger.debug(f"var: {var_name}, vmin: {vmin}, vmax: {vmax}")
 
             try:
@@ -159,19 +160,30 @@ if __name__ == '__main__':
                               start_date2=start_date2, end_date2=end_date2,
                               outputdir=outputdir, outputfig=outputfig,
                               vmin=vmin, vmax=vmax,
-                              loglevel=loglevel)
+                              loglevel=loglevel, seasons=seasons)
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")
 
     if compare_datasets_plev_bool:
         for var_name in variables_with_plev:
             logger.info(f"Running compare datasets plev diagnostic for {var_name}...")
+            
+            # Getting variable specific attributes
+            var_attributes = config['compare_datasets_plev'].get(var_name, {})
+            vmin = var_attributes.get('vmin', None)
+            vmax = var_attributes.get('vmax', None)
+            logger.debug(f"var: {var_name}, vmin: {vmin}, vmax: {vmax}")
+            plev_min = config['compare_datasets_plev'].get('plev_min', None)
+            plev_max = config['compare_datasets_plev'].get('plev_max', None)
+            
             try:
                 compare_datasets_plev(dataset1=data, dataset2=data_obs, var_name=var_name,
                                       model_label1=model_label, model_label2=model_label_obs,
                                       start_date1=start_date1, end_date1=end_date1,
                                       start_date2=start_date2, end_date2=end_date2,
                                       outputdir=outputdir, outputfig=outputfig,
+                                      vmin=vmin, vmax=vmax,
+                                      plev_min=plev_min, plev_max=plev_max,
                                       loglevel=loglevel)
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")

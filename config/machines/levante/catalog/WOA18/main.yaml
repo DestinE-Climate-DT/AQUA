@@ -1,6 +1,0 @@
-sources:
- woa18_2005_2017:
-    description: World Ocean Atlas climatology
-    driver: yaml_file_cat
-    args:
-      path: "{{CATALOG_DIR}}/woa18_2005_2017.yaml"

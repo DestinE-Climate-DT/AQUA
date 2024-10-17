@@ -1,59 +1,83 @@
+rebuild_output: false
+
 data:
-  model:  "MSWEP"         # Name of the climate model used
-  exp:    "past"          # Experiment identifier
-  source: "3hourly"       # Data source, specifying resolution and frequency
-  freq:   "3H"            # Frequency of data, 'M' stands for Monthly
-  regrid: "r010"          # Regridding option to apply
-  s_year:  null           # Start year for analysis, 'null' means it will be set dynamically
-  f_year:  null           # Final year for analysis, 'null' means it will be set dynamically
-  s_month: null           # Start month for analysis, 'null' means it will be set dynamically
-  f_month: null           # Final month for analysis, 'null' means it will be set dynamically
+  model: "IFS-NEMO"                   # Name of the climate model used
+  exp: "ssp370"                       # Experiment identifier
+  source: "hourly-hpz10-atm2d"        # Data source, specifying resolution and frequency
+  freq: "3H"                          # Frequency of data, 'M' stands for Monthly
+  regrid: "r010"                      # Regridding option to apply
+  s_year: null                        # Start year for analysis
+  f_year: null                        # Final year for analysis
+  s_month: null                       # Start month for analysis, null for dynamic setting
+  f_month: null                       # Final month for analysis, null for dynamic setting
 
 class_attributes:
-  trop_lat:    15         # Tropical latitude boundary for analysis
-  num_of_bins: 5000       # Number of bins for histogram generation
-  first_edge:   0         # Starting edge value for the histogram bins
-  width_of_bin: 0.1       # Width of each bin in the histogram, in mm/day
-  model_variable: 'mtpr'  # Model variable to be analyzed
-  new_unit:       'mm/day' # Unit for the model variable
-
-rebuild_output: False
+  trop_lat: 15                        # Tropical latitude boundary for analysis
+  num_of_bins: 10000                  # Number of bins for histogram generation
+  first_edge: 0                       # Starting edge value for the histogram bins
+  width_of_bin: 0.5                   # Width of each bin in the histogram, in mm/day
+  model_variable: 'mtpr'              # Model variable to be analyzed
+  new_unit: 'mm/day'                  # Unit for the model variable
 
 plot:
-  color: 'tab:green'      # Color for the plot
-  figsize: 1              # Figure size for the plot
-  xmax: null              # Max value for the x-axis in the plot
-  loc: 'upper right'      # Location of the legend/annotation in the plot
-  pdf_format: True        # Whether to save plots in PDF format
-
-machine: lumi             # The machine/environment where the analysis is run
+  factor: null                        # Factor to adjust bin widths (null for default)
+  xmax: null                          # Max value for the x-axis in the plot (null for dynamic setting)
+  loc: 'upper right'                  # Location of the legend/annotation in the plot
+  pdf_format: true                    # Whether to save plots in PDF format
+  color: 'tab:green'                  # Color for the plot
+  figsize: 1                          # Figure size for the plot
 
 output:
-  levante: "/work/bb1153/b382267/tropical_rainfall_cicle3/cli_test/"  # File path for Levante machine
+  levante: "/work/bb1153/b382267/tropical_rainfall_cicle3/cli_test/"
   lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/output/cli_test/"
 
-mswep:
-  levante: "/work/bb1153/b382267/observations/MSWEP/"  # File path for Levante machine
+buffer:
+  levante: "/scratch/b/b382267/cli_test/"
+  lumi: "/pfs/lustrep3/scratch/project_465000454/nazarova/cli_test/"
+
+# Observation Datasets
+mswep: &mswep_settings
+  levante: "/work/bb1153/b382267/observations/MSWEP/"
   lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/MSWEP/"
-  s_year:  1990           # Start year for analysis, 'null' means it will be set dynamically
-  f_year:  2021           # Final year for analysis, 'null' means it will be set dynamically
-  auto: False             # will be set dynamically
+  s_year: 1990                        # Start year for MSWEP analysis
+  f_year: 2020                        # Final year for MSWEP analysis
+  auto: false                         # Auto-adjust setting
+  factor: null                        # Factor to adjust bin widths (null for default)
+  color: 'tab:red'                    # Color for MSWEP plots
+
+era5: &era5_settings
+  levante: "/work/bb1153/b382267/observations/ERA5/"
+  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/ERA5/"
+  s_year: 1990
+  f_year: 2021
+  auto: false
+  factor: null
+  color: 'tab:blue'
+
+imerg:
+  levante: "/work/bb1153/b382267/observations/IMERG/"
+  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/IMERG/"
+  s_year: 2000
+  f_year: 2023
+  auto: false
+  factor: null
+  color: 'tab:orange'
 
 logger:
   diag_loglevel: info
   reader_loglevel: warning
 
 compute_resources:
-  resubmit: False         # Whether to automatically resubmit the job if it fails
-  run_on_sunday: False    # Restrict job execution to Sundays only
-  nproc: 16               # Number of processors to use for the job
-  nodes: 1                # Number of compute nodes required for the job
-  walltime: '06:20:00'    # Maximum wall-clock time allocated for the job
-  memory: '400G'          # Memory allocation for the job, 0 for default
-  lumi_version: '23.03'   # Specific version of LUMI to use
-  account:                # Account details for billing and access
+  resubmit: false                     # Whether to automatically resubmit the job if it fails
+  run_on_sunday: false                # Restrict job execution to Sundays only
+  nproc: 16                           # Number of processors to use for the job
+  nodes: 1                            # Number of compute nodes required for the job
+  walltime: '06:20:00'                # Maximum wall-clock time allocated for the job
+  memory: '400G'                      # Memory allocation for the job, 0 for default
+  lumi_version: '23.03'               # Specific version of LUMI to use
+  account:                            # Account details for billing and access
     lumi: 'project_465000454'
     levante: 'bb1153'
-  partition:              # Partition settings for different machines
+  partition:                          # Partition settings for different machines
     lumi: 'small'
     levante: 'compute'

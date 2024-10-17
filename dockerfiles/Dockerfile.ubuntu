@@ -2,7 +2,7 @@
 FROM ubuntu:22.04
 
 LABEL maintainer="jost.hardenberg@polito.it"
-LABEL version="0.1"
+LABEL version="0.2"
 LABEL description="Custom docker image based ion Ubuntu 22.04 with FDB5 and ECCODES for CA DestinE"
 
 #ARG DEBIAN_FRONTEND=noninteractive
@@ -13,10 +13,10 @@ RUN apt -y install libaec-dev gfortran
 
 # DIR definitions
 ENV INSTALL_DIR=/usr/local
-ENV ECKIT_VER=1.25.2
-ENV ECCODES_VER=2.33.1
-ENV METKIT_VER=1.11.2
-ENV FDB5_VER=5.11.99
+ENV ECKIT_VER=1.26.1
+ENV ECCODES_VER=2.34.2
+ENV METKIT_VER=1.11.9
+ENV FDB5_VER=5.11.113
 
 # ECBUILD
 WORKDIR /usr/local

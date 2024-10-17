@@ -4,10 +4,15 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package AQUA.
-AQUA is developed and tested with Python 3.11 and it supports Python 3.9 and later.
+AQUA is developed and tested with Python 3.12 and it supports Python 3.9 and later.
 
 We recommend using Mamba, a package manager for conda-forge, for the installation process.
 However, you can also use Conda, the default package manager for Anaconda.
+
+.. note ::
+    Soon AQUA will be available on the PyPI repository, so you will be able to install it with pip.
+    The installation process will be updated accordingly.
+    Some dependencies are not available in the PyPI repository, so mamba or conda are recommended for the installation process.
 
 Prerequisites
 -------------
@@ -118,6 +123,31 @@ If you do not agree, you will need to call ``load_aqua.sh`` manually every time 
 .. note ::
     If you encounter any issues with the installation script, please refer to the :ref:`faq` section.
 
+.. _installation-levante:
+
+Installation on Levante HPC at DKRZ
+-----------------------------------
+
+You can follow the mamba installation process described in the previous section.
+In order to use the FDB access, you need to load the FDB5 binary library (``libfdb5.so``).
+At the moment a specific module for levante seems not to be available, so you can either compile your own copy and then make it available
+(download the source code from ``https://github.com/ecmwf/fdb``), or you can use our precompiled version by setting
+
+.. code-block:: bash
+
+    export LD_LIBRARY_PATH=/work/bb1153/b382075/aqua/local/lib:$LD_LIBRARY_PATH 
+    
+in ``.bash_profile`` and in ``.bashrc`` in your home directory.
+
+The GSV package will also require, in order to correctly decode the unstructured grid, an environment variable to be set:
+
+.. code-block:: bash
+
+    export GRID_DEFINITION_PATH=/work/bb1153/b382321/grid_definitions
+
+This path is the one where the grid definitions are stored, and it is necessary for the GSV package to work correctly.
+Also in this case, you can set the environment variable in your ``.bash_profile`` and in ``.bashrc`` in your home directory.
+
 Installation and use of the AQUA container
 ------------------------------------------
 
@@ -127,6 +157,6 @@ The AQUA container is a Docker container that contains the AQUA package and all 
 Please refer to the :ref:`container` section for more information on how to deploy and how to use the AQUA container.
 
 .. note ::
-    If you're working on LUMI HPC, a compact script is available to load the AQUA container,
+    If you're working on LUMI or Levante HPC, a compact script is available to load the AQUA container,
     mounting the necessary folders and creating the necessary environment variables.
     Please refer to the :ref:`container` section.

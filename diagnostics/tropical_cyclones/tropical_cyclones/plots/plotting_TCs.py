@@ -11,10 +11,10 @@ from tropical_cyclones.tools.tempest_utils import getTrajectories
 
 def multi_plot(tracks_nc_file, tdict, title=None, units=None, save=False):
 
-    delta=10 # further extension of the are domain for plotting
+    delta=5 # further extension of the are domain for plotting
 
     # Create 10 subplots of a selected variable
-    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(16, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    fig, axs = plt.subplots(nrows=3, ncols=3,  figsize=(14, 14), subplot_kw={'projection': ccrs.PlateCarree()}, constrained_layout=True)
     axs = axs.flatten()
 
     # add main title and save figure accordingly
@@ -41,6 +41,14 @@ def multi_plot(tracks_nc_file, tdict, title=None, units=None, save=False):
         tracks_nc_file.isel(time=i).plot.pcolormesh(ax=ax, transform=ccrs.PlateCarree(), add_colorbar=False)
         ax.set_extent([lon_min, lon_max, lat_min, lat_max], ccrs.PlateCarree())
         ax.coastlines()
+
+        # Add latitude and longitude gridlines
+        gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, linewidth=1, color='gray', alpha=0.5, linestyle='--')
+        gl.xlabels_top = False
+        gl.ylabels_right = False
+        gl.xlabel_style = {'size': 10}
+        gl.ylabel_style = {'size': 10}
+
         # add time step at each ax subplot
         ax.set_title(f'{str(tracks_nc_file.time[i].values)[:13]}', fontsize=10)
 
@@ -52,8 +60,10 @@ def multi_plot(tracks_nc_file, tdict, title=None, units=None, save=False):
     
     os.makedirs(tdict['paths']['plotdir'], exist_ok=True)
 
+    plt.tight_layout
+
     if save:
-        save_path = os.path.join(tdict['paths']['plotdir'], save_title + ".pdf")
+        save_path = os.path.join(tdict['paths']['plotdir'], save_title + ".pdf", bbox_inches="tight")
         plt.savefig(save_path, dpi=350)
 
     plt.show()

@@ -1,0 +1,92 @@
+fixer_name:
+  ifs-ecmwf_reduced-v1:
+    data_model: ifs
+    deltat: 3600
+    delete: [tp]
+
+    vars:
+      2t: 
+        source: mean2t
+        grib: true
+      10u:
+        source: avg_10u
+        grib: true
+      10v:
+        source: avg_10v
+        grib: true
+      avg_tos:
+        source: avg_sst
+        grib: true
+      hcc:
+        source: avg_hcc_frac
+        grib: true
+      lcc:
+        source: avg_lcc_frac
+        grib: true
+      mcc:
+        source: avg_mcc_frac
+        grib: true
+      mer:
+        source: e
+        grib: true
+        src_units: m
+      msl:
+        source: avg_msl
+        grib: true
+      mslhf:
+        source: slhf
+        grib: true
+      msdwswrf:
+        source: ssrd
+        grib: true
+      msdwlwrf:
+        source: strd
+        grib: true
+      msnlwrf:
+        source: str
+        grib: true
+      msnswrf:
+        source: ssr
+        grib: true
+      mtdwswrf:
+        source: tisr
+        grib: true
+      msdwswrfcs:
+        source: ssrdc
+        grib: true
+      msnlwrfcs:
+        source: strc
+        grib: true
+      msnswrfcs:
+        source: ssrc
+        grib: true
+      msror:
+        source: sro
+        grib: true
+      msshf:
+        source: sshf
+        grib: true
+      mssror:
+        source: ssro
+        grib: true
+      mtnswrf:
+        source: tsr
+        grib: true
+      mtnlwrf:
+        source: ttr
+        grib: true
+      mtnswrfcs:
+        source: tsrc
+        grib: true
+      mtnlwrfcs:
+        source: ttrc
+        grib: true
+      mtpr:
+        source: mtpr
+        grib: True
+      skt:
+        source: mskt
+        grib: true
+      tcc:
+        source: meantcc
+        grib: true

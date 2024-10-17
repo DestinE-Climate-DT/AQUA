@@ -1,4 +1,4 @@
-Core Components
+The AQUA Reader
 ===============
 
 Here we describe the core components of the AQUA library.
@@ -10,7 +10,7 @@ The Reader class
 ----------------
 
 The ``Reader`` class provides AQUA access to data, developed to offer a centralized common data access point.
-AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogues, 
+AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogs, 
 and delivers xarray objects.
 On top of data access, the ``Reader`` is also able to perform multiple operations on the data:
 interpolation and regridding, spatial and temporal averaging and metadata correction. 
@@ -40,11 +40,11 @@ specifically an ``xarray.Dataset``, where only the metadata are loaded in memory
     on top of the NetCDF format, to `significantly improve the performance <https://ui.adsabs.harvard.edu/abs/2021AGUFMIN15A..08P/abstract>`_
     of the data access.
 
-Catalogue Exploration
+Catalog exploration
 ^^^^^^^^^^^^^^^^^^^^^
 
-To check what is available in the catalogue, we can use the ``inspect_catalogue()`` function.
-Three hierarchical layer structures describe each dataset.
+To check what is available in the catalog, we can use the ``inspect_catalog()`` function.
+Three hierarchical layer structures (e.g AQUA triplet) describe each dataset.
 At the top level, there are *models* (keyword ``model``) (e.g., ICON, IFS-NEMO, IFS-FESOM, etc.). 
 Each model has different *experiments* (keyword ``exp``) and each experiment can have different *sources* (keyword ``source``).
 
@@ -52,17 +52,17 @@ Calling, for example:
 
 .. code-block:: python
 
-    from aqua import inspect_catalogue
-    inspect_catalogue(model='CERES')
+    from aqua import inspect_catalog
+    inspect_catalog(model='CERES')
 
-will return experiments available in the catalogue for model CERES.
+will return experiments available in the catalog for model CERES.
 
 .. warning::
-    The ``inspect_catalogue()`` and the ``Reader`` are based on the machine and AQUA path configuration.
+    The ``inspect_catalog()`` and the ``Reader`` are based on the catalog and AQUA path configuration.
     If you don't find a source you're expecting, please check these are correctly set (see :ref:`getting_started`).
 
-If you want to have a complete overview of the sources available in the catalogue, you can use the ``catalogue()`` function.
-This will return a list of all the sources available in the catalogue, listed by model and experiment.
+If you want to have a complete overview of the sources available in the catalog, you can use the ``catalog()`` function.
+This will return a list of all the sources available in the catalog, listed by model and experiment.
 
 Reader basic usage
 ^^^^^^^^^^^^^^^^^^
@@ -76,6 +76,10 @@ The basic call to the ``Reader`` is:
     reader = Reader(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly')
     data = reader.retrieve()
 
+.. note::
+    If multiple catalog are installed, a browsing will be done to search for the required triplet.
+    In case you want to speed up the process, you can point to a specific catalog with the `catalog` keyword. 
+
 This will return a ``Reader`` object that can be used to access the data.
 The ``retrieve()`` method will return an ``xarray.Dataset`` to be used for further processing.
 
@@ -88,6 +92,16 @@ If some information about the data is needed, it is possible to use the ``info()
 .. warning::
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.
     If you're retrieving data from many sources, please instantiate a new ``Reader`` for each source.
+
+
+Since version v0.10, multiple catalogs are supported. AQUA is designed to browse all the sources to match the triplet requested
+by the users, but things can be speed up if we target a specific catalog. This can be done by passing the ``catalog`` kwargs. 
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly', catalog='climatedt-phase1')
+    data = reader.retrieve()
 
 Dask and Iterator access
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -105,7 +119,7 @@ Please check the :ref:`iterators` section for more details.
 
 .. note::
     Dask access to data is available also for FDB data.
-    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalogue,
+    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalog,
     we suggest to read the :ref:`FDB_dask` section.
 
 Regrid and interpolation capabilities
@@ -132,21 +146,26 @@ This will return an ``xarray.Dataset`` with the data lazily regridded to the tar
 We can then use the ``data_r`` object for further processing and the data
 will be loaded in memory only when necessary, allowing for further subsetting and processing.
 
+The default regrid method is ``ycon`` which is a conservative regrid method.
+If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
+following the CDO convention.
+
 Concept
 ^^^^^^^
 
 The idea of the regridder is first to generate the weights for the interpolation and
 then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already
-existent and stored in a directory specified in the ``config/machine/<machine-name>/catalog.yaml`` file.
-A list of predefined target grids (only regular lon-lat for now) is available in the ``config/aqua-grids.yaml`` file.
+existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/machine.yaml`` file. 
+This can have a `default` argument but can also specific for each machine you are working on. 
+A list of predefined target grids (only regular lon-lat for now) is available in the ``config/grids/default.yaml`` file.
 For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, etc.
 
 .. note::
     The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
-    centered between 90 and -90 degrees is sometimes used in the field. If you need sucha a grid please add an additional definition
-    to the ``config/aqua-grids.yaml`` file with a different grid name (for example ``r100a``).
+    centered between 90 and -90 degrees is sometimes used in the field and it is available in AQUA with the convention of adding
+    an s to the corresponding convention defined above (e.g. ``r100s`` ).
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
@@ -203,8 +222,8 @@ By default, fixes files with the name of the model or the name of the DestinE pr
 
 If you need to develop your own, fixes can be specified in two different ways:
 
-- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalogue entry.
-  This represents fixes that have a common nickname which can be used in multiple sources when defining the catalogue.
+- Using the ``fixer_name`` definitions, to be then provided as a metadata in the catalog source entry.
+  This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog.
   There is the possibility of specifing a **parent** fix so that a fix can be re-used with minor corrections,
   merging small changes to a larger ``fixer_name``.
 - Using the source-based definition.
@@ -264,6 +283,9 @@ Here we show an example of a fixer file, including all the possible options:
         documentation-fix:
             parent: documentation-to-merge
             data_model: ifs
+            dims:
+                cells:
+                    source: cells-to-rename
             coords:
                 time:
                     source: time-to-rename
@@ -304,9 +326,14 @@ different sections of the fixer file.
 - **data_model**: the name of the data model for coordinates. (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough.
   (See :ref:`coord-fix`).
+- **dims**: extra dimensions handling if data model is not flexible enough. 
+  (See :ref:`coord-fix`).
 - **decumulation**: 
-    - If only ``deltat`` is specified, all the variables that are considered flux variables
-      will be divided by the ``deltat``. This is done automatically based on target and source units.
+    - If only ``deltat`` is specified, all the variables that are considered as cumulated flux variables 
+      (i.e. that present a time unit mismatch from the source to target units) will be divided
+      by ``deltat``. This is done automatically based on the values of target and source units.
+      ``deltat`` can be an integer in seconds, or alternatively a string with `monthly`: in this case
+      each flux variable will be divided by the number of seconds of each month.
     - If additionally ``decumulate: true`` is specified for a specific variable,
       a time derivative of the variable will be computed.
       This is tipically done for cumulated fluxes for the IFS model, that are cumulated on a period longer
@@ -352,30 +379,43 @@ Then, extra keys can be then specified for `each` variable to allow for further 
 
 .. _coord-fix:
 
-Data Model and Coordinates Correction
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Data Model and Coordinates/Dimensions Correction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The fixer can adopt a common *coordinate data model*
 (default is the CDS data model).
 If this data model is not appropriate for a specific source,
-it is possible to specify a different one in the catalogue.
+it is possible to specify a different one in the catalog source.
 
-If the data model coordinate treatment is not enough to fix the coordinates,
-it is possible to specify a custom fix in the catalogue in the **coords** block
+If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
+it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
 For example, if the longitude coordinate is called ``longitude`` instead of ``lon``,
 it is possible to specify a fix like:
 
 .. code-block:: yaml
 
-    lon:
-        source: longitude
+    coords: 
+        lon:
+            source: longitude
 
 This will rename the coordinate to ``lon``.
 
 .. note::
     When possible, prefer a **data model** treatment of coordinates and use the **coords**
     block as second option.
+
+Similarly, if units are ill-defined in the dataset, it is possible to override them with the same fixer structure. 
+Of course, this feature is valid only for **coords**:
+
+.. code-block:: yaml
+
+    coords: 
+        level:
+            tgt_units: m
+
+.. warning::
+    Please keep in mind that coordinate units is simply an override of the attribute. It won't make any assumption on the source units and will not convert it accordingly.
 
 Time Aggregation
 ----------------
@@ -418,6 +458,9 @@ Some options includes:
 
 - ``degree``: this will define with an integer the order of the polynominial fit. Default is 1, i.e. linear Detrending
 - ``skipna==True``: removing the NaN from the fit. Default is True. 
+
+.. warning::
+    Detrending might lead to incorrect results if there is not an equal amount of time elements (e.g. same amount of months or days) in the dataset.
 
 
 Spatial Averaging
@@ -683,7 +726,7 @@ The function is built to plot time series of a single variable,
 with the possibility to plot multiple lines for different models and a special line for a reference dataset.
 The reference dataset can have a representation of the uncertainty over time.
 
-By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`global_mean_timeseries` diagnostic.
+By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`global_timeseries` diagnostic.
 
 The function takes as data input:
 
@@ -700,7 +743,7 @@ The function will automatically plot what is available, so it is possible to plo
     :align: center
     :width: 100%
 
-    Example of a ``plot_timeseries()`` output done with the :ref:`global_mean_timeseries`.
+    Example of a ``plot_timeseries()`` output done with the :ref:`global_timeseries`.
     The plot shows the global mean 2 meters temperature time series for the IFS-NEMO scenario and the ERA5 reference dataset.
 
 Seasonal cycle
@@ -720,5 +763,20 @@ The function will automatically plot what is available, so it is possible to plo
     :align: center
     :width: 100%
 
-    Example of a ``plot_seasonalcycle()`` output done with the :ref:`global_mean_timeseries`.
+    Example of a ``plot_seasonalcycle()`` output done with the :ref:`global_timeseries`.
     The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.
+
+Multiple maps
+^^^^^^^^^^^^^
+
+A function called ``plot_maps()`` is provided with many options to customize the plot.
+The function takes as input a list of xarray.DataArray, each one representing a map.
+It is built to plot multiple maps in a single figure, with a shared colorbar.
+This can be userdefined or evaluated automatically.
+Figsize can be adapted and the number of plots and their position is automatically evaluated.
+
+.. figure:: figures/maps_example.png
+    :align: center
+    :width: 100%
+
+    Example of a ``plot_maps()`` output.

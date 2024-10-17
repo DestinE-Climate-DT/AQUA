@@ -1,0 +1,57 @@
+grids:
+  #IFS
+  tl63:
+    path: '{{ grids }}/IFS/tl63_grid.nc'
+  tl159:
+    path: '{{ grids }}/IFS/tl159_grid.nc'
+  tco79:
+    path:  
+      2d: '{{ grids }}/IFS/tco79_grid.nc'
+      2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
+    vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this
+    masked: 
+      vars: ["ci", "sst"]
+  tco399:
+    path: 
+      2d: '{{ grids }}/IFS/tco399_grid.nc'
+      2dm: '{{ grids }}/IFS/tco399_grid_masked.nc'
+    # space_coord: ["cell"] # levante
+    # space_coord: ["ncells"] # lumi and mafalda
+    vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this
+    masked: 
+      vars: ["ci", "sst"]
+  tco1279:
+    path: 
+      2d: '{{ grids }}/IFS/tco1279_grid.nc'
+      2dm: '{{ grids }}/IFS/tco1279_grid_masked.nc'
+    masked: 
+      vars: ["ci", "sst"]
+    vert_coord: ["2d", "2dm"]
+    # space_coord: ["value"] # levante
+    # space_coord: ["ncells"] # lumi
+  tco2559:
+    path: 
+      2d: '{{ grids }}/IFS/tco2559_grid.nc'
+      2dm: '{{ grids }}/IFS/tco2559_grid_masked.nc'
+    masked: 
+      vars: ["ci", "sst"]
+    vert_coord: ["2d", "2dm"]
+    # space_coord: ["value"]
+  tco3999: 
+    path: '{{ grids }}/IFS/tco3999_grid.nc'
+    # space_coord: ["value"]
+  
+  # IFS interpolated
+  ifs-interpolated: 
+    path: '{{ grids }}/IFS/ifs_interpolated5400x2700.nc'
+    space_coord: ["lon", "lat"]
+  multio-r025:
+    space_coord: ["value"]
+    vert_coord: ["2d"]
+    extra: -setgrid,{{ grids }}/IFS/grid_lonlat_025.txt
+    cellareas: '{{ grids }}/IFS/cellarea_unstructured_025.nc'
+    cellarea_var: cell_area
+  ifs-healpix:
+    space_coord: ["ncells"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix_old/ifs_hpx10.nc'

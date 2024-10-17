@@ -1,0 +1,7 @@
+# List of experiments to analyze in the format
+# catalog model exp [source]
+
+climatedt-phase1 IFS-NEMO  ssp370
+climatedt-phase1 IFS-NEMO historical-1990
+climatedt-phase1 ICON historical-1990
+climatedt-phase1 ICON ssp370

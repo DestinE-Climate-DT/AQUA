@@ -6,15 +6,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aqua"
 dynamic = ["version"]
-authors = [
-    {name = "The AQUA team", email = "p.davini@isac.cnr.it"}
+authors = [ # AQUA core team reported here
+    {name = "The AQUA team", email = "p.davini@isac.cnr.it"},
+    {name = "Paolo Davini", email = "p.davini@isac.cnr.it"},
+    {name = "Matteo Nurisso", email = "m.nurisso@isac.cnr.it"},
+    {name = "Silvia Caprioli", email = "silvia.caprioli@polito.it"},
+    {name = "Jost von Hardenberg", email = "jost.hardenberg@polito.it"},
+    {name = "Natalia Nazarova", email = "natalia.nazarova@polito.it"},
+    {name = "Supriyo Ghosh", email = "supriyo.ghosh@bsc.es"}
 ]
 description = "AQUA; a model evaluation framework for high-resolution climate model simulations"
 readme = "README.md"
-keywords = [
-    "diagnostics"
-]
+keywords = ["climate", "modeling", "diagnostics", "high-resolution"]
 license = {text = "Private"}
+requires-python = ">=3.9"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -24,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
@@ -32,26 +38,30 @@ dependencies = [
     "cfgrib",
     "dask",
     "dask_jobqueue",
+    "eccodes==2.38.0",
     "docker",
+    "gcsfs", # Google Cloud Storage File System
     "gribscan",
-    "ecCodes",
     "pandas",
-    "intake==0.7.0",
+    "intake==0.7.0", # Version 2 is not yet compatible with intake-xarray
     "intake-esm",
     "intake-xarray",
     "jinja2",
     "matplotlib",
     "metpy",
     "numpy",
-    "pydantic<2.5.3", # NOTE: pydantic 2.5.3 has a bug that breaks tests
+    "pydantic",
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid",
+    "smmregrid==0.0.6",
     "sparse",
     "xarray",
-    "pyfdb@git+https://github.com/ecmwf/pyfdb.git@master",
-    "gsv@git+https://oauth2:NrMi_dshtmNeaWy9F3sz@earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface.git@v1.0.0"
+    "kerchunk",
+    "h5py",
+    "fastparquet",
+    "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
+    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.6.0"
 ]
 
 [project.optional-dependencies]
@@ -70,33 +80,31 @@ tests = [
     "pandoc",
     "pycobertura"
 ]
-# Here we list the packages that are required for each diagnostic
-# The syntax is "aqua[diagnostic_name]"
-# If a diagnostic is missing it means that it needs no extra dependencies
-ecmean = [
+diagnostics = [
     "ECmean4"
 ]
 all = [
     "aqua[docs]",
     "aqua[notebooks]",
     "aqua[tests]",
-    # diagnostics
-    "aqua[ecmean]"
+    "aqua[diagnostics]"
 ]
 
+[project.scripts]
+aqua = "aqua.cli.main:main"
+
 [project.urls]
-homepage = "https://aqua-web-contbuild.2.rahtiapp.fi"
-documentation = "https://aqua-web-contbuild.2.rahtiapp.fi/documentation/index.html"
+homepage = "https://aqua-web-climatedt.2.rahtiapp.fi"
+documentation = "https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html"
 repository = "https://github.com/DestinE-Climate-DT/AQUA/"
 issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 
 [tool.setuptools.package-data]
-platforms = [
-    "any"
-]
+platforms = ["any"]
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.package-dir]
+"aqua" = "src/aqua"
+"aqua.diagnostics" = "src/aqua_diagnostics"
 
 [tool.setuptools.dynamic]
 version = {attr = "aqua.__version__"}
@@ -125,7 +133,7 @@ markers = [
 [tool.coverage.run]
 branch = true
 command_line = '-m pytest tests'
-source = ["aqua"]
+source = ["src/aqua"]
 omit = ["tests/*"]
 
 [tool.coverage.report]

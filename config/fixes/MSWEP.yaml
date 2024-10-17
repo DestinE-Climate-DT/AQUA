@@ -1,8 +1,0 @@
-fixer_name:  
-    MSWEP-default:
-        data_model: cf
-        vars:
-            # Automatic conversion to destination grib units
-            mtpr:
-                source: precipitation
-                grib: true

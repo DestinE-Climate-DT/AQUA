@@ -3,57 +3,105 @@
 Advanced Topics
 ===============
 
-.. _new-machine:
+Set up the configuration file
+-----------------------------
 
-Adding a new machine
---------------------
+A configuration file is available to specify the parameters for the AQUA package.
+This is a YAML file called ``config-aqua.yaml`` and is located in the installation folder, which usually is ``$HOME/.aqua``.
 
-Change the machine name
-^^^^^^^^^^^^^^^^^^^^^^^
+.. warning::
+  All the details of the configuration file are now handled during the installation process
+  described in the :ref:`initialization` section. This is why this section is in the advanced topics.
+  As a normal user you should not need to modify the configuration file manually.
 
-Let's assume that the new machine to configure is called ``new_machine``.
-The first step is to change the machine name in the ``config-aqua.yaml`` file,
-which is located in the ``$AQUA/config`` directory.
+The configuration file is used to specify the following parameters:
 
-.. code-block:: yaml
+- **machine**: the machine on which the AQUA will run. This is used to specify the
+  location of the grids, weights and areas produced by AQUA.
+  By default no machine is set. You will need to specify the machine you want to use while installing AQUA (see :ref:`aqua-install`).
+- **catalog**: the catalog on which the AQUA will run. This is used to specify the
+  location of the AQUA catalog and the location of the data.
+  By default no catalog is set. You will need to specify the catalog you want to use (see :ref:`aqua-add`).
+- **reader**: this block contains catalog, fixes and grids location.
+  These paths are required to be inside the AQUA repository,
+  so these paths should not be changed unless strictly necessary.
+  Refer to :ref:`add-data` for more information.
 
-    machine: new_machine
+The configuration folder has this structure:
 
-Creation of the catalogue folder
+.. code-block:: text
+
+    ├── config
+    │   ├── data_models
+    │   ├── fixes
+    │   ├── grids
+    │   └── catalogs
+    │       ├── climatedt-phase1
+    │       │   ├── catalog 
+    │       │   └── catalog.yaml
+    │       │   └── machine.yaml
+    │       ├── obs
+    │       └── ...
+    ├── config-aqua.yaml
+
+
+.. _new-catalog:
+
+Adding a new catalog
+----------------------
+
+
+Creation of the catalog folder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Then to add a new machine to the AQUA catalogue we need to create a
-new folder that will contain the configuration files for the new machine.
+To add a new catalog to the AQUA catalog we need to create a
+new folder that will contain the configuration files.
 
-The folder should be created in the ``config`` directory.
+You can create the folder where you prefer and then add it to the
+available catalogs with the ``aqua add`` command (see :ref:`aqua-add`).
+This will copy or link the required files, allowing to have your custom catalog
+folder under version control if needed.
 
 .. code-block:: bash
 
-    cd aqua/config
-    mkdir new_machine
+    cd /path/of/your/catalog
+    mkdir new_catalog
 
-This will contain the ``catalog.yaml`` file, which is the main file for the machine configuration.
+A machine specific file ``machine.yaml`` need to be created as a first step. This will include the path 
+where the grids, weights and areas produced by AQUA will be stored. A default can be provided to be used in 
+whatsoever machine where AQUA is installed, but also machine specific paths can be defined
 
 .. code-block:: yaml
 
-    paths:
-        grids: /path/to/aqua/data/grids
-        weights: /path/to/aqua/data/weights
-        areas: /path/to/aqua/data/areas
+    default: 
+        paths:
+            grids: /path/to/aqua/data/grids
+            weights: /path/to/aqua/data/weights
+            areas: /path/to/aqua/data/areas
+    myhpc: 
+        paths:
+            grids: /path/to/aqua/data/grids
+            weights: /path/to/aqua/data/weights
+            areas: /path/to/aqua/data/areas
+
+
+Then, you will need to create the the ``catalog.yaml`` file, which is the main file for the catalog configuration.
+
+.. code-block:: yaml
 
     sources:
         my-model:
-            description: New model for a new machine
+            description: New model for a new catalog
             driver: yaml_file_cat
             args:
                 path: "{{CATALOG_DIR}}/catalog/my-model/main.yaml"
 
 In this example we're adding just one model, called ``my-model``.
 
-Populating the catalogue
+Populating the catalog
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Let's assume that the new machine has a new model called ``my-model`` defined before.
+Let's assume that the new catalog has a new model called ``my-model`` defined before.
 Let's create a new experiment with a new source for this model.
 
 The file ``main.yaml`` should be created in the ``catalog/my-model`` directory.
@@ -72,6 +120,20 @@ Finally we can create the file ``my-exp.yaml`` in the same directory.
 This is the file that will describe all the sources for the new experiment.
 More informations about how to add them can be found in the :ref:`add-data` section.
 
+Adding the catalog to the AQUA package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since ``v0.9`` the AQUA package has an entry point script that will allow to add a new catalog to the AQUA package.
+This is done with the ``aqua add`` command.
+
+.. code-block:: bash
+
+    aqua add new_catalog -e /path/to/your/catalog/new_catalog
+
+.. note::
+    This command will create a symbolic link to the new catalog in the ``$AQUA/config/catalogs`` directory.
+    See the :ref:`aqua-add` section for more information.
+
 Download of grids
 ^^^^^^^^^^^^^^^^^
 
@@ -85,7 +147,7 @@ Please refer to the section :ref:`grids-downloader` for more details.
 Dask access to FDB or GSV
 --------------------------
 
-If an appropriate entry has been created in the catalogue, the reader can also read data from a FDB/GSV source. 
+If an appropriate entry has been created in the catalog, the reader can also read data from a FDB/GSV source. 
 The request is transparent to the user (no apparent difference to other data sources) in the call.
 
 .. code-block:: python
@@ -98,22 +160,23 @@ like all other data sources.
 This is performed by an intake driver for FDB which has been specifically developed from scratch inside AQUA.
 
 In the case of FDB access specifying the variable is compulsory,
-but a list can be provided and it is done for the FDB sources available in the catalogue.
-If not specified, the default variable defined in the catalogue is used.
+but a list can be provided and it is done for the FDB sources available in the catalog.
+If not specified, the default variable defined in the catalog is used.
 
 .. warning::
+
     The FDB access can be significantly fasten by selecting variables and time range.
 
 An optional keyword, which in general we do **not** recommend to specify for dask access, is ``chunks``,
 which specifies the chunk size for dask access.
 Values could be ``D``, ``M``, ``Y`` etc. (in pandas notation) to specify daily, monthly and yearly aggregation.
-It is best to use the default, which is already specified in the catalogue for each data source.
+It is best to use the default, which is already specified in the catalog for each data source.
 This default is based on the memory footprint of single grib message, so for example for IFS-NEMO dative data
 we use ``D`` for Tco2559 (native) and "1deg" streams, ``Y`` for monthly 2D data and ``M`` for 3D monthly data.
 In any case, if you use multiprocessing and run into memory troubles for your workers, you may wish to decrease
 the aggregation (i.e. chunk size).
 It is also possible to specify vertical chunking by passing a dictionary with the keys ``time`` and ``vertical``.
-In this case ``time`` will follow the notation discussed above, while ``vertical``specifies the number of vertical
+In this case ``time`` will follow the notation discussed above, while ``vertical`` specifies the number of vertical
 levels to use for each chunk.
 
 .. _iterators:
@@ -136,7 +199,7 @@ In that case the next block of data can be read from the iterator with ``next()`
 or with a loop iterating over ``data``. The result of these operations is in turn a regular xarray.Dataset containg the data.
 Since this is a data stream the user should also specify the desired initial time and the final time (the latter can be omitted and will default to the end of the dataset).
 When using an iterator it is possible to specify the size of the data blocks read at each iteration with the ``aggregation`` keyword
-(``M`` is month, ``D``is day etc.). 
+(``M`` is month, ``D`` is day etc.). 
 The default is ``S`` (step), i.e. single saved timesteps are read at each iteration.
 
 Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
@@ -178,111 +241,239 @@ the regridder is still able to deal with this situation using the information in
     since in that case the vertical level information is preserved by producing 3D variables
     with a single vertical level.
 
+Reader prepocessing option
+--------------------------
+
+The reader has a preprocessing option that can be used to apply a function to the data before it is retrieved.
+This can be useful to apply a function to the data before it is read, to quickly apply some function that is not available in the Reader class.
+
+In order to use this option, the user must pass a function as ``preproc`` keyword while instantiating the Reader.
+
+.. code-block:: python
+
+    def my_preproc(data):
+        return data * 2
+
+    reader = Reader(model="IFS", exp="control-1990", source="lra-r100-monthly", preproc=my_preproc)
+    data = reader.retrieve(var='2t')
+
+.. note::
+    There is not yet a way to define a preproc function in the catalog, so it must be passed as a keyword argument.
+    This is a feature that will be added in the future, if needed.
+
 .. _slurm:
 
 Slurm utilities
 ---------------
 
-The aqua.slurm module is based on the `dask_jobqueue package <https://jobqueue.dask.org/en/latest/>`_.
-The Dask-jobqueue makes it easy to run Dask on job-queuing systems in high-performance supercomputers.
+The ``aqua.slurm`` module is based on the ``dask_jobqueue`` `package <https://jobqueue.dask.org/en/latest/>`_.
+This package makes easy to run Dask on job-queuing systems in HPC environments.
 It has a simple interface accessible from interactive systems like Jupyter Notebooks or batch Jobs.
 
 The Slurm Class
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
-The aqua.slurm module contains the ``slurm`` class, which allows us to create and operate the dask-jobs.
-The ``slurm`` class has the following main functions:
+The ``aqua.slurm`` module contains several functions that allow us to create and operate Dask jobs:
 
-- ``squeue``: allows us to check the status of created Jobs in the queue,
-- ``job``: allows the creation and submission of the Job to a selected queue,
-- ``scancel``: allows to cancel of all submitted Jobs or only Job with specified Job_ID.
+- ``squeue``: Allows us to check the status of created jobs in the queue.
+- ``job``: Allows the creation and submission of a job to a selected queue.
+- ``scancel``: Allows the cancellation of all submitted jobs or only a job with a specified Job_ID.
 
 
-The dask-job initialization 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Dask-Job Initialization
+^^^^^^^^^^^^^^^^^^^^^^^
 
-The job can be launched to the queue with the following command in a Notebook cell:
-
-.. code-block:: python
-
-	slurm.job()
- 
-
-The default arguments of ``slurm.job()`` function on Levante
-(``machine=Levante`` in configdir) are the followings:
+The ``job()`` function can be used to launch a job to the queue directly from a notebook cell.
+This function leverages the ``dask_jobqueue.SLURMCluster`` for initializing and managing Dask jobs on SLURM-managed clusters.
 
 .. code-block:: python
 
-	account = "bb1153"
-	queue = "compute"
-	cores=1
-	memory="10 GB"
-	path_to_output="."
-	exclusive=False
+    slurm.job(machine_name='lumi')
 
-The default arguments of ``slurm.job()`` function,
-i.e., account and queue names, are different for Lumi (``machine=Lumi`` in configdir):
 
-.. code-block:: python
+Submitting Jobs on Different Machines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-	account = "project_465000454"
-	queue = "small"
+The ``job()`` function provides a flexible and efficient way to submit jobs to SLURM-managed clusters on different machines.
+Users can specify machine-specific configurations through a YAML configuration file (``.aqua/aqua/slurm/config-slurm.yml``) or provide parameters directly through the function call.
 
-The function ``slurm.job()`` has an argument ``exclusive=False`` by default.
-Exclusive argument ``exclusive=True`` is reserving an entire node for the Job.
+The ``job()`` function allows users to either use predefined settings from a YAML file for known machines or manually input job parameters for machines without predefined settings. 
+Here's how to use the function for different scenarios:
 
-If you would like to reserve a node on a different queue,
-specify the queue's name as an argument of the function:
+
+Submit a Job Using Predefined Configurations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the machine has predefined settings in the YAML configuration file, simply specify the machine's name:
 
 .. code-block:: python
 
-	slurm.job(queue="gpu")
+    slurm.job(machine_name='lumi')
 
+This method pulls all necessary parameters like memory, cores, and walltime from the YAML file associated with the specified machine name.
+
+.. note::
+
+    The available machines are Lumi, Levante, Atos (HPC2020) and Mafalda.
+    Please be aware that the user or project fields may be specific of the Destination Earth project and may need to be changed.
+
+Submit a Job with Maximum Available Resources per Node
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To utilize the maximum available resources per node for the selected queue, set ``max_resources_per_node=True``:
+
+.. code-block:: python
+
+    slurm.job(machine_name='lumi', max_resources_per_node=True)
+
+
+Change default attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If a machine is defined then default arguments are used for a simple call of the ``slurm.job()`` function.
+On Lumi for example they are as follows:
+
+.. code-block:: yaml
+
+    machines:
+      lumi:
+        queue: 'small'
+        account: 'project_465000454'
+        walltime: '02:30:00'
+        memory: '10 GB'
+        cores: 1
+        jobs: 1
+        loglevel: 'WARNING'
+        path_to_output: '.'
+
+.. note::
+
+    The ``slurm.job()`` function has an argument ``exclusive=False`` by default.
+    Setting ``exclusive=True`` reserves an entire node for the job.
+
+If you would like to reserve a node on a different queue, specify the queue's name as an argument of the function:
+
+.. code-block:: python
+
+    slurm.job(machine_name='lumi', queue="small")
 
 .. warning::
 
-	The exclusive argument **does not** automatically provide us the maximum available memory,
-    number of cores, and walltime.
+    The `exclusive` argument **does not** automatically provide the maximum available memory, number of cores, and walltime.
+    Anyway for some machines you will be billed for the entire node every time you ask exclusive access to it.
 
-The function ``slurm.job()`` has an argument ``max_resources_per_node``, False by default.
-If we set the argument to ``max_resources_per_node=True``, the number of cores, memory,
-and walltime will equal the maximum available for the choosen node.
+The ``slurm.job()`` function has an argument ``max_resources_per_node``, which is ``False`` by default.
+Setting ``max_resources_per_node=True`` will allocate the maximum number of cores, memory, and walltime available for the chosen node.
 
-Path to the output
+
+Path to the Output
 ^^^^^^^^^^^^^^^^^^
 
-The function slurm.job() creates the folders for the job output.
-By default, the path is ``".""``. 
-Therefore, the paths for log and output are: 
+The ``slurm.job()`` function creates folders for the job output.
+By default, the path is ``"."``.
+Therefore, the paths for log and output are:
 
-- ``./slurm/logs`` for the errors,
-- ``./slurm/output/`` for the output.
+- ``./slurm/logs`` for errors,
+- ``./slurm/output/`` for output.
 
-Users can specify the different paths for the SLURM output:
-
-.. code-block:: python
-
-	slurm.job(path_to_output="/any/other/folder/")
-
-
-Cancel the dask-job
-^^^^^^^^^^^^^^^^^^^
-
-The user can cancel all submitted Jobs by
-
-.. code-block:: python
-	
-	slurm.scancel()
-
-If the user would like to cancel the specific Job, he needs to know the Job_ID of that Job. 
-The Job_ID can be found with the function slurm.squeue(),
-which returns the information about all user Slurm Jobs on the machine. 
-Then the user can cancel the particular Job as:
+Users can specify different paths for the SLURM output:
 
 .. code-block:: python
 
-	slurm.scancel(all=False, Job_ID=5000000)
+    slurm.job(machine_name='lumi', path_to_output="/any/other/folder/")
+
+
+Canceling the Dask Job
+^^^^^^^^^^^^^^^^^^^^^^
+
+The user can cancel all submitted jobs by:
+
+.. code-block:: python
+
+    slurm.scancel()
+
+If the user would like to cancel a specific job, they need to know the Job_ID of that job.
+The Job_ID can be found using the ``slurm.squeue()`` function, which returns information about all user SLURM jobs on the machine.
+Then, the user can cancel the particular job as:
+
+.. code-block:: python
+
+    slurm.scancel(all=False, Job_ID=5000000)
 
 .. warning::
-    It is potentially dangerous to cancel all your jobs,
-    always prefer to cancel jobs with the Job_ID
+
+    It is potentially dangerous to cancel all your jobs. Always prefer to cancel jobs with the Job_ID.
+
+
+Modifying and Adding Machine Configurations in YAML
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To modify existing configurations or add new machines, edit the ``.aqua/aqua/slurm/config-slurm.yml`` file:
+
+1. Open the YAML file and locate the machines section.
+2. Modify or add entries for machines. For example, to add a new machine configuration:
+
+.. code-block:: yaml
+
+    machines:
+      mafalda:
+        queue: 'batch'
+        account: null
+        walltime: '02:30:00'
+        memory: '10 GB'
+        cores: 1
+        jobs: 1
+        loglevel: 'WARNING'
+        path_to_output: '.'
+
+.. note::
+
+    Currently, the pip installation does not copy the YAML configuration file to a user-accessible directory.
+    This functionality will be updated in the future to ensure easier modification of configurations by users.
+
+.. _dev-notes:
+
+Developer notes
+---------------
+
+The standard setup of AQUA is thought to be used in a conda environment by users who are not going to modify under version control the downloaded catalogs.
+For this reason we suggest to install the AQUA configuration files in the ``$HOME/.aqua``. 
+Anyway, this configuration could be not ideal if you're creating a new catalog or modifying an existing one and you want to keep it under version control.
+For this reason the following steps are suggested to set up the AQUA package in a developer environment.
+
+Set up environment variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since ``v0.9`` the AQUA package has an entry point script that can be used to copy the configuration files
+and the catalog to an external directory (see :ref:`aqua-install` and :ref:`aqua-console`).
+
+By default the configuration files are stored in the ``$HOME/.aqua`` directory.
+Same for the catalog, which is stored in the ``$HOME/.aqua/catalogs`` directory.
+This has been done to make the package more user-friendly, expecially when installing the package
+from a conda environment or from a pip package.
+
+A developer may want to keep the configuration files and the catalogs in a different directory,
+for this reason the ``aqua init`` command can be used to copy the configuration files and the catalog
+to a different directory. For more information see the :ref:`aqua-install` section.
+
+If you're using a custom directory to store the configuration files and the catalog it is recommended
+to set up an environment variable to specify the path to the AQUA package.
+This can be done by adding the following line to your `.bashrc` or `.bash_profile` file:
+
+.. code-block:: bash
+
+    export AQUA_CONFIG=/path/to/config_files
+
+This will make clear for the code where to find the AQUA catalog and the configuration files.
+
+.. note::
+    It is temporalily possible to set the environment variable ``AQUA`` to specify the path of the source code,
+    so that the entire new aqua entry point can be superseeded by the old method.
+    This will be removed in the next release.
+
+Add new catalogs as developer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you're adding a new catalog or modifying an existing one it is recommended to use the old method to set up the AQUA package
+or to add the catalog with the editable option.
+Please refer to the :ref:`aqua-add` section for more information.

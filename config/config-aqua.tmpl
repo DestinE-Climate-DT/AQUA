@@ -1,0 +1,11 @@
+# catalog dependent configuration file for AQUA
+catalog: null
+
+# please do not modify this if you do not know what you are doing
+machine: auto
+
+reader:
+  catalog: '{{ configdir }}/catalogs/{{ catalog }}/catalog.yaml'
+  machine: '{{ configdir }}/catalogs/{{ catalog }}/machine.yaml'
+  fixer: '{{ configdir }}/fixes'
+  regrid: '{{ configdir }}/grids'

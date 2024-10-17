@@ -1,0 +1,58 @@
+# NOTE: v2 because the file has been created in the phase2 of the project
+fixer_name:
+  ifs-nemo-reduced-output-monthly-v1:
+    parent: ifs-destine-v1
+    data_model: false
+    vars:
+      avg_tos:
+        source: avg_tos
+        src_units: degC
+        grib: true
+        units: 'K'
+      avg_thetao:
+        source: avg_thetao
+        src_units: degC
+        grib: true
+        units: 'K'
+      2t: 
+        source: mean2t
+        grib: true
+      10u: 
+        source: m10u
+        grib: true
+      10v: 
+        source: m10v
+        grib: true
+      msl: 
+        source: mmsl
+        grib: true
+      tcc: 
+        source: meantcc
+        grib: true
+      t: 
+        source: mt
+        grib: true
+      u: 
+        source: mu
+        grib: true
+      v: 
+        source: mv
+        grib: true
+      q: 
+        source: mq
+        grib: true
+  
+  ifs-nemo-reduced-output-monthly-v2:
+    parent: ifs-destine-v1
+    data_model: ifs
+    deltat: monthly
+    vars:
+      2t: 
+        source: mean2t
+        grib: true
+      mtpr:
+        source: tp
+        grib: True
+        # decumulate: true
+        src_units: m
+        units: kg m**-2 s**-1

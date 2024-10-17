@@ -1,0 +1,25 @@
+# Horizontal grids
+H32: hpz5
+H128: hpz7
+H512: hpz9
+H1024: hpz10
+
+r360x181: lon-lat
+
+# Grid string mappings
+grid_mappings:
+  sfc:
+    default: "{aqua_grid}-nested"
+  pl:
+    default: "{aqua_grid}-nested"
+  o2d:
+    ifs-nemo: "nemo-{ocean_grid}-{aqua_grid}-nested"
+    ifs-fesom: "fesom-{aqua_grid}-nested"
+    icon: "icon-{aqua_grid}-nested"
+  o3d:
+    ifs-nemo: "nemo-{ocean_grid}-{aqua_grid}-nested-3d" 
+    ifs-fesom: "fesom-{aqua_grid}-nested-3d"
+    icon: "icon-{aqua_grid}-nested-3d"
+  default: "{aqua_grid}"
+
+#NSIDE_TO_ORDER = {1:0, 2:1, 4:2, 8:3, 16:4, 32:5, 64:6, 128:7, 256:8, 512:9, 1024:10, 2048:11, 4096:12, 8192:13}

@@ -10,7 +10,7 @@ The Application for Quality assessment and Uncertainity quAntification (AQUA) is
 
 ## Installation
 
-AQUA requires python>=3.9,<3.12. Recommended installation should be done through mamba (a package manager for conda-forge).
+AQUA requires python>=3.9. Recommended installation should be done through mamba (a package manager for conda-forge).
 
 ### Create conda/mamba environment and install packages
 ```
@@ -24,11 +24,11 @@ This installation will provide both the AQUA framework and the AQUA diagnostics,
 
 ### Use of AQUA container 
 
-An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/container.html).
+An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/container.html).
 
 ## Documentation
 
-Full [AQUA Documentation](https://aqua-web-contbuild.2.rahtiapp.fi/documentation/index.html) is available.
+Full [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html) is available.
 Please notice that the webpage is password protected.
 You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/AQUA+-+Meetings) or please contact the AQUA team to get access.
 

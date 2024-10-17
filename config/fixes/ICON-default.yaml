@@ -1,0 +1,173 @@
+fixer_name:
+    ICON-default:
+        data_model: false  # Do not attempt to correct coordinates
+        delete:  # variables to drop at the end
+            - hfls
+            - hfss
+            - rlus
+            - rlut
+            - rsus
+            - rsdt
+            - rsut
+        vars:
+            metss:
+                source: tauu
+                grib: true
+            mntss:
+                source: tauv
+                grib: true
+            skt:
+                source: ts
+                grib: true
+            sp:
+                source: ps
+                grib: true
+            msl:
+                source: psl
+                grib: true
+            10si:
+                source: sfcwind
+                grib: true
+            avg_siconc:
+                source: sic
+                src_units: frac
+                grib: true
+            avg_sithick:
+                source: sit
+                grib: true
+            2t:
+                source: tas
+                grib: true
+            10u:
+                source: uas
+                grib: true
+            10v:
+                source: vas
+                grib: true
+            tciw:
+                source: clivi
+                grib: true
+            tclw:
+                source: cllvi
+                grib: true
+            mslhfl:
+                source: hfls
+                grib: true
+            msshfl:
+                source: hfss
+                grib: true
+            mtpr:
+                source: pr
+                grib: true
+                src_units: kg m**-2 s**-1
+                units: kg m**-2 s**-1
+            mlsprt:
+                source: prlr
+                grib: true
+                src_units: kg m**-2 s**-1
+                units: kg m**-2 s**-1
+            tcwv:
+                source: prw
+                grib: true
+            msdwlwrf:
+                source: rlds
+                grib: true
+            msnlwrf:
+                derived: rlds-rlus
+                grib: true
+            mtnlwrf:
+                derived: -rlut
+                grib: true
+            msdwswrf:
+                source: rsds
+                grib: true
+            msnswrf:
+                derived: rsds-rsus
+                grib: true
+            mtnswrf:
+                derived: rsdt-rsut
+                grib: true
+            avg_thetao:
+                source: to
+                grib: true
+            t:
+                source: ta
+                grib: true
+            q:
+                src_units: kg/kg
+                source: hus
+                grib: true
+            u:
+                source: ua
+                grib: true
+            avg_uoe:
+                source: u
+                grib: true
+            v:
+                source: va
+                grib: true
+            avg_von:
+                source: v
+                grib: true
+            avg_so:
+                source: so
+                grib: true
+            #fixes for NextGems data    
+            cfh_lnd: 
+                source: cfh_lnd
+                src_units: m s**-1
+                units: m s**-1 
+            conc: 
+                source: conc
+                src_units: frac
+                units: frac
+            heat_content_seaice: 
+                source: heat_content_seaice
+                src_units: J/m**2
+                units: J/m**2
+            heat_content_snow: 
+                source: heat_content_snow
+                src_units: J/m**2
+                units: J/m**2
+            heat_content_total: 
+                source: heat_content_total
+                src_units: J/m**2
+                units: J/m**2
+            hydro_canopy_cond_limited_box: 
+                source: hydro_canopy_cond_limited_box
+                src_units: m/s
+                units: m/s
+            prls:
+                source: prls
+                src_units: kg m**-2 s**-1
+                units: kg m**-2 s**-1
+
+    ICON-cycle3:
+        parent: ICON-default
+        vars:
+            msl: # from here different from default
+                source: pres_msl
+                src_units: Pa
+                grib: true
+            avg_tos:
+                source: ts
+                grib: false
+                src_units: K
+    ICON-hpx: 
+        data_model: false
+        vars:
+            t:
+                source: ta
+                grib: true
+            msl:
+                source: sea_level_pressure
+                src_units: Pa
+                grib: true
+            2t:
+                source: tas
+                src_units: K
+                grib: true 
+            10si:
+                source: 10m_wind_speed
+                src_units: m/s
+                grib: true

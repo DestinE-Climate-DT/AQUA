@@ -2,6 +2,7 @@
 
 Main authors: 
 - Paolo Ghinassi (CNR-ISAC, p.ghinassi@isac.cnr.it)
+- Paolo Davini (CNR-ISAC, p.davini@isac.cnr.it)
 
 ## Description
 
@@ -26,37 +27,9 @@ it features the possibility to save selected variables in a box in the vicinity 
 
 ## Installation Instructions
 
-### Installation on Levante
+### Installation
 
-To install the tropical_cyclones diagnostic on `Levante` you can use conda; the yaml file
-`AQUA/diagnostics/tropical_cyclones/env-TCs.yml` to create the dedicated conda environment includes the tempest-extremes package and
-all the necessary dependencies to run the tropical cyclones diagnostic.
-
-To install the diagnostic in a new conda environment run:
-
-```bash
-conda env create -f env-TCs.yml
-```
-
-To install the diagnostic in an existing conda environment run:
-
-```bash
-conda env update -f env-TCs.yml
-```
-
-To activate the environment run:
-
-```bash
-conda activate TCs
-```
-
-The diagnostic environment is compatible with python 3.9 and 3.10 and with the AQUA framework.
-Different diagnostic environments may be not compatible with each other.
-If you want to use multiple diagnostics at the same time, it is recommended to use the different environments for each of them.
-
-### Installation on Lumi 
-
-Not tested yet - To be updated
+The diagnostic is based on the AQUA framework, and requires the installation of the AQUA package. Follow the instructions in the AQUA documentation to install the framework. A pyproject.toml file is provided in this folder to install the diagnostic in the AQUA environment. It is not tought to be used as a standalone package.
 
 ## Data requirements  
 

@@ -3,21 +3,31 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.dates as mdates
 import cartopy.crs as ccrs
 from matplotlib.legend_handler import HandlerTuple
 from aqua import Reader
 from aqua.util import create_folder, add_cyclic_lon
 from aqua.logger import log_configure
 
-
-def process_ceres_data(exp=None, source=None, fix=True, loglevel='WARNING'):
+def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , level = 'toa', loglevel='WARNING'):
     """
-    Function to extract CERES data for further analyis + create global means
+    Function to extract CERES data for further analysis + create global means
 
     Args:
-        exp (str):   Input experiment to be selected from the catalogue.
-        source (str): Input source to be selected from the catalogue.
+        exp (str):   Input experiment to be selected from the catalog.
+        source (str): Input source to be selected from the catalog.
         fix (bool):  If True, apply the fix to the CERES data. Default is True.
+        level (str): Input level (either 'toa' or 'sfc'). Defaults to 'toa'
+        variable_names (dict): Dictionary containing variable names mapping. Defaults for toa and sfc are:
+                                default_variable_names_toa = {
+                                                        'mtnlwrf': 'mtnlwrf',
+                                                        'mtnswrf': 'mtnswrf',
+                                                        }
+                                default_variable_names_sfc = {
+                                                        'msnlwrf': 'msnlwrf',
+                                                        'msnswrf': 'msnswrf',
+                                                    }
         loglevel (str): The log level for the logger. Default is 'WARNING'.
 
     Returns:
@@ -32,17 +42,49 @@ def process_ceres_data(exp=None, source=None, fix=True, loglevel='WARNING'):
             - "anom": Monthly anomalies data.
     """
     logger = log_configure(log_level=loglevel, log_name='Process CERES Data')
+    
+    # Default variable names dictionaries for 'toa' and 'sfc' levels
+    default_variable_names_toa = {
+        'mtnlwrf': 'mtnlwrf',
+        'mtnswrf': 'mtnswrf',
+    }
 
-    # reader_ceres_toa
+    default_variable_names_sfc = {
+        'msnlwrf': 'msnlwrf',
+        'msnswrf': 'msnswrf',
+    }
+    
+    # Select appropriate default variable names dictionary based on the level parameter
+    if level == 'toa':
+        default_variable_names = default_variable_names_toa
+    elif level == 'sfc':
+        default_variable_names = default_variable_names_sfc
+    else:
+        raise ValueError("Invalid value for 'level' parameter. It should be either 'toa' or 'sfc'.")
+
+    # If variable_names is not provided, use the default_variable_names
+    if variable_names is None:
+        variable_names = default_variable_names
+    else:
+        # Merge user-provided variable names with default variable names, if any
+        variable_names = {**default_variable_names, **variable_names}
+        
     if fix is None or fix is False:
         reader = Reader(model='CERES', exp=exp, source=source, regrid='r100', fix=False, loglevel=loglevel)
     else:
         reader = Reader(model='CERES', exp=exp, source=source, regrid='r100', fix=True, loglevel=loglevel)
     data = reader.retrieve()
 
-    data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
-    ceres = reader.regrid(data[['tnr', 'mtnlwrf', 'mtnswrf']])
+    # Rename variables based on variable_names dictionary
+    data = data.rename(variable_names)
 
+    if level == 'toa':
+        data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
+        ceres = reader.regrid(data[['tnr', 'mtnlwrf', 'mtnswrf']])
+    elif level == 'sfc':
+        data['snr'] = data['msnlwrf'] + data['msnswrf']
+        ceres = reader.regrid(data[['snr', 'msnlwrf', 'msnswrf']])
+        
     starting_year = str(ceres["time.year"][0].values) if len(ceres.sel(time=str(ceres["time.year"][0].values)).time) == 12 \
         else str(ceres["time.year"][0].values + 1)
     final_year = str(ceres["time.year"][-1].values) if len(ceres.sel(time=str(ceres["time.year"][-1].values)).time) == 12 \
@@ -57,7 +99,6 @@ def process_ceres_data(exp=None, source=None, fix=True, loglevel='WARNING'):
     monthly_anomalies = complete.groupby('time.month') - clim
 
     clim = clim.rename({'month': 'time'})
-    # global mean
     clim_gm = reader.fldmean(clim)
     ceres_gm = reader.fldmean(ceres)
     anom_gm = reader.fldmean(monthly_anomalies)
@@ -72,21 +113,22 @@ def process_ceres_data(exp=None, source=None, fix=True, loglevel='WARNING'):
         "anom_gm": anom_gm,
         "clim": clim,
         "anom": monthly_anomalies
-
     }
     return dictionary
 
 
-def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WARNING'):
+def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WARNING', start_date=None, end_date=None):
     """
     Function to extract Model output data for further analysis and create global means.
 
     Args:
-        model (str):   Input model to be selected from the catalogue.
-        exp (str):     Input experiment to be selected from the catalogue.
-        source (str):  Input source to be selected from the catalogue.
+        model (str):   Input model to be selected from the catalog.
+        exp (str):     Input experiment to be selected from the catalog.
+        source (str):  Input source to be selected from the catalog.
         fix (bool):    If True, apply the fix to the model data. Default is False.
         loglevel (str): The log level for the logger. Default is 'WARNING'.
+        start_date (str): Start date of the time range to select (format: 'YYYY-MM-DD').
+        end_date (str): End date of the time range to select (format: 'YYYY-MM-DD').
 
     Returns:
         dict: A dictionary containing the following information:
@@ -103,9 +145,13 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
         reader = Reader(model=model, exp=exp, source=source,
                         regrid='r100', fix=True, loglevel=loglevel)
 
-    data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf'])
+    data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf', 'mslhf', 'msnlwrf', 'msnswrf', 'msshf'])
     data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
     gm = reader.fldmean(data)
+    
+    # Select time range if start_date and end_date are provided
+    if start_date is not None and end_date is not None:
+        data = data.sel(time=slice(start_date, end_date))
 
     dictionary = {
         "model": model.lower(),
@@ -117,131 +163,10 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
 
     return dictionary
 
-
-def gregory_plot(obs_data=None, models=None, obs_time_range=None, model_labels=None, obs_labels=None,  outputdir=None,
-                 outputfig=None, fontsize=14, markersize=3, loglevel='WARNING'):
-    """
-    Create a Gregory Plot with various models and an observational dataset (e.g., ERA5).
-
-    Args:
-        obs_data (dict): Xarray Dataset containing the observational data.
-        models (list): A list of models that should be plotted.
-        obs_time_range (tuple, optional): A tuple containing the start and end dates
-                                          of the time range for the observational data.
-                                          Format: ('YYYY-MM-DD', 'YYYY-MM-DD')
-        model_labels (list, optional): Labels for the models. If not provided, default labels are used.
-        obs_labels (str, optional): Desired label for the observational data.
-        outputdir (str, optional): The directory to save the data files.
-        outputfig (str, optional): The directory to save the plot as a PDF.
-        fontsize (int, optional): Font size for the plot labels and title.
-        markersize (int, optional): Size of the markers in the plot.
-        loglevel (str, optional): The log level for the logger. Default is 'WARNING'.
-
-    Returns:
-        A Gregory Plot displaying the data for each model and the observational data.
-    """
-    logger = log_configure(log_level=loglevel, log_name='Gregory Plot')
-
-    # Create the plot and axes
-    fig, ax = plt.subplots()
-    fig.set_facecolor('white')
-    # Colors for the plots
-    colors = ["orange", "gray", "dodgerblue", "yellow", "indigo", "violet"]
-
-    # Plot the data for each model
-    handles = []
-    labels = []
-
-    models = models if isinstance(models, list) else [models]
-
-    # Plot the data for observation
-    if obs_time_range is None:
-        dummy_model_gm = models[0]["gm"]
-        starting_year = str(dummy_model_gm["time.year"][0].values) if \
-            len(dummy_model_gm.sel(time=str(dummy_model_gm["time.year"][0].values)).time) == 12 \
-            else str(dummy_model_gm["time.year"][0].values + 1)
-        final_year = str(dummy_model_gm["time.year"][-1].values) \
-            if len(dummy_model_gm.sel(time=str(dummy_model_gm["time.year"][-1].values)).time) == 12 \
-            else str(dummy_model_gm["time.year"][-1].values - 1)
-        # limit to years that are complete
-        obs_data_gm = obs_data["gm"].sel(time=slice(starting_year, final_year))
-    else:
-        obs_data_gm = obs_data["gm"].sel(time=slice(*obs_time_range))
-    obs_2t_resampled = obs_data_gm["2t"].resample(time="M").mean()
-    obs_tnr_resampled = obs_data_gm["tnr"].resample(time="M").mean()
-
-    if obs_labels is None:
-        if obs_time_range is None:
-            obs_labels = obs_data["model"]+' '+obs_data["exp"]+' '+obs_data["source"] + ', ('+starting_year+'-'+final_year+')'
-        else:
-            obs_labels = obs_data["model"]+' '+obs_data["exp"]+' '+obs_data["source"] + f', ({obs_time_range[0]}\
-                  - {obs_time_range[1]})'
-    # Plot the data
-    line = ax.plot(
-        obs_2t_resampled - 273.15, obs_tnr_resampled,
-        marker="o", color="mediumseagreen", linestyle="-", markersize=markersize, label=obs_labels)
-    handles.append(line[0])  # Append the line object itself
-    labels.append(obs_labels)
-
-    for i, model in enumerate(models):
-        model_name = model["model"]+' '+model["exp"]+' '+model["source"] if model_labels is None else model_labels[i]
-        model_color = colors[i % len(colors)]  # Rotate colors for each model
-        model_2t = model["gm"]["2t"].resample(time="M").mean() - 273.15
-        model_tnr = model["gm"]["tnr"].resample(time="M").mean()
-
-        line, = ax.plot(model_2t, model_tnr, color=model_color,
-                        linestyle="-", marker="o", markersize=5, label=model_name)
-        handles.append(line)  # Append the line object itself
-        labels.append(model_name)
-
-        ax.plot(model_2t[0], model_tnr[0],
-                marker="*", color="black", linestyle="-", markersize=markersize*5)
-        ax.plot(model_2t[-1], model_tnr[-1],
-                marker="X", color="tab:red", linestyle="-", markersize=markersize*5)
-    # Set labels and title
-    ax.set_xlabel("2m temperature [$^{\circ} C$]", fontsize=fontsize-2)
-    ax.set_ylabel("Net radiation TOA [Wm$^{-2}$]", fontsize=fontsize-2)
-    ax.set_title("Gregory Plot", fontsize=fontsize)
-    ax.legend(handles, labels + ["Start", "End"], handler_map={tuple: HandlerTuple(ndivide=None)})
-    ax.text(0.5, -0.15,
-            "Black stars indicate the first value of the dataseries\nRed X indicate the last value of the dataseries.",
-            transform=ax.transAxes, fontsize=fontsize-6, verticalalignment='top', horizontalalignment='center')
-    ax.tick_params(axis="both", which="major", labelsize=10)
-
-    ax.grid(True, linestyle="--", linewidth=0.5)
-
-    if outputdir is not None:
-        create_folder(folder=str(outputdir), loglevel='WARNING')
-        for model in models:
-            start_date = str(model["data"]["time.year"][0].values) + '-' + str(model["data"]["time.month"][0].values) +\
-                '-' + str(model["data"]["time.day"][0].values)
-            end_date = str(model["data"]["time.year"][-1].values) + '-' + str(model["data"]["time.month"][-1].values) +\
-                '-' + str(model["data"]["time.day"][-1].values)
-            model_name = model["model"]+'_'+model["exp"]+'_'+model["source"] if model_labels is None else model_labels[i]
-            model_data_resampled = model["gm"].resample(time="M").mean()
-            model_data_resampled.to_netcdf(f"{outputdir}/gregory_plot_{model_name}_{start_date}_{end_date}.nc")
-            logger.info(f"Data has been saved to {outputdir}.")
-
-    # Save the data for each model to separate netCDF files
-    if outputfig is not None:
-        create_folder(folder=str(outputfig), loglevel='WARNING')
-        for model in models:
-            start_date = str(model["data"]["time.year"][0].values) + '-' + str(model["data"]["time.month"][0].values) +\
-                '-' + str(model["data"]["time.day"][0].values)
-            end_date = str(model["data"]["time.year"][-1].values) + '-' + str(model["data"]["time.month"][-1].values) +\
-                '-' + str(model["data"]["time.day"][-1].values)
-            model_name = model["model"]+'_'+model["exp"]+'_'+model["source"] if model_labels is None else model_labels[i]
-            filename = f"{outputfig}/gregory_plot_{model_name}_{start_date}_{end_date}.pdf"
-            plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
-            logger.info(f"Plot has been saved to {outputfig}.")
-    else:
-        plt.show()
-
-
 def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfig=None, year=None,
-                       fontsize=14, loglevel='WARNING'):
+                       fontsize=14, loglevel='WARNING', variables=None):
     """
-    Create a boxplot with various models and CERES data. Variables 'mtnlwrf' and 'mtnswrf' are plotted to show imbalances.
+    Create a boxplot with various models and CERES data. Variables are plotted to show imbalances.
     The default mean for CERES data is calculated over the entire time range.
 
     Args:
@@ -253,14 +178,14 @@ def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfi
                               Default is None (calculation for the entire time range).
         fontsize (int, optional): Font size for labels and legends in the plot. Default is 14.
         loglevel (str, optional): The log level for the logger. Default is 'WARNING'.
+        variables (list of str, optional): List of variables to be plotted. Default is None.
 
     Returns:
-        A boxplot showing the uncertainty of global mean radiation variables ('mtnlwrf' and 'mtnswrf')
+        A boxplot showing the uncertainty of global mean radiation variables at toa and sfc
         for different models and CERES data.
     """
     logger = log_configure(log_level=loglevel, log_name='Boxplot Model Data')
 
-    # Set a seaborn color palette
     sns.set_palette("pastel")
 
     # Initialize a dictionary to store data for the boxplot
@@ -269,68 +194,51 @@ def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfi
     model_names = [dataset["model"] + ' ' + dataset["exp"] + ' ' + dataset["source"] for dataset in datasets]\
         if model_names is None else model_names
 
-    for i in range(0, len(datasets)):
-        # Extract values for 'mtnlwrf' and 'mtnswrf' from each dataset
-        if year is not None:
-            # Select data for the specified year if 'gm' key exists
-            if 'gm' in datasets[i]:
-                dataset_year = datasets[i]['gm'].sel(time=str(year))
-                mtnlwrf_values = -dataset_year["mtnlwrf"].values.flatten()
-                mtnswrf_values = dataset_year["mtnswrf"].values.flatten()
-            else:
-                # Handle the case where 'gm' key is not present in the dictionary
-                mtnlwrf_values = []
-                mtnswrf_values = []
-        else:
-            # Use the entire dataset if 'gm' key exists
-            if 'gm' in datasets[i]:
-                mtnlwrf_values = -datasets[i]['gm']["mtnlwrf"].values.flatten()
-                mtnswrf_values = datasets[i]['gm']["mtnswrf"].values.flatten()
-            else:
-                mtnlwrf_values = []
-                mtnswrf_values = []
+    variables = ['-mtnlwrf', 'mtnswrf']\
+        if variables is None else variables
 
-        # Update the boxplot_data dictionary
-        boxplot_data['Variables'].extend(['mtnlwrf'] * len(mtnlwrf_values))
-        boxplot_data['Variables'].extend(['mtnswrf'] * len(mtnswrf_values))
-        boxplot_data['Values'].extend(mtnlwrf_values)
-        boxplot_data['Values'].extend(mtnswrf_values)
-        boxplot_data['Datasets'].extend([model_names[i]] * (len(mtnlwrf_values) + len(mtnswrf_values)))
+    for dataset, model_name in zip(datasets, model_names):
+        for variable in variables:
+            var_name = variable[1:] if variable.startswith('-') else variable  # Adjusted variable name
+            if 'gm' in dataset and var_name in dataset['gm']:
+                dataset_year = dataset['gm'].sel(time=str(year)) if year is not None else dataset['gm']
+                values = dataset_year[var_name].values.flatten()
+                if variable.startswith('-'):
+                    values = -values
+                boxplot_data['Variables'].extend([variable] * len(values))
+                boxplot_data['Values'].extend(values)
+                boxplot_data['Datasets'].extend([model_name] * len(values))
 
+                units = dataset_year[var_name].attrs.get('units', 'Unknown')
+    
     # Create a DataFrame from the boxplot_data dictionary
     boxplot_df = pd.DataFrame(boxplot_data)
-
-    # Create a boxplot
     ax = sns.boxplot(x='Variables', y='Values', hue='Datasets', data=boxplot_df)
 
-    # Add a legend outside the plot to the right side
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Datasets', fontsize=fontsize-2)
-
-    # Set labels and title
     plt.xlabel('Variables', fontsize=fontsize)
-    plt.ylabel('Global mean ($W/m^2$)', fontsize=fontsize)
-    # plt.ylim(230, 255)
-    plt.xticks(rotation=0, fontsize=fontsize-2)
-    plt.yticks(fontsize=fontsize-2)
+    plt.ylabel(f'Global mean ({units})', fontsize=fontsize)  # Use units retrieved from the dataset
+    plt.xticks(rotation=0, fontsize=fontsize - 2)
+    plt.yticks(fontsize=fontsize - 2)
 
     if year is not None:
-        plt.title(
-            f"Global Mean TOA radiation for different models ({year})", fontsize=fontsize+2)
+        plt.title(f"Global mean radiation for different models ({year})", fontsize=fontsize + 2)
     else:
-        plt.title("Global Mean TOA radiation for different models", fontsize=fontsize+2)
+        plt.title("Global mean radiation for different models", fontsize=fontsize + 2)
+
+    model_names_with_dates = [f"{name} ({pd.to_datetime(dataset['data']['time'].values).min().strftime('%d-%m-%Y')} to {pd.to_datetime(dataset['data']['time'].values).max().strftime('%d-%m-%Y')})" for name, dataset in zip(model_names, datasets)]
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles, model_names_with_dates, loc='center left', bbox_to_anchor=(1, 0.5), title='Datasets', fontsize=fontsize - 2)
 
     if outputdir is not None:
         create_folder(folder=str(outputdir), loglevel='WARNING')
-        # Save the data to a NetCDF file
         output_data = xr.Dataset(boxplot_data)
-        filename = f"{outputdir}/boxplot_mtnlwrf_mtnswrf_{'_'.join(model_names).replace(' ', '_').lower()}.nc"
+        filename = f"{outputdir}/boxplot_{'_'.join(model_names).replace(' ', '_').lower()}.nc"
         output_data.to_netcdf(filename)
         logger.info(f"Data has been saved to {outputdir}.")
 
     if outputfig is not None:
         create_folder(folder=str(outputfig), loglevel='WARNING')
-
-        filename = f"{outputfig}/boxplot_mtnlwrf_mtnswrf_{'_'.join(model_names).replace(' ', '_').lower()}.pdf"
+        filename = f"{outputfig}/boxplot_{'_'.join(model_names).replace(' ', '_').lower()}.pdf"
         plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
         logger.info(f"Plot has been saved to {outputfig}.")
     else:
@@ -338,7 +246,7 @@ def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfi
 
 
 def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
-                                     outputdir=None, outputfig=None, ylim=6.5, loglevel='WARNING'):
+                                     outputdir=None, outputfig=None, ylim=None, loglevel='WARNING'):
     """
     Create time series bias plot with various models and CERES, including the individual CERES years to show variabilities.
     Variables ttr, tsr, and tnr are plotted to show imbalances. Default mean for CERES data is the whole time range.
@@ -349,7 +257,7 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
         ceres (xarray.DataSet): The CERES data to be compared with the models.
         outputdir (str, optional): Directory where the output data will be saved. Default is None.
         outputfig (str, optional): Directory where the output figure will be saved. Default is None.
-        ylim (float, optional): The limit for the y-axis in the plot. Default is 6.5.
+        ylim (float, optional): The limit for the y-axis in the plot.
         loglevel (str, optional): The log level for the logger. Default is 'WARNING'.
 
     Returns:
@@ -358,13 +266,9 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
     logger = log_configure(log_level=loglevel, log_name='Plot Model Comparison Timeseries')
 
     fig, axes = plt.subplots(3, 1, figsize=(12, 8))
-    # Set the Seaborn style (you can choose other styles if needed)
-    sns.set_style("darkgrid")
-    # Choose a Seaborn color palette (you can select a different one if needed)
-    color_palette = sns.color_palette("Set1")  # Change "Set1" to your preferred palette
-    # Get a list of colors from the palette
+    #sns.set_style("darkgrid")
+    color_palette = sns.color_palette("Set1") 
     linecolors = color_palette.as_hex()
-    # linecolors = plt.cm.get_cmap('tab10').colors
 
     if models is None:
         raise ValueError("models cannot be None")
@@ -399,24 +303,52 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
         linelabels = []
         for model in models:
             linelabels.append(model["model"]+' '+model["exp"]+' '+model["source"])
-
+        
     for i, model in enumerate(models):
         ttr_diff = []  # Initialize an empty list to store the data for each year
         tsr_diff = []
         tnr_diff = []
         # Iterate through the years
         for year in years:
-            ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
-            tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
-            tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
-        # Concatenate the data along the 'time' dimension
-        ttr_diff = xr.concat(ttr_diff, dim='time')
-        tsr_diff = xr.concat(tsr_diff, dim='time')
-        tnr_diff = xr.concat(tnr_diff, dim='time')
-        # Plot the data for the current model
-        ttr_diff.plot(ax=axes[0], color=linecolors[i], label=linelabels[i], x='time')
-        tsr_diff.plot(ax=axes[1], color=linecolors[i], label=linelabels[i], x='time')
-        ttr_diff.plot(ax=axes[2], color=linecolors[i], label=linelabels[i], x='time')
+            try:
+                ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
+                tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
+                tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
+            except KeyError:
+                # Skip the current year if not all values are found in the index 'time'
+                continue
+                
+        # Check if any data points are collected before concatenating
+        if ttr_diff:
+            # Concatenate the data along the 'time' dimension
+            ttr_diff = xr.concat(ttr_diff, dim='time')
+            ttr_diff.plot(ax=axes[0], color=linecolors[i], label=linelabels[i], x='time')
+            
+        if tsr_diff:
+            tsr_diff = xr.concat(tsr_diff, dim='time')
+            tsr_diff.plot(ax=axes[1], color=linecolors[i], label=linelabels[i], x='time')
+            
+        if tnr_diff:
+            tnr_diff = xr.concat(tnr_diff, dim='time')
+            tnr_diff.plot(ax=axes[2], color=linecolors[i], label=linelabels[i], x='time')
+
+    # for i, model in enumerate(models):
+    #     ttr_diff = []  # Initialize an empty list to store the data for each year
+    #     tsr_diff = []
+    #     tnr_diff = []
+    #     # Iterate through the years
+    #     for year in years:
+    #         ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
+    #         tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
+    #         tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
+    #     # Concatenate the data along the 'time' dimension
+    #     ttr_diff = xr.concat(ttr_diff, dim='time')
+    #     tsr_diff = xr.concat(tsr_diff, dim='time')
+    #     tnr_diff = xr.concat(tnr_diff, dim='time')
+    #     # Plot the data for the current model
+    #     ttr_diff.plot(ax=axes[0], color=linecolors[i], label=linelabels[i], x='time')
+    #     tsr_diff.plot(ax=axes[1], color=linecolors[i], label=linelabels[i], x='time')
+    #     tnr_diff.plot(ax=axes[2], color=linecolors[i], label=linelabels[i], x='time')
 
     samples_tmp = []
     for year in range(int(ceres["data"]["time.year"][0].values), int(ceres["data"]["time.year"][-1].values)-1):
@@ -437,7 +369,7 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
     axes[0].set_xticklabels([])
     axes[0].set_xlabel('')
     axes[0].legend(loc="upper left", frameon=False, fontsize='medium', ncol=3)
-
+    
     axes[1].fill(long_time, np.append(shading_data['mtnswrf'].min(dim='ensemble'),
                                       shading_data['mtnswrf'].max(dim='ensemble')[::-1]),
                  color='lightgrey', alpha=0.6, label='ceres individual years', zorder=0)
@@ -448,12 +380,30 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
     axes[2].fill(long_time, np.append(shading_data['tnr'].min(dim='ensemble'), shading_data['tnr'].max(dim='ensemble')[::-1]),
                  color='lightgrey', alpha=0.6, label='ceres individual years', zorder=0)
     axes[2].set_title('net', fontsize=16)
+    axes[2].set_xticklabels([])
+    axes[2].set_xlabel('')
 
+    if ylim is None:
+        max_bias = max(
+            max(abs(ttr_diff.max()), abs(ttr_diff.min()),
+                abs(tsr_diff.max()), abs(tsr_diff.min()),
+                abs(tnr_diff.max()), abs(tnr_diff.min()))
+            for model in models
+        )
+    else:
+        max_bias = ylim
+    ylim = max_bias * 1.1
+
+    
     for i in range(3):
         axes[i].set_ylabel('$W/m^2$')
         axes[i].set_xlim(xlim)
         axes[i].plot(xlim, [0, 0], color='black', linestyle=':')
         axes[i].set_ylim([-ylim, ylim])
+        axes[i].xaxis.set_major_locator(mdates.YearLocator())
+        axes[i].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        axes[i].tick_params(axis='x', rotation=45)
+        axes[i].grid(False)
 
     plt.suptitle('Global mean TOA radiation bias relative to CERES climatology', fontsize=18)
 
@@ -464,11 +414,12 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
         # Save the data for each model to separate netCDF files
         for i, model in enumerate(models):
             model_name = linelabels[i].replace(' ', '_').lower()
-            start_date = str(model["data"]["time.year"][0].values) + '-' + str(model["data"]["time.month"][0].values) +\
-                '-'+str(model["data"]["time.day"][0].values)
-            end_date = str(model["data"]["time.year"][-1].values) + '-' + str(model["data"]["time.month"][-1].values) +\
-                '-'+str(model["data"]["time.day"][-1].values)
-            model["gm"].to_netcdf(f"{outputdir}timeseries_{model_name}_{start_date}_{end_date}.nc")
+            # start_date = str(model["data"]["time.year"][0].values) + '-' + str(model["data"]["time.month"][0].values) +\
+            #     '-'+str(model["data"]["time.day"][0].values)
+            # end_date = str(model["data"]["time.year"][-1].values) + '-' + str(model["data"]["time.month"][-1].values) +\
+            #     '-'+str(model["data"]["time.day"][-1].values)
+            #model["gm"].to_netcdf(f"{outputdir}timeseries_{model_name}_{start_date}_{end_date}.nc")
+            model["gm"].to_netcdf(f"{outputdir}timeseries_{model_name}.nc")
         logger.info(f"Data has been saved to {outputdir}.")
 
     if outputfig is not None:
@@ -564,6 +515,9 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             # Calculate the mean bias over the specified time range and months
             mean_bias = model_season_data - ceres_seasonal_climatology
 
+            # Adjust contour plot levels to include zero
+            levels = np.linspace(-np.max(np.abs(mean_bias)), np.max(np.abs(mean_bias)), 21)
+            
             # Add cyclic longitude
             mean_bias = add_cyclic_lon(mean_bias)
 
@@ -572,7 +526,7 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             # model_label_season = f'{model_label}_{season}'
 
             # Plot on the current subplot
-            contour_plot = mean_bias.plot.contourf(ax=axs[i], transform=ccrs.PlateCarree(), cmap='RdBu_r', levels=20,
+            contour_plot = mean_bias.plot.contourf(ax=axs[i], transform=ccrs.PlateCarree(), cmap='RdBu_r', levels=levels,
                                                    add_colorbar=False, add_labels=False, extend='both')
 
             # Start significance testing
@@ -647,14 +601,16 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             create_folder(folder=str(outputdir), loglevel='WARNING')
             # Save the data to a netCDF file
             ceres_model_name = ceres["model"] + '_' + ceres["exp"] + '_' + ceres["source"]
-            filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}_seasons.pdf"
+            #filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}_seasons.pdf"
+            filename = f"{outputdir}mean_biases_{var}_{model_label}_{ceres_model_name}_seasons.pdf"
             plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
             logger.info(f"Data has been saved to {outputdir}.")
 
         if outputfig is not None:
             create_folder(folder=str(outputfig), loglevel='WARNING')
             ceres_model_name = ceres["model"] + '_' + ceres["exp"] + '_' + ceres["source"]
-            filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}_seasons.pdf"
+            #filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}_seasons.pdf"
+            filename = f"{outputfig}mean_biases_{var}_{model_label}_{ceres_model_name}_seasons.pdf"
             plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
             logger.info(f"Plot has been saved to {outputfig}.")
         else:
@@ -668,12 +624,15 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
         mean_bias = mean_bias.where(~mean_bias.isnull(), np.nan)
         mean_bias = add_cyclic_lon(mean_bias)
 
+        # Adjust contour plot levels to include zero
+        levels = np.linspace(-np.max(np.abs(mean_bias)), np.max(np.abs(mean_bias)), 21)
+        
         model_label = model["model"]+'_'+model["exp"]+'_'+model["source"] if model_label is None else model_label
 
         fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(8, 6))
 
         # Plot mean biases
-        contour_plot = mean_bias.plot.contourf(ax=ax, transform=ccrs.PlateCarree(), cmap='RdBu_r', levels=20,
+        contour_plot = mean_bias.plot.contourf(ax=ax, transform=ccrs.PlateCarree(), cmap='RdBu_r', levels=levels,
                                                add_colorbar=False, add_labels=False, extend='both')
 
         # Start significance testing
@@ -747,14 +706,16 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
             create_folder(folder=str(outputdir), loglevel='WARNING')
             # Save the data to a netCDF file
             ceres_model_name = ceres["model"]+'_'+ceres["exp"]+'_'+ceres["source"]
-            filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}.nc"
+            # filename = f"{outputdir}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}.nc"
+            filename = f"{outputdir}mean_biases_{var}_{model_label}_{ceres_model_name}.nc"
             mean_bias.to_netcdf(filename)
             logger.info(f"Data has been saved to {outputdir}.")
 
         if outputfig is not None:
             create_folder(folder=str(outputfig), loglevel='WARNING')
             ceres_model_name = ceres["model"]+'_'+ceres["exp"]+'_'+ceres["source"]
-            filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}.pdf"
+            # filename = f"{outputfig}toa_mean_biases_{var}_{model_label}_{start_year}_{end_year}_{ceres_model_name}.pdf"
+            filename = f"{outputfig}mean_biases_{var}_{model_label}_{ceres_model_name}.pdf"
             plt.savefig(filename, dpi=300, format='pdf', bbox_inches="tight")
             logger.info(f"Plot has been saved to {outputfig}.")
         else:

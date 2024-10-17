@@ -42,6 +42,9 @@ fixer_name:
         coords:
             timepippo:
                 source: time
+        dims:
+            cellspippo:
+                source: cell
     
     ci-teleconnections:
         data_model: false
@@ -50,3 +53,22 @@ fixer_name:
             - surface
             - step
             - number
+
+    FESOM-test:
+        parent: FESOM-default
+        data_model: false
+        vars:
+            mlotst125:
+                source: MLD2
+                src_units: m
+                grib: true
+                attributes:
+                    uncle: "scrooge"
+
+    FESOM-change-coords:
+        parent: FESOM-default
+        data_model: false
+        coords:
+            level:
+                source: nz1
+                tgt_units: 'a lot of water'

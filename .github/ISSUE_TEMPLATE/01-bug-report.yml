@@ -15,10 +15,31 @@ body:
       description: Which machine are you using?
       options:
       - Levante
+      - Leonardo
       - Lumi
-      - MN4
+      - MN5
       - CI
+      - Atos
       - Others
+    validations:
+      required: true
+  - type: dropdown
+    id: catalog
+    attributes:
+      label: catalog
+      description: Which catalog are you using?
+      options:
+      - ci
+      - climatedt-phase1
+      - leonardo
+      - levante
+      - lumi-phase1
+      - lumi-phase2
+      - mn5-phase2
+      - nextgems3
+      - nextgems4
+      - obs
+      - Others (specify)
     validations:
       required: true
   - type: dropdown
@@ -28,13 +49,12 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
-      - v0.7.2
-      - v0.7.1
-      - v0.7
-      - v0.6.3
-      - v0.6.2
-      - v0.6.1
-      - v0.6
+      - v0.12
+      - v0.11.3
+      - v0.11.2
+      - v0.11.1
+      - v0.11
+      - v0.10.*
       - older
     validations:
       required: true
@@ -52,6 +72,11 @@ body:
       label: Code to reproduce the issue
       description: Please copy and paste any relevant code. This will be automatically formatted into code, so no need for backticks.
       render: python
+  - type: textarea
+    id: error
+    attributes:
+      label: Error messages
+      description: Please copy and paste any error messages you received.
   - type: dropdown
     id: contributor
     attributes:

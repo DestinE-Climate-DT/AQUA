@@ -27,7 +27,7 @@ class TestFldmean():
         """Fldmean test for FESOM"""
         reader = Reader(model="FESOM", exp="test-pi", source='original_2d', loglevel=loglevel)
         data = reader.retrieve()
-        avg = reader.fldmean(data['sst']).values
+        avg = reader.fldmean(data['avg_tos']).values
         assert avg.shape == (2,)
         # assert avg[1] == pytest.approx(17.9806)
         assert avg[1] == pytest.approx(291.1306)
@@ -38,7 +38,7 @@ class TestFldmean():
                         regrid='r100', loglevel=loglevel)
         data = reader.retrieve()
         data = reader.regrid(data)
-        avg = reader.fldmean(data['sst'], lon_limits=[50, 90], lat_limits=[10, 40]).values
+        avg = reader.fldmean(data['avg_tos'], lon_limits=[50, 90], lat_limits=[10, 40]).values
         assert avg.shape == (2,)
         # assert avg[1] == pytest.approx(17.9806)
         assert avg[1] == pytest.approx(300.1865)
@@ -84,7 +84,7 @@ class TestFldmean():
         reader = Reader(model='FESOM', exp='test-pi', source='original_2d',
                         regrid='r250', loglevel=loglevel)
         data = reader.retrieve()
-        avg = reader.fldmean(data['sst']).values
+        avg = reader.fldmean(data['avg_tos']).values
         assert avg.shape == (2,)
         assert avg[1] == pytest.approx(291.1306)
 

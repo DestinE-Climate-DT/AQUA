@@ -9,12 +9,12 @@ experiments and gregory plot.
 import argparse
 import os
 import sys
-
 from dask.distributed import Client, LocalCluster
 
 from aqua.util import load_yaml, get_arg
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.logger import log_configure
+from global_time_series import Timeseries, GregoryPlot, SeasonalCycle
 
 
 def parse_arguments(args):
@@ -31,6 +31,8 @@ def parse_arguments(args):
                         required=False, help="loglevel")
 
     # These will override the first one in the config file if provided
+    parser.add_argument("--catalog", type=str,
+                        required=False, help="catalog name")
     parser.add_argument("--model", type=str,
                         required=False, help="model name")
     parser.add_argument("--exp", type=str,
@@ -72,6 +74,9 @@ def get_plot_options(config: dict = None,
         std_startdate = plot_options.get("std_startdate", None)
         std_enddate = plot_options.get("std_enddate", None)
         plot_kw = plot_options.get("plot_kw", {})
+        longname = plot_options.get("longname", None)
+        units = plot_options.get("units", None)
+        extend = plot_options.get("extend", True)
     else:
         monthly = config["timeseries_plot_params"]["default"].get("monthly", True)
         annual = config["timeseries_plot_params"]["default"].get("annual", True)
@@ -87,8 +92,11 @@ def get_plot_options(config: dict = None,
         std_startdate = config["timeseries_plot_params"]["default"].get("std_startdate", None)
         std_enddate = config["timeseries_plot_params"]["default"].get("std_enddate", None)
         plot_kw = config["timeseries_plot_params"]["default"].get("plot_kw", {})
+        longname = None
+        units = None
+        extend = config["timeseries_plot_params"]["default"].get("extend", True)
     return monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, enddate, \
-        monthly_std, annual_std, std_startdate, std_enddate, plot_kw
+        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, units, extend
 
 
 if __name__ == '__main__':
@@ -113,26 +121,26 @@ if __name__ == '__main__':
         client = Client(cluster)
         logger.info(f"Running with {nworkers} dask distributed workers.")
 
-    # Import diagnostic module
-    from global_time_series import Timeseries, GregoryPlot, SeasonalCycle
-
     # Load configuration file
     file = get_arg(args, "config", "config_time_series_atm.yaml")
     logger.info(f"Reading configuration file {file}")
     config = load_yaml(file)
 
     models = config['models']
+    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
     models[0]['source'] = get_arg(args, 'source', models[0]['source'])
 
     logger.debug("Analyzing models:")
+    catalogs_list = []
     models_list = []
     exp_list = []
     source_list = []
 
     for model in models:
-        logger.debug(f"  - {model['model']} {model['exp']} {model['source']}")
+        logger.debug(f"  - {model['catalog']} {model['model']} {model['exp']} {model['source']}")
+        catalogs_list.append(model['catalog'])
         models_list.append(model['model'])
         exp_list.append(model['exp'])
         source_list.append(model['source'])
@@ -146,10 +154,11 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} time series")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw = get_plot_options(config, var)
+                plot_kw, longname, units, extend = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=False,
+                            catalogs=catalogs_list,
                             models=models_list,
                             exps=exp_list,
                             sources=source_list,
@@ -164,6 +173,9 @@ if __name__ == '__main__':
                             annual_std=annual_std,
                             std_startdate=std_startdate,
                             std_enddate=std_enddate,
+                            longname=longname,
+                            units=units,
+                            extend=extend,
                             plot_kw=plot_kw,
                             outdir=outputdir,
                             loglevel=loglevel)
@@ -185,10 +197,11 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} time series")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw = get_plot_options(config, var)
+                plot_kw, longname, units, extend = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=True,
+                            catalogs=catalogs_list,
                             models=models_list,
                             exps=exp_list,
                             sources=source_list,
@@ -204,6 +217,9 @@ if __name__ == '__main__':
                             std_startdate=std_startdate,
                             std_enddate=std_enddate,
                             plot_kw=plot_kw,
+                            longname=longname,
+                            units=units,
+                            extend=extend,
                             outdir=outputdir,
                             loglevel=loglevel)
             try:
@@ -233,7 +249,8 @@ if __name__ == '__main__':
         toa_std_start = config_gregory.get("toa_std_start", "2001-01-01")
         toa_std_end = config_gregory.get("toa_std_end", "2020-12-31")
 
-        gp = GregoryPlot(models=models_list,
+        gp = GregoryPlot(catalogs=catalogs_list,
+                         models=models_list,
                          exps=exp_list,
                          sources=source_list,
                          monthly=monthly,
@@ -267,10 +284,11 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} seasonal cycle")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw = get_plot_options(config, var)
+                plot_kw, longname, units, _ = get_plot_options(config, var)
 
             sc = SeasonalCycle(var=var,
                                formula=False,
+                               catalogs=catalogs_list,
                                models=models_list,
                                exps=exp_list,
                                sources=source_list,
@@ -283,6 +301,8 @@ if __name__ == '__main__':
                                std_enddate=std_enddate,
                                plot_kw=plot_kw,
                                outdir=outputdir,
+                               longname=longname,
+                               units=units,
                                loglevel=loglevel)
             try:
                 sc.run()
@@ -294,4 +314,43 @@ if __name__ == '__main__':
                 logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
             except Exception as e:
                 logger.error(f"Error plotting {var} seasonal cycle: {e}")
+
+    if "seasonal_cycle_formulae" in config:
+        logger.info("Plotting seasonal cycle formulae")
+
+        for var in config["seasonal_cycle_formulae"]:
+            logger.info(f"Plotting {var} seasonal cycle")
+            monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
+                enddate, monthly_std, annual_std, std_startdate, std_enddate, \
+                plot_kw, longname, units, _ = get_plot_options(config, var)
+
+            sc = SeasonalCycle(var=var,
+                               formula=True,
+                               catalogs=catalogs_list,
+                               models=models_list,
+                               exps=exp_list,
+                               sources=source_list,
+                               regrid=regrid,
+                               plot_ref=plot_ref,
+                               plot_ref_kw=plot_ref_kw,
+                               startdate=startdate,
+                               enddate=enddate,
+                               std_startdate=std_startdate,
+                               std_enddate=std_enddate,
+                               plot_kw=plot_kw,
+                               outdir=outputdir,
+                               longname=longname,
+                               units=units,
+                               loglevel=loglevel)
+            try:
+                sc.run()
+            except NotEnoughDataError as e:
+                logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
+            except NoDataError as e:
+                logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
+            except NoObservationError as e:
+                logger.warning(f"Skipping {var} seasonal cycle plot: {e}")
+            except Exception as e:
+                logger.error(f"Error plotting {var} seasonal cycle: {e}")
+
     logger.info("Global Time Series is terminated.")

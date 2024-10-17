@@ -15,6 +15,6 @@ else
     echo "File already exists."
 fi
 
-# Change the machine name in the config file.
+# Change the catalog name in the config file.
 cp ./config/config.yaml ./config/config.yaml.bak
-sed -i "/^machine:/c\\machine: ci" "./config/config.yaml"
+sed -i "/^catalog:/c\\catalog: ci" "./config/config.yaml"

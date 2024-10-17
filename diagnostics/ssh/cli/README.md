@@ -11,7 +11,7 @@ Configuration for the diagnostic is first read from the configuration file, spec
 ### Basic command
 
 ```bash
-python ./ssh_cli.py --config=./config.yml
+python ./ssh_cli.py --config=./config.yaml
 ```
 
 ### Command with Override Options:
@@ -19,13 +19,13 @@ python ./ssh_cli.py --config=./config.yml
 If you wish to override specific configurations from the configuration file, you can use the following command line arguments:
 
 ```bash
-python ./ssh_cli.py --config=./config.yml --model=$MODEL --exp=$EXP --source=$SOURCE --outputdir=$OUTPUTDIR/dummy
+python ./ssh_cli.py --config=./config.yaml --model=$MODEL --exp=$EXP --source=$SOURCE --outputdir=$OUTPUTDIR/dummy
 ```
 
 Command Line Arguments:
 
 * `--config`: Specifies the path to the YAML configuration file.
-  - Default: (The default path is provided in the script. Usually something like `./config.yml`)  
+  - Default: (The default path is provided in the script. Usually something like `./config.yaml`)  
 * `--model`: Overrides the model name in the configuration file.
 * `--exp`: Overrides the experiment name in the configuration file.
 * `--source`: Overrides the source name in the configuration file.
@@ -34,4 +34,8 @@ Command Line Arguments:
   - Example: `--modeltime "2022-01-01" "2022-12-31"`
 * `--obstime`: Sets the observation time span. This takes two dates in the format "YYYY-MM-DD", "YYYY-MM-DD".
   - Example: `--obstime "2022-01-01" "2022-12-31"`
+* `--nworkers`: Sets the number of workers, dask
+  - Example: `--nworkers 4`
+* `--regrid`: Sets the required resolution
+  - Example: `--regrid r010`
 

@@ -12,6 +12,8 @@ import xarray as xr
 from aqua.logger import log_configure
 from teleconnections.tools import lon_180_to_360, wgt_area_mean
 
+xr.set_options(keep_attrs=True)
+
 
 def station_based_index(field: xr.DataArray,
                         namelist: dict,

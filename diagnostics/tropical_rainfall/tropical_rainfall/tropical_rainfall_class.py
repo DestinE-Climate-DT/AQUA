@@ -5,6 +5,7 @@
 """
 from typing import Union, Optional
 from aqua.logger import log_configure
+from aqua.util import ConfigPath
 
 from .src.tropical_rainfall_tools import ToolsClass
 from .src.tropical_rainfall_plots import PlottingClass
@@ -14,7 +15,7 @@ from .src.tropical_rainfall_meta import MetaClass
 from importlib import resources
 full_path_to_config = resources.files("tropical_rainfall") / "config-tropical-rainfall.yml"
 config = ToolsClass().get_config()
-machine = ToolsClass().get_machine()
+machine = ConfigPath().get_machine()
 
 loglevel = ToolsClass().get_config_value(config, 'loglevel', default='WARNING')
 trop_lat = ToolsClass().get_config_value(config, 'class_attributes', 'trop_lat', default=10)
@@ -116,7 +117,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
                               path_to_netcdf=self.path_to_netcdf, path_to_pdf=self.path_to_pdf, loglevel=self.loglevel)
 
         self.precipitation_rate_units_converter = self.main.precipitation_rate_units_converter
-        self.width_of_bin = self.precipitation_rate_units_converter(width_of_bin, old_unit='mm/day', new_unit=self.new_unit)
+        self.width_of_bin = width_of_bin
         self.main.width_of_bin = self.width_of_bin
 
         self.plots = PlottingClass(pdf_format=pdf_format, figsize=figsize, linewidth=linewidth,
@@ -131,5 +132,4 @@ class Tropical_Rainfall(metaclass=MetaClass):
     def import_methods(self):
         pass
 
-
-Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__
+#Tropical_Rainfall.class_attributes_update.__doc__ = MainClass.class_attributes_update.__doc__

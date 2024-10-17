@@ -41,6 +41,8 @@ def parse_arguments(cli_args):
                         help='if True, analysis is performed against a reference')
 
     # This arguments will override the configuration file if provided
+    parser.add_argument('--catalog', type=str, help='catalog name',
+                        required=False)
     parser.add_argument('--model', type=str, help='model name',
                         required=False)
     parser.add_argument('--exp', type=str, help='experiment name',
@@ -56,9 +58,6 @@ def parse_arguments(cli_args):
 
 
 if __name__ == '__main__':
-
-    cluster = LocalCluster(threads_per_worker=2, n_workers=8)  # Creates a local cluster with 4 workers
-    client = Client(cluster)
 
     args = parse_arguments(sys.argv[1:])
     loglevel = get_arg(args, 'loglevel', 'WARNING')
@@ -142,6 +141,7 @@ if __name__ == '__main__':
     # first model/exp/source combination
     models = config['models']
 
+    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
     models[0]['source'] = get_arg(args, 'source', models[0]['source'])
@@ -156,20 +156,21 @@ if __name__ == '__main__':
         if ref:  # We run first the reference model since it's needed for comparison plots
             logger.info('--ref: evaluating reference models first')
             ref_config = config['reference'][0]
+            catalog_ref = ref_config.get('catalog', 'obs')
             model_ref = ref_config.get('model', 'ERA5')
             exp_ref = ref_config.get('exp', 'era5')
             source_ref = ref_config.get('source', 'monthly')
             regrid = ref_config.get('regrid', None)
-            zoom = ref_config.get('zoom', None)
             freq = ref_config.get('freq', None)
-            logger.debug("setup: %s %s %s %s %s %s",
-                         model_ref, exp_ref, source_ref, regrid, freq, zoom)
+            logger.debug("setup: %s %s %s %s %s",
+                         model_ref, exp_ref, source_ref, regrid, freq)
 
             try:
                 tc = Teleconnection(telecname=telec,
                                     configdir=configdir,
+                                    catalog=catalog_ref,
                                     model=model_ref, exp=exp_ref, source=source_ref,
-                                    regrid=regrid, freq=freq, zoom=zoom,
+                                    regrid=regrid, freq=freq,
                                     months_window=months_window,
                                     outputdir=outputnetcdf,
                                     outputfig=outputpdf,
@@ -244,24 +245,25 @@ if __name__ == '__main__':
         # Model evaluation
         logger.debug('Models to be evaluated: %s', models)
         for mod in models:
+            catalog = mod['catalog']
             model = mod['model']
             exp = mod['exp']
             source = mod['source']
             regrid = mod.get('regrid', None)
             freq = mod.get('freq', None)
-            zoom = mod.get('zoom', None)
             reference = mod.get('reference', False)
             startdate = mod.get('startdate', None)
             enddate = mod.get('enddate', None)
 
-            logger.debug("setup: %s %s %s %s %s %s",
-                         model, exp, source, regrid, freq, zoom)
+            logger.debug("setup: %s %s %s %s %s",
+                         model, exp, source, regrid, freq)
 
             try:
                 tc = Teleconnection(telecname=telec,
                                     configdir=configdir,
+                                    catalog=catalog,
                                     model=model, exp=exp, source=source,
-                                    regrid=regrid, freq=freq, zoom=zoom,
+                                    regrid=regrid, freq=freq,
                                     months_window=months_window,
                                     outputdir=outputnetcdf,
                                     outputfig=outputpdf,
@@ -426,10 +428,16 @@ if __name__ == '__main__':
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
+                        vmin, vmax = config[telec].get('cbar_range', None)
+                        if vmin is None or vmax is None:
+                            sym = True
+                        else:
+                            sym = False
                         try:
                             plot_single_map_diff(data=data_map,
                                                  data_ref=ref_maps[i],
-                                                 save=True, sym=True,
+                                                 save=True, sym=sym,
+                                                 vmin_fill=vmin, vmax_fill=vmax,
                                                  cbar_label=cbar_labels[i],
                                                  outputdir=tc.outputfig,
                                                  filename=map_names[i],
@@ -443,7 +451,7 @@ if __name__ == '__main__':
                             try:
                                 plot_single_map_diff(data=data_map,
                                                      data_ref=ref_maps[i],
-                                                     save=True, sym=True,
+                                                     save=True, sym=sym,
                                                      cbar_label=cbar_labels[i],
                                                      outputdir=tc.outputfig,
                                                      filename=map_names[i],
@@ -530,9 +538,15 @@ if __name__ == '__main__':
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
+                        vmin, vmax = config[telec].get('cbar_range', None)
+                        if vmin is None or vmax is None:
+                            sym = True
+                        else:
+                            sym = False
                         try:
                             plot_single_map(data=data_map,
-                                            save=True, sym=True,
+                                            save=True, sym=sym,
+                                            vmin=vmin, vmax=vmax,
                                             cbar_label=cbar_labels[i],
                                             outputdir=tc.outputfig,
                                             filename=map_names[i],
@@ -545,7 +559,7 @@ if __name__ == '__main__':
                             logger.info('Trying with transform_first=True')
                             try:
                                 plot_single_map(data=data_map,
-                                                save=True, sym=True,
+                                                save=True, sym=sym,
                                                 cbar_label=cbar_labels[i],
                                                 outputdir=tc.outputfig,
                                                 filename=map_names[i],

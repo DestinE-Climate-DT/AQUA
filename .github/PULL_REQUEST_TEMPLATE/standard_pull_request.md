@@ -2,7 +2,7 @@
 
 ## Issues closed by this pull request:
 
-Close 
+Close #issue_number
 
 ----
 
@@ -16,5 +16,5 @@ Please apply the "run tests" label if you want to trigger CI tests.
  - [ ] Docstrings are updated if needed.
  - [ ] Changelog is updated.
  - [ ] Notebooks which requires changes are updated. 
- - [ ] If a source is added, the experiment table on the wiki is updated.
  - [ ] environment.yml and pyproject.toml are updated if needed, together with the lumi installation tool. 
+ - [ ] Diagnostic config files path are updated in the console if needed
