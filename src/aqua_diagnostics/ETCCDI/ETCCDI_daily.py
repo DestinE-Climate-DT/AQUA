@@ -63,6 +63,7 @@ class ETCCDI_daily ():
         else:
             self.statistic = statistic
 
+        self.aggregation = 'D'
         self.units = units
         self.cmap = cmap
 
@@ -83,4 +84,6 @@ class ETCCDI_daily ():
         self.startdate = f"{self.year}0101"
         self.enddate = f"{self.year}1231"
         self.month = int(self.startdate[4:6])
-        
+
+        # set the streaming
+        self.Reader.stream(startdate=self.startdate, enddate=self.enddate, aggregation=self.aggregation)
