@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- Fix the container loading script in order to avoid load of local libraries (#1399)
 - Fix using AQUA container for submit-aqua-web, do not wipe old figures by default (#1387)
 - New `timstat` module which opens complement `timmean()` with `timmax()`, `timmin()` and `timstd()` methods (#1391)
 
