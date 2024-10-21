@@ -71,8 +71,8 @@ log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
 singularity $cmd \
     --cleanenv \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
+    --env PYTHONUSERBASE=1 \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
     $AQUA_container $script

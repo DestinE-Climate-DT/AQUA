@@ -18,10 +18,10 @@ module load singularity
 
 singularity exec \
     --cleanenv \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
+    --env PYTHONUSERBASE=1 \
     --bind /pool/data/ICDC/atmosphere/ceres_ebaf/ \
     --bind /work/bb1153 \
     $AQUA_container \

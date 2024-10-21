@@ -73,10 +73,10 @@ singularity $cmd \
     --cleanenv \
     --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
+    --env PYTHONUSERBASE=1 \
     --bind /pfs/lustrep1/ \
     --bind /pfs/lustrep2/ \
     --bind /pfs/lustrep3/ \

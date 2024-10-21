@@ -16,9 +16,9 @@ AQUA_container="/gpfs/projects/ehpc01/containers/AQUA/aqua_0.12.sif"
 # singularity shell can be an option depending on the requirement
 singularity exec \
     --cleanenv \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA_path \
+    --env PYTHONUSERBASE=1 \
     --env AQUA=$AQUA_path \
     $AQUA_container \
     bash -c \
