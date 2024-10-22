@@ -45,7 +45,7 @@ fi
 # User defined variables
 
 # for LUMI
-# outputdir="/appl/local/destine/data/AQUA/grids"
+# outputdir="/appl/local/climatedt/data/AQUA/grids"
 # for Levante
 # outputdir="/work/bb1153/b382075/aqua/grids"
 # for Leonardo
