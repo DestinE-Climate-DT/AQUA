@@ -8,7 +8,7 @@ channels:
   - conda-forge
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
-  - python>=3.9
+  - python>=3.9,<3.13
   - cdo>=2.2.0,<=2.4.0 #for healpix support
   - pandas      
   - pandoc
