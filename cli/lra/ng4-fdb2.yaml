@@ -1,0 +1,38 @@
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  catalog: nextgems4
+
+paths:
+  outdir: /work/bb1153/b382076/LRA_test
+  tmpdir: /scratch/b/b382076
+
+options:
+  loglevel: INFO
+  zarr: False
+  verify_zarr: False
+
+slurm:
+  partition: small
+  username: padavini
+  account: project_465000454
+  time: 10:00:00
+  mem: 256GB
+
+data:
+  IFS-FESOM:
+    historical-1990:
+      hourly-hpz7-atm2d-fdb2:
+        workers: 24
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
+          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+      hourly-hpz7-atm3d-fdb2:
+        workers: 16
+        vars: ['q', 't', 'u', 'v']
+      daily-hpz7-oce2d-fdb2:
+        workers: 32
+        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+      daily-hpz7-oce3d-fdb2:
+        workers: 16
+        vars: ['avg_thetao', 'avg_so']

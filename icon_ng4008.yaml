@@ -1,0 +1,39 @@
+# templates for LRA generation. Please modify everything between {{ }} according to your configuration
+
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  catalog: nextgems4
+
+paths:
+  outdir: /work/bb1153/b382076/LRA_NG4
+  tmpdir: /scratch/b/b382076/lra_ng4
+
+options: 
+  # loglevel
+  loglevel: INFO
+  # Set to True if lra-r100-monthly-zarr should be created and checked
+  zarr: True
+  verify_zarr: True
+
+# sbatch job definitions
+slurm:
+  partition: compute
+  username: b382076
+  account: bb1153
+  time: 08:00:00
+  mem: 256GB
+
+data:
+  ICON:
+    ngc4008:
+      P1D:
+        vars: ['2t', 'mtpr', 
+        'msnlwrf', 'mtnlwrf', 'msnswrf', 'mtnswrf',
+        't', 'u', 'v', 'avg_sithick', 'avg_siconc', 'avg_thetao', 'avg_so']
+        zoom: 5
+      #   vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
+      #      'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
+      #   workers: 12  #this defines the workers for this source
+        

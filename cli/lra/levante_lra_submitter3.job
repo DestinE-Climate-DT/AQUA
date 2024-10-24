@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH --partition=compute
+#SBATCH --job-name=LRA_NG4_FDB3
+#SBATCH --output=LRA_NG4_FDB3_%j.out
+#SBATCH --error=LRA_NG4_FDB3_%j.err
+#SBATCH --account=bb1153
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=32
+#SBATCH --time=16:00:00
+#SBATCH --mem=200G 
+set -e
+
+# find mamba/conda (to be refined)
+whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+source $whereconda/etc/profile.d/conda.sh
+
+# activate conda environment
+conda activate aqua
+
+# set the number of dask workers
+# should be equal to the number of the total tasks available
+workers=8
+
+# run the Python script
+# -c to specify the configuration file
+# -f to use the fixer on data
+# -d to perform a dry run (to check generated lra)
+# -o to overwrite existing lra
+# -l to set the log level (default is WARNING)
+./cli_lra_generator.py --config ng4-fdb3.yaml -w ${workers} -d -l INFO

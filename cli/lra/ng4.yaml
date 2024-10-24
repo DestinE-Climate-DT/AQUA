@@ -1,0 +1,57 @@
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  outdir: /work/bb1153/b382076/LRA_NG4
+  tmpdir: /scratch/b/b382076
+loglevel: INFO
+
+slurm:
+  partition: compute
+  username: b382076
+  account: bb1153
+  time: 08:00:00
+  mem: 200GB
+
+catalog:
+  IFS-FESOM:
+    historical-1990:
+      hourly-hpz7-atm2d:
+        workers: 24
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
+          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+      hourly-hpz7-atm3d:
+        workers: 16
+        vars: ['q', 't', 'u', 'v']
+      daily-hpz7-oce2d:
+        workers: 32
+        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+      daily-hpz7-oce3d:
+        workers: 16
+        vars: ['avg_thetao', 'avg_so']
+      hourly-hpz7-atm2d-fdb2:
+        workers: 24
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
+          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+      hourly-hpz7-atm3d-fdb2:
+        workers: 16
+        vars: ['q', 't', 'u', 'v']
+      daily-hpz7-oce2d-fdb2:
+        workers: 32
+        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+      daily-hpz7-oce3d-fdb2:
+        workers: 16
+        vars: ['avg_thetao', 'avg_so']
+      hourly-hpz7-atm2d-fdb3:
+        workers: 24
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'mer', 'msr', 'mslhf', 'msshf',
+          'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf', 'mntss', 'metss', 'msror']
+      hourly-hpz7-atm3d-fdb3:
+        workers: 16
+        vars: ['q', 't', 'u', 'v']
+      daily-hpz7-oce2d-fdb3:
+        workers: 32
+        vars: ['avg_tos', 'avg_sithick', 'avg_siconc', 'avg_sos', 'avg_hc700m']
+      daily-hpz7-oce3d-fdb3:
+        workers: 16
+        vars: ['avg_thetao', 'avg_so']
