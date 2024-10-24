@@ -11,6 +11,7 @@ AQUA core complete list:
 - Fix the container loading script in order to avoid load of local libraries (#1399)
 - Fix using AQUA container for submit-aqua-web, do not wipe old figures by default (#1387)
 - New `timstat` module which opens complement `timmean()` with `timmax()`, `timmin()` and `timstd()` methods (#1391)
+- Fix to avoid mismatch between `hdf5` and `h5py` libraries (#1408)
 
 AQUA diagnostic complete list:
 
