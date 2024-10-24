@@ -255,7 +255,10 @@ class AquaFDBGenerator:
         self.logger.info("File %s has been created in %s", output_filename, output_dir)
 
         main_yaml_path = os.path.join(output_dir, 'main.yaml')
-        main_yaml = load_yaml(main_yaml_path)
+        if not os.path.exists(main_yaml_path):
+            main_yaml = {'sources': {}} 
+        else: 
+            main_yaml = load_yaml(main_yaml_path)
         main_yaml['sources'][self.config['exp']] = {
             'description': self.config['description'],
             'driver': 'yaml_file_cat',
