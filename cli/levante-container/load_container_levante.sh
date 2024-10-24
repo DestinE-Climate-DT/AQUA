@@ -12,7 +12,7 @@ else
 fi
 
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-AQUA_container="/work/bb1153/b382289/container/aqua/aqua_0.12.sif"
+AQUA_container="/work/bb1153/b382289/container/aqua/aqua_0.12.1.sif"
 GRID_DEFINITION_PATH="/work/bb1153/b382321/grid_definitions"
 
 # Simple command line parsing

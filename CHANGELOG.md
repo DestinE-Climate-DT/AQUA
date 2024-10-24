@@ -7,13 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+## [v0.12.1]
+
 AQUA core complete list:
 - Fix the container loading script in order to avoid load of local libraries (#1399)
 - Fix using AQUA container for submit-aqua-web, do not wipe old figures by default (#1387)
 - New `timstat` module which opens complement `timmean()` with `timmax()`, `timmin()` and `timstd()` methods (#1391)
 - Fix installation to avoid mismatch between `hdf5` and `h5py` libraries (#1408)
-
-AQUA diagnostic complete list:
 
 ## [v0.12]
 
@@ -666,7 +666,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.1...HEAD
+[v0.12.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12...v0.12.1
 [v0.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.3...v0.12
 [v0.11.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.2...v0.11.3
 [v0.11.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.1...v0.11.2
