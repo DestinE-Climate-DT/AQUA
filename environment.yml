@@ -15,6 +15,7 @@ dependencies:
   - pandas      
   - pandoc
   - pip
+  - hdf5 #explicitly to avoid issues with pypi version
   - python-cdo # for teleconnections
   - tempest-extremes # for TCs
   - xesmf # for ECmean
