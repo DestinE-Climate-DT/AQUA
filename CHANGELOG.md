@@ -13,6 +13,7 @@ AQUA core complete list:
 ## [v0.12.1]
 
 AQUA core complete list:
+- Allow multiple realizations in fdb-catalog-generator (#1335)
 - Fix the container loading script in order to avoid load of local libraries (#1399)
 - Fix using AQUA container for submit-aqua-web, do not wipe old figures by default (#1387)
 - New `timstat` module which opens complement `timmean()` with `timmax()`, `timmin()` and `timstd()` methods (#1391)
