@@ -319,15 +319,15 @@ We put together many different fixes, but let's take a look at the
 different sections of the fixer file.
 
 - **documentation-fix**: This is the name of the fixer.
-  It is used to identify the fixer and will be used in the entry metadata
-  to specify which fixer to use. (See :ref:`add-data` for more details)
+    It is used to identify the fixer and will be used in the entry metadata
+    to specify which fixer to use. (See :ref:`add-data` for more details)
 - **parent**: a source ``fixer_name`` with which the current fixes have to be merged. 
-  In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it. 
+    In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it. 
 - **data_model**: the name of the data model for coordinates. (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough.
-  (See :ref:`coord-fix`).
+    (See :ref:`coord-fix`).
 - **dims**: extra dimensions handling if data model is not flexible enough. 
-  (See :ref:`coord-fix`).
+    (See :ref:`coord-fix`).
 - **decumulation**: 
     - If only ``deltat`` is specified, all the variables that are considered as cumulated flux variables 
       (i.e. that present a time unit mismatch from the source to target units) will be divided
@@ -340,11 +340,12 @@ different sections of the fixer file.
       than the output saving frequency.
       The additional ``jump`` parameter specifies the period of cumulation.
       Only months are supported at the moment, implying that fluxes are reset at the beginning of each month.
+- **timeshift**: Roll the time axis forward/back in time by a certain amount. This could be an integer that will
+    be interpreted as a number of timesteps, or a pandas Timedelta string (e.g. `1D`). Positive numbers
+    will move the time axis forward, while negative ones will move it backward (e.g. `-2H`). Please note that only the 
+    time axis will be affected, the Dataset will maintain all its properties. 
 - **vars**: this is the main fixer block, described in detail on the following section :ref:`metadata-fix`.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
-- **timeshift**: Roll the time axis forward/back in time by a certain amount. This could be an integer that will
-    be interpreted as a number of timesteps, or a pandas Timedelta string (e.g. `1D`). Please note that only the 
-    time axis will be affected, the Dataset will maintain all its properties. 
 
 .. _metadata-fix:
 
