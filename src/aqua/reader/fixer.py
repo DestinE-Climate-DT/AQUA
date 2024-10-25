@@ -487,7 +487,7 @@ class FixerMixin():
             time_interval = timeshift * data.time.diff("time").isel(time=0).values
             field = field.assign_coords(time=data.time + time_interval)
         elif isinstance(timeshift, str):
-            self.logger.info('Shifting time axis by %s follwing pandas timedelta.', timeshift)
+            self.logger.info('Shifting time axis by %s following pandas timedelta.', timeshift)
             field['time'] = field['time'] + pd.Timedelta(timeshift)
         else:
             raise TypeError('timeshift should be either a integer (timesteps) or a pandas Timedelta!')
