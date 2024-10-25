@@ -432,7 +432,7 @@ class FixerMixin():
                 self.apply_unit_fix(data[var])
 
         # apply time shift if necessary
-        data = self._timeshift(data)
+        data = self._timeshifter(data)
 
         # remove variables following the fixes request
         data = self._delete_variables(data)
@@ -470,9 +470,17 @@ class FixerMixin():
         if not timeshift:
             return data
 
-        self.logger.info('Shifting time axis by %s', timeshift)
         field = data.copy()
-        field['time'] = field['time'] + pd.Timedelta(timeshift)
+        if isinstance(timeshift, int):
+            time_interval = timeshift * data.time.diff("time")[0:1].values
+            self.logger.warning('Shifting the time axis by %s timesteps', timeshift)
+            field = field.assign_coords(time=data.time + time_interval)
+        elif isinstance(timeshift, str):
+            self.logger.warning('Shifting time axis by %s follwing pandas timedelta', timeshift)
+            field['time'] = field['time'] + pd.Timedelta(timeshift)
+        else:
+            raise TypeError('timeshift should be either a integer (timesteps) or a pandas Timedelta!')
+     
         return field
 
 
