@@ -464,19 +464,30 @@ class FixerMixin():
 
     def _timeshifter(self, data):
         """
-        Apply a timedelta in pandas jargon to a xr.Dataset
+        Apply a timeshift to the time coordinate of an xr.Dataset.
+
+        Parameters:
+        - data (xr.Dataset): The dataset containing a 'time' coordinate to be shifted.
+
+        Returns:
+        - xr.Dataset: The dataset with the 'time' coordinate shifted based on the specified timeshift
+                      which is retrieved from the fixes dictionary.
         """
         timeshift = self.fixes.get('timeshift', None)
-        if not timeshift:
+
+        if timeshift is None:
             return data
+
+        if 'time' not in data:
+            raise KeyError("'time' coordinate not found in the dataset.")
 
         field = data.copy()
         if isinstance(timeshift, int):
-            time_interval = timeshift * data.time.diff("time")[0:1].values
-            self.logger.info('Shifting the time axis by %s timesteps', timeshift)
+            self.logger.info('Shifting the time axis by %s timesteps.', timeshift)
+            time_interval = timeshift * data.time.diff("time").isel(time=0).values
             field = field.assign_coords(time=data.time + time_interval)
         elif isinstance(timeshift, str):
-            self.logger.info('Shifting time axis by %s follwing pandas timedelta', timeshift)
+            self.logger.info('Shifting time axis by %s follwing pandas timedelta.', timeshift)
             field['time'] = field['time'] + pd.Timedelta(timeshift)
         else:
             raise TypeError('timeshift should be either a integer (timesteps) or a pandas Timedelta!')
