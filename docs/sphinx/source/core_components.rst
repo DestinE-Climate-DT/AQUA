@@ -342,6 +342,9 @@ different sections of the fixer file.
       Only months are supported at the moment, implying that fluxes are reset at the beginning of each month.
 - **vars**: this is the main fixer block, described in detail on the following section :ref:`metadata-fix`.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
+- **timeshift**: Roll the time axis forward/back in time by a certain amount. This could be an integer that will
+    be interpreted as a number of timesteps, or a pandas Timedelta string (e.g. `1D`). Please note that only the 
+    time axis will be affected, the Dataset will maintain all its properties. 
 
 .. _metadata-fix:
 
