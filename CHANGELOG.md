@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+AQUA core complete list:
+- Introduce `timeshift` option for the fixer to roll forward/back the time axis (#1411)
+
 ## [v0.12.1]
 
 AQUA core complete list:
