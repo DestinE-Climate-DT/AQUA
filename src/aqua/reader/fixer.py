@@ -8,6 +8,7 @@ import types
 from datetime import timedelta
 import xarray as xr
 import numpy as np
+import pandas as pd
 from metpy.units import units
 
 from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction
@@ -430,6 +431,9 @@ class FixerMixin():
             for var in data.data_vars:
                 self.apply_unit_fix(data[var])
 
+        # apply time shift if necessary
+        data = self._timeshift(data)
+
         # remove variables following the fixes request
         data = self._delete_variables(data)
 
@@ -457,6 +461,20 @@ class FixerMixin():
             data = data.drop_vars(dellist)
 
         return data
+
+    def _timeshifter(self, data):
+        """
+        Apply a timedelta in pandas jargon to a xr.Dataset
+        """
+        timeshift = self.fixes.get('timeshift', None)
+        if not timeshift:
+            return data
+
+        self.logger.info('Shifting time axis by %s', timeshift)
+        field = data.copy()
+        field['time'] = field['time'] + pd.Timedelta(timeshift)
+        return field
+
 
     def _wrapper_decumulate(self, data, variables, varlist, keep_memory, jump):
         """
