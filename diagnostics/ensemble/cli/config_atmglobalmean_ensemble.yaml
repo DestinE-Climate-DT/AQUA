@@ -1,0 +1,30 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+
+# This yaml file will only have either annual or monthly
+models:
+  - model: 'aqua-atmglobalmean'
+    #catalog: 'diagnosis'
+    exp: 'IFS-NEMO-hist'
+    source: 't2m'
+  - model: 'aqua-atmglobalmean'
+    #catalog: 'diagnosis'
+    exp: 'IFS-FESOM-hist'
+    source: 't2m'
+
+
+outputdir: "/work/ab0995/a270260/test_01/ens_atm_test"
+
+# This is the variable that will be plotted as timeseries
+
+atmglobalmean: ['t2m']
+
+atmglobalmean_plot_params:
+  figure_size: [15,15]
+  plot_label: True
+  label_ncol: 1
+  label_size: 7.5
+  #unit:
+  pdf_save: True
+  plot_std: True
