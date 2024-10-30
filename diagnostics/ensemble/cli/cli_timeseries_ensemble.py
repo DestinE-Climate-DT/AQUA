@@ -54,14 +54,15 @@ def get_plot_options(config: dict = None, var: str = None):
     ann_enddate = config["timeseries_plot_params"].get("annual_enddate",None)
     figure_size = config["timeseries_plot_params"].get("figure_size",None)
     plot_std = config["timeseries_plot_params"].get("plot_std",None)
-    plot_label = config["timeseries_plot_params"].get("plot_label",None)
+    plot_label_model = config["timeseries_plot_params"].get("plot_label_model",None)
+    plot_label_ref = config["timeseries_plot_params"].get("plot_label_ref",None)
     ref_mon_label = config["timeseries_plot_params"].get("ref_mon_label",None)
     ref_ann_label = config["timeseries_plot_params"].get("ref_ann_label",None)
     label_ncol = config["timeseries_plot_params"].get("label_ncol",None)
     label_size = config["timeseries_plot_params"].get("label_size",None)
     pdf_save = config["timeseries_plot_params"].get("pdf_save",None)
     units = config["timeseries_plot_params"].get("units",None)
-    return mon_startdate,mon_enddate,ann_startdate,ann_enddate,figure_size,plot_std,plot_label,ref_mon_label,ref_ann_label,label_ncol,label_size,pdf_save,units
+    return mon_startdate,mon_enddate,ann_startdate,ann_enddate,figure_size,plot_std,plot_label_model,plot_label_ref,ref_mon_label,ref_ann_label,label_ncol,label_size,pdf_save,units
 
 if __name__ == '__main__':
 
@@ -117,7 +118,7 @@ if __name__ == '__main__':
             ann_source_list.append(model['source'])
     var = config['timeseries']
     logger.info(f"Plotting {var} timeseries")
-    mon_startdate,mon_enddate,ann_startdate,ann_enddate,figure_size,plot_std,plot_label,ref_mon_label,ref_ann_label,label_ncol,label_size,pdf_save,units = get_plot_options(config,var)
+    mon_startdate,mon_enddate,ann_startdate,ann_enddate,figure_size,plot_std,plot_label_model,plot_label_ref,ref_mon_label,ref_ann_label,label_ncol,label_size,pdf_save,units = get_plot_options(config,var)
 
 
     ref_mon = config['reference_model_monthly']
@@ -136,7 +137,7 @@ if __name__ == '__main__':
     
     outputdir = get_arg(args, "outputdir", config["outputdir"])
     
-    ts = EnsembleTimeseries(var=var,mon_model=mon_model_list,mon_exp=mon_exp_list,mon_source=mon_source_list,ann_model=ann_model_list,ann_exp=ann_exp_list,ann_source=ann_source_list,ref_mon_dict=ref_mon_dict,ref_ann_dict=ref_ann_dict,mon_startdate=mon_startdate,mon_enddate=mon_enddate,ann_startdate=ann_startdate,ann_enddate=ann_enddate,figure_size=figure_size,plot_std=plot_std,plot_label=plot_label,label_ncol=label_ncol,label_size=label_size,outdir=outputdir,pdf_save=pdf_save,loglevel=loglevel)
+    ts = EnsembleTimeseries(var=var,mon_model=mon_model_list,mon_exp=mon_exp_list,mon_source=mon_source_list,ann_model=ann_model_list,ann_exp=ann_exp_list,ann_source=ann_source_list,ref_mon_dict=ref_mon_dict,ref_ann_dict=ref_ann_dict,mon_startdate=mon_startdate,mon_enddate=mon_enddate,ann_startdate=ann_startdate,ann_enddate=ann_enddate,figure_size=figure_size,plot_std=plot_std,plot_label_model=plot_label_model,plot_label_ref=plot_label_ref,label_ncol=label_ncol,label_size=label_size,outdir=outputdir,pdf_save=pdf_save,loglevel=loglevel)
     try:
         ts.run()
     except Exception as e:

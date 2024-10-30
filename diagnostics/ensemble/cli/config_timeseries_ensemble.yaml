@@ -36,7 +36,7 @@ reference_model_annual:
     exp: 'ERA5-analysis'
     source: 't2m-ann'
 
-outputdir: "/work/ab0995/a270260/test_01/ens_test_1"
+outputdir: "/work/ab0995/a270260/test_01"
 
 # This is the variable that will be plotted as timeseries
 timeseries: ['2t']
@@ -52,8 +52,9 @@ timeseries_plot_params:
   ref_ann_label: 'ERA5 Annual'
   figure_size: [10,5]
   plot_std: True
-  plot_label: True
-  label_ncol: 4
+  plot_label_model: False
+  plot_label_ref: True
+  label_ncol: 2  
   label_size: 7.5 
   unit:
   pdf_save: True
