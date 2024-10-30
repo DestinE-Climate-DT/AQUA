@@ -12,7 +12,8 @@ loglevel = "DEBUG"
 def lra_arguments(request):
     return request.param
 
-
+# path for lra data
+lrapath = 'ci/IFS/test-tco79/r100/monthly'
 
 @pytest.mark.aqua
 class TestLRA():
@@ -21,20 +22,20 @@ class TestLRA():
     def test_definitive_false(self, lra_arguments):
         """Test the LRA generator with definitive = False"""
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                             outdir=outdir, tmpdir=tmpdir, resolution='r100',
                             frequency='monthly', loglevel=loglevel)
         test.retrieve()
         test.generate_lra()
         assert os.path.isdir(os.path.join(os.getcwd(), outdir,
-                                          "IFS/test-tco79/r100/monthly"))
+                                          lrapath))
         
     # defintiive = True with or without dask
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, lra_arguments, nworkers):
         """Test the LRA generator with definitive = True"""
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                             outdir=outdir, tmpdir=tmpdir, resolution='r100',
                             frequency='monthly', definitive=True,
                             loglevel=loglevel, nproc=nworkers)
@@ -43,8 +44,8 @@ class TestLRA():
         month = year.sel(time=year.time.dt.month == 1)
         test.data = month
         test.generate_lra()
-        path = os.path.join(os.getcwd(), outdir,
-                            "IFS/test-tco79/r100/monthly/2t_test-tco79_r100_monthly_202001.nc")
+        path = os.path.join(os.getcwd(), outdir,lrapath,
+                            "2t_test-tco79_r100_monthly_202001.nc")
         test.check_integrity(varname=var)
         assert os.path.isfile(path)
         file = xr.open_dataset(path)
@@ -59,7 +60,7 @@ class TestLRA():
         but with create zarr archive
         """
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                             outdir=outdir, tmpdir=tmpdir,
                             resolution='r100', frequency='monthly', nproc= 1,
                             loglevel=loglevel, definitive=True)
@@ -82,15 +83,14 @@ class TestLRA():
         but with dask init and catalog generator
         """
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                             outdir=outdir, tmpdir=tmpdir, overwrite=True,
                             definitive=True,
                             resolution='r100', frequency='monthly', nproc=2,
                             loglevel=loglevel)
         test.retrieve()
         test.generate_lra()
-        assert os.path.isdir(os.path.join(os.getcwd(), outdir,
-                                          "IFS/test-tco79/r100/monthly"))
+        assert os.path.isdir(os.path.join(os.getcwd(), outdir, lrapath))
         shutil.rmtree(os.path.join(os.getcwd(), outdir))
         shutil.rmtree(os.path.join(os.getcwd(), tmpdir))
 
@@ -98,19 +98,19 @@ class TestLRA():
     def test_exclude_incomplete(self, lra_arguments):
         """Test exclude_incomplete option"""
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                             outdir=outdir, tmpdir=tmpdir, resolution='r100',
                             frequency='monthly', definitive=True, exclude_incomplete=True,
                             loglevel=loglevel)
         test.retrieve()
         test.generate_lra()
 
-        path = os.path.join(os.getcwd(), outdir,
-                            "IFS/test-tco79/r100/monthly/2t_test-tco79_r100_monthly_202008.nc")
+        path = os.path.join(os.getcwd(), outdir, lrapath,
+                            "2t_test-tco79_r100_monthly_202008.nc")
         assert not os.path.exists(path)
 
-        path = os.path.join(os.getcwd(), outdir,
-                            "IFS/test-tco79/r100/monthly/2t_test-tco79_r100_monthly_202002.nc")
+        path = os.path.join(os.getcwd(), outdir, lrapath,
+                            "2t_test-tco79_r100_monthly_202002.nc")
         assert os.path.exists(path)
         file = xr.open_dataset(path)
         assert len(file.time) == 1
@@ -129,7 +129,7 @@ class TestLRA():
         resolution='r100'
         frequency='monthly'
         year = 2022
-        test = LRAgenerator(model=model, exp=exp, source=source, var=var,
+        test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                         outdir=outdir, tmpdir=tmpdir, resolution=resolution,
                         frequency=frequency, loglevel=loglevel)
 

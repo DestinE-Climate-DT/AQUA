@@ -72,3 +72,12 @@ fixer_name:
             level:
                 source: nz1
                 tgt_units: 'a lot of water'
+
+    ifs-ci-timestep:
+        parent: ifs-ci-test
+        timeshift: -24
+    
+    ifs-ci-pandas:
+        parent: ifs-ci-test
+        timeshift: -19D
+    

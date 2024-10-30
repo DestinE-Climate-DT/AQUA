@@ -41,3 +41,18 @@ fixer_name:
       q: 
         source: mq
         grib: true
+  
+  ifs-nemo-reduced-output-monthly-v2:
+    parent: ifs-destine-v1
+    data_model: ifs
+    deltat: monthly
+    vars:
+      2t: 
+        source: mean2t
+        grib: true
+      mtpr:
+        source: tp
+        grib: True
+        # decumulate: true
+        src_units: m
+        units: kg m**-2 s**-1

@@ -7,19 +7,20 @@ import shutil
 import intake_esm
 import intake_xarray
 import xarray as xr
+import numpy as np
 import smmregrid as rg
 
 from aqua.util import load_multi_yaml, files_exist
 from aqua.util import ConfigPath, area_selection
 from aqua.logger import log_configure, log_history
 from aqua.util import flip_lat_dir, find_vert_coord
-from aqua.exceptions import NoDataError
+from aqua.exceptions import NoDataError, NoRegridError
 import aqua.gsv
 
 from .streaming import Streaming
 from .fixer import FixerMixin
 from .regrid import RegridMixin
-from .timmean import TimmeanMixin
+from .timstat import TimStatMixin
 from .reader_utils import group_shared_dims, set_attrs
 from .reader_utils import configure_masked_fields
 
@@ -38,7 +39,7 @@ default_weights_areas_parameters = ['zoom']
 xr.set_options(keep_attrs=True)
 
 
-class Reader(FixerMixin, RegridMixin, TimmeanMixin):
+class Reader(FixerMixin, RegridMixin, TimStatMixin):
     """General reader for climate data."""
 
     instance = None  # Used to store the latest instance of the class
@@ -198,12 +199,13 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
             if self.src_grid_name is not None:
                 self.logger.info('Grid metadata is %s', self.src_grid_name)
+                self.dst_grid_name = regrid
+                # configure all the required elements
+                self._configure_coords(cfg_regrid)
             else: 
-                self.logger.warning('Grid metadata is not defined. Regridding capabilities might not work.')
-            self.dst_grid_name = regrid
-
-            # configure all the required elements
-            self._configure_coords(cfg_regrid)
+                self.logger.warning('Grid metadata is not defined. Disabling regridding and areas capabilities.')
+                areas = False
+                regrid = None
 
         # generate source areas
         if areas:
@@ -568,7 +570,7 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
         if isinstance(data, xr.Dataset) and self.fix:
             for var in data.data_vars:
                 if not hasattr(data[var], 'units'):
-                    self.logger.error('Variable %s has no units!', var)
+                    self.logger.warning('Variable %s has no units!', var)
 
         if not fiter:  # This is not needed if we already have an iterator
             if self.streaming:
@@ -632,6 +634,9 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
+
+        if self.dst_grid_name is None:
+            raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
 
         if isinstance(data, types.GeneratorType):
             return self._regridgen(data)
@@ -767,6 +772,40 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
 
         return att.get("regridded", False)
 
+    def _clean_spourious_coords(self, data, name=None):
+        """
+        Remove spurious coordinates from an xarray DataArray or Dataset.
+
+        This function identifies and removes unnecessary coordinates that may 
+        be incorrectly associated with spatial coordinates, such as a time 
+        coordinate being linked to latitude or longitude.
+
+        Parameters:
+        ----------
+        data : xarray.DataArray or xarray.Dataset
+            The input data object from which spurious coordinates will be removed.
+
+        name : str, optional
+            An optional name or identifier for the data. This will be used in 
+            warning messages to indicate which dataset the issue pertains to.
+
+        Returns:
+        -------
+        xarray.DataArray or xarray.Dataset
+            The cleaned data object with spurious coordinates removed.
+        """
+
+        drop_coords = set()
+        for coord in list(data.coords):
+            if len(data[coord].coords)>1:
+                drop_coords.update(koord for koord in data[coord].coords if koord != coord)
+        if not drop_coords:
+            return data
+        self.logger.warning('Issue found in %s, removing %s coordinates',
+                                name, list(drop_coords))
+        return data.drop_vars(drop_coords)
+
+
     def fldmean(self, data, lon_limits=None, lat_limits=None, **kwargs):
         """
         Perform a weighted global average.
@@ -798,36 +837,32 @@ class Reader(FixerMixin, RegridMixin, TimmeanMixin):
             data = area_selection(data, lon=lon_limits, lat=lat_limits,
                                   loglevel=self.loglevel, **kwargs)
 
+        # cleaning coordinates which have "multiple" coordinates in their own definition
+        grid_area = self._clean_spourious_coords(grid_area, name = "area")
+        data = self._clean_spourious_coords(data, name = "data")
+
         # check if coordinates are aligned
         try:
             xr.align(grid_area, data, join='exact')
         except ValueError as err:
             # check in the dimensions what is wrong
-            for coord in self.grid_area.coords:
+            for coord in grid_area.coords:
+                if coord in space_coord:
+                    xcoord = data.coords[coord]
 
-                xcoord = data.coords[coord]
-                # HACK to solve minor issue in xarray
-                # check https://github.com/oloapinivad/AQUA/pull/397 for further info
-                if len(xcoord.coords) > 1:
-                    self.logger.warning('Issue found in %s, removing spurious coordinates', coord)
-                    drop_coords = [koord for koord in xcoord.coords if koord != coord]
-                    xcoord = xcoord.drop_vars(drop_coords)
-
-                # option1: shape different
-                if len(self.grid_area[coord]) != len(xcoord):
-                    raise ValueError(f'{coord} has different shape between area files and your dataset.'
-                                     'If using the LRA, try setting the regrid=r100 option') from err
-                # shape are ok, but coords are different
-                if not self.grid_area[coord].equals(xcoord):
-                    # if they are fine when sorted, there is a sorting mismatch
-                    if self.grid_area[coord].sortby(coord).equals(xcoord.sortby(coord)):
-                        self.logger.warning('%s is sorted in different way between area files and your dataset. Flipping it!',
-                                            coord)
-                        self.grid_area = self.grid_area.reindex({coord: list(reversed(self.grid_area[coord]))})
-                        # raise ValueError(f'{coord} is sorted in different way between area files and your dataset.') from err
-                    # something else
-                    else:
-                        raise ValueError(f'{coord} has a mismatch in coordinate values!') from err
+                    # first case: shape different
+                    if len(grid_area[coord]) != len(xcoord):
+                        raise ValueError(f'{coord} has different shape between area files and your dataset.'
+                                        'If using the LRA, try setting the regrid=r100 option') from err
+                    # shape are ok, but coords are different
+                    if not grid_area[coord].equals(xcoord):
+                        # if they are fine when sorted, there is a sorting mismatch
+                        if grid_area[coord].sortby(coord).equals(xcoord.sortby(coord)):
+                            self.logger.warning('%s is sorted in different way between area files and your dataset. Flipping it!',
+                                                coord)
+                            grid_area = grid_area.reindex({coord: list(reversed(grid_area[coord]))})
+                        else:
+                            raise ValueError(f'{coord} has a mismatch in coordinate values!') from err
 
         out = data.weighted(weights=grid_area.fillna(0)).mean(dim=space_coord)
 

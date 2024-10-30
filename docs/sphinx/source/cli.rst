@@ -132,6 +132,18 @@ Additional options
 
     Title for the automatic PR (optional).
 
+.. option:: -w, --wipe
+    
+        Wipe the destination directory before copying the images.
+
+.. option:: -n, --no-convert
+    
+        Do not convert PDFs to PNGs.
+
+.. option:: -l, --loglevel LEVEL
+        
+            Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
+
 Another script is used to upload the documentation to the aqua-web repository.
 
 .. code-block:: bash
@@ -180,6 +192,11 @@ experiments specified in the list.
 
 Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
 
+The extra ``-w``, ``-f`` and ``-n`` flags are used for maintenance and debugging 
+and can be used to wipe the destination directory before pushing the images to aqua-web,
+use a fresh temporary output directory for the analysis generation and use the
+native (local) AQUA version respectively.
+
 Options
 ^^^^^^^
 
@@ -222,6 +239,18 @@ Options
 .. option:: -p, --push
     
     Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
+
+.. option:: -w, --wipe
+    
+    Flag to wipe the destination directory before pushing the images to aqua-web.
+
+.. option:: -f, --fresh
+    
+    Flag to use a fresh temporary output directory for the analysis generation.
+
+.. option:: -n, --native
+    
+    Flag to use the native (local) AQUA version (default is the container version).
 
 
 .. _benchmarker:

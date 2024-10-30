@@ -22,13 +22,25 @@ grids:
   lon-lat-depth:
     vert_coord: ["depth"]
     space_coord: [lon, lat]
+  longitude-latitude:
+    vert_coord: ["2d"]
+    space_coord: [longitude, latitude]
 
   # target regrid
+  # rxxxs are staggered grids
+  r005s: r7200x3601
   r005: r7200x3600
+  r010s: r3600x1801
   r010: r3600x1800
+  r020s: r1800x901
   r020: r1800x900
+  r025s: r1440x721
   r025: r1440x720
+  r050s: r720x361
   r050: r720x360
+  r100s: r360x181
   r100: r360x180
+  r200s: r180x91
   r200: r180x90
+  r250s: r144x73
   r250: r144x72

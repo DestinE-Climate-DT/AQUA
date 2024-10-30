@@ -12,13 +12,13 @@
 AQUA_path=$AQUA
 # If you don't have access to ehpc01, use the below bsc32 path
 # AQUA_container="/gpfs/projects/bsc32/DestinE/containers/aqua/aqua_0.9.2.sif"
-AQUA_container="/gpfs/projects/ehpc01/containers/AQUA/aqua_0.11.3.sif"
+AQUA_container="/gpfs/projects/ehpc01/containers/AQUA/aqua_0.12.1.sif"
 # singularity shell can be an option depending on the requirement
 singularity exec \
     --cleanenv \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA_path \
+    --env PYTHONUSERBASE=1 \
     --env AQUA=$AQUA_path \
     $AQUA_container \
     bash -c \

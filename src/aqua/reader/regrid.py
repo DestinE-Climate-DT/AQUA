@@ -351,6 +351,11 @@ class RegridMixin():
         self.enddate = None
         self.preproc = None
         data = self.retrieve(sample=True, history=False, *args, **kwargs)
+        # HACK: ensuring we load only a single time step if possible:
+        if 'time' in data.coords:
+            data = data.isel(time=0)
+        else:
+            self.logger.warning('No time dimension found while sampling the data!')
         self.aggregation = aggregation
         self.chunks = chunks
         self.fix = fix

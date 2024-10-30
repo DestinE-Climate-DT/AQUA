@@ -8,16 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- Introduce `timeshift` option for the fixer to roll forward/back the time axis (#1411)
+- Add extra maintenance options to submit-aqua-web (#1415)
+- Update push-analysis.sh removing dependency on full AQUA and option not to convert to png (#1419)
+- Pin to xarray<2024.09 to prevent bug in polyfit requires temporary (#1420)
+- Remove spurious dimensions when running `fldmean()` (#1423)
 
+## [v0.12.1]
+
+AQUA core complete list:
+- Allow multiple realizations in fdb-catalog-generator (#1335)
+- Fix the container loading script in order to avoid load of local libraries (#1399)
+- Fix using AQUA container for submit-aqua-web, do not wipe old figures by default (#1387)
+- New `timstat` module which opens complement `timmean()` with `timmax()`, `timmin()` and `timstd()` methods (#1391)
+- Fix installation to avoid mismatch between `hdf5` and `h5py` libraries (#1408)
+
+## [v0.12]
+
+Main changes are:
+1. AQUA installation now requires a mandatory machine name.
+2. The `aqua` source code has been moved to the `src` folder. The change is transparent to the user.
+3. A diagnostic module, called `aqua.diagnostics`, is under development. The module is not yet active, diagnostics are still available with the previous structure.
+
+AQUA core complete list:
+
+- Mixed updates to support data for NextGEMS cycle4 hackathon (#1375)
 - Preprocess functionality added to the `Reader` class (#1298)
 - The AQUAthon material has been moved under the `notebooks` folder (#1342)
 - `aqua` source code has been moved to the `src` folder (#1332)
 - A diagnostic module, called `aqua.diagnostics`, has been created under the `src` folder (#1332, #1341)
+- LRA generator tool support for multiple relizations (#1357, #1375)
+- LRA generator requires `catalog` as a mandatory argument (#1357)
 - AQUA console revisiting, adding `avail` method and `update` method (#1346)
 - AQUA install now requires mandatory machine name (#1346)
 - Fix to make keyword step optional in request (#1360)
-
-AQUA diagnostic complete list:
 
 ## [v0.11.3]
 
@@ -650,7 +674,9 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.3...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.1...HEAD
+[v0.12.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12...v0.12.1
+[v0.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.3...v0.12
 [v0.11.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.2...v0.11.3
 [v0.11.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.1...v0.11.2
 [v0.11.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11...v0.11.1

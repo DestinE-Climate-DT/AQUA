@@ -14,7 +14,7 @@ fi
 setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 # If you don't have access to ehpc01, use the below bsc32 path
 # AQUA_container="/gpfs/projects/bsc32/DestinE/containers/aqua/aqua_0.9.2.sif"
-AQUA_container="/gpfs/projects/ehpc01/containers/AQUA/aqua_0.11.3.sif"
+AQUA_container="/gpfs/projects/ehpc01/containers/AQUA/aqua_0.12.1.sif"
 
 # Simple command line parsing
 user_defined_aqua="ask"
@@ -71,8 +71,8 @@ log_message INFO "Perfect! Now it's time to ride with AQUA ⛵"
 
 singularity $cmd \
     --cleanenv \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
+    --env PYTHONUSERBASE=1 \
     --env PYTHONPATH=$AQUA \
     --env AQUA=$AQUA \
     $AQUA_container $script

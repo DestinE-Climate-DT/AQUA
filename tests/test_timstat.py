@@ -16,7 +16,7 @@ def data(reader):
 @pytest.mark.aqua
 class TestTimmean():
 
-    @pytest.mark.parametrize('var', ['2t', 'ttr'])
+    @pytest.mark.parametrize('var', ['ttr'])
     def test_timmean_monthly(self, reader, data, var):
         """Timmean test for monthly aggregation"""
         avg = reader.timmean(data[var], freq='monthly')
@@ -26,30 +26,47 @@ class TestTimmean():
         assert len(unique) == nmonths
         assert all(counts == counts[0])
 
+    @pytest.mark.parametrize('var', ['2t'])
+    def test_timstd_allperiod(self, reader, data, var):
+        """Timstd test for entire data period"""
+        avg = reader.timstd(data[var])
+        assert avg.shape == (9, 18)
+
     @pytest.mark.parametrize('var', ['2t', 'ttr'])
-    def test_timmean_monthly_exclude_incomplete(self, reader, data, var):
+    def test_timstat_monthly_exclude_incomplete(self, reader, data, var):
         """Timmean test for monthly aggregation with excluded incomplete chunks"""
-        avg = reader.timmean(data[var], freq='monthly', exclude_incomplete=True)
+        avg = reader.timstat(data[var], stat='mean', freq='monthly', exclude_incomplete=True)
         unique, counts = np.unique(avg.time.dt.month, return_counts=True)
         assert avg.shape == (6, 9, 18)
         assert len(unique) == 6
         assert all(counts == counts[0])
 
     @pytest.mark.parametrize('var', ['2t', 'ttr'])
-    def test_timmean_daily(self, reader, data, var):
+    def test_timmax_daily(self, reader, data, var):
         """Timmean test for daily aggregation"""
-        avg = reader.timmean(data[var], freq='daily')
+        avg = reader.timmax(data[var], freq='daily')
         unique, counts = np.unique(avg.time.dt.day, return_counts=True)
         assert avg.shape == (197, 9, 18)
         assert len(unique) == 31
         assert all(counts == np.array([7, 7, 7, 6, 6, 6, 6, 6, 6, 6,
                                        6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7,
                                        7, 7, 7, 7, 7, 7, 7, 6, 4]))
+        
+    def test_timstat_compare(self, reader):
+        """Time operations provide robust values"""
 
-    def test_timmean_yearly_exclude_incomplete(self, reader):
+        data = reader.retrieve(var='2t')
+        minval = reader.timmin(data['2t'], freq='daily')
+        maxval = reader.timmax(data['2t'], freq='daily')
+        avg = reader.timmean(data['2t'], freq='daily')
+        
+        assert (minval <= avg).all()
+        assert (avg <= maxval).all()
+
+    def test_timmin_yearly_exclude_incomplete(self, reader):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
         data = reader.retrieve(var='ttr')
-        avg = reader.timmean(data, freq='yearly', exclude_incomplete=True)
+        avg = reader.timmin(data, freq='yearly', exclude_incomplete=True)
         assert avg['ttr'].shape == (0, 9, 18)
 
     def test_timmean_yearly_center_time(self, reader):
@@ -66,10 +83,10 @@ class TestTimmean():
         assert avg['2t'].shape == (8, 9, 18)
         assert avg['2t'].time[1].values == np.datetime64('2020-02-15T00:00:00.000000000')
 
-    def test_timmean_daily_center_time(self, reader):
+    def test_timstd_daily_center_time(self, reader):
         """Timmean test for daily aggregation with center_time=True and exclude_incomplete=True"""
         data = reader.retrieve(var='2t')
-        avg = reader.timmean(data, freq='daily', center_time=True, exclude_incomplete=True)
+        avg = reader.timstd(data, freq='daily', center_time=True, exclude_incomplete=True)
         assert avg['2t'].shape == (197, 9, 18)
         assert avg['2t'].time[1].values == np.datetime64('2020-01-21T12:00:00.000000000')
 
@@ -91,12 +108,12 @@ class TestTimmean():
     def test_timmean_invalid_frequency(self, reader):
         """Test for timmean method with an invalid frequency"""
         data = reader.retrieve(var='2t')
-        with pytest.raises(ValueError, match=r'Cant find a frequency to resample, aborting!'):
+        with pytest.raises(ValueError, match=r'Cant find a frequency to resample, using resample_freq=invalid not work, aborting!'):
             reader.timmean(data, freq='invalid')
 
-    def test_timmean_error(self, reader):
+    def test_timstd_error(self, reader):
         data = reader.retrieve(var='2t')
         single = data.sel(time=data.time[0])
-        with pytest.raises(ValueError, match=r'Time dimension not found in the input data. Cannot compute timmean'):
-            avg = reader.timmean(single, freq='monthly')
+        with pytest.raises(ValueError, match=r'Time dimension not found in the input data. Cannot compute timstd statistic'):
+            avg = reader.timstat(single, stat='std', freq='monthly')
 

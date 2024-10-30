@@ -9,6 +9,7 @@ import argparse
 import re
 import sys
 import os
+import uuid
 from jinja2 import Template
 from ruamel.yaml import YAML
 from tempfile import NamedTemporaryFile
@@ -22,7 +23,8 @@ class Submitter():
     """
 
     def __init__(self, loglevel='INFO', config='config.aqua-web.yaml',
-                 template='aqua-web.job.j2', dryrun=False, parallel=True):
+                 template='aqua-web.job.j2', dryrun=False, parallel=True,
+                 wipe=False, local=False, fresh=False):
         """
         Initialize the Submitter class
 
@@ -32,6 +34,9 @@ class Submitter():
             template: jinja template file base name
             dryrun: perform a dry run (no job submission)
             parallel: run in parallel mode (multiple cores)
+            wipe: wipe the destination directory before copying the images
+            local: use the local AQUA version (default is the container version)
+            fresh: use a fresh (new) output directory, do not recycle original one
         """
 
         if dryrun:
@@ -43,6 +48,12 @@ class Submitter():
 
         self.dryrun = dryrun
         self.parallel = parallel
+        self.wipe = wipe
+        self.local = local
+        if fresh:
+            self.fresh = f"/tmp{str(uuid.uuid4())[:13]}"
+        else:
+            self.fresh = ""
 
     def is_job_running(self, job_name, username):
         """verify that a job name is not already submitted in the slurm queue"""
@@ -93,12 +104,22 @@ class Submitter():
             definitions['parallel'] = '-p'
         else:
             definitions['parallel'] = ''
+        if self.wipe:
+            definitions['wipe'] = '-w'
+        else:
+            definitions['wipe'] = ''
+        if self.local:
+            definitions['localaqua'] = '-y'
+        else:
+            definitions['localaqua'] = '-n'
+
+        definitions['fresh'] = self.fresh
 
         username = definitions['username']
         jobname = definitions.get('jobname', 'aqua-web')
 
         # create identifier for each model-exp-source-var tuple
-        full_job_name = jobname + '_' + "_".join([model, exp, source])
+        full_job_name = jobname + '_' + "_".join([catalog, model, exp, source])
         definitions['job_name'] = full_job_name
 
         definitions['output'] = full_job_name + '_%j.out'
@@ -162,6 +183,16 @@ class Submitter():
 
         definitions['push'] = "true"
         definitions['explist'] = listfile
+        if self.wipe:
+            definitions['wipe'] = '-w'
+        else:
+            definitions['wipe'] = ''
+        if self.local:
+            definitions['localaqua'] = '-y'
+        else:
+            definitions['localaqua'] = '-n'
+
+        definitions['fresh'] = self.fresh
 
         with open(self.template, 'r', encoding='utf-8') as file:
             rendered_job  = Template(file.read()).render(definitions)
@@ -262,7 +293,13 @@ def parse_arguments(arguments):
                         help='logging level')
     parser.add_argument('-p', '--push', action="store_true",
                         help='flag to push to aqua-web')
-    
+    parser.add_argument('-w', '--wipe', action="store_true",
+                        help='wipe the destination directory before copying the images')
+    parser.add_argument('-n', '--native', action="store_true",
+                        help='use the native (local) AQUA version (default is the container version)')
+    parser.add_argument('-f', '--fresh', action="store_true",
+                        help='use a fresh (new) output directory, do not recycle original one')
+     
     # List of experiments is a positional argument
     parser.add_argument('list', nargs='?', type=str,
                         help='list of experiments in format: model, exp, source')
@@ -286,8 +323,13 @@ if __name__ == '__main__':
     dryrun = get_arg(args, 'dry', False)
     loglevel = get_arg(args, 'loglevel', 'info')
     push = get_arg(args, 'push', False)
+    wipe = get_arg(args, 'wipe', False)
+    local = get_arg(args, 'native', False)
+    fresh = get_arg(args, 'fresh', False)
 
-    submitter = Submitter(config=config, template=template, dryrun=dryrun, parallel=not serial, loglevel=loglevel)
+    submitter = Submitter(config=config, template=template, dryrun=dryrun,
+                          parallel=not serial, wipe=wipe, local=local,
+                          fresh=fresh, loglevel=loglevel)
 
     count = 0
     parent_job = None

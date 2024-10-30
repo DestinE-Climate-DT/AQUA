@@ -47,6 +47,7 @@ class AquaFDBGenerator:
         self.model = self.config["model"].lower()
         self.portfolio = self.config["portfolio"]
         self.ocean_grid = self.config["ocean_grid"]
+        self.num_of_realizations = self.config["num_of_realizations"]
 
         # portfolio
         self.logger.info("Running FDB catalog generator for %s portfolio for model %s", data_portfolio, self.model)
@@ -201,6 +202,17 @@ class AquaFDBGenerator:
         self.logger.debug('levtype: %s, levels: %s, grid: %s', levtype, levelist, grid_str)
 
         time_dict = self.get_time(profile["frequency"])
+        print(self.num_of_realizations)
+        
+        # Add realization parameters if ensembles 
+        parameters = {
+            'realization': {
+                'allowed': list(range(1, self.num_of_realizations + 1)),
+                'description': 'realization member',
+                'type': 'int',
+                'default': 1
+            }
+        } if self.num_of_realizations > 1 else None
 
         kwargs = {
             "dp_version": self.dp_version,
@@ -208,13 +220,15 @@ class AquaFDBGenerator:
             "grid": grid_str,
             "source": source,
             "levelist": levelist,
+            "realization": self.num_of_realizations,
             "levels": levels_values,
             "levtype": profile["levtype"],
             "variables": profile["variables"],
             "param": profile["variables"][0],
             "time": time_dict['time'],
             "chunks": time_dict['chunks'],
-            "savefreq": time_dict['savefreq']
+            "savefreq": time_dict['savefreq'], 
+            "parameters": parameters
         }
         return kwargs
 
@@ -241,7 +255,10 @@ class AquaFDBGenerator:
         self.logger.info("File %s has been created in %s", output_filename, output_dir)
 
         main_yaml_path = os.path.join(output_dir, 'main.yaml')
-        main_yaml = load_yaml(main_yaml_path)
+        if not os.path.exists(main_yaml_path):
+            main_yaml = {'sources': {}} 
+        else: 
+            main_yaml = load_yaml(main_yaml_path)
         main_yaml['sources'][self.config['exp']] = {
             'description': self.config['description'],
             'driver': 'yaml_file_cat',

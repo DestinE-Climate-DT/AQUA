@@ -32,6 +32,8 @@ data:
         vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
            'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
         workers: 12  #this defines the workers for this source
+        #realizations: [0, 1, 2] #optional argument if supported by the catalog
+        #zoom: 8 #optional argument if supported by the source
       hourly-hpz10-atm3d:
         vars: ['q', 't', 'u', 'v']
         workers: 6 #this defines the workers for this source

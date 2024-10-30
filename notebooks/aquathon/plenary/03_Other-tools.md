@@ -46,16 +46,16 @@ Can you reproduce the result of the exercise 1, but making use of AQUA built-in 
     from aqua.graphics import plot_timeseries
 
     reader_era5 = Reader(catalog='obs', model='ERA5', exp='era5', source='monthly')
-    reader_ifs_nemo = Reader(catalog='climatedt-phase1', model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly')
+    reader_ifs_fesom = Reader(catalog='nextgems4', model='IFS-FESOM', exp='historical-1990', source='lra-r100-monthly')
 
     data_era5 = reader_era5.retrieve(var='2t', startdate='1990-01-01', enddate='2005-12-31')
-    data_ifs_nemo = reader_ifs_nemo.retrieve(var='2t', startdate='1990-01-01', enddate='2005-12-31')
+    data_ifs_fesom = reader_ifs_fesom.retrieve(var='2t', startdate='1990-01-01', enddate='2005-12-31')
 
     ts_era5 = reader_era5.fldmean(data_era5['2t'])
-    ts_ifs_nemo = reader_ifs_nemo.fldmean(data_ifs_nemo['2t'])
+    ts_ifs_fesom = reader_ifs_fesom.fldmean(data_ifs_fesom['2t'])
 
-    plot_timeseries(monthly_data=ts_ifs_nemo, ref_monthly_data=ts_era5,
-                    data_labels=['IFS-NEMO historical'], ref_label='ERA5',
+    plot_timeseries(monthly_data=ts_ifs_fesom, ref_monthly_data=ts_era5,
+                    data_labels=['IFS-FESOM historical'], ref_label='ERA5',
                     title='2m Temperature')
 </details>
 
@@ -68,18 +68,3 @@ Please take a look at the dedicated page in the [documentation](https://aqua-web
 In particular, not mentioned so far, AQUA provides a `aqua-analysis.sh` script that allows the user to run all the available diagnostics on a experiment (monthly and regridded to 1 deg). This will be explored in our breakout session.
 
 If you want to explore and expand our diagnostics, please take a look at the dedicated section of the [documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/diagnostics/index.html) and contact the AQUA team on GitHub or our [mattermost channel](https://mattermost.mpimet.mpg.de/destine/channels/aqua) for every doubt.
-
-
-## :interrobang: Issues 
-
-Feel free to modify this paragraph with possible questions you have about the aqua tools:
-
-:::danger
-- issue: ...
-:::
-
-## Thanks!
-
-Thank you for having followed so far, let's move to the breakout rooms!
-
-:house_with_garden: [To the homepage](https://siili.rahtiapp.fi/SG2E5GTnT5mIDpB7v2bxKA#)

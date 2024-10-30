@@ -10,7 +10,7 @@
 #SBATCH -p debug    #change the partition
 
 AQUA_path=$AQUA
-AQUA_container=/project/project_465000454/containers/aqua/aqua-v0.11.3.sif
+AQUA_container=/project/project_465000454/containers/aqua/aqua_0.12.1.sif
 GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights/
 GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions
 
@@ -19,10 +19,10 @@ singularity exec \
     --cleanenv \
     --env GSV_WEIGHTS_PATH=$GSV_WEIGHTS_PATH \
     --env GRID_DEFINITION_PATH=$GRID_DEFINITION_PATH \
-    --env PYTHONPATH=/opt/conda/lib/python3.10/site-packages \
     --env ESMFMKFILE=/opt/conda/lib/esmf.mk \
     --env PYTHONPATH=$AQUA_path \
     --env AQUA=$AQUA_path \
+    --env PYTHONUSERBASE=1 \
     --bind /pfs/lustrep1/ \
     --bind /pfs/lustrep2/ \
     --bind /pfs/lustrep3/ \
@@ -35,7 +35,7 @@ singularity exec \
     --bind /project \
     --bind /scratch/ \
     $AQUA_container \
-    bash -c \
+    bash -c --norc --noprofile \
     ' 
     # You can edit below code for your required script.
     # This is just an example to run jupyter-lab in compute node.
