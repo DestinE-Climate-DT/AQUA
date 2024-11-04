@@ -36,7 +36,7 @@ reference_model_annual:
     exp: 'ERA5-analysis'
     source: 't2m-ann'
 
-outputdir: "/work/ab0995/a270260/test_01"
+outputdir: "./"
 
 # This is the variable that will be plotted as timeseries
 timeseries: ['2t']

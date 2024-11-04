@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 xr.set_options(keep_attrs=True)
 
 class EnsembleTimeseries():
-    def __init__(self,var=None,mon_model=None,mon_exp=None,mon_source=None,ann_model=None,ann_exp=None,ann_source=None,ref_mon_dict=None,ref_ann_dict=None,mon_startdate=None,mon_enddate=None,ann_startdate=None,ann_enddate=None,figure_size=None,plot_std=True,plot_label=True,label_ncol=None,label_size=None,outdir=None,outfile=None,pdf_save=True,loglevel='WARNING'):
+    def __init__(self,var=None,mon_model=None,mon_exp=None,mon_source=None,ann_model=None,ann_exp=None,ann_source=None,ref_mon_dict=None,ref_ann_dict=None,mon_startdate=None,mon_enddate=None,ann_startdate=None,ann_enddate=None,figure_size=None,plot_std=True,plot_label_model=None,plot_label_ref=True,label_ncol=None,label_size=None,outdir=None,outfile=None,pdf_save=True,loglevel='WARNING'):
         """
         """
         self.loglevel = loglevel
@@ -66,6 +66,7 @@ class EnsembleTimeseries():
         self.ref_ann_dict = ref_ann_dict
         self.ref_mon_data = None
         self.ref_ann_data = None
+        
         if ref_mon_dict != {}:
             self.ref_mon_model = ref_mon_dict['model']
             self.ref_mon_exp = ref_mon_dict['exp']
@@ -78,7 +79,8 @@ class EnsembleTimeseries():
             self.ref_ann_label = ref_ann_dict['ref_ann_label']
         
         self.plot_std = plot_std
-        self.plot_label = plot_label
+        self.plot_label_model = plot_label_model
+        self.plot_label_ref = plot_label_ref
         self.label_ncol = label_ncol
         self.label_size = label_size
         self.figure_size = figure_size
@@ -221,8 +223,13 @@ class EnsembleTimeseries():
             mon_data_mean.plot(ax=ax,label='Multimodel-mean-mon',color=color_list[0],zorder=2)
             if self.plot_std:
                 ax.fill_between(mon_data_mean.time, mon_data_mean -2.*mon_data_std,mon_data_mean +2.*mon_data_std,facecolor=color_list[0],alpha=0.25,label='Multimodel-mean-mon'+r'$\pm2$std',zorder=0)
-            for i in range(len(mon_data_label)):
-                mon_timeseries_data[i][var].plot(ax=ax,label=mon_data_label[i]+'-mon',color=color_list[i+2],lw=0.9,zorder=1)
+            if self.plot_label_model == False:            
+                for i in range(len(mon_data_label)):
+                    mon_timeseries_data[i][var].plot(ax=ax,color=color_list[3],lw=0.7,zorder=1)
+                    #ax.get_legend().remove()
+            else:
+                for i in range(len(mon_data_label)):
+                    mon_timeseries_data[i][var].plot(ax=ax,label=mon_data_label[i]+'-mon',color=color_list[i],lw=0.7,zorder=1)
         
         if self.ann_model != []:
             ann_data_label = self.ann_data_label
@@ -235,20 +242,25 @@ class EnsembleTimeseries():
             ann_data_mean.plot(ax=ax,label='Multimodel-mean-ann',color='grey',linestyle='--',zorder=2)
             if self.plot_std:
                 ax.fill_between(ann_data_mean.time, ann_data_mean -2.*ann_data_std,ann_data_mean +2.*ann_data_std,facecolor='grey',alpha=0.20,label='Multimodel-mean-ann'+r'$\pm2$std',zorder=0)
-            for i in range(len(ann_data_label)):
-                ann_timeseries_data[i][var].plot(ax=ax,label=ann_data_label[i]+'-ann',color=color_list[i+2],lw=0.9,linestyle='--',zorder=2)
-        
+            if self.plot_label_model == False:            
+                for i in range(len(ann_data_label)):
+                    ann_timeseries_data[i][var].plot(ax=ax,color=color_list[4],lw=0.7,zorder=1)
+                    #ax.get_legend().remove()
+            else:
+                for i in range(len(ann_data_label)):
+                    ann_timeseries_data[i][var].plot(ax=ax,label=ann_data_label[i]+'-ann',color=color_list[i],lw=0.7,zorder=1)
+
         if self.ref_mon_dict != {}:
             #ref_mon_label = self.ref_mon_exp+' Monthly'
-            self.ref_mon_data[var].plot(ax=ax,label=self.ref_mon_label,color='black',lw=0.9,zorder=2)
+            self.ref_mon_data[var].plot(ax=ax,label=self.ref_mon_label,color='black',lw=0.95,zorder=2)
             ref_label = self.ref_mon_exp
         if self.ref_ann_dict != {}:
             #ref_ann_label = self.ref_ann_exp+' Annual'
-            self.ref_ann_data[var].plot(ax=ax,label=self.ref_ann_label,color='black',lw=0.9,linestyle='--',zorder=2)
+            self.ref_ann_data[var].plot(ax=ax,label=self.ref_ann_label,color='black',lw=0.95,linestyle='--',zorder=2)
             ref_label = self.ref_ann_exp
         if self.ref_mon_dict == {} and self.ref_ann_dict == {}:
             ref_label = 'no reference time series'
-        if self.plot_label:
+        if self.plot_label_ref:
             ax.legend(ncol=self.label_ncol,fontsize=self.label_size,framealpha=0) 
         #ax.figure.savefig('ensemble_timeseries.png')
         if self.pdf_save:
