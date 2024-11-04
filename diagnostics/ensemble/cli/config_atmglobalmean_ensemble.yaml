@@ -14,11 +14,11 @@ models:
     source: 't2m'
 
 
-outputdir: "/work/ab0995/a270260/test_01/ens_atm_test"
+outputdir: "./"
 
 # This is the variable that will be plotted as timeseries
 
-atmglobalmean: ['t2m']
+atmglobalmean: ['2t']
 
 atmglobalmean_plot_params:
   figure_size: [15,15]
