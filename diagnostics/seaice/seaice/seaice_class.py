@@ -15,6 +15,8 @@ from cartopy.util import add_cyclic_point
 from seaice.colInterpolatOr import colInterpolatOr
 from matplotlib.colors import LinearSegmentedColormap, BoundaryNorm
 import matplotlib.ticker as mticker  
+from matplotlib.patches import Circle
+import matplotlib.path as mpath
 
 
 class SeaIceExtent:
@@ -999,6 +1001,7 @@ class SeaIceThickness:
                 fig1, ax1 = plt.subplots(nrows=1, ncols=len(months_diagnostic), 
                                         subplot_kw={'projection': projection}, 
                                         figsize=(5 * len(months_diagnostic), 5))
+                lat_limit = 40 if hemi == "nh" else -40
 
                 for jMonth, month_diagnostic in enumerate(months_diagnostic):
                     ax1 = ax1.flatten() if len(months_diagnostic) > 1 else [ax1]
@@ -1008,10 +1011,10 @@ class SeaIceThickness:
                     dataPlot[dataPlot < 0.001] = np.nan
 
                     # Mask data based on latitude and hemisphere
-                    dataPlot = np.where(lat2D >= 40, dataPlot, np.nan) if hemi == "nh" else np.where(lat2D <= -40, dataPlot, np.nan)
+                    dataPlot = np.where(lat2D >= lat_limit, dataPlot, np.nan) if hemi == "nh" else np.where(lat2D <= lat_limit, dataPlot, np.nan)
 
                     # Set contour levels and colormap
-                    levels = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30]
+                    levels = [0, 1.5, 3, 4.5, 6, 7.5, 9, 10.5, 12, 13.5, 15, 16.5, 18, 19.5, 21, 22.5, 24, 25.5, 27, 28.5, 30]
                     myCM = plt.get_cmap('turbo')
                     norm = BoundaryNorm(boundaries=levels, ncolors=myCM.N, clip=True)
 
@@ -1019,10 +1022,14 @@ class SeaIceThickness:
                     contour = ax1[jMonth].pcolormesh(lon, lat, dataPlot, 
                                                     transform=ccrs.PlateCarree(), cmap=myCM, 
                                                     norm=norm)
+                    # Set map limits and apply circular clip
+                    clip_circle = Circle((0.5, 0.5), 0.5, transform=ax1[jMonth].transAxes, color='none', fill=True)
 
-                    # Set map limits for clearer Arctic focus
-                    ax1[jMonth].set_extent([-180, 180, 40, 90] if hemi == "nh" else [-180, 180, -90, -40], 
-                                        crs=ccrs.PlateCarree())
+                    theta = np.linspace(0, 2 * np.pi, 100)  
+                    circle_path = mpath.Path(np.column_stack([0.5 + 0.5 * np.cos(theta), 0.5 + 0.5 * np.sin(theta)]))
+
+                    ax1[jMonth].set_extent([-180, 180, lat_limit, 90] if hemi == "nh" else [-180, 180, -90, lat_limit], crs=ccrs.PlateCarree())
+                    ax1[jMonth].set_boundary(circle_path, transform=ax1[jMonth].transAxes)
                     ax1[jMonth].coastlines()
                     ax1[jMonth].add_feature(cfeature.LAND, edgecolor='k')
 
