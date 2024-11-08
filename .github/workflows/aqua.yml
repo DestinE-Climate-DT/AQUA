@@ -2,9 +2,9 @@ name: AQUA tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, v0.12-operational ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, v0.12-operational ]
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
