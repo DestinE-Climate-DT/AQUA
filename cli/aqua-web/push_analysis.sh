@@ -170,7 +170,7 @@ fi
 
 if [ -n "$branch" ]; then
     log_message INFO "Creating and switching to branch $branch"
-    git checkout -b $branch
+    git checkout -B $branch
 fi
 
 autopr=false
