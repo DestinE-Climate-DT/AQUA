@@ -3,7 +3,7 @@
 FROM mambaorg/micromamba:1.5.6 as micromamba
 
 # -----------------------------------------------------------------------------
-FROM ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua:latest as fdb
+FROM ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua-test:latest as fdb
 
 # We switch to mamba user later, root for now just to create the user.
 USER root
