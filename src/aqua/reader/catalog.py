@@ -72,7 +72,7 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
         KeyError: If the input specifications are incorrect.
     """
 
-    aquacats = aqua_catalog(catalog=catalog, verbose=False)
+    aquacats = aqua_catalog(catalog=catalog, verbose=False) 
 
     # get all info from with the scan_catalog function
     infodict = {}
