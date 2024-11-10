@@ -74,12 +74,13 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
 
     aquacats = aqua_catalog(catalog=catalog, verbose=False)
 
+    # get all info from with the scan_catalog function
     infodict = {}
     for aquacat, cat in aquacats.items():
         infodict[aquacat] = {}
         infodict[aquacat]['check'], infodict[aquacat]['level'], infodict[aquacat]['avail'] = scan_catalog(cat, model, exp, source)
 
-
+    # return information to the user
     for level in ['variables', 'source', 'exp', 'model']:
         status = find_string_in_dict(infodict, level)
         if status:
@@ -100,6 +101,7 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
     
 
 def find_string_in_dict(data, target_string):
+    """Helper function"""
     matches = []
     
     for key, sub_dict in data.items():
@@ -108,59 +110,3 @@ def find_string_in_dict(data, target_string):
             matches.append((key, sub_dict['level']))
     
     return matches
-
-        # if model and exp and not source:
-        #     if is_in_cat(cat, model, exp, None):
-        #         if verbose:
-        #             print(f"Sources available in catalog {aquacat} for model {model} and exp {exp}:")
-        #         infodict[aquacat]=list(cat[model][exp].keys())
-        # elif model and not exp:
-        #     if is_in_cat(cat, model, None, None):
-        #         if verbose:
-        #             print(f"Experiments available in catalog {aquacat} for model {model}:")
-        #         infodict[aquacat]=list(cat[model].keys())
-        # elif not model:
-        #     if verbose:
-        #         print(f"Models available in catalog {aquacat}:")
-        #     infodict[aquacat]=list(cat.keys())
-
-        # elif model and exp and source:
-        #     # Check if variables can be explored
-        #     # Added a try/except to avoid the KeyError when the source is not in the catalog
-        #     # because model or exp are not in the catalog
-        #     # This allows to always have a True/False or var list return
-        #     # when model/exp/source are provided
-        #     try:
-        #         if is_in_cat(cat, model, exp, source):
-        #             # Ok, it exists, but does it have metadata?
-        #             try:
-        #                 variables = cat[model][exp][source].metadata['variables']
-        #                 if verbose:
-        #                     print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
-        #                 infodict[cat]=variables
-        #             except KeyError:
-        #                 return True
-        #     except KeyError:
-        #         pass  # go to return False
-        # else:
-        #    infodict[aquacat]=False
-        # if verbose:
-        #     print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalog.")
-        #     if model:
-        #         if is_in_cat(aquacat, model, None, None):
-        #             if exp:
-        #                 if is_in_cat(aquacat, model, exp, None):
-        #                     print(f"Available sources for model {model} and exp {exp}:")
-        #                     return list(aquacat[model][exp].keys())
-        #                 else:
-        #                     print(f"Experiment {exp} is not available for model {model}.")
-        #                     print(f"Available experiments for model {model}:")
-        #                     return list(aquacat[model].keys())
-        #             else:
-        #                 print(f"Available experiments for model {model}:")
-        #                 return list(aquacat[model].keys())
-        #         else:
-        #             print(f"Model {model} is not available.")
-        #             print("Available models:")
-        #             return list(aquacat.keys())
-

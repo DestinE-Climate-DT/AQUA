@@ -109,11 +109,6 @@ def test_catalog_reader(reader_regrid):
 def test_inspect_catalog():
     """Checking that inspect catalog works"""
 
-    # calling the catalog
-    #cat = catalog(verbose=True)
-    #out, _ = capfd.readouterr()
-    #assert 'FESOM' in out
-    #assert 'IFS' in out
 
     # inspect catalog
     models = inspect_catalog(catalog='ci')
