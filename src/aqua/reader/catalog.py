@@ -2,8 +2,10 @@
 
 import intake
 from aqua.util import ConfigPath
+from aqua.util.config import scan_catalog
 
-def catalog(verbose=True, configdir=None, catalog_name=None):
+
+def aqua_catalog(verbose=True, configdir=None, catalog=None):
     """
     Catalog of available data.
 
@@ -15,6 +17,8 @@ def catalog(verbose=True, configdir=None, catalog_name=None):
                                         configuration files.
                                         If not provided, get_config_dir
                                         is used to find it.
+        catalog (str, optional):        Specify a single catalog and avoid 
+                                        browsing all available catalogs
 
     Returns:
         cat (intake.catalog.local.LocalCatalog):    The catalog object
@@ -22,24 +26,27 @@ def catalog(verbose=True, configdir=None, catalog_name=None):
     """
 
     # get the config dir and the catalog
-    Configurer = ConfigPath(configdir=configdir, catalog=catalog_name)
+    configurer = ConfigPath(configdir=configdir, catalog=catalog)
+    
+    aquacats = {}
+    for aquacat in configurer.catalog_available:
 
-    # get configuration from the catalog
-    catalog_file, _ = Configurer.get_catalog_filenames()
+        catalog_file, _ = configurer.get_catalog_filenames(catalog=aquacat)
+        cat = intake.open_catalog(catalog_file)
+        if verbose:
+            print('Catalog: ' + aquacat)
+            for model, vm in cat.items():
+                for exp, _ in vm.items():
+                    print(model + '\t' + exp + '\t' + cat[model][exp].description)
+                    if exp != "grids":
+                        for k in cat[model][exp]:
+                            print('\t' + '- ' + k + '\t' + cat[model][exp].walk()[k]._description)  # pylint: disable=W0212
+                print()
+        aquacats[aquacat] = cat
+    return aquacats
 
-    cat = intake.open_catalog(catalog_file)
-    if verbose:
-        print('Catalog: ' + Configurer.catalog)
-        for model, vm in cat.items():
-            for exp, _ in vm.items():
-                print(model + '\t' + exp + '\t' + cat[model][exp].description)
-                if exp != "grids":
-                    for k in cat[model][exp]:
-                        print('\t' + '- ' + k + '\t' + cat[model][exp].walk()[k]._description)  # pylint: disable=W0212
-            print()
-    return cat
 
-def inspect_catalog(catalog_name=None, model=None, exp=None, source=None, verbose=True):
+def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=True):
     """
     Basic function to simplify catalog inspection.
     If a partial match between model, exp and source is provided, then it will return a list
@@ -48,7 +55,7 @@ def inspect_catalog(catalog_name=None, model=None, exp=None, source=None, verbos
     True if it exists but is not a FDB source.
 
     Args:
-        catalog_name(str, optional): A string containing the catalog name.
+        catalog(str, optional): A string containing the catalog name.
         model (str, optional): The model ID to filter the catalog.
             If None, all models are returned. Defaults to None.
         exp (str, optional): The experiment ID to filter the catalog.
@@ -64,85 +71,96 @@ def inspect_catalog(catalog_name=None, model=None, exp=None, source=None, verbos
     Raises:
         KeyError: If the input specifications are incorrect.
     """
+
+    aquacats = aqua_catalog(catalog=catalog, verbose=False)
+
+    infodict = {}
+    for aquacat, cat in aquacats.items():
+        infodict[aquacat] = {}
+        infodict[aquacat]['check'], infodict[aquacat]['level'], infodict[aquacat]['avail'] = scan_catalog(cat, model, exp, source)
+
+
+    for level in ['variables', 'source', 'exp', 'model']:
+        status = find_string_in_dict(infodict, level)
+        if status:
+            if len(status)>1:
+                print("WARNING: inspect_catalog found multiple entries for the required keys!")
+                print('Return a dictionary instead of a list!')
+                return {key: value['avail'] for key, value in infodict.items() if 'avail' in value}
+            printcat = status[0][0]
+            if verbose:
+                if not model:
+                    print(f"Models available in catalog {printcat}:")
+                if model and not exp:
+                    print(f"Experiments available in catalog {printcat} for model {model}:")
+                if model and exp and not source:
+                    print(f"Sources available in catalog {printcat} for model {model} and exp {exp}:")
+            
+            return infodict[status[0][0]]['avail']
     
-    cat = catalog(catalog_name=catalog_name, verbose=False)
 
-    if catalog_name is None:
-        catalog_name = ConfigPath().catalog
+def find_string_in_dict(data, target_string):
+    matches = []
+    
+    for key, sub_dict in data.items():
+        
+        if sub_dict['level'] == target_string:
+            matches.append((key, sub_dict['level']))
+    
+    return matches
 
-    if model and exp and not source:
-        if is_in_cat(cat, model, exp, None):
-            if verbose:
-                print(f"Sources available in catalog {catalog_name} for model {model} and exp {exp}:")
-            return list(cat[model][exp].keys())
-    elif model and not exp:
-        if is_in_cat(cat, model, None, None):
-            if verbose:
-                print(f"Experiments available in catalog {catalog_name} for model {model}:")
-            return list(cat[model].keys())
-    elif not model:
-        if verbose:
-            print(f"Models available in catalog {catalog_name}:")
-        return list(cat.keys())
+        # if model and exp and not source:
+        #     if is_in_cat(cat, model, exp, None):
+        #         if verbose:
+        #             print(f"Sources available in catalog {aquacat} for model {model} and exp {exp}:")
+        #         infodict[aquacat]=list(cat[model][exp].keys())
+        # elif model and not exp:
+        #     if is_in_cat(cat, model, None, None):
+        #         if verbose:
+        #             print(f"Experiments available in catalog {aquacat} for model {model}:")
+        #         infodict[aquacat]=list(cat[model].keys())
+        # elif not model:
+        #     if verbose:
+        #         print(f"Models available in catalog {aquacat}:")
+        #     infodict[aquacat]=list(cat.keys())
 
-    elif model and exp and source:
-        # Check if variables can be explored
-        # Added a try/except to avoid the KeyError when the source is not in the catalog
-        # because model or exp are not in the catalog
-        # This allows to always have a True/False or var list return
-        # when model/exp/source are provided
-        try:
-            if is_in_cat(cat, model, exp, source):
-                # Ok, it exists, but does it have metadata?
-                try:
-                    vars = cat[model][exp][source].metadata['variables']
-                    if verbose:
-                        print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
-                    return vars
-                except KeyError:
-                    return True
-        except KeyError:
-            pass  # go to return False
+        # elif model and exp and source:
+        #     # Check if variables can be explored
+        #     # Added a try/except to avoid the KeyError when the source is not in the catalog
+        #     # because model or exp are not in the catalog
+        #     # This allows to always have a True/False or var list return
+        #     # when model/exp/source are provided
+        #     try:
+        #         if is_in_cat(cat, model, exp, source):
+        #             # Ok, it exists, but does it have metadata?
+        #             try:
+        #                 variables = cat[model][exp][source].metadata['variables']
+        #                 if verbose:
+        #                     print(f"The following variables are available for model {model}, exp {exp}, source {source}:")
+        #                 infodict[cat]=variables
+        #             except KeyError:
+        #                 return True
+        #     except KeyError:
+        #         pass  # go to return False
+        # else:
+        #    infodict[aquacat]=False
+        # if verbose:
+        #     print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalog.")
+        #     if model:
+        #         if is_in_cat(aquacat, model, None, None):
+        #             if exp:
+        #                 if is_in_cat(aquacat, model, exp, None):
+        #                     print(f"Available sources for model {model} and exp {exp}:")
+        #                     return list(aquacat[model][exp].keys())
+        #                 else:
+        #                     print(f"Experiment {exp} is not available for model {model}.")
+        #                     print(f"Available experiments for model {model}:")
+        #                     return list(aquacat[model].keys())
+        #             else:
+        #                 print(f"Available experiments for model {model}:")
+        #                 return list(aquacat[model].keys())
+        #         else:
+        #             print(f"Model {model} is not available.")
+        #             print("Available models:")
+        #             return list(aquacat.keys())
 
-    if verbose:
-        print(f"The combination model={model}, exp={exp}, source={source} is not available in the catalog.")
-        if model:
-            if is_in_cat(cat, model, None, None):
-                if exp:
-                    if is_in_cat(cat, model, exp, None):
-                        print(f"Available sources for model {model} and exp {exp}:")
-                        return list(cat[model][exp].keys())
-                    else:
-                        print(f"Experiment {exp} is not available for model {model}.")
-                        print(f"Available experiments for model {model}:")
-                        return list(cat[model].keys())
-                else:
-                    print(f"Available experiments for model {model}:")
-                    return list(cat[model].keys())
-            else:
-                print(f"Model {model} is not available.")
-                print("Available models:")
-                return list(cat.keys())
-
-    return False
-
-
-def is_in_cat(cat, model, exp, source):
-    """
-    Check if the model, experiment and source are in the catalog.
-    """
-    if source:
-        try:
-            return source in cat[model][exp].keys()
-        except KeyError:
-            return False
-    elif exp:
-        try:
-            return exp in cat[model].keys()
-        except KeyError:
-            return False
-    else:
-        try:
-            return model in cat.keys()
-        except KeyError:
-            return False

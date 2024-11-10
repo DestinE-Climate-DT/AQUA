@@ -3,19 +3,19 @@
 import pytest
 import types
 import xarray
-from aqua import Reader, catalog, inspect_catalog
-from aqua.reader.reader_utils import check_catalog_source
+from aqua import Reader, aqua_catalog, inspect_catalog
 
 loglevel = "DEBUG"
 
-@pytest.fixture(params=[(model, exp, source)
-                        for model in catalog()
-                        for exp in catalog()[model]
-                        for source in catalog()[model][exp]])
+@pytest.fixture(params=[(catalog, model, exp, source)
+                        for catalog in aqua_catalog()
+                        for model in aqua_catalog()[catalog]
+                        for exp in aqua_catalog()[catalog][model]
+                        for source in aqua_catalog()[catalog][model][exp]])
 def reader(request):
     """Reader instance fixture"""
-    model, exp, source = request.param
-    print([model, exp, source])
+    catalog, model, exp, source = request.param
+    print([catalog, model, exp, source])
     # very slow access, skipped
     if model == 'ICON' and source == 'intake-esm-test':
         pytest.skip()
@@ -30,7 +30,7 @@ def reader(request):
     # teleconnections catalog, only on teleconnections workflow
     if model == 'IFS' and exp == 'test-tco79' and source == 'teleconnections':
         pytest.skip()
-    myread = Reader(model=model, exp=exp, source=source, areas=False,
+    myread = Reader(catalog=catalog, model=model, exp=exp, source=source, areas=False,
                     fix=False, loglevel=loglevel)
     data = myread.retrieve()
     return myread, data
@@ -50,14 +50,15 @@ def test_catalog_gsv(reader):
         assert isinstance(reader_gsv, Reader)
         assert isinstance(data, xarray.Dataset)
 
-@pytest.fixture(params=[(model, exp, source)
-                        for model in catalog()
-                        for exp in catalog()[model]
-                        for source in catalog()[model][exp]])
+@pytest.fixture(params=[(catalog, model, exp, source)
+                        for catalog in aqua_catalog()
+                        for model in aqua_catalog()[catalog]
+                        for exp in aqua_catalog()[catalog][model]
+                        for source in aqua_catalog()[catalog][model][exp]])
 def reader_regrid(request):
     """Reader instance fixture"""
-    model, exp, source = request.param
-    print([model, exp, source])
+    catalog, model, exp, source = request.param
+    print([catalog, model, exp, source])
     # very slow access, skipped
     if model == 'ICON' and source == 'intake-esm-test':
         pytest.skip()
@@ -72,7 +73,7 @@ def reader_regrid(request):
     # teleconnections catalog, only on teleconnections workflow
     if model == 'IFS' and exp == 'test-tco79' and source == 'teleconnections':
         pytest.skip()
-    myread = Reader(model=model, exp=exp, source=source, areas=True, regrid='r200',
+    myread = Reader(catalog=catalog, model=model, exp=exp, source=source, areas=True, regrid='r200',
                     loglevel=loglevel, rebuild=False)
     data = myread.retrieve()
 
@@ -115,7 +116,7 @@ def test_inspect_catalog():
     #assert 'IFS' in out
 
     # inspect catalog
-    models = inspect_catalog()
+    models = inspect_catalog(catalog='ci')
     assert isinstance(models, list)
     exps = inspect_catalog(model='IFS')
     assert isinstance(exps, list)
@@ -125,73 +126,9 @@ def test_inspect_catalog():
     assert variables is True
 
     # wrong calls
-    models = inspect_catalog(model='antani')
+    models = inspect_catalog(catalog='ci', model='antani')
     assert 'IFS' in models 
     exps = inspect_catalog(model='IFS', exp="antani")
     assert 'test-tco79' in exps
     sources = inspect_catalog(model='IFS', exp="test-tco79", source='antani')
     assert 'short' in sources
-
-# @pytest.mark.aqua
-# @pytest.mark.parametrize(
-#     "catalog, model, exp, source, expected_output",
-#     [
-#         # Test case 1: Source is specified and exists in the catalog
-#         (
-#             {"model1": {"exp1": {"source1": "data1", "source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             "source1",
-#             "source1"
-#         ),
-#         # Test case 2: Source is specified but does not exist,
-#         # default source exists
-#         (
-#             {"model1": {"exp1": {"default": "default_data", "source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             "source1",
-#             "default"
-#         ),
-#         # Test case 3: Source is specified but does not exist,
-#         # default source does not exist
-#         (
-#             {"model1": {"exp1": {"source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             "source1",
-#             pytest.raises(KeyError)
-#         ),
-#         # Test case 4: Source is not specified, choose the first source
-#         (
-#             {"model1": {"exp1": {"source1": "data1", "source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             None,
-#             "source1"
-#         ),
-#         # Test case 5: Source is not specified, no sources available
-#         (
-#             {"model1": {"exp1": {}}},
-#             "model1",
-#             "exp1",
-#             None,
-#             pytest.raises(KeyError)
-#         ),
-#         # Test case 6: Source is not specified, no sources available,
-#         # but a default source exists
-#         (
-#             {"model1": {"exp1": {"default": "default_data"}}},
-#             "model1",
-#             "exp1",
-#             None,
-#             "default"
-#         )
-#     ]
-# )
-# def test_check_catalog_source(catalog, model, exp, source, expected_output):
-#     if isinstance(expected_output, str):
-#         assert check_catalog_source(catalog, model, exp, source) == expected_output
-#     else:
-#         with expected_output:
-#             check_catalog_source(catalog, model, exp, source)

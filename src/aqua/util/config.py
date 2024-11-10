@@ -328,6 +328,8 @@ def scan_catalog(cat, model=None, exp=None, source=None):
         if exp in cat[model]:
             if source in cat[model][exp]:
                 status = True
+                avail = cat[model][exp][source].metadata.get('variables', True)
+                level = 'variables'
             else:
                 level = 'source'
                 avail = list(cat[model][exp].keys())
