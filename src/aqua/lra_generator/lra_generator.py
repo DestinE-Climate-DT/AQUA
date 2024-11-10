@@ -73,7 +73,9 @@ class LRAgenerator():
                                                dask usage, default is False.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.  
-            **kwargs:                kwargs to be sent to the Reader, as zoom
+            **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
+                                     please notice that realization will change the file name 
+                                     produced by the LRA
         """
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
@@ -105,6 +107,11 @@ class LRAgenerator():
                                    generate_random_string(10))
 
         # safechecks
+        if catalog is not None:
+            self.catalog = catalog
+        else:
+            raise KeyError('Please specify catalog.')
+
         if model is not None:
             self.model = model
         else:
@@ -135,7 +142,6 @@ class LRAgenerator():
 
         Configurer = ConfigPath(configdir=configdir)
         self.configdir = Configurer.configdir
-        self.catalog = catalog
 
         self.frequency = frequency
         if not self.frequency:
@@ -168,7 +174,7 @@ class LRAgenerator():
         if outdir is None:
             raise KeyError('Please specify outdir.')
 
-        self.outdir = os.path.join(outdir, self.model, self.exp, self.resolution)
+        self.outdir = os.path.join(outdir, self.catalog, self.model, self.exp, self.resolution)
 
         if self.frequency:
             self.outdir = os.path.join(self.outdir, self.frequency)
@@ -247,7 +253,11 @@ class LRAgenerator():
         entry_name = f'lra-{self.resolution}-{self.frequency}'
         self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
 
-        urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
+        # modify filename if realization is there
+        if 'realization' in self.kwargs:
+            urlpath = os.path.join(self.outdir, f"*{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc")
+        else:      
+            urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
 
         self.logger.info('Fully expanded urlpath %s', urlpath)
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -437,7 +447,11 @@ class LRAgenerator():
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
 
-        filestring = f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc'
+        # modify filename if realization is in the kwargs
+        if 'realization' in self.kwargs:
+            filestring = f'{var}_{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc'
+        else:
+            filestring = f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc'
         if tmp:
             filename = os.path.join(self.tmpdir, filestring)
         else:

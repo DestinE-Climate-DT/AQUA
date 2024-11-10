@@ -5,7 +5,7 @@
 trap 'kill 0' SIGINT
 
 # define the aqua installation path
-AQUA=$(aqua --path)/..
+AQUA=$(aqua --path)/../..
 
 if [ ! -d $AQUA ]; then
     echo -e "\033[0;31mError: AQUA is not installed."

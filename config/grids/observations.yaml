@@ -16,7 +16,7 @@ grids:
   era5-n320:
     path: '{{ grids }}/ERA5/n320_unstructured.nc'
     space_coord: ["values"]
-  era5-r025:
+  era5-r025s:
     path: 
       2d: '{{ grids }}/ERA5/r025_grid.nc'
       2dm: '{{ grids }}/ERA5/r025_grid_masked.nc'

@@ -22,6 +22,7 @@ defaults:
             'm of water': 'm'
             'C': 'degC'
             '(0 - 1)': 'frac'
+            'Celsius': 'degC'
 
 
     

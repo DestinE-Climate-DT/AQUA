@@ -2,7 +2,7 @@
 set -e
 
 # define the aqua installation path
-AQUA=$(aqua --path)/..
+AQUA=$(aqua --path)/../..
 
 echo $AQUA
 if [ ! -d $AQUA ]; then
@@ -45,11 +45,11 @@ fi
 # User defined variables
 
 # for LUMI
-# outputdir="/pfs/lustrep3/projappl/project_465000454/data/AQUA/grids"
+# outputdir="/appl/local/climatedt/data/AQUA/grids"
 # for Levante
 # outputdir="/work/bb1153/b382075/aqua/grids"
 # for Leonardo
-outputdir="/leonardo_work/DestE_330_24/AQUA/grids"
+# outputdir="/leonardo_work/DestE_330_24/AQUA/grids"
 
 log_message INFO "Creating output directory $outputdir"
 mkdir -p $outputdir

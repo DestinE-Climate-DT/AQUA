@@ -80,3 +80,11 @@ fixer_name:
           source: sftof
           src_units: frac
           units: frac
+  
+  era5-arco:
+    data_model: false
+    coords:
+      lat:
+        source: latitude
+      lon:
+        source: longitude

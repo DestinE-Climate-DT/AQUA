@@ -52,39 +52,42 @@ to define some environment variables.
 Load container script
 ^^^^^^^^^^^^^^^^^^^^^
 
-AQUA provides scripts to use the AQUA container (updated to the last release) with Singularity on LUMI and Levante.
+AQUA provides scripts to use the AQUA container (updated to the last release) with Singularity on LUMI, Levante and MN5.
 These contain also bindings to the commonly used folders on the machine but they can be easily adapted to other platforms.
-The scripts are located in the ``cli/lumi-container`` and ``cli/levante-container`` folders.
-The scripts are (for LUMI, but same in the Levante folder):
-
-- **load_container_lumi.sh**: Load the AQUA container with the most common bindings and environment variables.
-  This is the most common script to use the AQUA container on LUMI on production environment.
-- **slurm_job_container.sh**: A template for a Slurm script to use the AQUA container on LUMI.
-  This is useful to run batch jobs on LUMI using the AQUA container, but it can be easily adapted to
-  any platform using Slurm. By default it opens a Jupyter Lab server on the computational node.
+The scripts are located in the ``cli/aqua-container/load_AQUA_container.sh``, and it is centralized for all the three machines.
 
 The script can be called and will guide the user to load the container in an interactive way.
 Otherwise some options can be passed to the script to avoid the interactive mode, for example in a batch job.
 
-.. option:: -y
+.. option:: machine
 
-   Load the container with the local version of AQUA found in the ``$AQUA`` environment variable.
+   Mandatory argument, could be ``levante``, ``lumi`` or ``MN5``. This set env variables and bindings which are specifically required.
 
-.. option:: -n
+.. option:: -n, --native
 
-   Load the container with the container version of AQUA.
+   Load the container with the local version of AQUA found in the ``$AQUA`` environment variable (which must be defined).
+   Please also notice that to be fully able to exploit the local installation of AQUA you will need to run `pip install -e $AQUA`
+   once you are in the container. Use this option with caution since it is not how the container is meant to work. 
 
-.. option:: -e <script>
+.. option:: -v, --version <version>
 
-   Execute a script in the container after loading it.
+   Load a specific version of the AQUA container. The default is the "latest" version available on the machine
 
-.. option:: -c <command>
+.. option:: -c, --command <script>
 
    Execute a command in the container after loading it.
 
-.. option:: -h
+.. option:: -s, --script <command>
+
+   Execute an executable script (e.g. python or bash) after loading it.
+
+.. option:: -h, --help
    
    Show the help message.
+
+.. note::
+   The script contains for each machine the specific bindings and environment variables required to run AQUA.
+   This may need to be expanded or modified for other usages.
 
 .. _pat:
 
@@ -125,13 +128,13 @@ Running Jupyter Notebook
     LUMI installation procedure, see :ref:`installation-lumi`.
     The container is mainly designed for workflow and production environment, not for interactive use.
 
-To run a Jupyter Notebook using the container, follow these steps. 
+To run a Jupyter Notebook using the container, follow these steps (we use here the LUMI machine as an example).
 
 - Run the previously saved script in the terminal to load the AQUA Singularity container into the shell:
 
 .. code-block:: bash
 
-   $AQUA/cli/lumi-container/load_container_lumi.sh
+   $AQUA/cli/aqua-container/load-aqua-container.sh lumi
 
 - Start Jupyter Lab:
 
@@ -155,7 +158,7 @@ This will provide a server URL like: ``http://nodeurl:<port>/lab?token=random_to
 - Open the Jupyter Lab URL in your browser. It will launch Jupyter Lab. Choose the **Python 3 (ipykernel)** kernel for the AQUA environment.
 
 .. note::
-    Using the ``load_container_lumi.sh`` script will launch the Jupyter Lab server on the node where the script is executed.
+    Using the ``load-aqua-container.sh`` script will launch the Jupyter Lab server on the node where the script is executed.
     You may want to use a computational node to run the Jupyter Lab server, especially if you are running a large notebook.
     This can be achieved by requiring a computational node and then running the Jupyter Lab server on that node or 
     by using the Slurm script to run the Jupyter Lab server (you can find an example in the Slurm script itself).

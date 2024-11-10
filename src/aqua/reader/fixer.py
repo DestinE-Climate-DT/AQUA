@@ -8,6 +8,7 @@ import types
 from datetime import timedelta
 import xarray as xr
 import numpy as np
+import pandas as pd
 from metpy.units import units
 
 from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction
@@ -430,6 +431,9 @@ class FixerMixin():
             for var in data.data_vars:
                 self.apply_unit_fix(data[var])
 
+        # apply time shift if necessary
+        data = self._timeshifter(data)
+
         # remove variables following the fixes request
         data = self._delete_variables(data)
 
@@ -457,6 +461,39 @@ class FixerMixin():
             data = data.drop_vars(dellist)
 
         return data
+
+    def _timeshifter(self, data):
+        """
+        Apply a timeshift to the time coordinate of an xr.Dataset.
+
+        Parameters:
+        - data (xr.Dataset): The dataset containing a 'time' coordinate to be shifted.
+
+        Returns:
+        - xr.Dataset: The dataset with the 'time' coordinate shifted based on the specified timeshift
+                      which is retrieved from the fixes dictionary.
+        """
+        timeshift = self.fixes.get('timeshift', None)
+
+        if timeshift is None:
+            return data
+
+        if 'time' not in data:
+            raise KeyError("'time' coordinate not found in the dataset.")
+
+        field = data.copy()
+        if isinstance(timeshift, int):
+            self.logger.info('Shifting the time axis by %s timesteps.', timeshift)
+            time_interval = timeshift * data.time.diff("time").isel(time=0).values
+            field = field.assign_coords(time=data.time + time_interval)
+        elif isinstance(timeshift, str):
+            self.logger.info('Shifting time axis by %s following pandas timedelta.', timeshift)
+            field['time'] = field['time'] + pd.Timedelta(timeshift)
+        else:
+            raise TypeError('timeshift should be either a integer (timesteps) or a pandas Timedelta!')
+     
+        return field
+
 
     def _wrapper_decumulate(self, data, variables, varlist, keep_memory, jump):
         """
@@ -688,20 +725,22 @@ class FixerMixin():
                 src_coord = coords_fix[coord].get("source", None)
                 tgt_units = coords_fix[coord].get("tgt_units", None)
 
-                if src_coord and src_coord in data.coords:
-                    data = data.rename({src_coord: coord})
-                    self.logger.debug("Coordinate %s renamed to %s", src_coord, coord)
-                    log_history(data[coord], f"Coordinate {src_coord} renamed to {coord} by fixer")
-                else:
-                    self.logger.warning("Coordinate %s not found", coord)
+                if src_coord:
+                    if src_coord in data.coords:
+                        data = data.rename({src_coord: coord})
+                        self.logger.debug("Coordinate %s renamed to %s", src_coord, coord)
+                        log_history(data[coord], f"Coordinate {src_coord} renamed to {coord} by fixer")
+                    else:
+                        self.logger.warning("Coordinate %s not found", src_coord)
 
-                if tgt_units and coord in data.coords:
-                    self.logger.debug("Coordinate %s units set to %s", coord, tgt_units)
-                    self.logger.debug("Please notice that this is an override, no unit conversion has been applied")
-                    data[coord].attrs['units'] = tgt_units
-                    log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by fixer")
-                else:
-                    self.logger.warning("Coordinate %s not found", coord)
+                if tgt_units:
+                    if coord in data.coords:
+                        self.logger.debug("Coordinate %s units set to %s", coord, tgt_units)
+                        self.logger.debug("Please notice that this is an override, no unit conversion has been applied")
+                        data[coord].attrs['units'] = tgt_units
+                        log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by fixer")
+                    else:
+                        self.logger.warning("Coordinate %s not found", coord)
 
         return data
     

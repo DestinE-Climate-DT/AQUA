@@ -66,10 +66,12 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
     ]
 
     if dependency is not None:
+        print(dependency)
         sbatch_cmd.append('--dependency=afterany:'+ str(dependency))
 
     # Add script command
-    sbatch_cmd.append('aqua lra')
+    sbatch_cmd.append('aqua')
+    sbatch_cmd.append('lra')
     sbatch_cmd.append('--config')
     sbatch_cmd.append(yaml_file)
     sbatch_cmd.append('--model')
@@ -92,11 +94,17 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
         if overwrite:
             sbatch_cmd.append('-o')
         sbatch_cmd.append('-d')
-        result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
-        jobid = re.findall(r'\b\d+\b', result)[-1]
-        return jobid
+        try:
+            result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
+            jobid = re.findall(r'\b\d+\b', result)[-1]
+            return jobid
+        except subprocess.CalledProcessError as e:
+            # Print the error message and stderr if the command fails
+            print(f"Command failed with return code {e.returncode}")
+            print(f"stdout: {e.stdout}")
+            print(f"stderr: {e.stderr}")
 
-    #print(sbatch_cmd)
+    print(sbatch_cmd)
     return 0
 
 
@@ -147,7 +155,7 @@ if __name__ == '__main__':
                 varnames = config['data'][model][exp][source]['vars']
                 for varname in varnames:
                     if (COUNT % int(parallel)) == 0 and COUNT != 0:
-                        print('Updating parent job to' + jobid)
+                        print('Updating parent job to' + str(jobid))
                         PARENT_JOB = str(jobid)
                     COUNT = COUNT + 1
                     print(' '.join(['Submitting', model, exp, source, varname]))

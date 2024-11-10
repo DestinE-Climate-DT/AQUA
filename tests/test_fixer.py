@@ -109,6 +109,18 @@ def test_fixer_ifs_default_fix():
     data = reader.retrieve()
     assert data['mtnlwrf'].attrs['paramId'] == '235040'
 
+@pytest.mark.aqua
+def test_fixer_ifs_timeshift():
+    """Check fixer for timeshift with both timestep and pandas"""
+
+    reader = Reader(model="IFS", exp="test-tco79", source="long-shift-timestep", loglevel=loglevel)
+    data = reader.retrieve()
+    assert data.time[0].values == np.datetime64('2020-01-19T00:00:00')
+
+    reader = Reader(model="IFS", exp="test-tco79", source="long-shift-pandas", loglevel=loglevel)
+    data = reader.retrieve()
+    assert data.time[0].values == np.datetime64('2020-01-01T00:00:00')
+
 
 @pytest.mark.aqua
 def test_fixer_ifs_coords():

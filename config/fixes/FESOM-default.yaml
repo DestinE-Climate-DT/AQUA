@@ -30,11 +30,11 @@ fixer_name:
                 src_units: degC
                 grib: true
                 units: degC 
-            avg_uo:
+            avg_uoe:
                 source: u
                 grib: true
                 src_units: m/s
-            avg_vo:
+            avg_von:
                 source: v
                 grib: true
                 src_units: m/s

@@ -64,7 +64,7 @@ def _xarray_timedelta_string(xdataset):
     if years >= 1:
         return f"{years}Y"
     elif months >= 1:
-        return f"{months}M"
+        return f"{months}MS"
     elif days >= 1:
         return f"{days}D"
     else:
@@ -84,8 +84,10 @@ def _find_end_date(start_date, offset):
 
 
 def _generate_expected_time_series(start_date, frequency, time_period):
-    """Given a start date, a pandas frequency and the data_frequency generate
-    an expected time series"""
+    """
+    Given a start date, a pandas frequency and the data_frequency generate
+    an expected time series
+    """
 
     end_date = _find_end_date(start_date, time_period)
     time_series = pd.date_range(start=start_date, end=end_date, freq=frequency, inclusive='left')

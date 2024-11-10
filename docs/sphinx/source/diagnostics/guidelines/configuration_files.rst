@@ -1,7 +1,7 @@
 Configuration Files and AQUA console
 ====================================
 
-In the section :ref:`aqua-install-diagnostics`, the tool to expose configuration files for the diagnostic or
+In the section :ref:`aqua-install`, the tool to expose configuration files for the diagnostic or
 its CLI is described.
 This section provides more details on how to update the code if you want to expose a new configuration file or
 you are developing a new diagnostic.

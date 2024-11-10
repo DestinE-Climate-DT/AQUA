@@ -38,8 +38,9 @@ dependencies = [
     "cfgrib",
     "dask",
     "dask_jobqueue",
-    "eccodes<2.37.0",
+    "eccodes==2.38.3",
     "docker",
+    "gcsfs", # Google Cloud Storage File System
     "gribscan",
     "pandas",
     "intake==0.7.0", # Version 2 is not yet compatible with intake-xarray
@@ -53,13 +54,14 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid",
+    "smmregrid==0.0.6",
     "sparse",
-    "xarray",
+    "xarray<2024.10.0",
     "kerchunk",
-    "h5py",
+    "h5py@git+https://github.com/h5py/h5py.git@3.12.1", #specific github pin to avoid installation of binaries
+    "fastparquet",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.6.0"
+    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.6.1"
 ]
 
 [project.optional-dependencies]
@@ -100,8 +102,9 @@ issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 [tool.setuptools.package-data]
 platforms = ["any"]
 
-[tool.setuptools]
-packages = { find = { where = ["src"] } }
+[tool.setuptools.package-dir]
+"aqua" = "src/aqua"
+"aqua.diagnostics" = "src/aqua_diagnostics"
 
 [tool.setuptools.dynamic]
 version = {attr = "aqua.__version__"}

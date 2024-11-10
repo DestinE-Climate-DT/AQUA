@@ -1,0 +1,42 @@
+# Configuration file for aqua-analysis.sh
+
+# Variables $AQUA and $OUTPUT can be used to refer to the root directory of AQUA
+# and the output directory respectively
+
+job:
+    # The max_threads variable controls the maximum number of threads or parallel processes.
+    # - If max_threads is set to 0 or a negative value: All processes run in parallel without waiting (no limit).
+    # - If max_threads is set to a positive value: Limits the number of concurrent threads.
+
+    max_threads: {{ max_threads, int }}  # Maximum number of threads or 0 for no limit
+    loglevel: {{ loglevel, str }}  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+    # Run a dummy analysis to test the configuration and presence of needed data
+    run_dummy: {{ run_dummy, bool (true/false) }}
+
+    # Default output directory for the analysis, can be overridden by command-line arguments
+    outputdir: {{ /path/to/output, str }}
+
+    # Default values, overridden from command-line arguments
+    model: {{ model_name, str }}  # Model name for analysis
+    exp: {{ experiment_name, str }}  # Experiment identifier
+    source: {{ source_name, str }}  # Data source identifier
+
+    script_path_base: "${AQUA}/diagnostics"  # Base directory for diagnostic scripts
+
+diagnostics:
+
+  # List of diagnostics to run
+  run: {{ diagnostics_to_analyze, list }}
+
+  # Each diagnostic can have the following options:
+  # - nworkers: Number of workers to use for the diagnostic (default is 1).
+  # - extra: Additional command-line arguments to pass to the diagnostic script.
+  # - outname: Name of the output directory for the diagnostic (default is the diagnostic name itself).
+  # - script_path: Location of the script to run the diagnostic.
+
+  diagnostic_name:
+    nworkers: {{ nworkers, int }}  # Number of workers
+    script_path: {{ script_path, str (optional) }}  # Path to the diagnostic script
+    extra: {{ extra_arguments, str (optional) }}  # Additional arguments for the diagnostic
+    outname: {{ outname, str (optional) }}  # Name for the output directory
