@@ -72,7 +72,13 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
         KeyError: If the input specifications are incorrect.
     """
 
-    aquacats = aqua_catalog(catalog=catalog, verbose=False) 
+    aquacats = aqua_catalog(catalog=catalog, verbose=False)
+
+    # return a list of catalogs if nothing is provided
+    if not catalog and not model and not exp and not source:
+        if verbose:
+            print(f"Catalog available in AQUA: {list(aquacats)}")
+        return list(aquacats)
 
     # get all info from with the scan_catalog function
     infodict = {}
