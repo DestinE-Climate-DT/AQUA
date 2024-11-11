@@ -5,7 +5,7 @@ from aqua.util import ConfigPath
 from aqua.util.config import scan_catalog
 
 
-def aqua_catalog(verbose=True, configdir=None, catalog=None):
+def aqua_catalog(catalog=None, configdir=None, verbose=True):
     """
     Catalog of available data.
 
@@ -46,7 +46,7 @@ def aqua_catalog(verbose=True, configdir=None, catalog=None):
     return aquacats
 
 
-def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=True):
+def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=False):
     """
     Basic function to simplify catalog inspection.
     If a partial match between model, exp and source is provided, then it will return a list
@@ -62,11 +62,16 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
             If None, all experiments are returned. Defaults to None.
         source (str, optional): The source ID to filter the catalog.
             If None, all sources are returned. Defaults to None.
-        verbose (bool, optional): Print the catalog information to the console. Defaults to True.
+        verbose (bool, optional): Print the catalog information to the console. Defaults to False.
 
     Returns:
-        list:   A list of available items in the catalog, depending on the
+        list or dict:   A list of available items in the catalog, depending on the
                 specified model and/or experiment, a list of variables or True/False.
+                If multiple entries are matched in multiple catalogs
+                it will return a dictionary with all the entries available
+                for each catalog
+            
+
 
     Raises:
         KeyError: If the input specifications are incorrect.
@@ -133,6 +138,9 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
                     print(f"Source {source} for exp {exp} and model {model} in catalog {printcat} is found!")
 
             return infodict[printcat]['avail']
+
+    # safety return
+    return False
     
 
 
