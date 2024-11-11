@@ -27,7 +27,7 @@ def aqua_catalog(verbose=True, configdir=None, catalog=None):
 
     # get the config dir and the catalog
     configurer = ConfigPath(configdir=configdir, catalog=catalog)
-    
+   
     aquacats = {}
     for aquacat in configurer.catalog_available:
 
@@ -72,47 +72,77 @@ def inspect_catalog(catalog=None, model=None, exp=None, source=None, verbose=Tru
         KeyError: If the input specifications are incorrect.
     """
 
+    # safety check on argument sequence
+    if model is None:
+        if exp is not None or source is not None:
+            raise ValueError("If 'exp' or 'source' is provided, 'model' must also be provided.")
+    elif exp is None and source is not None:
+        raise ValueError("If 'source' is provided, 'exp' must also be provided.")
+
+    #getting the catalogs
     aquacats = aqua_catalog(catalog=catalog, verbose=False)
 
     # return a list of catalogs if nothing is provided
-    if not catalog and not model and not exp and not source:
+    if all(arg is None for arg in [catalog, model, exp, source]):
         if verbose:
             print(f"Catalog available in AQUA: {list(aquacats)}")
         return list(aquacats)
-
-    # get all info from with the scan_catalog function
+    
+    # get all info from with the scan_catalog from config function
     infodict = {}
     for aquacat, cat in aquacats.items():
-        infodict[aquacat] = {}
-        infodict[aquacat]['check'], infodict[aquacat]['level'], infodict[aquacat]['avail'] = scan_catalog(cat, model, exp, source)
+        check, level, avail = scan_catalog(cat, model, exp, source)
+        infodict[aquacat] = {
+            'check': check,
+            'level': level,
+            'avail': avail
+        }
 
     # return information to the user
     for level in ['variables', 'source', 'exp', 'model']:
         status = find_string_in_dict(infodict, level)
+        find = True
         if status:
+            index = [t[1] for t in status]
+            if model is not None and 'model' in index:
+                print(f'Cannot find model {model}. Returning available models for installed catalogs')
+                find = False
+            if exp is not None and 'exp' in index:
+                print(f'Cannot find exp {exp}. Returning available experiments for model {model}')
+                find = False
+            if source is not None and 'source' in index:
+                print(f'Cannot find source {source}. Returning available source for experiment {exp}')
+                find = False
+        
+            # multiple matches
             if len(status)>1:
-                print("WARNING: inspect_catalog found multiple entries for the required keys!")
-                print('Return a dictionary instead of a list!')
-                return {key: value['avail'] for key, value in infodict.items() if 'avail' in value}
+                print(f"WARNING: inspect_catalog found multiple entries for the {level} key!")
+                print('WARNING: Returning a dictionary instead of a list!')
+                return {key: value['avail'] for key, value in infodict.items() if level in value['level']}
+         
+            
             printcat = status[0][0]
             if verbose:
-                if not model:
+                if not model and find:
                     print(f"Models available in catalog {printcat}:")
-                if model and not exp:
+                if model and not exp and find:
                     print(f"Experiments available in catalog {printcat} for model {model}:")
-                if model and exp and not source:
+                if model and exp and not source and find:
                     print(f"Sources available in catalog {printcat} for model {model} and exp {exp}:")
-            
-            return infodict[status[0][0]]['avail']
+                if model and exp and source and find:
+                    print(f"Source {source} for exp {exp} and model {model} in catalog {printcat} is found!")
+
+            return infodict[printcat]['avail']
     
+
 
 def find_string_in_dict(data, target_string):
     """Helper function"""
     matches = []
-    
+
     for key, sub_dict in data.items():
-        
+ 
         if sub_dict['level'] == target_string:
             matches.append((key, sub_dict['level']))
-    
+
     return matches
