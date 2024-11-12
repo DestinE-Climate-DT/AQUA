@@ -82,9 +82,9 @@ jobs:
           crate: htmlq
           cache-key: cargo-coverage
       - name: Set up Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: '1.5.10-0'
+          micromamba-version: 'latest'
           environment-file: environment.yml 
           environment-name: aqua
           cache-downloads: true

@@ -255,7 +255,7 @@ class LRAgenerator():
 
         # modify filename if realization is there
         if 'realization' in self.kwargs:
-            urlpath = os.path.join(self.outdir, f'*{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc')
+            urlpath = os.path.join(self.outdir, f"*{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc")
         else:      
             urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
 

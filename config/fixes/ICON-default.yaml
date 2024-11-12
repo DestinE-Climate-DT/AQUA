@@ -153,6 +153,11 @@ fixer_name:
                 source: ts
                 grib: false
                 src_units: K
+
+    ICON-cycle4:
+        parent: ICON-default
+        timeshift: -1
+
     ICON-hpx: 
         data_model: false
         vars:

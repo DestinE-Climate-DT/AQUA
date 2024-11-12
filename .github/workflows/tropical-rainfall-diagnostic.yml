@@ -28,9 +28,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Micromamba with diagnostic environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: '1.5.10-0'
+          micromamba-version: 'latest'
           environment-file: environment.yml
           environment-name: tropical-rainfall
           cache-downloads: true

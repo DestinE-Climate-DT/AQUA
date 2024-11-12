@@ -39,8 +39,24 @@ class AquaAccessor:
         return self.instance.regrid(self._obj, **kwargs)
 
     def timmean(self, **kwargs):
-        """Perform daily and monthly averaging."""
+        """Perform time averaging."""
         return self.instance.timmean(self._obj, **kwargs)
+    
+    def timmax(self, **kwargs):
+        """Perform time maximum."""
+        return self.instance.timmax(self._obj, **kwargs)
+    
+    def timmin(self, **kwargs):
+        """Perform time minimum."""
+        return self.instance.timmin(self._obj, **kwargs)
+    
+    def timstd(self, **kwargs):
+        """Perform time standard deviation."""
+        return self.instance.timstd(self._obj, **kwargs)
+    
+    def timstat(self, **kwargs):
+        """Perform time statistics."""
+        return self.instance.timstat(self._obj, **kwargs)
 
     def fldmean(self, **kwargs):
         """Perform a weighted global average."""

@@ -36,6 +36,10 @@ grids:
     space_coord: ["ncells"]
     vert_coord: ["2d"]
     path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
+  hpz8-nested-nextgems4: 
+    space_coord: ["cell"]
+    vert_coord: ["2d"]
+    path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
   hpz9-nested: 
     space_coord: ["ncells"]
     vert_coord: ["2d"]

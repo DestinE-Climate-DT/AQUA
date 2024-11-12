@@ -25,7 +25,7 @@ setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 
 # Set the path to the grids on the servers
 LEVANTE_GRID_PATH="/work/bb1153/b382075/aqua/grids"
-LUMI_GRID_PATH="/pfs/lustrep3/projappl/project_465000454/data/AQUA/grids"
+LUMI_GRID_PATH="/appl/local/climatedt/data/AQUA/grids"
 
 # Set the paths for the grids on levante and lumi
 LEVANTE_SSH="levante:$LEVANTE_GRID_PATH"

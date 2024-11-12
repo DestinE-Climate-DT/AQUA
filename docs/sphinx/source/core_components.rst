@@ -146,6 +146,10 @@ This will return an ``xarray.Dataset`` with the data lazily regridded to the tar
 We can then use the ``data_r`` object for further processing and the data
 will be loaded in memory only when necessary, allowing for further subsetting and processing.
 
+The default regrid method is ``ycon`` which is a conservative regrid method.
+If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
+following the CDO convention.
+
 Concept
 ^^^^^^^
 
@@ -160,8 +164,8 @@ For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, e
 .. note::
     The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
-    centered between 90 and -90 degrees is sometimes used in the field. If you need sucha a grid please add an additional definition
-    to the ``config/grids`` folder with a different grid name (for example ``r100a``).
+    centered between 90 and -90 degrees is sometimes used in the field and it is available in AQUA with the convention of adding
+    an s to the corresponding convention defined above (e.g. ``r100s`` ).
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
@@ -315,15 +319,15 @@ We put together many different fixes, but let's take a look at the
 different sections of the fixer file.
 
 - **documentation-fix**: This is the name of the fixer.
-  It is used to identify the fixer and will be used in the entry metadata
-  to specify which fixer to use. (See :ref:`add-data` for more details)
+    It is used to identify the fixer and will be used in the entry metadata
+    to specify which fixer to use. (See :ref:`add-data` for more details)
 - **parent**: a source ``fixer_name`` with which the current fixes have to be merged. 
-  In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it. 
+    In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it. 
 - **data_model**: the name of the data model for coordinates. (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough.
-  (See :ref:`coord-fix`).
+    (See :ref:`coord-fix`).
 - **dims**: extra dimensions handling if data model is not flexible enough. 
-  (See :ref:`coord-fix`).
+    (See :ref:`coord-fix`).
 - **decumulation**: 
     - If only ``deltat`` is specified, all the variables that are considered as cumulated flux variables 
       (i.e. that present a time unit mismatch from the source to target units) will be divided
@@ -336,6 +340,10 @@ different sections of the fixer file.
       than the output saving frequency.
       The additional ``jump`` parameter specifies the period of cumulation.
       Only months are supported at the moment, implying that fluxes are reset at the beginning of each month.
+- **timeshift**: Roll the time axis forward/back in time by a certain amount. This could be an integer that will
+    be interpreted as a number of timesteps, or a pandas Timedelta string (e.g. `1D`). Positive numbers
+    will move the time axis forward, while negative ones will move it backward (e.g. `-2H`). Please note that only the 
+    time axis will be affected, the Dataset will maintain all its properties. 
 - **vars**: this is the main fixer block, described in detail on the following section :ref:`metadata-fix`.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
 
@@ -413,19 +421,24 @@ Of course, this feature is valid only for **coords**:
 .. warning::
     Please keep in mind that coordinate units is simply an override of the attribute. It won't make any assumption on the source units and will not convert it accordingly.
 
-Time Aggregation
-----------------
+Time Statistics
+---------------
 
-Input data may not be available at the desired time frequency. It is possible to perform time averaging at a given
-frequency by using the ``timmean`` method. 
+Input data may not be available at the desired time frequency. It is possible to perform time statistics, including
+time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``timstat()`` method and its sibilings
+`timmean()`, `timmin()`, `timmax()` and `timstd()`. 
 
 .. code-block:: python
 
     reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
     data = reader.retrieve()
     daily = reader.timmean(data, freq='daily')
+    # alternatively: daily = reader.timstat(data, stat='mean', freq='daily')
 
-Data have now been averaged at the desired daily timescale.
+Data have now been averaged at the desired daily timescale. Similarly operations can be performed with others methods.
+
+.. warning::
+    If you do not specify the `freq` argument, the statistical operation will be operated on the entire dataset!
 
 Some extra options are available:
 
@@ -433,6 +446,7 @@ Some extra options are available:
   (for example, verify  that all the record from each month are available before doing the time mean).
 - ``center_time=True``: this flag will center the time coordinate on the mean time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
+
 
 Detrending
 ----------

@@ -36,17 +36,19 @@ collect_figures() {
 convert_pdf_to_png() {
     # This assumes that we are inside the aqua-web repository
 
-    log_message INFO "Converting PDFs to PNGs for $1"
+    if [ "$convert" -eq 1 ]; then
+        log_message INFO "Converting PDFs to PNGs for $1"
 
-    dstdir="./content/png/$1"
+        dstdir="./content/png/$1"
 
-    git rm -r $dstdir
-    mkdir -p $dstdir
+        git rm -r $dstdir
+        mkdir -p $dstdir
     
-    IFS='/' read -r catalog model experiment <<< "$1"
-    ./pdf_to_png.sh "$catalog" "$model" "$experiment"
+        IFS='/' read -r catalog model experiment <<< "$1"
+        ./pdf_to_png.sh "$catalog" "$model" "$experiment"
 
-    git add $dstdir
+        git add $dstdir
+    fi
 }
 
 # Note: the -r|--repository option is implemented but deactivated at the moment since 
@@ -66,6 +68,8 @@ print_help() {
     echo "  -m, --message MESSAGE  message for the automatic PR (optional)"
     echo "  -t, --title TITLE      title for the automatic PR (optional)"
     echo "  -w, --wipe             wipe the destination directory before copying the images"
+    echo "  -n, --no-convert       do not convert PDFs to PNGs"
+    echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
 #    echo "  -r, --repository REPO  specify a local copy of the aqua-web repository"
 }
 
@@ -80,6 +84,8 @@ repository=""
 user=""
 message=""
 wipe=0
+convert=1
+loglevel=2
 while [[ $# -gt 2 ]]; do
   case "$1" in
     -h|--help)
@@ -106,6 +112,14 @@ while [[ $# -gt 2 ]]; do
         wipe=1
         shift
         ;;
+    -n|--no-convert)
+        convert=0
+        shift
+        ;;
+    -l|--loglevel)
+        loglevel="$2"
+        shift 2
+        ;;
     # -r|--repository)
     #     repository="$2"
     #     shift 2
@@ -120,20 +134,26 @@ done
 indir=$1
 exps=$2
 
-# define the aqua installation path
-AQUA=$(aqua --path)/../..
+# define the location of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ ! -d $AQUA ]; then
-    echo -e "\033[0;31mError: AQUA is not installed."
-    echo -e "\x1b[38;2;255;165;0mPlease install AQUA with aqua install command"
-    exit 1  # Exit with status 1 to indicate an error
+if [ ! -f "$SCRIPT_DIR/../util/logger.sh" ]; then
+    echo "Warning: $SCRIPT_DIR/../util/logger.sh not found, using dummy logger"
+    # Define a dummy log_message function
+    function log_message() {
+        echo "$2"
+    }
+else
+    source "$SCRIPT_DIR/../util/logger.sh"
+    setup_log_level $loglevel # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
+    log_message DEBUG "Sourcing logger.sh from: $SCRIPT_DIR/../util/logger.sh"
 fi
 
-source "$AQUA/cli/util/logger.sh"
-log_message DEBUG "Sourcing logger.sh from: $AQUA/cli/util/logger.sh"
-setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
-
 log_message INFO "Processing $indir"
+
+if [ "$convert" -eq 0 ]; then
+    log_message INFO "Conversion of PDFs to PNGs suppressed"
+fi
 
 if [ -n "$repository" ]; then
     log_message INFO "Using local aqua-web repository: $repository"
@@ -150,7 +170,7 @@ fi
 
 if [ -n "$branch" ]; then
     log_message INFO "Creating and switching to branch $branch"
-    git checkout -b $branch
+    git checkout -B $branch
 fi
 
 autopr=false

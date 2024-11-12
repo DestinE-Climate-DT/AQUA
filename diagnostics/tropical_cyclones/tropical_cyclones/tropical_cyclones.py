@@ -74,9 +74,9 @@ class TCs(DetectNodes, StitchNodes):
             self.frequency = tdict['time']['frequency']
             self.startdate = tdict['time']['startdate']
             self.enddate = tdict['time']['enddate']
-            self.orography=orography
+            self.orography = orography
             if self.orography:
-                self.orography_file = tdict['orography']['file_path'] + tdict['orography']['file_name']
+                self.orography_file = os.path.join(tdict['orography']['file_path'], tdict['orography']['file_name'])
         else:
             if paths is None:
                 raise ValueError('Without paths defined you cannot go anywhere!')
@@ -203,7 +203,7 @@ class TCs(DetectNodes, StitchNodes):
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
             
-        elif self.model in 'IFS-NEMO':
+        elif self.model in ['IFS-NEMO', 'IFS-FESOM']:
             self.varlist2d = ['msl', '10u', '10v']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
                                          regrid=self.lowgrid,
@@ -252,7 +252,10 @@ class TCs(DetectNodes, StitchNodes):
         # now retrieve 2d and 3d data needed
 
         self.data2d = self.reader2d.retrieve(var=self.varlist2d)
-        self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
+        if self.model == "IFS-FESOM": # plev are in Pa
+            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[30000, 50000])
+        else: # plev are in hPa
+            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
         self.fullres = self.reader_fullres.retrieve(var=self.var2store)
         
         # in case data2d is empty, we reached the end of the data
@@ -270,7 +273,7 @@ class TCs(DetectNodes, StitchNodes):
         if self.orography:
             self.logger.info("orography retrieved from file")
             self.orog = xr.open_dataset(self.orography_file)
-            if self.model == "IFS" or self.model == "IFS-NEMO":
+            if self.model == "IFS" or self.model == "IFS-NEMO" or self.model == "IFS-FESOM":
                 #rename var for detect nodes
                 self.logger.info(f"orography file for {self.model} is {self.orography_file}")
                 self.orog = self.orog.rename({'z': 'zs'})
@@ -279,7 +282,6 @@ class TCs(DetectNodes, StitchNodes):
                 self.orog = self.orog.rename({'oromea': 'zs'})
             else:
                 raise ValueError(f'Orography variable of {self.model} not recognised!')
-
 
 
     def store_fullres_field(self, xfield, nodes):

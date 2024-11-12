@@ -1,0 +1,17 @@
+# These are needed for the AQUA retrieve
+#model: IFS-FESOM
+#exp: historical-1990
+#source: 2D_monthly_0.25deg
+#var: mean2t
+model: IFS-NEMO
+exp: tco1279-orca025
+source: hourly-r100-atm2d
+var: 2t
+
+# These are extra info:
+# model name for saving the grid
+model_name: ifs
+multio_resolution: r100
+
+# target folder for the grid generated
+tgt: /scratch/b/b382076
