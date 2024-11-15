@@ -148,6 +148,39 @@ The GSV package will also require, in order to correctly decode the unstructured
 This path is the one where the grid definitions are stored, and it is necessary for the GSV package to work correctly.
 Also in this case, you can set the environment variable in your ``.bash_profile`` and in ``.bashrc`` in your home directory.
 
+.. _installation-mn5:
+
+Installation on MareNostrum 5 (MN5) HPC at Barcelona Supercomputing Center (BSC)
+--------------------------------------------------------------------------------
+
+To enable git, pip-install, conda etc. on MN5, configure an SSH tunnel and set up proxy environment variables:
+
+Add a ``RemoteForward`` directive for a high five-digit port number (e.g., ``52698``) under the MN5 section of your ``.ssh/config`` file:
+
+.. code-block:: plaintext
+
+    Host mn5
+        RemoteForward 52698
+
+Use a unique high five-digit port number to avoid conflicts. Replace ``52698`` with your chosen port.
+After logging into MN5, export the proxy variables to direct traffic through the SSH tunnel:
+
+.. code-block:: bash
+
+    export https_proxy=socks5://localhost:52698
+    export http_proxy=socks5://localhost:52698
+
+Once this setup is complete, you can use commands like ``git clone`` with internet access.
+
+To use the FDB5 binary library on MN5, set the following environment variable:
+
+.. code-block:: bash
+
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/gpfs/projects/ehpc01/sbeyer/models/DE_CY48R1.0_climateDT_tco399_fesom2.6/build/lib"
+
+You can add these exports to your ``.bash_profile`` and ``.bashrc`` files in your home directory for persistence.
+
+
 Installation and use of the AQUA container
 ------------------------------------------
 
