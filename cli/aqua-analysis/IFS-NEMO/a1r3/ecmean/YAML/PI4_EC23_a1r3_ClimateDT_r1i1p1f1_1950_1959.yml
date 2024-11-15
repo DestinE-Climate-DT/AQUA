@@ -1,0 +1,208 @@
+net_sfc:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+tas:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+pr:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+psl:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+tauu:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+tauv:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+ta:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+ua:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+va:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+hus:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+tos:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+sos:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+siconc:
+  ALL:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  DJF:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan
+  JJA:
+    Global: .nan
+    North Midlat: .nan
+    Tropical: .nan
+    South Midlat: .nan

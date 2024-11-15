@@ -56,3 +56,79 @@ fixer_name:
         # decumulate: true
         src_units: m
         units: kg m**-2 s**-1
+
+  ifs-nemo-reduced-output-monthly-v2_0_1_9:
+    parent: ifs-destine-v1
+    data_model: ifs
+    deltat: monthly
+    vars:
+      2t: 
+        source: mean2t
+        grib: true
+      10u: 
+        source: avg_10u
+        grib: true
+      10v: 
+        source: avg_10v
+        grib: true
+      msl: 
+        source: avg_msl
+        grib: true
+      mtpr:
+        source: tprate
+        grib: true 
+      mer:
+        source: erate
+        grib: true
+        src_units: m
+      mslhf: 
+          source: mslhf
+          grib: true
+      msshf:
+          source: msshf
+          grib: true
+      # msdwswrf:
+      #     source: msdwswrf
+      #     grib: True
+      # msdwlwrf:
+      #     source: msdwlwrf
+      #     grib: True
+      tcc: 
+        source: meantcc
+        grib: true
+      t: 
+        source: avg_t
+        grib: true
+      u: 
+        source: avg_u
+        grib: true
+      v: 
+        source: avg_v
+        grib: true
+      q: 
+        source: avg_q
+        grib: true
+      # # Surface fluxes
+      msnswrf:
+          source: msnswrf
+          grib: true
+      msnlwrf:
+          source: msnlwrf
+          grib: true
+      # TOA fluxes
+      mtnswrf:
+          source: mtnswrf
+          grib: true
+      mtnlwrf:
+          source: mtnlwrf
+          grib: true
+      mtdwswrf:
+          source: mtdwswrf
+          grib: true
+      # Wind stresses
+      metss: 
+          source: metss
+          grib: true
+      mntss: # https://codes.ecmwf.int/grib/param-db/?id=235042 
+          source: mntss
+          grib: true
