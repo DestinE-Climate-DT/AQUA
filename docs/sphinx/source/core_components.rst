@@ -44,7 +44,7 @@ Catalog exploration
 ^^^^^^^^^^^^^^^^^^^^^
 
 To check what is available in the catalog, we can use the ``inspect_catalog()`` function.
-Three hierarchical layer structures (e.g AQUA triplet) describe each dataset.
+On top of the ``catalog`` key, three hierarchical layer structures (e.g AQUA triplet) describe each dataset.
 At the top level, there are *models* (keyword ``model``) (e.g., ICON, IFS-NEMO, IFS-FESOM, etc.). 
 Each model has different *experiments* (keyword ``exp``) and each experiment can have different *sources* (keyword ``source``).
 
@@ -55,13 +55,14 @@ Calling, for example:
     from aqua import inspect_catalog
     inspect_catalog(model='CERES')
 
-will return experiments available in the catalog for model CERES.
+will return experiments available in the catalog for model CERES. Please notice that it is not required to specify the ``catalog`` key since 
+the AQUA will scan automatically all the available catalogs. 
 
 .. warning::
     The ``inspect_catalog()`` and the ``Reader`` are based on the catalog and AQUA path configuration.
     If you don't find a source you're expecting, please check these are correctly set (see :ref:`getting_started`).
 
-If you want to have a complete overview of the sources available in the catalog, you can use the ``catalog()`` function.
+If you want to have a complete overview of the sources available in the catalog, you can use the ``aqua_catalog()`` function.
 This will return a list of all the sources available in the catalog, listed by model and experiment.
 
 Reader basic usage

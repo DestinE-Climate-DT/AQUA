@@ -411,9 +411,9 @@ class Teleconnection():
         self.logger.debug("Catalog: %s", self.catalog)
 
         # Check that the data is available in the catalog
-        if inspect_catalog(catalog_name=self.catalog, model=self.model, exp=self.exp,
+        if inspect_catalog(catalog=self.catalog, model=self.model, exp=self.exp,
                            source=self.source,
-                           verbose=False) is False:
+                           verbose=False) is not True:
             raise NoDataError('Data not available')
 
     def _load_figs_options(self, savefig=False, outputfig=None):

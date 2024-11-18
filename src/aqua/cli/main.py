@@ -11,7 +11,7 @@ from urllib.error import HTTPError
 import fsspec
 
 from aqua import __path__ as pypath
-from aqua import catalog
+from aqua import aqua_catalog
 from aqua.util import load_yaml, dump_yaml, load_multi_yaml, ConfigPath, create_folder
 from aqua.logger import log_configure
 from aqua.util.util import HiddenPrints, to_list
@@ -411,7 +411,7 @@ class AquaConsole():
         # verify that the new catalog is compatible with AQUA, loading it with catalog()
         try:
             with HiddenPrints():
-                catalog()
+                aqua_catalog()
         except Exception as e:
             self.remove(args)
             self.logger.error('Current catalog is not compatible with AQUA, removing it for safety!')

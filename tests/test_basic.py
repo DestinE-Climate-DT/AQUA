@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from aqua import Reader, catalog
+from aqua import Reader, aqua_catalog
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
@@ -30,7 +30,7 @@ class TestAqua:
         """
         Test if the catalog function returns a non-empty list
         """
-        cat = catalog()
+        cat = aqua_catalog()
         assert len(cat) > 0
 
     def test_reader_init(self):

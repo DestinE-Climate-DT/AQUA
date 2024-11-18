@@ -1,6 +1,6 @@
 """Reader module."""
 from .reader import Reader
-from .catalog import catalog, inspect_catalog
+from .catalog import inspect_catalog, aqua_catalog
 from .streaming import Streaming
 
-__all__ = ["Reader", "catalog", "Streaming"]
+__all__ = ["Reader", "Streaming"]
