@@ -14,6 +14,7 @@ import pandas as pd
 from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
 from dask.distributed.diagnostics import MemorySampler
+from gsv.exceptions import MissingGSVMessageError
 from aqua.logger import log_configure, log_history
 from aqua.reader import Reader
 from aqua.util import create_folder, generate_random_string
@@ -215,7 +216,12 @@ class LRAgenerator():
             self.catalog = self.reader.catalog
 
         self.logger.info('Retrieving data...')
-        self.data = self.reader.retrieve(var=self.var)
+        try:
+            self.data = self.reader.retrieve(var=self.var)
+        except MissingGSVMessageError as e:
+            self.logger.error("GSV message not found: %s", e)
+            self.logger.error("Retrieving all variables")
+            self.data = self.reader.retrieve()
 
         self.logger.debug(self.data)
 
