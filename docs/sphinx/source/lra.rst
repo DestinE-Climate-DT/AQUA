@@ -126,7 +126,7 @@ Parallel LRA tool
 ^^^^^^^^^^^^^^^^^
 
 Building the LRA can be an heavy task, which requires a lot of memory and thus cannot be easily parallized in the same job.
-To this end, an extra script for parallel execution is also provided. Using `cli_lra_parallel_slurm.py` it is possible to submit to SLURM multiple jobs,
+To this end, an extra script for parallel execution is also provided. Using ``cli_lra_parallel_slurm.py`` it is possible to submit to SLURM multiple jobs,
 one for each of the variables to be processed. For now it is configured only to be run on LUMI but further development should allow for larger portability.
 
 A basic example usage can thus be: 
@@ -140,4 +140,10 @@ This will launch the `definitive` writing of the LRA, using 4 workers per node a
 .. warning ::
     Use this script with caution since it will submit very rapidly tens of job to the SLURM scheduler!
 
-    
+Error Handling
+^^^^^^^^^^^^^^
+
+In order to be able to deal with different possible issues in the data metadata the LRA has two features that can be used with caution.
+
+- It is possible to provide a ``paramid`` (as integer value) instead of a ``var`` name in the configuration file. The ``Reader`` will retrieve based on the ``paramid`` and the variable name will be guessed form the retrieved dataset.
+- If, with an FDB source, the GRIB message is not found, the LRA will try to retrieve all the available variables and to check in that dataset if the var is present. This can be necessary with some old ``eccodes`` versions (2.35.*)

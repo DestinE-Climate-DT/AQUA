@@ -50,8 +50,9 @@ class LRAgenerator():
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
-            var (str, list):         Variable(s) to be processed and archived
-                                     in LRA.
+            var (str, list, int):    Variable(s) to be processed and archived
+                                     in LRA. If var is an int, a paramid is used to retrieve
+                                     the data and the var name is guessed from the dataset.
             resolution (string):     The target resolution for the LRA
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
