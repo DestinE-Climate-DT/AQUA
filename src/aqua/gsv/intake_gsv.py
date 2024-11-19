@@ -531,10 +531,21 @@ class GSVSource(base.DataSource):
                 darr = dask.array.concatenate(dalist, axis=self.ilevel)  # This is a lazy dask array
 
             shortname = self.get_eccodes_shortname(var)
+            self.logger.debug("Shortname: %s", shortname)
 
+            try:
+                attrs = self._ds[shortname].attrs
+            except KeyError as e:
+                self.logger.error('Shortname %s not found in the database, guessing it from the GSVDecoder', shortname)
+                self.logger.debug('Original error: %s', e)
+
+                shortname = self._da.GRIB_shortName
+                self.logger.warning("Guessing the shortname %s from the GSVDecoder", shortname)
+                attrs = self._ds[shortname].attrs
+            
             da = xr.DataArray(darr,
                               name=shortname,
-                              attrs=self._ds[shortname].attrs,
+                              attrs=attrs,
                               dims=self._da.dims,
                               coords=coords)
 
