@@ -129,6 +129,8 @@ class LRAgenerator():
             raise KeyError('Please specify source.')
 
         if var is not None:
+            if isinstance(var, int):
+                self.logger.warning('Asking for paramid %s', var)
             self.var = var
         else:
             raise KeyError('Please specify variable string or list.')
@@ -218,6 +220,10 @@ class LRAgenerator():
         self.logger.info('Retrieving data...')
         try:
             self.data = self.reader.retrieve(var=self.var)
+
+            if isinstance(self.var, int):
+                self.var = list(self.data.keys())[0]
+                self.logger.warning('Setting var to %s', self.var)
         except MissingGSVMessageError as e:
             self.logger.error("GSV message not found: %s", e)
             self.logger.error("Retrieving all variables")
