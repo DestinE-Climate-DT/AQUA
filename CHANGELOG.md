@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- LRA generator can now handle paramid (guessing the variable name) and mismatch between the shortname and GSV table (#1480)
 - Convert `aqua-analysis.sh` to Python with Subprocess and Multiprocessing Support (#1354)
 - Eccodes version 2.38.3 and new base container for aqua-container (#1441)
 - Autodetection of latest AQUA in `load-aqua-container.sh` script (#1437)
