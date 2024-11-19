@@ -5,6 +5,7 @@ both with monthly and annual aggregation options
 import xarray as xr
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
+from .styles import ConfigStyle
 
 
 def plot_timeseries(monthly_data=None,
@@ -15,6 +16,7 @@ def plot_timeseries(monthly_data=None,
                     std_annual_data=None,
                     data_labels: list = None,
                     ref_label: str = None,
+                    style: str = None,
                     loglevel: str = 'WARNING',
                     **kwargs):
     """
@@ -31,6 +33,8 @@ def plot_timeseries(monthly_data=None,
         std_annual_data (xr.DataArray): standard deviation of the reference annual data
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
+        style (str): style to use for the plot.
+                     By default the schema specified in the configuration file is used.
         loglevel (str): logging level
 
     Keyword Arguments:
@@ -41,18 +45,15 @@ def plot_timeseries(monthly_data=None,
         fig, ax (tuple): tuple containing the figure and axis objects
     """
     logger = log_configure(loglevel, 'PlotTimeseries')
+    ConfigStyle(style=style, loglevel=loglevel)
+
     fig_size = kwargs.get('figsize', (10, 5))
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
-
-    color_list = ["#1898e0", "#8bcd45", "#f89e13", "#d24493",
-                  "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf",
-                  "#00bb62", "#f9c410", "#fb4865", "#645ccc"]
 
     if monthly_data is not None:
         if isinstance(monthly_data, xr.DataArray):
             monthly_data = [monthly_data]
         for i in range(len(monthly_data)):
-            color = color_list[i]
             try:
                 mon_data = monthly_data[i]
                 if data_labels:
@@ -60,13 +61,12 @@ def plot_timeseries(monthly_data=None,
                     label += ' monthly'
                 else:
                     label = None
-                mon_data.plot(ax=ax, label=label, color=color)
+                mon_data.plot(ax=ax, label=label)
             except Exception as e:
                 logger.debug(f"Error plotting monthly data: {e}")
 
     if annual_data is not None:
         for i in range(len(annual_data)):
-            color = color_list[i]
             try:
                 ann_data = annual_data[i]
                 if data_labels:
@@ -74,7 +74,7 @@ def plot_timeseries(monthly_data=None,
                     label += ' annual'
                 else:
                     label = None
-                ann_data.plot(ax=ax, label=label, color=color, linestyle='--')
+                ann_data.plot(ax=ax, label=label, linestyle='--')
             except Exception as e:
                 logger.debug(f"Error plotting annual data: {e}")
 
@@ -128,6 +128,7 @@ def plot_seasonalcycle(data=None,
                        data_labels: list = None,
                        ref_label: str = None,
                        grid=True,
+                       style: str = None,
                        loglevel: str = 'WARNING',
                        **kwargs):
     """
@@ -140,6 +141,8 @@ def plot_seasonalcycle(data=None,
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
         grid (bool): if True, plot grid
+        style (str): style to use for the plot.
+                     By default the schema specified in the configuration file is used.
         loglevel (str): logging level
 
     Keyword Arguments:
@@ -150,6 +153,8 @@ def plot_seasonalcycle(data=None,
         fig, ax (tuple): tuple containing the figure and axis objects
     """
     logger = log_configure(loglevel, 'PlotSeasonalCycle')
+    ConfigStyle(style=style, loglevel=loglevel)
+
     fig_size = kwargs.get('figsize', (6, 4))
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
 

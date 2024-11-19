@@ -14,6 +14,7 @@ from aqua.logger import log_configure
 from aqua.util import plot_box, add_cyclic_lon, set_ticks
 from aqua.util import coord_names, evaluate_colorbar_limits
 from aqua.util import cbar_get_label, create_folder
+from .styles import ConfigStyle
 
 
 def plot_maps(maps: list = None,
@@ -25,6 +26,7 @@ def plot_maps(maps: list = None,
               cmap='RdBu_r',
               gridlines=False,
               display=True,
+              style=None,
               loglevel='WARNING',
               **kwargs):
     """
@@ -47,6 +49,8 @@ def plot_maps(maps: list = None,
         cmap (str,opt):       colormap, default is 'RdBu_r'
         gridlines (bool,opt): display gridlines, default is False
         display (bool,opt):   display the figure, default is True
+        style (str,opt):      style to use for the plot.
+                              If not provided, it will be read from the configuration file.
         loglevel (str,opt):   log level, default is 'WARNING'
         **kwargs:             additional arguments
 
@@ -73,6 +77,7 @@ def plot_maps(maps: list = None,
         fig, axs if more manipulations on the figure are needed
     """
     logger = log_configure(loglevel, 'Multiple maps')
+    ConfigStyle(style=style, loglevel=loglevel)
 
     if maps is None:
         raise ValueError('Nothing to plot')
