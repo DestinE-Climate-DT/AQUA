@@ -131,7 +131,9 @@ class LRAgenerator():
 
         if var is not None:
             if isinstance(var, int):
-                self.logger.warning('Asking for paramid %s', var)
+                self.logger.warning('One or more var are paramid %s', var)
+            elif (isinstance(var, list) and any(isinstance(i, int) for i in var)):
+                raise KeyError('LRA cannot manage a list containing paramids, generate the LRA individually')
             self.var = var
         else:
             raise KeyError('Please specify variable string or list.')
