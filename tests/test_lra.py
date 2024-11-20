@@ -148,3 +148,12 @@ class TestLRA():
         # Check if a single file is created for the year
         assert os.path.exists(outfile)
         os.remove(outfile)
+
+    def test_errors(self, lra_arguments):
+        """Test wrong call to the LRAgenerator"""
+        model, exp, source, _, outdir, tmpdir = lra_arguments
+        var = ['2t', 167]
+        with pytest.raises(KeyError):
+            LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
+                         outdir=outdir, tmpdir=tmpdir, resolution='r100',
+                         frequency='monthly', loglevel=loglevel)
