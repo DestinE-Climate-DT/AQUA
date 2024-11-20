@@ -6,14 +6,17 @@ from aqua import LRAgenerator, Reader
 
 loglevel = "DEBUG"
 
+
 @pytest.fixture(
     params=[("IFS", "test-tco79", "long", "2t", "lra_test", "tmpdir")]
 )
 def lra_arguments(request):
     return request.param
 
+
 # path for lra data
 lrapath = 'ci/IFS/test-tco79/r100/monthly'
+
 
 @pytest.mark.aqua
 class TestLRA():
@@ -29,7 +32,7 @@ class TestLRA():
         test.generate_lra()
         assert os.path.isdir(os.path.join(os.getcwd(), outdir,
                                           lrapath))
-        
+
     # defintiive = True with or without dask
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, lra_arguments, nworkers):
@@ -44,7 +47,7 @@ class TestLRA():
         month = year.sel(time=year.time.dt.month == 1)
         test.data = month
         test.generate_lra()
-        path = os.path.join(os.getcwd(), outdir,lrapath,
+        path = os.path.join(os.getcwd(), outdir, lrapath,
                             "2t_test-tco79_r100_monthly_202001.nc")
         test.check_integrity(varname=var)
         assert os.path.isfile(path)
@@ -62,7 +65,7 @@ class TestLRA():
         model, exp, source, var, outdir, tmpdir = lra_arguments
         test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
                             outdir=outdir, tmpdir=tmpdir,
-                            resolution='r100', frequency='monthly', nproc= 1,
+                            resolution='r100', frequency='monthly', nproc=1,
                             loglevel=loglevel, definitive=True)
         test.retrieve()
         test.generate_lra()
@@ -73,8 +76,7 @@ class TestLRA():
         data1 = reader1.retrieve()
         data2 = reader2.retrieve()
         assert data1.equals(data2)
-        shutil.rmtree(os.path.join(os.getcwd(), tmpdir))    
-
+        shutil.rmtree(os.path.join(os.getcwd(), tmpdir))
 
     # test with definitive = True and overwrite=True but with dask init
     def test_dask_overwrite(self, lra_arguments):
@@ -94,7 +96,6 @@ class TestLRA():
         shutil.rmtree(os.path.join(os.getcwd(), outdir))
         shutil.rmtree(os.path.join(os.getcwd(), tmpdir))
 
-    
     def test_exclude_incomplete(self, lra_arguments):
         """Test exclude_incomplete option"""
         model, exp, source, var, outdir, tmpdir = lra_arguments
@@ -126,17 +127,17 @@ class TestLRA():
 
         # create a LRAgenerator object
         model, exp, source, var, outdir, tmpdir = lra_arguments
-        resolution='r100'
-        frequency='monthly'
+        resolution = 'r100'
+        frequency = 'monthly'
         year = 2022
         test = LRAgenerator(catalog='ci', model=model, exp=exp, source=source, var=var,
-                        outdir=outdir, tmpdir=tmpdir, resolution=resolution,
-                        frequency=frequency, loglevel=loglevel)
+                            outdir=outdir, tmpdir=tmpdir, resolution=resolution,
+                            frequency=frequency, loglevel=loglevel)
 
         # Create temporary files for each month of the year
         for month in range(1, 13):
             mm = f'{month:02d}'
-            filename =  test.get_filename(var, year, month = mm)
+            filename = test.get_filename(var, year, month=mm)
             with xr.Dataset() as ds:
                 ds[var] = xr.DataArray([0], dims=['time'], coords={'time': [f'{year}-{month:02d}-01']})
                 ds.to_netcdf(filename)
