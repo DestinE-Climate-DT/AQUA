@@ -10,7 +10,7 @@ from .util import generate_random_string, get_arg, create_folder, to_list
 from .util import file_is_complete, find_vert_coord
 from .util import files_exist
 from .util import extract_literal_and_numeric, add_pdf_metadata, add_png_metadata
-from .util import open_image, username, update_metadata_with_date
+from .util import open_image, username, update_metadata
 from .yaml import load_yaml, dump_yaml, load_multi_yaml, eval_formula
 from .time import check_chunk_completeness, frequency_string_to_pandas
 from .time import time_to_string
@@ -28,7 +28,7 @@ __all__ = ['ConfigPath',
            'files_exist',
            'file_is_complete', 'find_vert_coord',
            'extract_literal_and_numeric', 'add_pdf_metadata', 'add_png_metadata',
-           'open_image', 'username', 'update_metadata_with_date',
+           'open_image', 'username', 'update_metadata',
            'load_yaml', 'dump_yaml', 'load_multi_yaml', 'eval_formula',
            'check_chunk_completeness', 'frequency_string_to_pandas',
            'time_to_string',

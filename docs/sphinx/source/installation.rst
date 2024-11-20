@@ -148,6 +148,73 @@ The GSV package will also require, in order to correctly decode the unstructured
 This path is the one where the grid definitions are stored, and it is necessary for the GSV package to work correctly.
 Also in this case, you can set the environment variable in your ``.bash_profile`` and in ``.bashrc`` in your home directory.
 
+.. _installation-mn5:
+
+Installation on MareNostrum 5 (MN5) HPC at Barcelona Supercomputing Center (BSC)
+--------------------------------------------------------------------------------
+
+To enable internet-dependent operations like git, pip install, or conda on MN5, you can configure an SSH tunnel and set up proxy environment variables.
+
+Note: we recommend using a machine with a stable connection, such as Levante or LUMI, for these configurations, as connections to MN5 from personal computers may be unstable
+
+Add a ``RemoteForward`` directive for a high five-digit port number under the MN5 section of your ``~/.ssh/config`` file.
+Use the following configuration, replacing ``<port_number>`` with a unique port number to avoid conflicts (on most systems the valid range for ports is from 1024 to 49151 for user-level applications).
+
+.. code-block:: plaintext
+
+    Host mn5
+        RemoteForward <port_number>
+
+After logging into MN5, export the following proxy environment variables export the proxy variables to direct traffic through the SSH tunnel. 
+Replace ``<port_number>`` with the same port number used in your SSH configuration:
+
+.. code-block:: bash
+
+    export https_proxy=socks5://localhost:<port_number>
+    export http_proxy=socks5://localhost:<port_number>
+
+You can add these exports to your ``.bash_profile`` and ``.bashrc`` files in your home directory for persistence.
+
+Check if the forwarding is running by using the following command with your chosen port number:
+
+.. code-block:: bash
+
+    netstat -tlnp | grep <port_number>
+
+Next, create your GitHub SSH key as usual, and then update your ``~/.ssh/config`` file with the following configuration:
+
+.. code-block:: plaintext
+
+    Host github.com
+        Hostname ssh.github.com
+        Port 443
+        User git
+        IdentityFile ~/.ssh/id_github
+        ProxyCommand nc -x localhost:<port_number> %h %p
+
+To verify the configuration, try testing the SSH connection with:
+
+.. code-block:: bash
+
+    ssh -T git@github.com
+
+Once verified, you can successfully use ``git clone`` and other Git commands with SSH.
+
+To install AQUA, you can follow the mamba installation process described in the previous section.
+
+.. warning::
+
+   The ``wget`` command does not work properly in this setup. Use ``curl`` as an alternative for downloading files.
+
+
+To use the FDB5 binary library on MN5, set the following environment variable:
+
+.. code-block:: bash
+
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/gpfs/projects/ehpc01/sbeyer/models/DE_CY48R1.0_climateDT_tco399_fesom2.6/build/lib"
+    
+
+
 Installation and use of the AQUA container
 ------------------------------------------
 

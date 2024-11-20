@@ -13,12 +13,12 @@ AQUA diagnostic complete list:
 
 ## [v0.13]
 
-AQUA diagnostics complete list:
-- Convert `aqua-analysis.sh` to Python with Subprocess and Multiprocessing Support (#1354)
-
 AQUA core complete list:
+- Convert `aqua-analysis.sh` to Python with Subprocess and Multiprocessing Support (#1354)
 - Eccodes version 2.38.3 and new base container for aqua-container (#1441)
 - Autodetection of latest AQUA in `load-aqua-container.sh` script (#1437)
+- Update Metadata Handling for NetCDF, PDF, and PNG Outputs (#1430)
+- Add instructions to install AQUA on MN5 (#1468)
 
 AQUA diagnostic complete list:
 - Tropical Cyclones: Adaptation to IFS-FESOM and tool to compute orography from data (#1393)

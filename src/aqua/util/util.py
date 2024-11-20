@@ -5,9 +5,11 @@ import random
 import string
 import re
 import sys
+import json
 import numpy as np
 import xarray as xr
 import datetime
+import subprocess
 from glob import glob
 from pypdf import PdfReader, PdfWriter
 from PIL import Image, PngImagePlugin
@@ -199,53 +201,50 @@ def add_pdf_metadata(filename: str,
                      old_metadata: bool = True,
                      loglevel: str = 'WARNING'):
     """
-    Open a pdf and add a new metadata.
+    Open a pdf and add new metadata.
 
     Args:
         filename (str): the filename of the pdf.
                         It must be a valid full path.
-        metadata_value (str): the value of the new metadata
+        metadata_value (str): the value of the new metadata.
         metadata_name (str): the name of the new metadata.
-                            Default is 'Description'
+                            Default is '/Description'.
         old_metadata (bool): if True, the old metadata will be kept.
-                            Default is True
-        loglevel (str): the log level. Default is 'WARNING'
+                            Default is True.
+        loglevel (str): the log level. Default is 'WARNING'.
 
     Raise:
-        FileNotFoundError: if the file does not exist
+        FileNotFoundError: if the file does not exist.
     """
     logger = log_configure(loglevel, 'add_pdf_metadata')
 
     if not os.path.isfile(filename):
         raise FileNotFoundError(f'File {filename} not found')
 
-    # Check that metadata_name starts with '/'
-    if metadata_name and metadata_name[0] != '/':
+    # Ensure metadata_name starts with '/'
+    if metadata_name and not metadata_name.startswith('/'):
         logger.debug('metadata_name does not start with "/". Adding it...')
         metadata_name = '/' + metadata_name
 
     pdf_reader = PdfReader(filename)
     pdf_writer = PdfWriter()
 
-    # Adding existing pages to the new pdf
+    # Add existing pages to the new PDF
     for page in pdf_reader.pages:
         pdf_writer.add_page(page)
 
     # Keep old metadata if required
-    if old_metadata is True:
+    if old_metadata:
         logger.debug('Keeping old metadata')
         metadata = pdf_reader.metadata
         pdf_writer.add_metadata(metadata)
-    else:
-        logger.debug('Removing old metadata')
 
     # Add the new metadata
     pdf_writer.add_metadata({metadata_name: metadata_value})
 
-    # Overwrite input pdf
+    # Overwrite input PDF
     with open(filename, 'wb') as f:
         pdf_writer.write(f)
-        f.close()
 
 
 def add_png_metadata(png_path: str, metadata: dict, loglevel: str = 'WARNING'):
@@ -255,9 +254,13 @@ def add_png_metadata(png_path: str, metadata: dict, loglevel: str = 'WARNING'):
     Args:
         png_path (str): The path to the PNG image file.
         metadata (dict): A dictionary of metadata to add to the PNG file.
+                         Note: Metadata keys do not need a '/' prefix.
         loglevel (str): The log level. Default is 'WARNING'.
     """
     logger = log_configure(loglevel, 'add_png_metadata')
+
+    if not os.path.isfile(png_path):
+        raise FileNotFoundError(f'File {png_path} not found')
 
     image = Image.open(png_path)
 
@@ -274,7 +277,7 @@ def add_png_metadata(png_path: str, metadata: dict, loglevel: str = 'WARNING'):
     logger.info(f"Metadata added to PNG: {png_path}")
 
 
-def open_image(file_path: str, loglevel: str = 'WARNING'):
+def open_image(file_path: str, loglevel: str = 'WARNING') -> dict:
     """
     Open an image file (PNG or PDF), log its metadata, and display a link to the file in the notebook.
 
@@ -283,7 +286,7 @@ def open_image(file_path: str, loglevel: str = 'WARNING'):
         loglevel (str): The log level. Default is 'WARNING'.
 
     Returns:
-        None
+        dict: The metadata of the image file with normalized keys (lowercase and without prefixes).
     """
     logger = log_configure(loglevel, 'open_image')
 
@@ -292,25 +295,35 @@ def open_image(file_path: str, loglevel: str = 'WARNING'):
         logger.error(f"The file {file_path} does not exist.")
         raise FileNotFoundError(f"The file {file_path} does not exist.")
 
+    metadata = {}
+
     # Determine the file extension using endswith()
     if file_path.lower().endswith('.png'):
         # Open the PNG file and read the metadata
         image = Image.open(file_path)
-        image_metadata = image.info
+        metadata = image.info
+
+        # Normalize keys to lowercase and remove any prefixes
+        metadata = {normalize_key(key): normalize_value(value) for key, value in metadata.items()}
 
         # Log the metadata
-        print("PNG Metadata:")
-        for key, value in image_metadata.items():
-            print(f"{key}: {value}")
+        logger.info("PNG Metadata:")
+        for key, value in metadata.items():
+            logger.info(f"{key}: {value}")
+
     elif file_path.lower().endswith('.pdf'):
         # Open the PDF file and read the metadata
         pdf_reader = PdfReader(file_path)
         metadata = pdf_reader.metadata
 
+        # Convert PyPDF2 metadata object to dictionary and normalize keys
+        metadata = {normalize_key(key): normalize_value(value) for key, value in metadata.items() if value is not None}
+
         # Log the metadata
-        print("PDF Metadata:")
+        logger.info("PDF Metadata:")
         for key, value in metadata.items():
-            print(f"{key}: {value}")
+            logger.info(f"{key}: {value}")
+
     else:
         logger.error(f"Unsupported file type: {file_path}")
         raise ValueError(f"Unsupported file type: {file_path}")
@@ -319,23 +332,75 @@ def open_image(file_path: str, loglevel: str = 'WARNING'):
     display(FileLink(file_path))
     logger.info(f"Displayed file link for: {file_path}")
 
+    return metadata
 
-def update_metadata_with_date(metadata: dict = None) -> dict:
+def normalize_key(key: str) -> str:
     """
-    Update the provided metadata dictionary with the current date and time.
+    Normalize metadata key by removing leading '/' and converting to lowercase.
+    """
+    return key.lstrip('/').lower()
+
+def normalize_value(value):
+    """
+    Normalize metadata values. If the value is a dictionary or dictionary-like string, normalize its keys.
+
+    Args:
+        value: Metadata value to normalize.
+
+    Returns:
+        Normalized value.
+    """
+    # Check if value is a dictionary, normalize its keys
+    if isinstance(value, dict):
+        return {normalize_key(k): normalize_value(v) for k, v in value.items()}
+    
+    # Check if value is a string that looks like a dictionary-like structure
+    if isinstance(value, str):
+        if re.match(r"^\{.*\}$", value.strip()):
+            try:
+                # Convert dictionary-like string into an actual dictionary
+                parsed_value = eval(value, {"__builtins__": None}, {})
+                if isinstance(parsed_value, dict):
+                    # Normalize the keys if it is a dictionary
+                    return {normalize_key(k): normalize_value(v) for k, v in parsed_value.items()}
+            except Exception as e:
+                # Log parsing errors and return the original string if parsing fails
+                log_configure('WARNING', 'normalize_value').warning(f"Failed to parse string as dictionary: {e}")
+    
+    # Return the value as-is if it can't be processed further
+    return value
+
+def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> dict:
+    """
+    Update the provided metadata dictionary with the current date, time, aqua package version,
+    and additional diagnostic information.
 
     Args:
         metadata (dict, optional): The original metadata dictionary.
+        additional_metadata (dict, optional): A dictionary containing additional metadata fields (e.g., diagnostic, model, experiment, etc.).
 
     Returns:
-        dict: The updated metadata dictionary with the current date and time.
+        dict: The updated metadata dictionary.
     """
     if metadata is None:
         metadata = {}
 
+    # Add current date and time to metadata
     now = datetime.datetime.now()
     date_now = now.strftime("%Y-%m-%d %H:%M:%S")
-    metadata['date_saved'] = date_now
+    metadata['timestamp'] = date_now
+
+    # Get aqua package version and add to metadata
+    try:
+        aqua_version = subprocess.run(["aqua", "--version"], stdout=subprocess.PIPE, text=True).stdout.strip()
+        metadata['aqua_version'] = aqua_version
+    except Exception as e:
+        metadata['aqua_version'] = f"Error retrieving version: {str(e)}"
+
+    # Add additional metadata fields
+    if additional_metadata:
+        metadata.update(additional_metadata)
+
     return metadata
 
 

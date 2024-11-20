@@ -1,5 +1,5 @@
 from aqua.logger import log_configure, log_history
-from aqua.util import add_pdf_metadata, add_png_metadata, update_metadata_with_date, ConfigPath
+from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata, ConfigPath
 import os
 import xarray as xr
 from datetime import datetime
@@ -14,31 +14,43 @@ class OutputSaver:
     customized naming based on provided parameters and metadata.
     """
 
-    def __init__(self, diagnostic: str, model: str, exp: str, diagnostic_product: str = None, catalog: str = None, loglevel: str = 'WARNING',
-                 default_path: str = '.', rebuild: bool = True):
+    def __init__(self, diagnostic: str, catalog: str = None, model: str = None, exp: str = None, diagnostic_product: str = None, loglevel: str = 'WARNING',
+                 default_path: str = '.', rebuild: bool = True, filename_keys: list = None):
         """
         Initialize the OutputSaver class to manage output file saving.
 
         Args:
             diagnostic (str): Name of the diagnostic.
-            model (str): Model used in the diagnostic.
-            exp (str): Experiment identifier.
+            catalog (str, optional): Catalog where the model is stored. Default is None.
+            model (str, optional): Model used in the diagnostic. Default is None.
+            exp (str, optional): Experiment identifier. Default is None.
             diagnostic_product (str, optional): Product of the diagnostic analysis.
-            catalog (str, optional): Catalog where to search for the triplet. Default to None will allow for autosearch in the installed catalogs.
             loglevel (str, optional): Log level for the class's logger.
             default_path (str, optional): Default path where files will be saved.
             rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
+            filename_keys (list, optional): List of keys to keep in the filename. Default is None, which includes all keys.
         """
         self.diagnostic = diagnostic
+        self.catalog = catalog if catalog is not None else ConfigPath().catalog
         self.model = model
         self.exp = exp
         self.diagnostic_product = diagnostic_product
-        self.catalog = catalog if catalog is not None else ConfigPath().catalog
         self.loglevel = loglevel
         self.default_path = default_path
         self.rebuild = rebuild
+        self.all_keys = [
+            'diagnostic', 'diagnostic_product', 'catalog', 'model', 'exp',
+            'var', 'model_2', 'exp_2', 'catalog_2', 'area', 'time_start', 'time_end', 'time_precision']
+        if filename_keys is not None:
+            # Validate that filename_keys are part of the allowed keys
+            for key in filename_keys:
+                if key not in self.all_keys:
+                    raise ValueError(f"Invalid key '{key}' in filename_keys. Allowed keys are: {self.all_keys}")
+            self.filename_keys = filename_keys
+        else:
+            self.filename_keys = self.all_keys
         self.logger = log_configure(log_level=self.loglevel, log_name='OutputSaver')
-
+        
     def update_diagnostic_product(self, diagnostic_product: str):
         """
         Update the diagnostic product for the instance.
@@ -77,7 +89,8 @@ class OutputSaver:
         """
         self.update_diagnostic_product(diagnostic_product)
 
-        if not self.diagnostic_product:
+        # Skip setting diagnostic_product if not required in filename_keys
+        if 'diagnostic_product' in self.filename_keys and not self.diagnostic_product:
             raise ValueError("The 'diagnostic_product' parameter is required and cannot be empty.")
 
         # Handle time formatting based on the specified precision
@@ -101,11 +114,40 @@ class OutputSaver:
             except (ValueError, TypeError) as e:
                 raise ValueError(f"Invalid date format: {e}")
 
-        additional_parts = [f"{key}_{value}" for key, value in sorted(kwargs.items())]
+        parts_dict = {
+            'diagnostic': self.diagnostic,
+            'diagnostic_product': self.diagnostic_product,
+            'catalog': self.catalog,
+            'model': self.model,
+            'exp': self.exp,
+            'var': var,
+            'catalog_2': catalog_2,
+            'model_2': model_2,
+            'exp_2': exp_2,
+            'area': area,
+            'time_start': time_parts[0] if time_parts else None,
+            'time_end': time_parts[1] if time_parts else None,
+            'time_precision': time_precision if time_parts else None
+        }
 
-        parts = [part for part in [self.diagnostic, self.diagnostic_product, var,
-                                   self.model, self.exp, self.catalog, model_2, exp_2, catalog_2, area] if part]
-        parts.extend(time_parts)
+        # If filename_keys are specified, only use those keys. Otherwise, use all available keys and kwargs
+        if self.filename_keys == self.all_keys:
+            additional_parts = [f"{key}_{value}" for key, value in sorted(kwargs.items()) if key not in parts_dict]
+        else:
+            additional_parts = [f"{key}_{value}" for key, value in sorted(kwargs.items()) if key in self.filename_keys and key not in parts_dict]
+        
+        # Ensure catalog_2 always comes before model_2 if both are provided
+        ordered_keys = []
+        for key in self.filename_keys:
+            if key == 'model_2' and 'catalog_2' in self.filename_keys and 'catalog_2' not in ordered_keys:
+                ordered_keys.append('catalog_2')
+            if key not in ordered_keys:
+                ordered_keys.append(key)
+        
+        # Filter parts based on ordered_keys, ensuring to follow the specified order
+        parts = [parts_dict[key] for key in ordered_keys if key in parts_dict and parts_dict[key] is not None]
+        
+        # Append additional parts and suffix
         parts.extend(additional_parts)
         parts.append(suffix)
 
@@ -143,15 +185,38 @@ class OutputSaver:
                                       time_precision=time_precision, area=area, suffix='nc', catalog_2=catalog_2, **kwargs)
 
         if path is None:
-            path = self.default_path
+            path = os.path.join(self.default_path, 'netcdf')
+        create_folder(folder=str(path), loglevel=self.loglevel)
         full_path = os.path.join(path, filename)
 
         if not self.rebuild and os.path.exists(full_path):
             self.logger.info(f"File already exists and rebuild is set to False: {full_path}")
             return full_path
 
-        # Add metadata if provided, including the current time
-        metadata = update_metadata_with_date(metadata)
+        # Add metadata if provided, including the current time and additional fields
+        additional_metadata = {
+            'diagnostic': self.diagnostic,
+            'model': self.model,
+            'experiment': self.exp,
+            'diagnostic_product': diagnostic_product,
+            'var': var,
+            'model_2': model_2,
+            'exp_2': exp_2,
+            'time_start': time_start,
+            'time_end': time_end,
+            'time_precision': time_precision,
+            'area': area,
+            'catalog': self.catalog,
+            'catalog_2': catalog_2,
+            'rebuild': str(self.rebuild)  # Convert rebuild to a string to make it compatible with NetCDF
+        }
+        # Include kwargs in additional_metadata
+        additional_metadata.update(kwargs)
+
+        # Filter out None values from additional_metadata
+        filtered_metadata = {key: value for key, value in additional_metadata.items() if value is not None}
+
+        metadata = update_metadata(metadata, filtered_metadata)
 
         # If metadata contains a history attribute, log the history
         if 'history' in metadata:
@@ -198,7 +263,9 @@ class OutputSaver:
             ValueError: If the provided fig parameter is not a valid matplotlib Figure.
         """
         if path is None:
-            path = self.default_path
+            path = os.path.join(self.default_path, 'pdf')
+        create_folder(folder=str(path), loglevel=self.loglevel)
+
         filename = self.generate_name(diagnostic_product=diagnostic_product, var=var, model_2=model_2, exp_2=exp_2,
                                       time_start=time_start, time_end=time_end, time_precision=time_precision, area=area,
                                       suffix='pdf', catalog_2=catalog_2, **kwargs)
@@ -217,8 +284,31 @@ class OutputSaver:
         else:
             raise ValueError("The provided fig parameter is not a valid matplotlib Figure or pyplot figure.")
 
-        # Update metadata with the current date and time
-        metadata = update_metadata_with_date(metadata)
+        # Add metadata if provided, including the current time and additional fields
+        additional_metadata = {
+            'diagnostic': self.diagnostic,
+            'model': self.model,
+            'experiment': self.exp,
+            'diagnostic_product': diagnostic_product,
+            'var': var,
+            'model_2': model_2,
+            'exp_2': exp_2,
+            'time_start': time_start,
+            'time_end': time_end,
+            'time_precision': time_precision,
+            'area': area,
+            'catalog': self.catalog,
+            'catalog_2': catalog_2,
+            'rebuild': str(self.rebuild)  # Convert rebuild to a string to make it compatible with NetCDF
+        }
+        # Include kwargs in additional_metadata
+        additional_metadata.update(kwargs)
+
+        # Filter out None values from additional_metadata
+        filtered_metadata = {key: value for key, value in additional_metadata.items() if value is not None}
+
+        metadata = update_metadata(metadata, filtered_metadata)
+
         add_pdf_metadata(full_path, metadata, loglevel=self.loglevel)
 
         self.logger.info(f"Saved PDF file at: {full_path}")
@@ -258,7 +348,9 @@ class OutputSaver:
                                       area=area, suffix='png', catalog_2=catalog_2, **kwargs)
 
         if path is None:
-            path = self.default_path
+            path = os.path.join(self.default_path, 'png')
+        create_folder(folder=str(path), loglevel=self.loglevel)
+
         full_path = os.path.join(path, filename)
 
         if not self.rebuild and os.path.exists(full_path):
@@ -274,8 +366,31 @@ class OutputSaver:
         else:
             raise ValueError("The provided fig parameter is not a valid matplotlib Figure or pyplot figure.")
 
-        # Update metadata with the current date and time
-        metadata = update_metadata_with_date(metadata)
+        # Add metadata if provided, including the current time and additional fields
+        additional_metadata = {
+            'diagnostic': self.diagnostic,
+            'model': self.model,
+            'experiment': self.exp,
+            'diagnostic_product': diagnostic_product,
+            'var': var,
+            'model_2': model_2,
+            'exp_2': exp_2,
+            'time_start': time_start,
+            'time_end': time_end,
+            'time_precision': time_precision,
+            'area': area,
+            'catalog': self.catalog,
+            'catalog_2': catalog_2,
+            'rebuild': str(self.rebuild)  # Convert rebuild to a string to make it compatible with NetCDF
+        }
+        # Include kwargs in additional_metadata
+        additional_metadata.update(kwargs)
+
+        # Filter out None values from additional_metadata
+        filtered_metadata = {key: value for key, value in additional_metadata.items() if value is not None}
+
+        metadata = update_metadata(metadata, filtered_metadata)
+
         add_png_metadata(full_path, metadata, loglevel=self.loglevel)
 
         self.logger.info(f"Saved PNG file to path: {full_path}")

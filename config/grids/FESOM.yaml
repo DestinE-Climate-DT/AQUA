@@ -27,6 +27,14 @@ grids:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level_v1.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
+  fesom-D3-hpz7-nested:
+    space_coord: ["ncells"]
+    path: '{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce.nc'
+  fesom-D3-hpz7-nested-3d:
+    path:
+      level: '{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce_level.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
 
   # FESOM oceanic healpix after 2023 update in land-sea-mask.
   # Notice that these are different from those above due to different land-sea mask
