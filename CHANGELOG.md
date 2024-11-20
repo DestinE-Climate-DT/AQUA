@@ -5,9 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-## [v0.13]
-
 Unreleased in the current development version:
+
+AQUA diagnostics complete list:
+
+AQUA diagnostic complete list:
+
+## [v0.13]
 
 AQUA diagnostics complete list:
 - Convert `aqua-analysis.sh` to Python with Subprocess and Multiprocessing Support (#1354)
