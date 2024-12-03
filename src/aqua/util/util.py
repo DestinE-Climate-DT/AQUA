@@ -431,3 +431,40 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+def load_and_override_output_config(config, args):
+    """
+    Load output configuration from YAML and override with command-line arguments if provided.
+
+    Args:
+        config (dict): Loaded configuration from YAML.
+        args: Parsed command-line arguments.
+
+    Returns:
+        dict: Dictionary with output configuration.
+    """
+    # Load the output configuration from YAML
+    output_config = config.get('output', {})
+
+    # Override with command-line arguments if provided, otherwise use config values
+    outputdir = getattr(args, 'outputdir', None) or output_config.get("outputdir")
+    if outputdir:
+        outputdir = os.path.expandvars(outputdir)
+
+    rebuild = getattr(args, 'rebuild', None) or output_config.get("rebuild")
+    save_pdf = getattr(args, 'save_pdf', None) or output_config.get("save_pdf")
+    save_png = getattr(args, 'save_png', None) or output_config.get("save_png")
+    save_netcdf = getattr(args, 'save_netcdf', None) or output_config.get("save_netcdf")
+    dpi = getattr(args, 'dpi', None) or output_config.get("dpi")
+    filename_keys = getattr(args, 'filename_keys', None) or output_config.get("filename_keys")
+
+    return {
+        "outputdir": outputdir,
+        "rebuild": rebuild,
+        "save_pdf": save_pdf,
+        "save_png": save_png,
+        "save_netcdf": save_netcdf,
+        "dpi": dpi,
+        "filename_keys": filename_keys
+    }
+

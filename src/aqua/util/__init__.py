@@ -8,7 +8,7 @@ from .graphics import coord_names, ticks_round, set_ticks
 from .sci_util import area_selection, check_coordinates
 from .util import generate_random_string, get_arg, create_folder, to_list
 from .util import file_is_complete, find_vert_coord
-from .util import files_exist
+from .util import files_exist, load_and_override_output_config
 from .util import extract_literal_and_numeric, add_pdf_metadata, add_png_metadata
 from .util import open_image, username, update_metadata
 from .yaml import load_yaml, dump_yaml, load_multi_yaml, eval_formula
@@ -25,7 +25,7 @@ __all__ = ['ConfigPath',
            'coord_names', 'ticks_round', 'set_ticks',
            'area_selection', 'check_coordinates',
            'generate_random_string', 'get_arg', 'create_folder', 'to_list',
-           'files_exist',
+           'files_exist', 'load_and_override_output_config',
            'file_is_complete', 'find_vert_coord',
            'extract_literal_and_numeric', 'add_pdf_metadata', 'add_png_metadata',
            'open_image', 'username', 'update_metadata',
