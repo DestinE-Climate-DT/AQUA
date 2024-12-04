@@ -43,22 +43,15 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str, loglevel:
         logger: Logger instance for logging messages.
         logfile (str): Path to the logfile for capturing the command output.
     """
-    try:
-        logfile = os.path.expandvars(logfile)
-        create_folder(os.path.dirname(logfile))
+    logfile = os.path.expandvars(logfile)
+    create_folder(os.path.dirname(logfile))
 
-        cmd = f"python {script_path} {extra_args} -l {loglevel} > {logfile} 2>&1"
-        logger.info(f"Running diagnostic {diagnostic}")
-        logger.debug(f"Command: {cmd}")
+    cmd = f"python {script_path} {extra_args} -l {loglevel} > {logfile} 2>&1"
+    logger.info(f"Running diagnostic {diagnostic}")
+    logger.debug(f"Command: {cmd}")
 
-        process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-        if process.returncode != 0:
-            logger.error(f"Error running diagnostic {diagnostic}: {process.stderr}")
-        else:
-            logger.info(f"Diagnostic {diagnostic} completed successfully.")
-    except Exception as e:
-        logger.error(f"Failed to run diagnostic {diagnostic}: {e}")
+    # Ensure to raise an exception if the command fails
+    subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
 
 def run_diagnostic_func(diagnostic: str, parallel: bool = False, config=None, model='default_model', exp='default_exp',
                         source='default_source', output_dir='./output', loglevel='INFO', logger=None, aqua_path='',
@@ -103,35 +96,55 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, config=None, mo
             "save_png": "--save_png",
             "rebuild": "--rebuild"
         }
-
+        config_args = ""
         for key, flag in flags.items():
             if key in output_config:
                 if output_config[key]:
-                    extra_args += f" {flag}"
+                    config_args += f" {flag}"
                 else:
-                    extra_args += f" --no_{key}"
+                    config_args += f" --no_{key}"
 
         # Add dpi if present in output_config
         if 'dpi' in output_config:
-            extra_args += f" --dpi {output_config['dpi']}"
+            config_args += f" --dpi {output_config['dpi']}"
 
         # Add filename_keys if present in output_config
         filename_keys = output_config.get('filename_keys')
         if filename_keys:
-            extra_args += f" --filename_keys {' '.join(map(str, filename_keys))}"
-
+            config_args += f" --filename_keys {' '.join(map(str, filename_keys))}"
 
     outname = f"{output_dir}/{diagnostic_config.get('outname', diagnostic)}"
-    args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args}"
+    args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} {config_args}"
 
-    run_diagnostic(
-        diagnostic=diagnostic,
-        script_path=os.path.join(aqua_path, "diagnostics", diagnostic_config.get('script_path', f"{diagnostic}/cli/cli_{diagnostic}.py")),
-        extra_args=args,
-        loglevel=loglevel,
-        logger=logger,
-        logfile=logfile
-    )
+    try:
+        # Try running with all arguments, including the extra output configuration
+        run_diagnostic(
+            diagnostic=diagnostic,
+            script_path=os.path.join(aqua_path, "diagnostics", diagnostic_config.get('script_path', f"{diagnostic}/cli/cli_{diagnostic}.py")),
+            extra_args=args,
+            loglevel=loglevel,
+            logger=logger,
+            logfile=logfile
+        )
+        logger.info(f"Diagnostic {diagnostic} completed successfully.")
+    except subprocess.CalledProcessError as e:
+        logger.warning(f"Failed with extra config arguments, retrying without them: {e}")
+
+        # Remove unsupported config arguments and retry
+        args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args}"
+        try:
+            run_diagnostic(
+                diagnostic=diagnostic,
+                script_path=os.path.join(aqua_path, "diagnostics", diagnostic_config.get('script_path', f"{diagnostic}/cli/cli_{diagnostic}.py")),
+                extra_args=args,
+                loglevel=loglevel,
+                logger=logger,
+                logfile=logfile
+            )
+            logger.info(f"Diagnostic {diagnostic} completed successfully after retrying without extra arguments.")
+        except subprocess.CalledProcessError as e_retry:
+            # Log the final error if retry also fails
+            logger.error(f"Error running diagnostic {diagnostic} after retrying without extra arguments: {e_retry.stderr}")
 
 def get_args():
     """

@@ -23,7 +23,7 @@ job:
     run_dummy: false
 
     output:
-      outputdir: "${AQUA}/cli/aqua-analysis/output_3_dec_test_18"
+      outputdir: "${AQUA}/cli/aqua-analysis/output"
       rebuild: true
       filename_keys: null # or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
       save_netcdf: true
