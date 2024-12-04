@@ -21,9 +21,15 @@ job:
 
     # Run a dummy analysis to test the configuration and the presence of needed data
     run_dummy: false
-    
-    # Default output directory for the analysis. Can be overridden by the command line arguments
-    outputdir: "${AQUA}/cli/aqua-analysis/output" 
+
+    output:
+      outputdir: "${AQUA}/cli/aqua-analysis/output_3_dec_test_18"
+      rebuild: true
+      filename_keys: null # or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
+      save_netcdf: true
+      save_pdf: true
+      save_png: true
+      dpi: 300
 
     # Default values, overriden from command line arguments
     # catalog: "lumi"  # The catalog to use for the analysis, usually defined elsewhere

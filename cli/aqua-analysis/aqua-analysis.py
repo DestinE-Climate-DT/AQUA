@@ -4,7 +4,7 @@ import sys
 import subprocess
 import argparse
 from aqua.logger import log_configure
-from aqua.util import load_yaml, create_folder
+from aqua.util import load_yaml, create_folder, load_and_override_output_config
 
 def run_command(cmd: str, log_file: str = None, logger=None) -> int:
     """
@@ -60,7 +60,9 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str, loglevel:
     except Exception as e:
         logger.error(f"Failed to run diagnostic {diagnostic}: {e}")
 
-def run_diagnostic_func(diagnostic: str, parallel: bool = False, config=None, model='default_model', exp='default_exp', source='default_source', output_dir='./output', loglevel='INFO', logger=None, aqua_path=''):
+def run_diagnostic_func(diagnostic: str, parallel: bool = False, config=None, model='default_model', exp='default_exp',
+                        source='default_source', output_dir='./output', loglevel='INFO', logger=None, aqua_path='',
+                        output_config=None):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
 
@@ -75,6 +77,7 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, config=None, mo
         loglevel (str): Log level for the diagnostic.
         logger: Logger instance for logging messages.
         aqua_path (str): AQUA path.
+        output_config (dict): Output configuration dictionary from YAML.
     """
     diagnostic_config = config.get('diagnostics', {}).get(diagnostic)
     if diagnostic_config is None:
@@ -91,6 +94,32 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, config=None, mo
         nworkers = diagnostic_config.get('nworkers')
         if nworkers is not None:
             extra_args += f" --nworkers {nworkers}"
+
+    # Incorporate output configuration arguments if they are True or False
+    if output_config:
+        flags = {
+            "save_netcdf": "--save_netcdf",
+            "save_pdf": "--save_pdf",
+            "save_png": "--save_png",
+            "rebuild": "--rebuild"
+        }
+
+        for key, flag in flags.items():
+            if key in output_config:
+                if output_config[key]:
+                    extra_args += f" {flag}"
+                else:
+                    extra_args += f" --no_{key}"
+
+        # Add dpi if present in output_config
+        if 'dpi' in output_config:
+            extra_args += f" --dpi {output_config['dpi']}"
+
+        # Add filename_keys if present in output_config
+        filename_keys = output_config.get('filename_keys')
+        if filename_keys:
+            extra_args += f" --filename_keys {' '.join(map(str, filename_keys))}"
+
 
     outname = f"{output_dir}/{diagnostic_config.get('outname', diagnostic)}"
     args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args}"
@@ -110,12 +139,23 @@ def get_args():
     """
     parser = argparse.ArgumentParser(description="Run diagnostics for the AQUA project.")
 
+    # Model-related arguments
     parser.add_argument("-a", "--model_atm", type=str, help="Atmospheric model")
     parser.add_argument("-o", "--model_oce", type=str, help="Oceanic model")
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
+
+    # Output-related arguments
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
+    parser.add_argument("--rebuild", action="store_true", help="Whether to rebuild the plots (default: False)")
+    parser.add_argument("--save_pdf", action="store_true", help="Whether to save plots as PDF (default: False)")
+    parser.add_argument("--save_png", action="store_true", help="Whether to save plots as PNG (default: False)")
+    parser.add_argument("--save_netcdf", action="store_true", help="Whether to save results as NetCDF (default: False)")
+    parser.add_argument("--dpi", type=int, required=False, help="DPI for saved images")
+    parser.add_argument("--filename_keys", nargs='+', help="Keys to be used in the output filename (list)")
+
+    # Configuration and logging-related arguments
     parser.add_argument("-f", "--config", type=str, default="$AQUA/cli/aqua-analysis/config.aqua-analysis.yaml",
                         help="Configuration file")
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
@@ -126,7 +166,6 @@ def get_args():
                         default=None, help="Log level")
 
     return parser.parse_args()
-
 
 def get_aqua_paths(*, args, logger):
     """
@@ -156,7 +195,6 @@ def get_aqua_paths(*, args, logger):
     except Exception as e:
         logger.error(f"Error getting AQUA path or config: {e}")
         sys.exit(1)
-
 
 def main():
     """
@@ -192,7 +230,10 @@ def main():
     else:
         logger.info(f"Successfully validated inputs: Model = {model}, Experiment = {exp}, Source = {source}.")
 
-    output_dir = f"{outputdir}/{model}/{exp}"
+    # Load and override output configuration
+    output_config = load_and_override_output_config(config['job'], args)
+
+    output_dir = f"{output_config['outputdir']}/{model}/{exp}"
     output_dir = os.path.expandvars(output_dir)
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA"] = aqua_path
@@ -232,7 +273,8 @@ def main():
                 output_dir=output_dir,
                 loglevel=loglevel,
                 logger=logger,
-                aqua_path=aqua_path
+                aqua_path=aqua_path,
+                output_config=output_config  # Pass the output config to the function
             ))
 
         for future in as_completed(futures):

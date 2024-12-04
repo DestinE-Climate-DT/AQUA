@@ -42,8 +42,29 @@ def parse_arguments(args):
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
 
-    return parser.parse_args(args)
+    # Adding new output configuration options
+    parser.add_argument("--rebuild", action="store_true",
+                        help="Whether to rebuild the plots")
+    parser.add_argument("--no_rebuild", action="store_true",
+                        help="Disable rebuilding of plots")
+    parser.add_argument("--save_netcdf", action="store_true",
+                        help="Whether to save plots as NetCDF")
+    parser.add_argument("--no_save_netcdf", action="store_true",
+                        help="Disable saving plots as NetCDF")
+    parser.add_argument("--save_pdf", action="store_true",
+                        help="Whether to save plots as PDF")
+    parser.add_argument("--no_save_pdf", action="store_true",
+                        help="Disable saving plots as PDF")
+    parser.add_argument("--save_png", action="store_true",
+                        help="Whether to save plots as PNG")
+    parser.add_argument("--no_save_png", action="store_true",
+                        help="Disable saving plots as PNG")
+    parser.add_argument("--dpi", type=int, required=False,
+                        help="DPI for saved images")
+    parser.add_argument("--filename_keys", type=str, nargs='*',
+                        help="Keys to use for filenames")
 
+    return parser.parse_args(args)
 
 def get_plot_options(config: dict = None,
                      var: str = None):
@@ -129,6 +150,18 @@ if __name__ == '__main__':
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
     models[0]['source'] = get_arg(args, 'source', models[0]['source'])
 
+    # Override output parameters if provided as command-line arguments
+    outputdir = get_arg(args, "outputdir", config['output'].get("outputdir"))
+    rebuild = not args.no_rebuild if args.rebuild or args.no_rebuild else config['output'].get("rebuild")
+    save_netcdf = not args.no_save_netcdf if args.save_netcdf or args.no_save_netcdf else config['output'].get("save_netcdf")
+    save_pdf = not args.no_save_pdf if args.save_pdf or args.no_save_pdf else config['output'].get("save_pdf")
+    save_png = not args.no_save_png if args.save_png or args.no_save_png else config['output'].get("save_png")
+    dpi = args.dpi if args.dpi is not None else config['output'].get("dpi")
+    filename_keys = args.filename_keys if args.filename_keys else config['output'].get("filename_keys", [])
+
+    logger.debug(f"Saving settings - NetCDF: {'enabled' if save_netcdf else 'disabled'}, PDF: {'enabled' if save_pdf else 'disabled'}, PNG: {'enabled' if save_png else 'disabled'}")
+
+    # Prepare model-related lists for the diagnostics
     logger.debug("Analyzing models:")
     catalogs_list = []
     models_list = []
@@ -141,12 +174,6 @@ if __name__ == '__main__':
         models_list.append(model['model'])
         exp_list.append(model['exp'])
         source_list.append(model['source'])
-
-    outputdir = get_arg(args, "outputdir", config['output'].get("outputdir"))
-    rebuild = config['output'].get("rebuild")
-    save_pdf = config['output'].get("save_pdf")
-    save_png = config['output'].get("save_png")
-    dpi = config['output'].get("dpi")
 
     if "timeseries" in config:
         logger.info("Plotting timeseries")
@@ -181,6 +208,8 @@ if __name__ == '__main__':
                             outdir=outputdir,
                             loglevel=loglevel,
                             rebuild=rebuild,
+                            filename_keys=filename_keys,
+                            save_netcdf=save_netcdf,
                             save_pdf=save_pdf,
                             save_png=save_png,
                             dpi=dpi)
@@ -228,6 +257,8 @@ if __name__ == '__main__':
                             outdir=outputdir,
                             loglevel=loglevel,
                             rebuild=rebuild,
+                            filename_keys=filename_keys,
+                            save_netcdf=save_netcdf,
                             save_pdf=save_pdf,
                             save_png=save_png,
                             dpi=dpi)
@@ -275,6 +306,8 @@ if __name__ == '__main__':
                          regrid=regrid,
                          loglevel=loglevel,
                          rebuild=rebuild,
+                         filename_keys=filename_keys,
+                         save_netcdf=save_netcdf,
                          save_pdf=save_pdf,
                          save_png=save_png,
                          dpi=dpi)
@@ -318,6 +351,8 @@ if __name__ == '__main__':
                                units=units,
                                loglevel=loglevel,
                                rebuild=rebuild,
+                               filename_keys=filename_keys,
+                               save_netcdf=save_netcdf,
                                save_pdf=save_pdf,
                                save_png=save_png,
                                dpi=dpi)
@@ -360,6 +395,8 @@ if __name__ == '__main__':
                                units=units,
                                loglevel=loglevel,
                                rebuild=rebuild,
+                               filename_keys=filename_keys,
+                               save_netcdf=save_netcdf,
                                save_pdf=save_pdf,
                                save_png=save_png,
                                dpi=dpi)
