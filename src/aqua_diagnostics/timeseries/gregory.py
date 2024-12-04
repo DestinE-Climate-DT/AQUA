@@ -27,7 +27,7 @@ class GregoryPlot():
                  ts_name='2t', toa_name=['mtnlwrf', 'mtnswrf'],
                  ts_std_start='1980-01-01', ts_std_end='2010-12-31',
                  toa_std_start='2001-01-01', toa_std_end='2020-12-31',
-                 ref=True, save=True,
+                 ref=True, save_netcdf=True,
                  outdir='./',
                  loglevel='WARNING',
                  rebuild=True, filename_keys=None,
@@ -58,7 +58,7 @@ class GregoryPlot():
             ref (bool): If True, reference data is plotted.
                         Default is True. Reference data are ERA5 for 2m temperature
                         and CERES for net radiation at TOA.
-            save (bool): If True, save the figure. Default is True.
+            save_netcdf (bool): If True, save the NetCDF file. Default is True.
             outdir (str): Output directory. Default is './'.
             loglevel (str): Logging level. Default is WARNING.
             rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
@@ -104,9 +104,9 @@ class GregoryPlot():
                           f"2m temperature from {time_to_string(self.ts_std_start)} to {time_to_string(self.ts_std_end)}, "
                           f"net radiation at TOA from {time_to_string(self.toa_std_start)} to {time_to_string(self.toa_std_end)}") # noqa
 
-        self.save = save
-        if self.save is False:
-            self.logger.info("No output file will be saved.")
+        self.save_netcdf = save_netcdf
+        if self.save_netcdf is False:
+            self.logger.info("No NetCDF file will be saved.")
         self.outdir = outdir
 
         self.diagnostic_product = 'gregory_plot'
@@ -124,8 +124,8 @@ class GregoryPlot():
         self.retrieve_data()
         self.retrieve_ref()
         self.plot()
-        if self.save:
-            self.save_netcdf()
+        if self.save_netcdf:
+            self._save_netcdf()
         self.cleanup()
 
     def retrieve_data(self):
@@ -327,7 +327,7 @@ class GregoryPlot():
 
             ax2.legend()
 
-        if self.save:
+        if self.save_pdf or self.save_png:
             self.save_image(fig)
 
     def save_image(self, fig):
@@ -353,7 +353,7 @@ class GregoryPlot():
         if self.save_png:
             output_saver.save_png(fig, metadata=metadata, **common_save_args)
 
-    def save_netcdf(self):
+    def _save_netcdf(self):
         """Save the data to a netCDF file."""
 
         # Loop through the models and save their corresponding data

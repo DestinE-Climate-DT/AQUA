@@ -38,7 +38,7 @@ class Timeseries():
                  plot_kw={'ylim': {}}, longname=None,
                  units=None, extend=True,
                  lon_limits=None, lat_limits=None,
-                 save=True,
+                 save_netcdf=True,
                  outdir='./',
                  loglevel='WARNING',
                  rebuild=None, filename_keys=None,
@@ -68,7 +68,7 @@ class Timeseries():
             extend (bool): Extend the reference range. Default is True.
             lon_limits (list): Longitude limits of the area to evaluate. Default is None.
             lat_limits (list): Latitude limits of the area to evaluate. Default is None.
-            save (bool): Save the figure. Default is True.
+            save_netcdf (bool): Save the NetCDF. Default is True.
             outdir (str): Output directory. Default is "./".
             loglevel (str): Log level. Default is "WARNING".
             rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
@@ -127,9 +127,9 @@ class Timeseries():
         self.lon_limits = lon_limits
         self.lat_limits = lat_limits
 
-        self.save = save
-        if self.save is False:
-            self.logger.info("Figure will not be saved")
+        self.save_netcdf = save_netcdf
+        if self.save_netcdf is False:
+            self.logger.info("NetCDF will not be saved")
         self.outdir = outdir
 
         self.diagnostic_product = 'timeseries'
@@ -138,6 +138,8 @@ class Timeseries():
         self.filename_keys = filename_keys
         self.save_pdf = save_pdf
         self.save_png = save_png
+        if not self.save_png and not self.save_pdf:
+            self.logger.info("Figure will not be saved")
         self.dpi = dpi
 
     def run(self):
@@ -145,8 +147,8 @@ class Timeseries():
         self.retrieve_data()
         self.retrieve_ref(extend=self.extend)
         self.plot()
-        if self.save:
-            self.save_netcdf()
+        if self.save_netcdf:
+            self._save_netcdf()
         self.cleanup()
 
     def retrieve_ref(self, extend=True):
@@ -337,7 +339,7 @@ class Timeseries():
                                  data_labels=data_labels,
                                  title=title)
 
-        if self.save:
+        if self.save_pdf or self.save_png:
             self.save_image(fig, ref_label)
 
     def save_image(self, fig, ref_label):
@@ -362,7 +364,7 @@ class Timeseries():
         if self.save_png:
             output_saver.save_png(fig, metadata=metadata, **common_save_args)
 
-    def save_netcdf(self):
+    def _save_netcdf(self):
         """
         Save the data to a netcdf file.
         Every model-exp-source combination is saved in a separate file.

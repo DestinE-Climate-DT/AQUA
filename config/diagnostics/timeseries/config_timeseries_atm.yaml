@@ -11,6 +11,7 @@ output:
   outputdir: "./"
   rebuild: true
   filename_keys: null # or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
+  save_netcdf: true
   save_pdf: true
   save_png: true
   dpi: 300

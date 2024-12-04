@@ -29,7 +29,7 @@ class SeasonalCycle(Timeseries):
                  startdate=None, enddate=None,
                  std_startdate=None, std_enddate=None,
                  plot_kw={'ylim': {}},
-                 save=True,
+                 save_netcdf=True,
                  outdir='./',
                  longname=None, units=None,
                  lon_limits=None, lat_limits=None,
@@ -54,7 +54,7 @@ class SeasonalCycle(Timeseries):
             std_startdate: the start date to evaluate the standard deviation
             std_enddate: the end date to evaluate the standard deviation
             plot_kw: the keyword arguments to pass to the plot
-            save: if True, save the figure. Default is True.
+            save_netcdf: if True, save the NetCDF. Default is True.
             outdir: the output directory
             longname: the long name of the variable. Override the attribute in the data file.
             units: the units of the variable. Override the attribute in the data file.
@@ -78,7 +78,7 @@ class SeasonalCycle(Timeseries):
                          monthly_std=True, annual_std=False,
                          std_startdate=std_startdate, std_enddate=std_enddate,
                          plot_kw=plot_kw,
-                         save=save,
+                         save_netcdf=save_netcdf,
                          outdir=outdir,
                          longname=longname, units=units,
                          lon_limits=lon_limits, lat_limits=lat_limits,
@@ -164,8 +164,9 @@ class SeasonalCycle(Timeseries):
                                     loglevel=self.loglevel,
                                     title=title)
 
-        if self.save:
+        if self.save_pdf or self.save_png:
             self.save_seasonal_image(fig, ref_label)
+        if self.save_netcdf:
             self.save_seasonal_netcdf()
 
     def save_seasonal_image(self, fig, ref_label):
