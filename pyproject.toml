@@ -54,7 +54,7 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid==0.0.6",
+    "smmregrid==0.1.0",
     "sparse",
     "xarray",
     "kerchunk",

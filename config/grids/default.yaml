@@ -13,7 +13,8 @@ cdo-paths: # to be checked
   icon: /pool/data/ICON
 
 # Available grids
-# extra is an extra special cdo command to be applied before generating the weights
+# cdo_extra is an extra special cdo command to be applied before generating the weights
+# cdo_options similarly to be used to pass to cdo specific options
 grids:
   # default
   lon-lat:

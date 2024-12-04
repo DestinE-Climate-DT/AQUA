@@ -76,18 +76,18 @@ grids:
       nz1: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz1.nc'
     space_coord: ["nod2"]
     vert_coord: ["nz", "nz1"]
-    extra: 
+    cdo_extra: 
     - -setgrid,'{{ grids }}/FESOM/NG5_griddes_nodes_IFS.nc' 
   ng5-elems-2d:
     space_coord: ['elem']
-    extra: 
+    cdo_extra: 
     - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc' 
   ng5-elems-3d:
     path:
       nz1: '{{ grids }}/FESOM/NG5_elem_fesom_mask_nz1.nc'
     space_coord: ["elem"]
     vert_coord: ["nz1"]
-    extra: 
+    cdo_extra: 
     - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc'
 
   # FESOM interpolated

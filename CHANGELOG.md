@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- Support for new smmregrid==0.1.0 including simpler weights and area generation (#1395)
+- Removing cdo pin for more recent versions (#1395)
+- Change `bridge_end_date` convention (#1498)
 - `catgen` to support data bridge options (#1499)
 - Enhance OutputSaver with Improved File Handling, Logging, and NetCDF Write Modes (#1495)
 - Introduction a specific pipeline and tests for `catgen`utiliy (#1505)
@@ -16,7 +19,7 @@ AQUA core complete list:
 - Introduction of a convention table for the fixer, in order to create a more general fixer (#1488, #1506)
 - Refactor of `cli_lra_parallel_slurm.py` to work with container via jinja (#1497) 
 - Convert `aqua-analysis.sh` to Python with Subprocess and Multiprocessing Support (#1354)
-- Eccodes version 2.38.3 and new base container for aqua-container (#1441)
+- New base container for aqua-container (#1441)
 - Autodetection of latest AQUA in `load-aqua-container.sh` script (#1437)
 - Update Metadata Handling for NetCDF, PDF, and PNG Outputs (#1430)
 - Add instructions to install AQUA on MN5 (#1468)

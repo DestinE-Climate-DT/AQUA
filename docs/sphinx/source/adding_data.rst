@@ -204,7 +204,7 @@ Some of the parameters are here described:
 .. option:: bridge_end_date
 
     This optional date is used for cases where part of the data are on the HPC FDB and part on the databridge.
-    This is the first date/time (included) from which data are still on the HPC. Before all data are assumed to be on the databridge.
+    This is the last date/time (included) for which data are stored on the databridge. More recent data are assumed to be on the HPC.    
     If set to "complete" then all data are assumed to be on the bridge.
     It can also be set to a filename, from which to read the date of the data which were last wiped from the HPC (in YYYYMMDD format).
 
@@ -384,7 +384,8 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   In all the cases, the ``2dm`` grid will be applied to the data.
 - **vert_coords** (if applicable): Vertical coordinate options for the grid.
   Specific for oceanic models where interpolation is changing at each depth level.
-- **extra** (if applicable): Additional CDO command-line options to be used to process the files defined in ``path``.
+- **cdo_extra** (if applicable): Additional CDO command to be used to process the files defined in ``path``.
+- **cdo_options** (if applicable): Additional CDO options to be used to process the files defined in ``path``.
 - **cellareas**, **cellarea_var** (if applicable): Optional path and variable name where to specify a file to retrieve
   the grid area cells when the grid shape is too complex for being automatically computed by CDO.
 - **regrid_method** (if applicable): Alternative CDO regridding method which is not the ``ycon`` default.

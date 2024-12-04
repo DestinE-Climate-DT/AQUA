@@ -12,11 +12,11 @@ grids:
   R02B08: # ICON grid R02B08, corresponding to 10km resolution
     path: '{{ grids }}/ICON/icon_grid_0033_R02B08_G.nc'
     space_coord: ["cell"]
-    extra: -selname,cell_index
+    cdo_extra: -selname,cell_index
   R02B09: # ICON grid R02B09, corresponding to 5km resolution
     path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
     space_coord: ["cell"]
-    extra: -selname,cell_index
+    cdo_extra: -selname,cell_index
   # R02B09_oce:  #not working!!! wrong vert coordinates?
   #   path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
   #   space_coord: ["cell"]
@@ -24,7 +24,7 @@ grids:
   #   vert_coord: ["depth_half", "depth_full"]
   icon-R02B09-intaketest: 
       path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
-      extra: -selname,cell_index
+      cdo_extra: -selname,cell_index
       space_coord: ["ncells"]
   icon-R02B08-hp-nested: # NG4, from ICON grid R02B08, corresponding to 10km resolution, 72 depth_full levels
     path:

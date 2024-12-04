@@ -13,7 +13,7 @@ grids:
   test-pi-2d:
     path: '{{ grids }}/pi_griddes_nodes_IFS.nc'
     #space_coord: [nod2]
-    extra:
+    cdo_extra:
     - -setgrid,{{ grids }}/pi_griddes_nodes_IFS.nc
     - -selname,cell_area
   test-pi-3d:
@@ -22,14 +22,16 @@ grids:
       nz: '{{ grids }}/pi_fesom_mask_nz.nc'
     space_coord: [nod2]
     vert_coord: [nz1, nz]
-    extra:
+    cdo_extra:
     - -setgrid,{{ grids }}/pi_griddes_nodes_IFS.nc
   # ICON
-  test-healpix: {path: '{{ grids }}/icon_healpix0.nc'} #space_coord: [x]
+  test-healpix: 
+    path: '{{ grids }}/icon_healpix0.nc'
+    cdo_options: --force
   test-r2b0: {path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc} #space_coord: [cell]
   test-eORCA1-3d:
     path: 
       level: '{{ grids }}/NEMO/test-eorca1_3D.nc'
     #vert_coord: ["level"]
-    extra: 
+    cdo_extra: 
       - -selname,dummy
