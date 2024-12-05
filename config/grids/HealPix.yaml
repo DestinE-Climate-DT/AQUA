@@ -13,6 +13,7 @@ grids:
     vert_coord: ["2d"]
     path: '{{ grids }}/HealPix/hpz2_nested_atm.nc'
   hpz3-nested: 
+    cdo_options: "--force"
     space_coord: ["ncells"]
     vert_coord: ["2d"]
     path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
