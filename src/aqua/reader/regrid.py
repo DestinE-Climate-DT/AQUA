@@ -12,13 +12,14 @@ from aqua.util import to_list
 class RegridMixin():
     """Regridding mixin for the Reader class"""
 
-    def _make_dst_area_file(self, areafile, grid):
+    def _make_dst_area_file(self, areafile, grid_name, grid_dict):
         """
         Helper function to create destination (regridded) area files.
 
         Args:
             areafile (str): The path to the destination area file to be created.
-            grid (str): The destination grid specification.
+            grid_name (str): The destination grid specification.
+            grid_dict (dict): The dictionary containing the grid specifications.
 
         Returns:
             None
@@ -27,9 +28,12 @@ class RegridMixin():
         self.logger.warning("Destination areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
 
-        generator = CdoGenerate(source_grid=None, target_grid=grid,
-                                cdo_extra=None,
-                                cdo_options=None, cdo_download_path=None, 
+        cdo_extra = grid_dict.get("cdo_extra", [])
+        cdo_options = grid_dict.get("cdo_options", [])
+
+        generator = CdoGenerate(source_grid=None, target_grid=grid_name,
+                                cdo_extra=cdo_extra, cdo_options=cdo_options,
+                                cdo_download_path=None,
                                 cdo_icon_grids=None,
                                 cdo=self.cdo, loglevel=self.loglevel)
         grid_area = generator.areas(target=True)['cell_area']

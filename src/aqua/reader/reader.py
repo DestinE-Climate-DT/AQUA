@@ -424,8 +424,17 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         if rebuild or not os.path.exists(self.dst_areafile):
             if os.path.exists(self.dst_areafile):
                 os.unlink(self.dst_areafile)
+            # We added the possibility to have target grids
+            # with a dictionary so we may need to extract the grid
+            # name and the grid dictionary.
             grid = cfg_regrid["grids"][self.dst_grid_name]
-            self._make_dst_area_file(self.dst_areafile, grid)
+            if isinstance(grid, dict):
+                grid_name = self.dst_grid_name
+                grid_dict = grid
+            else:
+                grid_name = grid
+                grid_dict = None
+            self._make_dst_area_file(self.dst_areafile, grid_name, grid_dict)
 
         # open the area file and possibily fix it
         self.dst_grid_area = xr.open_mfdataset(self.dst_areafile).cell_area
