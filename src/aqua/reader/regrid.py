@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 import xarray as xr
 from smmregrid import CdoGenerate
+from aqua.util import to_list
+
 
 class RegridMixin():
     """Regridding mixin for the Reader class"""
@@ -58,14 +60,13 @@ class RegridMixin():
         Returns:
             None
         """
-       
         if self.vert_coord and self.vert_coord != ["2d"]:
             vert_coord = self.vert_coord[0]  # We need only the first one for areas
         else:
             vert_coord = None
 
         sgrid = self._get_source_grid(source_grid, vert_coord)
-       
+
         self.logger.warning("Source areas file not found: %s", areafile)
         self.logger.warning("Attempting to generate it ...")
 
@@ -77,11 +78,10 @@ class RegridMixin():
         #                                    extra=src_extra)
 
         generator = CdoGenerate(sgrid, cdo_extra=src_extra,
-                                cdo_options=None, cdo_download_path=gridpath, 
+                                cdo_options=None, cdo_download_path=gridpath,
                                 cdo_icon_grids=icongridpath,
                                 cdo=self.cdo, loglevel=self.loglevel)
         grid_area = generator.areas()['cell_area']
-
 
         # Make sure that the new DataArray uses the expected spatial dimensions
         grid_area = _rename_dims(grid_area, self.src_space_coord)
@@ -134,8 +134,7 @@ class RegridMixin():
             formatted_time = f'{hours} hours, {minutes} minutes'
             self.logger.warning(f'Time to generate the weights will take approximately {formatted_time}.')
 
-
-    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, method='ycon', regrid=None, extra=None, 
+    def _make_weights_file(self, weightsfile, source_grid, cfg_regrid, method='ycon', regrid=None, extra=None,
                            vert_coord=None, original_grid_size=None, nproc=None):
         """
         Helper function to produce weights file.
@@ -148,10 +147,10 @@ class RegridMixin():
             extra (str or list, optional): Extra command(s) to apply to source grid before weight generation. Defaults to None.
             vert_coord (str, optional): The vertical coordinate to use for weight generation. Defaults to None.
             method (str, optional): The interpolation method to be used (see CDO manual). Defaults to 'ycon'.
+
         Returns:
             None
         """
-
         sgrid = self._get_source_grid(source_grid, vert_coord)
 
         self.logger.warning("Weights file not found: %s", weightsfile)
@@ -160,45 +159,56 @@ class RegridMixin():
         if vert_coord == "2d" or vert_coord == "2dm":  # if 2d we need to pass None to smmregrid
             vert_coord = None
 
-        width, height = map(int, cfg_regrid['grids'][regrid][1:].split('x'))
-        new_grid_size = width * height
-        
-        total_size = sgrid.sizes
-        total_elements = 1
-        for dim_size in total_size.values():
-            total_elements *= dim_size
+        # For HealPix targets we need to read a dictionary, since also for target we may have extra options
+        target_grid = cfg_regrid["grids"][regrid]
+        if isinstance(target_grid, dict):
+            target_grid_name = regrid
+            tgt_options = target_grid.get("cdo_options", [])
+            tgt_extra = target_grid.get("cdo_extra", [])
 
-        if original_grid_size > 0:  # Prevent division by zero
-            vert_coord_size = total_elements / original_grid_size
-        else:
-            vert_coord_size = 1
+            self.logger.info("Target grid is a dictionary, using target grid name instead: %s", target_grid_name)
+        else:  # Target grid is a string so we do not look for extra options
+            target_grid_name = target_grid
+            tgt_options = []
+            tgt_extra = []
 
-        self._weights_generation_time(original_grid_size=original_grid_size,
-                                      new_grid_size=new_grid_size, vert_coord_size=vert_coord_size, nproc=nproc)
+            # The evaluation of the weights generation time is only done for regular grids at the moment
+            width, height = map(int, cfg_regrid['grids'][regrid][1:].split('x'))
+            new_grid_size = width * height
 
-        # hack to  pass a correct list of all options
+            total_size = sgrid.sizes
+            total_elements = 1
+            for dim_size in total_size.values():
+                total_elements *= dim_size
+
+            if original_grid_size > 0:  # Prevent division by zero
+                vert_coord_size = total_elements / original_grid_size
+            else:
+                vert_coord_size = 1
+
+            self._weights_generation_time(original_grid_size=original_grid_size,
+                                          new_grid_size=new_grid_size, vert_coord_size=vert_coord_size, nproc=nproc)
+
+        # Hack to pass a correct list of all options
         src_extra = source_grid.get("cdo_extra", [])
         src_options = source_grid.get("cdo_options", [])
-        if src_extra:
-            if not isinstance(src_extra, list):
-                src_extra = [src_extra]
+        cdo_options = to_list(src_options) + to_list(tgt_options)
+        cdo_extra = to_list(src_extra) + to_list(tgt_extra)
         if extra:
-            extra = [extra]
-        else:
-            extra = []
-        extra = extra + src_extra
+            cdo_extra = cdo_extra + to_list(extra)
 
         sgrid.load()  # load the data to avoid problems with dask in smmregrid
-        sgrid = sgrid.compute()  # for some reason both lines are needed 
-         
+        sgrid = sgrid.compute()  # for some reason both lines are needed
+
         generator = CdoGenerate(source_grid=sgrid,
-                                target_grid=cfg_regrid["grids"][regrid],
+                                target_grid=target_grid_name,
                                 cdo_download_path=cfg_regrid["cdo-paths"]["download"],
                                 cdo_icon_grids=cfg_regrid["cdo-paths"]["icon"],
-                                cdo_extra=extra,
-                                cdo_options=src_options,
+                                cdo_extra=cdo_extra,
+                                cdo_options=cdo_options,
                                 cdo=self.cdo,
                                 loglevel=self.loglevel)
+
         weights = generator.weights(method=method, vert_coord=vert_coord, nproc=self.nproc)
         # weights = rg.cdo_generate_weights(source_grid=sgrid,
         #                                   target_grid=cfg_regrid["grids"][regrid],

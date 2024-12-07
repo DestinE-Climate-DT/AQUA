@@ -45,3 +45,5 @@ grids:
   r200: r180x90
   r250s: r144x73
   r250: r144x72
+  hpz3:
+    cdo_options: "--force"
