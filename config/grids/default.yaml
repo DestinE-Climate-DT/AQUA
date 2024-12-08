@@ -45,5 +45,7 @@ grids:
   r200: r180x90
   r250s: r144x73
   r250: r144x72
-  hpz3:
+  hp3_ring:
+    cdo_options: "--force"
+  hp9_ring:
     cdo_options: "--force"
