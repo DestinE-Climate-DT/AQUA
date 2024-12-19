@@ -110,7 +110,7 @@ class Teleconnection():
         self.outputdir = outputdir
 
         # Teleconnection variables
-        avail_telec = ['NAO', 'ENSO', 'MJO']
+        avail_telec = ['NAO', 'ENSO', 'MJO', "QBO"]
         if telecname in avail_telec:
             self.telecname = telecname
             if self.telecname == 'MJO':

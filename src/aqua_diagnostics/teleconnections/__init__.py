@@ -5,6 +5,7 @@ from .index import regional_mean_anomalies
 from .mjo import mjo_hovmoller
 from .plots import index_plot, indexes_plot
 from .plots import maps_diffs_plot
+from .qbo import QBO
 from .statistics import reg_evaluation, cor_evaluation
 from .tc_class import Teleconnection
 from .tools import TeleconnectionsConfig
@@ -16,6 +17,7 @@ __all__ = ['bootstrap_teleconnections', 'build_confidence_mask',
            'mjo_hovmoller',
            'index_plot', 'indexes_plot',
            'maps_diffs_plot',
+           'QBO',
            'reg_evaluation', 'cor_evaluation',
            'Teleconnection', 'TeleconnectionsConfig',
            'wgt_area_mean']
