@@ -32,3 +32,14 @@ MJO: # http://www.bom.gov.au/climate/mjo
   lonW: null
   lonE: null
   flip_sign: true # To obtain standard OLR variable
+
+# Hovmoller plot monthly u-wind in the box 2N-2S, 1000-10000 hPa
+# averaged over the entire longitude
+QBO:
+  field: u
+  latN: 2
+  latS: -2
+  lonW: null
+  lonE: null
+  Pamin: 1000
+  Pamax: 10000
