@@ -67,6 +67,7 @@ def plot_hovmoller(data: xr.DataArray,
         ylog (bool, optional):       Use log scale for the y-axis. Defaults to False.
         xinvert (bool, optional):    Invert the x-axis. Defaults to False.
         yinvert (bool, optional):    Invert the y-axis. Defaults to False.
+        title (str, optional):       Title of the plot. Defaults to None.
 
     Returns:
         fig, ax: tuple with the figure and axes
@@ -199,6 +200,11 @@ def plot_hovmoller(data: xr.DataArray,
     if kwargs.get('yinvert', False):
         ax.invert_yaxis()
 
+    # Set title
+    title = kwargs.get('title', None)
+    if title is not None:
+        ax.set_title(title)
+
     # Save the figure
     if save:
         logger.debug("Saving figure to %s", outputdir)
@@ -221,11 +227,11 @@ def plot_hovmoller(data: xr.DataArray,
         fig.savefig('{}/{}'.format(outputdir, filename),
                     dpi=dpi, bbox_inches='tight')
 
-        if display is False:
+        if display is False and return_fig is False:
             logger.debug("Display is set to False, closing figure")
             plt.close(fig)
         logger.info('Saving figure to {}/{}'.format(outputdir, filename))
 
-        if return_fig:
-            logger.debug("Returning figure and axes")
-            return fig, ax
+    if return_fig:
+        logger.debug("Returning figure and axes")
+        return fig, ax

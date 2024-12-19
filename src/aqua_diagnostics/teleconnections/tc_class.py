@@ -118,6 +118,7 @@ class Teleconnection():
         else:
             raise ValueError('telecname must be one of {}'.format(avail_telec))
 
+        # Define the namelist attribute
         self._load_namelist(configdir=configdir, interface=interface)
 
         # Variable to be used for teleconnection
