@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 
 from aqua.logger import log_configure
-from .statistics import reg_evaluation, cor_evaluation
+from .tc_statistics import reg_evaluation, cor_evaluation
 
 xr.set_options(keep_attrs=True)
 

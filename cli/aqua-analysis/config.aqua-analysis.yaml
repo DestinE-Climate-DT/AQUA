@@ -41,11 +41,7 @@ cluster:  # options for dask cluster
 diagnostics:
 
   # List of diagnostics to run
-  run: ["tropical_rainfall", "timeseries_atm", "seasonal_cycles",
-        "radiation", "teleconnections_atm", "atmglobalmean",
-        "timeseries_oce", "teleconnections_oce", "ocean3d_drift",
-        "ocean3d_circulation", "seaice_extent", "seaice_conc",
-        "seaice_volume", "seaice_thick", "ecmean"]
+  run: ["teleconnections_atm", "teleconnections_oce"]
 
   # List of diagnostics
 
@@ -78,19 +74,19 @@ diagnostics:
   radiation:
     nworkers: 8
   teleconnections_atm:
-    script_path: "teleconnections/cli/cli_teleconnections.py"
+    script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 8
     # Command line extra arguments for teleconnections:
     # --dry, -d (dry run, if set it will run without producing plots)
     # --ref (if set it will analyze also the reference data, it is set
     #        by default)
     # --interface (custom interface file)
-    extra: "--config ${AQUA}/diagnostics/teleconnections/cli/cli_config_atm.yaml --ref"
+    extra: "--config ${AQUA}/config/diagnostics/teleconnections/cli_config_atm.yaml --ref"
     outname: teleconnections
   teleconnections_oce:
-    script_path: "teleconnections/cli/cli_teleconnections.py"
+    script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 4
-    extra: "--config ${AQUA}/diagnostics/teleconnections/cli/cli_config_oce.yaml --ref"
+    extra: "--config ${AQUA}/config/diagnostics/teleconnections/cli_config_oce.yaml --ref"
     outname: teleconnections
   tropical_rainfall:
     nworkers: 16

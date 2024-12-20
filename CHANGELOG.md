@@ -20,6 +20,9 @@ AQUA core complete list:
 - Added the `cdo_options: "--force"` to the definitions of the oceanic HealPix grids (#1539)
 
 AQUA diagnostic complete list:
+- Teleconnections: The `teleconnections` diagnostic is now integrated in the `aqua_diagnostics` module (#1352)
+- Teleconnections: OutputSaver for the teleconnections diagnostic (#1567)
+- Ocean3d: Fix to improve memory usage and cli (#1490)
 - Seaice: Fix to read sithick as fallback instead of sivol (#1543)
 - Ocean3d: Minor fix to allow to read new variable names (#1540)
 - Timeseries: The `timeseries` diagnostic is now integrated in the `aqua_diagnostics` module (#1340)

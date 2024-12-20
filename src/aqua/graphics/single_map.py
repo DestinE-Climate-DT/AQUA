@@ -253,6 +253,7 @@ def plot_single_map_diff(data: xr.DataArray,
         loglevel (str, optional):  Log level. Defaults to 'WARNING'.
         **kwargs:                  Keyword arguments for plot_single_map.
                                    Check the docstring of plot_single_map.
+                                   return_fig will be used to return the figure and axes.
 
     Raise:
         ValueError: If data or data_ref is not a DataArray.

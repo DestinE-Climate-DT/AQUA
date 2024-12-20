@@ -14,10 +14,11 @@ The diagnostic is based on the computation of the regression or correlation betw
 of the teleconnection index and the time series of the variable used to compute the teleconnection index.
 Teleconnections available:
 
-- `NAO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
-- `ENSO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/notebooks/teleconnections/ENSO.ipynb>`_
-- `MJO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/notebooks/teleconnections/MJO.ipynb>`_
+- NAO
+- ENSO
+- MJO
 
+See :ref:`teleconnections_notebooks` for detailed examples of the usage of the diagnostic.
 More diagnostics or functionalities will be added in the future.
 
 Structure
@@ -31,7 +32,7 @@ The source code is organized in the following way:
 
 - ``tc_class.py`` contains the class that is used to run the diagnostic.
 - ``index.py`` contains functions for the direct evaluation of teleconnection indices.
-- ``statistics.py`` contains functions for the regression and correlation analysis.
+- ``tc_statistics.py`` contains functions for the regression and correlation analysis.
 - ``bootstrap.py`` contains functions for the bootstrap evaluation for concordance maps of regression and correlation.
 - ``mjo.py`` contains functions for the evaluation of the MJO teleconnections. This is still under development.
 - ``plots`` folder contains functions for the visualization of time series and maps for teleconnection diagnostic. Part of the graphical functions are part of the AQUA framework.
@@ -114,6 +115,7 @@ The CLI accepts the following arguments:
 - ``-n`` or ``--nworkers``: number of dask workers for parallel computation.
 - ``-d`` or ``--dry``: dry run, no files are written.
 - ``-l`` or ``--loglevel``: log level for the logger. Default is WARNING.
+- ``--cluster``: run the diagnostic on a dask cluster already existing (used by aqua-analysis).
 
 Configuration file structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -176,13 +178,15 @@ Example plot
    ENSO IFS-NEMO ssp370 regression map (avg_tos) compared to ERA5.
    The contour lines are the model regression map and the filled contour map is the difference between the model and the reference regression map (ERA5).
 
+.. _teleconnections_notebooks:
+
 Available demo notebooks
 ------------------------
 
-- `NAO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/notebooks/teleconnections/NAO.ipynb>`_
-- `ENSO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/notebooks/teleconnections/ENSO.ipynb>`_
-- `concordance_map: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/notebooks/teleconnections/concordance_map.ipynb>`_
-- `MJO: notebook available <https://github.com/DestinE-Climate-DT/AQUA/blob/main/diagnostics/notebooks/teleconnections/MJO.ipynb>`_
+- `NAO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
+- `ENSO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/ENSO.ipynb>`_
+- `concordance_map<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/concordance_map.ipynb>`_
+- `MJO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/MJO.ipynb>`_
 
 Detailed API
 ------------

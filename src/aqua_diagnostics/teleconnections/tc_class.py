@@ -22,7 +22,7 @@ from aqua.reader import Reader, inspect_catalog
 from aqua.util import ConfigPath, OutputSaver
 from .index import station_based_index, regional_mean_anomalies
 from .plots import index_plot
-from .statistics import reg_evaluation, cor_evaluation
+from .tc_statistics import reg_evaluation, cor_evaluation
 from .tools import TeleconnectionsConfig
 
 xr.set_options(keep_attrs=True)
@@ -39,7 +39,6 @@ class Teleconnection():
                  regrid=None, freq=None,
                  save_pdf=False, save_png=False,
                  save_netcdf=False, outputdir='./',
-                 filename=None,
                  startdate=None, enddate=None,
                  months_window: int = 3, loglevel: str = 'WARNING',
                  filename_keys: list = None,
@@ -62,7 +61,6 @@ class Teleconnection():
             save_netcdf (bool, optional):   Save netCDF if True. Defaults to False.
             outputdir (str, optional):      Output directory for files.
                                             If None, the current directory is used.
-            filename (str, optional):       Output filename.
             startdate (str, optional):     Start date for the data.
                                             Format: YYYY-MM-DD. Defaults to None.
             enddate (str, optional):        End date for the data.
@@ -84,7 +82,7 @@ class Teleconnection():
         self.logger = log_configure(self.loglevel, 'Teleconnection')
 
         # Reader variables
-        self.catalog = catalog
+        self.catalog = catalog # Then updated by the Reader, it can be None here.
         self.model = model
         self.exp = exp
         self.source = source
@@ -219,24 +217,20 @@ class Teleconnection():
         if self.data is None and self.index is None:
             self.logger.info('No retrieve has been performed, trying to retrieve')
             self.retrieve()
-
         if self.index is not None and not rebuild:
             self.logger.warning('Index already calculated, skipping')
             return
         elif self.index is None and not rebuild and self.save_netcdf:
             self._check_index_file()
-
         if rebuild and self.index is not None:
             self.logger.info('Rebuilding index')
             self.index = None
 
         if self.index is not None:
             return
-
         # Check that data have at least 2 years:
         if len(self.data[self.var].time) < 24:
             raise NotEnoughDataError('Data have less than 24 months')
-
         if self.telec_type == 'station':
             self.index = station_based_index(field=self.data[self.var],
                                              namelist=self.namelist,
@@ -445,10 +439,9 @@ class Teleconnection():
     def _check_index_file(self):
         """Check if the index file is already present."""
         self.logger.debug("Checking if index has been calculated in a previous session")
-
         common_save_args = {'diagnostic_product': self.telecname + '_' + 'index', 'var': self.var}
         filename = self.output_saver.generate_name(suffix='nc', **common_save_args)
-        file = os.join(self.outputdir, 'netcdf', filename)
+        file = os.path.join(self.outputdir, 'netcdf', filename)
         if os.path.isfile(file):
             self.logger.info('Index found in %s', file)
             self.index = xr.open_mfdataset(file)

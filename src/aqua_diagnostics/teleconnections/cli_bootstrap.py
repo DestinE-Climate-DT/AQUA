@@ -19,10 +19,9 @@ from aqua.graphics import plot_single_map
 from aqua.util import load_yaml, get_arg, create_folder
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
-from teleconnections import __version__ as telecversion
-from teleconnections.bootstrap import bootstrap_teleconnections, build_confidence_mask
-from teleconnections.tc_class import Teleconnection
-from teleconnections.tools import set_filename
+from aqua.diagnostics.teleconnections.bootstrap import bootstrap_teleconnections, build_confidence_mask
+from aqua.diagnostics.teleconnections.tc_class import Teleconnection
+from aqua.diagnostics.teleconnections.tools import set_filename
 
 xr.set_options(keep_attrs=True)
 
@@ -67,7 +66,7 @@ if __name__ == '__main__':
     loglevel = get_arg(args, 'loglevel', 'WARNING')
     logger = log_configure(log_name='Teleconnections Bootstrap CLI', log_level=loglevel)
 
-    logger.info(f'Running AQUA v{aquaversion} Teleconnections diagnostic v{telecversion}')
+    logger.info(f'Running AQUA v{aquaversion} Teleconnections bootstrap diagnostic')
 
     # change the current directory to the one of the CLI so that relative path works
     # before doing this we need to get the directory from wich the script is running

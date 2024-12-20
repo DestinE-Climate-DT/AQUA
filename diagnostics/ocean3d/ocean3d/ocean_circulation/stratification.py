@@ -7,40 +7,71 @@ class stratification:
         self.logger = log_configure(self.loglevel, 'stratification')
 
     def prepare_data_list(self):
-        self.obs_data = crop_obs_overlap_time(self.data, self.obs_data)
+        if self.obs_data:
+            self.logger.debug("Preparing data for Observation and loading into memory")
+            self.obs_data = crop_obs_overlap_time(self.data, self.obs_data)
 
-        obs_data, time = prepare_data_for_stratification_plot(
-            self.obs_data, self.region, self.time, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
-        data, self.time = prepare_data_for_stratification_plot(
-            self.data, self.region, self.time, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
-        data_list, self.obs_data = compare_arrays(data, obs_data)
+            data_list, self.obs_data = compare_arrays(self.data, self.obs_data)
 
+            self.obs_data, time = prepare_data_for_stratification_plot(
+                self.obs_data, self.region, self.time, self.lat_s, self.lat_n, self.lon_w, self.lon_e, areamean=True, timemean= True)
+            self.obs_data = self.obs_data.compute()
+        self.logger.debug("Preparing Model and and loading into memory")
+            
+        if not self.obs_data:
+            data_list = [self.data]
+        
         data_list = list(
             filter(lambda value: value is not None, data_list))
+        for i, data in enumerate(data_list):
+            data_list[i], self.time = prepare_data_for_stratification_plot(
+                data, self.region, self.time, self.lat_s, self.lat_n, self.lon_w, self.lon_e, areamean= True, timemean= True)
+            data_list[i] = data_list[i].compute()
+        
+        # if self.obs_data:
+        #     data_list, self.obs_data = compare_arrays(self.data, self.obs_data)
+        # else:
+
+
+        
+        # self.logger.debug("Performing time mean and loading it into memory before going to plot it")
+        # self.logger.debug("Operation starts for Model")
+        # for i, data in enumerate(data_list):
+        #     data.attrs["start_year"] = data_list[i].time[0].data
+        #     data.attrs["end_year"] = data_list[i].time[-1].data
+        #     data_list[i] = data.mean("time")
+        #     data_list[i] = data_list[i].compute()
+        # self.logger.debug("Finished for Model")
+        
+        # self.logger.debug("Operation starts for Observation")
+        # if self.obs_data is not None:
+            # self.obs_data.attrs["start_year"] = self.obs_data.time[0].data
+            # self.obs_data.attrs["end_year"] = self.obs_data.time[-1].data
+            # self.obs_data = self.obs_data.mean("time").persist()
+        #     self.obs_data = self.obs_data.compute()
+        # self.logger.debug("Finished for Observation")
+        # self.logger.debug("Data prepared for the stratification plot")
+        self.logger.debug("Preparation done.")
         return data_list
+
 
     def plot(self):
         
         data_list = self.prepare_data_list()
 
         fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(14, 8))
-        self.logger.info("Stratification plot is in process")
+        self.logger.debug("Stratification plot is in process")
 
         if self.output:
             filename = file_naming(self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e, plot_name=f"{self.model}-{self.exp}-{self.source}_stratification_{self.time}_clim")
                 
         legend_list = []
-        if self.time in ["Yearly"]:
-            start_year = data_list[0].time[0].data
-            end_year = data_list[0].time[-1].data
-            logger.debug(end_year)
-        else:
-            start_year = data_list[0].time[0].dt.year.data
-            end_year = data_list[0].time[-1].dt.year.data
+        start_year = data_list[0].attrs["start_year"]
+        end_year = data_list[0].attrs["end_year"]
 
         for i, var in zip(range(len(axs)), ["avg_thetao", "avg_so", "rho"]):
             axs[i].set_ylim((4500, 0))
-            data_1 = data_list[0][var].mean("time")
+            data_1 = data_list[0][var]
 
             axs[i].plot(data_1, data_1.lev, 'g-', linewidth=2.0)
             legend_info = f"Model {start_year}-{end_year}"
@@ -49,16 +80,12 @@ class stratification:
                 new_filename = f"{filename}_{legend_info.replace(' ', '_')}"
                 write_data(self.output_dir, new_filename, data_1)
 
+
             if len(data_list) > 1:
-                if self.time in ["Yearly"]:
-                    start_year_data_2 = data_list[1].time[0].data
-                    end_year_data_2 = data_list[1].time[-1].data
-                    logger.debug(end_year)
-                else:
-                    start_year_data_2 = data_list[1].time[0].dt.year.data
-                    end_year_data_2 = data_list[1].time[-1].dt.year.data
+                start_year_data_2 = data_list[1].attrs["start_year"]
+                end_year_data_2 = data_list[1].attrs["end_year"]
                 
-                data_2 = data_list[1][var].mean("time")
+                data_2 = data_list[1][var]
                 axs[i].plot(data_2, data_2.lev, 'b-', linewidth=2.0)
 
                 legend_info_data_2 = f"Model {start_year_data_2}-{end_year_data_2}"
@@ -68,7 +95,7 @@ class stratification:
                     write_data(self.output_dir, new_filename, data_2)
 
             if self.obs_data is not None:
-                data_3 = self.obs_data[var].mean("time")
+                data_3 = self.obs_data[var]
                 axs[i].plot(data_3, data_3.lev, 'r-', linewidth=2.0)
                 # if var == "avg_thetao":
                 #     axs[i].plot(obs_data["thetao_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
@@ -107,5 +134,4 @@ class stratification:
             export_fig(self.output_dir, filename , "pdf", metadata_value = title, loglevel= self.loglevel)
 
         return
-
 

@@ -96,7 +96,6 @@ def index_plot(indx, step=False, loglevel='WARNING', **kwargs):
 def indexes_plot(indx1: xr.DataArray, indx2: xr.DataArray,
                  titles: list = None,
                  title: str = None,
-                 save=False, outputdir='./', filename='indexes.pdf',
                  loglevel='WARNING', **kwargs):
     """
     Use the plot_index function to plot two indexes in two
@@ -107,12 +106,6 @@ def indexes_plot(indx1: xr.DataArray, indx2: xr.DataArray,
         - indx2 (DataArray):    second index
         - titles (list,opt):    list of titles for the plots
         - title (str,opt):      title for the figure
-        - save (bool,opt):      enable or disable saving the plot,
-                                default is False
-        - outputdir (str,opt):  directory to save the plot,
-                                default is './'
-        - filename (str,opt):   filename for the plot
-                                default is 'indexes.png'
         - loglevel (str,opt):   log level for the logger,
 
     Kwargs are the same as for the index_plot function.
@@ -153,10 +146,5 @@ def indexes_plot(indx1: xr.DataArray, indx2: xr.DataArray,
         fig.suptitle(title)
 
     fig.tight_layout()
-
-    if save:
-        filepath = os.path.join(outputdir, filename)
-        fig.savefig(filepath)
-        logger.info("Fig saved in %s", filepath)
 
     return fig, axs

@@ -12,14 +12,15 @@ import gc
 from dask.distributed import Client, LocalCluster
 
 from aqua import __version__ as aquaversion
-from aqua.util import load_yaml, get_arg, add_pdf_metadata
+from aqua.util import load_yaml, get_arg
+from aqua.util import add_pdf_metadata, add_png_metadata
+from aqua.util import OutputSaver, ConfigPath
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
 from aqua.graphics import plot_single_map, plot_single_map_diff
-from teleconnections import __version__ as telecversion
-from teleconnections.plots import indexes_plot
-from teleconnections.tc_class import Teleconnection
-from teleconnections.tools import set_figs, set_filename
+from aqua.diagnostics.teleconnections.plots import indexes_plot
+from aqua.diagnostics.teleconnections.tc_class import Teleconnection
+from aqua.diagnostics.teleconnections.tools import set_figs
 
 
 def parse_arguments(cli_args):
@@ -65,7 +66,7 @@ if __name__ == '__main__':
     loglevel = get_arg(args, 'loglevel', 'WARNING')
     logger = log_configure(log_name='Teleconnections CLI', log_level=loglevel)
 
-    logger.info(f'Running AQUA v{aquaversion} Teleconnections diagnostic v{telecversion}')
+    logger.info(f'Running AQUA v{aquaversion} Teleconnections diagnostic')
 
     # change the current directory to the one of the CLI so that relative path works
     # before doing this we need to get the directory from wich the script is running
@@ -90,9 +91,12 @@ if __name__ == '__main__':
         client = Client(cluster)
     else:
         client = None
-    
+
     # Read configuration file
-    file = get_arg(args, 'config', 'cli_config_atm.yaml')
+    configdir = ConfigPath(loglevel=loglevel).configdir
+    default_config = os.path.join(configdir, "diagnostics", "teleconnections",
+                                  "cli_config_atm.yaml")
+    file = get_arg(args, 'config', default_config)
     logger.info('Reading configuration yaml file: {}'.format(file))
     config = load_yaml(file)
 
@@ -105,24 +109,22 @@ if __name__ == '__main__':
     dry = get_arg(args, 'dry', False)
     if dry:
         logger.warning('Dry run, no files will be written')
-        savefig = False
-        savefile = False
+        save_pdf, save_png = False, False
+        save_netcdf = False
     else:
         logger.debug('Saving files')
-        savefig = True
-        savefile = True
+        save_pdf, save_png = True, True
+        save_netcdf = True
+
+    dpi = 300
 
     try:
         outputdir = get_arg(args, 'outputdir', config['outputdir'])
         # if the outputdir is relative we need to make it absolute
         if not os.path.isabs(outputdir):
             outputdir = os.path.join(execdir, outputdir)
-        outputnetcdf = os.path.join(outputdir, 'netcdf')
-        outputpdf = os.path.join(outputdir, 'pdf')
     except KeyError:
         outputdir = None
-        outputnetcdf = None
-        outputpdf = None
         logger.error('Output directory not defined')
 
     configdir = config['configdir']
@@ -182,12 +184,14 @@ if __name__ == '__main__':
                                     model=model_ref, exp=exp_ref, source=source_ref,
                                     regrid=regrid, freq=freq,
                                     months_window=months_window,
-                                    outputdir=outputnetcdf,
-                                    outputfig=outputpdf,
-                                    savefig=savefig, savefile=savefile,
+                                    outputdir=outputdir,
+                                    save_pdf=False, save_png=False,
+                                    save_netcdf=save_netcdf,
                                     interface=interface,
                                     loglevel=loglevel)
                 tc.retrieve()
+                output_saver = OutputSaver(diagnostic='teleconnections', catalog=tc.catalog, model=model_ref,
+                               exp=exp_ref, loglevel=loglevel, default_path=outputdir, filename_keys=None)
             except NoDataError:
                 logger.error('No data available for %s teleconnection', telec)
                 continue
@@ -275,13 +279,18 @@ if __name__ == '__main__':
                                     model=model, exp=exp, source=source,
                                     regrid=regrid, freq=freq,
                                     months_window=months_window,
-                                    outputdir=outputnetcdf,
-                                    outputfig=outputpdf,
-                                    savefig=savefig, savefile=savefile,
+                                    outputdir=outputdir,
+                                    # If ref we do index plot against the reference model
+                                    save_pdf=save_pdf if not ref else False,
+                                    save_png=save_png if not ref else False,
+                                    save_netcdf=save_netcdf,
                                     startdate=startdate, enddate=enddate,
                                     interface=interface,
                                     loglevel=loglevel)
                 tc.retrieve()
+                catalog = tc.catalog
+                output_saver = OutputSaver(diagnostic='teleconnections', catalog=catalog, model=model,
+                                           exp=exp, loglevel=loglevel, default_path=outputdir, filename_keys=None)
             except NoDataError:
                 logger.error('No data available for %s teleconnection', telec)
                 continue
@@ -333,7 +342,7 @@ if __name__ == '__main__':
                 reg_season = None
                 cor_season = None
 
-            if savefig:
+            if save_pdf or save_png:
                 if ref:  # Plot against the reference model
                     title = '{} index'.format(telec)
                     titles = ['{} index for {} {}'.format(telec, model, exp),
@@ -342,99 +351,81 @@ if __name__ == '__main__':
                     logger.debug('Description: %s', description)
                     # Index plots
                     try:
-                        filename = set_filename(filename=tc.filename, fig_type='index')
-                        filename += '_{}'.format(model_ref)
-                        filename += '.pdf'
-                        indexes_plot(indx1=tc.index, indx2=ref_index,
-                                     titles=titles,
-                                     save=True, outputdir=tc.outputfig,
-                                     filename=filename,
-                                     loglevel=loglevel)
-                        add_pdf_metadata(filename=os.path.join(tc.outputfig, filename),
-                                         metadata_value=description)
+                        fig, _ = indexes_plot(indx1=tc.index, indx2=ref_index, titles=titles, loglevel=loglevel)
+                        common_save_args = {'diagnostic_product': telec + '_index', 'dpi': dpi, 'model_2': model_ref}
+                        if save_pdf:
+                            output_saver.save_pdf(fig, **common_save_args, metadata={'description': description})
+                        if save_png:
+                            output_saver.save_png(fig, **common_save_args, metadata={'description': description})
                     except Exception as e:
                         logger.error('Error plotting %s index: %s', telec, e)
 
                     # Correlation plot
-                    map_names, maps, ref_maps, titles, descriptions, cbar_labels = set_figs(telec=telec,
-                                                                                            model=model,
-                                                                                            exp=exp,
-                                                                                            ref=model_ref,
-                                                                                            filename=tc.filename,
-                                                                                            cor=True, reg=False,
-                                                                                            full_year=full_year,
-                                                                                            seasons=seasons,
-                                                                                            reg_full=reg_full,
-                                                                                            cor_full=cor_full,
-                                                                                            reg_season=reg_season,
-                                                                                            cor_season=cor_season,
-                                                                                            ref_reg_full_year=ref_reg_full,
-                                                                                            ref_cor_full_year=ref_cor_full,
-                                                                                            ref_reg_season=ref_reg_season,
-                                                                                            ref_cor_season=ref_cor_season)
-                    logger.debug('map_names: %s', map_names)
+                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels =\
+                        set_figs(telec=telec,
+                                 catalog=catalog,
+                                 model=model,
+                                 exp=exp,
+                                 ref=model_ref,
+                                 cor=True, reg=False,
+                                 full_year=full_year,
+                                 seasons=seasons,
+                                 reg_full=reg_full,
+                                 cor_full=cor_full,
+                                 reg_season=reg_season,
+                                 cor_season=cor_season,
+                                 ref_reg_full_year=ref_reg_full,
+                                 ref_cor_full_year=ref_cor_full,
+                                 ref_reg_season=ref_reg_season,
+                                 ref_cor_season=ref_cor_season)
+                    logger.debug('map_names_pdf: %s (same for png)', map_names_pdf)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
                         vmin = -1
                         vmax = 1
+                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'save': False, 'sym': False,
+                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
+                                     'title': titles[i], 'vmin_contour': vmin, 'vmax_contour': vmax,
+                                     'return_fig': True, 'vmin_fill': vmin, 'vmax_fill': vmax,
+                                     'loglevel': loglevel}
                         try:
-                            plot_single_map_diff(data=data_map,
-                                                 data_ref=ref_maps[i],
-                                                 save=True,
-                                                 sym=False, sym_contour=False,
-                                                 cbar_label=cbar_labels[i],
-                                                 outputdir=tc.outputfig,
-                                                 filename=map_names[i],
-                                                 title=titles[i],
-                                                 transform_first=False,
-                                                 vmin_contour=vmin, vmax_contour=vmax,
-                                                 vmin_fill=vmin, vmax_fill=vmax,
-                                                 loglevel=loglevel)
+                            fig, _ =  plot_single_map_diff(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names[i], err)
+                                           model, exp, map_names_pdf[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
-                                plot_single_map_diff(data=data_map,
-                                                     data_ref=ref_maps[i],
-                                                     save=True,
-                                                     sym=False, sym_contour=False,
-                                                     cbar_label=cbar_labels[i],
-                                                     outputdir=tc.outputfig,
-                                                     filename=map_names[i],
-                                                     title=titles[i],
-                                                     transform_first=True,
-                                                     vmin_contour=vmin, vmax_contour=vmax,
-                                                     vmin_fill=vmin, vmax_fill=vmax,
-                                                     loglevel=loglevel)
+                                fig, _ = plot_single_map_diff(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names[i], err2)
-                        try:
-                            add_pdf_metadata(filename=os.path.join(tc.outputfig, map_names[i]),
-                                             metadata_value=descriptions[i])
-                        except FileNotFoundError as e:
-                            logger.error('Error adding metadata to %s: %s', map_names[i], e)
+                                             model, exp, map_names_pdf[i], err2)
+                        if save_pdf and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
+                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                        if save_png and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
+                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
 
                     # Regression plot
-                    map_names, maps, ref_maps, titles, descriptions, cbar_labels = set_figs(telec=telec,
-                                                                                            model=model,
-                                                                                            exp=exp,
-                                                                                            ref=model_ref,
-                                                                                            filename=tc.filename,
-                                                                                            cor=False, reg=True,
-                                                                                            full_year=full_year,
-                                                                                            seasons=seasons,
-                                                                                            reg_full=reg_full,
-                                                                                            cor_full=cor_full,
-                                                                                            reg_season=reg_season,
-                                                                                            cor_season=cor_season,
-                                                                                            ref_reg_full_year=ref_reg_full,
-                                                                                            ref_cor_full_year=ref_cor_full,
-                                                                                            ref_reg_season=ref_reg_season,
-                                                                                            ref_cor_season=ref_cor_season)
-                    logger.debug('map_names: %s', map_names)
+                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels =\
+                        set_figs(telec=telec,
+                                 catalog=catalog,
+                                 model=model,
+                                 exp=exp,
+                                 ref=model_ref,
+                                 cor=False, reg=True,
+                                 full_year=full_year,
+                                 seasons=seasons,
+                                 reg_full=reg_full,
+                                 cor_full=cor_full,
+                                 reg_season=reg_season,
+                                 cor_season=cor_season,
+                                 ref_reg_full_year=ref_reg_full,
+                                 ref_cor_full_year=ref_cor_full,
+                                 ref_reg_season=ref_reg_season,
+                                 ref_cor_season=ref_cor_season)
+                    logger.debug('map_names: %s (same for png)', map_names_pdf)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
@@ -443,39 +434,27 @@ if __name__ == '__main__':
                             sym = True
                         else:
                             sym = False
+                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'save': False, 'sym': sym,
+                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
+                                     'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
+                                     'loglevel': loglevel}
                         try:
-                            plot_single_map_diff(data=data_map,
-                                                 data_ref=ref_maps[i],
-                                                 save=True, sym=sym,
-                                                 vmin_fill=vmin, vmax_fill=vmax,
-                                                 cbar_label=cbar_labels[i],
-                                                 outputdir=tc.outputfig,
-                                                 filename=map_names[i],
-                                                 title=titles[i],
-                                                 transform_first=False,
-                                                 loglevel=loglevel)
+                            fig, _ = plot_single_map_diff(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names[i], err)
+                                           model, exp, map_names_pdf[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
-                                plot_single_map_diff(data=data_map,
-                                                     data_ref=ref_maps[i],
-                                                     save=True, sym=sym,
-                                                     cbar_label=cbar_labels[i],
-                                                     outputdir=tc.outputfig,
-                                                     filename=map_names[i],
-                                                     title=titles[i],
-                                                     transform_first=True,
-                                                     loglevel=loglevel)
+                                fig, _ = plot_single_map_diff(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names[i], err2)
-                        try:
-                            add_pdf_metadata(filename=os.path.join(tc.outputfig, map_names[i]),
-                                             metadata_value=descriptions[i])
-                        except FileNotFoundError as e:
-                            logger.error('Error adding metadata to %s: %s', map_names[i], e)
+                                             model, exp, map_names_pdf[i], err2)
+                        if save_pdf and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
+                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                        if save_png and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
+                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
                 else:  # Individual plots
                     # Index plot
                     try:
@@ -483,68 +462,59 @@ if __name__ == '__main__':
                     except Exception as e:
                         logger.error('Error plotting %s index: %s', telec, e)
                     # Correlation plot
-                    map_names, maps, ref_maps, titles, descriptions, cbar_labels = set_figs(telec=telec,
-                                                                                            model=model,
-                                                                                            exp=exp,
-                                                                                            filename=tc.filename,
-                                                                                            cor=True, reg=False,
-                                                                                            full_year=full_year,
-                                                                                            seasons=seasons,
-                                                                                            reg_full=reg_full,
-                                                                                            cor_full=cor_full,
-                                                                                            reg_season=reg_season,
-                                                                                            cor_season=cor_season)
-                    logger.debug('map_names: %s', map_names)
+                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels = \
+                        set_figs(telec=telec,
+                                 catalog=catalog,
+                                 model=model,
+                                 exp=exp,
+                                 cor=True, reg=False,
+                                 full_year=full_year,
+                                 seasons=seasons,
+                                 reg_full=reg_full,
+                                 cor_full=cor_full,
+                                 reg_season=reg_season,
+                                 cor_season=cor_season)
+                    logger.debug('map_names: %s (same for png)', map_names_pdf)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
                         vmin = -1
                         vmax = 1
+                        plot_args = {'data': data_map, 'save': True, 'sym': False,
+                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
+                                     'title': titles[i], 'vmin': vmin, 'vmax': vmax, 'return_fig': True,
+                                     'loglevel': loglevel}
                         try:
-                            plot_single_map(data=data_map,
-                                            save=True, sym=False,
-                                            cbar_label=cbar_labels[i],
-                                            outputdir=tc.outputfig,
-                                            filename=map_names[i],
-                                            title=titles[i],
-                                            transform_first=False,
-                                            vmin=vmin, vmax=vmax,
-                                            loglevel=loglevel)
+                            fig, _ = plot_single_map(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names[i], err)
+                                           model, exp, map_names_pdf[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
-                                plot_single_map(data=data_map,
-                                                save=True, sym=False,
-                                                cbar_label=cbar_labels[i],
-                                                outputdir=tc.outputfig,
-                                                filename=map_names[i],
-                                                title=titles[i],
-                                                transform_first=True,
-                                                vmin=vmin, vmax=vmax,
-                                                loglevel=loglevel)
+                                fig, _ = plot_single_map(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names[i], err2)
-                        try:
-                            add_pdf_metadata(filename=os.path.join(tc.outputfig, map_names[i]),
-                                             metadata_value=descriptions[i])
-                        except FileNotFoundError as e:
-                            logger.error('Error adding metadata to %s: %s', map_names[i], e)
+                                             model, exp, map_names_pdf[i], err2)
+                        if save_pdf and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
+                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                        if save_png and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
+                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
                     # Regression plot
-                    map_names, maps, ref_maps, titles, descriptions, cbar_labels = set_figs(telec=telec,
-                                                                                            model=model,
-                                                                                            exp=exp,
-                                                                                            filename=tc.filename,
-                                                                                            cor=False, reg=True,
-                                                                                            full_year=full_year,
-                                                                                            seasons=seasons,
-                                                                                            reg_full=reg_full,
-                                                                                            cor_full=cor_full,
-                                                                                            reg_season=reg_season,
-                                                                                            cor_season=cor_season)
-                    logger.debug('map_names: %s', map_names)
+                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels =\
+                        set_figs(telec=telec,
+                                 catalog=catalog,
+                                 model=model,
+                                 exp=exp,
+                                 cor=False, reg=True,
+                                 full_year=full_year,
+                                 seasons=seasons,
+                                 reg_full=reg_full,
+                                 cor_full=cor_full,
+                                 reg_season=reg_season,
+                                 cor_season=cor_season)
+                    logger.debug('map_names: %s (same for png)', map_names_pdf)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
@@ -553,37 +523,27 @@ if __name__ == '__main__':
                             sym = True
                         else:
                             sym = False
+                        plot_args = {'data': data_map, 'save': True, 'sym': sym,
+                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
+                                     'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
+                                     'loglevel': loglevel}
                         try:
-                            plot_single_map(data=data_map,
-                                            save=True, sym=sym,
-                                            vmin=vmin, vmax=vmax,
-                                            cbar_label=cbar_labels[i],
-                                            outputdir=tc.outputfig,
-                                            filename=map_names[i],
-                                            title=titles[i],
-                                            transform_first=False,
-                                            loglevel=loglevel)
+                            fig, _ = plot_single_map(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names[i], err)
+                                           model, exp, map_names_pdf[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
-                                plot_single_map(data=data_map,
-                                                save=True, sym=sym,
-                                                cbar_label=cbar_labels[i],
-                                                outputdir=tc.outputfig,
-                                                filename=map_names[i],
-                                                title=titles[i],
-                                                transform_first=True,
-                                                loglevel=loglevel)
+                                fig, _ = plot_single_map(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names[i], err2)
-                        try:
-                            add_pdf_metadata(filename=os.path.join(tc.outputfig, map_names[i]),
-                                             metadata_value=descriptions[i])
-                        except FileNotFoundError as e:
-                            logger.error('Error adding metadata to %s: %s', map_names[i], e)
+                                             model, exp, map_names_pdf[i], err2)
+                        if save_pdf and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
+                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                        if save_png and fig is not None:
+                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
+                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
 
     if client:
         client.close()
