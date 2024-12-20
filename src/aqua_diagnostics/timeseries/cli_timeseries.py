@@ -134,9 +134,8 @@ if __name__ == '__main__':
     config = load_yaml(file_diag_config)
 
     aqua_analysis_config = os.path.join(configdir, "config.aqua-analysis.yaml")
-    file_aqua_config = get_arg(args, 'config', aqua_analysis_config)
-    logger.info('Reading aqua-analysis configuration yaml file: {}'.format(file_aqua_config))
-    aqua_analysis_config = load_yaml(file_aqua_config)
+    logger.info('Reading aqua-analysis configuration yaml file: {}'.format(aqua_analysis_config))
+    aqua_analysis_config = load_yaml(aqua_analysis_config)
 
     # Override the first model in the config file if provided in the command line
     models = aqua_analysis_config['models']
