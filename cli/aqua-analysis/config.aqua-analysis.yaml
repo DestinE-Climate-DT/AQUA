@@ -23,10 +23,14 @@ job:
     run_dummy: false
     
     # Default output directory for the analysis. Can be overridden by the command line arguments
-    outputdir: "${AQUA}/cli/aqua-analysis/output" 
-
+    output:
+      outputdir: "${AQUA}/cli/aqua-analysis/output"
+      rebuild: true
+      save_pdf: true
+      save_png: true
+      dpi: 300
     # Default values, overriden from command line arguments
-    # catalog: "lumi"  # The catalog to use for the analysis, usually defined elsewhere
+    catalog: null # The catalog to use for the analysis, usually defined elsewhere
     model: "IFS-NEMO"
     exp: "historical-1990"
     source: "lra-r100-monthly"
