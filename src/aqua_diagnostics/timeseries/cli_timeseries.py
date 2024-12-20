@@ -125,16 +125,21 @@ if __name__ == '__main__':
     else:
         client = None
     
-    # Load configuration file
+    # Read configuration file
     configdir = ConfigPath(loglevel=loglevel).configdir
-    default_config = os.path.join(configdir, "diagnostics", "timeseries",
-                                  "config_timeseries_atm.yaml")
-    file = get_arg(args, "config", default_config)
-    logger.info(f"Reading configuration file {file}")
-    config = load_yaml(file)
+    default_diag_config = os.path.join(configdir, "diagnostics", "timeseries",
+                                       "config_timeseries_atm.yaml")
+    file_diag_config = get_arg(args, 'config', default_diag_config)
+    logger.info('Reading diagnostic configuration yaml file: {}'.format(file_diag_config))
+    config = load_yaml(file_diag_config)
+
+    aqua_analysis_config = os.path.join(configdir, "config.aqua-analysis.yaml")
+    file_aqua_config = get_arg(args, 'config', aqua_analysis_config)
+    logger.info('Reading aqua-analysis configuration yaml file: {}'.format(file_aqua_config))
+    aqua_analysis_config = load_yaml(file_aqua_config)
 
     # Override the first model in the config file if provided in the command line
-    models = config['models']
+    models = aqua_analysis_config['models']
     models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
@@ -157,11 +162,14 @@ if __name__ == '__main__':
     if not any(models_list) or not any(exp_list):
         raise ValueError("No models or experiments provided, please use the config file or the command line arguments.")
 
-    outputdir = get_arg(args, "outputdir", config['output'].get("outputdir"))
-    rebuild = config['output'].get("rebuild")
-    save_pdf = config['output'].get("save_pdf")
-    save_png = config['output'].get("save_png")
-    dpi = config['output'].get("dpi")
+    outputdir = get_arg(args, "outputdir", aqua_analysis_config['job'].get('output').get('outputdir'))
+    # Expand environment variables in the path
+    outputdir = os.path.expandvars(outputdir)
+
+    rebuild = aqua_analysis_config['job'].get('output').get("rebuild")
+    save_pdf = aqua_analysis_config['job'].get('output').get("save_pdf")
+    save_png = aqua_analysis_config['job'].get('output').get("save_png")
+    dpi = aqua_analysis_config['job'].get('output').get("dpi")
 
     if "timeseries" in config:
         logger.info("Plotting timeseries")
