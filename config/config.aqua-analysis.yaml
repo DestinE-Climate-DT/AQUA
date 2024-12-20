@@ -21,21 +21,23 @@ job:
 
     # Run a dummy analysis to test the configuration and the presence of needed data
     run_dummy: false
-    
+
     # Default output directory for the analysis. Can be overridden by the command line arguments
     output:
       outputdir: "${AQUA}/cli/aqua-analysis/output"
       rebuild: true
+      save_netcdf: true
       save_pdf: true
       save_png: true
       dpi: 300
-    # Default values, overriden from command line arguments
-    catalog: null # The catalog to use for the analysis, usually defined elsewhere
+
+    script_path_base: "${AQUA}/diagnostics"  # Base directory for the diagnostic scripts
+
+models: # Default values, overriden from command line arguments
+  - catalog: null # The catalog to use for the analysis, usually defined elsewhere
     model: "IFS-NEMO"
     exp: "historical-1990"
     source: "lra-r100-monthly"
-
-    script_path_base: "${AQUA}/diagnostics"  # Base directory for the diagnostic scripts
 
 cluster:  # options for dask cluster
     workers: 32
