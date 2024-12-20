@@ -94,11 +94,16 @@ if __name__ == '__main__':
 
     # Read configuration file
     configdir = ConfigPath(loglevel=loglevel).configdir
-    default_config = os.path.join(configdir, "diagnostics", "teleconnections",
+    default_diag_config = os.path.join(configdir, "diagnostics", "teleconnections",
                                   "cli_config_atm.yaml")
-    file = get_arg(args, 'config', default_config)
-    logger.info('Reading configuration yaml file: {}'.format(file))
-    config = load_yaml(file)
+    file_diag_config = get_arg(args, 'config', default_diag_config)
+    logger.info('Reading diagnostic configuration yaml file: {}'.format(file_diag_config))
+    config = load_yaml(file_diag_config)
+
+    aqua_analysis_config = os.path.join(configdir, "config.aqua-analysis.yaml")
+    file_aqua_config = get_arg(args, 'config', aqua_analysis_config)
+    logger.info('Reading aqua-analysis configuration yaml file: {}'.format(file_aqua_config))
+    aqua_analysis_config = load_yaml(file_aqua_config)
 
     # if ref we're running the analysis against a reference
     ref = get_arg(args, 'ref', False)
@@ -113,13 +118,16 @@ if __name__ == '__main__':
         save_netcdf = False
     else:
         logger.debug('Saving files')
-        save_pdf, save_png = True, True
-        save_netcdf = True
+        save_pdf = aqua_analysis_config['job'].get('output').get('save_pdf'),
+        save_png = aqua_analysis_config['job'].get('output').get('save_png')
+        save_netcdf = aqua_analysis_config['job'].get('output').get('save_netcdf')
 
-    dpi = 300
+    dpi = aqua_analysis_config['job'].get('output').get('dpi')
 
     try:
-        outputdir = get_arg(args, 'outputdir', config['outputdir'])
+        outputdir = get_arg(args, 'outputdir', aqua_analysis_config['job'].get('output').get('outputdir'))
+        # Expand environment variables in the path
+        outputdir = os.path.expandvars(outputdir)
         # if the outputdir is relative we need to make it absolute
         if not os.path.isabs(outputdir):
             outputdir = os.path.join(execdir, outputdir)
@@ -151,7 +159,7 @@ if __name__ == '__main__':
     # if exclusive we're running only the first model/exp/source combination
     # if model/exp/source are provided as arguments, we're overriding the
     # first model/exp/source combination
-    models = config['models']
+    models = aqua_analysis_config['models']
 
     models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
