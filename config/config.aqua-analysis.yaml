@@ -47,7 +47,7 @@ cluster:  # options for dask cluster
 diagnostics:
 
   # List of diagnostics to run
-  run: ["teleconnections_atm", "teleconnections_oce"]
+  run: ["teleconnections_atm", "teleconnections_oce", "timeseries_atm", "timeseries_oce"]
 
   # List of diagnostics
 
