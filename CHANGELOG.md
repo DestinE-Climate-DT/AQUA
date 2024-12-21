@@ -20,6 +20,7 @@ AQUA core complete list:
 - Added the `cdo_options: "--force"` to the definitions of the oceanic HealPix grids (#1539)
 
 AQUA diagnostic complete list:
+- Enhance Configuration Files Structure and Management (#1568)
 - Teleconnections: The `teleconnections` diagnostic is now integrated in the `aqua_diagnostics` module (#1352)
 - Teleconnections: OutputSaver for the teleconnections diagnostic (#1567)
 - Ocean3d: Fix to improve memory usage and cli (#1490)
