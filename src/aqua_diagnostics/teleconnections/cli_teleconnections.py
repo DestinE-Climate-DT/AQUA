@@ -198,7 +198,7 @@ if __name__ == '__main__':
                                     loglevel=loglevel)
                 tc.retrieve()
                 output_saver = OutputSaver(diagnostic='teleconnections', catalog=tc.catalog, model=model_ref,
-                               exp=exp_ref, loglevel=loglevel, default_path=outputdir, filename_keys=None)
+                                           exp=exp_ref, loglevel=loglevel, default_path=outputdir, filename_keys=None)
             except NoDataError:
                 logger.error('No data available for %s teleconnection', telec)
                 continue

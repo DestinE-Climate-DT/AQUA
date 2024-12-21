@@ -28,23 +28,6 @@ diagnostic_config = {
             'target_path': 'diagnostics/ecmean/cli'
         }
     ],
-    'timeseries': [
-        {
-            'config_file': 'config_seasonalcycles_atm.yaml',
-            'source_path': 'config/diagnostics/timeseries',
-            'target_path': 'diagnostics/timeseries'
-        },
-        {
-            'config_file': 'config_timeseries_atm.yaml',
-            'source_path': 'config/diagnostics/timeseries',
-            'target_path': 'diagnostics/timeseries'
-        },
-        {
-            'config_file': 'config_timeseries_oce.yaml',
-            'source_path': 'config/diagnostics/timeseries',
-            'target_path': 'diagnostics/timeseries'
-        }
-    ],
     'ocean3d': [
         {
             'config_file': 'regions.yaml',
@@ -111,38 +94,6 @@ diagnostic_config = {
             'config_file': 'config.yaml',
             'source_path': 'diagnostics/ssh/cli',
             'target_path': 'diagnostics/ssh/cli'
-        },
-    ],
-    'teleconnections': [
-        {
-            'config_file': 'teleconnections-ci.yaml',
-            'source_path': 'config/diagnostics/teleconnections/interface',
-            'target_path': 'diagnostics/teleconnections/config'
-        },
-        {
-            'config_file': 'teleconnections-destine.yaml',
-            'source_path': 'config/diagnostics/teleconnections/interface',
-            'target_path': 'diagnostics/teleconnections/config'
-        },
-        {
-            'config_file': 'teleconnections-netgems3.yaml',
-            'source_path': 'config/diagnostics/teleconnections/interface',
-            'target_path': 'diagnostics/teleconnections/config'
-        },
-        {
-            'config_file': 'cli_config_atm.yaml',
-            'source_path': 'config/diagnostics/teleconnections',
-            'target_path': 'diagnostics/teleconnections'
-        },
-        {
-            'config_file': 'cli_config_oce.yaml',
-            'source_path': 'config/diagnostics/teleconnections',
-            'target_path': 'diagnostics/teleconnections'
-        },
-        {
-            'config_file': 'config_bootstrap.yaml',
-            'source_path': 'config/diagnostics/teleconnections',
-            'target_path': 'diagnostics/teleconnections'
         },
     ],
     'tropical_cyclones': [
