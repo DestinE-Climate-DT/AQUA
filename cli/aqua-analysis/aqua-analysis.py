@@ -6,7 +6,7 @@ import argparse
 import logging
 from dask.distributed import LocalCluster
 from aqua.logger import log_configure
-from aqua.util import load_yaml, create_folder
+from aqua.util import load_yaml, create_folder, ConfigPath
 
 def run_command(cmd: str, log_file: str = None, logger=None) -> int:
     """
@@ -126,8 +126,7 @@ def get_args():
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
-    parser.add_argument("-f", "--config", type=str, default="$AQUA/cli/aqua-analysis/config.aqua-analysis.yaml",
-                        help="Configuration file")
+    parser.add_argument("-f", "--config", type=str, help="Configuration file")
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
     parser.add_argument("--local_clusters", action="store_true", help="Use separate local clusters instead of single global one")
     parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostics in parallel with a cluster")
@@ -157,9 +156,16 @@ def get_aqua_paths(*, args, logger):
         aqua_path = os.path.abspath(os.path.join(aqua_path, "..", ".."))
         logger.info(f"AQUA path: {aqua_path}")
 
-        aqua_config_path = os.path.expandvars(args.config) if args.config and args.config.strip() else os.path.join(aqua_path, "cli/aqua-analysis/config.aqua-analysis.yaml")
+        configdir = ConfigPath(loglevel='warning').configdir
+
+        # Expand the config path if provided, otherwise use the default path
+        if args.config and args.config.strip():
+            aqua_config_path = os.path.expandvars(args.config)
+        else:
+            aqua_config_path = os.path.join(configdir, "config.aqua-analysis.yaml")
+        # Check if the config file exists
         if not os.path.exists(aqua_config_path):
-            logger.error(f"Config file {aqua_config_path} not found.")
+            logger.error(f"Configuration file not found: {aqua_config_path}")
             sys.exit(1)
 
         logger.info(f"AQUA config path: {aqua_config_path}")
@@ -181,12 +187,13 @@ def main():
     loglevel = args.loglevel or config.get('job', {}).get('loglevel', "info")
     logger = log_configure(loglevel.lower(), 'AQUA Analysis')
 
-    model = args.model or config.get('job', {}).get('model')
-    exp = args.exp or config.get('job', {}).get('exp')
-    source = args.source or config.get('job', {}).get('source')
-    outputdir = os.path.expandvars(args.outputdir or config.get('job', {}).get('outputdir', './output'))
+    catalog = args.catalog or config['models'][0]['catalog']
+    model = args.model or config['models'][0]['model']
+    exp = args.exp or config['models'][0]['exp']
+    source = args.source or config['models'][0]['source']
+
+    outputdir = os.path.expandvars(args.outputdir or config['job'].get('output').get('outputdir'))
     max_threads = args.threads
-    catalog = args.catalog or config.get('job', {}).get('catalog')
 
     logger.debug(f"outputdir: {outputdir}")
     logger.debug(f"max_threads: {max_threads}")

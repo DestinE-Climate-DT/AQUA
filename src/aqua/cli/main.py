@@ -181,12 +181,14 @@ class AquaConsole():
         for file in ['config-aqua.tmpl']:
             target_file = os.path.splitext(file)[0] + '.yaml'  # replace the tmpl with yaml
             self._copy_update_folder_file(f'{self.aquapath}/{file}', f'{self.configpath}/{target_file}')
-        for directory in ['fixes', 'data_models', 'grids', 'catgen', 'datachecker']:
+        for file in ['config.aqua-analysis.yaml']:
+            self._copy_update_folder_file(f'{self.aquapath}/{file}', f'{self.configpath}/{file}')
+        for directory in ['fixes', 'data_models', 'grids', 'catgen', 'datachecker', 'diagnostics']:
             self._copy_update_folder_file(os.path.join(self.aquapath, directory),
-                                     os.path.join(self.configpath, directory))
+                                          os.path.join(self.configpath, directory))
         for directory in ['templates']:
             self._copy_update_folder_file(os.path.join(self.aquapath, '..', directory),
-                                     os.path.join(self.configpath, directory))
+                                          os.path.join(self.configpath, directory))
         os.makedirs(f'{self.configpath}/{catpath}', exist_ok=True)
 
     def _install_editable(self, editable):
@@ -206,9 +208,10 @@ class AquaConsole():
                 self.logger.error('%s folder does not include AQUA configuration files. Please use AQUA/config', editable)
                 os.rmdir(self.configpath)
                 sys.exit(1)
-        for directory in ['fixes', 'data_models', 'grids', 'catgen', 'datachecker']:
+        for file in ['config.aqua-analysis.yaml']:
+            self._copy_update_folder_file(f'{self.aquapath}/{file}', f'{self.configpath}/{file}', link=True)
+        for directory in ['fixes', 'data_models', 'grids', 'catgen', 'datachecker', 'diagnostics']:
             self._copy_update_folder_file(f'{editable}/{directory}', f'{self.configpath}/{directory}', link=True)
-
         for directory in ['templates']:
             self._copy_update_folder_file(os.path.join(editable, '..', directory), f'{self.configpath}/{directory}', link=True)
 

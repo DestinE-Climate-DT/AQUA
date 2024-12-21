@@ -31,7 +31,7 @@ class TeleconnectionsConfig():
             self.configdir = configdir
 
         self.config_file = os.path.join(self.configdir, 'diagnostics',
-                                        'teleconnections', 'config', self.filename)
+                                        'teleconnections', 'interface', self.filename)
 
     def load_namelist(self):
         """
