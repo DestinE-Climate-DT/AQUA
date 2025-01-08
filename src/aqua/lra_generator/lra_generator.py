@@ -448,9 +448,9 @@ class LRAgenerator():
 
         # modify filename if realization is in the kwargs
         if 'realization' in self.kwargs:
-            filestring = f'{var}_{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc'
+            filestring = f"{var}_{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc"
         else:
-            filestring = f'{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc'
+            filestring = f"{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc"
         if tmp:
             filename = os.path.join(self.tmpdir, filestring)
         else:

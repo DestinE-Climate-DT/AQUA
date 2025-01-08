@@ -3,6 +3,7 @@ import os
 import argparse
 
 from dask.distributed import Client, LocalCluster
+
 from aqua.util import load_yaml, get_arg
 from aqua.logger import log_configure
 
@@ -25,6 +26,8 @@ def parse_arguments(args):
                         required=False, help="source name")
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
+    parser.add_argument("--cluster", type=str,
+                        required=False, help="dask cluster address")
 
     return parser.parse_args(args)
 
@@ -48,12 +51,21 @@ if __name__ == '__main__':
 
     logger.info('Running Radiation Budget Diagnostic ...')
 
+    # Dask distributed cluster
     nworkers = get_arg(args, 'nworkers', None)
-    if nworkers:
-        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+    cluster = get_arg(args, 'cluster', None)
+    private_cluster = False
+    if nworkers or cluster:
+        if not cluster:
+            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+            logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
+            private_cluster = True
+        else:
+            logger.info(f"Connecting to cluster {cluster}.")
         client = Client(cluster)
-        logger.info(f"Running with {nworkers} dask distributed workers.")
-
+    else:
+        client = None
+    
     # Load configuration file
     file = get_arg(args, 'config', 'config/radiation_config.yml')
     logger.info(f"Reading configuration file {file}")
@@ -164,4 +176,12 @@ if __name__ == '__main__':
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
 
-    logger.info("Radiation Budget Diagnostic is terminated.")
+    if client:
+        client.close()
+        logger.debug("Dask client closed.")
+
+    if private_cluster:
+        cluster.close()
+        logger.debug("Dask cluster closed.")
+
+    logger.info("Radiation Budget Diagnostic has finished.")

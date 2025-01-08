@@ -2,9 +2,11 @@
 grids:
   # ICON oceanic healpix
   icon-hpz10-nested:
+    cdo_options: "--force"
     space_coord: ["ncells"]
     path: '{{ grids }}/HealPix/icon_hpz10_nested_oce.nc'
   icon-hpz10-nested-3d:
+    cdo_options: "--force"
     path:
       level: '{{ grids }}/HealPix/icon_hpz10_nested_oce_level.nc'
 

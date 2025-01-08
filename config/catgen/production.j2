@@ -7,7 +7,7 @@
         experiment: {{ experiment }}  # To be overwritten by workflow/config file
         generation: {{ generation | default(1) }}  # To be overwritten by workflow/config file
         model: {{ model }}
-        realization: {% if num_of_realizations > 1 %}{% raw %}{{ realization }}{% endraw %}{% else %}1{% endif %} 
+        realization: {% if num_of_realizations > 1 %}{% raw %}'{{ realization }}'{% endraw %}{% else %}1{% endif %} 
         resolution: {{ resolution }}
         expver: {{ expver }}  # To be overwritten by workflow/config file
         type: fc
@@ -28,9 +28,13 @@
       savefreq: {{ savefreq }}
       timestep: h
       timestyle: date
-
     {% if num_of_realizations > 1 %}
-    parameters: {{ parameters }}
+    parameters:
+      realization:
+        allowed: {{ range(1, num_of_realizations + 1) | list }}
+        description: realization member
+        type: int
+        default: 1
     {% endif %}
     description: {{ description }}
     driver: gsv
@@ -47,6 +51,6 @@
         {% endif %}
         variables: {{ variables }}
         source_grid_name: {{ grid }}
-        fixer_name: {{ fixer_name }}
+        fixer_name: {% if fixer_name %}{{ fixer_name }}{% else %}{% raw %}climatedt-phase2-production{% endraw %}{% endif %}
 
         

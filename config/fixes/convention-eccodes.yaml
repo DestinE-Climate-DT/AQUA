@@ -156,6 +156,7 @@ convention_name:
           - 235021 # avg_ssurfror
           - 231011 # ssurfror
           - 172009 # mssror
+          - ssro # corresponding to 9
           - ssurfror
           - mssror
           - avg_ssurfror
@@ -166,6 +167,7 @@ convention_name:
           - 235020 # avg_surfror
           - 231009 # surfror
           - 172008 # msror
+          - sro # corresponding to 8
           - avg_surfror
           - msror
           - surfror
@@ -191,7 +193,7 @@ convention_name:
           - meantcc #legacy eccodes name
           - avg_tcc
           - TCC # AQUA ERA5
-        grib: 164
+        grib: 131164
       tciw: # Total column vertically-integrated cloud ice water
         source:
           - 79 # original GRIB2 code

@@ -216,16 +216,6 @@ class AquaFDBGenerator:
         time_dict = self.get_time(frequency=profile["frequency"], levtype=profile['levtype'])
         self.logger.debug('Time dict: %s', time_dict)
         self.logger.debug('Number of realizations %s', self.num_of_realizations)
-  
-        # Add realization parameters if ensembles
-        parameters = {
-            'realization': {
-                'allowed': list(range(1, self.num_of_realizations + 1)),
-                'description': 'realization member',
-                'type': 'int',
-                'default': 1
-            }
-        } if self.num_of_realizations > 1 else None
 
         kwargs = {
             "dp_version": self.dp_version,
@@ -241,7 +231,6 @@ class AquaFDBGenerator:
             "time": time_dict['time'],
             "chunks": time_dict['chunks'],
             "savefreq": time_dict['savefreq'], 
-            "parameters": parameters
         }
         return kwargs
 
@@ -299,7 +288,7 @@ class AquaFDBGenerator:
                 combined = {**self.config, **content}
                 self.logger.debug('Creating catalog entry for %s', combined['source'])
                 #self.logger.debug(combined)
-                for replacepath in ['fdb_home', 'fdb_home_bridge', 'eccodes_path']:
+                for replacepath in ['fdb_home', 'fdb_home_bridge']:
                     if 'replacepath' in combined:
                         combined[replacepath] = '"' + replace_intake_vars(combined[replacepath], catalog=combined['catalog_dir']) + '"'
                 all_content.append(self.template.render(combined))

@@ -1,9 +1,6 @@
 """Regridder mixin for the Reader class"""
 
-import os
 import types
-import subprocess
-import tempfile
 import xarray as xr
 from smmregrid import CdoGenerate
 from aqua.util import to_list
@@ -42,10 +39,13 @@ class RegridMixin():
         #grid_area = self.cdo_generate_areas(source=dst_extra)
 
         # Make sure that grid areas contain exactly the same coordinates
-        data = self._retrieve_plain()
-        data = self.regrid(data)
+        #data = self._retrieve_plain()
+        #data = self.regrid(data)
 
-        grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
+        #if all(elem in grid_area.coords for elem in self.dst_space_coord):
+        #    grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.dst_space_coord})
+        #else:
+        #    self.logger.warning("Cannot find the destination spatial coordinates in the data")
 
         grid_area.to_netcdf(self.dst_areafile)
         self.logger.warning("Success!")
@@ -75,6 +75,7 @@ class RegridMixin():
         self.logger.warning("Attempting to generate it ...")
 
         src_extra = source_grid.get("cdo_extra", [])
+        src_options = source_grid.get("cdo_options", [])
 
         #grid_area = self.cdo_generate_areas(source=sgrid,
         #                                    gridpath=gridpath,
@@ -82,7 +83,7 @@ class RegridMixin():
         #                                    extra=src_extra)
 
         generator = CdoGenerate(sgrid, cdo_extra=src_extra,
-                                cdo_options=None, cdo_download_path=gridpath,
+                                cdo_options=src_options, cdo_download_path=gridpath, 
                                 cdo_icon_grids=icongridpath,
                                 cdo=self.cdo, loglevel=self.loglevel)
         grid_area = generator.areas()['cell_area']
@@ -90,7 +91,12 @@ class RegridMixin():
         # Make sure that the new DataArray uses the expected spatial dimensions
         grid_area = _rename_dims(grid_area, self.src_space_coord)
         data = self._retrieve_plain(startdate=None)
-        grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.src_space_coord})
+       
+        if all(elem in grid_area.coords for elem in self.src_space_coord):
+            grid_area = grid_area.assign_coords({coord: data.coords[coord] for coord in self.src_space_coord})
+        else:   
+            self.logger.warning("Cannot find the source spatial coordinates in the data")
+       
         grid_area.to_netcdf(areafile)
         self.logger.warning("Success!")
 

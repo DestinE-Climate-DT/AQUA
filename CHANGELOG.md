@@ -7,7 +7,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+## [v0.13-beta]
+
+Main changes are:
+1. All the diagnostics are now compatible with the new fixes and eccodes version.
+2. Full compatibility with HealPix grids and the new CDO version.
+3. Major improvements in the Ocean3D diagnostic.
+
 AQUA core complete list:
+- Safety checks and error messages on FDB folders (#1512)
+- Refreshed internal `to_list` function (#1512)
+- Reorganizing and extending CI/CD catalog with 5 years of hpz3 data from ERA5 (atm) and FESOM (oce) (#1552)
+- Version info in a separate module (#1546) 
+- Corrected `tcc` units to % (#1551)
+- Fix pdf attributes (#1547)
+- Catgen fixes (#1536)
+- Introduced fixer for ClimateDT phase 2 (#1536)
+- `aqua_analysis.py` using a common central dask cluster (#1525)
+- Added the `cdo_options: "--force"` to the definitions of the oceanic HealPix grids (#1539)
+
+AQUA diagnostic complete list:
+- Teleconnections: The `teleconnections` diagnostic is now integrated in the `aqua_diagnostics` module (#1352)
+- Teleconnections: OutputSaver for the teleconnections diagnostic (#1567, #1570)
+- Ocean3d: Fix to improve memory usage and cli (#1490)
+- Seaice: Fix to read sithick as fallback instead of sivol (#1543)
+- Ocean3d: Minor fix to allow to read new variable names (#1540)
+- Timeseries: The `timeseries` diagnostic is now integrated in the `aqua_diagnostics` module (#1340)
+- Timeseries: Integrating Updated OutputSaver (#1492)
+
+## [v0.13-alpha]
+
+Main changes are:
+1. A refactor of the fixes, with a new common main convention table is available, based on eccodes.
+2. Diagnostics are updated to work with the new fixes and the new eccodes version. This is not yet complete and will be finalized in the next release.
+3. The FDB reader always rely on paramids, so that support for eccodes 2.39.0 and backward compatibility is ensured.
+
+AQUA core complete list:
+- push-analysis.sh maintenance (#1555)
 - Added the `cdo_options: "--force"` to the definitions of the HealPix grids (#1527)
 - Removing default fixes (#1519)
 - Support for eccodes=2.39.0 with full fixes refactoring (#1519)
@@ -17,9 +53,9 @@ AQUA core complete list:
 - Change `bridge_end_date` convention (#1498)
 - `catgen` to support data bridge options (#1499)
 - Enhance OutputSaver with Improved File Handling, Logging, and NetCDF Write Modes (#1495)
-- Introduction a specific pipeline and tests for `catgen`utiliy (#1505)
+- Introduction a specific pipeline and tests for `catgen` utiliy (#1505)
 - Remove pin on xarray (#1507)
-- FDB reader internally always asks for paramids (#1491, #1508)
+- FDB reader internally always asks for paramids (#1491, #1508, #1529)
 - Introduction of a convention table for the fixer, in order to create a more general fixer (#1488, #1506)
 - Refactor of `cli_lra_parallel_slurm.py` to work with container via jinja (#1497) 
 - Convert `aqua-analysis.sh` to Python with Subprocess and Multiprocessing Support (#1354, #1521)
@@ -709,7 +745,9 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.2...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...HEAD
+[v0.13-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-alpha...v0.13-beta
+[v0.13-alpha]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.2...v0.13-alpha
 [v0.12.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.1...v0.12.2
 [v0.12.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12...v0.12.1
 [v0.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.11.3...v0.12

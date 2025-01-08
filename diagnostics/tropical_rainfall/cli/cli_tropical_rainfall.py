@@ -47,5 +47,15 @@ def main():
         logger.error(f"An error occurred during execution: {e}")
         sys.exit(4)
 
+    if trop_rainfall_cli.client:
+        trop_rainfall_cli.client.close()
+        logger.debug("Dask client closed.")
+
+    if trop_rainfall_cli.private_cluster:
+        trop_rainfall_cli.cluster.close()
+        logger.debug("Dask cluster closed.")
+    
+    logger.info("Tropical rainfall diagnostic has finished.")
+
 if __name__ == '__main__':
     main()

@@ -188,6 +188,17 @@ different sections of the fixer file.
 - **vars**: this is the main fixer block, described in detail on the following section :ref:`metadata-fix`.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
 
+.. _aqua-convention:
+
+AQUA variables convention
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Based on the convention file described in :ref:`convention-structure`, we have defined a convention for the AQUA variables.
+This means that all the experiments maintained by the AQUA project will have the same target variable names if the fixer is activated.
+
+The convention file is named ``convention-eccodes.yaml`` and is placed in the ``config/fixes`` folder or available at `this link <https://github.com/DestinE-Climate-DT/AQUA/blob/main/config/fixes/convention-eccodes.yaml>`_.
+Since v0.13 all the diagnostics are supposed to work with the AQUA convention, so that any other experiment following the AQUA convention will be compatible with the diagnostics.
+
 .. _metadata-fix:
 
 Metadata Correction

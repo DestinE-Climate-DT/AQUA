@@ -5,7 +5,7 @@ import datetime
 import xarray as xr
 import numpy as np
 import pandas as pd
-from aqua.util import extract_literal_and_numeric, file_is_complete
+from aqua.util import extract_literal_and_numeric, file_is_complete, to_list
 
 @pytest.fixture
 def test_text():
@@ -107,8 +107,25 @@ class TestFileIsComplete:
         result = file_is_complete(valid_with_nan_file)
         assert result is True
 
-# Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
+@pytest.mark.parametrize("arg, expected", [
+    (None, []),                        # Test None
+    ([1, 2, 3], [1, 2, 3]),              # Test list (unchanged)
+    ((4, 5), [4, 5]),                    # Test tuple
+    ({6, 7}, [6, 7]),                    # Test set
+    ({"capa": 1, "tonda": 2}, ["capa", "tonda"]),      # Test dictionary (keys)
+    ("maccio", ["maccio"]),# Test string (split into chars)
+    (8, [8]),                            # Test single integer
+    (3.14, [3.14]),                      # Test single float
+    (True, [True]),                      # Test single boolean
+    ([], []),                            # Test empty list
+    ({}, []),                            # Test empty dictionary
+    (set(), []),                         # Test empty set
+    ((), []),                            # Test empty tuple
+])
+def test_to_list(arg, expected):
+    assert to_list(arg) == expected
 
+# Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
 # def test_flip_time():
 #     """Test the flip_time function"""
 #     time = np.arange(0, 10)

@@ -44,7 +44,7 @@ class ConfigPath():
 
         
         # set the catalog as the first available and get all configurations
-        if self.catalog_available is None:
+        if not self.catalog_available:
             self.logger.warning('No available catalogs found')
             self.catalog = None
             self.base_available = None

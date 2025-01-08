@@ -34,15 +34,18 @@ collect_figures() {
     if [ "$wipe" -eq 1 ]; then
         log_message INFO "Wiping destination directory $dstdir"
         git rm -r $dstdir
-        mkdir -p $dstdir
     fi
+
+    mkdir -p $dstdir
 
     find $indir -name "*.pdf"  -exec cp {} $dstdir/ \;
 
     # Remove dates from EC-mean filenames
     for file in $dstdir/PI4*_????_????.pdf $dstdir/global_mean*_????_????.pdf
     do
-        mv -- "$file" "${file%_*_*}.pdf"
+        if [ -e "$file" ]; then
+            mv -- "$file" "${file%_*_*}.pdf"
+        fi
     done
 
     echo $(date) > $dstdir/last_update.txt

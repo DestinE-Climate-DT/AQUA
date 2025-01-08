@@ -5,7 +5,7 @@
 
 job:
     # The max_threads variable serves as a mechanism to control the maximum number of threads
-    # or parallel processes that can run simultaneously.
+    # i.e. diagnostic scripts that can run concurrently.
     # - If max_threads is set to 0 or a negative value: There is no limit on the number of threads,
     #                                                   and all processes run in parallel without waiting. 
     #                                                   This is suitable for situations where you want to utilize
@@ -33,66 +33,68 @@ job:
 
     script_path_base: "${AQUA}/diagnostics"  # Base directory for the diagnostic scripts
 
+cluster:  # options for dask cluster
+    workers: 32
+    threads: 2  # per worker
+    memory_limit: 7GiB  # per worker
+
 diagnostics:
 
   # List of diagnostics to run
-  run: ["tropical_rainfall", "global_time_series_atm", "seasonal_cycles",
-        "radiation", "teleconnections_atm", "atmglobalmean",
-        "global_time_series_oce", "teleconnections_oce", "ocean3d_drift",
-        "ocean3d_circulation", "seaice_extent", "seaice_conc",
-        "seaice_volume", "seaice_thick", "ecmean"]
+  run: ["atmglobalmean", "timeseries_atm", "timeseries_oce", "seasonal_cycles", "radiation", "teleconnections_atm", "teleconnections_oce",
+        "tropical_rainfall", "ecmean", "ocean3d_drift", "ocean3d_circulation", "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
 
   # List of diagnostics
 
-  # Each diagnostic can have the following options:
-  # nworkers: the number of workers to use for the diagnostic. Default is 1.
-  # extra: extra command line arguments to pass to the diagnostic script.
-  # outname: the name of the output directory for the diagnostic.
-  #          Default is the diagnostic name itself.
-  # script_path: the location of the script to run the diagnostic.
-  #              Default script_path is "$script_path_base/$diagnostic/cli/cli_${diagnostic}.py"
+  # Each diagnostic can have the following options (all optional):
+  #    nworkers: the number of workers to use for the diagnostic if a global dask cluster is not used. Default is 1.
+  #              Notice: these are still provided mostly for testing the local cluster option, using a global cluster (not using this option) is the new default.
+  #    extra: extra command line arguments to pass to the diagnostic script.
+  #    outname: the name of the output directory for the diagnostic. Default is the diagnostic name itself.
+  #    script_path: the location of the script to run the diagnostic.
+  #                 Default script_path is "$script_path_base/$diagnostic/cli/cli_${diagnostic}.py"
+  #    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default false (needed for ECmean)
 
   atmglobalmean:
     nworkers: 16
-  global_time_series_atm:
-    script_path: "global_time_series/cli/cli_global_time_series.py"
-    extra: "--config ${AQUA}/diagnostics/global_time_series/cli/config_time_series_atm.yaml"
+  timeseries_atm:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    extra: "--config ${AQUA}/config/diagnostics/timeseries/config_timeseries_atm.yaml"
     nworkers: 16
-    outname: global_time_series
-  global_time_series_oce:
-    script_path: "global_time_series/cli/cli_global_time_series.py"
-    extra: "--config ${AQUA}/diagnostics/global_time_series/cli/config_time_series_oce.yaml"
+    outname: timeseries
+  timeseries_oce:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    extra: "--config ${AQUA}/config/diagnostics/timeseries/config_timeseries_oce.yaml"
     nworkers: 8
-    outname: global_time_series
+    outname: timeseries
   seasonal_cycles:
-    script_path: "global_time_series/cli/cli_global_time_series.py"
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
     nworkers: 16
-    extra: "--config ${AQUA}/diagnostics/global_time_series/cli/config_seasonal_cycles_atm.yaml"
+    extra: "--config ${AQUA}/config/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
+    outname: timeseries
   radiation:
     nworkers: 8
   teleconnections_atm:
-    script_path: "teleconnections/cli/cli_teleconnections.py"
+    script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 8
     # Command line extra arguments for teleconnections:
     # --dry, -d (dry run, if set it will run without producing plots)
     # --ref (if set it will analyze also the reference data, it is set
     #        by default)
     # --interface (custom interface file)
-    extra: "--config ${AQUA}/diagnostics/teleconnections/cli/cli_config_atm.yaml --ref"
+    extra: "--config ${AQUA}/config/diagnostics/teleconnections/cli_config_atm.yaml --ref"
     outname: teleconnections
   teleconnections_oce:
-    script_path: "teleconnections/cli/cli_teleconnections.py"
+    script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 4
-    extra: "--config ${AQUA}/diagnostics/teleconnections/cli/cli_config_oce.yaml --ref"
+    extra: "--config ${AQUA}/config/diagnostics/teleconnections/cli_config_oce.yaml --ref"
     outname: teleconnections
   tropical_rainfall:
     nworkers: 16
     extra: "--regrid=r100 --freq=M --xmax=75 --bufferdir=${OUTPUT}/tropical_rainfall/"
   ecmean:
     nworkers: 4
-    # Command line extra arguments for ecmean:
-    # -c --config (ecmean config file)
-    # -i --interface (custom interface file)
+    nocluster: true  # ECmean does not use the global dask cluster
     extra: "--interface ${AQUA}/diagnostics/ecmean/config/interface_AQUA_destine-v1.yml"
   ocean3d_drift:
     script_path: "ocean3d/cli/cli_ocean3d.py"

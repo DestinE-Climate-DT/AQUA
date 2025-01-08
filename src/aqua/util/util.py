@@ -5,16 +5,15 @@ import random
 import string
 import re
 import sys
-import json
 import numpy as np
 import xarray as xr
 import datetime
-import subprocess
 from glob import glob
 from pypdf import PdfReader, PdfWriter
 from PIL import Image, PngImagePlugin
-from aqua.logger import log_configure
 from IPython.display import display, Image as IPImage, FileLink
+from aqua.logger import log_configure
+from aqua.version import __version__ as version
 
 
 def generate_random_string(length):
@@ -29,17 +28,28 @@ def generate_random_string(length):
 
 def to_list(arg):
     """
-    Support function to ensure conversion of a variable to list
+    Converts the input to a list.
+    - Returns [] if input is None.
+    - Returns the list itself if input is already a list.
+    - Converts tuples, sets, and dictionaries to a list.
+    - Wraps other types in a single-element list.
 
-    Args:
-        arg: the variable to convert to list
+    Parameters:
+    arg: The input object to convert.
 
     Returns:
-        arg: the input arg transformed as list type (if possible)
+    list: A list representation of the input.
     """
-    if isinstance(arg, str) or isinstance(arg, int):
-        arg = [arg]
-    return arg
+    if arg is None:  # Preserve None
+        return []
+    if isinstance(arg, list):  # Already a list
+        return arg
+    if isinstance(arg, (tuple, set)):  # Convert tuples and sets to a list
+        return list(arg)
+    if isinstance(arg, dict):  # Convert dictionary keys to a list
+        return list(arg.keys())
+    return [arg]
+
 
 
 def files_exist(path):
@@ -204,7 +214,7 @@ def extract_literal_and_numeric(text):
 
 
 def add_pdf_metadata(filename: str,
-                     metadata_value: str,
+                     metadata_value: str | dict,
                      metadata_name: str = '/Description',
                      old_metadata: bool = True,
                      loglevel: str = 'WARNING'):
@@ -214,7 +224,7 @@ def add_pdf_metadata(filename: str,
     Args:
         filename (str): the filename of the pdf.
                         It must be a valid full path.
-        metadata_value (str): the value of the new metadata.
+        metadata_value (str | dict): the value(s) of the new metadata.
         metadata_name (str): the name of the new metadata.
                             Default is '/Description'.
         old_metadata (bool): if True, the old metadata will be kept.
@@ -248,7 +258,11 @@ def add_pdf_metadata(filename: str,
         pdf_writer.add_metadata(metadata)
 
     # Add the new metadata
-    pdf_writer.add_metadata({metadata_name: metadata_value})
+    if isinstance(metadata_value, dict):
+        metadata_value = {f'/{k}' if not k.startswith('/') else k: v for k, v in metadata_value.items()}  # Ensure keys start with '/'
+        pdf_writer.add_metadata(metadata_value)
+    else:
+        pdf_writer.add_metadata({metadata_name: metadata_value})
 
     # Overwrite input PDF
     with open(filename, 'wb') as f:
@@ -342,11 +356,13 @@ def open_image(file_path: str, loglevel: str = 'WARNING') -> dict:
 
     return metadata
 
+
 def normalize_key(key: str) -> str:
     """
     Normalize metadata key by removing leading '/' and converting to lowercase.
     """
     return key.lstrip('/').lower()
+
 
 def normalize_value(value):
     """
@@ -378,6 +394,7 @@ def normalize_value(value):
     # Return the value as-is if it can't be processed further
     return value
 
+
 def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> dict:
     """
     Update the provided metadata dictionary with the current date, time, aqua package version,
@@ -397,13 +414,7 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
     now = datetime.datetime.now()
     date_now = now.strftime("%Y-%m-%d %H:%M:%S")
     metadata['timestamp'] = date_now
-
-    # Get aqua package version and add to metadata
-    try:
-        aqua_version = subprocess.run(["aqua", "--version"], stdout=subprocess.PIPE, text=True).stdout.strip()
-        metadata['aqua_version'] = aqua_version
-    except Exception as e:
-        metadata['aqua_version'] = f"Error retrieving version: {str(e)}"
+    metadata['aqua_version'] = version
 
     # Add additional metadata fields
     if additional_metadata:

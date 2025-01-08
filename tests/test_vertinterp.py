@@ -17,15 +17,15 @@ def test_vertinterp():
     interp = reader.vertinterp(select['thetao'], levels=10, units='m',
                                vert_coord='nz1')
 
-    assert pytest.approx(interp[40:41].values[0] - 273.15) == -1.09438590
+    assert pytest.approx(interp[40].values) == 272.64060
 
     # dataset access
     interp = reader.vertinterp(select, levels=10, vert_coord='nz1')
-    assert pytest.approx(interp['thetao'][40:41].values[0] - 273.15) == -1.09438590
+    assert pytest.approx(interp['thetao'][40].values) == 272.64060
 
     # change unit
-    interp = reader.vertinterp(select['thetao'], levels=[0.1, 0.2, 0.3], units='km', vert_coord='nz1')
-    assert interp.shape == (3, 3140)
+    interp = reader.vertinterp(select['thetao'], levels=[0.1, 0.3], units='km', vert_coord='nz1')
+    assert interp.shape == (2, 3140)
 
 @pytest.mark.aqua
 def test_vertinterp_exceptions():

@@ -11,7 +11,6 @@ from aqua.util import find_vert_coord, load_yaml, add_pdf_metadata
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 
-
 def kelvin_to_celsius(data, variable_name, loglevel= "WARNING"):
     """
     Convert temperature in Kelvin to degrees Celsius for a specific variable in an xarray dataset.
@@ -26,7 +25,7 @@ def kelvin_to_celsius(data, variable_name, loglevel= "WARNING"):
     """
     logger = log_configure(loglevel, 'Unit')
     # Check if the variable exists in the dataset
-    if data[variable_name].attrs['units']== 'K' or 'kelvin':
+    if data[variable_name].attrs['units'].lower()== 'k' or 'kelvin':
         logger.warning("The unit of Pot. Temperature is Kelvin. Converting to degC")
         # Convert Kelvin to Celsius: Celsius = Kelvin - 273.15
         data[variable_name] -= 273.15
@@ -48,19 +47,18 @@ def check_variable_name(data, loglevel= "WARNING"):
     vars = list(data.variables)
     required_vars= []
     var_list= ["SO","avg_so","thetao","THETAO","avg_SO","avg_so","avg_thetao","avg_THETAO",
-               "toce_mean","soce_mean"]
+               "toce_mean","soce_mean", "so"]
     for var in vars:
         if var in var_list:
             required_vars.append(var)
     if required_vars != []:
         logger.debug("This are the variables %s available for the diags in the catalog.", required_vars)
         data = data[required_vars]
-        logger.debug("Selected this variables")
         for var in required_vars:
-            if 'avg_so' in var.lower() or 'soce' in var.lower():
+            if 'so' in var.lower():
                 data = data.rename({var: "avg_so"})
                 logger.debug("renaming %s as avg_so", var)
-            if 'thetao' in var.lower() or 'toce' in var.lower():
+            if var.lower() in ['avg_thetao', 'toce', "thetao"]:
                 data = data.rename({var: "avg_thetao"})
                 logger.debug("renaming %s as avg_thetao", var)
     else:
@@ -74,6 +72,7 @@ def check_variable_name(data, loglevel= "WARNING"):
     data = kelvin_to_celsius(data, "avg_thetao")
     # if "thetao_uncertainty" in data:
     #     data = kelvin_to_celsius(data, "thetao_uncertainty")
+    data = data.resample(time="MS").mean()
     return data
 
 def time_slicing(data, start_year, end_year, loglevel= "WARNING"):
@@ -142,7 +141,6 @@ def convert_longitudes(data, loglevel= "WARNING"):
 
     return data
 
-
 def area_selection(data, region=None, lat_s: float = None, lat_n: float = None,
                    lon_w: float = None, lon_e: float = None, loglevel= "WARNING"):
     """
@@ -182,9 +180,9 @@ def area_selection(data, region=None, lat_s: float = None, lat_n: float = None,
         "Selected for this region (latitude %s to %s, longitude %s to %s)", lat_s, lat_n, lon_w, lon_e)
     # Perform data slicing based on the specified or predefined latitude and longitude boundaries
     data = data.sel(lat=slice(lat_s, lat_n), lon=slice(lon_w, lon_e))
+    logger.debug(data)   
 
     return data
-
 
 def weighted_zonal_mean(data, region=None, lat_s: float = None, lat_n: float = None,
                         lon_w: float = None, lon_e: float = None, loglevel= "WARNING"):
@@ -212,9 +210,10 @@ def weighted_zonal_mean(data, region=None, lat_s: float = None, lat_n: float = N
                           lat_n, lon_w, lon_e)
 
     wgted_mean = data.mean(("lon"))
+    logger.debug("Weighted the data")
+    logger.debug(data)   
 
     return wgted_mean
-
 
 def weighted_area_mean(data, region=None, lat_s: float = None, lat_n: float = None,
                        lon_w: float = None, lon_e: float = None, loglevel= "WARNING"):
@@ -240,8 +239,11 @@ def weighted_area_mean(data, region=None, lat_s: float = None, lat_n: float = No
     logger = log_configure(loglevel, 'weighted_area_mean')
     data = area_selection(data, region, lat_s,
                           lat_n, lon_w, lon_e)
-    weighted_data = data.weighted(np.cos(np.deg2rad(data.lat)))
+    # weighted_data = data.weighted(np.cos(np.deg2rad(data.lat)))
+    weights = xr.ufuncs.cos(xr.ufuncs.deg2rad(data.lat))
+    weighted_data = data.weighted(weights)
     wgted_mean = weighted_data.mean("lat").mean("lon")
+    logger.debug(wgted_mean)   
     return wgted_mean
 
 
@@ -311,27 +313,26 @@ def load_obs_data(model='EN4', exp='en4', source='monthly', loglevel= "WARNING")
     return den4
 
 
-def crop_obs_overlap_time(data1, data2, loglevel= "WARNING"):
+def crop_obs_overlap_time(ref_data, data, loglevel="WARNING"):
     """
     Crop the observational data to the overlapping time period with the model data.
 
     Parameters:
-        data1 (xarray.Dataset): data1.
-        data2 (xarray.Dataset): data2.
+        data1 (xarray.Dataset): ref_data.
+        data2 (xarray.Dataset): data.
 
     Returns:
         xarray.Dataset: Observational data cropped to the overlapping time period with the model data.
     """
     logger = log_configure(loglevel, 'crop_obs_overlap_time')
-    data1_time = data1.time
-    data2_time = data2.time
-    common_time = xr.DataArray(np.intersect1d(
-        data1_time, data2_time), dims='time')
+    ref_data_time = ref_data.time
+    data_time = data.time
+    common_time = ref_data_time.where(ref_data_time.isin(data_time), drop=True)
     if len(common_time) > 0:
-        data2 = data2.sel(time=common_time)
+        data = data.sel(time=common_time)
         logger.debug(
-            "selected the overlaped time of the obs data compare to the model")
-    return data2
+            "Selected the overlapping time of the obs data compared to the model")
+    return data
 
 
 def data_time_selection(data, time, loglevel= "WARNING"):
@@ -525,6 +526,7 @@ def export_fig(output_dir, filename, type, metadata_value: str = None,
 
     if type == "pdf":
         add_pdf_metadata(filename, metadata_value, loglevel = loglevel)
+    logger.debug("Figure saved: %s", filename)
     logger.info("Figure saved to: %s", output_dir)
 
 def split_ocean3d_req(self, o3d_request, loglevel= "WARNING"):

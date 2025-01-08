@@ -146,8 +146,8 @@ def test_metadata_addition(output_saver):
 
     # Use the open_image function to open the PDF and verify the metadata
     pdf_metadata = open_image(pdf_path, loglevel='DEBUG')
-    assert pdf_metadata.get('description').get('author') == 'test'
-    assert pdf_metadata.get('description').get('description') == 'test metadata'
+    assert pdf_metadata.get('author') == 'test'
+    assert pdf_metadata.get('description') == 'test metadata'
 
     # Save PNG file with metadata
     png_path = output_saver.save_png(fig=fig, diagnostic_product='mean', metadata=metadata)

@@ -513,8 +513,20 @@ Please refer to the :ref:`aqua-add` section for more information.
 
 .. _eccodes:
 
+ecCodes
+-------
+
+ecCodes is a package developed by ECMWF to handle GRIB and BUFR files.
+AQUA uses ecCodes to interpret the GRIB files coming from the FDB sources.
+This is handled by the intake driver for FDB sources developed inside AQUA and making use of ecCodes definitions and the GSVRetriever class.
+
+Since v0.13 AQUA uses always the ecCodes definitions selected in the environment file. In particular we're currently using ecCodes 2.39.0.
+There is the possibility to switch ecCodes version while opening a source written with an older ecCodes but this is not recommended.
+As a consequence of this default behaviour, the shortnames deduced from a paramid will be always referred to the ecCodes definitions used by AQUA
+and not to the definitions used by the source. If the fixer is used, the shortnames will be anyway converted to the standard variable names used in AQUA.
+
 ecCodes fixer
--------------
+^^^^^^^^^^^^^
 
 .. warning::
 

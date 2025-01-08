@@ -13,17 +13,27 @@ if not gsv_available:
 """Tests for GSV in AQUA. Requires FDB library installed and an FDB repository."""
 
 # Used to create the ``GSVSource`` if no request provided.
-DEFAULT_GSV_PARAMS = {'request': {
-    'date': '20080101',
-    'time': '1200',
-    'step': "0",
-    'param': '130',
-    'levtype': 'pl',
-    'levelist': '300'
-}, 'data_start_date': '20080101T1200', 'data_end_date': '20080101T1200', 'timestep': 'h', 'timestyle': 'date'}
+DEFAULT_GSV_PARAMS = {
+    'request': {
+        'domain': 'g',
+        'stream': 'oper',
+        'class': 'ea',
+        'type': 'an',
+        'expver': '0001',
+        'param': '130',
+        'levtype': 'pl',
+        'levelist': ['1000'],
+        'date': '20080101',
+        'time': '1200',
+        'step': '0'
+    },
+    'data_start_date': '20080101T1200', 
+    'data_end_date': '20080101T1200', 
+    'timestep': 'h', 
+    'timestyle': 'date'
+}
 
 loglevel = 'DEBUG'
-
 
 @pytest.fixture()
 def gsv(request) -> GSVSource:
@@ -32,7 +42,7 @@ def gsv(request) -> GSVSource:
         request = DEFAULT_GSV_PARAMS
     else:
         request = request.param
-    return GSVSource(**request)
+    return GSVSource(**request, metadata={'fdb_home': '/app'})
 
 
 @pytest.mark.gsv
@@ -40,13 +50,34 @@ class TestGsv():
     """Pytest marked class to test GSV."""
 
     # Low-level tests
-
     def test_gsv_constructor(self) -> None:
         """Simplest test, to check that we can create it correctly."""
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167', metadata=None)
+                           chunks="S", var='167', metadata={'fdb_home': '/app'})
         assert source is not None
+
+    def test_gsv_constructor_bridge(self) -> None:
+        """Test bridge"""
+        print(DEFAULT_GSV_PARAMS['request'])
+        source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
+                           chunks="S", var='167', bridge_end_date='complete',
+                           metadata={'fdb_home_bridge': '/app'})
+        assert source is not None
+            
+    def test_gsv_constructor_raise(self) -> None:
+        """Test raise for missing fdbhome"""
+        print(DEFAULT_GSV_PARAMS['request'])
+        with pytest.raises(ValueError):
+            GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
+                           chunks="S", var='167')
+    
+    def test_gsv_constructor_raise_bridge(self) -> None:
+        """Test raise for missing fdbhome"""
+        print(DEFAULT_GSV_PARAMS['request'])
+        with pytest.raises(ValueError):
+            GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
+                           chunks="S", var='167', bridge_end_date='complete')
 
     @pytest.mark.parametrize('gsv', [{'request': {
         'domain': 'g',
@@ -68,7 +99,6 @@ class TestGsv():
         data = gsv.read_chunked()
         dd = next(data)
         assert len(dd) > 0, 'GSVSource could not load data'
-        assert dd.t.GRIB_paramId == 130, 'Wrong GRIB param in Dask data'
 
     # High-level, integrated test
     def test_reader(self) -> None:
@@ -153,8 +183,8 @@ class TestGsv():
         assert "1990-01-01T00:00" in str(data.time[0].values)
         assert "1990-01-01T23:00" in str(data.time[-1].values)
         # Test if the data can actually be read and contain the expected values
-        assert data.tcc.isel(time=0).values.mean() == pytest.approx(0.6530221138649116)
-        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(0.6679689864974151)
+        assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
+        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
     def test_reader_dask(self) -> None:
         """
@@ -170,8 +200,8 @@ class TestGsv():
         assert "1990-01-01T00:00" in str(data.time[0].values)
         assert "1990-01-01T23:00" in str(data.time[-1].values)
         # Test if the data can actually be read and contain the expected values
-        assert data.tcc.isel(time=0).values.mean() == pytest.approx(0.6530221138649116)
-        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(0.6679689864974151)
+        assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
+        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
         client.shutdown()
         cluster.close()

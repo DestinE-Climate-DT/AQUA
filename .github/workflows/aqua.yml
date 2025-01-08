@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
+    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
 
 permissions:
   contents: read
@@ -131,6 +131,7 @@ jobs:
           export
           # FDB for GSV
           rm -rf /app/
+          ls -l *
           cp -r ./AQUA/AQUA_tests/fdb/ /app/
           cat /app/etc/fdb/config.yaml
           mkdir -pv /app/localroot/
@@ -160,7 +161,7 @@ jobs:
         run: |
           # Produce the HTML report. Defaults to writing in htmlcov/index.html.
           cd AQUA
-          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics or catgen"
+          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics or catgen or timeseries or teleconnections"
       - name: Processing coverage
         run: |
           if [[ ${COVERAGE_ENABLED} ]]; then

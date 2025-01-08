@@ -1,4 +1,5 @@
 import pytest
+from aqua.diagnostics import Teleconnection
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
@@ -10,8 +11,6 @@ def test_class_NAO():
     """
     Test that the NAO class works
     """
-    from teleconnections.tc_class import Teleconnection
-
     telecname = 'NAO'
     model = 'IFS'
     exp = 'test-tco79'
@@ -20,8 +19,7 @@ def test_class_NAO():
 
     telec = Teleconnection(model=model, exp=exp, source=source,
                            loglevel=loglevel, telecname=telecname,
-                           interface=interface,
-                           configdir="diagnostics/teleconnections/config")
+                           interface=interface)
 
     telec.evaluate_index()
     assert telec.index[4].values == pytest.approx(0.21909582, rel=approx_rel)

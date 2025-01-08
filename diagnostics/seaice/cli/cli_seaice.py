@@ -46,26 +46,11 @@ def parse_arguments(args):
     parser.add_argument('--source', type=str, help='Source name')
     parser.add_argument('--outputdir', type=str, help='Output directory')
     parser.add_argument('--regrid', type=str, help='Target regrid resolution')
+    parser.add_argument("--cluster", type=str,
+                        required=False, help="dask cluster address")
 
     return parser.parse_args(args)
 
-def run_analyzer(analyzer):
-    """
-    Run the given analyzer.
-
-    :param analyzer: Analyzer object.
-    """
-    
-    try:
-        analyzer.run()
-    except NoDataError as e:
-        logger.debug(f"Error: {e}")
-        logger.error("No data found for the given configuration. Exiting...")
-
-    except Exception as e:
-        logger.error(f"An error occurred while running the analyzer: {e}")
-        logger.warning("Please report this error to the developers. Exiting...")
-    
 
 if __name__ == '__main__':
     # Add the directory containing the `seaice` module to the Python path.
@@ -91,11 +76,19 @@ if __name__ == '__main__':
 
     # Dask distributed cluster
     nworkers = get_arg(args, 'nworkers', None)
-    if nworkers:
-        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+    cluster = get_arg(args, 'cluster', None)
+    private_cluster = False
+    if nworkers or cluster:
+        if not cluster:
+            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+            logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
+            private_cluster = True
+        else:
+            logger.info(f"Connecting to cluster {cluster}.")
         client = Client(cluster)
-        logger.info(f"Running with {nworkers} dask distributed workers.")
-
+    else:
+        client = None
+    
     # Outputdir
     outputdir = get_arg(args, 'outputdir', None)
     logger.debug(f"Output directory: {outputdir}")
@@ -137,7 +130,7 @@ if __name__ == '__main__':
         logger.debug(f"Final configuration: {config}")
         analyzer = SeaIceExtent(config=config, outputdir=outputdir,
                                 loglevel=loglevel)
-        run_analyzer(analyzer)
+        analyzer.run()
         logger.info("sea ice diagnostic Extent terminated!")
 
     if run_volume:
@@ -151,19 +144,27 @@ if __name__ == '__main__':
 
         analyzer = SeaIceVolume(config=config, outputdir=outputdir,
                                 loglevel=loglevel)
-        run_analyzer(analyzer)
-        logger.info("sea ice diagnostic Volume terminated!")
+        analyzer.run()
+        logger.info("sea ice diagnostic Volume has finished.")
 
     if run_concentration:
         logger.info("Running sea ice concentration diagnostic...")
         analyzer = SeaIceConcentration(config=config, outputdir=outputdir,
                                 loglevel=loglevel)
-        run_analyzer(analyzer)
-        logger.info("sea ice diagnostic Concentration terminated!")
+        analyzer.run()
+        logger.info("sea ice diagnostic Concentration has finished.")
 
     if run_thickness:
         logger.info("Running sea ice thickness diagnostic...")
         analyzer = SeaIceThickness(config=config, outputdir=outputdir,
                                 loglevel=loglevel)
-        run_analyzer(analyzer)
-        logger.info("sea ice diagnostic Thickness terminated!")   
+        analyzer.run()
+        logger.info("sea ice diagnostic Thickness has finished.")
+
+    if client:
+        client.close()
+        logger.debug("Dask client closed.")
+
+    if private_cluster:
+        cluster.close()
+        logger.debug("Dask cluster closed.")

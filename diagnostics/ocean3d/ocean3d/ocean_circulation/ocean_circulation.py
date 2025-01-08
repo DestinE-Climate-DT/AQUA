@@ -65,7 +65,7 @@ def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
 
     """
     logger = log_configure(loglevel, 'convert_avg_thetao')
-    x = np.sqrt(0.0248826675584615*absso)
+    x = xr.ufuncs.sqrt(0.0248826675584615 * absso)
     y = avg_thetao*0.025e0
     enthalpy = 61.01362420681071e0 + y*(168776.46138048015e0 +
                                         y*(-2735.2785605119625e0 + y*(2574.2164453821433e0 +
@@ -116,7 +116,7 @@ def compute_rho(absso, bigavg_thetao, ref_pressure, loglevel= "WARNING"):
     CTu = 40.
     Zu = 1e4
     deltaS = 32.
-    ss = np.sqrt((absso+deltaS)/SAu)
+    ss = xr.ufuncs.sqrt((absso+deltaS)/SAu)
     tt = bigavg_thetao / CTu
     pp = ref_pressure / Zu
 
@@ -243,7 +243,7 @@ def convert_variables(data, loglevel= "WARNING"):
 
 
 def prepare_data_for_stratification_plot(data, region=None, time=None, lat_s: float = None, lat_n: float = None, lon_w: float = None,
-                                         lon_e: float = None, loglevel= "WARNING"):
+                                         lon_e: float = None, areamean= False, timemean= False, compute_mld= False, loglevel= "WARNING"):
     """
     Prepare data for plotting stratification profiles.
 
@@ -260,11 +260,24 @@ def prepare_data_for_stratification_plot(data, region=None, time=None, lat_s: fl
         xarray.Dataset: Prepared data for plotting stratification profiles.
     """
     logger = log_configure(loglevel, 'prepare_data_for_stratification_plot')
-    data = weighted_area_mean(data, region, lat_s, lat_n, lon_w, lon_e)
+    if areamean == True:
+        data = weighted_area_mean(data, region, lat_s, lat_n, lon_w, lon_e)
+    else:
+        data = area_selection(data, region, lat_s, lat_n, lon_w, lon_e)
+        
     data = convert_variables(data)
     data_rho = data["rho"] - 1000
     data["rho"] = data_rho
+    if compute_mld == True:
+        mld = compute_mld_cont(data[["rho"]])
+        data = data.merge(mld)
+    
     data, time = data_time_selection(data, time)
+    if timemean == True:
+        data.attrs["start_year"] = data.time[0].data.astype('datetime64[Y]').astype(str)
+        data.attrs["end_year"] = data.time[-1].data.astype('datetime64[Y]').astype(str)
+        data = data.mean("time")
+        
     return data, time
 
 
@@ -317,8 +330,8 @@ def compute_mld_cont(rho, loglevel= "WARNING"):
         ["lev"])  # rho diff in second lev
     mld = cutoff_lev1+((ddif)*(rdif1))/(rdif1-rdif2)
     # The MLD is set as the maximum depth if the threshold is not exceeded before
-    mld = np.fmin(mld, depth)
-    # mld=mld.rename("mld")
+    mld = xr.ufuncs.fmin(mld, depth)
+    mld=mld.rename({"rho":"mld"})
 
     return mld
 

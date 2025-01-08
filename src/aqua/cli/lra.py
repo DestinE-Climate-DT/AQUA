@@ -142,13 +142,13 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
     Options for dry run and overwriting, as well as monitoring and zarr creation, are available
     """
 
-    models = to_list(get_arg(args, 'model', config['data'].keys()))
+    models = to_list(get_arg(args, 'model', config['data']))
     for model in models:
-        exps = to_list(get_arg(args, 'exp', config['data'][model].keys()))
+        exps = to_list(get_arg(args, 'exp', config['data'][model]))
         for exp in exps:
 
             # if you do require the entire catalog generator
-            sources = to_list(get_arg(args, 'source', config['data'][model][exp].keys()))
+            sources = to_list(get_arg(args, 'source', config['data'][model][exp]))
             for source in sources:
                 # get info on potential realizations
                 realizations = config['data'][model][exp][source].get('realizations')

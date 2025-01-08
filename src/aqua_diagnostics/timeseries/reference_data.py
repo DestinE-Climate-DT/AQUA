@@ -172,7 +172,10 @@ def get_reference_timeseries(var, formula=False,
     if formula:  # We retrieve all variables
         data = reader.retrieve()
     else:  # We retrieve only the variable of interest
-        data = reader.retrieve(var=var)
+        try:
+            data = reader.retrieve(var=var)
+        except Exception as e:
+            raise NoObservationError(f"Could not retrieve {var}. No plot will be drawn.") from e
 
     # Monthly data
     if monthly or monthly_std:

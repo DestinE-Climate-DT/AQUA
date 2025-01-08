@@ -4,6 +4,7 @@ from ocean3d import export_fig
 from ocean3d import split_ocean3d_req
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
+from dask.diagnostics import ProgressBar
 
 
 class hovmoller_plot:
@@ -137,6 +138,10 @@ class hovmoller_plot:
 
         logger.debug("Plotting started for %s", type)
         
+        with ProgressBar():
+            data = data.compute()
+            logger.debug(f"Loaded the data ({type}) into memory before plotting")
+            
         if type != "Full values":
             abs_max_avg_thetao = max(abs(np.nanmax(data.avg_thetao)), abs(np.nanmin(data.avg_thetao)))
             abs_max_so = max(abs(np.nanmax(data.avg_so)), abs(np.nanmin(data.avg_so)))
@@ -187,10 +192,11 @@ class hovmoller_plot:
         # adding type in the plot
         axs[i, 0].text(-0.35, 0.33, type.replace("wrt", "\nwrt\n"), fontsize=15, color='dimgray', rotation=90, transform=axs[i, 0].transAxes, ha='center')
 
-        if self.output:
-            type = type.replace(" ","_").lower()
-            filename =  f"{self.filename}_{type}"
-            write_data(self.output_dir, filename, data)
+        # if self.output:
+        #     type = type.replace(" ","_").lower()
+        #     filename =  f"{self.filename}_{type}"
+        #     write_data(self.output_dir, filename, data)
+        logger.debug("Plotting completed for %s", type)
     
 
 

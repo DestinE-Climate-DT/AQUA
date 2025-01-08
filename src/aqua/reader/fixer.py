@@ -477,7 +477,7 @@ class FixerMixin():
                 # 1. source case. We want to be able to work with a list of sources to scan
                 source = to_list(varfix.get("source", None))
                 # We want to process a list of sources
-                if isinstance(source, list):
+                if source:
                     match = list(set(source) & set(data.variables))
                     if match:
                         # Having more than a match should be a problem for a dataset, we do not raise an error
@@ -572,7 +572,7 @@ class FixerMixin():
                         data[source].attrs.update({"tgt_units": tgt_units})
                         for key, value in conversion_dictionary.items():
                             data[source].attrs.update({key: value})
-                            self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, value)
+                            self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, float(value))
                             log_history(data[source], f"Fixing {source} to {var}. Unit fix: {key}={value}")
 
                 # Set to NaN before a certain date

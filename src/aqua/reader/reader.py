@@ -1137,7 +1137,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                         var_match.append(element)
                 elif isinstance(element, list):
                     if self.fix is False:
-                        raise ValueError("Var %s is a list and fix is False, this is not allowed", element)
+                        raise ValueError(f"Var {element} is a list and fix is False, this is not allowed")
                     match = list(set(fdb_var) & set(element))
                     if match and len(match) == 1:
                         var_match.append(match[0])

@@ -29,7 +29,7 @@ named after the diagnostic name.
 Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
 
 The exact list of diagnostics to run and technical details of the analysis
-(such as the nuber of cpu cores to be used for each diagnostic) 
+(such as the number of workers/thread/memory to use for the dask cluster) 
 are specified in the configuration file ``config.aqua-analysis.yaml``. 
 
 .. warning::
@@ -76,17 +76,20 @@ so that the script can be used in a batch job or in a workflow.
 
 .. option:: -t <threads>, --threads <threads>
 
-    The number of threads to use for the cli and the diagnostics.
-    Default is ``0``, which means the number of threads is automatically set to the number of available cores.
-    Notice that the diagnostics are run in a single thread, which means that the parallelization
-    is used to run multiple diagnostics at the same time.
-    This is basically the number of diagnostics running in parallel.
+    This is the number of diagnostics running in parallel.
+    Default is ``0``, which means no limit.
 
 .. option:: -p, --parallel
 
     This flag activates running the diagnostics with multiple dask.distributed workers.
-    A predefined number of workers is used for each diagnostic, set in the script itself.
-    For ecmean the multiprocessing option is used.
+    By default the script will set up a common dask cluster/scheduler and close it when finished.
+    
+.. option:: --local_clusters
+    
+    This is a legacy feature to run the diagnostics with multiple dask.distributed 'local' clusters (not reccomended)
+    In this case predefined number of workers is used for each diagnostic, set in the configuration file `config.aqua-analysis.yaml`.
+    
+.. option:: 
     
 .. note ::
 
@@ -268,6 +271,10 @@ Options
 .. option:: -n, --native
     
     Flag to use the native (local) AQUA version (default is the container version).
+
+.. option:: -j, --jobname
+    
+    Alternative prefix for the job name (the default is specified in the config file)
 
 
 .. _benchmarker:
