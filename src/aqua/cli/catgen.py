@@ -45,9 +45,15 @@ class AquaFDBGenerator:
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
         self.model = self.config["model"].lower()
-        self.portfolio = self.config["portfolio"]
+        #self.portfolio = self.config["portfolio"]
+        self.resolution = self.config["resolution"]
         self.ocean_grid = self.config["ocean_grid"]
         self.num_of_realizations = int(self.config.get("num_of_realizations", 1))
+
+        #sefaty check
+        if (data_portfolio == 'production' and self.resolution not in ['production', 'lowres', 'develop'] or
+            data_portfolio == 'reduced' and self.resolution not in ['intermediate']):
+            raise KeyError(f'Wrong match between data portfolio {data_portfolio} and data resolution {self.resolution}')
 
         # portfolio
         self.logger.info("Running FDB catalog generator for %s portfolio for model %s", data_portfolio, self.model)
@@ -55,26 +61,27 @@ class AquaFDBGenerator:
         self.grids = load_yaml(os.path.join(self.dp_dir_path, data_portfolio, 'grids.yaml'))
         self.levels = load_yaml(os.path.join(self.dp_dir_path, 'definitions', 'levels.yaml'))
 
-        self.local_grids = self.get_local_grids(self.portfolio, self.grids)
+        self.local_grids = self.get_local_grids(self.resolution, self.grids)
 
 
-    def get_local_grids(self, portfolio, grids):
+    def get_local_grids(self, resolution, grids):
         """
         Get local grids based on the portfolio.
 
         Args:
-            portfolio (str): The portfolio type (production/reduced).
+            resolution (str): The portfolio resolution type.
             grids (dict): The grids definition.
 
         Returns:
             dict: Local grids for the given portfolio.
         """
         local_grids = grids["common"]
-        if portfolio in grids:
-            self.logger.debug('Update grids for specific %s portfolio', portfolio)
-            local_grids.update(grids[portfolio])
+        if resolution in grids:
+            self.logger.debug('Update grids for specific %s portfolio', resolution)
+            local_grids.update(grids[resolution])
         else:
-            self.logger.error('Cannot find grids for %s portfolio', portfolio)
+            self.logger.error('Cannot find grids for %s portfolio', resolution)
+        print(local_grids)
         return local_grids
 
     def get_available_resolutions(self, local_grids, model):
@@ -86,12 +93,12 @@ class AquaFDBGenerator:
             model (str): The model name.
 
         Returns:
-            list: List of available resolutions.
+            list: List of available grid resolutions.
         """
         re_pattern = f"horizontal-{model.upper()}-(.+)"
-        resolutions = [match.group(1) for key in local_grids if (match := re.match(re_pattern, key))]
-        self.logger.debug('Resolution found are %s', resolutions)
-        return resolutions
+        grid_resolutions = [match.group(1) for key in local_grids if (match := re.match(re_pattern, key))]
+        self.logger.debug('Resolutions found are %s', grid_resolutions)
+        return grid_resolutions
 
     @staticmethod
     def get_levelist(profile, local_grids, levels):
@@ -114,7 +121,7 @@ class AquaFDBGenerator:
         return level_data["levelist"], level_data["levels"]
 
     @staticmethod
-    def get_time(frequency):
+    def get_time(frequency, levtype):
         """
         Get time string based on the frequency.
 
@@ -127,10 +134,11 @@ class AquaFDBGenerator:
 
         freq2time = {
             "hourly": {
-                'time': '"0000/to/2300/by/0100"',
-                'chunks': 'D',
+                #'time': '"0000/to/2300/by/0100"',
+                'time': '0000',
+                'chunks': '6h' if levtype == 'pl' else 'D',
                 'savefreq': 'h'
-            }, 
+            },
             "daily": {
                 'time': "0000",
                 'chunks': "D",
@@ -138,7 +146,7 @@ class AquaFDBGenerator:
             },
             "monthly": {
                 'time': None,
-                'chunks': "MS",
+                'chunks': 'D' if levtype == 'o3d' else 'MS',
                 'savefreq': "MS"
             }
         }
@@ -160,22 +168,22 @@ class AquaFDBGenerator:
         if os.path.exists(template_file):
             self.logger.debug('Loading template for %s', template_file)
             return templateenv.get_template(os.path.basename(template_file))
-        else:
-            raise FileNotFoundError('Cannot file template file %s', template_file)
+        
+        raise FileNotFoundError(f'Cannot file template file {template_file}')
 
-    def get_profile_content(self, profile, resolution):
+    def get_profile_content(self, profile, grid_resolution):
         """
         Generate profile content based on the given parameters.
 
         Args:
             profile (dict): Profile definition.
-            resolution (str): Resolution value.
+            grid_resolution (str): Resolution value.
 
         Returns:
             dict: Generated profile content.
         """
 
-        grid = self.local_grids[f"horizontal-{self.model.upper()}-{resolution}"]
+        grid = self.local_grids[f"horizontal-{self.model.upper()}-{grid_resolution}"]
         
         aqua_grid = self.matching_grids[grid]
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
@@ -184,7 +192,10 @@ class AquaFDBGenerator:
             'atm2d' if profile["levtype"] == 'sfc' else
             'atm3d' if profile["levtype"] == 'pl' else
             'oce2d' if profile["levtype"] == 'o2d' else
-            'oce3d' if profile["levtype"] == 'o3d' else
+            'oce3d' if profile["levtype"] == 'o3d' and 'full' in profile['vertical'] else
+            'oce3d-half' if profile["levtype"] == 'o3d' and 'half' in profile['vertical'] else
+            'sol4' if profile["levtype"] == 'sol' and profile['vertical'] == 'sol4' else
+            'sol5' if profile["levtype"] == 'sol' and profile['vertical'] == 'sol5' else
             profile["levtype"]
         )
 
@@ -196,31 +207,23 @@ class AquaFDBGenerator:
                 self.model, grid_mappings[levtype].get('default')).format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
         else:
             grid_str = grid_mappings['default'].format(aqua_grid=aqua_grid)
-        
+ 
         source = f"{profile['frequency']}-{aqua_grid}-{levtype_str}"
+        self.logger.info('Source: %s', source)
 
         self.logger.debug('levtype: %s, levels: %s, grid: %s', levtype, levelist, grid_str)
 
-        time_dict = self.get_time(profile["frequency"])
-        print(self.num_of_realizations)
-        
-        # Add realization parameters if ensembles 
-        parameters = {
-            'realization': {
-                'allowed': list(range(1, self.num_of_realizations + 1)),
-                'description': 'realization member',
-                'type': 'int',
-                'default': 1
-            }
-        } if self.num_of_realizations > 1 else None
+        time_dict = self.get_time(frequency=profile["frequency"], levtype=profile['levtype'])
+        self.logger.debug('Time dict: %s', time_dict)
+        self.logger.debug('Number of realizations %s', self.num_of_realizations)
 
         kwargs = {
             "dp_version": self.dp_version,
-            "resolution": resolution,
+            "resolution": grid_resolution,
             "grid": grid_str,
             "source": source,
             "levelist": levelist,
-            "realization": self.num_of_realizations,
+            "num_of_realizations": self.num_of_realizations,
             "levels": levels_values,
             "levtype": profile["levtype"],
             "variables": profile["variables"],
@@ -228,7 +231,6 @@ class AquaFDBGenerator:
             "time": time_dict['time'],
             "chunks": time_dict['chunks'],
             "savefreq": time_dict['savefreq'], 
-            "parameters": parameters
         }
         return kwargs
 
@@ -239,8 +241,9 @@ class AquaFDBGenerator:
         Args:
             all_content (list): List of all generated content strings.
         """
-        output_dir = os.path.join(self.catalog_dir_path, 'catalogs', 
+        output_dir = os.path.join(self.catalog_dir_path, 'catalogs',
                                   self.config['catalog_dir'], 'catalog', self.model.upper())
+        os.makedirs(output_dir, exist_ok=True)
         output_filename = f"{self.config['exp']}.yaml"
         output_path = os.path.join(output_dir, output_filename)
 
@@ -256,8 +259,8 @@ class AquaFDBGenerator:
 
         main_yaml_path = os.path.join(output_dir, 'main.yaml')
         if not os.path.exists(main_yaml_path):
-            main_yaml = {'sources': {}} 
-        else: 
+            main_yaml = {'sources': {}}
+        else:
             main_yaml = load_yaml(main_yaml_path)
         main_yaml['sources'][self.config['exp']] = {
             'description': self.config['description'],
@@ -276,16 +279,18 @@ class AquaFDBGenerator:
 
         all_content = []
 
-        resolutions = self.get_available_resolutions(self.local_grids, self.model)
+        grid_resolutions = self.get_available_resolutions(self.local_grids, self.model)
         for profile in self.dp[self.model]:
-            if not resolutions:
+            if not grid_resolutions:
                 self.logger.error('No resolutions found, generating an empty file!')
-            for resolution in resolutions:
-                content = self.get_profile_content(profile, resolution)
+            for grid_resolution in grid_resolutions:
+                content = self.get_profile_content(profile, grid_resolution)
                 combined = {**self.config, **content}
-                self.logger.info('Creating catalog entry for %s', combined['source'])
-                for replacepath in ['fdb_home', 'eccodes_path']:
-                    combined[replacepath] = '"' + replace_intake_vars(combined[replacepath], catalog=combined['catalog_dir']) + '"'
+                self.logger.debug('Creating catalog entry for %s', combined['source'])
+                #self.logger.debug(combined)
+                for replacepath in ['fdb_home', 'fdb_home_bridge']:
+                    if 'replacepath' in combined:
+                        combined[replacepath] = '"' + replace_intake_vars(combined[replacepath], catalog=combined['catalog_dir']) + '"'
                 all_content.append(self.template.render(combined))
 
         self.create_catalog_entry(all_content)
@@ -305,4 +310,4 @@ if __name__ == '__main__':
 
     args = catgen_parser().parse_args(sys.argv[1:])
     catgen_execute(args)
-    
+

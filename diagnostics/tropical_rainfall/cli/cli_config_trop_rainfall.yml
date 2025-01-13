@@ -16,7 +16,7 @@ class_attributes:
   num_of_bins: 10000                  # Number of bins for histogram generation
   first_edge: 0                       # Starting edge value for the histogram bins
   width_of_bin: 0.5                   # Width of each bin in the histogram, in mm/day
-  model_variable: 'mtpr'              # Model variable to be analyzed
+  model_variable: 'tprate'              # Model variable to be analyzed
   new_unit: 'mm/day'                  # Unit for the model variable
 
 plot:

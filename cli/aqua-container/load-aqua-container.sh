@@ -158,7 +158,7 @@ function setup_container_path(){
     
     if [ ${version} == "latest" ] ; then
         echo "Asking for latest AQUA version, detecting the more recent available in ${AQUA_folder}" >&2
-        available_versions=$(find ${AQUA_folder} -type f -name 'aqua_*.sif' -exec basename {} .sif \; | sed 's/^aqua_//')
+        available_versions=$(find ${AQUA_folder}/ -type f -name 'aqua_*.sif' -exec basename {} .sif \; | sed 's/^aqua_//')
         version=$(printf "%s\n" "${available_versions[@]}" | sort -V -r | head -n 1 )
         echo "AQUA v${version} selected! If you are not happy, please specify your version with -v flag" >&2
     fi 

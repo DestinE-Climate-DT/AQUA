@@ -2,10 +2,10 @@ dataset:
   catalog: null #optional, not necessary
   model: IFS-NEMO
   exp: historical-1990
-  atm_vars: ['2t', 'mtpr', 'msl', 'mer', 'metss', 'mntss', 'tcc', 'msr',
-    'mtnswrf', 'mtnlwrf', 'msnswrf', 'msnlwrf', 'msshf', 'mslhf',
+  atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
+    'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
     'u', 'v', 't', 'q']
-  oce_vars: ['avg_tos', 'avg_siconc', 'avg_sos']
+  oce_vars: ['tos', 'siconc', 'sos']
   year1: null #if you want to select some specific years, otherwise use the entire dataset
   year2: null
 

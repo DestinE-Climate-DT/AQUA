@@ -2,19 +2,19 @@
 fixer_name:
     # These are for tests
     ifs-ci-test:
-        #method: merge #replace #merge
+        convention: eccodes
         data_model: ifs
         deltat: 3600
         jump: month
         vars:
             2t:
-                source: 2t
                 attributes: 
                     donald: 'duck'
-            ttr:    # Just decumulate OLR
-                source: ttr
+            tnlwrf: # This is a block merged with the conversion-eccodes which gives the GRIB details
                 decumulate: true
-            mtntrf: # Convert with auto unit conversion from eccodes properties
+                attributes:
+                    description: "Top thermal radiation originally found in the dataset and decumulated"
+            mtntrf: # Convert with auto unit conversion from eccodes properties, notice that this is an old shortname
                 derived: ttr
                 grib: true
                 decumulate: true     
@@ -35,7 +35,6 @@ fixer_name:
         vars:
             2t:
                 mindate: 2020-08-01T00:00
-                source: 2t
 
     ifs-ci-coords:
         data_model: ifs

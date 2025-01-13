@@ -12,6 +12,19 @@ FROM mambaorg/micromamba:1.5.6 as micromamba
 FROM ghcr.io/destine-climate-dt/base:ubuntu-22.04 as fdb
 
 
+# Install dependencies
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get --yes update && \
+    apt-get --yes upgrade && \
+    apt-get --yes --no-install-recommends install \
+        ssh \
+        vim \
+        && \
+    apt-get --yes clean && \
+    apt-get --yes autoremove && \
+    rm -rf /var/lib/apt/lists/*
+
+
 # We switch to mamba user later, root for now just to create the user.
 USER root
 

@@ -34,7 +34,7 @@ You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/c
 
 ## Examples
 
-Please look at the `notebook` folder to explore AQUA functionalities. 
+Please look at the `notebook` folder to explore AQUA functionalities.
 
 ## Command lines tools
 

@@ -16,7 +16,7 @@ models:
 #     experiment: ssp370
 #     source: daily-hpz10-oce2d
 #     regrid: r005
-#     variable: avg_zos
+#     variable: zos
 #     zoom: 10
 #     timespan: ['2020-01-20', '2025-05-30']
 # #    timespan: ['2020-01-01', '2020-12-31']
@@ -25,7 +25,7 @@ models:
     experiment: ssp370
     source: daily-r025-oce2d
     regrid: r005
-    variable: avg_zos
+    variable: zos
     zoom: 7
     timespan: ['2020-01-01', '2024-12-31']
     
@@ -33,7 +33,7 @@ models:
   #   experiment: story-2017-historical
   #   source: hourly-hpz7-oce2d
   #   regrid: r005
-  #   variable: avg_zos
+  #   variable: zos
   #   zoom: 7
   #   timespan: ['2017-01-21', '2017-12-31']
 

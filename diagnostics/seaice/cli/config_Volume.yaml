@@ -10,20 +10,20 @@ models:
     exp: historical-1990
     source: lra-r100-monthly
     regrid: null
-    var: avg_sivol
+    var: sivol
     timespan: null # can be of the format ['2020-01-20', '2024-12-31']
 # These are observational datasets / reanalyses
   - model: PSC
     exp: PIOMAS
     source: monthly
     regrid: null
-    variable: avg_sivol
+    variable: sivol
     timespan: null
   - model: PSC
     exp: GIOMAS
     source: monthly
     regrid: null
-    variable: avg_sivol
+    variable: sivol
     timespan: null
     
 regions: # If this block is missing all regions will be evaluated

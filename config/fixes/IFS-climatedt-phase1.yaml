@@ -1,0 +1,90 @@
+fixer_name:
+    ifs-destine-v1:
+        data_model: ifs
+        deltat: 3600
+        convention: eccodes
+        # delete: [tprate]
+
+        vars:
+            tprate:
+                nanfirst: true
+            ie:
+                src_units: m
+                nanfirst: True
+            tsrwe:
+                src_units: m
+                nanfirst: True
+            slhtf:
+                nanfirst: True
+            ishf:
+                nanfirst: True
+            snswrf:
+                nanfirst: True
+            snlwrf:
+                nanfirst: True
+            sdlwrf:
+                nanfirst: True
+            sdswrf:
+                nanfirst: True
+            tnswrf:
+                nanfirst: True
+            tnlwrf:
+                nanfirst: True
+            tdswrf:
+                nanfirst: True      
+            iews:
+                nanfirst: True
+            inss:
+                nanfirst: True
+            surfror:
+                nanfirst: True
+            ssurfror:
+                nanfirst: True
+
+    ifs-nemo-destine-v1-monthly:
+        convention: eccodes
+        vars:
+            ie:
+                src_units: m
+            tsrwe:
+                src_units: m
+
+    ifs-nemo-destine-v2-monthly:
+        # multio saves 2t as mean2t if it averages. This is pretty weird and we have to fix it back.
+        parent: ifs-nemo-destine-v1-monthly
+        convention: eccodes
+        deltat: monthly
+
+    ifs-nemo-destine-v1-nan:  # special version for historical-1990 IFS-NEMO data, fixing to nan first step of month
+        parent: ifs-destine-v1
+        convention: eccodes
+        # The nanfirst keys fix to NaN the first step of each month
+        # for cumulated variables of this experiment
+        # The fix is activated by specifying nanfirst_enddate
+        # The dates are exclusive (the first step is actually ok and will be kept)
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 1999-10-01
+
+    ifs-nemo-destine-v1-nan-lowres:  # special version for historical-1990-dev-lowres IFS-NEMO data, fixing to nan first step of month
+        parent: ifs-destine-v1
+        convention: eccodes
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 2050-01-01
+
+    ifs-fesom-destine-v1-nan:  # special version for historical-1990 IFS-FESOM data, fixing to nan first step of month
+        parent: ifs-destine-v1
+        convention: eccodes
+        nanfirst_startdate: 1990-01-01
+        nanfirst_enddate: 2020-01-01
+    
+    ifs-ecmwf_reduced-v1:
+        data_model: ifs
+        deltat: 3600
+        delete: [tp]
+        convention: eccodes
+
+    ifs-fesom-reduced-v2:
+        parent: ifs-destine-v1
+        data_model: ifs
+        deltat: monthly
+        convention: eccodes

@@ -1,0 +1,94 @@
+fixer_name:
+    ifs-nextgems:
+        convenction: eccodes
+        data_model: ifs
+        deltat: 3600
+        jump: month
+        vars:
+            tprate:
+                decumulate: true
+                src_units: m
+            cprea:
+                decumulate: true
+                src_units: m
+            lsprate:
+                decumulate: true
+                src_units: m
+            ie:
+                decumulate: true
+                src_units: m
+            # esrate:
+            #     source: es
+            #     grib: true
+            #     decumulate: true
+            #     src_units: m
+            #     units: kg m**-2 s**-1
+            # mrort:
+            #     source: ro
+            #     grib: true
+            #     decumulate: true
+            #     src_units: m
+            #     units: kg m**-2 s**-1
+            tsrwe:
+                decumulate: true
+                src_units: m
+            slhtf:
+                decumulate: true
+            ishf:
+                decumulate: true
+            snswrf:
+                decumulate: true
+            sdswrf:
+                decumulate: true    
+            snlwrf:
+                decumulate: true
+            sdlwrf:
+                decumulate: true
+            tnswrf:
+                decumulate: true
+            tnlwrf:
+                decumulate: true         
+            var172045:  # if the variable has no short name we can use its paramId
+                source: smlt
+                grib: true
+                decumulate: true
+            iews:
+                decumulate: true  
+            inss: 
+                decumulate: true
+            surfror:  # a very recent version of eccodes is needed for this one
+                decumulate: true 
+            lcc:
+                src_units: frac
+
+    ifs-multio-cycle3:
+        # for this exp we have a lot of output from MultI/O, already decumulated and
+        # averaged monthly, so default is without decumulation
+        convention: eccodes
+        vars:
+            tprate:
+                src_units: m s**-1
+            cprea:
+                src_units: m s**-1
+            lsprate:
+                src_units: m s**-1
+            ie:
+                src_units: m s**-1
+            tsrwe:
+                src_units: m s**-1
+            slhtf:
+                src_units: W/m2
+            ishf:
+                src_units: W/m2
+            snswrf:
+                src_units: W/m2
+            sdswrf:
+                src_units: W/m2
+            snlwrf:
+                src_units: W/m2
+            sdlwrf:
+                src_units: W/m2
+            tnswrf:
+                src_units: W/m2
+            tnlwrf:
+                src_units: W/m2

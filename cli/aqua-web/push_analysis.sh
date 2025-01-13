@@ -4,6 +4,23 @@
 
 # CLI tool to push analysis results to aqua-web
 
+
+make_contents() {
+    # This assumes that we are inside the aqua-web repository
+
+    if [ "$content" -eq 1 ]; then
+        log_message INFO "Making all content files"
+        python $SCRIPT_DIR/make_contents.py -f
+        dstdir="./content/png"
+        git add $dstdir
+    else
+        log_message INFO "Making content files for $1"
+        python $SCRIPT_DIR/make_contents.py -f -e $1
+        dstdir="./content/png/$1"
+        git add $dstdir
+    fi
+}
+
 collect_figures() {
     # This assumes that we are inside the aqua-web repository
 
@@ -17,19 +34,21 @@ collect_figures() {
     if [ "$wipe" -eq 1 ]; then
         log_message INFO "Wiping destination directory $dstdir"
         git rm -r $dstdir
-        mkdir -p $dstdir
     fi
+
+    mkdir -p $dstdir
 
     find $indir -name "*.pdf"  -exec cp {} $dstdir/ \;
 
     # Remove dates from EC-mean filenames
     for file in $dstdir/PI4*_????_????.pdf $dstdir/global_mean*_????_????.pdf
     do
-        mv -- "$file" "${file%_*_*}.pdf"
+        if [ -e "$file" ]; then
+            mv -- "$file" "${file%_*_*}.pdf"
+        fi
     done
 
     echo $(date) > $dstdir/last_update.txt
-
     git add $dstdir
 }
 
@@ -46,7 +65,6 @@ convert_pdf_to_png() {
     
         IFS='/' read -r catalog model experiment <<< "$1"
         ./pdf_to_png.sh "$catalog" "$model" "$experiment"
-
         git add $dstdir
     fi
 }
@@ -62,15 +80,16 @@ print_help() {
     echo "                         or the name of a text file containing a list of catalog, model, experiment (space separated)"
     echo
     echo "Options:"
-    echo "  -h, --help             display this help and exit"
     echo "  -b, --branch BRANCH    branch to push to (optional, default is "main")"
-    echo "  -u, --user USER:PAT    credentials (in the format "username:PAT") to create an automatic PR for the branch (optional)"
-    echo "  -m, --message MESSAGE  message for the automatic PR (optional)"
-    echo "  -t, --title TITLE      title for the automatic PR (optional)"
-    echo "  -w, --wipe             wipe the destination directory before copying the images"
-    echo "  -n, --no-convert       do not convert PDFs to PNGs"
+    echo "  -c, --content          flag to refresh all content.yaml files (default is only specific experiment)"
+    echo "  -d, --dry-run          do not push to the repository"
+    echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
-#    echo "  -r, --repository REPO  specify a local copy of the aqua-web repository"
+    echo "  -m, --message MESSAGE  message for the automatic PR (optional)"
+    echo "  -n, --no-convert       do not convert PDFs to PNGs"
+    echo "  -t, --title TITLE      title for the automatic PR (optional)"
+    echo "  -u, --user USER:PAT    credentials (in the format "username:PAT") to create an automatic PR for the branch (optional)"
+    echo "  -w, --wipe             wipe the destination directory before copying the images"
 }
 
 if [ -z "$1" ] || [ -z "$2" ]; then
@@ -84,8 +103,11 @@ repository=""
 user=""
 message=""
 wipe=0
+dry=0
+content=0
 convert=1
 loglevel=2
+
 while [[ $# -gt 2 ]]; do
   case "$1" in
     -h|--help)
@@ -120,10 +142,14 @@ while [[ $# -gt 2 ]]; do
         loglevel="$2"
         shift 2
         ;;
-    # -r|--repository)
-    #     repository="$2"
-    #     shift 2
-    #     ;;
+    -c|--content)
+        content=1
+        shift
+        ;;
+    -d|--dry-run)
+        dry=1
+        shift
+        ;;
     -*|--*)
       echo "Unknown option: $1"
       exit 1
@@ -208,12 +234,14 @@ if [ -f "$exps" ]; then
         log_message INFO "Collect figures for $catalog/$model/$experiment and converting to png"
         collect_figures "$1" "$catalog/$model/$experiment" $wipe
         convert_pdf_to_png "$catalog/$model/$experiment"
+        make_contents "$catalog/$model/$experiment"  # create catalog.yaml and catalog.json
         description="$description|$catalog|$experiment|$model|\n"
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"
     collect_figures "$indir" "$exps" $wipe
     convert_pdf_to_png "$exps"
+    make_contents "$exps"  # create catalog.yaml and catalog.json
     description="$description|${exps//\//|}|\n"
 fi
 
@@ -222,6 +250,12 @@ log_message INFO "Commit and push"
 
 commit_message="update pdfs $(date)"
 git commit -m "$commit_message"
+
+if [ "$dry" -eq 1 ]; then
+    log_message INFO "Dry run, not pushing to the repository"
+    cd ..
+    exit 0
+fi
 
 if [ -n "$branch" ]; then
     git push --set-upstream origin $branch

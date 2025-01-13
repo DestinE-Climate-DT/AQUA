@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from aqua import Reader
 from aqua.logger import log_configure
-from aqua.util import create_folder, add_pdf_metadata
+from aqua.util import OutputSaver
 from aqua.util import time_to_string, evaluate_colorbar_limits
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from .reference_data import get_reference_ts_gregory, get_reference_toa_gregory
@@ -24,12 +24,14 @@ class GregoryPlot():
                  models=None, exps=None, sources=None,
                  monthly=True, annual=True,
                  regrid=None,
-                 ts_name='2t', toa_name=['mtnlwrf', 'mtnswrf'],
+                 ts_name='2t', toa_name=['tnlwrf', 'tnswrf'],
                  ts_std_start='1980-01-01', ts_std_end='2010-12-31',
                  toa_std_start='2001-01-01', toa_std_end='2020-12-31',
                  ref=True, save=True,
-                 outdir='./', outfile=None,
-                 loglevel='WARNING'):
+                 outdir='./',
+                 loglevel='WARNING',
+                 rebuild=True, filename_keys=None,
+                 save_pdf=True, save_png=True, dpi=300):
         """
         Args:
             catalogs (list, opt): List of catalogs to search for the data.
@@ -44,7 +46,7 @@ class GregoryPlot():
                           Default is None.
             ts (str): variable name for 2m temperature, default is '2t'.
             toa (list): list of variable names for net radiation at TOA,
-                        default is ['mtnlwrf', 'mtnswrf'].
+                        default is ['tnlwrf', 'tnswrf'].
             ts_std_start (str): Start date for standard deviation calculation for 2m temperature.
                                 Default is '1980-01-01'.
             ts_std_end (str): End date for standard deviation calculation for 2m temperature.
@@ -58,8 +60,14 @@ class GregoryPlot():
                         and CERES for net radiation at TOA.
             save (bool): If True, save the figure. Default is True.
             outdir (str): Output directory. Default is './'.
-            outfile (str): Output file name. Default is None.
             loglevel (str): Logging level. Default is WARNING.
+            rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
+            filename_keys (list, optional): List of keys to keep in the filename.
+                                            Default is None, which includes all keys (see OutputNamer class).
+            save_pdf (bool): If True, save the figure as a PDF. Default is True.
+            save_png (bool): If True, save the figure as a PNG. Default is True.
+            dpi (int, optional): Dots per inch (DPI) for saving figures. Default is 300.
+
         """
         self.loglevel = loglevel
         self.logger = log_configure(loglevel, 'Gregory plot')
@@ -94,13 +102,20 @@ class GregoryPlot():
         self.toa_std_end = toa_std_end
         self.logger.debug(f"Retrieving {self.retrieve_list}, for standard deviation calculation: "
                           f"2m temperature from {time_to_string(self.ts_std_start)} to {time_to_string(self.ts_std_end)}, "
-                          f"net radiation at TOA from {time_to_string(self.toa_std_start)} to {time_to_string(self.toa_std_end)}")
+                          f"net radiation at TOA from {time_to_string(self.toa_std_start)} to {time_to_string(self.toa_std_end)}") # noqa
 
         self.save = save
         if self.save is False:
             self.logger.info("No output file will be saved.")
         self.outdir = outdir
-        self.outfile = outfile
+
+        self.diagnostic_product = 'gregory_plot'
+        self.diagnostic = 'timeseries'
+        self.rebuild = rebuild
+        self.filename_keys = filename_keys
+        self.save_pdf = save_pdf
+        self.save_png = save_png
+        self.dpi = dpi
 
     def run(self):
         """
@@ -128,6 +143,7 @@ class GregoryPlot():
                                 exp=self.exps[i], source=self.sources[i],
                                 regrid=self.regrid, loglevel=self.loglevel)
                 data = reader.retrieve(var=self.retrieve_list)
+                # We're assuming the ts is in K and we want it in C
                 ts = reader.fldmean(data[self.ts_name]) - 273.15
                 toa = reader.fldmean(data[self.toa_name[0]] + data[self.toa_name[1]])
             except Exception as e:
@@ -202,6 +218,7 @@ class GregoryPlot():
                 self.logger.debug(f"Error: {e}")
                 self.logger.error("No reference data available. No reference plot will be drawn.")
                 self.ref = False
+            # We're assuming the ts is in K and we want it in C
             self.ref_ts_mean = ref_ts_mean - 273.15
             self.ref_ts_std = ref_ts_std
             self.ref_toa_mean = ref_toa_mean
@@ -256,7 +273,7 @@ class GregoryPlot():
                         label_b = None
                         label_e = None
                     ax1.plot(self.data_ts_mon[i][0], self.data_toa_mon[i][0], marker=">",
-                             color="tab:blue", label=label_b) # Blue to be colorblind friendly
+                             color="tab:blue", label=label_b)  # Blue to be colorblind friendly
                     ax1.plot(self.data_ts_mon[i][-1], self.data_toa_mon[i][-1], marker="<",
                              color="tab:red", label=label_e)
 
@@ -311,76 +328,116 @@ class GregoryPlot():
             ax2.legend()
 
         if self.save:
-            self.save_pdf(fig)
+            self.save_image(fig)
 
-    def save_pdf(self, fig):
-        """Save the figure to a pdf file."""
-        self.logger.info("Saving figure to pdf")
-        # Save to outdir/pdf/filename
-        outfig = os.path.join(self.outdir, 'pdf')
-        self.logger.debug(f"Saving figure to {outfig}")
-        create_folder(outfig, self.loglevel)
-        if self.outfile is None:
-            self.outfile = 'global_time_series_gregory_plot'
-            for i, model in enumerate(self.models):
-                if self.catalogs[i] is not None:
-                    self.outfile += f'_{self.catalogs[i]}'
-                self.outfile += f"_{model}_{self.exps[i]}"
-            if self.ref:
-                self.outfile += "_ref_ERA5_CERES"
-            self.outfile += '.pdf'
-        self.logger.debug(f"Output file: {self.outfile}")
-        fig.savefig(os.path.join(outfig, self.outfile))
+    def save_image(self, fig):
+        """Save the figure to an image file (PDF/PNG).
+        
+        Args:
+            fig (matplotlib.figure.Figure): Figure to save.
+        """
+    
+        # Get OutputSaver instance for the first model
+        output_saver = self._get_output_saver(catalog=self.catalogs[0], model=self.models[0], exp=self.exps[0])
+        common_save_args = {'diagnostic_product': self.diagnostic_product, 'dpi': self.dpi}
 
-        description = "Gregory plot"
-        for i, model in enumerate(self.models):
-            description += f" {model} {self.exps[i]}"
-        if self.ref:
-            description += f" with reference data ERA5 for 2m temperature from {self.ts_std_start} to {self.ts_std_end}"
-            description += f" and CERES for net radiation at TOA from {self.toa_std_start} to {self.toa_std_end}."
+        # Use the helper function to generate the description
+        description = self._construct_description(plot_type="Gregory plot", ref_label="ERA5 and CERES")
         self.logger.debug(f"Description: {description}")
-        add_pdf_metadata(filename=os.path.join(outfig, self.outfile),
-                         metadata_value=description)
+
+        metadata = {"Description": description}
+
+        # Save the figure as PDF/PNG as per user preferences
+        if self.save_pdf:
+            output_saver.save_pdf(fig, metadata=metadata, **common_save_args)
+        if self.save_png:
+            output_saver.save_png(fig, metadata=metadata, **common_save_args)
 
     def save_netcdf(self):
-        """Save the data to a netcdf file."""
-        self.logger.info("Saving data to netcdf")
-        outdir = os.path.join(self.outdir, 'netcdf')
-        create_folder(outdir, self.loglevel)
+        """Save the data to a netCDF file."""
 
+        # Loop through the models and save their corresponding data
         for i, model in enumerate(self.models):
-            try:
-                if self.monthly:
-                    outfile = f'global_time_series_gregory_plot_monthly'
-                    if self.catalogs[i] is not None:
-                        outfile += f'_{self.catalogs[i]}'
-                    outfile += f'_{model}_{self.exps[i]}.nc'
-                    self.data_ts_mon[i].to_netcdf(os.path.join(outdir, outfile), mode='w')
-                    self.data_toa_mon[i].to_netcdf(os.path.join(outdir, outfile), mode='a')
-                if self.annual:
-                    outfile = f'global_time_series_gregory_plot_annual'
-                    if self.catalogs[i] is not None:
-                        outfile += f'_{self.catalogs[i]}'
-                    outfile += f'_{model}_{self.exps[i]}.nc'
-                    self.data_ts_annual[i].to_netcdf(os.path.join(outdir, outfile), mode='w')
-                    self.data_toa_annual[i].to_netcdf(os.path.join(outdir, outfile), mode='a')
-            except Exception as e:
-                self.logger.error(f"Error: {e}")
-                self.logger.error(f"Could not save data to {outfile}")
+            output_saver = self._get_output_saver(catalog=self.catalogs[i], model=model, exp=self.exps[i])
+            common_save_args = {'diagnostic_product': self.diagnostic_product}
 
+            if self.monthly:
+                self._save_frequency_data(output_saver, frequency='monthly', data_ts=self.data_ts_mon[i], data_toa=self.data_toa_mon[i], **common_save_args)
+            if self.annual:
+                self._save_frequency_data(output_saver, frequency='annual', data_ts=self.data_ts_annual[i], data_toa=self.data_toa_annual[i], **common_save_args)
+
+        # Save the reference data if required
         if self.ref:
-            try:
-                outfile = 'global_time_series_gregory_plot_ref_ERA5_CERES.nc'
-                xr.Dataset({'ts_mean': self.ref_ts_mean, 'ts_std': self.ref_ts_std,
-                            'toa_mean': self.ref_toa_mean, 'toa_std': self.ref_toa_std}).to_netcdf(os.path.join(outdir, outfile), mode='w')
-            except Exception as e:
-                self.logger.error(f"Error: {e}")
-                self.logger.error(f"Could not save reference data to {outfile}")
+            output_saver_ref = self._get_output_saver(model='ERA5', exp='CERES')
+            ref_dataset = xr.Dataset({'ts_mean': self.ref_ts_mean, 'ts_std': self.ref_ts_std,
+                                      'toa_mean': self.ref_toa_mean, 'toa_std': self.ref_toa_std})
+            output_saver_ref.save_netcdf(ref_dataset, diagnostic_product=self.diagnostic_product)
+
+    def _construct_description(self, plot_type: str = "Gregory plot", ref_label: str = None) -> str:
+        """
+        Construct a descriptive string for the output files.
+
+        Args:
+            plot_type (str): Type of plot (e.g., "Gregory plot").
+            ref_label (str, optional): Label for the reference data.
+
+        Returns:
+            str: A description of the figure or NetCDF dataset.
+        """
+        description = f"{plot_type}"
+
+        # Add model and experiment details
+        models_info = ' '.join(f"{model} {exp}" for model, exp in zip(self.models, self.exps))
+        description += f" {models_info}"
+
+        # Add reference data information if available
+        # TODO: Make the reference data source more generic
+        if self.ref:
+            description += (
+                f" with reference data ERA5 for 2m temperature from {self.ts_std_start} to {self.ts_std_end}"
+                f" and CERES for net radiation at TOA from {self.toa_std_start} to {self.toa_std_end}."
+            )
+            if ref_label:
+                description += f" with {ref_label} as reference."
+
+        return description
+
+    def _get_output_saver(self, catalog=None, model=None, exp=None):
+        """
+        Create and return an OutputSaver instance.
+
+        Args:
+            catalog (str): Catalog to use.
+            model (str): Model identifier.
+            exp (str): Experiment identifier.
+
+        Returns:
+            OutputSaver: An instance of the OutputSaver class.
+        """
+        return OutputSaver(diagnostic=self.diagnostic, catalog=catalog, model=model, exp=exp,
+                           loglevel=self.loglevel, default_path=self.outdir, rebuild=self.rebuild,
+                           filename_keys=self.filename_keys)
+
+    def _save_frequency_data(self, output_saver, frequency, data_ts, data_toa, **common_save_args):
+        """Helper function to save data for a specific frequency.
+        
+        Args:
+            output_saver (OutputSaver): OutputSaver instance.
+            frequency (str): Frequency of the data (e.g., 'monthly', 'annual').
+            data_ts (xarray.DataArray): 2m temperature data.
+            data_toa (xarray.DataArray): Net radiation at TOA data.
+            common_save_args (dict): Common arguments for saving the data.
+        """
+        output_saver.save_netcdf(data_ts, frequency=frequency, mode='w', **common_save_args)
+        output_saver.save_netcdf(data_toa, frequency=frequency, mode='a', **common_save_args)
 
     def _catalogs(self, catalogs=None):
         """
         Fill in the missing catalogs. If catalogs is None, creates a list of None
         with the same length as models, exps and sources.
+
+        Args:
+            catalogs (list): List of catalogs to search for the data.
         """
         if catalogs is None:
             self.catalogs = [None] * len(self.models)

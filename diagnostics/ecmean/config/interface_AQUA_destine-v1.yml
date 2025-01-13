@@ -57,20 +57,20 @@ variables:
     varname: '2m Temperature'
     filetype: atmbase 
   pr:
-    derived: 'mtpr'
+    derived: 'tprate'
     varname: 'Total precipitation'
     filetype: atmbase 
   prns:
-    derived: 'msr'
+    derived: 'tsrwe'
     varname: 'Snowfall'
     filetype: atmbase
   evspsbl:
     varname: Evaporation
-    derived: 'mer'
+    derived: 'ie'
     filetype: atmbase
   pme:
     varname: 'Precip. minus evap.'
-    derived: 'mtpr+mer'
+    derived: 'tprate+ie'
     filetype: atmbase
   ta: 
     varname: 'Air Temperature'
@@ -118,11 +118,11 @@ variables:
     filetype: atmbase
   siconc:
     varname: 'Sea-ice Concentration'
-    derived: avg_siconc
+    derived: siconc
     filetype: ocebase
   rlnt:
     varname: 'TOA net LW'
-    derived: mtnlwrf
+    derived: tnlwrf
     filetype: atmbase
   # rlntcs:
   #   varname: 'TOA net LW, CS'
@@ -130,7 +130,7 @@ variables:
   #   filetype: atmbase
   rsnt:
     varname: 'TOA net SW'
-    derived: mtnswrf
+    derived: tnswrf
     filetype: atmbase
   # rsntcs:
   #   varname: 'TOA net SW, CS'
@@ -139,7 +139,7 @@ variables:
   net_toa:
     varname: 'Net TOA'
     units: W/m2
-    derived: 'mtnswrf+mtnlwrf'
+    derived: 'tnswrf+tnlwrf'
     filetype: atmbase
   # swcf:
   #   varname: 'SW CRE'
@@ -151,52 +151,52 @@ variables:
   #   filetype: atmbase
   tos:
     varname: SST
-    derived: avg_tos
+    derived: tos
     filetype: ocebase
   sos:
     varname: SSS
-    derived: avg_sos
+    derived: sos
     filetype: ocebase
   pr_land:
     varname: 'Precipitation (land)'
-    derived: mtpr
+    derived: tprate
     filetype: atmbase
   pr_oce:
     varname: 'Precipitation (ocean)'
-    derived: mtpr
+    derived: tprate
     filetype: atmbase
   pme_land:
     varname: 'Precip. minus evap. (land)'
-    derived: 'mtpr+mer'
+    derived: 'tprate+ie'
     filetype: atmbase
   pme_oce:
     varname: 'Precip. minus evap. (ocean)'
-    derived: 'mtpr+mer'
+    derived: 'tprate+ie'
     filetype: atmbase
   rlns:
     varname: 'Surface net LW'
     filetype: atmbase
-    derived: msnlwrf
+    derived: snlwrf
   rsns:
     varname: 'Surface net SW'
     filetype: atmbase
-    derived: msnswrf
+    derived: snswrf
   hfss:
     varname: 'Surface SH'
     filetype: atmbase
-    derived: msshf
+    derived: ishf
   hfls:
     varname: 'Surface LH'
     filetype: atmbase
-    derived: mslhf
+    derived: slhtf
   net_sfc_nosn:
     varname: 'Net Surface (no snowfall)'
     filetype: atmbase
-    derived: 'msshf+mslhf+msnlwrf+msnswrf'
+    derived: 'ishf+slhtf+snlwrf+snswrf'
   net_sfc:
     varname: 'Net Surface'
     filetype: atmbase
-    derived: 'msshf+mslhf+msnlwrf+msnswrf-msr*334000'
+    derived: 'ishf+slhtf+snlwrf+snswrf-msr*334000'
   # toamsfc:
   #   varname: 'TOA-Sfc net radiation'
   #   units: W/m2

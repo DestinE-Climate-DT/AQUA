@@ -24,7 +24,7 @@ class Submitter():
 
     def __init__(self, loglevel='INFO', config='config.aqua-web.yaml',
                  template='aqua-web.job.j2', dryrun=False, parallel=True,
-                 wipe=False, native=False, fresh=False):
+                 wipe=False, native=False, fresh=False, jobname=None):
         """
         Initialize the Submitter class
 
@@ -37,6 +37,7 @@ class Submitter():
             wipe: wipe the destination directory before copying the images
             native: use the native AQUA version (default is the container version)
             fresh: use a fresh (new) output directory, do not recycle original one
+            jobname: alternative prefix for job name
         """
 
         if dryrun:
@@ -46,6 +47,7 @@ class Submitter():
 
         self.config, self.template = self.find_config_files(config, template)
 
+        self.jobname = jobname
         self.dryrun = dryrun
         self.parallel = parallel
         self.wipe = wipe
@@ -116,8 +118,10 @@ class Submitter():
         definitions['fresh'] = self.fresh
 
         username = definitions['username']
-        jobname = definitions.get('jobname', 'aqua-web')
-
+        if self.jobname:
+            jobname = self.jobname
+        else:
+            jobname = definitions.get('jobname', 'aqua-web')
         # create identifier for each model-exp-source-var tuple
         full_job_name = jobname + '_' + "_".join([catalog, model, exp, source])
         definitions['job_name'] = full_job_name
@@ -293,6 +297,8 @@ def parse_arguments(arguments):
                         help='logging level')
     parser.add_argument('-p', '--push', action="store_true",
                         help='flag to push to aqua-web')
+    parser.add_argument('-j', '--jobname', type=str,
+                        help='alternative prefix for job name')
     parser.add_argument('-w', '--wipe', action="store_true",
                         help='wipe the destination directory before copying the images')
     parser.add_argument('-n', '--native', action="store_true",
@@ -326,10 +332,11 @@ if __name__ == '__main__':
     wipe = get_arg(args, 'wipe', False)
     native = get_arg(args, 'native', False)
     fresh = get_arg(args, 'fresh', False)
+    jobname = get_arg(args, 'jobname', None)
 
     submitter = Submitter(config=config, template=template, dryrun=dryrun,
                           parallel=not serial, wipe=wipe, native=native,
-                          fresh=fresh, loglevel=loglevel)
+                          fresh=fresh, loglevel=loglevel, jobname=jobname)
 
     count = 0
     parent_job = None

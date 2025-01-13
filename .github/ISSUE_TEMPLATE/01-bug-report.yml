@@ -49,11 +49,10 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
-      - v0.12.2
-      - v0.12.1
-      - v0.12
-      - v0.11.*
-      - older
+      - v0.13-beta
+      - v0.13-alpha
+      - v0.12.3
+      - older (specify)
     validations:
       required: true
   - type: textarea

@@ -5,6 +5,7 @@ from ocean3d import split_ocean3d_req
 import matplotlib.pyplot as plt
 from .hovmoller_plot import hovmoller_plot
 from aqua.logger import log_configure
+from dask.diagnostics import ProgressBar
 
 
 
@@ -50,7 +51,12 @@ class time_series(hovmoller_plot):
         region_title = plot_info['region_title']
         type = plot_info['type']
         customise_level = False
+        
+        logger.debug("Plotting started for %s", type)
 
+        with ProgressBar():
+            data = data.compute()
+            logger.debug(f"Loaded data ({type}) into memory before plotting")
         if customise_level:
             if levels is None:
                 raise ValueError(
@@ -65,7 +71,7 @@ class time_series(hovmoller_plot):
             else:
                 # Select the data at the surface level (0)
                 data_level = data.isel(lev=0)
-           
+
             # Plot the temperature time series
             data_level.avg_thetao.plot.line(
                 ax=axs[i,0], label=f"{round(int(data_level.lev.data), -2)}")
@@ -113,6 +119,8 @@ class time_series(hovmoller_plot):
             filename =  f"{self.filename}_{type}"
             write_data(self.output_dir, filename, data)
     
+        logger.debug("Plotting completed for %s", type)
+
 
     def plot(self):
         """

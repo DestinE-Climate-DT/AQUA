@@ -492,7 +492,7 @@ class sshVariability():
 
             try:
                 reader = Reader(model=model_name['name'], exp=model_name['experiment'],
-                            source=model_name['source'], regrid=model_name['regrid'], zoom=model_name['zoom'], fix=True)
+                            source=model_name['source'], regrid=model_name['regrid'], zoom=model_name.get('zoom'), fix=True)
             except:
                 raise NoDataError("Model data not found.")
             

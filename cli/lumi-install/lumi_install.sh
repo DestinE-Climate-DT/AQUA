@@ -80,7 +80,7 @@ install_aqua() {
   log_message INFO "Environment has been cleaned up."
 
   # load modules
-  module load LUMI/23.09
+  module load LUMI/24.03
   module load lumi-container-wrapper
   log_message INFO "Modules have been loaded."
   
@@ -141,16 +141,15 @@ create_aqua_file() {
   touch $load_aqua_file
 
   echo '# Use ClimateDT paths' >> $load_aqua_file
-  echo 'module use /project/project_465000454/software/23.09/modules/C' >> $load_aqua_file
+  echo 'module use /project/project_465000454/software/24.03/modules/C' >> $load_aqua_file
 
   echo '# Load modules' >> $load_aqua_file
   # Removed, see issue #1195
   # echo 'module purge' >> $load_aqua_file
-  echo 'module load fdb/5.12.1-cpeCray-23.09' >> $load_aqua_file
+  echo 'module load fdb/5.12.1-cpeCray-24.03-eccodes-2.39' >> $load_aqua_file
   # These are loaded automatically with the fdb module
-  # echo 'module load eckit/1.26.3-cpeCray-23.09' >> $load_aqua_file
-  # echo 'module load metkit/1.11.14-cpeCray-23.09' >> $load_aqua_file
-  # echo 'module load eccodes/2.36.0-cpeCray-23.09' >> $load_aqua_file
+  # echo 'module load eckit/1.26.3-cpeCray-24.03' >> $load_aqua_file
+  # echo 'module load metkit/1.11.14-cpeCray-24.03' >> $load_aqua_file
     
   log_message INFO "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 

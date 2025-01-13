@@ -11,12 +11,12 @@ source_ceres: "monthly"
 diagnostic_attributes:
   box_plot: True
   box_plot_vars:
-      - -mtnlwrf
-      - mtnswrf
+      - -tnlwrf
+      - tnswrf
       # - tnr
   bias_maps: True
   bias_maps_vars: 
-      - mtnlwrf
-      - mtnswrf
+      - tnlwrf
+      - tnswrf
       - tnr
   time_series: True

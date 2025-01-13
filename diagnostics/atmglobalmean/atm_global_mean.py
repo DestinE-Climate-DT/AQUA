@@ -77,7 +77,7 @@ def seasonal_bias(dataset1=None, dataset2=None, var_name=None,
     except KeyError:
         raise NoDataError(f"The variable {var_name} is not present in the dataset. Please try again.")
 
-    if var_name == 'tprate' or var_name == 'mtpr':
+    if var_name == 'tprate' or var_name == 'tprate':
         logger.warning(f"Adjusting {var_name} to be in mm/day")
         var1 = var1 * 86400
         var2 = var2 * 86400
@@ -529,7 +529,7 @@ def plot_map_with_stats(dataset=None, var_name=None, start_date=None, end_date=N
         start_date = str(dataset["time.year"][0].values) + '-' + str(dataset["time.month"][0].values) + '-' + str(dataset["time.day"][0].values)
         end_date = str(dataset["time.year"][-1].values) + '-' + str(dataset["time.month"][-1].values) + '-' + str(dataset["time.day"][-1].values)
 
-    if var_name == 'tprate' or var_name == 'mtpr':
+    if var_name == 'tprate' or var_name == 'tprate':
         logger.warning(f"Adjusting {var_name} to be in mm/day")
         var_data = var_data * 86400
         logger.warning(f"Changing {var_name} units attribute to 'mm/day'")
@@ -561,7 +561,7 @@ def plot_map_with_stats(dataset=None, var_name=None, start_date=None, end_date=N
     cmap = 'RdBu_r'  # Choose a colormap (reversed)
     levels = np.linspace(var_min, var_max, num=21)
 
-    if var_name == 'avg_tos':
+    if var_name == 'tos':
         # TODO: need to meshgrid the lat and lon and set transform_first=True in contourf
         #       in order to be able to plot it
         logger.error(f"Cannot plot {var_name} variable.")

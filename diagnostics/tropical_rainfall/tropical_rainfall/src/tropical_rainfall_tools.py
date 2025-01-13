@@ -491,6 +491,7 @@ class ToolsClass:
         """
         fix = FixerMixin()
         fix.logger = self.logger
+        fix.deltat = 1 #HACK, this has to be revisited
 
         fix.fixer_folder, _ = (ConfigPath().get_reader_filenames())
         fix.fixes_dictionary = load_multi_yaml(fix.fixer_folder)

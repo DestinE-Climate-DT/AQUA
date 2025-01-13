@@ -3,11 +3,11 @@ import sys
 import os
 import argparse
 
+from dask.distributed import Client, LocalCluster
+
 from aqua.util import load_yaml, get_arg
 from aqua import Reader
 from aqua.logger import log_configure
-
-from dask.distributed import Client, LocalCluster
 
 def parse_arguments(args):
     """Parse command line arguments"""
@@ -36,7 +36,9 @@ def parse_arguments(args):
                         required=False)
     parser.add_argument('--end_date2', type=str, help='end date for dataset2',
                         required=False)
-
+    parser.add_argument("--cluster", type=str,
+                        required=False, help="dask cluster address")
+    
     return parser.parse_args(args)
 
 
@@ -74,10 +76,18 @@ if __name__ == '__main__':
 
     # Dask distributed cluster
     nworkers = get_arg(args, 'nworkers', None)
-    if nworkers:
-        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+    cluster = get_arg(args, 'cluster', None)
+    private_cluster = False
+    if nworkers or cluster:
+        if not cluster:
+            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+            logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
+            private_cluster = True
+        else:
+            logger.info(f"Connecting to cluster {cluster}.")
         client = Client(cluster)
-        logger.info(f"Running with {nworkers} dask distributed workers.")
+    else:
+        client = None
 
     # Acquiring model, experiment and source
     model = get_arg(args, 'model', config['data']['model'])
@@ -197,4 +207,12 @@ if __name__ == '__main__':
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")
 
-    logger.info("Atmospheric global mean biases diagnostic is terminated.")
+    if client:
+        client.close()
+        logger.debug("Dask client closed.")
+
+    if private_cluster:
+        cluster.close()
+        logger.debug("Dask cluster closed.")
+    
+    logger.info("Atmospheric global mean biases diagnostic has finished.")

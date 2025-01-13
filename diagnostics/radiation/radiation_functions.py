@@ -21,12 +21,12 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
         level (str): Input level (either 'toa' or 'sfc'). Defaults to 'toa'
         variable_names (dict): Dictionary containing variable names mapping. Defaults for toa and sfc are:
                                 default_variable_names_toa = {
-                                                        'mtnlwrf': 'mtnlwrf',
-                                                        'mtnswrf': 'mtnswrf',
+                                                        'tnlwrf': 'tnlwrf',
+                                                        'tnswrf': 'tnswrf',
                                                         }
                                 default_variable_names_sfc = {
-                                                        'msnlwrf': 'msnlwrf',
-                                                        'msnswrf': 'msnswrf',
+                                                        'snlwrf': 'snlwrf',
+                                                        'snswrf': 'snswrf',
                                                     }
         loglevel (str): The log level for the logger. Default is 'WARNING'.
 
@@ -45,13 +45,13 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     
     # Default variable names dictionaries for 'toa' and 'sfc' levels
     default_variable_names_toa = {
-        'mtnlwrf': 'mtnlwrf',
-        'mtnswrf': 'mtnswrf',
+        'tnlwrf': 'tnlwrf',
+        'tnswrf': 'tnswrf',
     }
 
     default_variable_names_sfc = {
-        'msnlwrf': 'msnlwrf',
-        'msnswrf': 'msnswrf',
+        'snlwrf': 'snlwrf',
+        'snswrf': 'snswrf',
     }
     
     # Select appropriate default variable names dictionary based on the level parameter
@@ -79,11 +79,11 @@ def process_ceres_data(exp=None, source=None, fix=True, variable_names=None , le
     data = data.rename(variable_names)
 
     if level == 'toa':
-        data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
-        ceres = reader.regrid(data[['tnr', 'mtnlwrf', 'mtnswrf']])
+        data['tnr'] = data['tnlwrf'] + data['tnswrf']
+        ceres = reader.regrid(data[['tnr', 'tnlwrf', 'tnswrf']])
     elif level == 'sfc':
-        data['snr'] = data['msnlwrf'] + data['msnswrf']
-        ceres = reader.regrid(data[['snr', 'msnlwrf', 'msnswrf']])
+        data['snr'] = data['snlwrf'] + data['snswrf']
+        ceres = reader.regrid(data[['snr', 'snlwrf', 'snswrf']])
         
     starting_year = str(ceres["time.year"][0].values) if len(ceres.sel(time=str(ceres["time.year"][0].values)).time) == 12 \
         else str(ceres["time.year"][0].values + 1)
@@ -145,8 +145,8 @@ def process_model_data(model=None, exp=None, source=None, fix=True, loglevel='WA
         reader = Reader(model=model, exp=exp, source=source,
                         regrid='r100', fix=True, loglevel=loglevel)
 
-    data = reader.retrieve(var=['2t', 'mtnlwrf', 'mtnswrf', 'mslhf', 'msnlwrf', 'msnswrf', 'msshf'])
-    data['tnr'] = data['mtnlwrf'] + data['mtnswrf']
+    data = reader.retrieve(var=['2t', 'tnlwrf', 'tnswrf', 'slhtf', 'snlwrf', 'snswrf', 'ishf'])
+    data['tnr'] = data['tnlwrf'] + data['tnswrf']
     gm = reader.fldmean(data)
     
     # Select time range if start_date and end_date are provided
@@ -194,7 +194,7 @@ def boxplot_model_data(datasets=None, model_names=None, outputdir=None, outputfi
     model_names = [dataset["model"] + ' ' + dataset["exp"] + ' ' + dataset["source"] for dataset in datasets]\
         if model_names is None else model_names
 
-    variables = ['-mtnlwrf', 'mtnswrf']\
+    variables = ['-tnlwrf', 'tnswrf']\
         if variables is None else variables
 
     for dataset, model_name in zip(datasets, model_names):
@@ -311,8 +311,8 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
         # Iterate through the years
         for year in years:
             try:
-                ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
-                tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
+                ttr_diff.append(model["gm"].tnlwrf.sel(time=str(year)) - ceres['clim_gm'].tnlwrf.values)
+                tsr_diff.append(model["gm"].tnswrf.sel(time=str(year)) - ceres['clim_gm'].tnswrf.values)
                 tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
             except KeyError:
                 # Skip the current year if not all values are found in the index 'time'
@@ -338,8 +338,8 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
     #     tnr_diff = []
     #     # Iterate through the years
     #     for year in years:
-    #         ttr_diff.append(model["gm"].mtnlwrf.sel(time=str(year)) - ceres['clim_gm'].mtnlwrf.values)
-    #         tsr_diff.append(model["gm"].mtnswrf.sel(time=str(year)) - ceres['clim_gm'].mtnswrf.values)
+    #         ttr_diff.append(model["gm"].tnlwrf.sel(time=str(year)) - ceres['clim_gm'].tnlwrf.values)
+    #         tsr_diff.append(model["gm"].tnswrf.sel(time=str(year)) - ceres['clim_gm'].tnswrf.values)
     #         tnr_diff.append(model["gm"].tnr.sel(time=str(year)) - ceres['clim_gm'].tnr.values)
     #     # Concatenate the data along the 'time' dimension
     #     ttr_diff = xr.concat(ttr_diff, dim='time')
@@ -362,16 +362,16 @@ def plot_model_comparison_timeseries(models=None, linelabels=None, ceres=None,
         shading_data = xr.concat(shading_data_list, dim='time')
         long_time = np.append(shading_data['time'], shading_data['time'][::-1])
 
-    axes[0].fill(long_time, np.append(shading_data['mtnlwrf'].min(dim='ensemble'),
-                                      shading_data['mtnlwrf'].max(dim='ensemble')[::-1]),
+    axes[0].fill(long_time, np.append(shading_data['tnlwrf'].min(dim='ensemble'),
+                                      shading_data['tnlwrf'].max(dim='ensemble')[::-1]),
                  color='lightgrey', alpha=0.6, label='ceres individual years', zorder=0)
     axes[0].set_title('LW', fontsize=16)
     axes[0].set_xticklabels([])
     axes[0].set_xlabel('')
     axes[0].legend(loc="upper left", frameon=False, fontsize='medium', ncol=3)
     
-    axes[1].fill(long_time, np.append(shading_data['mtnswrf'].min(dim='ensemble'),
-                                      shading_data['mtnswrf'].max(dim='ensemble')[::-1]),
+    axes[1].fill(long_time, np.append(shading_data['tnswrf'].min(dim='ensemble'),
+                                      shading_data['tnswrf'].max(dim='ensemble')[::-1]),
                  color='lightgrey', alpha=0.6, label='ceres individual years', zorder=0)
     axes[1].set_title('SW', fontsize=16)
     axes[1].set_xticklabels([])
@@ -440,7 +440,7 @@ def plot_mean_bias(model=None, var=None, model_label=None, ceres=None, start_yea
 
     Args:
         model (xarray.Dataset): The model TOA radiation data.
-        var (str): The variable to plot (e.g., 'mtnswrf', 'mtnlwrf', 'tnr').
+        var (str): The variable to plot (e.g., 'tnswrf', 'tnlwrf', 'tnr').
         model_label (str): The label for the model.
         ceres (float): The CERES TOA radiation climatology.
         start_year (str): The start year of the time range for the model data.

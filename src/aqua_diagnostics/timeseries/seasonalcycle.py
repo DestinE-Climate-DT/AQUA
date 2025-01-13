@@ -6,7 +6,7 @@ import gc
 
 import xarray as xr
 from aqua.graphics import plot_seasonalcycle
-from aqua.util import create_folder, add_pdf_metadata, time_to_string
+from aqua.util import time_to_string, OutputSaver
 from aqua.logger import log_configure
 
 from .timeseries import Timeseries
@@ -31,10 +31,10 @@ class SeasonalCycle(Timeseries):
                  plot_kw={'ylim': {}},
                  save=True,
                  outdir='./',
-                 outfile=None,
                  longname=None, units=None,
                  lon_limits=None, lat_limits=None,
-                 loglevel='WARNING'):
+                 loglevel='WARNING', rebuild=None, filename_keys=None,
+                 save_pdf=True, save_png=True, dpi=300):
         """
         Initialize the class.
 
@@ -56,12 +56,17 @@ class SeasonalCycle(Timeseries):
             plot_kw: the keyword arguments to pass to the plot
             save: if True, save the figure. Default is True.
             outdir: the output directory
-            outfile: the output file
             longname: the long name of the variable. Override the attribute in the data file.
             units: the units of the variable. Override the attribute in the data file.
             lon_limits (list): Longitude limits of the area to evaluate. Default is None.
             lat_limits (list): Latitude limits of the area to evaluate. Default is None.
             loglevel: the logging level. Default is 'WARNING'.
+            rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
+            filename_keys (list, optional): List of keys to keep in the filename.
+                                            Default is None, which includes all keys (see OutputNamer class).
+            save_pdf (bool): If True, save the figure as a PDF. Default is True.
+            save_png (bool): If True, save the figure as a PNG. Default is True.
+            dpi (int, optional): Dots per inch (DPI) for saving figures. Default is 300.
         """
         super().__init__(var=var, formula=formula,
                          catalogs=catalogs,
@@ -75,10 +80,11 @@ class SeasonalCycle(Timeseries):
                          plot_kw=plot_kw,
                          save=save,
                          outdir=outdir,
-                         outfile=outfile,
                          longname=longname, units=units,
                          lon_limits=lon_limits, lat_limits=lat_limits,
-                         loglevel=loglevel)
+                         loglevel=loglevel,
+                         rebuild=rebuild, filename_keys=filename_keys,
+                         save_pdf=save_pdf, save_png=save_png, dpi=dpi)
         # Change the logger name
         self.logger = log_configure(log_level=loglevel, log_name="SeasonalCycle")
         self.logger.info("SeasonalCycle class initialized")
@@ -87,6 +93,9 @@ class SeasonalCycle(Timeseries):
         self.clean_timeseries = super().cleanup
         if plot_ref:
             self.cycle_ref = None
+
+        self.diagnostic_product = 'seasonalcycle'
+        self.diagnostic = 'timeseries'
 
     def retrieve_ref(self):
         """
@@ -155,48 +164,102 @@ class SeasonalCycle(Timeseries):
                                     title=title)
 
         if self.save:
-            self.save_seasonal_pdf(fig, ref_label)
+            self.save_seasonal_image(fig, ref_label)
             self.save_seasonal_netcdf()
 
-    def save_seasonal_pdf(self, fig, ref_label):
+    def save_seasonal_image(self, fig, ref_label):
         """
-        Save the figure to a pdf file
+        Save the figure to an image file (PDF/PNG).
 
         Args:
             fig (matplotlib.figure.Figure): Figure to save
             ref_label (str): Label for the reference data
         """
-        self.logger.info("Saving figure to pdf")
+        output_saver = self._get_output_saver(catalog=self.catalogs[0], model=self.models[0], exp=self.exps[0])
+        common_save_args = self._construct_save_args()
 
-        outfig = os.path.join(self.outdir, 'pdf')
-        self.logger.debug(f"Saving figure to {outfig}")
-        create_folder(outfig, self.loglevel)
-        if self.outfile is None:
-            self.outfile = f'global_time_series_seasonalcycle_{self.var}'
-            for i, model in enumerate(self.models):
-                if self.catalogs[i] is not None:
-                    self.outfile += f'_{self.catalogs[i]}'
-                self.outfile += f'_{model}_{self.exps[i]}'
-            if self.lon_limits is not None:
-                self.outfile += f'_lon{self.lon_limits[0]}_{self.lon_limits[1]}'
-            if self.lat_limits is not None:
-                self.outfile += f'_lat{self.lat_limits[0]}_{self.lat_limits[1]}'
-            if self.plot_ref:
-                self.outfile += f'_{ref_label}'
-            self.outfile += '.pdf'
-        self.logger.debug(f"Outfile: {self.outfile}")
-        fig.savefig(os.path.join(outfig, self.outfile))
+        description = self._construct_description(ref_label)
+        self.logger.debug(f"Description: {description}")
 
+        metadata = {"Description": description}
+
+        if self.save_pdf:
+            output_saver.save_pdf(fig, metadata=metadata, **common_save_args)
+        if self.save_png:
+            output_saver.save_png(fig, metadata=metadata, **common_save_args)
+
+    def save_seasonal_netcdf(self):
+        """Save the seasonal cycle to a NetCDF file."""
+        for i, model in enumerate(self.models):
+            output_saver = self._get_output_saver(catalog=self.catalogs[i], model=model, exp=self.exps[i])
+            common_save_args = self._construct_save_args()
+            # Pop the 'dpi' key from the dictionary
+            common_save_args.pop('dpi', None)
+
+            output_saver.save_netcdf(self.cycle[i], **common_save_args)
+
+        if self.plot_ref:
+            output_saver_ref = self._get_output_saver(model=self.plot_ref_kw['model'], exp=self.plot_ref_kw['exp'])
+            output_saver_ref.save_netcdf(self.cycle_ref, **common_save_args)
+
+    def _get_output_saver(self, catalog=None, model=None, exp=None):
+        """
+        Create and return an OutputSaver instance.
+
+        Args:
+            catalog (str): Catalog to use.
+            model (str): Model identifier.
+            exp (str): Experiment identifier.
+
+        Returns:
+            OutputSaver: An instance of the OutputSaver class.
+        """
+        # TODO: CHeck if this can be done by using the similar method from the parent class
+        return OutputSaver(diagnostic=self.diagnostic, catalog=catalog, model=model, exp=exp,
+                           loglevel=self.loglevel, default_path=self.outdir, rebuild=self.rebuild,
+                           filename_keys=self.filename_keys)
+
+    def _construct_save_args(self):
+        """
+        Construct common save arguments for image and NetCDF files.
+
+        Returns:
+            dict: Dictionary containing the common save arguments.
+        """
+        common_save_args = {'diagnostic_product': self.diagnostic_product, 'var': self.var, 'dpi': self.dpi}
+
+        if self.plot_ref:
+            common_save_args.update({'model_2': self.plot_ref_kw['model'], 'exp_2': self.plot_ref_kw['exp']})
+        if self.lon_limits is not None:
+            lon_limits = f'_lon{self.lon_limits[0]}_{self.lon_limits[1]}'
+            common_save_args.update({'lon_limits': lon_limits})
+        if self.lat_limits is not None:
+            lat_limits = f'_lat{self.lat_limits[0]}_{self.lat_limits[1]}'
+            common_save_args.update({'lat_limits': lat_limits})
+
+        return common_save_args
+
+    def _construct_description(self, ref_label):
+        """
+        Construct a description string for the metadata.
+
+        Args:
+            ref_label (str): Label for the reference data.
+
+        Returns:
+            str: Constructed description.
+        """
         description = f"Seasonal cycle of the global mean of {self.var}"
+
         for i, model in enumerate(self.models):
             description += f" for {model} {self.exps[i]}"
             description += self.description_timerange[i]
         if self.plot_ref:
             description += f" with {ref_label} as reference,"
             try:
-                description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"  # noqa: E501
+                description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"
             except ValueError:
-                description += f" std evaluated from {time_to_string(self.ref_mon.time.values[0])} to {time_to_string(self.ref_mon.time.values[-1])}"  # noqa: E501
+                description += f" std evaluated from {time_to_string(self.ref_mon.time.values[0])} to {time_to_string(self.ref_mon.time.values[-1])}"
         description += "."
         if self.lon_limits is not None or self.lat_limits is not None:
             description += " The data have been averaged over a region defined by"
@@ -205,34 +268,8 @@ class SeasonalCycle(Timeseries):
             if self.lat_limits is not None:
                 description += f" latitude limits {self.lat_limits}"
             description += "."
-        self.logger.debug(f"Description: {description}")
-        add_pdf_metadata(filename=os.path.join(outfig, self.outfile),
-                         metadata_value=description)
 
-    def save_seasonal_netcdf(self):
-        """
-        Save the seasonal cycle to a netcdf file
-        """
-        self.logger.info("Saving seasonal cycle to netcdf")
-        outdir = os.path.join(self.outdir, 'netcdf')
-        create_folder(outdir, self.loglevel)
-
-        for i, model in enumerate(self.models):
-            outfile = f'global_time_series_seasonalcycle_{self.var}'
-            if self.catalogs[i] is not None:
-                outfile += f'_{self.catalogs[i]}'
-            outfile += f'_{model}_{self.exps[i]}.nc'
-            try:
-                self.cycle[i].to_netcdf(os.path.join(outdir, outfile))
-            except Exception as e:
-                self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
-
-        if self.plot_ref:
-            outfile = f'global_time_series_seasonalcycle_{self.var}_{self.plot_ref_kw["model"]}.nc'
-            try:
-                self.cycle_ref.to_netcdf(os.path.join(outdir, outfile))
-            except Exception as e:
-                self.logger.error(f"Error while saving netcdf {outdir}/{outfile}: {e}")
+        return description
 
     def cleanup(self):
         """Clean up the data."""

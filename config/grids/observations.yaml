@@ -21,7 +21,7 @@ grids:
       2d: '{{ grids }}/ERA5/r025_grid.nc'
       2dm: '{{ grids }}/ERA5/r025_grid_masked.nc'
     masked: 
-      vars: ["SSTK", "sst", "avg_tos"]
+      vars: ["SSTK", "sst", "tos"]
     space_coord: ["lon", "lat"]
     vert_coord: ["2d", "2dm"]
 

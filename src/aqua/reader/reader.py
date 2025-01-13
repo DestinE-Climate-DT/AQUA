@@ -1,5 +1,6 @@
 """The main AQUA Reader class"""
 
+from json import load
 import os
 import re
 import types
@@ -7,10 +8,9 @@ import shutil
 import intake_esm
 import intake_xarray
 import xarray as xr
-import numpy as np
-import smmregrid as rg
+from smmregrid import Regridder
 
-from aqua.util import load_multi_yaml, files_exist
+from aqua.util import load_multi_yaml, files_exist, to_list
 from aqua.util import ConfigPath, area_selection
 from aqua.logger import log_configure, log_history
 from aqua.util import flip_lat_dir, find_vert_coord
@@ -52,7 +52,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
                  aggregation=None, chunks=None,
-                 preproc=None,
+                 preproc=None, convention='eccodes',
                  **kwargs):
         """
         Initializes the Reader class, which uses the catalog
@@ -88,6 +88,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                                             Time chunking can be one of S (step), 10M, 15M, 30M, h, 1h, 3h, 6h, D, 5D, W, M, Y.
                                             Vertical chunking is expressed as the number of vertical levels to be used.
             preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
+            convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
+                                        (Only one supported so far)
             **kwargs: Arbitrary keyword arguments to be passed as parameters to the catalog entry.
                       'zoom', meant for HEALPix grid, is a predefined one which will allow for multiple gridname definitions.
 
@@ -107,8 +109,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         self.regrid_method = regrid_method
         self.nproc = nproc
         self.vert_coord = None
-        self.deltat = 1 #time in seconds to be used for cumulated variables unit convrersion
-        self.time_correction = False #extra flag for correction data with cumulation time on monthly timescale
+        self.deltat = 1  # time in seconds to be used for cumulated variables unit convrersion
+        self.time_correction = False  # extra flag for correction data with cumulation time on monthly timescale
         self.aggregation = aggregation
         self.chunks = chunks
 
@@ -157,18 +159,20 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         # load the catalog
         self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source](**kwargs)
 
-        # manual safety check for netcdf sources (see #943)
+        # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             if not files_exist(self.esmcat.urlpath):
-                raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}")
-
+                raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}") # noqa E501
 
         # store the kwargs for further usage
         self.kwargs = self._check_kwargs_parameters(kwargs, intake_vars)
 
-        # get fixes dictionary and find them
+        # Get fixes dictionary and find them
         self.fix = fix  # fix activation flag
         self.fixer_name = self.esmcat.metadata.get('fixer_name', None)
+        self.convention = convention
+        if self.convention is not None and self.convention != 'eccodes':
+            raise ValueError(f"Convention {self.convention} not supported, only 'eccodes' is supported so far.")
 
         # case to disable automatic fix
         if self.fixer_name is False:
@@ -202,7 +206,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                 self.dst_grid_name = regrid
                 # configure all the required elements
                 self._configure_coords(cfg_regrid)
-            else: 
+            else:
                 self.logger.warning('Grid metadata is not defined. Disabling regridding and areas capabilities.')
                 areas = False
                 regrid = None
@@ -311,7 +315,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
             self.weights.update({vc: xr.open_mfdataset(self.weightsfile[vc])})
             vc2 = None if vc == "2d" or vc == "2dm" else vc
-            self.regridder.update({vc: rg.Regridder(weights=self.weights[vc],
+            self.regridder.update({vc: Regridder(weights=self.weights[vc],
                                                     vert_coord=vc2,
                                                     space_dims=default_space_dims)})
 
@@ -518,19 +522,19 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         else:
             # If we are retrieving from fdb we have to specify the var
             if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
-                
+
                 metadata = self.esmcat.metadata
                 if metadata:
                     loadvar = metadata.get('variables')
-                    
+
                     if loadvar is None:
                         loadvar = [self.esmcat._request['param']]  # retrieve var from catalog
-        
+
                     if not isinstance(loadvar, list):
                         loadvar = [loadvar]
 
                     if sample:
-                        #self.logger.debug("FDB source sample reading, selecting only one variable")
+                        # self.logger.debug("FDB source sample reading, selecting only one variable")
                         loadvar = [loadvar[0]]
 
                     self.logger.debug("FDB source: loading variables as %s", loadvar)
@@ -611,7 +615,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             if dim in data.coords:
                 idx = list(range(0, len(data.coords[dim])))
                 data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
-        
+
         if level:
             if not isinstance(level, list):
                 level = [level]
@@ -716,7 +720,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             if isinstance(dd, xr.Dataset):
                 self.logger.debug(f"Using vertical coordinate {vc}: {list(dd.data_vars)}")
             else:
-                self.logger.debug(f"Using vertical coordinate {vc}: {dd.name}")            
+                self.logger.debug(f"Using vertical coordinate {vc}: {dd.name}")
 
             # remove extra coordinates starting with idx_ (if any)
             # to make the regridder work correctly with multiple helper indices
@@ -776,8 +780,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         """
         Remove spurious coordinates from an xarray DataArray or Dataset.
 
-        This function identifies and removes unnecessary coordinates that may 
-        be incorrectly associated with spatial coordinates, such as a time 
+        This function identifies and removes unnecessary coordinates that may
+        be incorrectly associated with spatial coordinates, such as a time
         coordinate being linked to latitude or longitude.
 
         Parameters:
@@ -786,7 +790,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             The input data object from which spurious coordinates will be removed.
 
         name : str, optional
-            An optional name or identifier for the data. This will be used in 
+            An optional name or identifier for the data. This will be used in
             warning messages to indicate which dataset the issue pertains to.
 
         Returns:
@@ -985,7 +989,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             skinpna (bool, optional): skip or not the NaN
 
         Return
-            A detrended DataArray or a Dataset 
+            A detrended DataArray or a Dataset
         """
 
         if isinstance(data, xr.DataArray):
@@ -993,7 +997,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
         elif isinstance(data, xr.Dataset):
             selected_vars = [da for da in data.data_vars if dim in data[da].coords]
-            final = data[selected_vars].map(self._detrend, keep_attrs=True, 
+            final = data[selected_vars].map(self._detrend, keep_attrs=True,
                                             dim=dim, degree=degree, skipna=skipna)
         else:
             raise ValueError('This is not an xarray object!')
@@ -1039,18 +1043,114 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
         Read fdb data. Returns an iterator or dask array.
+
         Args:
             esmcat (intake catalog): the intake catalog to read
-            var (str): the shortname of the variable to retrieve
+            var (str, int or list): the variable(s) to read
             startdate (str): a starting date and time in the format YYYYMMDD:HHTT
             enddate (str): an ending date and time in the format YYYYMMDD:HHTT
             dask (bool): return directly a dask array instead of an iterator
             level (list, float, int): level to be read, overriding default in catalog
+
         Returns:
             An xarray.Dataset or an iterator over datasets
         """
-
+        # Var can be a list or a single one of these cases:
+        # - an int, in which case it is a paramid
+        # - a str, in which case it is a short_name that needs to be matched with the paramid
+        # - a list (in this case I may have a list of lists) if fix=True and the original variable
+        #   found a match in the source field of the fixer dictionary
         request = esmcat._request
+        var = to_list(var)
+        var_match = []
+
+        fdb_var = esmcat.metadata.get('variables', None)
+        # This is a fallback for the case in which no 'variables' metadata is defined
+        # It is a backward compatibility feature and it may be removed in the future
+        # We need to access with describe because the 'param' element is not a class
+        # attribute. I would not add it since it is a deprecated feature
+        if fdb_var is None:
+            self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
+            fdb_var = esmcat.describe()["args"]["request"]["param"]
+            fdb_var = to_list(fdb_var)
+
+        # We avoid the following loop if the user didn't specify any variable
+        # We make sure this is the case by checking that var is the same as fdb_var
+        # If we need to loop, two cases may arise:
+        # 1. fix=True: if elem is a paramid we try to match it with the list on fdb_var
+        #              if is a str we scan in the fixer dictionary if there is a match
+        #              and we use the paramid listed in the source block to match with fdb_var
+        #              As a final fallback, if the scan fails, we use the initial str as a match
+        #              letting eccodes itself to find the paramid (this may lead to errors)
+        # 2. fix=False: we just scan the list of variables requested by the user.
+        #               For paramids we do as case 1, while for str we just do as in the fallback
+        #               option defined in case 1
+        # We're trying to set the if/else by int vs str and then eventually by the fix option
+        # We store the fixer_dict once for all for semplicity of the if case.
+        if self.fix is True:
+            fixer_dict = self.fixes.get('vars', {})
+            if fixer_dict == {}:
+                self.logger.debug("No 'vars' block in the fixer, guessing variable names base on ecCodes")
+        if var != fdb_var:
+            for element in var:
+                # We catch also the case where we ask for var='137' but we know that is a paramid
+                if isinstance(element, int) or (isinstance(element, str) and element.isdigit()):
+                    element = int(element) if isinstance(element, str) else element
+                    element = to_list(element)
+                    match = list(set(fdb_var) & set(element))
+                    if match and len(match) == 1:
+                        var_match.append(match[0])
+                    elif match and len(match) > 1:
+                        self.logger.warning('Multiple matches found for %s, using the first one', element)
+                        var_match.append(match[0])
+                    else:
+                        self.logger.warning('No match found for %s, skipping it', element)
+                elif isinstance(element, str):
+                    if self.fix is True:
+                        if element in fixer_dict:
+                            src_element = fixer_dict[element].get('source', None)
+                            derived_element = fixer_dict[element].get('derived', None)
+                            if derived_element is not None or src_element is None:  # We let eccodes to find the paramid
+                                var_match.append(derived_element)
+                            else:  # src_element is not None and it is not a derived variable
+                                match = list(set(fdb_var) & set(src_element))
+                                if match and len(match) == 1:
+                                    var_match.append(match[0])
+                                elif match and len(match) > 1:
+                                    self.logger.warning('Multiple paramids found for %s: %s, using: %s',
+                                                        element, match, match[0])
+                                    var_match.append(match[0])
+                                else:
+                                    self.logger.warning('No match found for %s, using eccodes to find the paramid',
+                                                        element)
+                                    var_match.append(element)
+                    else:
+                        var_match.append(element)
+                elif isinstance(element, list):
+                    if self.fix is False:
+                        raise ValueError(f"Var {element} is a list and fix is False, this is not allowed")
+                    match = list(set(fdb_var) & set(element))
+                    if match and len(match) == 1:
+                        var_match.append(match[0])
+                    elif match and len(match) > 1:
+                        self.logger.warning('Multiple matches found for %s, using the first one', element)
+                        var_match.append(match[0])
+                    else:
+                        self.logger.error('No match found for %s, skipping it', element)
+                else:  # Something weird is happening, we may want to have a raise instead
+                    self.logger.error("Element %s is not a valid type, skipping it", element)
+        else:  # There is no need to scan the list of variables, total match
+            var_match = var
+
+        if var_match == []:
+            self.logger.error("No match found for the variables you are asking for!")
+            self.logger.error("Please be sure the metadata 'variables' is defined in the catalog")
+            var_match = var
+        else:
+            self.logger.debug("Found variables: %s", var_match)
+
+        var = var_match
+        self.logger.debug("Requesting variables: %s", var)
 
         if level and not isinstance(level, list):
             level = [level]
@@ -1066,7 +1166,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                 chunks['time'] = self.aggregation
             if self.streaming and not self.aggregation:
                 self.logger.warning("Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value")
-    
+
         if dask:
             if chunks:  # if the chunking or aggregation option is specified override that from the catalog
                 data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
@@ -1101,13 +1201,28 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         data = esmcat.to_dask()
 
         if loadvar:
+            loadvar = to_list(loadvar)
+            loadvar_match = []
+            for element in loadvar:
+                # Having to do a list comprehension we want to be sure that the element is a list
+                element = to_list(element)
+                match = list(set(data.data_vars) & set(element))
+
+                if match:
+                    loadvar_match.append(match[0])
+                else:
+                    self.logger.warning('No match found for %s', element)
+            loadvar = loadvar_match
+
             if all(element in data.data_vars for element in loadvar):
                 data = data[loadvar]
             else:
                 try:
                     data = data[var]
-                    self.logger.warning("You are asking for var %s but the fixes definition requires %s, which is not there.", var, loadvar)
-                    self.logger.warning("Retrieving %s, but it would be safer to run with fix=False or to correct the fixes", var)
+                    self.logger.warning("You are asking for var %s but the fixes definition requires %s, which is not there.",
+                                        var, loadvar)
+                    self.logger.warning("Retrieving %s, but it would be safer to run with fix=False or to correct the fixes",
+                                        var)
                 except Exception as e:
                     raise KeyError("You are asking for variables which we cannot find in the catalog!") from e
 

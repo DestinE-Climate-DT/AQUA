@@ -27,8 +27,10 @@ def plot_hovmoller(data: xr.DataArray,
                    loglevel: str = "WARNING",
                    **kwargs):
     """"
+    Plot a hovmoller diagram of a DataArray.
+
     Args:
-        data (DataArray):       DataArray to be plot
+        data (xr.DataArray):    xr.DataArray to be plot
         invert_axis (bool,opt): enable or disable axis inversion,
                                 default is False
         invert_time (bool,opt): enable or disable time inversion,

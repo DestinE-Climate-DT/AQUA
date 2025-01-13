@@ -1,0 +1,261 @@
+fixer_name:
+    ERA5-destine-v1:
+        convention: eccodes
+        data_model: cf
+        vars:
+            ie:
+                source: E
+                src_units: m/day
+            tprate: 
+                source: TP
+                src_units: m/day
+            slhtf:
+                src_units: J m**-2 day**-1
+                source: SLHF
+            ishf:
+                src_units: J m**-2 day**-1
+                source: SSHF
+            snswrf:
+                src_units: J m**-2 day**-1
+                source: SSR
+            sdswrf:
+                src_units: J m**-2 day**-1
+                source: SSRD
+            snlwrf:
+                src_units: J m**-2 day**-1
+                source: STR
+            sdlwrf:
+                src_units: J m**-2 day**-1
+                source: STRD
+            tnswrf:
+                src_units: J m**-2 day**-1
+                source: TSR
+            tnlwrf:
+                src_units: J m**-2 day**-1
+                source: TTR
+              
+    ERA5-daily-destine-v1:
+        convention: eccodes
+        delete:
+            - SLHF
+            - SSHF
+            - SSR
+            - SSRD
+            - STR
+            - STRD
+            - TSR
+            - TTR
+        vars:
+            slhtf:
+                src_units: J m**-2 day**-1
+                derived: SLHF*24
+            ishf:
+                src_units: J m**-2 day**-1
+                derived: SSHF*24
+            snswrf:
+                src_units: J m**-2 day**-1
+                derived: SSR*24
+            sdswrf:
+                src_units: J m**-2 day**-1
+                derived: SSRD*24
+            snlwrf:
+                src_units: J m**-2 day**-1
+                derived: STR*24
+            sdlwrf:
+                src_units: J m**-2 day**-1
+                derived: STRD*24
+            tnswrf:
+                src_units: J m**-2 day**-1
+                derived: TSR*24
+            tnlwrf:
+                src_units: J m**-2 day**-1
+                derived: TTR*24
+            ie:
+                derived: E*24
+                src_units: m/day
+            tprate:
+                derived: TP*24
+                src_units: m/day
+
+    ERA5-hourly-destine-v1:
+        convention: eccodes
+        delete:
+            - TSR
+            - TTR
+            - TP
+        vars:
+            tprate:
+                derived: TP*24
+                src_units: m/day
+                
+    # CERES
+    ceres-ebaf-sfc-destine-v1:
+        convention: eccodes 
+        data_model: False
+        vars:
+            snlwrf: 
+                derived: 0.-sfc_net_lw_all_mon
+            snswrf: 
+                source: sfc_net_sw_all_mon
+
+    ceres-ebaf-toa-destine-v1:
+        convention: eccodes 
+        data_model: False
+        vars:
+            tnlwrf:
+                derived: 0.-toa_lw_all_mon
+                attributes:
+                    valid_min: -500
+                    valid_max: 0
+                    positive: down  
+            tnswrf: 
+                derived: solar_mon-toa_sw_all_mon
+                attributes:
+                    valid_min: 0
+                    valid_max: 1400
+                    positive: down
+
+    ceres-syn-destine-v1:
+        convention: eccodes 
+        data_model: False
+        vars:
+            toa_lw_all_daily_eb:
+                derived: toa_lw_all_daily*1.0060667743 
+                attributes:
+                    long_name: Observed Top of the Atmosphere Longwave Flux, All-sky conditions, Daily Means, Energy balanced
+                    standard_name: toa_outgoing_longwave_flux
+                    units: W m-2
+                    valid_min: 0
+                    valid_max: 500
+                    positive: up
+            toa_sw_all_daily_eb:
+                derived: toa_sw_all_daily*1.0198334952
+                attributes:
+                    long_name: Observed Top of the Atmosphere Shortwave Flux, All-sky conditions, Daily Means, Energy balanced
+                    standard_name: toa_outgoing_shortwave_flux
+                    units: W m-2
+                    valid_min: 0
+                    valid_max: 1400
+                    positive: up
+            toa_solar_all_daily_eb:
+                derived: toa_sw_all_daily+toa_lw_all_daily+toa_net_all_daily-0.01632
+                attributes:
+                    long_name: Observed Top of the Atmosphere incoming Solar Flux, Daily Means, Energy balanced
+                    units: W m-2
+                    valid_min: 0
+                    valid_max: 1400
+                    positive: down
+            tnlwrf:
+                # The fixer does not allow multiplying by negative numbers yet
+                derived: 0.-toa_lw_all_daily_eb
+                # Let's use eccodes tables to find the attributes
+                grib: true
+                attributes:
+                    valid_min: -500
+                    valid_max: 0
+                    positive: down    
+            tnswrf:
+                # The fixer does not allow multiplying by negative numbers yet
+                derived: toa_solar_all_daily_eb-toa_sw_all_daily_eb
+                # Let's use eccodes tables to find the attributes
+                grib: true
+                attributes:
+                    valid_min: 0
+                    valid_max: 1400
+                    positive: down
+
+    eobs-destine-v1:
+        convention: eccodes 
+        data_model: false
+        deltat: 86400 # precipitation on daily basis
+        coords:
+            lat:
+                source: latitude
+            lon:
+                source: longitude
+        vars:
+            2t:
+                source: tg
+            tprate:
+                source: rr
+            mn2t24: # there might be 24h mismatch in grib definition
+                source: tn
+            mx2t24: # there might be 24h mismatch in grib definition
+                source: tx
+
+    era5-arco:
+        convention: eccodes 
+        data_model: false
+        coords:
+            lat:
+                source: latitude
+            lon:
+                source: longitude
+
+    # EN4
+    EN4-default:
+        convention: eccodes 
+        data_model: false
+        vars:
+            so:
+                src_units: psu
+  
+    # GPM
+    GPM-default:
+        convention: eccodes 
+        data_model: cf
+        vars:
+            # Automatic conversion to destination grib units
+            tprate:
+                source: precipitationCal
+
+    # MSWEP
+    MSWEP-default:
+        convention: eccodes 
+        data_model: cf
+        vars:
+            tprate:
+                source: precipitation
+
+    # OSI-SAF
+    OSI-SAF-default:
+        convention: eccodes 
+        data_model: false  # Do not attempt to fix coordinates
+
+    # PHC3
+    PHC3-default:
+        convention: eccodes 
+        data_model: false
+        vars:
+            thetao:
+                src_units: C
+            so:
+                src_units: psu
+
+
+    #PSC
+    PSC-default:
+        convention: eccodes 
+        data_model: False
+
+    # GIOMAS and PIOMAS
+    GIOMAS:
+        convention: eccodes 
+        data_model: false  # Do not attempt to fix coordinates
+        delete: [latitude, longitude]
+        vars:
+            sftof:
+                source: sftof
+                src_units: frac
+                units: frac
+    
+    PIOMAS:
+        convention: eccodes 
+        data_model: false  # Do not attempt to fix coordinates
+        delete: [latitude, longitude]
+        vars:
+            sftof:
+                source: sftof
+                src_units: frac
+                units: frac
+    

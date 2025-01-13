@@ -8,8 +8,10 @@ Use with caution, it can submit tens of sbatch jobs!
 import subprocess
 import argparse
 import re
+import os
 import sys
-from aqua.util import load_yaml, get_arg
+import jinja2
+from aqua.util import load_yaml, get_arg, ConfigPath
 
 def is_job_running(job_name, username):
     """verify that a job name is not already submitted in the slurm queue"""
@@ -21,8 +23,27 @@ def is_job_running(job_name, username):
     # Parse the output to check if the job name is in the list
     return job_name in output
 
+def load_jinja_template(template_file='aqua_lra.j2'):
+    """
+    Load a Jinja2 template.
+
+    Args:
+        template_file (str): Template file name.
+
+    Returns:
+        jinja2.Template: Loaded Jinja2 template.
+    """
+
+    templateloader = jinja2.FileSystemLoader(searchpath=os.path.dirname(template_file))
+    templateenv = jinja2.Environment(loader=templateloader, trim_blocks=True, lstrip_blocks=True)
+    if os.path.exists(template_file):
+        return templateenv.get_template(os.path.basename(template_file))
+    
+    raise FileNotFoundError(f'Cannot file template file {template_file}')
+
 def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
-                  workers=1, definitive=False, overwrite=False, dependency=None):
+                  workers=1, definitive=False, overwrite=False,
+                  dependency=None, singularity=None):
     
     """
     Submit a sbatch script for the LRA CLI with basic options
@@ -38,6 +59,7 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
         definitive: produce the LRA
         overwrite: overwrite the LRA
         dependency: jobid on which dependency of slurm is built
+        singularity: Run with the available AQUA container
 
     Return
         jobid
@@ -46,57 +68,58 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
     # create identifier for each model-exp-source-var tuple
     job_name = "_".join([model, exp, source, varname])
     full_job_name = 'lra-generator_' + job_name
+    log_dir = 'log'
 
-    # username
-    username = slurm_dict.get('username', 'padavini')
+    # bit complicated way to get the AQUA main path
+    aquapath =  os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    # Construct basic sbatch command
-    sbatch_cmd = [
-        'sbatch',
-        '--partition=' + slurm_dict.get('partition', 'small'),
-        '--job-name=' + slurm_dict.get('job_name', full_job_name),
-        '--output=log/overnight-lra_' + job_name + '_%j.out',
-        '--error=log/overnight-lra_' + job_name + '_%j.err',
-        '--account=' + slurm_dict.get('account', 'project_465000454'),
-        '--nodes=' + str(slurm_dict.get('nodes', 1)),
-        '--ntasks-per-node=' + str(slurm_dict.get('ntasks_per_node', workers)),
-        '--time=' + slurm_dict.get('time', '08:00:00'),
-        '--mem=' + slurm_dict.get('mem', '256G')
-        #'--priority=low',
-    ]
+    jinjadict = {
+        'job_name': full_job_name,
+        'username': slurm_dict.get('username', 'padavini'),
+        'partition': slurm_dict.get('partition', 'debug'),
+        'log_output': f'{log_dir}/overnight-lra_{job_name}_%j.out',
+        'log_error': f'{log_dir}/overnight-lra_{job_name}_%j.err',
+        'account': slurm_dict.get('account', 'project_465000454'),
+        'nodes': str(slurm_dict.get('nodes', 1)),
+        'ntasks_per_node': str(slurm_dict.get('ntasks_per_node', workers)),
+        'time': slurm_dict.get('time', '00:29:00'),
+        'memory': slurm_dict.get('mem', '128G'),
+        'singularity': singularity,
+        'dependency': dependency,
+        'model': model,
+        'exp': exp,
+        'source': source,
+        'varname': varname,
+        'definitive': definitive,
+        'overwrite': overwrite,
+        'config': yaml_file,
+        'machine': ConfigPath().get_machine(),
+        'aqua': aquapath
+    }
 
-    if dependency is not None:
-        print(dependency)
-        sbatch_cmd.append('--dependency=afterany:'+ str(dependency))
-
-    # Add script command
-    sbatch_cmd.append('aqua')
-    sbatch_cmd.append('lra')
-    sbatch_cmd.append('--config')
-    sbatch_cmd.append(yaml_file)
-    sbatch_cmd.append('--model')
-    sbatch_cmd.append(model)
-    sbatch_cmd.append('--exp')
-    sbatch_cmd.append(exp)
-    sbatch_cmd.append('--source')
-    sbatch_cmd.append(source)
-    sbatch_cmd.append('--var')
-    sbatch_cmd.append(varname)
-    sbatch_cmd.append('-w')
-    sbatch_cmd.append(str(workers))
-
-    if is_job_running(full_job_name, username):
+    if is_job_running(full_job_name, jinjadict['username']):
         print(f'The job is {job_name} is already running, will not resubmit')
         return 0
 
+    template = load_jinja_template()
+    render = template.render(jinjadict)
+    #print(render)
+
+    tempfile = 'tempfile.job'
+    with open(tempfile, "w", encoding='utf8') as fh:
+        fh.write(render)
+
+    sbatch_cmd = ['sbatch', tempfile]
+
     # Execute sbatch command
     if definitive:
-        if overwrite:
-            sbatch_cmd.append('-o')
-        sbatch_cmd.append('-d')
         try:
+            #command_str = ' '.join(sbatch_cmd)
+            #result = subprocess.run(command_str, shell=True, capture_output = True, check=True, env=os.environ).stdout.decode('utf-8')
             result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
             jobid = re.findall(r'\b\d+\b', result)[-1]
+            if os.path.exists(tempfile):
+                os.remove(tempfile)
             return jobid
         except subprocess.CalledProcessError as e:
             # Print the error message and stderr if the command fails
@@ -116,8 +139,8 @@ def parse_arguments(arguments):
     parser = argparse.ArgumentParser(description='AQUA LRA parallel SLURM generator')
     parser.add_argument('-c', '--config', type=str,
                         help='AQUA yaml configuration file', required=True)
-    parser.add_argument('-s', '--slurm', type=str,
-                        help='SLURM yaml configuration file')
+    parser.add_argument('-s', '--singularity', action="store_true",
+                        help='run with singualirity container')
     parser.add_argument('-d', '--definitive', action="store_true",
                         help='definitive run with files creation')
     parser.add_argument('-o', '--overwrite', action="store_true",
@@ -134,10 +157,10 @@ if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
     config_file = get_arg(args, 'config', None)
-    slurm_file = get_arg(args, 'slurm', None)
     workers = get_arg(args, 'workers', 8)
     definitive = get_arg(args, 'definitive', False)
     overwrite = get_arg(args, 'overwrite', False)
+    singularity = get_arg(args, 'singularity', None)
     parallel = get_arg(args, 'parallel', 5)
     print('Reading configuration yaml file..')
 
@@ -162,4 +185,5 @@ if __name__ == '__main__':
                     jobid = submit_sbatch(model=model, exp=exp, source=source, varname=varname,
                                           slurm_dict=slurm, yaml_file=config_file,
                                           workers=workers, definitive=definitive,
-                                          overwrite=overwrite, dependency=PARENT_JOB)
+                                          overwrite=overwrite, dependency=PARENT_JOB,
+                                          singularity=singularity)

@@ -21,7 +21,7 @@ grids:
   highgrid: 'r010'
 
 # variables to stored 
-varlist: ['msl', '10u', '10v', 'mtpr']
+varlist: ['msl', '10u', '10v', 'tprate']
 
 # temporal definition (date format: YYYYMMDD)
 time: 

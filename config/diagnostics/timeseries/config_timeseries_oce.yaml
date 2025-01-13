@@ -1,0 +1,32 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+models:
+  - catalog: null
+    model: null
+    exp: null
+    source: 'lra-r100-monthly'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+# This is the list of variables that will be plotted as timeseries
+timeseries: ['tos', 'siconc']
+seasonal_cycle: ['tos', 'siconc']
+
+timeseries_plot_params:
+# These are options that specify how the data is plotted
+# Default values are used if the variable that is being
+# plotted is not specified here.
+# If you need specific options for a variable, you can
+# add it here.
+  default:
+    plot_ref: True
+    monthly: True
+    annual: True
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'

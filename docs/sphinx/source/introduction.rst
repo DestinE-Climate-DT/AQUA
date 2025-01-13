@@ -4,7 +4,7 @@ Introduction
 Overview of AQUA
 ----------------
 
-AQUA (Climate DT Applications for Quality assessment, and Uncertainty quAntification)
+AQUA (Climate DT Applications for QUality Assessment)
 is a model evaluation framework designed for running diagnostics on high-resolution climate models,  
 also known as Digital Twins of Earth.
 The package provides a flexible and efficient framework to process and analyze large volumes of climate data. 
@@ -23,7 +23,7 @@ Key Features
 ------------
 
 - Efficient handling of large datasets from high-resolution climate models
-- Support for various data formats, such as GRIB, NetCDF, Zarr and FDB access
+- Support for various data formats, such as GRIB, NetCDF, Zarr, FDB and Parquet access
 - Robust and fast regridding functionality
 - Averaging and aggregation tools for temporal and spatial analyses
 - Metadata and coordinate fixes for data homogenization and comparison

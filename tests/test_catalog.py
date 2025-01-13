@@ -36,7 +36,7 @@ def reader(request):
     return myread, data
 
 @pytest.mark.gsv
-def test_catalog_gsv(reader):
+def test_catalog_gsv():
     """
     Checking that both reader and Dataset are retrived in reasonable shape
     """

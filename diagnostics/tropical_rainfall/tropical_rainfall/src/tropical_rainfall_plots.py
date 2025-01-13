@@ -540,7 +540,7 @@ class PlottingClass:
             lonmax (int, optional): Maximum longitude. Defaults to 181.
             latmin (int, optional): Minimum latitude. Defaults to -90.
             latmax (int, optional): Maximum latitude. Defaults to 91.
-            model_variable (str, optional): Model variable for the plot. Defaults to 'mtpr'.
+            model_variable (str, optional): Model variable for the plot. Defaults to 'tprate'.
             figsize (float, optional): Figure size. Defaults to 1.
             number_of_bar_ticks (int, optional): Number of ticks. Defaults to 6.
             cbarlabel (str, optional): Colorbar label. Defaults to ''.
@@ -682,27 +682,27 @@ class PlottingClass:
         utc_time = mean_per_hour['local_time']
         utc_time_smooth = mean_per_hour_smooth['local_time']
         if relative:
-            mtpr = mean_per_hour['mtpr_relative']
-            mtpr_smooth = mean_per_hour_smooth['mtpr_relative']
+            tprate = mean_per_hour['tprate_relative']
+            tprate_smooth = mean_per_hour_smooth['tprate_relative']
         else:
-            mtpr = mean_per_hour[self.model_variable]
-            mtpr_smooth = mean_per_hour_smooth[self.model_variable]
+            tprate = mean_per_hour[self.model_variable]
+            tprate_smooth = mean_per_hour_smooth[self.model_variable]
         try:
             units = mean_per_hour.units
         except AttributeError:
-            units = mean_per_hour.mtpr.units
+            units = mean_per_hour.tprate.units
 
-        #plt.plot(utc_time, mtpr, color=color, linestyle=self.linestyle, alpha=0.25)
-        plt.plot(utc_time_smooth, mtpr_smooth, color=color, label=legend, linestyle=self.linestyle,
+        #plt.plot(utc_time, tprate, color=color, linestyle=self.linestyle, alpha=0.25)
+        plt.plot(utc_time_smooth, tprate_smooth, color=color, label=legend, linestyle=self.linestyle,
                  linewidth=1*self.linewidth)
         if plot_title is None:
             if relative:
                 plt.suptitle(
                     'Relative Value of Daily Precipitation Variability', fontsize=self.fontsize+1)
-                plt.ylabel('relative mtpr', fontsize=self.fontsize-2)
+                plt.ylabel('relative tprate', fontsize=self.fontsize-2)
             else:
                 plt.suptitle('Daily Precipitation Variability', fontsize=self.fontsize+1)
-                plt.ylabel('mtpr variability, '+units, fontsize=self.fontsize-2)
+                plt.ylabel('tprate variability, '+units, fontsize=self.fontsize-2)
                 
         else:
             plt.suptitle(plot_title, fontsize=self.fontsize+3)

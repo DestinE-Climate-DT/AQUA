@@ -3,8 +3,17 @@
 Configuration and catalog manager
 =================================
 
-Since ``v0.9`` the possibility to manage where the configuration and catalog files are stored has been added.
-This is based on a command line interface which can also handle fixes and grids files. 
+Since ``v0.9`` a command line interface has been added to AQUA.
+We refer to this as the **AQUA console**.
+
+The AQUA console
+----------------
+
+The AQUA console has two main purposes:
+
+- A central access to manage where the configuration and catalog files are stored has been added. This can also handle fixes and grids files.
+- A tool for more complex operations, for the moment the LRA generator (see :ref:`aqua-lra` and :ref:`lra`) and the FDB catalog generator (see :ref:`fdb-catalog-generator`).
+
 Here we give a brief overview of the features.
 If you are a developer, you may want to read the :ref:`dev-notes` section.
 
@@ -36,9 +45,9 @@ The main command has some options listed below:
     This is particularly useful if you're running a script that uses AQUA.
 
 .. warning::
-    Many of the CLI commands (see :ref:`cli`) are still relying on the existance
+    Some of the CLI commands (see :ref:`cli`) are still relying on the existance
     of an environment variable ``AQUA`` pointing to the main AQUA folder.
-    This will be soon deprecated in favor of the new console command.
+    This is deprecated in favor of the new console command.
 
 .. option:: --help, -h
 
@@ -70,13 +79,15 @@ which can keep their catalog or fixes files under version control.
     Since version ``v0.10`` the configuration file provided in the AQUA release is a template.
     Even if the ``aqua install`` is done in editable mode, the configuration file will be copied to the destination folder.
 
-Optional arguments are:
+Mandatory arguments are:
 
 .. option:: machine-name
 
     The name of the machine where you are installing. **It is a mandatory argument.**
     Even if you are working on your local machine, always define it (even a random name would suffice!)
     Setting machine to `lumi`, `levante` or `MN5` is fundamental to use AQUA on these platforms.
+
+Optional arguments are:
 
 .. option:: --path, -p <path>
 
@@ -98,7 +109,7 @@ for different diagnostics.
 Each diagnostic has its own set of configuration files that are copied or linked to specific folders.
 
 After running ``aqua install``, the configuration files for each diagnostic will be organized in the target directories 
-specified in the ``diagnostic_config.py``. For example, the structure might look like this:
+specified in the ``AQUA/src/aqua/cli/diagnostic_config.py``. For example, the structure might look like this:
 
 .. code-block:: text
 
@@ -126,6 +137,7 @@ aqua avail
 ----------
 
 This simple command will print all the available catalogs on the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
+You don't need to have access to the repository to see the available catalogs.
 
 .. _aqua-add:
 
@@ -157,6 +169,10 @@ and install the catalog from there.
     It installs the catalog based on the path given.
     It will create a symbolic link to the catalog folder.
     This is very recommended for developers. Please read the :ref:`dev-notes` section.
+
+.. note::
+
+    With the editable mode it is possible to install a catalog not present in the Climate-DT repository.
 
 .. _aqua-remove:
 

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from metpy.units import units
 
-from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction
+from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir, check_direction, to_list
 from aqua.logger import log_history
 from aqua.data_models import translate_coords
 
@@ -21,10 +21,14 @@ class FixerMixin():
 
     def find_fixes(self):
         """
-        Get the fixes for the model/exp/source hierarchy.
-        First looks for family fixes as base_fixes.
+        Get the fixes for the required model, experiment and source.
+        A convention dictionary is loaded and merged with the fixer_name.
+        The default convention is eccodes-2.39.0.
+
         If not found, looks for default fixes for the model.
         Then source_fixes are loaded and merged with base_fixes.
+
+        This second block of search is deprecated and will be removed in the future.
 
         Args:
             The fixer class
@@ -32,17 +36,30 @@ class FixerMixin():
         Return:
             The fixer dictionary
         """
+        # The convention dictionary is defined by stardard: eccodes and version: 2.39.0
+        # At the actual stage 'eccodes' is the default and if not set to None or 'eccodes'
+        # an error is raised in the Reader initialization
+        convention_dictionary = self._load_convention_dictionary() if self.convention else None
 
-        # look for family fixes and set them as default
+        # Here we load the fixer_name, the specific fix that is merged with the convention dictionary
+        # The merge is done only if the base_fixes dictionary has the 'convention' field matching the
+        # convention dictionary.
         base_fixes = self._load_fixer_name()
+        base_fixes = self._combine_convention(base_fixes, convention_dictionary)
 
-        # check the presence of model-specific fix
+        # Check the presence of model-specific fix
+        # If fix_model is found, we look for the specific source one and
+        # only in that case we merge it with the dictionary obtained so far.
+        # TODO: this is deprecated and will be removed in the future
         fix_model = self.fixes_dictionary["models"].get(self.model, None)
 
-        # browse for source-specific fixes
+        # Browse for source-specific fixes and load them.
+        # TODO: this is deprecated and will be removed in the future
         source_fixes = self._load_source_fixes(fix_model)
+        if source_fixes is not None:
+            self.logger.warning("Source-specific fixes are deprecated and they will be removed in the future")
 
-        # if only fixes family/default is available, return them
+        # If only fixes family/default is available, return them
         if source_fixes is None:
             if base_fixes is None:
                 self.logger.warning("No fixes available for model %s, experiment %s, source %s",
@@ -62,6 +79,109 @@ class FixerMixin():
 
         self.logger.debug('Final fixes are: %s', final_fixes)
         return final_fixes
+
+    def _load_convention_dictionary(self, version='2.39.0'):
+        """
+        Load the convention dictionary from the fixer file.
+        The convention_name block should be called <convention>-<version>.
+
+        Args:
+            version: The convention name version. Default is 2.39.0
+
+        Returns:
+            The convention dictionary
+        """
+        convention_dictionary = self.fixes_dictionary.get("convention_name", None)
+        if convention_dictionary is None:
+            self.logger.error("Convention dictionary not found, will be disabled")
+            return None
+
+        convention_name = self.convention + '-' + version
+
+        convention_dictionary = convention_dictionary.get(convention_name, None)
+        if convention_dictionary is None:
+            self.logger.error("No convention dictionary found for %s", convention_name)
+            return None
+        else:
+            self.logger.info("Convention dictionary: %s", convention_name)
+
+        return convention_dictionary
+
+    def _combine_convention(self, base_fixes: dict, convention_dictionary: dict):
+        """
+        Combine convention dictionary with the fixes.
+        It scan the 'vars' block and merge the convention dictionary with the fixer_name.
+        If an item is new in the convention dictionary, it is added to the fixes.
+        If the item is already present, non existing keys are added,
+        otherwise the existing keys (in the base file) are kept.
+
+        Args:
+            base_fixes (dict): The base fixes (coming from the fixer_name)
+            convention_dictionary (dict): The convention dictionary
+
+        Returns:
+            The final fixes, with the convention dictionary merged
+        """
+        if base_fixes is None:
+            self.logger.info("No fixer_name found, only convention will be applied")
+            base_fixes = {}
+            base_convention = 'eccodes'
+        elif convention_dictionary is None:
+            self.logger.info("No convention dictionary found, only fixer_name will be applied")
+            return base_fixes
+        else:
+            base_convention = base_fixes.get('convention', None)
+        # We do not crash if the convention is not eccodes, but we log an error and return the base fixes
+        convention = convention_dictionary.get('convention', None)
+        if convention != 'eccodes':
+            self.logger.error("Convention %s not supported, only eccodes is supported", convention)
+            return base_fixes
+
+        # We make sure that the convention is the same in the convention dictionary and in the fixer_name
+        # Additionally, we check that the version is the same, knowing that for the moment we are not going to
+        # document this feature since the version is hardcoded in the code.
+        # TODO: version should be a parameter in the fixer_name and in the convention dictionary
+        if base_convention is not None:
+            if base_convention != convention and convention is not None:
+                raise ValueError("The convention in the convention dictionary: %s is different from the fixer_name: %s",
+                                 base_convention, convention)
+            if 'version' in base_fixes and 'version' in convention_dictionary:
+                if base_fixes['version'] != convention_dictionary['version']:
+                    raise ValueError("The version in the convention dictionary: %s is different from the fixer_name: %s",
+                                     base_fixes['version'], convention_dictionary['version'])
+        else:
+            self.logger.info("No convention found in the fixer_name, the convention dictionary will not be used")
+            return base_fixes
+
+        # Merge one by one the variables. This is done so that we can be careful at the level of the individual variables.
+        # If a field for the specific variable is present in the base_fixes, it has priority.
+        if 'vars' in convention_dictionary:
+            if 'vars' not in base_fixes:
+                base_fixes['vars'] = convention_dictionary['vars']
+            else:  # A merge one variable by one is needed
+                for var_key in convention_dictionary['vars'].keys():
+                    if var_key in base_fixes['vars']:
+                        # self.logger.debug("Variable %s already present in the fixes, merging...", var_key)
+                        # This requires python >= 3.9
+                        base_fixes['vars'][var_key] = convention_dictionary['vars'][var_key] | base_fixes['vars'][var_key]
+                        # We need to check that only one between 'source' and 'derived' is present.
+                        # If both are present, we give priority to 'derived' and log an info.
+                        if 'source' in base_fixes['vars'][var_key] and 'derived' in base_fixes['vars'][var_key]:
+                            self.logger.info("Variable %s has both 'source' and 'derived' in the fixes, 'derived' will be used",  # noqa: E501
+                                             var_key)
+                            base_fixes['vars'][var_key].pop('source')
+                    else:
+                        # This is a new variable to fix
+                        # We need to manipulate the convention_dictionary to set the grib flag
+                        # TODO: expand to other formats (cmor tables, etc.)
+                        new_var = convention_dictionary['vars'][var_key]
+                        if convention == 'eccodes':
+                            new_var['grib'] = convention_dictionary['vars'][var_key].get('grib', True)
+                        base_fixes['vars'][var_key] = new_var
+        else:
+            self.logger.warning("No 'vars' block found in the convention dictionary")
+
+        return base_fixes
 
     def _combine_fixes(self, default_fixes, model_fixes):
         """
@@ -86,7 +206,7 @@ class FixerMixin():
                              self.model, self.exp, self.source)
             return default_fixes
         else:
-            # get method for replacement: replace is the default
+            # get method to combine fixes: replace is the default
             method = model_fixes.get('method', 'replace')
             self.logger.info("For source %s, method for fixes is: %s", self.source, method)
 
@@ -112,7 +232,6 @@ class FixerMixin():
         Load the fixer_name reading from the metadata of the catalog.
         If the fixer_name has a parent, load it and merge it giving priority to the child.
         """
-        
         # if fixer name is found, get it
         if self.fixer_name is not None:
             self.logger.info('Fix names in metadata is %s', self.fixer_name)
@@ -132,16 +251,21 @@ class FixerMixin():
                     else:
                         self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes['parent'])
 
+            return fixes
+
+        # if not fixes found, return fixes None
+        return None
+
         # check the default in alternative
-        else:   
-            default_fixer_name = self.model + '-default'
-            self.logger.info('No specific fix found, will call the default fix %s', default_fixer_name)
-            fixes = self.fixes_dictionary["fixer_name"].get(default_fixer_name)
-            if fixes is None:
-                self.logger.warning("The requested default fixer name %s does not exist in fixes files", default_fixer_name)
-                return None
-            else:
-                self.logger.info("Fix names %s found in fixes files", default_fixer_name)
+        #else:
+        #    default_fixer_name = self.model + '-default'
+        #    self.logger.warning('No specific fix found, will call the default fix %s, this is deprecated and will be removed', default_fixer_name)
+        #    fixes = self.fixes_dictionary["fixer_name"].get(default_fixer_name)
+        #    if fixes is None:
+        #        self.logger.warning("The requested default fixer name %s does not exist in fixes files", default_fixer_name)
+        #        return None
+        #    else:
+        #        self.logger.warning("Fix names %s found in fixes files. This is a default fixer_name and will be deprecated", default_fixer_name)
 
         # # if found, proceed as expected
         # if fixes is not None:
@@ -156,8 +280,6 @@ class FixerMixin():
         #             self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes['parent'])
         # else:
         #     return None
-
-        return fixes
 
     def _merge_fixes(self, base, specific):
         """
@@ -182,28 +304,32 @@ class FixerMixin():
         return final
 
     def _load_source_fixes(self, fix_model):
-        """Browse for source/model specific fixes, return None if not found"""
+        """
+        Browse for source/model specific fixes, return None if not found
 
-        if fix_model is None:
-            self.logger.debug("No source-specific fixes available for model %s, using default fixes",
-                              self.model)
+        Deprecated and will be removed in the future
+        """
+        if fix_model is None:  # Nothing to do and since this is deprecated we do not log
+            # self.logger.debug("No source-specific fixes available for model %s, using default fixes",
+            #                   self.model)
             return None
 
         # look for exp fix, if not found, set default fixes
         fix_exp = fix_model.get(self.exp, None)
         if fix_exp is None:
-            self.logger.debug("No source-specific fixes available for model %s, experiment %s",
-                              self.model, self.exp)
+            # self.logger.debug("No source-specific fixes available for model %s, experiment %s",
+            #                   self.model, self.exp)
             return None
 
         fixes = fix_exp.get(self.source, None)
         if fixes is None:
-            self.logger.debug("No source-specific fixes available for model %s, experiment %s, source %s: checking for model default...",  # noqa: E501
-                              self.model, self.exp, self.source)
+            # self.logger.debug("No source-specific fixes available for model %s, experiment %s, source %s: checking for model default...",  # noqa: E501
+            #                   self.model, self.exp, self.source)
             fixes = fix_exp.get('default', None)
-            if fixes is None:
-                self.logger.debug("Nothing found! I will use with model default or family fixes...")
-            else:
+            # if fixes is None:
+            #     self.logger.debug("Nothing found! I will use with model default or family fixes...")
+            # else:
+            if fixes is not None:
                 self.logger.debug("Using experiment-specific default for model %s, experiment %s", self.model, self.exp)
         else:
             self.logger.debug("Source-specific fixes found for model %s, experiment %s, source %s",
@@ -226,16 +352,18 @@ class FixerMixin():
 
         default_fix_exp = fix_model.get('default', None)
         if default_fix_exp is None:
-            self.logger.info("Default fixes not found for %s", self.model)
+            self.logger.debug("Default fixes not found for %s", self.model)
             default_fixes = None
         else:
             if 'default' in default_fix_exp:
                 default_fixes = default_fix_exp.get('default', None)
                 if default_fixes is not None:
                     self.logger.debug("Default based fixes found for %s-%s", self.model, self.exp)
+                    self.logger.warning("Default fixes are deprecated and they will be removed in the future")
 
             else:
                 self.logger.debug("Default based fixes found for %s", self.model)
+                self.logger.warning("Default fixes are deprecated and they will be removed in the future")
                 default_fixes = default_fix_exp
 
         return default_fixes
@@ -301,12 +429,12 @@ class FixerMixin():
             self.time_correction = data.time.dt.days_in_month
 
         jump = self.fixes.get("jump", None)  # if to correct for a monthly accumulation jump
-        # Special feature to fix corrupted data in first step of each month
 
+        # Special feature to fix corrupted data in first step of each month
         nanfirst_startdate = self.fixes.get("nanfirst_startdate", None)
         nanfirst_enddate = self.fixes.get("nanfirst_enddate", None)
 
-        fixd = {}  # variables dictionary for name change: only for source
+        fixd = {}  # variables dictionary for name change: only for source, done as {source: var}
         varlist = {}  # variable dictionary for name change
         vars_to_fix = self.fixes.get("vars", None)  # variables with available fixes
 
@@ -316,13 +444,26 @@ class FixerMixin():
         if vars_to_fix:
             for var in vars_to_fix:
 
-                # dictionary of fixes of the single var
+                # Dictionary of fixes of the single var
                 varfix = vars_to_fix[var]
 
-                # get grib attributes if requested and fix name
+                # Get grib attributes if requested and fix name
+                # This can be expanded to other formats in the future
                 grib = varfix.get("grib", None)
-                if grib:
-                    attributes, shortname = self._get_variables_grib_attributes(var)
+                # We make sure also of the case were an user saw a grib: True
+                # and decided to build a grib: False instead of just not using
+                # the block
+                if grib is not None and grib is not False:
+                    # grib: True means that we're just going to use the default grib attributes
+                    # associated with the variable name var
+                    if isinstance(grib, bool):
+                        attributes, shortname = self._get_variables_grib_attributes(var)
+                    # grib: paramid is an option, this means that the variable name may not correspond
+                    # to the shortname that it can be found within the attributes
+                    elif isinstance(grib, int):
+                        attributes, shortname = self._get_variables_grib_attributes(f"var{grib}")
+                    else:
+                        raise ValueError("grib should be either a boolean or an integer")
                 else:
                     attributes = {}
                     shortname = var
@@ -330,27 +471,51 @@ class FixerMixin():
                 # Get extra attributes from fixer, leave empty dict otherwise
                 attributes.update(varfix.get("attributes", {}))
 
-                # define the list of name changes
+                # Define the list of name changes
                 varlist[var] = shortname
 
-                # 1. source case
-                source = varfix.get("source", None)
-                # if we are using a gribcode as a source, convert it to shortname to access it
-                if str(source).isdigit():
-                    self.logger.info(f'The source {source} is a grib code, need to convert it')
-                    source = get_eccodes_attr(f'var{source}', loglevel=self.loglevel)['shortName']
-                # This is a renamed variable. This will be done at the end.
+                # 1. source case. We want to be able to work with a list of sources to scan
+                source = to_list(varfix.get("source", None))
+                # We want to process a list of sources
                 if source:
-                    if source not in data.variables:
-                        continue
-                    if source != shortname:
-                        fixd.update({f"{source}": f"{shortname}"})
+                    match = list(set(source) & set(data.variables))
+                    if match:
+                        # Having more than a match should be a problem for a dataset, we do not raise an error
+                        # but we warn the user
+                        if len(match) > 1:
+                            self.logger.error("Multiple matches found for variable %s: %s, the first one will be taken",
+                                              var, match)
+                        # Even if we have only a match, we make sure that source is a string
+                        source = match[0]
 
-                    log_history(data[source], f"Variable renamed {shortname} by fixer")
+                        # If a gribcode is the source match, convert it to shortname to access it
+                        if str(source).isdigit():
+                            self.logger.info(f'The source {source} is a grib code, need to convert it')
+                            source = get_eccodes_attr(f'var{source}', loglevel=self.loglevel)['shortName']
+
+                        # Here we update the fixd dictionary with the source and the variable
+                        # The rename is done as {source: var} and at the end of the function
+                        # This because the source name could be used in the derived formula
+                        fixd.update({f"{source}": f"{var}"})
+                        if source != var:
+                            # We keep in the history the original variable name only if it is different from the target
+                            log_history(data[source], f"Variable renamed {var} from {source} by fixer")
+                    else:  # if there is no match
+                        # We do not know in advance if the source is available, so we loop over all the available in the final
+                        # merge of the fixes
+                        self.logger.debug('While fixing variable %s, no match found with sources %s', var, source)
+                        continue
 
                 # 2. derived case: let's compute the formula it and create the new variable
                 formula = varfix.get("derived", None)
                 if formula:
+                    # If the formula is the same as the variable name, we raise an error
+                    # Asking for a derived variable that is also a source variable is not allowed
+                    # since it may lead to changing how the fixer based on the source variable is applied
+                    if formula == var:
+                        self.logger.error('Derived variable %s cannot have the same name as the source variable, skipping it',
+                                          var)
+                        continue
                     try:
                         source = shortname
                         data[source] = eval_formula(formula, data)
@@ -366,7 +531,7 @@ class FixerMixin():
                             self.logger.info('%s is defined in the fixes but cannot be computed, is it available?',
                                              shortname)
                         continue
-                
+
                 # safe check debugging
                 self.logger.debug('Name of fixer var: %s', var)
                 self.logger.debug('Name of data source var: %s', source)
@@ -398,7 +563,8 @@ class FixerMixin():
                                                                                                               '').replace('}',
                                                                                                                           '')]
                     self.logger.info("%s: converting units %s --> %s", var, data[source].units, tgt_units)
-                    log_history(data[source], f"Converting units of {var}: from {data[source].units} to {tgt_units}")
+                    if data[source].units != tgt_units:
+                        log_history(data[source], f"Converting units of {var}: from {data[source].units} to {tgt_units}")
                     conversion_dictionary = self.convert_units(data[source].units, tgt_units, var)
 
                     # if some unit conversion is defined, modify the attributes and history for later usage
@@ -406,7 +572,7 @@ class FixerMixin():
                         data[source].attrs.update({"tgt_units": tgt_units})
                         for key, value in conversion_dictionary.items():
                             data[source].attrs.update({key: value})
-                            self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, value)
+                            self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, float(value))
                             log_history(data[source], f"Fixing {source} to {var}. Unit fix: {key}={value}")
 
                 # Set to NaN before a certain date
@@ -417,7 +583,11 @@ class FixerMixin():
                     self.logger.debug("Steps before %s set to NaN for variable %s", str(mindate), var)
 
         # Only now rename everything
-        data = data.rename(fixd)
+        for item, value in fixd.items():
+            if not data[item].attrs.get("derived", None):
+                data = data.rename({item: value})
+            else:
+                self.logger.info("Variable %s is derived, it will not be renamed to %s", item, value)
 
         # decumulate if necessary and fix first of month if necessary
         if vars_to_fix:
@@ -491,9 +661,8 @@ class FixerMixin():
             field['time'] = field['time'] + pd.Timedelta(timeshift)
         else:
             raise TypeError('timeshift should be either a integer (timesteps) or a pandas Timedelta!')
-     
-        return field
 
+        return field
 
     def _wrapper_decumulate(self, data, variables, varlist, keep_memory, jump):
         """
@@ -949,6 +1118,7 @@ class FixerMixin():
         # dependency in the unit factor conversion
         if "second" in str(factor.units):
             conversion['time_conversion_flag'] = 1
+            conversion['deltat'] = str(self.deltat)
 
         if factor.units == units('dimensionless'):
             offset = (0 * units(src)).to(units(dst)) - (0 * units(dst))

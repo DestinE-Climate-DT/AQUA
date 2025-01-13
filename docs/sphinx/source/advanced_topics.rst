@@ -431,6 +431,39 @@ To modify existing configurations or add new machines, edit the ``.aqua/aqua/slu
     Currently, the pip installation does not copy the YAML configuration file to a user-accessible directory.
     This functionality will be updated in the future to ensure easier modification of configurations by users.
 
+.. _new-machine-regrid:
+
+Enable regrid capabilities in a new machine
+-------------------------------------------
+
+If AQUA has been installed in a machine where the grids are not available yet, some extra step may be needed to enable the regrid capabilities.
+
+Set the machine in the catalog machine file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Every catalog has a machine file that specifies the paths where the grids, weights and areas produced by AQUA will be stored for each machine.
+If you want to use such a catalog in a new machine, you need to add the machine to the catalog machine file.
+This is contained in the ``config/catalogs/<catalog-name>/machine.yaml`` file.
+The block to add should look like this:
+
+.. code-block:: yaml
+
+    myhpc: 
+        paths:
+            grids: /path/to/aqua/data/grids
+            weights: /path/to/aqua/data/weights
+            areas: /path/to/aqua/data/areas
+
+Where ``myhpc`` is the name of the machine used during the ``aqua install <myhpc>`` command.
+
+Download the grids
+^^^^^^^^^^^^^^^^^^
+
+The grids used in AQUA are stored and available on Swift storage, powered by DKRZ.
+See the :ref:`grids-downloader` section for more details.
+
+You can then check the completeness of the grids with the tool described in the :ref:`grids-checker` section.
+
 .. _dev-notes:
 
 Developer notes
@@ -477,3 +510,39 @@ Add new catalogs as developer
 If you're adding a new catalog or modifying an existing one it is recommended to use the old method to set up the AQUA package
 or to add the catalog with the editable option.
 Please refer to the :ref:`aqua-add` section for more information.
+
+.. _eccodes:
+
+ecCodes
+-------
+
+ecCodes is a package developed by ECMWF to handle GRIB and BUFR files.
+AQUA uses ecCodes to interpret the GRIB files coming from the FDB sources.
+This is handled by the intake driver for FDB sources developed inside AQUA and making use of ecCodes definitions and the GSVRetriever class.
+
+Since v0.13 AQUA uses always the ecCodes definitions selected in the environment file. In particular we're currently using ecCodes 2.39.0.
+There is the possibility to switch ecCodes version while opening a source written with an older ecCodes but this is not recommended.
+As a consequence of this default behaviour, the shortnames deduced from a paramid will be always referred to the ecCodes definitions used by AQUA
+and not to the definitions used by the source. If the fixer is used, the shortnames will be anyway converted to the standard variable names used in AQUA.
+
+ecCodes fixer
+^^^^^^^^^^^^^
+
+.. warning::
+
+    Deprecated starting from AQUA v0.13
+
+In order to be able to read data written with recent versions of ecCodes,
+AQUA needs to use a very recent version of the binary and of the definition files.
+Data written with earlier versions of ecCodes should instead be read using previous definition files.
+AQUA solves this problem by switching on the fly the definition path for ecCodes, as specified in the source catalog entry. 
+Starting from version 2.34.0 of ecCodes older definitions are not compatible anymore.
+As a fix we create copies of the original older definion files with the addition/change of 5 files (``stepUnits.def`` and 4 files including it).
+A CLI script (``eccodes/fix_eccodes.sh``) is available to create such 'fixed' definition files.
+
+.. warning::
+
+    This change is necessary since AQUA v0.11.1 and it is going to be not necessary anymore starting from AQUA v0.13.
+    Please notice that this also means that earlier versions of the ecCodes binary will not work using these 'fixed' definition files.
+    If you are planning to use older versions of AQUA (with older versions of ecCodes) you should not use these 'fixed' definition files
+    and you may need to modify the ecCodes path in the catalog entries.

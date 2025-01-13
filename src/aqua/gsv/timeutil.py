@@ -230,7 +230,6 @@ def read_bridge_end_date(obj):
         with open(obj, 'r') as file:
             date = file.read()
         date = pd.Timestamp(date.strip())
-        date += pd.DateOffset(days=1)
         return (date.strftime('%Y%m%d'))
     else:
         return obj

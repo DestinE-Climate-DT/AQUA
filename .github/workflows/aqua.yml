@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1" #run every Monday night at 3AM UTC
+    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
 
 permissions:
   contents: read
@@ -62,6 +62,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          path: AQUA
       # The FDB docker image does not have git and other dependencies
       - name: Install GH Actions dependencies
         run: |
@@ -72,6 +74,19 @@ jobs:
               curl \
               git \
               rustc
+      - name: Checkout Climate-DT-catalog repository
+        uses: actions/checkout@v4
+        with:
+          repository: DestinE-Climate-DT/Climate-DT-catalog
+          token: github_pat_${{ secrets.CLIMATEDT_TOKEN }}
+          path: Climate-DT-catalog 
+      - name: Clone GitLab data-portfolio repository
+        run: |
+          git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio
+      - name: List Workspace Contents
+        run: |
+          echo "Current Directory: $PWD"
+          ls -l
       # Using GH Action https://github.com/marketplace/actions/cargo-install
       # as it caches the binary installation (the official cargo is tailored for
       # building Rust applications, this one is for installing tools with Cargo).
@@ -85,7 +100,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
-          environment-file: environment.yml 
+          environment-file: AQUA/environment.yml 
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -108,6 +123,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
       - name: Download and set up tests
         run: |
+          cd AQUA
           ./download_data_for_tests.sh
           ./tests/teleconnections/download_data_for_tests.sh
       - name: Set up FDB
@@ -115,7 +131,8 @@ jobs:
           export
           # FDB for GSV
           rm -rf /app/
-          cp -r ./AQUA_tests/fdb/ /app/
+          ls -l *
+          cp -r ./AQUA/AQUA_tests/fdb/ /app/
           cat /app/etc/fdb/config.yaml
           mkdir -pv /app/localroot/
           cd /app/
@@ -143,10 +160,12 @@ jobs:
         #        shell and not with the micromamba shell.
         run: |
           # Produce the HTML report. Defaults to writing in htmlcov/index.html.
-          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics"
+          cd AQUA
+          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics or catgen or timeseries or teleconnections"
       - name: Processing coverage
         run: |
           if [[ ${COVERAGE_ENABLED} ]]; then
+            cd AQUA
             # Extract the top header of the pytest HTML report.
             # Passes the HTML through htmlq, extracting the first H1 displayed.
             # Uses tr to delete breaklines and squeeze-repeats blank spaces,
@@ -180,7 +199,7 @@ jobs:
         # Only run if **NOT** running in a pull request (see step below).
         if: ${{ github.event_name != 'pull_request' && env.COVERAGE_ENABLED }}
         run: |
-          cat coverage.md
+          cat AQUA/coverage.md
       - name: Publish coverage reports (bot)
         # Publish the coverage reports in only one matrix job run.
         # Only run if running in a pull request.
@@ -204,7 +223,7 @@ jobs:
             // Find any comment already made by the bot.
             const botComment = comments.find(comment => comment.user.id === 41898282)
             const fs = require("fs").promises
-            let commentBody = await fs.readFile("coverage.md", "utf8")
+            let commentBody = await fs.readFile("AQUA/coverage.md", "utf8")
             // Replace _ by \_ since it is Markdown. Pandoc already adds it,
             // but pycobertura does not adds it. Thus the negative lookahead
             // ignoring already escaped underscores.

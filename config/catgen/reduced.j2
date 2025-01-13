@@ -5,10 +5,9 @@
         dataset: climate-dt
         activity: {{ activity }}  # To be overwritten by workflow/config file
         experiment: {{ experiment }}  # To be overwritten by workflow/config file
-        generation: 1  # To be overwritten by workflow/config file
+        generation: {{ generation | default(1) }}   # To be overwritten by workflow/config file
         model: {{ model }}
-        realization: {% if num_of_realizations > 1 %}{% raw %}{{ realization }}{% endraw %}{% else %}1{% endif %}
-
+        realization: {% if num_of_realizations > 1 %}{% raw %}'{{ realization }}'{% endraw %}{% else %}1{% endif %} 
         resolution: {{ resolution }}
         expver: {{ expver }}  # To be overwritten by workflow/config file
         type: fc
@@ -17,29 +16,41 @@
         levtype: {{ levtype }}
         year: {{ data_start_date[:4] }}
         month: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  
-        {% if levelist != None %}
+        {% if levelist %}
         levelist: {{ levelist }}
         {% endif %}
       data_start_date: {{ data_start_date }}T0000
-      data_end_date: auto
+      data_end_date: {{ data_end_date }}
+      {% if bridge_end_date %} 
+      bridge_end_date: {{ bridge_end_date }}
+      {% endif %}
       chunks: {{ chunks }}
       savefreq: {{ savefreq }}
       timestep: h
       timestyle: yearmonth
-
     {% if num_of_realizations > 1 %}
-    parameters: {{ parameters }}
+    parameters:
+      realization:
+        allowed: {{ range(1, num_of_realizations + 1) | list }}
+        description: realization member
+        type: int
+        default: 1
     {% endif %}
     description: {{ description }}
     driver: gsv
     metadata:
         fdb_home: {{ fdb_home }}
+        {% if fdb_home_bridge %}
+        fdb_home_bridge: {{ fdb_home_bridge }}
+        {% endif %}
+        {% if eccodes_path %}
         eccodes_path: {{ eccodes_path }}
-        {% if levels != None %}
+        {% endif %}
+        {% if levels %}
         levels: {{ levels }}
         {% endif %}
         variables: {{ variables }}
         source_grid_name: {{ grid }}
-        fixer_name: {{ fixer_name }}
+        fixer_name: {% if fixer_name %}{{ fixer_name }}{% else %}{% raw %}climatedt-phase2-reduced{% endraw %}{% endif %} 
 
         

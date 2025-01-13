@@ -13,8 +13,8 @@ approx_rel = 1e-4
         ("IFS", "test-tco79", "long", "mtntrf", 0),
         ("ICON", "test-r2b0", "short", "2t", 0),
         ("ICON", "test-healpix", "short", "2t", 0),
-        ("FESOM", "test-pi", "original_2d", "avg_tos", 0.33925926),
-        ("NEMO", "test-eORCA1", "long-2d", "sst", 0.28716)
+        ("FESOM", "test-pi", "original_2d", "tos", 0.33925926),
+        ("NEMO", "test-eORCA1", "long-2d", "tos", 0.28716)
     ]
 )
 def reader_arguments(request):
@@ -94,13 +94,15 @@ class TestRegridder():
         data = reader.retrieve(var='temp')
         rgd = reader.regrid(data)
 
-        ratio1 = rgd.temp.isel(nz1=0).isnull().sum()/rgd.temp.isel(nz1=0).size  # land fraction
-        ratio2 = rgd.temp.isel(nz1=40).isnull().sum()/rgd.temp.isel(nz1=40).size  # land fraction
+        subdata = rgd.temp.isel(nz1=0)
+        ratio1 = subdata.isnull().sum()/subdata.size  # land fraction
+        subdata = rgd.temp.isel(nz1=2)
+        ratio2 = subdata.isnull().sum()/subdata.size  # land fraction
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
         assert len(rgd.time) == 2
         assert 0.33 <= ratio1 <= 0.36
-        assert 0.75 <= ratio2 <= 0.79
+        assert 0.43 <= ratio2 <= 0.46
 
     def test_recompute_weights_nemo3D(self):
         """
@@ -113,12 +115,14 @@ class TestRegridder():
         data = reader.retrieve(var='avg_so')
         rgd = reader.regrid(data)
 
-        ratio1 = rgd.avg_so.isel(level=0).isnull().sum()/rgd.avg_so.isel(level=0).size  # land fraction
-        ratio2 = rgd.avg_so.isel(level=40).isnull().sum()/rgd.avg_so.isel(level=40).size  # land fraction
+        subdata = rgd.avg_so.isel(level=0)
+        ratio1 = subdata.isnull().sum()/subdata.size  # land fraction
+        subdata = rgd.avg_so.isel(level=6)
+        ratio2 = subdata.isnull().sum()/subdata.size  # land fraction
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert 0.27 <= ratio1 <= 0.30
-        assert 0.35 <= ratio2 <= 0.39
+        assert 0.44 <= ratio2 <= 0.46
 
     def test_levels_and_regrid(self):
         """
@@ -128,22 +132,23 @@ class TestRegridder():
                         regrid='r100', loglevel=loglevel)
         data = reader.retrieve()
 
-        val = data.aqua.regrid().isel(time=1, nz=40, nz1=[5, 40, 42]).avg_wo.aqua.fldmean().values
-        assert val == pytest.approx(-4.81366779e-08)
-        val = data.isel(time=1, nz=40, nz1=[5, 40, 42]).aqua.regrid().avg_wo.aqua.fldmean().values
-        assert val == pytest.approx(-4.81366779e-08)
-        val = data.isel(time=1, nz=40, nz1=[5, 40, 42]).avg_wo.aqua.regrid().aqua.fldmean().values
-        assert val == pytest.approx(-4.81366779e-08)
-        val = data.isel(time=1, nz=40, nz1=[5, 40, 42]).aqua.regrid().avg_thetao.isel(nz1=2).aqua.fldmean().values
-        assert val == pytest.approx(0.54845744)
-        val = data.aqua.regrid().isel(time=1, nz=40, nz1=[5, 40, 42]).avg_thetao.isel(nz1=2).aqua.fldmean().values
-        assert val == pytest.approx(0.54845744)
-        val = data.isel(time=1, nz=40, nz1=[5, 40, 42]).avg_thetao.aqua.regrid().isel(nz1=2).aqua.fldmean().values
-        assert val == pytest.approx(0.54845744)
+        layers = [0, 2]
+        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.fldmean().values
+        assert val == pytest.approx(8.6758228e-08)
+        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.fldmean().values
+        assert val == pytest.approx(8.6758228e-08)
+        val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.fldmean().values
+        assert val == pytest.approx(8.6758228e-08)
+        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
+        assert val == pytest.approx(274.9045)
+        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
+        assert val == pytest.approx(274.9045)
+        val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
+        assert val == pytest.approx(274.9045)
 
         # test reading specific levels for first vertical coordinate (nz1)
-        data = reader.retrieve(level=[45, 4525, 5025])
-        val = data.isel(time=1).aqua.regrid().avg_thetao.isel(nz1=2).aqua.fldmean().values
-        assert val == pytest.approx(0.54845744)
+        data = reader.retrieve(level=[2.5, 2275])
+        val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
+        assert val == pytest.approx(274.9045)
 
 # missing test for ICON-Healpix

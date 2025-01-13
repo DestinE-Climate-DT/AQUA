@@ -7,7 +7,8 @@ import xarray as xr
 import numpy as np
 import dask
 from ruamel.yaml import YAML
-from aqua.util.eccodes import init_get_eccodes_shortname
+from aqua.util.eccodes import get_eccodes_attr
+from aqua.util import to_list
 from intake.source import base
 from .timeutil import check_dates, shift_time_dataset, todatetime, read_bridge_end_date
 from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
@@ -38,7 +39,7 @@ class GSVSource(base.DataSource):
     def __init__(self, request, data_start_date, data_end_date, bridge_end_date=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 loglevel='WARNING', **kwargs):
+                 switch_eccodes=False, loglevel='WARNING', **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -47,7 +48,7 @@ class GSVSource(base.DataSource):
             request (dict): Request dictionary
             data_start_date (str): Start date of the available data.
             data_end_date (str): End date of the available data.
-            bridge_end_date (str, optional): End date of the bridge data (excluded). Defaults to None.
+            bridge_end_date (str, optional): End date of the bridge data. Defaults to None.
             timestyle (str, optional): Time style. Defaults to "date".
             chunks (str or dict, optional): Time and vertical chunking.
                                         If a string is provided, it is assumed to be time chunking.
@@ -63,6 +64,7 @@ class GSVSource(base.DataSource):
             var (str, optional): Variable ID. Defaults to those in the catalog.
             metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
+            switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
@@ -81,8 +83,21 @@ class GSVSource(base.DataSource):
             self.fdbpath = metadata.get('fdb_path', None)
             self.fdbhome_bridge = metadata.get('fdb_home_bridge', None)
             self.fdbpath_bridge = metadata.get('fdb_path_bridge', None)
-            self.eccodes_path = metadata.get('eccodes_path', None)
+            if switch_eccodes:
+                self.eccodes_path = metadata.get('eccodes_path', None)
+                self.logger.info("ECCODES switching to %s", self.eccodes_path)
+            else:
+                self.logger.debug("ECCODES switching is off")
+                self.eccodes_path = None
             self.levels = metadata.get('levels', None)
+
+            # safety check for paths
+            for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
+                         'fdbpath_bridge', 'eccodes_path']:
+                attr_path = getattr(self, attr)
+                if attr_path and not os.path.exists(attr_path):
+                    raise FileNotFoundError(f'{attr} path {attr_path} does not exist!')
+
         else:
             self.fdbpath = None
             self.fdbhome = None
@@ -97,11 +112,23 @@ class GSVSource(base.DataSource):
         self.timeshift = timeshift
         self.itime = 0  # position of time dim
 
+        self.ilevel = None
+
         if not var:  # if no var provided keep the default in the catalog
             self._var = request["param"]
         else:
             self._var = var
 
+        self._var = to_list(self._var)  # Make sure self._var is a list
+
+        # Convert var names to paramId. The usage of strings is discouraged, so a warning is issued
+        for i, v in enumerate(self._var):
+            if isinstance(v, str):
+                self.logger.warning("Variable %s is a string, conversion to paramid may lead to errors", v)
+                self._var[i] = int(get_eccodes_attr(v)['paramId'])
+
+        self.logger.debug("List of paramid to retrieve %s", self._var)
+                
         self._kwargs = kwargs
 
         if data_start_date == 'auto' or data_end_date == 'auto':
@@ -134,15 +161,14 @@ class GSVSource(base.DataSource):
         self.data_startdate, self.data_starttime = split_date(data_start_date)
 
         if "levelist" in self._request:
-            levelist = self._request["levelist"]
-            if not isinstance(levelist, list): levelist = [levelist]
+            levelist = to_list(self._request["levelist"])
             if level:
-                if not isinstance(level, list): level = [level]
+                level = to_list(level)
                 idx = list(map(levelist.index, level))
                 self.idx_3d = idx
                 self._request["levelist"] = level  # override default levels
                 if self.levels:  # if levels in metadata select them too
-                    if not isinstance(self.levels, list): self.levels = [self.levels]
+                    self.levels = to_list(self.levels)
                     self.levels = [self.levels[i] for i in idx]
             else:
                 self.idx_3d = list(range(0, len(levelist)))
@@ -166,11 +192,14 @@ class GSVSource(base.DataSource):
 
         if self.bridge_end_date and not self.fdbpath_bridge and not self.fdbhome_bridge:
             raise ValueError('Bridge end date requested but no bridge FDB path or FDB home specified in catalog.')
+        if not self.bridge_end_date or self.bridge_end_date != 'complete':
+            if not self.fdbpath and not self.fdbhome:
+                raise ValueError('Data is not entirely on the bridge but no local FDB path or FDB home is specified in catalog.')
 
         if self.bridge_end_date == "complete" or not self.bridge_end_date or (
                 self.bridge_end_date and
-                todatetime(self.bridge_end_date) > todatetime(self.enddate) or
-                todatetime(self.startdate) >= todatetime(self.bridge_end_date)
+                todatetime(self.bridge_end_date) >= todatetime(self.enddate) or
+                todatetime(self.startdate) > todatetime(self.bridge_end_date)
                 ):
             # data are all in bridge or no bridge needed or after end of bridge data
 
@@ -181,7 +210,7 @@ class GSVSource(base.DataSource):
             self._npartitions = len(timeaxis["start_date"])
 
             if self.bridge_end_date != "complete" and (
-                    not self.bridge_end_date or (todatetime(self.startdate) >= todatetime(self.bridge_end_date))
+                    not self.bridge_end_date or (todatetime(self.startdate) > todatetime(self.bridge_end_date))
             ):
                 self.chk_type = np.zeros(self._npartitions)  # mark as hpc fdb chunks
                 self.logger.debug("All data are in HPC FDB")
@@ -212,7 +241,7 @@ class GSVSource(base.DataSource):
             self._npartitions = nbridge + nhpc
             self.chk_type = np.ones(nbridge)  # the first part is bridge data
             self.chk_type = np.append(self.chk_type, np.zeros(nhpc))  # the second part is hpc fdb data
-            self.logger.debug("Data up to %s are on bridge FDB", timeaxis["end_date"][nbridge-1])
+            self.logger.debug("Data up to %s are on bridge FDB", timeaxis["end_date"][nbridge])
 
         self.timeaxis = timeaxis["timeaxis"]
         self.chk_start_idx = timeaxis["start_idx"]
@@ -228,8 +257,7 @@ class GSVSource(base.DataSource):
         if "levelist" in self._request:
             self.chunking_vertical = chunking_vertical
             if self.chunking_vertical:
-                levelist = self._request["levelist"]
-                if not isinstance(levelist, list): levelist = [levelist]
+                levelist = to_list(self._request["levelist"])
                 if len(levelist) <= self.chunking_vertical:
                     self.chunking_vertical = None
                 else:
@@ -242,8 +270,6 @@ class GSVSource(base.DataSource):
             self.chunking_vertical = None  # no vertical chunking
 
         self._switch_eccodes()
-
-        self.get_eccodes_shortname = init_get_eccodes_shortname()  # Can't pickle this, so we need to reinitialize it
 
         super(GSVSource, self).__init__(metadata=metadata)
 
@@ -306,7 +332,7 @@ class GSVSource(base.DataSource):
     def _get_schema(self):
         """
         Standard method providing data schema.
-        For dask access it is assumed that all dataarrays read share the same shape and data type.
+        For dask access it is assumed that all DataArrays read share the same shape and data type.
         """
 
         # check if dates are within acceptable range
@@ -431,7 +457,12 @@ class GSVSource(base.DataSource):
         if onelevel:  # limit to one single level
             request["levelist"] = request["levelist"][0]
 
+        # If a var is used and it is a string, it means that previous parts of the code have failed
+        # to convert it to paramId. The conversion is then asked to GSVRetriever, which rely on a
+        # dictionary of paramId to shortName. This is not guaranteed to work, so a warning is issued.
         if var:
+            if isinstance(var, str):
+                self.logger.warning("Asking for variable %s as string, this may lead to errors", var)
             request["param"] = var
         else:
             request["param"] = self._var
@@ -478,7 +509,7 @@ class GSVSource(base.DataSource):
         Returns a dask.array
 
         Args:
-            i (int): partition number
+            ii (int): partition number
             var (string): variable name
             shape: shape of the schema
             dtype: data type of the schema
@@ -517,30 +548,43 @@ class GSVSource(base.DataSource):
         coords['time'] = self.timeaxis
 
         ds = xr.Dataset()
-
-        for var in self._var:
+        
+        # Now works only with the variables which have been read (the fixer may change names later)
+        # Notice that the mismatch between shortnames in different versions of eccodes is handled here
+        # We consider stable between versions the paramId, not the shortName. This means that we read
+        # the GRIB_paramid attribute and based on this we get the shortName from the eccodes definitions.
+        # If you want to read the shortName according to previous versions of eccodes, you need to
+        # set the switch_eccodes flag to True in the catalog.
+        for var in self._ds.data_vars:
+            # We need to ask for the GRIB_paramid that is attribute of the variable
+            original_paramid = self._ds[var].attrs.get("GRIB_paramId", var)
+            updated_var = get_eccodes_attr(original_paramid)['shortName']
+            # If this is executed, it means that the shortname came from a previous version of eccodes
+            # and we're using a more recent one in which the paramId is still existing, but the shortName
+            # has changed. This is a warning to the user. However the final variable name will be influenced
+            # by this only if fix=False.
+            if updated_var != var:
+                self.logger.warning("Variable shortname %s has been interpreted with another eccodes. Current eccodes %s will read paramid %s as %s", var, eccodes.__version__, original_paramid, updated_var)
             # Create a dask array from a list of delayed get_partition calls
             if not self.chunking_vertical:
-                dalist = [self.get_part_delayed(i, var, shape, dtype) for i in range(self.npartitions)]
+                dalist = [self.get_part_delayed(i, original_paramid, shape, dtype) for i in range(self.npartitions)]
                 darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
             else:
                 dalist = []
                 for j in range(self.nlevelchunks):
-                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, var, shape, dtype) for i in range(self.ntimechunks)]
+                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, original_paramid, shape, dtype) for i in range(self.ntimechunks)]
                     dalist.append(dask.array.concatenate(dalistlev, axis=self.itime))
                 darr = dask.array.concatenate(dalist, axis=self.ilevel)  # This is a lazy dask array
 
-            shortname = self.get_eccodes_shortname(var)
-
             da = xr.DataArray(darr,
-                              name=shortname,
-                              attrs=self._ds[shortname].attrs,
+                              name=updated_var,
+                              attrs=self._ds[var].attrs, # We need the original var to retrieve the attributes
                               dims=self._da.dims,
                               coords=coords)
 
             log_history(da, "Dataset retrieved by GSV interface")
 
-            ds[shortname] = da
+            ds[updated_var] = da
 
         ds.attrs.update(self._ds.attrs)
         if self.idx_3d:

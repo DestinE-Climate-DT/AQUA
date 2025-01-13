@@ -1,0 +1,47 @@
+fixer_name:
+    icon-destine-v1:
+        data_model: ifs
+        deltat: 3600
+        convention: eccodes
+
+        vars:
+            # Evaporation and snowfall
+            ie:
+                src_units: m
+            tsrwe:
+                src_units: m
+                #units: kg m**-2 s**-1
+            # Wind stresses
+            # ICON use different variables that should not be decumulated
+            iews:
+                source: 140101
+                grib: true
+            inss:
+                source: 140102
+                grib: true
+    
+    icon-destine-v1-ssp370:
+        parent: icon-destine-v1
+        convention: eccodes
+        vars:
+            tnswrf:
+                mindate: 2020-09-01T00:00
+            tnlwrf:
+                mindate: 2020-09-01T00:00
+            snswrf:
+                mindate: 2020-09-01T00:00
+            snlwrf:
+                mindate: 2020-09-01T00:00
+
+    icon-destine-v1-hist:
+        parent: icon-destine-v1
+        convention: eccodes
+        vars:
+            tnswrf:
+                mindate: 1991-03-01T00:00
+            tnlwrf:
+                mindate: 1991-03-01T00:00
+            snswrf:
+                mindate: 1991-03-01T00:00
+            snlwrf:
+                mindate: 1991-03-01T00:00

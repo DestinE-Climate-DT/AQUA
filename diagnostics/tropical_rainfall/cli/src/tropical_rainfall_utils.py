@@ -31,6 +31,8 @@ def parse_arguments(args):
     parser.add_argument('--nproc', type=int, required=False,
                         help='the number of processes to run in parallel',
                         default=4)
+    parser.add_argument("--cluster", type=str,
+                        required=False, help="dask cluster address")
     return parser.parse_args(args)
 
 def validate_arguments(args):

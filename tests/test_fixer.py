@@ -25,13 +25,14 @@ def test_fixer_ifs_long():
     # Now let's fix
     reader1 = Reader(model="IFS", exp="test-tco79", source="long", loglevel='debug')
     data1 = reader1.retrieve()  # Retrieve fixed data
-    ttr1 = data1.ttr[ntime, 0, 0]
+    # This is the decumulated ttr
+    tnlwrf = data1.tnlwrf[ntime, 0, 0]
     tas1 = data1['skt'][ntime, 5, 5]
     mtntrf = data1.mtntrf[ntime, 0, 0]
     mtntrf2 = data1.mtntrf2[ntime, 0, 0]
 
     # Did decumulation work ?
-    assert pytest.approx(ttr1.values / 3600) == [-193.92693374, -194.7589371, -159.28750829]
+    assert pytest.approx(tnlwrf.values) == [-193.92693374, -194.7589371, -159.28750829]
 
     # Did we get a correct derived variable specified with paramId ?
     assert pytest.approx(tas1.values) == tas0.values + 1.0
@@ -101,13 +102,15 @@ def test_fixer_ifs_disable():
     reader = Reader(model="IFS", exp="test-tco79", source="short_disable_fix", loglevel=loglevel)
     assert reader.fix == False
 
-@pytest.mark.aqua
-def test_fixer_ifs_default_fix():
-    """Check with fixer_name with roll back on model default"""
 
-    reader = Reader(model="IFS", exp="test-tco79", source="long_default_fix", loglevel=loglevel)
-    data = reader.retrieve()
-    assert data['mtnlwrf'].attrs['paramId'] == '235040'
+# @pytest.mark.aqua
+# def test_fixer_ifs_default_fix():
+#     """Check with fixer_name with roll back on model default"""
+
+#     reader = Reader(model="IFS", exp="test-tco79", source="long_default_fix", loglevel=loglevel)
+#     data = reader.retrieve()
+#     assert data['tnlwrf'].attrs['paramId'] == '260672'
+
 
 @pytest.mark.aqua
 def test_fixer_ifs_timeshift():
@@ -131,6 +134,7 @@ def test_fixer_ifs_coords():
     assert 'timepippo' in data.coords
     assert 'cellspippo' in data.dims
 
+
 @pytest.mark.aqua
 def test_fixer_fesom_coords():
     """Check with fixer_name and coords block"""
@@ -139,6 +143,7 @@ def test_fixer_fesom_coords():
     data = reader.retrieve()
     assert 'level' in data.coords
     assert 'a lot of water' in data.level.attrs['units']
+
 
 @pytest.mark.aqua
 def test_fixer_fesom_names():

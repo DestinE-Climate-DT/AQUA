@@ -38,7 +38,7 @@ dependencies = [
     "cfgrib",
     "dask",
     "dask_jobqueue",
-    "eccodes==2.38.3",
+    "eccodes==2.39.0",
     "docker",
     "gcsfs", # Google Cloud Storage File System
     "gribscan",
@@ -54,14 +54,14 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid==0.0.6",
+    "smmregrid==0.1.0",
     "sparse",
-    "xarray<2024.10.0",
+    "xarray",
     "kerchunk",
     "h5py@git+https://github.com/h5py/h5py.git@3.12.1", #specific github pin to avoid installation of binaries
     "fastparquet",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.6.1"
+    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.8.4"
 ]
 
 [project.optional-dependencies]
@@ -107,7 +107,7 @@ platforms = ["any"]
 "aqua.diagnostics" = "src/aqua_diagnostics"
 
 [tool.setuptools.dynamic]
-version = {attr = "aqua.__version__"}
+version = {attr = "aqua.version.__version__"}
 
 [tool.pytest.ini_options]
 addopts = "-v --cov=aqua --cov-config=.coveragerc"
@@ -123,7 +123,8 @@ markers = [
     # beginning of diagnostic tests
     "dummy: mark test for dummy diagnostic",
     "teleconnections: mark test for teleconnections diagnostic",
-    "tropical_rainfall: mark test for tropical_rainfall diagnostic"
+    "tropical_rainfall: mark test for tropical_rainfall diagnostic",
+    "catgen: mark test for catalog generator"
 ]
 
 # This appears to be the correct configuration, but for some reason

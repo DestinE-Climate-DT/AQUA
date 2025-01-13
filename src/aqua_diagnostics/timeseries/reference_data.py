@@ -61,13 +61,13 @@ def get_reference_ts_gregory(ts_name='2t', ts_ref={'catalog': 'obs', 'model': 'E
     return ts_mean, ts_std
 
 
-def get_reference_toa_gregory(toa_name=['mtnlwrf', 'mtnswrf'],
+def get_reference_toa_gregory(toa_name=['tnlwrf', 'tnswrf'],
                               toa_ref={'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'},
                               startdate='2001-01-01', enddate='2020-12-31', loglevel='WARNING'):
     """Retrieve toa reference data for Gregory plot.
 
     Parameters:
-        toa_name (list): list of variable names for net radiation at TOA, default is ['mtnlwrf', 'mtnswrf'].
+        toa_name (list): list of variable names for net radiation at TOA, default is ['tnlwrf', 'tnswrf'].
         toa_ref (dict): dictionary with model, exp and source for net radiation at TOA,
                         default is {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}.
         startdate (str): start date for reference data, default is '2001-01-01'.
@@ -172,7 +172,10 @@ def get_reference_timeseries(var, formula=False,
     if formula:  # We retrieve all variables
         data = reader.retrieve()
     else:  # We retrieve only the variable of interest
-        data = reader.retrieve(var=var)
+        try:
+            data = reader.retrieve(var=var)
+        except Exception as e:
+            raise NoObservationError(f"Could not retrieve {var}. No plot will be drawn.") from e
 
     # Monthly data
     if monthly or monthly_std:

@@ -23,7 +23,7 @@ num_of_bins = ToolsClass().get_config_value(config, 'class_attributes', 'num_of_
 first_edge = ToolsClass().get_config_value(config, 'class_attributes', 'first_edge', default=0)
 bins = ToolsClass().get_config_value(config, 'class_attributes', 'bins', default=0)
 width_of_bin = ToolsClass().get_config_value(config, 'class_attributes', 'width_of_bin', default=0.05)  # in [mm/day]
-model_variable = ToolsClass().get_config_value(config, 'class_attributes', 'model_variable', default='mtpr')
+model_variable = ToolsClass().get_config_value(config, 'class_attributes', 'model_variable', default='tprate')
 new_unit = ToolsClass().get_config_value(config, 'class_attributes', 'new_unit', default='mm/day')
 path_to_netcdf = ToolsClass().get_config_value(config, machine, 'path_to_netcdf', default='./')
 path_to_pdf = ToolsClass().get_config_value(config, machine, 'path_to_pdf', default='./')
@@ -85,7 +85,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
             width_of_bin (Union[float, None], optional): The width of the bin. Defaults to None.
             bins (list, optional): The bins. Defaults to 0.
             new_unit (str, optional): The unit for the new data. Defaults to 'mm/day'.
-            model_variable (str, optional): The name of the model variable. Defaults to 'mtpr'.
+            model_variable (str, optional): The name of the model variable. Defaults to 'tprate'.
             path_to_netcdf (Union[str, None], optional): The path to the netCDF file. Defaults to None.
             path_to_pdf (Union[str, None], optional): The path to the PDF file. Defaults to None.
             loglevel (str, optional): The log level for logging. Defaults to 'WARNING'.

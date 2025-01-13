@@ -139,7 +139,6 @@ def _init_get_eccodes_attr():
     cfvarname = read_eccodes_def("cfVarName.def")
     units = read_eccodes_def("units.def")
 
-
     def _get_eccodes_attr(sn, loglevel='WARNING'):
         """
         Recover eccodes attributes for a given short name
@@ -152,6 +151,9 @@ def _init_get_eccodes_attr():
         """
         logger = log_configure(log_level=loglevel, log_name='eccodes')
         nonlocal shortname, paramid, name, cfname, cfvarname, units
+
+        if isinstance(sn, int) or (isinstance(sn, str) and sn.isdigit()):
+            sn = f'var{sn}'
 
         for grib_version, tables in shortname.items():
             for table in tables:
@@ -169,7 +171,6 @@ def _init_get_eccodes_attr():
                                            sn, paramid[grib_version][table][indices[0]])
                         i = indices[0]
 
-
                     dic = {"paramId": paramid[grib_version][table][i],
                            "long_name": name[grib_version][table][i],
                            "units": units[grib_version][table][i],
@@ -177,9 +178,9 @@ def _init_get_eccodes_attr():
                            "shortName": shortname[grib_version][table][i]}
 
                     if 'grib1' in grib_version:
-                        logger.warning('Variable %s is found in grib1 tables, please check if it is correct', shortname[grib_version][table][i]) # noqa E501
+                        logger.info('Variable %s is found in grib1 tables, please check if it is correct', shortname[grib_version][table][i]) # noqa E501
                     elif 'ecmwf' in table:
-                        logger.info('Variable %s is found in ECMWF local tables', shortname[grib_version][table][i])
+                        logger.debug('Variable %s is found in ECMWF local tables', shortname[grib_version][table][i])
 
                     return dic
 

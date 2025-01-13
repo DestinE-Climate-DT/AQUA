@@ -13,7 +13,7 @@ class_attributes:
   first_edge:   0
   bins: 0
   width_of_bin: 0.5 # in [mm/day]
-  model_variable: 'mtpr'
+  model_variable: 'tprate'
   new_unit:       'mm/day'
   loglevel:       'WARNING'
 

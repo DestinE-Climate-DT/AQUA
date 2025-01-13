@@ -12,8 +12,12 @@ Welcome to AQUA's documentation!
    introduction
    installation
    getting_started
-   core_components
+   example_use_case
+   reader
    aqua_console
+   regrid
+   fixer
+   other_components
    container
    diagnostics/index
    adding_data

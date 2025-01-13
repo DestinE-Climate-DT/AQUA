@@ -1,0 +1,20 @@
+# NOTE: v2 because the file has been created in the phase2 of the project
+fixer_name:
+  ifs-nemo-reduced-output-monthly-v1:
+    parent: ifs-destine-v1
+    data_model: false
+    convention: eccodes
+    vars:
+      tos:
+        src_units: degC
+      thetao:
+        src_units: degC
+  
+  ifs-nemo-reduced-output-monthly-v2:
+    parent: ifs-destine-v1
+    data_model: ifs
+    deltat: monthly
+    convention: eccodes
+    vars:
+      tprate:
+        src_units: m

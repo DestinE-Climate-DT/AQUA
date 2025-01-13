@@ -19,7 +19,7 @@ Basic usage
 
 .. code-block:: bash
 
-    bash aqua-analysis.sh
+    python aqua-analysis.py
 
 Without any argument, the script will run all the diagnostics available in AQUA on an hard-coded dataset,
 with LUMI configuration and output directory in the ``cli/aqua-analysis/output`` folder.
@@ -29,8 +29,12 @@ named after the diagnostic name.
 Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
 
 The exact list of diagnostics to run and technical details of the analysis
-(such as the nuber of cpu cores to be used for each diagnostic) 
+(such as the number of workers/thread/memory to use for the dask cluster) 
 are specified in the configuration file ``config.aqua-analysis.yaml``. 
+
+.. warning::
+
+    A bash script called ``aqua-analysis.sh`` is also available in the same folder but it is deprecated and will be removed in future releases.
 
 Additional options
 ^^^^^^^^^^^^^^^^^^
@@ -72,17 +76,20 @@ so that the script can be used in a batch job or in a workflow.
 
 .. option:: -t <threads>, --threads <threads>
 
-    The number of threads to use for the cli and the diagnostics.
-    Default is ``0``, which means the number of threads is automatically set to the number of available cores.
-    Notice that the diagnostics are run in a single thread, which means that the parallelization
-    is used to run multiple diagnostics at the same time.
-    This is basically the number of diagnostics running in parallel.
+    This is the number of diagnostics running in parallel.
+    Default is ``0``, which means no limit.
 
 .. option:: -p, --parallel
 
     This flag activates running the diagnostics with multiple dask.distributed workers.
-    A predefined number of workers is used for each diagnostic, set in the script itself.
-    For ecmean the multiprocessing option is used.
+    By default the script will set up a common dask cluster/scheduler and close it when finished.
+    
+.. option:: --local_clusters
+    
+    This is a legacy feature to run the diagnostics with multiple dask.distributed 'local' clusters (not reccomended)
+    In this case predefined number of workers is used for each diagnostic, set in the configuration file `config.aqua-analysis.yaml`.
+    
+.. option:: 
     
 .. note ::
 
@@ -111,6 +118,7 @@ This script is used to push the figures produced by the AQUA analysis to the aqu
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
 or a text file containing a list of experiments in the format "catalog model experiment".
+It creates ``content.yaml`` files for each experiment and pushes the images to the aqua-web repository.
 
 Additional options
 ^^^^^^^^^^^^^^^^^^
@@ -119,7 +127,19 @@ Additional options
 
     The branch to push to (optional, default is ``main``).
 
-.. option:: -u <user>, --user <user>
+.. option:: -c, --content
+
+    Flag to refresh all content.yaml files (default is only specific experiment).
+
+.. option:: -d, --dry-run
+
+    Do not push to the repository.
+
+.. option:: -l <level>, --loglevel <level>
+
+    Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
+
+.. option:: -u <user:PAT>, --user <user:PAT>
 
     Credentials (in the format username:PAT) to create an automatic PR for the branch (optional).
     If this is option is specified and a branch is used, then an automatic PR is generated.
@@ -218,7 +238,7 @@ Options
 
 .. option:: -r, --serial
 
-    Run in serial mode (only one core). This is passed to the ``aqua-analysis.sh`` script.
+    Run in serial mode (only one core). This is passed to the ``aqua-analysis.py`` script.
 
 .. option:: -x <max>, --max <max>
 
@@ -252,6 +272,10 @@ Options
     
     Flag to use the native (local) AQUA version (default is the container version).
 
+.. option:: -j, --jobname
+    
+    Alternative prefix for the job name (the default is specified in the config file)
+
 
 .. _benchmarker:
 
@@ -263,11 +287,62 @@ It runs a few selected methods for multiple times and report the durations of mu
 the associated jobscript in order to guarantee robust results. 
 It will be replaced in future by more robust performance machinery.
 
+.. _grids-management:
 
-.. _grids-from-data:
+Grids management
+----------------
+
+This section describes the tools available to manage the grids used in AQUA,
+from the download and validation to the synchronization between different HPC platforms.
+
+.. _grids-downloader:
+
+Grids downloader
+^^^^^^^^^^^^^^^^
+
+The grids used in AQUA are available for download.
+A script in the ``cli/grids-downloader/`` folder is available
+
+Basic usage:
+
+.. code-block:: bash
+
+    bash grids-downloader.sh all
+
+This will download all the grids used in AQUA.
+It is also possible to download only a subset of the grids,
+by specifying the group of grids to download (usually one per model).
+
+.. _grids-checker:
+
+Checksum verification of grid files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+AQUA built on many grids files to speed up operations for interpolation and area evaluation, especially within
+the ClimateDT workflow. These are available on multiple HPC but sometimes the synchronization
+might not be complete following an update. In order to verify that all the grids files are ported on the used machine
+the `cli/grids-checker/grids-checker.py` script is available to verify the checksum of the grid files
+is the same as it is planned.
+
+To verify that everything is at it should be please run:
+
+.. code-block:: bash
+
+    ./grid-checker.py verify
+
+To generate a new checksum should be please run:
+
+.. code-block:: bash
+
+    ./grid-checker.py generate -o checksum_file.md5
+
+Please notice that not all the grid folder will be checked, but only those defined in the file with ``GRIDS_FOLDERS`` variable. 
+Option ``-s`` can be used as well to scan a single grid folder (e.g. HealPix, or ERA5)
+
+.. _grid-from-data:
 
 Generation of grid from data
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A tool to create CDO-compliant grid files (which are fundamental for proper regridding) specifically 
 for oceanic model in order to ensure the right treatment of masks. 
@@ -285,26 +360,10 @@ Basic usage:
 
     ./hpx-from-source.py -c config-hpx-nemo.yaml -l INFO
 
-.. _grids-downloader:
-
-Grids downloader
-----------------
-
-The grids used in AQUA are available for download.
-A script in the ``cli/grids-downloader/`` folder is available
-
-Basic usage:
-
-.. code-block:: bash
-
-    bash grids-downloader.sh all
-
-This will download all the grids used in AQUA.
-It is also possible to download only a subset of the grids,
-by specifying the group of grids to download (usually one per model).
+.. _grids-sync:
 
 Grids synchronization
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Since the upload of the grids to the SWIFT platform used to store the grids is available only from Levante,
 a simple script to synchronize the grids from Levante to LUMI and viceversa is available in the ``cli/grids-downloader/`` folder.
@@ -325,7 +384,7 @@ This will synchronize the grids from Levante to LUMI or viceversa.
     Please contact the AQUA team to upload new relevant grids to the SWIFT platform.
 
 Grids uploader
---------------
+^^^^^^^^^^^^^^
 
 A script to upload the grids to the SWIFT platform is available in the ``cli/grids-downloader/`` folder.
 You will need to be on levante and to have the access to the SWIFT platform to run the script.
@@ -343,20 +402,10 @@ Basic usage:
     The script will check that a valid SWIFT token is available before starting the upload.
     If the token is not available, the script will ask the user to login to the SWIFT platform to obtain a new token.
 
-HPC container utilities
------------------------
-
-Includes the script for the usage of the container on LUMI and Levante HPC: please refer to :ref:`container`
-
-LUMI conda installation
------------------------
-
-Includes the script for the installation of conda environment on LUMI: please refer to :ref:`installation-lumi`
-
 .. _orca:
 
 ORCA grid generator
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 A tool to generate ORCA grid files (with bounds) from the `mesh_mask.nc`. 
 A script in the ``cli/orca-grids`` folder is available.
@@ -366,6 +415,16 @@ Basic usage:
 .. code-block:: bash
 
     ./orca_bounds_new.py mesh_mask.nc orcefile.nc
+
+HPC container utilities
+-----------------------
+
+Includes the script for the usage of the container on LUMI and Levante HPC: please refer to :ref:`container`
+
+LUMI conda installation
+-----------------------
+
+Includes the script for the installation of conda environment on LUMI: please refer to :ref:`installation-lumi`
 
 .. _weights:
 
@@ -384,23 +443,8 @@ Basic usage:
 
     ./generate_weights.py -c weights_config.yaml
 
-ecCodes fixer
--------------
 
-In order to be able to read data written with recent versions of ecCodes,
-AQUA needs to use a very recent version of the binary and of the definition files.
-Data written with earlier versions of ecCodes should instead be read using previous definition files.
-AQUA solves this problem by switching on the fly the definition path for ecCodes, as specified in the source catalog entry. 
-Starting from version 2.34.0 of ecCodes older definitions are not compatible anymore.
-As a fix we create copies of the original older definion files with the addition/change of 5 files (``stepUnits.def`` and 4 files including it).
-A CLI script (``eccodes/fix_eccodes.sh``) is available to create such 'fixed' definition files.
-
-.. warning::
-
-    This change is necessary since AQUA v0.11.1.
-    Please notice that this also means that earlier versions of the ecCodes binary will not work using these 'fixed' definition files.
-    If you are planning to use older versions of AQUA (with older versions of ecCodes) you should not use these 'fixed' definition files
-    and you may need to modify the ecCodes path in the catalog entries.
+.. _orography:
 
 Orography generator
 -------------------
