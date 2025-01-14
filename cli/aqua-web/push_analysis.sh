@@ -234,14 +234,14 @@ if [ -f "$exps" ]; then
         log_message INFO "Collect figures for $catalog/$model/$experiment and converting to png"
         collect_figures "$1" "$catalog/$model/$experiment" $wipe
         convert_pdf_to_png "$catalog/$model/$experiment"
-        make_contents "$catalog/$model/$experiment"  # create catalog.yaml and catalog.json
+        #make_contents "$catalog/$model/$experiment"  # create catalog.yaml and catalog.json
         description="$description|$catalog|$experiment|$model|\n"
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"
     collect_figures "$indir" "$exps" $wipe
     convert_pdf_to_png "$exps"
-    make_contents "$exps"  # create catalog.yaml and catalog.json
+    #make_contents "$exps"  # create catalog.yaml and catalog.json
     description="$description|${exps//\//|}|\n"
 fi
 
