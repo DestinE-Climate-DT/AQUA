@@ -128,6 +128,14 @@ if __name__ == '__main__':
         condition_sign = 'bigger_than'
         statistic = 'min'
         cmap = 'Blues'
+    elif index == 'sdii':
+        logger.info("ETCCDI index: Simple precipitation intensity index")
+        var = 'tprate'
+        if aggregation is None:
+            aggregation = 'D'
+        condition = 1.0/86400 # 1 mm/day converted to kg/m2/s
+        condition_sign = 'bigger_than'
+        statistic = 'sum'
     else:
         raise ValueError("Index is not known. Please provide the index in the configuration file.")
 
@@ -146,6 +154,8 @@ if __name__ == '__main__':
     logger.info(f"Analysis of year: {year}")
     
     etccdi = None
+    if index == 'sdii':
+        RRw = None
     while (etccdi is None or data is not None):
         data = reader.retrieve(var=var)
         if data is not None:
@@ -177,6 +187,8 @@ if __name__ == '__main__':
                 statistic_daily = data[var].max(dim='time')
             elif statistic == 'min':
                 statistic_daily = data[var].min(dim='time')
+            elif statistic == 'sum':
+                statistic_daily = data[var].sum(dim='time')
             else:
                 raise ValueError("Statistic is not supported.")
 
@@ -201,6 +213,11 @@ if __name__ == '__main__':
                 raise ValueError("Condition sign is not supported.")
 
             # Sum the number of hot days in the year
+            if index == 'sdii':
+                if RRw is None:
+                    RRw = xr.where(statistic_daily > condition, statistic_daily, 0)
+                else:
+                    RRw += xr.where(statistic_daily > condition, statistic_daily, 0)
             if etccdi is None:
                 etccdi = condition_days
             else:
@@ -221,6 +238,21 @@ if __name__ == '__main__':
                 else:
                     etccdi.to_netcdf(etccdi_filename)
                     logger.info(f"ETCCDI index saved to {outputdir}")
+
+            if index == 'sdii' and RRw is not None:
+                RRw_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_RRw_{year}_{month}.nc")
+
+                if os.path.exists(RRw_filename) and not overwrite:
+                    logger.info(f"File {RRw_filename} exists. Skip saving.")
+                elif os.path.exists(RRw_filename) and overwrite:
+                    logger.warning(f"File {RRw_filename} exists. Overwriting.")
+                    os.remove(RRw_filename)
+                    RRw.to_netcdf(RRw_filename)
+                    logger.info(f"RRw index saved to {outputdir}")
+                else:
+                    RRw.to_netcdf(RRw_filename)
+                    logger.info(f"RRw index saved to {outputdir}")
+
             break
 
     # Producing the final result
@@ -237,6 +269,21 @@ if __name__ == '__main__':
             index_res = res
         else:
             index_res += res
+    
+    if index == 'sdii':
+        RRw_res = None
+        for i in range(1, 13):
+            try:
+                res = xr.open_mfdataset(os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_RRw_{year}_{i}.nc"))
+                logger.debug(f"Opening file {model}_{exp}_{source}_{var}_RRw_{year}_{i}.ncc")
+            except FileNotFoundError:
+                raise FileNotFoundError(f"File {model}_{exp}_{source}_{var}_RRw_{year}_{i}.nc not found.")
+            res = res[var]
+            if RRw_res is None:
+                RRw_res = res
+            else:
+                RRw_res += res
+        index_res = RRw_res / index_res
 
     etccdi_final_filename = os.path.join(outputdir, f"{model}_{exp}_{source}_{var}_{index}ETCCDI_{year}.nc")
     if os.path.exists(etccdi_final_filename) and not overwrite:

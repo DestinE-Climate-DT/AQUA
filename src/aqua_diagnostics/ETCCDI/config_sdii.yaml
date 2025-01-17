@@ -1,0 +1,11 @@
+catalog: climatedt-phase1
+model: IFS-NEMO
+exp: ssp370
+source: hourly-hpz7-atm2d
+
+aggregation: D
+year: 2030
+
+loglevel: INFO
+outputdir: /project/project_465000454/nurissom/tmp/SDII
+index: sdii
