@@ -119,6 +119,8 @@ This script is used to push the figures produced by the AQUA analysis to the aqu
 ``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
 or a text file containing a list of experiments in the format "catalog model experiment".
 It creates ``content.yaml`` files for each experiment and pushes the images to the aqua-web repository.
+An option to push also to LUMI-O has been added. In this case the needed AWS credentials can be stored 
+in the ``~/.aws/credentials`` file or in environment variables ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
 
 Additional options
 ^^^^^^^^^^^^^^^^^^
@@ -160,15 +162,67 @@ Additional options
     
         Do not convert PDFs to PNGs.
 
-.. option:: -l, --loglevel LEVEL
+.. option:: -o, --lumio
+    
+        Push a copy of the figures also to LUMI-O.
+
+.. option:: --bucket <bucket>   
+    
+        Specify the bucket to use for the LUMI-O push (default 'aqua').
+
+.. option:: -l, --loglevel <level>>
         
             Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
 
-Another script is used to upload the documentation to the aqua-web repository.
+Another script is used to upload the documentation to the aqua-web repository:
 
 .. code-block:: bash
 
     bash make_push_docs.py 
+
+
+.. _push_s3:
+
+Pushing to LUMI-O or another S3 bucket
+--------------------------------------
+
+Tool to upload the contents of a directory or a single file to an S3 bucket.
+The AWS credentials can be stored in the ``~/.aws/credentials`` file or in environment variables ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` or passed as arguments.
+
+Basic usage:
+^^^^^^^^^^^
+
+.. code-block:: bash
+
+    python push_s3.py <bucket_name> <source> [-d <destination>] [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
+
+Options
+^^^^^^^
+
+.. option:: <bucket_name>
+
+    The name of the S3 bucket.
+
+.. option:: <source>
+
+    The path to the directory or file to upload.
+
+.. option:: -d <destination>, --destination <destination>
+
+    Optional destination path.
+
+.. option:: -k <aws_access_key_id>, --aws_access_key_id <aws_access_key_id>
+
+    AWS access key ID.
+
+.. option:: -s <aws_secret_access_key>, --aws_secret_access_key <aws_secret_access_key>
+
+    AWS secret access key.
+
+.. option:: --endpoint_url <endpoint_url>
+
+    Custom endpoint URL for S3. Default is 'https://lumidata.eu'.
+
 
 .. _submit-aqua-web:
 

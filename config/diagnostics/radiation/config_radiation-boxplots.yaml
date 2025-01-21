@@ -1,0 +1,31 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+models:
+    - catalog: null
+      model: 'IFS-NEMO'
+      exp: 'historical-1990'
+      source: 'lra-r100-monthly'
+
+    - catalog: null
+      model: 'ERA5'
+      exp: 'era5'
+      source: 'monthly'
+      
+    - catalog: null
+      model: 'CERES'
+      exp: 'ebaf-toa41'
+      source: 'monthly'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  filename_keys: null # or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostic_attributes:
+  variables: ['-tnlwrf', 'tnswrf']
+  variable_names: ['Mean top net long-wave radiation flux', 'Mean top net short-wave radiation flux']

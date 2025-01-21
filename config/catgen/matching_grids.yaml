@@ -14,11 +14,11 @@ grid_mappings:
     default: "{aqua_grid}-nested"
   o2d:
     ifs-nemo: "nemo-{ocean_grid}-{aqua_grid}-nested"
-    ifs-fesom: "fesom-{aqua_grid}-nested"
+    ifs-fesom: "fesom-{ocean_grid}-{aqua_grid}-nested-v2"
     icon: "icon-{aqua_grid}-nested"
   o3d:
     ifs-nemo: "nemo-{ocean_grid}-{aqua_grid}-nested-3d" 
-    ifs-fesom: "fesom-{aqua_grid}-nested-3d"
+    ifs-fesom: "fesom-{ocean_grid}-{aqua_grid}-nested-3d-v2"
     icon: "icon-{aqua_grid}-nested-3d"
   default: "{aqua_grid}"
 

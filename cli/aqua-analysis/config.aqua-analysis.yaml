@@ -41,8 +41,11 @@ cluster:  # options for dask cluster
 diagnostics:
 
   # List of diagnostics to run
-  run: ["atmglobalmean", "timeseries_atm", "timeseries_oce", "seasonal_cycles", "radiation", "teleconnections_atm", "teleconnections_oce",
-        "tropical_rainfall", "ecmean", "ocean3d_drift", "ocean3d_circulation", "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
+  run: ["global_biases", "timeseries_atm", "timeseries_oce", "seasonal_cycles",
+        "radiation-boxplots", "radiation-timeseries", "radiation-biases", 
+        "teleconnections_atm", "teleconnections_oce",
+        "tropical_rainfall", "ecmean", "ocean3d_drift", "ocean3d_circulation",
+         "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
 
   # List of diagnostics
 
@@ -55,8 +58,10 @@ diagnostics:
   #                 Default script_path is "$script_path_base/$diagnostic/cli/cli_${diagnostic}.py"
   #    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default false (needed for ECmean)
 
-  atmglobalmean:
+  global_biases:
     nworkers: 16
+    script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
+    extra: "--config ${AQUA}/config/diagnostics/global_biases/config_global_biases.yaml"
   timeseries_atm:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
     extra: "--config ${AQUA}/config/diagnostics/timeseries/config_timeseries_atm.yaml"
@@ -72,8 +77,18 @@ diagnostics:
     nworkers: 16
     extra: "--config ${AQUA}/config/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
     outname: timeseries
-  radiation:
+  radiation-biases:
+    script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
     nworkers: 8
+    extra: "--config ${AQUA}/config/diagnostics/radiation/config_radiation-biases.yaml"
+  radiation-boxplots:
+    script_path: "../src/aqua_diagnostics/radiation/cli_radiation.py"
+    nworkers: 8
+    extra: "--config ${AQUA}/config/diagnostics/radiation/config_radiation-boxplots.yaml"
+  radiation-timeseries:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    nworkers: 8
+    extra: "--config ${AQUA}/config/diagnostics/radiation/config_radiation-timeseries.yaml"
   teleconnections_atm:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 8

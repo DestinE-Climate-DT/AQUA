@@ -3,20 +3,27 @@
 # --model, --exp, --source, --outputdir, --catalog
 models:
   - catalog: null
-    model: null
-    exp: null
+    model: 'IFS-NEMO'
+    exp: 'historical-1990'
     source: 'lra-r100-monthly'
 
 output:
   outputdir: "./"
   rebuild: true
+  filename_keys: null # or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
+  save_netcdf: true
   save_pdf: true
   save_png: true
   dpi: 300
 
 # This is the list of variables that will be plotted as timeseries
-timeseries: ['tos', 'siconc']
-seasonal_cycle: ['tos', 'siconc']
+timeseries: ['tnlwrf', 'tnswrf']
+timeseries_formulae: ['tnlwrf+tnswrf']
+
+gregory:
+  toa: ['tnlwrf', 'tnswrf']
+  monthly: True
+  annual: True
 
 timeseries_plot_params:
 # These are options that specify how the data is plotted
@@ -28,13 +35,9 @@ timeseries_plot_params:
     plot_ref: True
     monthly: True
     annual: True
-    # List of regions to plot.
-    # The regions are defined in config/diagnostics/timeseries/interface/regions.yaml
-    # and installed with the aqua install command.
-    # Global timeseries are always plotted.
-    # regions: ['nh', 'sh', 'tropics', 'europe']
-    regrid: None
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
-  tos:
-    regions: ['nh', 'sh']
+  tnlwrf+tnswrf:
+    longname: "Net top radiation" # This is to override title and ylabel
+    std_startdate: '1990-01-01'
+    std_enddate: '2020-12-31'

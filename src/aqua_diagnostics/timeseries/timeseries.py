@@ -1,10 +1,12 @@
 import gc  # Garbage collector
+import os
 
 import xarray as xr
 from aqua import Reader
 from aqua.logger import log_configure
 from aqua.exceptions import NoObservationError, NoDataError
-from aqua.util import eval_formula, OutputSaver, time_to_string
+from aqua.util import ConfigPath, OutputSaver
+from aqua.util import eval_formula, time_to_string, load_yaml
 from aqua.graphics import plot_timeseries
 
 from .reference_data import get_reference_timeseries
@@ -37,6 +39,7 @@ class Timeseries():
                  std_startdate=None, std_enddate=None,
                  plot_kw={'ylim': {}}, longname=None,
                  units=None, extend=True,
+                 region=None,
                  lon_limits=None, lat_limits=None,
                  save=True,
                  outdir='./',
@@ -126,10 +129,27 @@ class Timeseries():
         self.units = units
         self.lon_limits = lon_limits
         self.lat_limits = lat_limits
+        self.region = region
+        if self.region is not None:
+            region_file = ConfigPath().get_config_dir()
+            region_file = os.path.join(region_file, 'diagnostics',
+                                       'timeseries', 'interface', 'regions.yaml')
+            if os.path.exists(region_file):
+                region_file = load_yaml(region_file)
+                if self.region in region_file['regions']:
+                    self.lon_limits = region_file['regions'][self.region].get('lon_limits', None)
+                    self.lat_limits = region_file['regions'][self.region].get('lat_limits', None)
+                    self.region_longname = region_file['regions'][self.region].get('longname', None)
+                    self.logger.info(f"Region {self.region_longname} found, selecting lon: {self.lon_limits}, lat: {self.lat_limits}") # noqa
+                else:
+                    self.logger.error(f"Available regions: {list(region_file['regions'].keys())}")
+                    raise KeyError(f"Region {self.region} not found in {region_file}")
+            else:
+                raise FileNotFoundError(f"Region file not found: {region_file}")
 
         self.save = save
         if self.save is False:
-            self.logger.info("Figure will not be saved")
+            self.logger.info("Figures will not be saved")
         self.outdir = outdir
 
         self.diagnostic_product = 'timeseries'
@@ -239,6 +259,10 @@ class Timeseries():
                 else:
                     enddate = max(enddate, data.time[-1].values)
 
+            if self.regrid is not None:
+                self.logger.info(f"Regridding data to {self.regrid}")
+                data = reader.regrid(data)
+
             if self.monthly:
                 if 'monthly' in self.sources[i] or 'mon' in self.sources[i]:
                     self.logger.debug(f"No monthly resample needed for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}") # noqa
@@ -320,7 +344,9 @@ class Timeseries():
         except KeyError:
             title = f'{self.var} timeseries'
 
-        if self.lon_limits is not None or self.lat_limits is not None:
+        if self.region is not None:
+            title += f' for {self.region_longname}'
+        elif self.lon_limits is not None or self.lat_limits is not None:
             title += ' for region'
             if self.lon_limits is not None:
                 title += f' lon: {self.lon_limits}'

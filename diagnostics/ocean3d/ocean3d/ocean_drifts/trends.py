@@ -155,7 +155,9 @@ class TrendCalculator:
         logger = log_configure(loglevel, 'lintrend_3D')
         x_array = TrendCalculator.create_time_array(y_array, loglevel=loglevel)
         n = x_array.count(dim="time")
-        trend = TrendCalculator.compute_covariances(x_array, y_array, dim="time", loglevel=loglevel)
+        x_var = x_array.var(dim="time", skipna=True)
+        covariance = TrendCalculator.compute_covariances(x_array, y_array, dim="time", loglevel=loglevel)
+        trend = covariance/x_var
         trend = xr.where(n >= 3, trend, np.nan)
         return trend
     

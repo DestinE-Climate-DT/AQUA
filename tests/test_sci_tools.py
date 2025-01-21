@@ -2,7 +2,7 @@ import pytest
 
 import xarray as xr
 import numpy as np
-from aqua.util import area_selection
+from aqua.util import area_selection, select_season
 
 loglevel = 'DEBUG'
 
@@ -75,3 +75,26 @@ def test_missing_data():
     with pytest.raises(ValueError):
         area_selection(None, lat=[15, 25], lon=[45, 55],
                        box_brd=True, loglevel=loglevel)
+
+
+@pytest.mark.aqua
+def test_select_season():
+    """Test the select_season function with valid and invalid inputs."""
+    # Sample DataArray with a time dimension
+    times = xr.cftime_range(start="2000-01-01", periods=12, freq="M")
+    data = xr.DataArray(np.random.rand(12), coords={"time": times}, dims=["time"])
+
+    # Valid season tests
+    for season, expected_months in {"DJF": [12, 1, 2], "MAM": [3, 4, 5]}.items():
+        result = select_season(data, season)
+        assert len(result) == 3
+        assert all(month in expected_months for month in result["time.month"].values)
+
+    # Invalid season test
+    with pytest.raises(ValueError):
+        select_season(data, "XYZ")
+
+    # Missing time dimension test
+    data_no_time = xr.DataArray(np.random.rand(12), dims=["dim_0"])
+    with pytest.raises(KeyError):
+        select_season(data_no_time, "DJF")

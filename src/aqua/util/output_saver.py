@@ -285,7 +285,7 @@ class OutputSaver:
         # Ensure fig is a Figure object
         if isinstance(fig, plt.Axes):
             fig = fig.figure
-        # Save the figure as a PDF
+
         if isinstance(fig, (plt.Figure, Figure)):
             fig.savefig(full_path, dpi=dpi, bbox_inches='tight')
         else:

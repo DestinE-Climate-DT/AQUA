@@ -144,6 +144,7 @@ The ``timeseries_plot_params`` block contains the following parameters:
 * ``monthly``: a boolean that enables the monthly time series plot.
 * ``monthly_std``: a boolean that enables the monthly standard deviation bands.
 * ``annual``: a boolean that enables the annual time series plot.
+* ``regions``: a list of regions to plot the time series. The global mean is always plotted.
 * ``annual_std``: a boolean that enables the annual standard deviation bands.
 * ``regrid``: if set to a value compatible with the AQUA Reader, the data will be regridded to the specified resolution.
 * ``startdate``, ``enddate``: the start and end date for the time series plot.
@@ -173,7 +174,11 @@ Title, caption and filenames will be updated with the area selection information
 
 .. note::
 
-    The area selection is not available for the CLI yet.
+    The area selection is not available for the CLI of the SeasonalCycle yet.
+
+If the CLI is used, a set of regions can be used to define the area selection.
+The regions are defined in the configuration file available under the ``config/diagnostics/timeseries/interface`` directory.
+More regions can be added to the configuration file.
 
 Output
 ------

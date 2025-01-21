@@ -201,12 +201,26 @@ Some of the parameters are here described:
 
     As above, it tells AQUA when to stop reading from the FDB and it can be set to ``auto`` too (only if ``timestyle`` is 'date').
 
+.. option:: bridge_start_date
+
+    This optional date is used for cases where part of the data are on the HPC FDB and part on the databridge.
+    This is the first date/time for which data are stored on the databridge. Previous data are assumed to be on the HPC.    
+    If set to "complete" then all data are assumed to be on the bridge. 
+    If omitted, but ``bridge_end_date`` is set, it is assumed to be the same as ``data_start_date``.
+    It can be set to a filename from which to read the date/time (in any format understood by pandas).
+
 .. option:: bridge_end_date
 
     This optional date is used for cases where part of the data are on the HPC FDB and part on the databridge.
-    This is the last date/time (included) for which data are stored on the databridge. More recent data are assumed to be on the HPC.    
-    If set to "complete" then all data are assumed to be on the bridge.
-    It can also be set to a filename, from which to read the date of the data which were last wiped from the HPC (in YYYYMMDD format).
+    This is the last date/time (included) for which data are stored on the databridge. Following data are assumed to be on the HPC.    
+    If set to "complete" then all data are assumed to be on the bridge (equivalent to setting ``data_end_date`` to "complete").
+     If omitted, but ``bridge_start_date`` is set, it is assumed to be the same as ``data_end_date``.
+    It can be set to a filename from which to read the date/time (in any format understood by pandas)
+
+.. option:: hpc_expver
+
+    This optional parameter is used to specify the expver of the data on the HPC FDB. 
+    If not set, the expver is assumed to be the same for all data.
 
 .. option:: chunks
 

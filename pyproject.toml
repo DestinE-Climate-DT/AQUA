@@ -34,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
+    "boto3",
     "cartopy",
     "cfgrib",
     "dask",

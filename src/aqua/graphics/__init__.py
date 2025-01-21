@@ -17,9 +17,9 @@ The following functions are available:
 from .hovmoller import plot_hovmoller
 from .single_map import plot_single_map, plot_single_map_diff
 from .timeseries import plot_timeseries, plot_seasonalcycle
-from .multiple_maps import plot_maps
+from .multiple_maps import plot_maps, plot_maps_diff
 
 __all__ = ["plot_hovmoller",
            "plot_single_map", "plot_single_map_diff",
            "plot_timeseries", "plot_seasonalcycle",
-           "plot_maps"]
+           "plot_maps", "plot_maps_diff"]
