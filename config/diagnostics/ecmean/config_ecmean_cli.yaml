@@ -1,7 +1,8 @@
 dataset:
   catalog: null #optional, not necessary
-  model: IFS-NEMO
-  exp: historical-1990
+  model: ERA5
+  exp: era5-hpz3
+  source: monthly
   atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
     'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
     'u', 'v', 't', 'q']
@@ -13,7 +14,7 @@ compute:
   numproc: 1
 
 setup:
-  interface_file: '../config/interface_AQUA_destine-v1.yml'
-  config_file: '../config/ecmean_config_destine-v1.yml'
-  outputdir: '../output'
+  interface_file: 'interface_AQUA_climatedt.yaml'
+  config_file: 'ecmean_config_climatedt.yaml'
+  outputdir: 'output'
   

@@ -7,10 +7,9 @@ import sys
 import argparse
 import os
 import xarray as xr
-from ecmean.performance_indices import performance_indices
-from ecmean.global_mean import global_mean
+from aqua.diagnostics import PerformanceIndices, GlobalMean
 from ecmean import __version__ as eceversion
-from aqua.util import load_yaml, get_arg, ConfigPath
+from aqua.util import load_yaml, get_arg, ConfigPath, OutputSaver
 from aqua import Reader
 from aqua import __version__ as aquaversion
 from aqua.logger import log_configure
@@ -34,7 +33,7 @@ def parse_arguments(args):
     parser.add_argument('-e', '--exp', type=str,
                         help='exp to be analysed')
     parser.add_argument('-s', '--source', type=str,
-                        help='source to be analysed', default='lra-r100-monthly')
+                        help='source to be analysed')
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
     parser.add_argument('-o', '--outputdir', type=str,
@@ -56,8 +55,9 @@ def reader_data(model, exp, source, catalog=None, keep_vars=None):
     # Try to read the data, if dataset is not available return None
     try:
         reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
-                        areas=False)
+                        regrid='r100')
         data = reader.retrieve()
+        data = reader.regrid(data)
      
     except Exception as err:
         logger.error('Error while reading model %s: %s', model, err)
@@ -91,19 +91,23 @@ if __name__ == '__main__':
     oce_vars = configfile['dataset']['oce_vars']
     year1 = configfile['dataset']['year1']
     year2 = configfile['dataset']['year2']
-    config = configfile['setup']['config_file']
 
     numproc = get_arg(args, 'nworkers', configfile['compute']['numproc'])
 
     # define the interface file
-    Configurer = ConfigPath(configdir=None)
-    #interface = '../config/interface_AQUA_' + Configurer.catalog + '.yml'
-    interface = '../config/interface_AQUA_destine-v1.yml'
+    Configurer = ConfigPath()
+    ecmeandir = os.path.join(Configurer.configdir, 'diagnostics', 'ecmean')
+    interface = os.path.join(ecmeandir, configfile['setup']['interface_file'])
     logger.debug('Default interface file: %s', interface)
+
+    config = os.path.join(ecmeandir, configfile['setup']['config_file'])
+    config = load_yaml(config)
+    config['dirs']['exp'] = ecmeandir
+    logger.debug('Default config file: %s', config)
 
     # activate override from command line
     exp = get_arg(args, 'exp', configfile['dataset']['exp'])
-    source = get_arg(args, 'source', 'lra-r100-monthly')
+    source = get_arg(args, 'source', configfile['dataset'].get('source', 'lra-r100-monthly'))
     model = get_arg(args, 'model', configfile['dataset']['model'])
     catalog = get_arg(args, 'catalog', configfile['dataset']['catalog'])
     outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
@@ -147,12 +151,21 @@ if __name__ == '__main__':
         raise NotEnoughDataError("Not enough data, exiting...")
     else:
         logger.info('Launching ECmean performance indices...')
-        performance_indices(exp, year1, year2, numproc=numproc, config=config,
+        pi = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
                             interface=interface, loglevel=loglevel,
                             outputdir=outputdir, xdataset=data)
+        pi.prepare()
+        pi.run()
+        pi.store()
+        pi.plot()
         logger.info('Launching ECmean global mean...')
-        global_mean(exp, year1, year2, numproc=numproc, config=config,
+
+        gm = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
                             interface=interface, loglevel=loglevel,
                             outputdir=outputdir, xdataset=data)
+        gm.prepare()
+        gm.run()
+        gm.store()
+        gm.plot()
 
     logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')

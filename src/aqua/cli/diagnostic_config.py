@@ -15,24 +15,34 @@ diagnostic_config = {
     ],
     'ecmean': [
         {
-            'config_file': 'ecmean_config_destine-v1-levante.yml',
-            'source_path': 'diagnostics/ecmean/config',
-            'target_path': 'diagnostics/ecmean/config'
+            'config_file': 'ecmean_config_climatedt.yaml',
+            'source_path': 'config/diagnostics/ecmean',
+            'target_path': 'diagnostics/ecmean'
         },
         {
-            'config_file': 'ecmean_config_destine-v1.yml',
-            'source_path': 'diagnostics/ecmean/config',
-            'target_path': 'diagnostics/ecmean/config'
-        },
-        {
-            'config_file': 'interface_AQUA_destine-v1.yml',
-            'source_path': 'diagnostics/ecmean/config',
-            'target_path': 'diagnostics/ecmean/config'
+            'config_file': 'interface_AQUA_climatedt.yaml',
+            'source_path': 'config/diagnostics/ecmean/interface',
+            'target_path': 'diagnostics/ecmean'
         },
         {
             'config_file': 'config_ecmean_cli.yaml',
-            'source_path': 'diagnostics/ecmean/cli',
-            'target_path': 'diagnostics/ecmean/cli'
+            'source_path': 'config/diagnostics/ecmean',
+            'target_path': 'diagnostics/ecmean'
+        },
+        {
+            'config_file': 'atm_mask_r100.nc',
+            'source_path': 'config/diagnostics/ecmean/data',
+            'target_path': 'diagnostics/ecmean'
+        },
+        {
+            'config_file': 'cell_area_r100.nc',
+            'source_path': 'config/diagnostics/ecmean/data',
+            'target_path': 'diagnostics/ecmean'
+        },
+        {
+            'config_file': 'oce_mask_r100.nc',
+            'source_path': 'config/diagnostics/ecmean/data',
+            'target_path': 'diagnostics/ecmean'
         }
     ],
     'timeseries': [

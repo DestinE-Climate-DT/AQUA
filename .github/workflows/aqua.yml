@@ -161,7 +161,7 @@ jobs:
         run: |
           # Produce the HTML report. Defaults to writing in htmlcov/index.html.
           cd AQUA
-          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics or catgen or timeseries or teleconnections"
+          pytest --cov=aqua --cov-report=html --cov-report=xml --cov-branch -m "aqua or slow or gsv or graphics or catgen or timeseries or ecmean or teleconnections"
       - name: Processing coverage
         run: |
           if [[ ${COVERAGE_ENABLED} ]]; then

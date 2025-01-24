@@ -4,10 +4,11 @@ interface: AQUA
 model:
   name: ClimateDT
 
+# this block is not necessary within the AQUA integration
 dirs:
-  exp: '../data/'
-  tab: /work/bb1153/b382076/ecmean_new/output/YAML
-  fig: /work/bb1153/b382076/ecmean_new/output/PDF
+  exp: null
+  tab: null
+  fig: null
 
 global:
   atm_vars: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,
@@ -31,4 +32,3 @@ PI:
   regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
   seasons: ['ALL', 'DJF', 'JJA']
   resolution: r360x180
-
