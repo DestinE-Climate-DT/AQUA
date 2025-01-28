@@ -80,6 +80,19 @@ grids:
     space_coord: ["ncells"]
     vert_coord: ["level"]
   
+  # For CORE2 a v1 does not exist, but we keep v2 because they are generated with
+  # the v2 of the others native grids.
+  fesom-CORE2-hpz5-nested-v2:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/HealPix/fesom-CORE2_hpz5_nested_oce_v2.nc'
+  fesom-CORE2-hpz5-nested-3d-v2:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/HealPix/fesom-CORE2_hpz5_nested_oce_level_v2.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  
   #FESOM
   ng5-nodes-2d:
     path: '{{ grids }}/FESOM/AQUA_NG5_griddes_nodes_IFS.nc'
