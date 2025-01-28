@@ -225,7 +225,7 @@ def main():
         logger.info("Running setup checker")
         checker_script = os.path.join(aqua_path, "src/aqua_diagnostics/cli/cli_checker.py")
         output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        command = f"python {checker_script} --model {model} --exp {exp} --source {source} -l {loglevel}"
+        command = f"python {checker_script} --model {model} --exp {exp} --source {source} -l {loglevel} --yaml {output_dir}"
         if catalog:
             command += f" --catalog {catalog}"
         logger.debug(f"Command: {command}")

@@ -38,6 +38,14 @@ collect_figures() {
         fi
     done
 
+    # Copy experiment.yaml if it exists
+    log_message INFO "Trying to collect $indir/experiment.yaml"
+    if [ -f "$indir/experiment.yaml" ]; then
+        log_message INFO "Collecting also experiment.yaml"
+        mkdir -p ./content/png/$2
+        cp "$indir/experiment.yaml" "./content/png/$2/"
+    fi
+
     echo $(date) > $dstdir/last_update.txt
 }
 

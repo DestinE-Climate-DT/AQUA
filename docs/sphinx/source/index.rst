@@ -24,6 +24,7 @@ Welcome to AQUA's documentation!
    catalog_generator
    lra
    aqua-analysis
+   dashboard
    examples_tutorials
    cli
    advanced_topics

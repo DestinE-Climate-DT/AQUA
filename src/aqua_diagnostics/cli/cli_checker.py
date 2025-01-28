@@ -6,8 +6,9 @@ Check that the imports are correct and the requested model is available in the
 Reader catalog.
 '''
 import sys
+import os
 import argparse
-
+import yaml
 
 def parse_arguments(args):
     """Parse command line arguments"""
@@ -24,7 +25,12 @@ def parse_arguments(args):
                         required=False, help="experiment name")
     parser.add_argument("--source", type=str,
                         required=False, help="source name")
-
+    parser.add_argument("--yaml", type=str,
+                        required=False, help="write an experiment.yaml file to a given directory")
+    parser.add_argument("--no-read", action="store_false",
+                        required=False, help="do not attempt to read data (used with --yaml to speed up when creating only yaml)")
+    parser.add_argument("--no-rebuild", action="store_false",
+                        required=False, help="by default rebuild of areas is forced, this prevents it")
     return parser.parse_args(args)
 
 
@@ -55,6 +61,9 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', None)
     exp = get_arg(args, 'exp', None)
     source = get_arg(args, 'source', None)
+    yamldir = get_arg(args, 'yaml', None)
+    fread = args.no_read
+    frebuild = args.no_rebuild
 
     if model is None or exp is None or source is None:
         raise ValueError('model, exp and source are required arguments')
@@ -63,8 +72,24 @@ if __name__ == '__main__':
 
     try:
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        loglevel=loglevel, rebuild=True)
-        reader.retrieve()
+                        loglevel=loglevel, rebuild=frebuild)
+
+        # extract metadata from catalog
+        if yamldir:
+            logger.info('Creating experiment.yaml')
+            metadata = reader.expcat.metadata
+            metadata.pop("catalog_dir", None)
+            metadata['description'] = reader.expcat.description
+            metadata['catalog'] = catalog
+            metadata['model'] = model
+            metadata['experiment'] = exp
+            yaml_path = os.path.join(yamldir, "experiment.yaml")
+            with open(yaml_path, "w") as file:
+                yaml.dump(metadata, file, default_flow_style=False)
+
+        if not fread:
+            reader.retrieve(sample=True)
+
     except Exception as e:
         logger.error('Failed to retrieve data: {}'.format(e))
         logger.error('Check that the model is available in the Reader catalog.')

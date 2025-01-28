@@ -26,9 +26,10 @@ File-based sources
 
 Adding file-based sources in AQUA is done with default interface by ``intake``. 
 Files supported can include NetCDF files (as the one described in the example below) or other formats as GRIB or Zarr. 
-The best way to explain the process is to follow the example of adding some fake dataset.
+The best way to explain the process is to follow the example of adding some fake dataset to an existing catalog (``obs`` in our example).
 
-Let's imagine we have a dataset called ``yearly_SST`` that consists of the following:
+Let's imagine we have a dataset called ``SST``, with yearly data, part of a data collection called ``NEWSATDATA`` which we would like to add. 
+Suppose that the dataset consists of the following:
 
 - 2 netCDF files, each file contains one year of data (``/data/path/1990.nc`` and ``/data/path/1991.nc``)
 - data are stored in 2D arrays, with dimensions ``lat`` and ``lon``
@@ -36,40 +37,40 @@ Let's imagine we have a dataset called ``yearly_SST`` that consists of the follo
 - data located on the LUMI machine
 
 We will create a catalog entry that will describe this dataset.
-The catalog name will be ``yearly_SST``.
+The "model" name will be ``NEWSATDATA`` (we use the "model/exp/source" hierarchy also for observations)
 
-The additional entry in this file will look like this:
+The first step is to add a new entry to the ``config/catalogs/obs/catalog.yaml`` file.
+
+The additional entry, to be added in the `sources:` section, will look like this:
 
 .. code-block:: yaml
 
-    yearly_SST:
-        description: amazing yearly_SST dataset
+    NEWSATDATA:
+        description: amazing NEWSAT collection of SST data
         driver: yaml_file_cat
         args:
-          path: "{{CATALOG_DIR}}/yearly_SST/main.yaml"
-
-The first step is to add this catalog to the ``config/catalogs/lumi/catalog.yaml`` file.  
+          path: "{{CATALOG_DIR}}/NEWSATDATA/main.yaml"
+  
 This will create the ``model`` entry within the catalog that can be used later by the ``Reader()``.
 
 .. note::
-    Sources are built using intake, which means that they can exploit of the built-in Jinja2 template replacamente as done in the example above with `{{CATALOG_DIR}}`
+    Catalog source files are processed by intake, which means that they can exploit of the built-in Jinja2 template replacamente as done in the example above with `{{CATALOG_DIR}}`
 
-Then we will need to create the ``exp`` entry, which will be included in the ``main.yaml``.
-In our case, the ``main.yaml`` file will look like this (but many other experiments,
-corresponding to the same model, can be added aside of this):
+Then we will need to create an appropriate entry at the ``exp`` level, which will be included in the file ``config/catalogs/lumi//catalog/NEWSATDATA/main.yaml``.
+For our example we will call this "experiment" ``SST``.
+In our case, the ``main.yaml`` file will look like this (but many other experiments, corresponding to the same model, can be added in the ``sources`` section):
 
 .. code-block:: yaml
 
     sources:
-      yearly_sst:
-        description: amazing yearly_SST dataset
+      SST:
+        description: amazing SST dataset from the NEWSATDATA collection
         driver: yaml_file_cat
         args:
-          path: "{{CATALOG_DIR}}/yearly_SST.yaml"
+          path: "{{CATALOG_DIR}}/SST.yaml"
 
-We finally need to define the specific experiment file that we linked in the ``main.yaml``,
-using the ``yearly_SST.yaml`` file and saving it in the ``config/catalogs/lumi/catalog/yearly_SST`` directory
-(that we should create first if missing).
+
+The final step is to create/edit the file  ``SST.yaml``, also to be stored  ``config/catalogs/lumi/catalog/NEWSATDATA`` directory.
 
 The most straightforward intake catalog describing our dataset will look like this: 
 
@@ -101,7 +102,7 @@ Once this is defined, we can access our dataset from AQUA with the following com
 .. code-block:: python
 
     from aqua import Reader
-    reader = Reader(model="yearly_SST", exp="yearly_sst", source="annual")
+    reader = Reader(model="NEWSATDATA", exp="SST", source="annual")
     data = reader.retrieve()
 
 Finally, the ``metadata`` entry contains optional additional information useful to define how to postprocess the data:
@@ -323,6 +324,52 @@ Some of the parameters are here described:
 
     Please notice that the recent version of ecCodes used by AQUA (>= 2.36.0) is not compatible anymore with definition files from earlier versions (<2.34.0). For this reason we point now to older definition files which have been 'fixed' to keep working. The CLI tool to create such fixed definition files (``fix_eccodes.sh``) is available.
 
+Experiment metadata
+-------------------
+
+It is highly recommended (but optional) to provide additional metadata for each experiment in the ``main.yaml`` file.
+This information is particularly useful to documents aspects of experiments such as resolution, forcing type, autosubmit expid, etc.
+These details are later used by the AQUA :ref:`dashboard` for visualization of model results.
+
+This can be done with an additional ``metadata`` key in the ``main.yaml`` file, as shown below:
+
+.. code-block:: yaml
+
+    sources:
+    historical-1990:
+        description: IFS-NEMO, historical 1990, tco1279/eORCA12 (a0h3)
+        metadata:
+        expid: a0h3
+        resolution_atm: tco1279
+        resolution_oce: eORCA12
+        forcing: historical
+        start: 1990
+        dashboard:
+            menu: historical 1990
+            resolution_id: SR
+        driver: yaml_file_cat
+        args:
+        path: '{{CATALOG_DIR}}/historical-1990.yaml'
+    
+All keys are optional, others could be freely added, the following are recommended:
+
+- ``expid``: the autosubmit expid of the experiment, useful to uniquely identify it.
+
+- ``resolution_atm``: the atmospheric resolution of the experiment.
+
+- ``resolution_oce``: the oceanic resolution of the experiment.
+
+- ``forcing``: the forcing type of the experiment (examples are "historical", "scenario ssp370", etc).
+
+- ``start``: the starting year of the experiment.
+
+- ``dashboard``: a dictionary with additional information for the dashboard/aqua-web:
+
+  - ``menu``: the name of the experiment as it will appear in the dashboard menu.
+
+  - ``resolution_id``: a short string to identify the resolution of the experiment in the dashboard (LR, MR, SR, HR).  
+    This is an internal classification for aqua-web. Our convention is LR=about 144 km, MR=about 36 km, SR=about 25 km, SR=about 10 km, HR=about 5 km.
+
 Regridding capabilities
 -----------------------
 
@@ -380,29 +427,29 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 .. note::
 
-    Two kinds of template replacament are available in the files contained in the ``config/grids`` folder. The Jinja formatting ``{{ var }}`` is used to set
+    Two kinds of template replacement are available in the files contained in the ``config/grids`` folder. The Jinja formatting ``{{ var }}`` is used to set
     variables as path that comes from the ``catalog.yaml`` file. The default python formatting ``{}`` is used for file structure which comes
     Reader arguments, as model, experiment or any other kwargs the user might set. Please pay attention to which one you are using in your files.
     In the future we will try to uniform this towards the Jinja formatting.
 
 
-- **path**: Path to the grid data file, can be a single file if the grid is 2d,
+- ``path``: Path to the grid data file, can be a single file if the grid is 2d,
   but can include multiple files as a function of the grid used.
   ``2d`` refers to the default grids, ``2dm`` to the grid for masked variables,
   any other key refers to specific 3d vertical structure (see ``vert_coord``)
-- **space_coord**: The space coordinate how coordinates are defined and used for interpolation.
+- ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
   Since AQUA v0.4 there is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
-- **masked** (if applicable): Keys to define variables which are masked.
+- ``masked``: (if applicable): Keys to define variables which are masked.
   When using this, the code will search for an attribute to make the distinction (``component: ocean`` in this case).
   In alternative, if you want to apply masking only on a group of variables, you can defined ``vars: [var1, var2]``.
   In all the cases, the ``2dm`` grid will be applied to the data.
-- **vert_coords** (if applicable): Vertical coordinate options for the grid.
+- ``vert_coords``: (if applicable): Vertical coordinate options for the grid.
   Specific for oceanic models where interpolation is changing at each depth level.
-- **cdo_extra** (if applicable): Additional CDO command to be used to process the files defined in ``path``.
-- **cdo_options** (if applicable): Additional CDO options to be used to process the files defined in ``path``.
-- **cellareas**, **cellarea_var** (if applicable): Optional path and variable name where to specify a file to retrieve
+- ``cdo_extra``: (if applicable): Additional CDO command to be used to process the files defined in ``path``.
+- ``cdo_options``: (if applicable): Additional CDO options to be used to process the files defined in ``path``.
+- ``cellareas``, ``cellarea_var``: (if applicable): Optional path and variable name where to specify a file to retrieve
   the grid area cells when the grid shape is too complex for being automatically computed by CDO.
-- **regrid_method** (if applicable): Alternative CDO regridding method which is not the ``ycon`` default.
+- ``regrid_method``: (if applicable): Alternative CDO regridding method which is not the ``ycon`` default.
   To be used when grid corners are not available. Alterntives might be ``bil``, ``bic`` or ``nn``.
 
 Other simpler grids can be defined using the CDO syntax, so for example we have ``r100: r360x180``.
@@ -563,10 +610,10 @@ Sources (`source` key)
 
 For the sources, we decide to uniform the different requirements of grids and temporal resolution. 
 
-0. **Domain**: Oceanic sources will have a `oce` prepended to all their sources
-1. **Time resolution**: `monthly`, `daily`, `6hourly`, `hourly`, etc.
-2. **Space resolution**: `native`, `1deg`, `025deg`, `r100`, etc... For some oceanic model we could add the horizontal grid so `native-elem` or `native-gridT`` could be an option. Similarly, if multiple healpix are present, they can be `healpix-0` or `healpix-6` in the case we want to specify the zoom level. 
-3. **Extra info**: `2d` or `3d`. Not mandatory, but to be used when confusion might arise.
+1. **Domain**: Oceanic sources will have a `oce` prepended to all their sources
+2. **Time resolution**: `monthly`, `daily`, `6hourly`, `hourly`, etc.
+3. **Space resolution**: `native`, `1deg`, `025deg`, `r100`, etc... For some oceanic model we could add the horizontal grid so `native-elem` or `native-gridT`` could be an option. Similarly, if multiple healpix are present, they can be `healpix-0` or `healpix-6` in the case we want to specify the zoom level. 
+4. **Extra info**: `2d` or `3d`. Not mandatory, but to be used when confusion might arise.
 
 
 
