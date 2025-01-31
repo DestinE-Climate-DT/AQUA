@@ -10,7 +10,7 @@ from ruamel.yaml import YAML
 from aqua.util.eccodes import get_eccodes_attr
 from aqua.util import to_list
 from intake.source import base
-from .timeutil import check_dates, shift_time_dataset, floor_datetime, read_bridge_date
+from .timeutil import check_dates, shift_time_dataset, floor_datetime, read_bridge_date, todatetime
 from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
 from aqua.logger import log_configure, _check_loglevel
 
@@ -93,6 +93,7 @@ class GSVSource(base.DataSource):
                 self.logger.debug("ECCODES switching is off")
                 self.eccodes_path = None
             self.levels = metadata.get('levels', None)
+            self.fdb_info_file = metadata.get('fdb_info_file', None)
 
             # safety check for paths
             for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
@@ -141,6 +142,22 @@ class GSVSource(base.DataSource):
                 raise ValueError('Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!')
             data_start_date, data_end_date = self.parse_fdb(data_start_date, data_end_date)
 
+        if self.fdb_info_file:
+            yaml = YAML()
+            if os.path.exists(self.fdb_info_file):
+                with open(self.fdb_info_file, 'r') as f:
+                    fdb_info = yaml.load(f)
+                    if 'hpc' not in fdb_info or 'bridge' not in fdb_info:
+                        self.logger.error("FDB info file %s does not contain expected information", self.fdb_info_file)
+                        fdb_info = None
+            else:
+                self.logger.error("FDB info file %s not found", self.fdb_info_file)
+        
+        if self.fdb_info_file and fdb_info:
+            data_start_date = todatetime(fdb_info['hpc']['data_start_date']).strftime('%Y%m%dT%H%M')
+            data_end_date = todatetime(fdb_info['hpc']['data_end_date']).strftime('%Y%m%dT%H%M')
+            self.hpc_expver = fdb_info['hpc']['expver']
+        
         if not startdate:
             startdate = data_start_date
         if not enddate:
@@ -189,8 +206,15 @@ class GSVSource(base.DataSource):
                 self.logger.warning("A speedup of data retrieval could be achieved by specifying the levels keyword in metadata.")
         
         # getting bridge data
-        self.bridge_end_date = read_bridge_date(bridge_end_date)  # Reads from file if possible
-        self.bridge_start_date = read_bridge_date(bridge_start_date)
+        #self.bridge_end_date = read_bridge_date(bridge_end_date)  # Reads from file if possible
+        #self.bridge_start_date = read_bridge_date(bridge_start_date)
+        if self.fdb_info_file and fdb_info:
+            self.bridge_start_date = todatetime(fdb_info['bridge']['bridge_start_date']).strftime('%Y%m%dT%H%M')
+            self.bridge_end_date = todatetime(fdb_info['bridge']['bridge_end_date']).strftime('%Y%m%dT%H%M')
+        else:
+            self.bridge_start_date = bridge_start_date
+            self.bridge_end_date = bridge_end_date
+
 
         # set bridge bounds if not specified
         if self.bridge_start_date == 'complete' or self.bridge_end_date == 'complete':
@@ -595,6 +619,22 @@ class GSVSource(base.DataSource):
             if self.idx_3d:
                 ds = ds.assign_coords(idx_level=("level", self.idx_3d))
             yield ds
+
+    @staticmethod
+    def get_definitions_from_file(file):
+        """
+        Get the definitions from a file
+        Args:
+            file (str): path to the file
+        Returns:
+            dict: definitions
+        """
+        yaml = YAML()
+        with open(file, 'r') as f:
+            data = yaml.load(f)
+
+        return data['hpc'], data['bridge']
+
 
     def parse_fdb(self, start_date, end_date):
         """Parse the FDB config file and return the start and end dates of the data.
