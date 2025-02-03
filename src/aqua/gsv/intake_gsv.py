@@ -621,29 +621,39 @@ class GSVSource(base.DataSource):
         Returns:
             dict: definitions
         """
-        yaml = YAML()
-        if os.path.exists(fdb_info_file):
-            with open(fdb_info_file, 'r') as f:
-                fdb_info = yaml.load(f)
-                if 'hpc' not in fdb_info or 'bridge' not in fdb_info:
-                    self.logger.error("FDB info file %s does not contain expected information", fdb_info_file)
-                    return None
-                try: 
-                    fdb_info['hpc']['data_start_date'] = todatetime(fdb_info['hpc']['data_start_date']).strftime('%Y%m%dT%H%M')
-                    fdb_info['hpc']['data_end_date'] = todatetime(fdb_info['hpc']['data_end_date']).strftime('%Y%m%dT%H%M')
-                except KeyError:
-                    self.logger.error("FDB info file %s does not contain HPC dates in correct format", fdb_info_file)
-                if self.fdbhome_bridge or self.fdbpath_bridge:
-                    try:
-                        fdb_info['bridge']['bridge_start_date'] = todatetime(fdb_info['bridge']['bridge_start_date']).strftime('%Y%m%dT%H%M')
-                        fdb_info['bridge']['bridge_end_date'] = todatetime(fdb_info['bridge']['bridge_end_date']).strftime('%Y%m%dT%H%M')
-                    except KeyError:
-                        self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
-                        return None
-            return fdb_info
-        else:
+        
+        if not os.path.exists(fdb_info_file):
             self.logger.error("FDB info file %s does not exist", fdb_info_file)
             return None
+
+        yaml = YAML()
+
+        try:
+            with open(fdb_info_file, 'r') as file:
+                fdb_info = yaml.load(file)
+        except (OSError, yaml.YAMLError) as e:
+            self.logger.error("Error reading or parsing YAML file %s: %s", fdb_info_file, str(e))
+            return None
+
+        if not all(key in fdb_info for key in ['hpc', 'bridge']):
+            self.logger.error("FDB info file %s does not contain expected sections ('hpc' and 'bridge')", fdb_info_file)
+            return None
+
+        try: 
+            fdb_info['hpc']['data_start_date'] = todatetime(fdb_info['hpc']['data_start_date']).strftime('%Y%m%dT%H%M')
+            fdb_info['hpc']['data_end_date'] = todatetime(fdb_info['hpc']['data_end_date']).strftime('%Y%m%dT%H%M')
+        except KeyError:
+            self.logger.error("FDB info file %s does not contain HPC dates in correct format", fdb_info_file)
+            return None
+        if self.fdbhome_bridge or self.fdbpath_bridge:
+                try:
+                    fdb_info['bridge']['bridge_start_date'] = todatetime(fdb_info['bridge']['bridge_start_date']).strftime('%Y%m%dT%H%M')
+                    fdb_info['bridge']['bridge_end_date'] = todatetime(fdb_info['bridge']['bridge_end_date']).strftime('%Y%m%dT%H%M')
+                except KeyError:
+                    self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
+                    return None
+
+        return fdb_info
 
 
     def parse_fdb(self, start_date, end_date):
