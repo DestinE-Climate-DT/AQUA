@@ -20,7 +20,7 @@
         levelist: {{ levelist }}
         {% endif %}
       data_start_date: {{ data_start_date }}T0000
-      data_end_date: {{ data_end_date | default('auto') }}
+      data_end_date: {{ data_end_date if data_end_date else 'auto' }}
       {% if bridge_end_date %}
       bridge_end_date: {{ bridge_end_date }}
       {% endif %}

@@ -40,6 +40,7 @@ class LRAgenerator():
                  outdir=None, tmpdir=None, nproc=1,
                  loglevel=None, overwrite=False, definitive=False,
                  performance_reporting=False,
+                 rebuild=False,
                  exclude_incomplete=False, **kwargs):
         """
         Initialize the LRA_Generator class
@@ -72,7 +73,8 @@ class LRAgenerator():
             performance_reporting (bool, opt): True to save an html report of the
                                                dask usage, default is False.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
-                                            when averaging, default is false.  
+                                            when averaging, default is false. 
+            rebuild (bool, opt):     Rebuild the weights when calling the reader 
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
                                      please notice that realization will change the file name 
                                      produced by the LRA
@@ -105,6 +107,10 @@ class LRAgenerator():
 
         self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
                                    generate_random_string(10))
+
+        self.rebuild = rebuild
+        if self.rebuild:
+            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
 
         # safechecks
         if catalog is not None:
@@ -199,6 +205,7 @@ class LRAgenerator():
                              regrid=self.resolution,
                              catalog=self.catalog,
                              loglevel=self.loglevel,
+                             rebuild=self.rebuild,
                              fix=self.fix, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',

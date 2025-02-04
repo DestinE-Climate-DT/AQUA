@@ -152,3 +152,16 @@ def test_fixer_fesom_names():
     reader = Reader(model="FESOM", exp="test-pi", source="original_2d_fix", loglevel=loglevel)
     data = reader.retrieve()
     assert data['mlotst125'].attrs['uncle'] == 'scrooge'
+
+@pytest.mark.aqua
+def test_fixer_deltat():
+    """Check that output for deltat read from metadata and from fixes are the same"""
+    
+    reader1 = Reader(model='IFS', exp='test-tco79', source='long-deltat', loglevel=loglevel)
+    data_metadata = reader1.retrieve(var='tnlwrf').isel(time=5)
+    reader2 = Reader(model='IFS', exp='test-tco79', source='long', loglevel=loglevel)
+    data_fixer = reader2.retrieve(var='tnlwrf').isel(time=5)
+    assert data_metadata.equals(data_fixer)
+    assert reader1.deltat == 3600
+    assert reader2.deltat == 3600
+

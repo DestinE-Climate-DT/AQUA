@@ -79,4 +79,14 @@ fixer_name:
     ifs-ci-pandas:
         parent: ifs-ci-test
         timeshift: -19D
+
+    ifs-ci-nodeltat:
+        convention: eccodes
+        data_model: ifs
+        jump: month
+        vars:
+            tnlwrf:
+                decumulate: true
+                attributes:
+                    description: "Top thermal radiation originally found in the dataset and decumulated"
     

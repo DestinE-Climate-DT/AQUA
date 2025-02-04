@@ -332,11 +332,10 @@ class GregoryPlot():
 
     def save_image(self, fig):
         """Save the figure to an image file (PDF/PNG).
-        
+
         Args:
             fig (matplotlib.figure.Figure): Figure to save.
         """
-    
         # Get OutputSaver instance for the first model
         output_saver = self._get_output_saver(catalog=self.catalogs[0], model=self.models[0], exp=self.exps[0])
         common_save_args = {'diagnostic_product': self.diagnostic_product, 'dpi': self.dpi}

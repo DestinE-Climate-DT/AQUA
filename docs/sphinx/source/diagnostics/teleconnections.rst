@@ -183,10 +183,10 @@ Example plot
 Available demo notebooks
 ------------------------
 
-- `NAO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
-- `ENSO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/ENSO.ipynb>`_
-- `concordance_map<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/concordance_map.ipynb>`_
-- `MJO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/MJO.ipynb>`_
+- `NAO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
+- `ENSO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/ENSO.ipynb>`_
+- `concordance_map <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/concordance_map.ipynb>`_
+- `MJO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/MJO.ipynb>`_
 
 Detailed API
 ------------

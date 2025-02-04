@@ -19,21 +19,22 @@ job:
     max_threads: 0  # Set to the desired maximum number of threads, or leave it as 0 for no limit
     loglevel: "WARNING" # DEBUG, IN FO, WARNING, ERROR, CRITICAL
 
-    # Run a dummy analysis to test the configuration and the presence of needed data
-    run_dummy: false
+    # Run a check analysis to test the configuration and the presence of needed data
+    # This also rebuild the area files, to avoid error with corrupted files
+    run_checker: true
     
     # Default output directory for the analysis. Can be overridden by the command line arguments
     outputdir: "${AQUA}/cli/aqua-analysis/output" 
 
     # Default values, overriden from command line arguments
-    # catalog: "lumi"  # The catalog to use for the analysis, usually defined elsewhere
+    catalog: null  # The catalog to use for the analysis
     model: "IFS-NEMO"
     exp: "historical-1990"
     source: "lra-r100-monthly"
 
     script_path_base: "${AQUA}/diagnostics"  # Base directory for the diagnostic scripts
 
-cluster:  # options for dask cluster
+cluster:  # options for dask cluster (this works well on lumi)
     workers: 32
     threads: 2  # per worker
     memory_limit: 7GiB  # per worker
@@ -41,39 +42,65 @@ cluster:  # options for dask cluster
 diagnostics:
 
   # List of diagnostics to run
-  run: ["atmglobalmean", "timeseries_atm", "timeseries_oce", "seasonal_cycles", "radiation", "teleconnections_atm", "teleconnections_oce",
-        "tropical_rainfall", "ecmean", "ocean3d_drift", "ocean3d_circulation", "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
+  # run: ["global_biases", "timeseries_atm", "timeseries_oce", "seasonal_cycles",
+  #       "radiation-boxplots", "radiation-timeseries", "radiation-biases", 
+  #       "teleconnections_atm", "teleconnections_oce",
+  #       "tropical_rainfall", "ecmean", "ocean3d_drift", "ocean3d_circulation",
+  #       "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
+
+  # Drifts disabled #1652
+  run: ["global_biases", "timeseries_atm", "timeseries_oce", "seasonal_cycles",
+        "radiation-boxplots", "radiation-timeseries", "radiation-biases", 
+        "teleconnections_atm", "teleconnections_oce",
+        "tropical_rainfall", "ecmean", "ocean3d_circulation",
+        "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
 
   # List of diagnostics
 
   # Each diagnostic can have the following options (all optional):
   #    nworkers: the number of workers to use for the diagnostic if a global dask cluster is not used. Default is 1.
   #              Notice: these are still provided mostly for testing the local cluster option, using a global cluster (not using this option) is the new default.
+  #    config: the configuration file for the diagnostic.
   #    extra: extra command line arguments to pass to the diagnostic script.
   #    outname: the name of the output directory for the diagnostic. Default is the diagnostic name itself.
   #    script_path: the location of the script to run the diagnostic.
   #                 Default script_path is "$script_path_base/$diagnostic/cli/cli_${diagnostic}.py"
-  #    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default false (needed for ECmean)
+  #    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default is false (needed for ECmean)
 
-  atmglobalmean:
+  global_biases:
     nworkers: 16
+    script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
+    config: "${AQUA}/config/diagnostics/global_biases/config_global_biases.yaml"
   timeseries_atm:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
-    extra: "--config ${AQUA}/config/diagnostics/timeseries/config_timeseries_atm.yaml"
+    config: "${AQUA}/config/diagnostics/timeseries/config_timeseries_atm.yaml"
     nworkers: 16
     outname: timeseries
   timeseries_oce:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
-    extra: "--config ${AQUA}/config/diagnostics/timeseries/config_timeseries_oce.yaml"
+    config: "${AQUA}/config/diagnostics/timeseries/config_timeseries_oce.yaml"
     nworkers: 8
     outname: timeseries
   seasonal_cycles:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
     nworkers: 16
-    extra: "--config ${AQUA}/config/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
+    config: "${AQUA}/config/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
     outname: timeseries
-  radiation:
+  radiation-biases:
+    script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
     nworkers: 8
+    config: "${AQUA}/config/diagnostics/radiation/config_radiation-biases.yaml"
+    outname: radiation
+  radiation-boxplots:
+    script_path: "../src/aqua_diagnostics/radiation/cli_radiation.py"
+    nworkers: 8
+    config: "${AQUA}/config/diagnostics/radiation/config_radiation-boxplots.yaml"
+    outname: radiation
+  radiation-timeseries:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    nworkers: 8
+    config: "${AQUA}/config/diagnostics/radiation/config_radiation-timeseries.yaml"
+    outname: radiation
   teleconnections_atm:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 8
@@ -82,28 +109,31 @@ diagnostics:
     # --ref (if set it will analyze also the reference data, it is set
     #        by default)
     # --interface (custom interface file)
-    extra: "--config ${AQUA}/config/diagnostics/teleconnections/cli_config_atm.yaml --ref"
+    config: "${AQUA}/config/diagnostics/teleconnections/cli_config_atm.yaml"
+    extra: "--ref"
     outname: teleconnections
   teleconnections_oce:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 4
-    extra: "--config ${AQUA}/config/diagnostics/teleconnections/cli_config_oce.yaml --ref"
+    config: "${AQUA}/config/diagnostics/teleconnections/cli_config_oce.yaml"
+    extra: "--ref"
     outname: teleconnections
   tropical_rainfall:
     nworkers: 16
     extra: "--regrid=r100 --freq=M --xmax=75 --bufferdir=${OUTPUT}/tropical_rainfall/"
   ecmean:
+    script_path: "../src/aqua_diagnostics/ecmean/cli_ecmean.py"
     nworkers: 4
     nocluster: true  # ECmean does not use the global dask cluster
-    extra: "--interface ${AQUA}/diagnostics/ecmean/config/interface_AQUA_destine-v1.yml"
+    config: "${AQUA}/config/diagnostics/ecmean/config_ecmean_cli.yaml"
   ocean3d_drift:
     script_path: "ocean3d/cli/cli_ocean3d.py"
     nworkers: 8
-    extra: "--config ${AQUA}/diagnostics/ocean3d/cli/config.drift.yaml"
+    config: "${AQUA}/diagnostics/ocean3d/cli/config.drift.yaml"
   ocean3d_circulation:
     script_path: "ocean3d/cli/cli_ocean3d.py"
     nworkers: 4
-    extra: "--config ${AQUA}/diagnostics/ocean3d/cli/config.circulation.yaml"
+    config: "${AQUA}/diagnostics/ocean3d/cli/config.circulation.yaml"
   seaice_volume:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
@@ -112,16 +142,16 @@ diagnostics:
     #               (default is False)
     # --config (seaice config file)
     # --regrid (regrid data to a different grid)
-    extra: "--config ${AQUA}/diagnostics/seaice/cli/config_Volume.yaml"
+    config: "${AQUA}/diagnostics/seaice/cli/config_Volume.yaml"
   seaice_thick:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
-    extra: "--config ${AQUA}/diagnostics/seaice/cli/config_Thickness.yaml"
+    config: "${AQUA}/diagnostics/seaice/cli/config_Thickness.yaml"
   seaice_conc:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
-    extra: "--config ${AQUA}/diagnostics/seaice/cli/config_Concentration.yaml"
+    config: "${AQUA}/diagnostics/seaice/cli/config_Concentration.yaml"
   seaice_extent:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
-    extra: "--config ${AQUA}/diagnostics/seaice/cli/config_Extent.yaml"
+    config: "${AQUA}/diagnostics/seaice/cli/config_Extent.yaml"

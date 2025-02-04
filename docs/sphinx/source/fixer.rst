@@ -174,7 +174,8 @@ different sections of the fixer file.
       (i.e. that present a time unit mismatch from the source to target units) will be divided
       by ``deltat``. This is done automatically based on the values of target and source units.
       ``deltat`` can be an integer in seconds, or alternatively a string with ``monthly``: in this case
-      each flux variable will be divided by the number of seconds of each month.
+      each flux variable will be divided by the number of seconds of each month. Please notice that from v0.13
+      it is possible to specify the ``deltat`` in the metadata of the source. This will have the priority over the fixer definition.
     - If additionally ``decumulate: true`` is specified for a specific variable,
       a time derivative of the variable will be computed.
       This is tipically done for cumulated fluxes for the IFS model, that are cumulated on a period longer

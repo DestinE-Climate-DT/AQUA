@@ -318,7 +318,7 @@ The function is built to plot time series of a single variable,
 with the possibility to plot multiple lines for different models and a special line for a reference dataset.
 The reference dataset can have a representation of the uncertainty over time.
 
-By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`global_timeseries` diagnostic.
+By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`timeseries` diagnostic.
 
 The function takes as data input:
 
@@ -335,7 +335,7 @@ The function will automatically plot what is available, so it is possible to plo
     :align: center
     :width: 100%
 
-    Example of a ``plot_timeseries()`` output done with the :ref:`global_timeseries`.
+    Example of a ``plot_timeseries()`` output done with the :ref:`timeseries`.
     The plot shows the global mean 2 meters temperature time series for the IFS-NEMO scenario and the ERA5 reference dataset.
 
 Seasonal cycle
@@ -355,7 +355,7 @@ The function will automatically plot what is available, so it is possible to plo
     :align: center
     :width: 100%
 
-    Example of a ``plot_seasonalcycle()`` output done with the :ref:`global_timeseries`.
+    Example of a ``plot_seasonalcycle()`` output done with the :ref:`timeseries`.
     The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.
 
 Multiple maps

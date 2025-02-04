@@ -2,6 +2,22 @@ fixer_name:
     climatedt-phase2-production:
         deltat: 3600  # true only for atm. 
         convention: eccodes
+
     climatedt-phase2-reduced:
         deltat: monthly
         convention: eccodes
+    
+    climatedt-phase2-IFS-NEMO-freeze:
+        deltat: 3600  # true only for atm. 
+        convention: eccodes
+        vars:
+            # Both avg_tprate and tp are present in the output
+            # only tp is correct, so we overwrite the convention fixer
+            tprate:
+                source: tp
+    
+    climatedt-phase2-ICON-freeze:
+        convention: eccodes
+        vars:
+            tcc:
+                src_units: frac

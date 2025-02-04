@@ -158,6 +158,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
         # load the catalog
         self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source](**kwargs)
+        self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):

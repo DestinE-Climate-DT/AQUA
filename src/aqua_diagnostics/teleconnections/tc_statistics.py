@@ -1,7 +1,8 @@
 """Module for computing regression maps."""
 import xarray as xr
 
-from .tools import check_dim, select_season
+from .tools import check_dim
+from aqua.util import select_season
 
 xr.set_options(keep_attrs=True)
 

@@ -65,7 +65,7 @@ def get_plot_options(config: dict = None,
     if plot_options:
         monthly = plot_options.get("monthly", True)
         annual = plot_options.get("annual", True)
-        regrid = plot_options.get("regrid", False)
+        regrid = plot_options.get("regrid", None)
         plot_ref = plot_options.get("plot_ref", True)
         plot_ref_kw = plot_options.get("plot_ref_kw", {'model': 'ERA5',
                                                        'exp': 'era5',
@@ -80,10 +80,11 @@ def get_plot_options(config: dict = None,
         longname = plot_options.get("longname", None)
         units = plot_options.get("units", None)
         extend = plot_options.get("extend", True)
+        regions = plot_options.get("regions", [])
     else:
         monthly = config["timeseries_plot_params"]["default"].get("monthly", True)
         annual = config["timeseries_plot_params"]["default"].get("annual", True)
-        regrid = config["timeseries_plot_params"]["default"].get("regrid", False)
+        regrid = config["timeseries_plot_params"]["default"].get("regrid", None)
         plot_ref = config["timeseries_plot_params"]["default"].get("plot_ref", True)
         plot_ref_kw = config["timeseries_plot_params"]["default"].get("plot_ref_kw", {'model': 'ERA5',
                                                                                       'exp': 'era5',
@@ -98,8 +99,11 @@ def get_plot_options(config: dict = None,
         longname = None
         units = None
         extend = config["timeseries_plot_params"]["default"].get("extend", True)
+        regions = config["timeseries_plot_params"]["default"].get("regions", [])
+    # Add global region always
+    regions.append(None)
     return monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, enddate, \
-        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, units, extend
+        monthly_std, annual_std, std_startdate, std_enddate, plot_kw, longname, units, extend, regions
 
 
 if __name__ == '__main__':
@@ -124,7 +128,7 @@ if __name__ == '__main__':
         client = Client(cluster)
     else:
         client = None
-    
+
     # Load configuration file
     configdir = ConfigPath(loglevel=loglevel).configdir
     default_config = os.path.join(configdir, "diagnostics", "timeseries",
@@ -170,45 +174,47 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} timeseries")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, units, extend = get_plot_options(config, var)
+                plot_kw, longname, units, extend, regions = get_plot_options(config, var)
 
-            ts = Timeseries(var=var,
-                            formula=False,
-                            catalogs=catalogs_list,
-                            models=models_list,
-                            exps=exp_list,
-                            sources=source_list,
-                            monthly=monthly,
-                            annual=annual,
-                            regrid=regrid,
-                            plot_ref=plot_ref,
-                            plot_ref_kw=plot_ref_kw,
-                            startdate=startdate,
-                            enddate=enddate,
-                            monthly_std=monthly_std,
-                            annual_std=annual_std,
-                            std_startdate=std_startdate,
-                            std_enddate=std_enddate,
-                            longname=longname,
-                            units=units,
-                            extend=extend,
-                            plot_kw=plot_kw,
-                            outdir=outputdir,
-                            loglevel=loglevel,
-                            rebuild=rebuild,
-                            save_pdf=save_pdf,
-                            save_png=save_png,
-                            dpi=dpi)
-            try:
-                ts.run()
-            except NotEnoughDataError as e:
-                logger.warning(f"Skipping {var} timeseries plot: {e}")
-            except NoDataError as e:
-                logger.warning(f"Skipping {var} timeseries plot: {e}")
-            except NoObservationError as e:
-                logger.warning(f"Skipping {var} timeseries plot: {e}")
-            except Exception as e:
-                logger.error(f"Error plotting {var} timeseries: {e}")
+            for region in regions:
+                ts = Timeseries(var=var,
+                                formula=False,
+                                catalogs=catalogs_list,
+                                models=models_list,
+                                exps=exp_list,
+                                sources=source_list,
+                                monthly=monthly,
+                                annual=annual,
+                                regrid=regrid,
+                                plot_ref=plot_ref,
+                                plot_ref_kw=plot_ref_kw,
+                                startdate=startdate,
+                                enddate=enddate,
+                                region=region,
+                                monthly_std=monthly_std,
+                                annual_std=annual_std,
+                                std_startdate=std_startdate,
+                                std_enddate=std_enddate,
+                                longname=longname,
+                                units=units,
+                                extend=extend,
+                                plot_kw=plot_kw,
+                                outdir=outputdir,
+                                loglevel=loglevel,
+                                rebuild=rebuild,
+                                save_pdf=save_pdf,
+                                save_png=save_png,
+                                dpi=dpi)
+                try:
+                    ts.run()
+                except NotEnoughDataError as e:
+                    logger.warning(f"Skipping {var} timeseries plot: {e}")
+                except NoDataError as e:
+                    logger.warning(f"Skipping {var} timeseries plot: {e}")
+                except NoObservationError as e:
+                    logger.warning(f"Skipping {var} timeseries plot: {e}")
+                except Exception as e:
+                    logger.error(f"Error plotting {var} timeseries: {e}")
 
     if "timeseries_formulae" in config:
         logger.info("Plotting timeseries formula")
@@ -217,7 +223,7 @@ if __name__ == '__main__':
             logger.info(f"Plotting {var} timeseries")
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, units, extend = get_plot_options(config, var)
+                plot_kw, longname, units, extend, regions = get_plot_options(config, var)
 
             ts = Timeseries(var=var,
                             formula=True,
@@ -310,9 +316,10 @@ if __name__ == '__main__':
 
         for var in config["seasonal_cycle"]:
             logger.info(f"Plotting {var} seasonal cycle")
+            # extend and regions are not used in seasonal cycle
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, units, _ = get_plot_options(config, var)
+                plot_kw, longname, units, _, _ = get_plot_options(config, var)
 
             sc = SeasonalCycle(var=var,
                                formula=False,
@@ -352,9 +359,10 @@ if __name__ == '__main__':
 
         for var in config["seasonal_cycle_formulae"]:
             logger.info(f"Plotting {var} seasonal cycle")
+            # extend and regions are not used in seasonal cycle
             monthly, annual, regrid, plot_ref, plot_ref_kw, startdate, \
                 enddate, monthly_std, annual_std, std_startdate, std_enddate, \
-                plot_kw, longname, units, _ = get_plot_options(config, var)
+                plot_kw, longname, units, _, _ = get_plot_options(config, var)
 
             sc = SeasonalCycle(var=var,
                                formula=True,

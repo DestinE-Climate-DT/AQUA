@@ -38,7 +38,9 @@ buffer:
 # Observation Datasets
 mswep: &mswep_settings
   levante: "/work/bb1153/b382267/observations/MSWEP/"
-  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/MSWEP/"
+  lumi: "/appl/local/climatedt/data/AQUA/diagnostics/tropical_rainfall/MSWEP/"
+  lumi-o25.1: "/appl/local/climatedt/data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
+  MN5-o25.1: "/gpfs/scratch/ehpc01/shared_input_data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
   s_year: 1990                        # Start year for MSWEP analysis
   f_year: 2020                        # Final year for MSWEP analysis
   auto: false                         # Auto-adjust setting
@@ -47,7 +49,10 @@ mswep: &mswep_settings
 
 era5: &era5_settings
   levante: "/work/bb1153/b382267/observations/ERA5/"
-  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/ERA5/"
+  lumi: "/appl/local/climatedt/data/AQUA/diagnostics/tropical_rainfall/ERA5/"
+  lumi-o25.1: "/appl/local/climatedt/data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/ERA5/"
+  MN5: "/gpfs/scratch/ehpc01/shared_input_data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/ERA5/"
+  MN5-o25.1: "/gpfs/scratch/ehpc01/shared_input_data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/ERA5/"
   s_year: 1990
   f_year: 2021
   auto: false
@@ -56,7 +61,10 @@ era5: &era5_settings
 
 imerg:
   levante: "/work/bb1153/b382267/observations/IMERG/"
-  lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/observations/IMERG/"
+  lumi: "/appl/local/climatedt/data/AQUA/diagnostics/tropical_rainfall/IMERG/"
+  lumi-o25.1: "/appl/local/climatedt/data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/IMERG/"
+  MN5: "/gpfs/scratch/ehpc01/shared_input_data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/ERA5/"
+  MN5-o25.1: "/gpfs/scratch/ehpc01/shared_input_data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/IMERG/"
   s_year: 2000
   f_year: 2023
   auto: false

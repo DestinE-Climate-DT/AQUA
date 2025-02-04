@@ -493,6 +493,12 @@ convention_name:
           - avg_hc700m
           - hc700m
         grib: 262122
+      hcbtm: # Total column heat content
+        source:
+          - 262123 # original GRIB2 code
+          - 263123 # avg_hcbtm
+          - avg_hcbtm
+          - hcbtm
       sos: # Sea surface practical salinity
         source:
           - 262100 # original GRIB2 code

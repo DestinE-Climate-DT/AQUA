@@ -290,6 +290,7 @@ def parse_arguments(args):
                         help='log level [default: WARNING]')
 
     # This arguments will override the configuration file is provided
+    parser.add_argument('--catalog', type=str, help='Catalog name', required=False) # not used yet
     parser.add_argument('--model', type=str, help='Model name')
     parser.add_argument('--exp', type=str, help='Experiment name')
     parser.add_argument('--source', type=str, help='Source name')

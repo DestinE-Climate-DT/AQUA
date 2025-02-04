@@ -1,5 +1,6 @@
 grids:
   # NEMO oceanic Healpix: each ORCA grid needs its definition due to changing LSM
+  # Used in ClimateDT phase1
   nemo-eORCA1-hpz5-nested:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -40,6 +41,58 @@ grids:
       level: '{{ grids }}/HealPix/nemo-eORCA12_hpz10_nested_oce_level.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
+  
+  # NEMO v3: These are grids for DestinE O-25.1 cycle.
+  # Interpolation to HealPix is now conservative and this
+  # produced a change in the land sea mask, so all the grids
+  # are different from the previous ones
+  nemo-eORCA12-hpz10-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/NEMO/nemo-eORCA12_hpz10_nested_oce_v3.nc'
+  nemo-eORCA12-hpz10-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/NEMO/nemo-eORCA12_hpz10_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  nemo-eORCA12-hpz9-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/NEMO/nemo-eORCA12_hpz9_nested_oce_v3.nc'
+  nemo-eORCA12-hpz9-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/NEMO/nemo-eORCA12_hpz9_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  nemo-eORCA12-hpz7-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/NEMO/nemo-eORCA12_hpz7_nested_oce_v3.nc'
+  nemo-eORCA12-hpz7-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/NEMO/nemo-eORCA12_hpz7_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  nemo-eORCA1-hpz5-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/NEMO/nemo-eORCA1_hpz5_nested_oce_v3.nc'
+  nemo-eORCA1-hpz5-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/NEMO/nemo-eORCA1_hpz5_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  # Grids from the multiIO r360x181 conservative interpolation from eORCA025
+  nemo-eORCA025-r100s-v3:
+    path: '{{ grids }}/NEMO/nemo-eORCA025-r100s_v3.nc'
+  nemo-eORCA025-r100s-3d-v3:
+    path:
+      level: '{{ grids }}/NEMO/nemo-eORCA025-r100s-3d_v3.nc'
+  
 
   # NEMO
   eORCA1-2d:

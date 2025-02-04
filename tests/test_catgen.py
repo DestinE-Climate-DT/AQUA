@@ -106,9 +106,9 @@ def test_catgen_reduced(tmp_path, model, nsources, nocelevels):
     assert sources['sources'][f'monthly-{grid}-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
-                        [('IFS-NEMO', 30, 75),
-                         ('IFS-FESOM', 34, 69),
-                         ('ICON', 17, 72)])
+                        [('IFS-NEMO', 28, 75),
+                         ('IFS-FESOM', 31, 69),
+                         ('ICON', 31, 72)])
 @pytest.mark.catgen
 def test_catgen_production(tmp_path, model, nsources, nocelevels):
     """test for production portfolio"""

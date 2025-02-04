@@ -269,16 +269,18 @@ def plot_single_map_diff(data: xr.DataArray,
     diff_map = data - data_ref
 
     return_main_fig = kwargs.get('return_fig', False)
-    if 'return_fig' in kwargs:
-        del kwargs['return_fig'] # Remove the return_fig kwarg from the kwargs
+    
+    for key in ['return_fig', 'contour']:
+        kwargs.pop(key, None) 
 
     fig, ax = plot_single_map(diff_map, return_fig=True,
-                              contour=contour, sym=sym,
+                              contour=contour,  # Disable contour for the color map
+                              sym=sym,
                               save=False, loglevel=loglevel,
                               vmin=vmin_fill, vmax=vmax_fill,
                               **kwargs)
 
-    logger.info("Plotting the map as contour")
+    logger.info("Plotting the map")
 
     cyclic_lon = kwargs.get('cyclic_lon', True)
     if cyclic_lon:
@@ -289,25 +291,29 @@ def plot_single_map_diff(data: xr.DataArray,
             logger.error("Cannot add cyclic longitude: %s", e)
             logger.warning("Cyclic longitude can be set to False with the cyclic_lon kwarg")
 
-    # Evaluate vmin and vmax of the contour
-    if vmin_contour is None or vmax_contour is None:
-        vmin_contour, vmax_contour = evaluate_colorbar_limits(maps=[data],
-                                                              sym=sym_contour)
-    else:
-        if sym_contour:
-            logger.warning("sym_contour=True, vmin_map and vmax_map given will be ignored")
+
+    if contour:
+        logger.info("Plotting the map as contour")
+
+        # Evaluate vmin and vmax of the contour
+        if vmin_contour is None or vmax_contour is None:
             vmin_contour, vmax_contour = evaluate_colorbar_limits(maps=[data],
                                                                   sym=sym_contour)
+        else:
+            if sym_contour:
+                logger.warning("sym_contour=True, vmin_map and vmax_map given will be ignored")
+                vmin_contour, vmax_contour = evaluate_colorbar_limits(maps=[data],
+                                                                      sym=sym_contour)
 
-    logger.debug("Setting contour vmin to %s, vmax to %s", vmin_contour, vmax_contour)
+        logger.debug("Setting contour vmin to %s, vmax to %s", vmin_contour, vmax_contour)
 
-    ds = data.plot.contour(ax=ax,
-                           transform=ccrs.PlateCarree(),
-                           colors='k', levels=10,
-                           linewidths=0.5,
-                           vmin=vmin_contour, vmax=vmax_contour)
+        ds = data.plot.contour(ax=ax,
+                               transform=ccrs.PlateCarree(),
+                               colors='k', levels=10,
+                               linewidths=0.5,
+                               vmin=vmin_contour, vmax=vmax_contour)
 
-    ax.clabel(ds, fmt='%1.1f', fontsize=6, inline=True)
+        ax.clabel(ds, fmt='%1.1f', fontsize=6, inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)
@@ -340,4 +346,3 @@ def plot_single_map_diff(data: xr.DataArray,
 
     if return_main_fig:
         return fig, ax
-    

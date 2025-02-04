@@ -116,6 +116,38 @@ Please see also the section :ref:`cli` for further information and a detailed de
    However, it is possible to run the diagnostics in other ways, for example by calling the Python scripts directly or by
    running them in a Jupyter notebook, allowing more flexibility and customization.
 
+Minimum Data Requirements
+-------------------------
+
+In order to obtain meaningful results, the diagnostics require a minimum amount of data.
+Here you can find the minimum requirements for each diagnostic.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Diagnostic
+     - Minimum Data Required
+   * - Global Biases
+     - 1 year of data
+   * - ecmean
+     - 1 year of data
+   * - Timeseries
+     - 2 months of data
+   * - Seasonal cycles
+     - 1 year of data
+   * - Ocean3d
+     - 1 year of data, 2 months for the timeseries
+   * - Radiation
+     - 1 year of data
+   * - Seaice
+     - 1 year of data
+   * - Teleconnections
+     - 2 years of data
+
+.. note::
+   Some diagnostics will technically run with less data, but the results may not be meaningful.
+   Some other will raise errors in the log files if the data is not enough.
+
 Creating Custom Diagnostics
 ---------------------------
 

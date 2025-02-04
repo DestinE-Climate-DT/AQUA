@@ -571,7 +571,7 @@ class AquaConsole():
                 cfg['catalog'] = [catalog] + to_list(cfg['catalog'])
             else:
                 if isinstance(cfg['catalog'], list):
-                    other_catalogs = [x for x in to_list(cfg['catalog']) if x != catalog]
+                    other_catalogs = [x for x in cfg['catalog'] if x != catalog]
                     self.logger.debug('Catalog %s is already there, setting it as first entry before %s',
                                       catalog, other_catalogs)
                     cfg['catalog'] = [catalog] + other_catalogs
