@@ -201,9 +201,10 @@ class GSVSource(base.DataSource):
         
         # getting bridge expver, start and end dates if the fdb_info_file is provided
         if self.fdb_info_file and fdb_info:
-            self.bridge_start_date = fdb_info['bridge']['bridge_start_date']
-            self.bridge_end_date = fdb_info['bridge']['bridge_end_date']
-            self._request['expver'] = fdb_info['bridge']['expver']
+            if fdb_info['bridge']:
+                self.bridge_start_date = fdb_info['bridge']['bridge_start_date']
+                self.bridge_end_date = fdb_info['bridge']['bridge_end_date']
+                self._request['expver'] = fdb_info['bridge']['expver']
         else:
             # deprecated method that guess from text file and fall back
             self.bridge_start_date = read_bridge_date(bridge_start_date)
@@ -232,8 +233,9 @@ class GSVSource(base.DataSource):
         self.logger.debug('Data frequency (i.e. savefreq): %s', savefreq)
         self.logger.debug('Data_start_date: %s, Data_end_date: %s, Bridge_start_date: %s, Bridge_end_date: %s',
             self.data_start_date, self.data_end_date, self.bridge_start_date, self.bridge_end_date)
+        #print('Data_start_date: %s, Data_end_date: %s, Bridge_start_date: %s, Bridge_end_date: %s' % (self.data_start_date, self.data_end_date, self.bridge_start_date, self.bridge_end_date))  
         self.logger.debug('Request startdate: %s, Request enddate: %s', self.startdate, self.enddate)
-
+        
         timeaxis = make_timeaxis(self.data_start_date, self.startdate, self.enddate,
                             shiftmonth=self.timeshift, timestep=timestep,
                             savefreq=savefreq, chunkfreq=chunking_time,
@@ -652,6 +654,8 @@ class GSVSource(base.DataSource):
                 except KeyError:
                     self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
                     return None
+        else:
+            fdb_info['bridge'] = None
 
         return fdb_info
 
