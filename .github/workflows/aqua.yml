@@ -39,6 +39,8 @@ jobs:
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
+      # This is needed to avoid FDB errors with ClimateDT specific keys.
+      # METKIT_RAW_PARAM: 1
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false

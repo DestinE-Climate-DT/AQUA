@@ -438,18 +438,13 @@ class AquaConsole():
         self._set_catalog(catalog)
 
     def _github_explore(self):
-
         try:
-            # for private repo, we need user e token. since this is a test feature,
-            # before going open source, we will use a basic token and PD account.
             fs = fsspec.filesystem("github",
                                     org="DestinE-Climate-DT",
-                                    repo="Climate-DT-catalog",
-                                    username="mnurisso",
-                                    token="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") # noqa
+                                    repo="Climate-DT-catalog")
             self.logger.info('Accessed remote repository https://github.com/DestinE-Climate-DT/Climate-DT-catalog')
         except HTTPError:
-            self.logger.error('Permission issues in accessing Climate-DT catalog, please contact AQUA mantainers')
+            self.logger.error('Permission issues in accessing Climate-DT catalog, please contact AQUA maintainers')
             sys.exit(1)
     
         return fs
