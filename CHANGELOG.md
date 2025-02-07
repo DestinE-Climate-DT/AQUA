@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- New container for tests with FDB 5.14.0 and ECCODES 2.39.2 (#1676)
 - Test for aqua-analysis.py (#1664)
 - Fix in the catgen now correctly generating an automatic description if not provided (#1662)
 
