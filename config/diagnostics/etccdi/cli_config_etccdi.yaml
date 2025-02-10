@@ -2,6 +2,8 @@
 indices:
   SDII: true
 
+year: null # year to calculate the indices, overwritten by the script with the flag --year
+
 # It is overwritten if the script with the flags --catalog, --model, --exp, --source
 models:
   - catalog: null
