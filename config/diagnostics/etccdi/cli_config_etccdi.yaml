@@ -1,15 +1,8 @@
 # you can turn on/off the indices to be calculated
-teleconnections:
+indices:
   SDII: true
 
-# The first is overwritten if the script with the flags --catalog, --model, --exp, --source
-# Extra keyword arguments for the models are:
-# regrid: null
-# freq: null
-# These are all null (None) by default because we're assuming
-# data are monthly and already regridded to a 1deg grid.
-# If you want to use native data, you have to set these parameters
-# for each model.
+# It is overwritten if the script with the flags --catalog, --model, --exp, --source
 models:
   - catalog: null
     model: null
@@ -17,7 +10,7 @@ models:
     source: null
 
 # This is overwritten if the script with the flags --configdir
-# Common output directory for all teleconnections
+# Common output directory for all the indices
 # Structure of the output directory:
 # outputdir
 # ├── png
