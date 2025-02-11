@@ -75,7 +75,7 @@ if __name__ == "__main__":
     source = get_arg(args, 'source', models[0]['source'])
     year = get_arg(args, 'year', config['year'])
 
-    sdii_flag = config['indices'].get('sdii', False)
+    sdii_flag = config['indices'].get('SDII', False)
 
     if sdii_flag:
         sdii = SDII(model=model, exp=exp, source=source, catalog=catalog,
