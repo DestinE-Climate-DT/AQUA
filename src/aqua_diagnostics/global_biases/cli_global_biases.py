@@ -25,6 +25,7 @@ def parse_arguments(args):
     parser.add_argument('--source', type=str, help='Source name')
     parser.add_argument('--outputdir', type=str, help='Output directory')
     parser.add_argument("--cluster", type=str, required=False, help="dask cluster address")
+    parser.add_argument("--regrid", type=str, required=False, help="Regrid the source data to a specified grid")
 
     return parser.parse_args(args)
 
@@ -62,6 +63,7 @@ def main():
     model_data = get_arg(args, 'model', config['data']['model'])
     exp_data = get_arg(args, 'exp', config['data']['exp'])
     source_data = get_arg(args, 'source', config['data']['source'])
+    regrid_data = get_arg(args, 'regrid', None)
     startdate_data = config['diagnostic_attributes'].get('startdate_data')
     enddate_data = config['diagnostic_attributes'].get('enddate_data')
 
@@ -90,8 +92,10 @@ def main():
     # Retrieve data and handle potential errors
     try:
         reader = Reader(catalog=catalog_data, model=model_data, exp=exp_data, source=source_data,
-                        startdate=startdate_data, enddate=enddate_data)
+                        startdate=startdate_data, enddate=enddate_data, regrid=regrid_data)
         data = reader.retrieve()
+        if regrid_data:
+            data = data.aqua.regrid()
 
         # Calculate 'tnr' if applicable
         if 'tnr' in variables:
@@ -103,8 +107,10 @@ def main():
 
     try:
         reader_obs = Reader(catalog=catalog_obs, model=model_obs, exp=exp_obs, source=source_obs,
-                            startdate=startdate_obs, enddate=enddate_obs, loglevel=loglevel)
+                            startdate=startdate_obs, enddate=enddate_obs, loglevel=loglevel, regrid=regrid_data)
         data_obs = reader_obs.retrieve()
+        if regrid_data:
+            data_obs = data_obs.aqua.regrid()
 
         # Calculate 'tnr' for observations if applicable
         if 'tnr' in variables:
