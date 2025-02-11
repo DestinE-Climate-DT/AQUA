@@ -168,7 +168,7 @@ class OutputSaver:
         self.logger.debug(f"Generated filename: {filename}")
         return filename
 
-    def save_netcdf(self, dataset: xr.Dataset, path: str = None, diagnostic_product: str = None, var: str = None,
+    def save_netcdf(self, dataset, path: str = None, diagnostic_product: str = None, var: str = None,
                     model_2: str = None, exp_2: str = None, time_start: str = None, time_end: str = None,
                     time_precision: str = 'ymd', area: str = None, metadata: dict = None, catalog_2: str = None,
                     mode: str = 'w', **kwargs) -> str:
@@ -177,7 +177,7 @@ class OutputSaver:
         precise time intervals.
 
         Args:
-            dataset (xr.Dataset): The xarray dataset to be saved as a netCDF file.
+            dataset (xr.Dataset or xr.DataArray): The xarray dataset to be saved as a netCDF file.
             path (str, optional): The absolute path where the netCDF file will be saved.
             diagnostic_product (str, optional): Product of the diagnostic analysis.
             var (str, optional): Variable of interest.
@@ -199,6 +199,11 @@ class OutputSaver:
         filename = self.generate_name(diagnostic_product=diagnostic_product, var=var,
                                       model_2=model_2, exp_2=exp_2, time_start=time_start, time_end=time_end,
                                       time_precision=time_precision, area=area, suffix='nc', catalog_2=catalog_2, **kwargs)
+        
+        # If dataset is an xarray DataArray, convert it to a Dataset
+        if isinstance(dataset, xr.DataArray):
+            self.logger.debug("Converting DataArray to Dataset.")
+            dataset = dataset.to_dataset()
 
         if path is None:
             path = os.path.join(self.default_path, 'netcdf')
