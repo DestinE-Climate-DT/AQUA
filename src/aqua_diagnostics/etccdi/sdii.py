@@ -22,11 +22,9 @@ class SDII(DailyETCCDI):
         """
         super().__init__(catalog=catalog, model=model, exp=exp,
                          source=source, year=year, loglevel=loglevel)
-        
-        self.index_cumulated = None
     
     def compute_index(self, var: str = 'tprate', output_dir: str = '.',
-                      rebuild: bool = True, threshold: float = 1.0, **kwargs):
+                      rebuild: bool = False, threshold: float = 1.0, **kwargs):
         """
         Compute the Simple pricipitation intensity index (SDII) for the given month.
 
@@ -39,9 +37,12 @@ class SDII(DailyETCCDI):
         """
         self.logger.info('Computing SDII for year %d using variable %s', self.year, var)
         self.logger.info('Threshold: %f mm/day', threshold)
-        month = 1
 
-        while(self.index is None or self.data is not None):
+        month = 1
+        index = None
+        index_cumulated = None
+
+        while(index is None or self.data is not None):
             super().retrieve(var=var)
 
             if self.data is not None:
@@ -50,25 +51,25 @@ class SDII(DailyETCCDI):
 
                 new_month = self.data.time.values[0].astype('datetime64[M]').astype(int) % 12 + 1
                 if new_month != month:
-                    
                     # Save the index on disk
-                    super().save_monthly_index(data=self.index, diagnostic_product='SDII_days', month=month,
+                    super().save_monthly_index(data=index, diagnostic_product='SDII_days', month=month,
                                                default_path=output_dir, rebuild=rebuild, **kwargs)
-                    super().save_monthly_index(data=self.index_cumulated, diagnostic_product='SDII_cumulated', month=month,
+                    super().save_monthly_index(data=index_cumulated, diagnostic_product='SDII_cumulated', month=month,
                                                default_path=output_dir, rebuild=rebuild, **kwargs)
 
                     self.logger.debug('New month: %d', new_month)
                     month = new_month
-                    self.index = None
-                    self.index_cumulated = None
+                    index = None
+                    index_cumulated = None
                 
                 self._check_data(var=var)
-                self._index_evaluation(var=var, threshold=threshold)
+                index, index_cumulated = self._index_evaluation(index_day=index, index_cumulated=index_cumulated,
+                                                                threshold=threshold)
             else:
                 self.logger.info('No more data to compute the index')
-                super().save_monthly_index(data=self.index, diagnostic_product='SDII_days', month=month,
+                super().save_monthly_index(data=index, diagnostic_product='SDII_days', month=month,
                                            default_path=output_dir, rebuild=rebuild, **kwargs)
-                super().save_monthly_index(data=self.index_cumulated, diagnostic_product='SDII_cumulated', month=month,
+                super().save_monthly_index(data=index_cumulated, diagnostic_product='SDII_cumulated', month=month,
                                            default_path=output_dir, rebuild=rebuild, **kwargs)
     
     def _check_data(self, var: str):
@@ -89,13 +90,20 @@ class SDII(DailyETCCDI):
             data = data * factor + offset
             self.data = data
 
-    def _index_evaluation(self, var: str, threshold: float):
+    def _index_evaluation(self, index_day, index_cumulated,
+                          threshold: float):
         """
         Evaluate the index for the given day.
         
         Args:
+            index_day (xr.DataArray): The index for the given day.
+            index_cumulated (xr.DataArray): The index for the cumulated days.
             var (str): The variable to use for the computation.
             threshold (float): The threshold to use for the computation.
+
+        Returns:
+            xr.DataArray: The index for the days with precipitation.
+            xr.DataArray: The index for the cumulated days with precipitation.
         """
 
         if self.data is None:
@@ -107,16 +115,27 @@ class SDII(DailyETCCDI):
         wet_day = xr.where(daily >= threshold, 1, 0)
         wet_value = xr.where(daily >= threshold, daily, 0)
 
-        if self.index is None:
-            self.index = wet_day
-        else:
-            self.index = self.index + wet_day
-        if self.index_cumulated is None:
-            self.index_cumulated = wet_value
-        else:
-            self.index_cumulated = self.index_cumulated + wet_value
+        # Make sure we get rid of the time dimension
+        try:
+            wet_day = wet_day.isel(time=0)
+            wet_value = wet_value.isel(time=0)
+        except Exception as e:
+            self.logger.warning('Could not remove the time from index: %s', e)
 
-    def combine_monthly_index(self, output_dir: str = '.', rebuild: bool = True, **kwargs):
+        if index_day is None:
+            self.logger.info('Creating index for the day')
+            index_day = wet_day
+        else:
+            index_day += wet_day
+        if index_cumulated is None:
+            self.logger.info('Creating index for the cumulated days')
+            index_cumulated = wet_value
+        else:
+            index_cumulated += wet_value
+        
+        return index_day, index_cumulated
+
+    def combine_monthly_index(self, output_dir: str = '.', rebuild: bool = False, **kwargs):
         """
         Combine the monthly indices to get the annual index.
 
