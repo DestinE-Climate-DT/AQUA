@@ -11,7 +11,8 @@ xr.set_options(keep_attrs=True)
 class DailyETCCDI():
     def __init__(self, catalog: str = None, model: str = None,
                  exp: str = None, source: str = None,
-                 year: int = None, loglevel: str = 'WARNING'):
+                 year: int = None, month: int = 1,
+                 loglevel: str = 'WARNING'):
         """
         Initialize the DailyETCCDI class.
 
@@ -21,6 +22,7 @@ class DailyETCCDI():
             exp (str): The experiment to be used.
             source (str): The source to be used.
             year (int): The year to be used.
+            month (int): The month to be used. By default, the entire year will be used.
             loglevel (str): The log level to be used. Default is 'WARNING'.
         """
         self.logger = log_configure(log_name='DailyETCCDI', log_level=loglevel)
@@ -32,7 +34,7 @@ class DailyETCCDI():
             raise ValueError('Model, experiment and source must be provided')
 
         self.year = year
-        self.startdate = f'{year}0101'
+        self.startdate = f'{year}{month:02d}01'
         self.enddate = f'{year}1231'
         self.reader = Reader(catalog=catalog, model=self.model, exp=self.exp, source=self.source,
                              startdate=self.startdate, enddate=self.enddate,

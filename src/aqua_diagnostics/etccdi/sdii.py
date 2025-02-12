@@ -7,7 +7,7 @@ xr.set_options(keep_attrs=True)
 
 
 class SDII(DailyETCCDI):
-    def __init__(self, model: str, exp: str, source: str, year: int,
+    def __init__(self, model: str, exp: str, source: str, year: int, month: int = 1,
                  catalog: str = None, loglevel: str = 'WARNING'):
         """
         Initialize the class to compute the Simple pricipitation intensity index (SDII).
@@ -18,10 +18,11 @@ class SDII(DailyETCCDI):
             exp (str): The experiment to use. Default is None.
             source (str): The source to use. Default is None.
             year (int): The year to compute the index. Default is None.
+            month (int, opt): The starting month to compute the index. Default is 1.
             loglevel (str, opt): The log level to use. Default is 'WARNING'.
         """
         super().__init__(catalog=catalog, model=model, exp=exp,
-                         source=source, year=year, loglevel=loglevel)
+                         source=source, year=year, month=month, loglevel=loglevel)
     
     def compute_index(self, var: str = 'tprate', output_dir: str = '.',
                       rebuild: bool = False, threshold: float = 1.0, **kwargs):
