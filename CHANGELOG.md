@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+AQUA diagnostics complete list:
+- Fix net surface radiative flux and wind stresses in ecmean (#1697)
+
 ## [v0.13.1]
 
 Main changes are:
