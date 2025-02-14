@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+AQUA diagnostics complete list:
+- Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1697)
 - Tropical Rainfall: Update of the precomputed histograms paths for lumi and MN5 operational (#1702)
 
 ## [v0.13.1]
