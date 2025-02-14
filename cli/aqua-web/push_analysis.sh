@@ -216,9 +216,17 @@ fi
 
 cd $repo
 if [ $update -eq 1 ]; then
-    git checkout $branch
-    git pull
+    if git show-ref --verify --quiet refs/heads/$branch; then
+        # Branch exists locally
+        git checkout $branch
+        git pull origin $branch
+    else
+        # Branch does not exist locally
+        git checkout -b $branch
+        git pull origin $branch || echo "No remote branch to pull from"
+    fi
 fi
+
 
 echo "Updated figures in bucket $bucket"  > updated.txt
 echo "on $(date) for the following experiments:" >> updated.txt
@@ -251,7 +259,7 @@ if [ -f "$exps" ]; then
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"
-    collect_figures "$indir" "$exps" $wipe
+    collect_figures "$indir" "$exps"
     convert_pdf_to_png "$exps"
     make_contents "$exps" "$config" # create catalog.yaml and catalog.json
     push_lumio $bucket "$exps" "$rsync"
@@ -268,7 +276,7 @@ if [ $update -eq 1 ]; then
     if [ "$dry" -eq 1 ]; then
         log_message INFO "Dry run, not pushing to the repository"
     else
-        git push
+        git push origin $branch
         log_message INFO "Pushed new figures to lumi-o"
     fi
 fi
