@@ -9,10 +9,8 @@ a configuration yaml file.
 
 import sys
 import argparse
-from glob import glob
 from aqua import LRAgenerator
 from aqua.util import load_yaml, get_arg, to_list
-from aqua.lra_generator.lra_util import opa_catalog_entry
 from aqua import __version__ as version
 
 
@@ -27,8 +25,6 @@ def lra_parser(parser = None):
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA LRA generator')
     
-    parser.add_argument('-a', '--autosubmit', action="store_true", 
-                        help='Run the LRA with OPA through autosubmit')
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
     parser.add_argument('-f', '--fix', action="store_true",
@@ -55,6 +51,7 @@ def lra_parser(parser = None):
                         help='source to be processed. Use with coherence with --exp and --var')
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
+    parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
     #parser.add_argument('-r', '--realization', type=str,
     #                    help="realization to be processed. Use with coherence with --var")
 
@@ -98,10 +95,6 @@ def lra_execute(args):
     # optional main catalog switch
     catalog = config['target'].get('catalog', None)
 
-    # for autosubmit workflow
-    opadir = paths.get('opadir', None)
-    fixer_name = config['target'].get('fixer_name', None)
-
     # options
     loglevel = config['options'].get('loglevel', 'WARNING')
     do_zarr = config['options'].get('zarr', False)
@@ -111,6 +104,7 @@ def lra_execute(args):
     definitive = get_arg(args, 'definitive', False)
     monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
+    rebuild = get_arg(args, 'rebuild', False)
     only_catalog = get_arg(args, 'only_catalog', False)
     if only_catalog:
         print('--only-catalog selected, doing a lot of noise but in the end producing only catalog update!')
@@ -118,24 +112,18 @@ def lra_execute(args):
     default_workers = get_arg(args, 'workers', 1)
     loglevel = get_arg(args, 'loglevel', loglevel)
 
-    # run the LRA through the workflow, based on OPA
-    # please notice that calls are very similar but to preserve previous structure two funcionts are implemented
-    if get_arg(args, 'autosubmit', False):
-        lra_autosubmit(args=args, config=config, catalog=catalog, resolution=resolution, 
-                       frequency=frequency, fix=fix,  
-                       outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-                       definitive=definitive, overwrite=overwrite, default_workers=default_workers,
-                       opadir=opadir, fixer_name=fixer_name)
-    # default run of the LRA
-    else:
-        lra_cli(args=args, config=config, catalog=catalog, resolution=resolution, 
-                frequency=frequency, fix=fix,
-                outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-                definitive=definitive, overwrite=overwrite, default_workers=default_workers,
-                monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
+    lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
+            frequency=frequency, fix=fix,
+            outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
+            definitive=definitive, overwrite=overwrite, rebuild=rebuild,
+            default_workers=default_workers,
+            monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
-            definitive, overwrite, monitoring, default_workers, do_zarr, verify_zarr, only_catalog):
+            definitive=False, overwrite=False,
+            rebuild=False, monitoring=False,
+            default_workers=1, do_zarr=False, verify_zarr=False,
+            only_catalog=False):
     """
     Running the default LRA from CLI, looping on all the configuration model/exp/source/var combination
     Optional feature for each source can be defined as `zoom`, `workers` and `realizations`
@@ -165,13 +153,17 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
 
                     # define realization as extra args only if this is found in the configuration file
                     extra_args = {'realization': realization} if realizations else {}
+                    print(varnames)
                     for varname in varnames:
 
-                        # get the zoom level - this might need some tuning for extra kwargs 
+                        # get the zoom level - this might need some tuning for extra kwargs
                         zoom = config['data'][model][exp][source].get('zoom', None)
                         if zoom is not None:
                             extra_args = {**extra_args, **{'zoom': zoom}}
-                    
+                        
+                        # disabling rebuild if we are not in the first realization and first varname
+                        if varname != varnames[0] or realization != loop_realizations[0]:
+                            rebuild = False
                         # init the LRA
                         lra = LRAgenerator(catalog=catalog, model=model, exp=exp, source=source,
                                         var=varname, resolution=resolution,
@@ -179,9 +171,12 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                                         outdir=outdir, tmpdir=tmpdir,
                                         nproc=workers, loglevel=loglevel,
                                         definitive=definitive, overwrite=overwrite,
+                                        rebuild=rebuild,
                                         performance_reporting=monitoring,
                                         exclude_incomplete=True,
                                         **extra_args)
+
+
                         
                         if not only_catalog:
                             # check that your LRA is not already there (it will not work in streaming mode)
@@ -196,61 +191,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
             if do_zarr:
                 lra.create_zarr_entry(verify=verify_zarr)
 
-    print('CLI LRA run completed. Have yourself a pint of beer!')
-
-def lra_autosubmit(args, config, catalog, resolution, frequency, fix, fixer_name,
-                   outdir, tmpdir, opadir, loglevel, definitive, overwrite, default_workers):
-    
-    """
-    If the --autosubmit flag is selected, run the LRA via the workflow assuming OPA files 
-    have been build beforehand 
-    """
-
-    models = to_list(get_arg(args, 'model', config['data'].keys()))
-    for model in models:
-        exps = to_list(get_arg(args, 'exp', config['data'][model].keys()))
-        for exp in exps:
-            source = f'lra-{resolution}-{frequency}'
-            variables = config['data'][model][exp][source]['vars']
-            print(f'LRA Processing {model}-{exp}-opa-{frequency}')
-
-            # update the dir
-            #opadir = os.path.join(opadir, model, exp, frequency)
-            # check if files are there
-            opa_files = glob(f"{opadir}/*{frequency}*.nc")
-            if opa_files:
-                for varname in variables:
-
-                    # create the catalog entry
-                    entry_name = opa_catalog_entry(datadir=opadir, catalog=catalog, model=model, source=source,
-                                                exp=exp, frequency=frequency, 
-                                                fixer_name=fixer_name, loglevel=loglevel)
-
-                    print(f'Netcdf files found in {opadir}: Launching LRA')
-
-                    # init the LRA
-                    lra = LRAgenerator(catalog=catalog, model=model, exp=exp, source=entry_name,
-                                       var=varname, resolution=resolution,
-                                       frequency=frequency, fix=fix,
-                                       outdir=outdir, tmpdir=tmpdir,
-                                       nproc=default_workers, loglevel=loglevel,
-                                       definitive=definitive, overwrite=overwrite,
-                                       performance_reporting=False,
-                                       exclude_incomplete=True)
-
-                    lra.retrieve()
-                    lra.generate_lra()
-                    lra.create_catalog_entry()
-
-                # cleaning the opa NetCDF files
-                # for varname in variables:
-                #    for file_name in opa_files:
-                #        os.remove(file_name)
-            else:
-                print(f'There are no Netcdf files in {opadir}')
-
-    print('Workflow LRA run completed. Have yourself a large beer!')
-
+    print('CLI LRA run completed. Have yourself a tasty pint of beer!')
 
 # if you want to execute the script from terminal without the aqua entry point
 if __name__ == '__main__':

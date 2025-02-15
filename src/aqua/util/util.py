@@ -1,5 +1,6 @@
 """Module containing general utility functions for AQUA"""
 
+from __future__ import annotations
 import os
 import random
 import string
@@ -291,7 +292,7 @@ def add_png_metadata(png_path: str, metadata: dict, loglevel: str = 'WARNING'):
 
     # Add the new metadata
     for key, value in metadata.items():
-        png_info.add_text(key, value)
+        png_info.add_text(key, str(value))
         logger.debug(f'Adding metadata: {key} = {value}')
 
     # Save the file with the new metadata

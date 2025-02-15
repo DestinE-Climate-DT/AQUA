@@ -5,10 +5,14 @@ source: lra-r100-monthly
 loglevel: warning
 outputdir: ./output
 
+# nworkers: 2
+
+variables: ["thetao", "so"]
+
 # select_time:
 #   start_year : 1991
 #   end_year : 1991
-   
+ 
 ocean_circulation: #specify region and climatology time
   compare_model_with_obs: True
   regions:
@@ -18,5 +22,7 @@ ocean_circulation: #specify region and climatology time
     Weddell Sea : JJA
     Gin Sea : DJF
   plots:
-    [stratification,
-    MLD]
+    [
+      stratification,
+      MLD
+    ]

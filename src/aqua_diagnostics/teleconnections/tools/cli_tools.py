@@ -1,6 +1,4 @@
 """Module containing cli tools"""
-from aqua.util import OutputSaver
-
 
 def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
              loglevel='WARNING',
@@ -39,8 +37,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
         - filename_keys (list, optional): List of keys to keep in the filename. Default is None, which includes all keys.
 
     Returns:
-        - map_names_pdf (list): list of the names of the maps in pdf format
-        - map_names_png (list): list of the names of the maps in png format
+        - common_save_args (dict): common args for a future images
         - maps (list):       list of the maps
         - ref_maps (list):   list of the reference maps
         - titles (list):     list of the titles
@@ -57,16 +54,13 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
     if model is None or exp is None:
         raise ValueError("We need to define the model and the experiment")
 
-    output_saver = OutputSaver(diagnostic='teleconnections', catalog=catalog, model=model, exp=exp,
-                               loglevel=loglevel, default_path=None, filename_keys=filename_keys)
-    map_names_pdf = []
-    map_names_png = []
     maps = []
     titles = []
     descriptions = []
     cbar_labels = []
     ref_maps = []
 
+    common_save_args_list = []
     common_save_args = {}
     if ref:
         common_save_args.update({'model_2': ref})
@@ -89,8 +83,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     ref_maps.append(ref_reg_full_year)
                 else:
                     description += '\nThe contour plot is the model regression map.'
-                map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                common_save_args_list.append(common_save_args)
                 titles.append(title)
                 descriptions.append(description)
                 cbar_labels.append('msl [hPa]')
@@ -102,7 +95,8 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     if ref:
                         ref_reg_season[i] = ref_reg_season[i] / 100
                     maps.append(reg_season[i])
-                    common_save_args.update({'seasons': season})
+                    season_save_args = common_save_args.copy()
+                    season_save_args.update({'seasons': season})
                     title = f'NAO {model} {exp} regression map (msl) for {season}'
                     description = f'NAO {model} {exp} regression map (msl) for {season}'
                     if ref:
@@ -112,8 +106,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                         ref_maps.append(ref_reg_season[i])
                     else:
                         description += '\nThe contour plot is the model regression map.'
-                    map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                    map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                    common_save_args_list.append(season_save_args)
                     titles.append(title)
                     descriptions.append(description)
                     cbar_labels.append('msl [hPa]')
@@ -132,8 +125,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     ref_maps.append(ref_cor_full_year)
                 else:
                     description += '\nThe contour plot is the model correlation map.'
-                map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                common_save_args_list.append(common_save_args)
                 titles.append(title)
                 descriptions.append(description)
                 cbar_labels.append('Pearson correlation coefficient')
@@ -141,7 +133,8 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
             if seasons:
                 for i, season in enumerate(seasons):
                     maps.append(cor_season[i])
-                    common_save_args.update({'seasons': season})
+                    season_save_args = common_save_args.copy()
+                    season_save_args.update({'seasons': season})
                     title = f'NAO {model} {exp} correlation map (msl) for {season}'
                     description = f'NAO {model} {exp} correlation map (msl) for {season}'
                     if ref:
@@ -151,8 +144,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                         ref_maps.append(ref_cor_season[i])
                     else:
                         description += '\nThe contour plot is the model correlation map.'
-                    map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                    map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                    common_save_args_list.append(season_save_args)
                     titles.append(title)
                     descriptions.append(description)
                     cbar_labels.append('Pearson correlation coefficient')
@@ -165,7 +157,6 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                 maps.append(reg_full)
                 title = f'ENSO {model} {exp} regression map (tos)'
                 description = f'ENSO {model} {exp} regression map (tos)'
-
                 if ref:
                     title += f' compared to {ref}'
                     description += f' compared to {ref}.'
@@ -173,8 +164,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     ref_maps.append(ref_reg_full_year)
                 else:
                     description += '\nThe contour plot is the model regression map.'
-                map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                common_save_args_list.append(common_save_args)
                 titles.append(title)
                 descriptions.append(description)
                 cbar_labels.append('tos [K]')
@@ -184,7 +174,8 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     maps.append(reg_season[i])
                     title = f'ENSO {model} {exp} regression map (tos) for {season}'
                     description = f'ENSO {model} {exp} regression map (tos) for {season}'
-
+                    season_save_args = common_save_args.copy()
+                    season_save_args.update({'seasons': season})
                     if ref:
                         title += f' compared to {ref}'
                         description += f' compared to {ref}.'
@@ -192,8 +183,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                         ref_maps.append(ref_reg_season[i])
                     else:
                         description += '\nThe contour plot is the model regression map.'
-                    map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                    map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                    common_save_args_list.append(season_save_args)
                     titles.append(title)
                     descriptions.append(description)
                     cbar_labels.append('tos [K]')
@@ -213,8 +203,7 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     ref_maps.append(ref_cor_full_year)
                 else:
                     description += '\nThe contour plot is the model correlation map.'
-                map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                common_save_args_list.append(common_save_args)
                 titles.append(title)
                 descriptions.append(description)
                 cbar_labels.append('Pearson correlation coefficient')
@@ -224,7 +213,8 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                     maps.append(cor_season[i])
                     title = f'ENSO {model} {exp} correlation map (tos) for {season}'
                     description = f'ENSO {model} {exp} correlation map (tos) for {season}'
-
+                    season_save_args = common_save_args.copy()
+                    season_save_args.update({'seasons': season})
                     if ref:
                         title += f' compared to {ref}'
                         description += f' compared to {ref}.'
@@ -232,10 +222,9 @@ def set_figs(telec=None, catalog=None, model=None, exp=None, ref=False,
                         ref_maps.append(ref_cor_season[i])
                     else:
                         description += '\nThe contour plot is the model correlation map.'
-                    map_names_pdf.append('pdf/' + output_saver.generate_name(suffix='pdf', **common_save_args))
-                    map_names_png.append('png/' + output_saver.generate_name(suffix='png', **common_save_args))
+                    common_save_args_list.append(season_save_args)
                     titles.append(title)
                     descriptions.append(description)
                     cbar_labels.append('Pearson correlation coefficient')
 
-    return map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels
+    return common_save_args_list, maps, ref_maps, titles, descriptions, cbar_labels

@@ -7,8 +7,7 @@ import pandas as pd
 import xarray as xr
 from datetime import datetime
 from typing import Union
-from aqua.util import ConfigPath, load_multi_yaml
-from aqua.reader.fixer import FixerMixin
+from aqua.util import ConfigPath, convert_units
 from aqua.logger import log_configure
 import yaml
 from os.path import isfile, join, exists, isdir
@@ -479,7 +478,7 @@ class ToolsClass:
     def convert_units(self, value, from_unit, to_unit):
         """
         Convert a length measurement from one unit to another.
-        
+
         Args:
             value (float): The numerical value of the length measurement to be converted.
             from_unit (str): The unit of the original length measurement (e.g., 'm', 'cm', 'mm').
@@ -489,14 +488,7 @@ class ToolsClass:
             float: The converted length value in the specified unit, accounting for
             the factor and offset needed for the conversion.
         """
-        fix = FixerMixin()
-        fix.logger = self.logger
-        fix.deltat = 1 #HACK, this has to be revisited
-
-        fix.fixer_folder, _ = (ConfigPath().get_reader_filenames())
-        fix.fixes_dictionary = load_multi_yaml(fix.fixer_folder)
-
-        conversion = fix.convert_units(from_unit, to_unit)
+        conversion = convert_units(from_unit, to_unit)
         factor = conversion.get('factor', 1)
         offset = conversion.get('offset', 0)
 
@@ -507,10 +499,10 @@ class ToolsClass:
         # Each degree of longitude corresponds to 4 minutes of time difference
         # Convert that into hours for the calculation (4 minutes = 4/60 hours)
         time_zone_offset_hours = longitude * 4 / 60
-        
+
         # Calculate the local time in decimal hours
         local_decimal_hour = (utc_decimal_hour + time_zone_offset_hours) % 24
-        
+
         return local_decimal_hour
 
     def update_dict_of_loaded_analyses(self, loaded_dict: dict = None) -> Union[dict, None]:

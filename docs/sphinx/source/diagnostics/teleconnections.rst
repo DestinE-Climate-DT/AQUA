@@ -66,7 +66,7 @@ This can be simply done with the following code:
 
 .. code-block:: python
 
-    from aqua.diagnostics import Teleconnections
+    from aqua.diagnostics import Teleconnection
 
     tc = Teleconnection(catalog='climatedt-phase1', model='ICON', exp='ssp370', source='lra-r100-monthly', telecname='NAO')
     tc.run()
@@ -183,10 +183,10 @@ Example plot
 Available demo notebooks
 ------------------------
 
-- `NAO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
-- `ENSO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/ENSO.ipynb>`_
-- `concordance_map<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/concordance_map.ipynb>`_
-- `MJO<https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/MJO.ipynb>`_
+- `NAO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
+- `ENSO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/ENSO.ipynb>`_
+- `concordance_map <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/concordance_map.ipynb>`_
+- `MJO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/MJO.ipynb>`_
 
 Detailed API
 ------------

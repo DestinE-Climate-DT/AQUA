@@ -361,7 +361,7 @@ if __name__ == '__main__':
                         logger.error('Error plotting %s index: %s', telec, e)
 
                     # Correlation plot
-                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels =\
+                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels =\
                         set_figs(telec=telec,
                                  catalog=catalog,
                                  model=model,
@@ -378,7 +378,7 @@ if __name__ == '__main__':
                                  ref_cor_full_year=ref_cor_full,
                                  ref_reg_season=ref_reg_season,
                                  ref_cor_season=ref_cor_season)
-                    logger.debug('map_names_pdf: %s (same for png)', map_names_pdf)
+                    logger.debug('common_save_args: %s ', common_save_args)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
@@ -393,22 +393,19 @@ if __name__ == '__main__':
                             fig, _ =  plot_single_map_diff(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names_pdf[i], err)
+                                           model, exp, common_save_args[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
                                 fig, _ = plot_single_map_diff(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names_pdf[i], err2)
-                        if save_pdf and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
-                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
-                        if save_png and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
-                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
-
+                                             model, exp, common_save_args[i], err2)
+                        if save_pdf:
+                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
+                        if save_png:
+                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
                     # Regression plot
-                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels =\
+                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels =\
                         set_figs(telec=telec,
                                  catalog=catalog,
                                  model=model,
@@ -425,7 +422,7 @@ if __name__ == '__main__':
                                  ref_cor_full_year=ref_cor_full,
                                  ref_reg_season=ref_reg_season,
                                  ref_cor_season=ref_cor_season)
-                    logger.debug('map_names: %s (same for png)', map_names_pdf)
+                    logger.debug('common_save_args: %s', common_save_args)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
@@ -442,19 +439,17 @@ if __name__ == '__main__':
                             fig, _ = plot_single_map_diff(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names_pdf[i], err)
+                                           model, exp, common_save_args[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
                                 fig, _ = plot_single_map_diff(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names_pdf[i], err2)
+                                             model, exp, common_save_args[i], err2)
                         if save_pdf and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
-                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
                         if save_png and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
-                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
+                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
                 else:  # Individual plots
                     # Index plot
                     try:
@@ -462,7 +457,7 @@ if __name__ == '__main__':
                     except Exception as e:
                         logger.error('Error plotting %s index: %s', telec, e)
                     # Correlation plot
-                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels = \
+                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels = \
                         set_figs(telec=telec,
                                  catalog=catalog,
                                  model=model,
@@ -474,13 +469,13 @@ if __name__ == '__main__':
                                  cor_full=cor_full,
                                  reg_season=reg_season,
                                  cor_season=cor_season)
-                    logger.debug('map_names: %s (same for png)', map_names_pdf)
+                    logger.debug('common_save_args: %s', common_save_args)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
                         vmin = -1
                         vmax = 1
-                        plot_args = {'data': data_map, 'save': True, 'sym': False,
+                        plot_args = {'data': data_map, 'save': False, 'sym': False,
                                      'cbar_label': cbar_labels[i], 'outputdir': outputdir,
                                      'title': titles[i], 'vmin': vmin, 'vmax': vmax, 'return_fig': True,
                                      'loglevel': loglevel}
@@ -488,21 +483,19 @@ if __name__ == '__main__':
                             fig, _ = plot_single_map(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names_pdf[i], err)
+                                           model, exp, common_save_args[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
                                 fig, _ = plot_single_map(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names_pdf[i], err2)
+                                             model, exp, common_save_args[i], err2)
                         if save_pdf and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
-                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
                         if save_png and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
-                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
+                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
                     # Regression plot
-                    map_names_pdf, map_names_png, maps, ref_maps, titles, descriptions, cbar_labels =\
+                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels =\
                         set_figs(telec=telec,
                                  catalog=catalog,
                                  model=model,
@@ -514,7 +507,7 @@ if __name__ == '__main__':
                                  cor_full=cor_full,
                                  reg_season=reg_season,
                                  cor_season=cor_season)
-                    logger.debug('map_names: %s (same for png)', map_names_pdf)
+                    logger.debug('common_save_args: %s', common_save_args)
                     logger.debug('titles: %s', titles)
                     logger.debug('descriptions: %s', descriptions)
                     for i, data_map in enumerate(maps):
@@ -523,7 +516,7 @@ if __name__ == '__main__':
                             sym = True
                         else:
                             sym = False
-                        plot_args = {'data': data_map, 'save': True, 'sym': sym,
+                        plot_args = {'data': data_map, 'save': False, 'sym': sym,
                                      'cbar_label': cbar_labels[i], 'outputdir': outputdir,
                                      'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
                                      'loglevel': loglevel}
@@ -531,19 +524,17 @@ if __name__ == '__main__':
                             fig, _ = plot_single_map(**plot_args, transform_first=False)
                         except Exception as err:
                             logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, map_names_pdf[i], err)
+                                           model, exp, common_save_args[i], err)
                             logger.info('Trying with transform_first=True')
                             try:
                                 fig, _ = plot_single_map(**plot_args, transform_first=True)
                             except Exception as err2:
                                 logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, map_names_pdf[i], err2)
+                                             model, exp, common_save_args[i], err2)
                         if save_pdf and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_pdf[i]), dpi=dpi)
-                            add_pdf_metadata(filename=os.path.join(outputdir, map_names_pdf[i]), metadata_value=descriptions[i])
+                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
                         if save_png and fig is not None:
-                            fig.savefig(os.path.join(outputdir, map_names_png[i]), dpi=dpi)
-                            add_png_metadata(png_path=os.path.join(outputdir, map_names_png[i]), metadata={'description': descriptions[i]})
+                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
 
     if client:
         client.close()

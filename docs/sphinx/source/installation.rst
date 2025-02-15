@@ -225,7 +225,7 @@ To use the FDB5 binary library on MN5, set the following environment variable:
 
 .. code-block:: bash
 
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/gpfs/projects/ehpc01/sbeyer/models/DE_CY48R1.0_climateDT_tco399_fesom2.6/build/lib"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/gpfs/projects/ehpc01/sbeyer/models/DE_CY48R1.0_climateDT_tco399_aerosol_runoff/build/lib"
 
 Installation and use of the AQUA container
 ------------------------------------------

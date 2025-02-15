@@ -163,16 +163,21 @@ class CustomLogColors(logging.Formatter):
     """Class for setting up personalized colors for logging"""
 
     # ANSI escape sequences for colors
+
     # GREY = "\x1b[38;20m"  # Unnecessary
     LGREY = "\x1b[37m"
     # DGREY = "\x1b[90m"
     #  LBLUE = "\x1b[38;2;64;183;197m"
-    # GREEN = "\x1b[32m"  # Less vibrant green
-    # ORANGE = "\x1b[33m" # Less vibrant orange
-    # RED = "\x1b[31;20m"  # Less vibrant red
-    GREEN = "\x1b[38;2;64;184;50m"  # Vibrant green
-    ORANGE = "\x1b[38;2;255;165;0m"  # Vibrant orange
-    RED = "\x1b[38;2;255;0;0m"  # Vibrant red
+    
+    # 8 bit
+    GREEN = "\x1b[32m"  # Less vibrant green
+    ORANGE = "\x1b[33m" # Less vibrant orange
+    RED = "\x1b[31;20m"  # Less vibrant red
+
+    # 24bit
+    # GREEN = "\x1b[38;2;64;184;50m"  # Vibrant green
+    # ORANGE = "\x1b[38;2;255;165;0m"  # Vibrant orange
+    # RED = "\x1b[38;2;255;0;0m"  # Vibrant red
     BOLD_RED = "\x1b[31;1m"
     RESET = "\x1b[0m"
 

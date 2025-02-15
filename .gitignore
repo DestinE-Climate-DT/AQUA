@@ -28,6 +28,9 @@ AQUA_tests.tar.gz
 AQUA_testsv2.tar.gz
 AQUA_testsv3.tar.gz
 AQUA_testsv4.tar.gz
+AQUA_tests_teleconnectionsv3.tar.gz
+AQUA_testsv5.tar.gz
+AQUA_tests_teleconnectionsv3.tar.gz
 *.bak
 
 # coverage and vscode

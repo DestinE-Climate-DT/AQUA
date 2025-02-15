@@ -4,7 +4,9 @@ Calculating Trends
 
 from .tools import *
 from ocean3d import split_ocean3d_req
+from ocean3d import compute_data
 import pandas as pd
+import IPython
 
 class TrendCalculator:
     @staticmethod
@@ -23,7 +25,7 @@ class TrendCalculator:
         logger.debug("Creating Array representing time indices")
         
         # Create time indices as a Dask array
-        time_indices = da.from_array(np.arange(1, len(data["time"]) + 1), chunks=len(data["time"]))
+        time_indices = da.arange(1, len(data["time"]) + 1, chunks=len(data["time"]))
         
         time_indices = xr.DataArray(
             time_indices,
@@ -155,28 +157,12 @@ class TrendCalculator:
         logger = log_configure(loglevel, 'lintrend_3D')
         x_array = TrendCalculator.create_time_array(y_array, loglevel=loglevel)
         n = x_array.count(dim="time")
-        trend = TrendCalculator.compute_covariances(x_array, y_array, dim="time", loglevel=loglevel)
+        x_var = x_array.var(dim="time", skipna=True)
+        covariance = TrendCalculator.compute_covariances(x_array, y_array, dim="time", loglevel=loglevel)
+        trend = covariance/x_var
         trend = xr.where(n >= 3, trend, np.nan)
         return trend
     
-    def chunking_trend(data, loglevel="WARNING"):
-        lon_chunks = [
-            slice(0, 60), slice(60, 120), slice(120, 180), slice(180, 240), slice(240, 300), slice(300, 360)
-            ]
-
-        # Define finer latitude chunks (every 45 degrees)
-        lat_chunks = [
-            slice(0, 45), slice(45, 90), slice(90, 135), slice(135, 180)
-            ]
-
-        for lon in lon_chunks:
-            for lat in lat_chunks:
-                subset = data.isel(lon=lon, lat=lat)
-                print(f"exporing file: subset_{lon.start}_{lat.start}.nc")
-                subset.to_netcdf(f"subset_{lon.start}_{lat.start}.nc")
-
-        data = xr.open_mfdataset("subset_*.nc", combine="by_coords")
-        return data
 
     def trend_from_polyfit(data, loglevel="WARNING"):
         """
@@ -195,6 +181,20 @@ class TrendCalculator:
         logger.debug("Starting trend calculation")
 
         trend_dict = {}
+        
+        time_frequency = data["time"].to_index().inferred_freq
+
+        if time_frequency is not None:
+            # Define the conversion factor
+            if time_frequency.startswith("D"):
+                factor = 1e9 * 60 * 60 * 24  # Convert ns⁻¹ to days⁻¹
+            elif time_frequency.startswith("M"):
+                factor = 1e9 * 60 * 60 * 24 * 30.4375  # Convert ns⁻¹ to months⁻¹
+            elif time_frequency.startswith("A") or time_frequency.startswith("Y"):  
+                factor = 1e9 * 60 * 60 * 24 * 365.25  # Convert ns⁻¹ to years⁻¹
+            else:
+                factor = 1
+                logger.warning (f"Unsupported time frequency: {time_frequency}. It will result wrong values in trend. To fix it please report of look at the unit of time in the dataset")
 
         # Iterate over variables in the input dataset
         for var in data.data_vars:
@@ -202,8 +202,7 @@ class TrendCalculator:
             # Perform the polyfit to calculate the trend (slope)
             poly_coeffs = data.polyfit(dim="time", deg=1)
             
-            # Extract the trend (degree=0) for the variable
-            trend_dict[var] = poly_coeffs[f"{var}_polyfit_coefficients"].sel(degree=0)
+            trend_dict[var] = poly_coeffs[f"{var}_polyfit_coefficients"].sel(degree=1)* factor
             trend_dict[var].attrs = data[var].attrs
             # Apply necessary adjustments for time frequency if needed (optional)
             trend_dict[var] = TrendCalculator.adjust_trend_for_time_frequency(trend_dict[var], data[var], loglevel=loglevel)
@@ -222,7 +221,7 @@ class TrendCalculator:
         Compute the trend values for temperature and salinity variables in a 3D dataset.
 
         Parameters:
-            data (xarray.Dataset): Input dataset containing temperature (avg_thetao) and salinity (avg_so) variables.
+            data (xarray.Dataset): Input dataset containing temperature (thetao) and salinity (so) variables.
             loglevel (str, optional): Log level for logging messages. Defaults to "WARNING".
 
         Returns:
@@ -232,37 +231,44 @@ class TrendCalculator:
         # logger.warning("decreasing the resolution of data to bypass the memory error issue for big data")
 
         logger.debug("Calculating linear trend")
-        TS_3dtrend_data = TrendCalculator.lintrend_3D(data, loglevel= loglevel)
-        # TS_3dtrend_data = TrendCalculator.trend_from_polyfit(data, loglevel= loglevel)
+        # TS_3dtrend_data = TrendCalculator.lintrend_3D(data, loglevel= loglevel)
+        TS_3dtrend_data = TrendCalculator.trend_from_polyfit(data, loglevel= loglevel)
         TS_3dtrend_data.attrs = data.attrs
-        # TS_3dtrend_data = TrendCalculator.chunking_trend(TS_3dtrend_data, loglevel= loglevel)
         logger.debug("Trend value calculated")
-        # TS_3dtrend_data = TS_3dtrend_data.coarsen(lat=2, lon=2, boundary="trim").mean()
         return TS_3dtrend_data
 
 
 class multilevel_trend:
     def __init__(self, o3d_request):
         split_ocean3d_req(self, o3d_request)
+        self.logger = log_configure(self.loglevel, 'Multilevel Linear Trend')
 
     def plot(self):
         
+        self._define_levels()
         self.data = area_selection(self.data, self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
-        TS_trend_data = TrendCalculator.TS_3dtrend(self.data, loglevel=self.loglevel)
-        self._plot_multilevel_trend(TS_trend_data)
+        self.data = self.data.interp(lev=self.levels)
+        self.logger.debug("Interpolating data for required depths")
+        self.trend_data = TrendCalculator.TS_3dtrend(self.data, loglevel=self.loglevel)
+        self._plot_multilevel_trend()
         return
 
-    def _plot_multilevel_trend(self, data):
+    def _plot_multilevel_trend(self):
         """
         Plots the multilevel trend for temperature and salinity.
         """
-        self._define_levels()
+        self.logger.debug("Plotting started")
         fig, axs = self._create_subplot_fig(len(self.levels))
-        self._plot_contourf(data, axs)
-        self._format_plot_axes(axs)
+        self.filename = file_naming(self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e, plot_name=f"{self.model}-{self.exp}-{self.source}_multilevel_t_s_trend")
         self._add_plot_title()
+        self._plot_contourf(axs)
+        self._format_plot_axes(axs)
         if self.output:
-            self._save_plot_data(data)
+            export_fig(self.output_dir, self.filename, "pdf", metadata_value=self.title, loglevel=self.loglevel)
+            write_data(self.output_dir, f"{self.filename}", self.trend_data, loglevel=self.loglevel)
+            self.logger.debug(f"Saved the data")
+        if not IPython.get_ipython():  
+            plt.close() 
         return
 
     def _define_levels(self):
@@ -286,20 +292,21 @@ class multilevel_trend:
         fig.subplots_adjust(hspace=0.18, wspace=0.15, top=0.95)
         return fig, axs
 
-    def _plot_contourf(self, data, axs):
+    def _plot_contourf(self, axs):
         """
         Plots contourf for temperature and salinity at different levels.
         """
-        data = data.interp(lev=self.levels).persist()
-        # print("export_trend")
-        # data.to_zarr("test.zarr", consolidated=True)
-        # print("exported_trend")
-        for levs in range(len(self.levels)):
-            subset_data = data.sel(lev=self.levels[levs])
-            subset_data["avg_thetao"].plot.contourf(cmap="coolwarm", ax=axs[levs, 0], levels=18)
-            subset_data["avg_so"].plot.contourf(cmap="coolwarm", ax=axs[levs, 1], levels=18)
-            axs[levs, 0].set_facecolor('grey')
-            axs[levs, 1].set_facecolor('grey')
+        self.trend_data = compute_data(self.trend_data, loglevel = self.loglevel)
+
+        for num, lev in enumerate(self.levels):
+            subset_data = self.trend_data.sel(lev=lev)
+            subset_data["thetao"].plot.contourf(cmap="coolwarm", ax=axs[num, 0], levels=18)
+            subset_data["so"].plot.contourf(cmap="coolwarm", ax=axs[num, 1], levels=18)
+            axs[num, 0].set_facecolor('grey')
+            axs[num, 1].set_facecolor('grey')
+            self.logger.debug(f"Plotted {lev} depth")
+
+            
         return
 
     def _format_plot_axes(self, axs):
@@ -315,6 +322,7 @@ class multilevel_trend:
             if levs != (len(self.levels)-1):
                 axs[levs, 0].set_xticklabels([])
                 axs[levs, 1].set_xticklabels([])
+        self.logger.debug(f"Added the plot axes")
         return
 
     def _add_plot_title(self):
@@ -322,7 +330,7 @@ class multilevel_trend:
         Adds title to the plot.
         """
         region_title = custom_region(region=self.region, lat_s=self.lat_s, lat_n=self.lat_n, lon_w=self.lon_w, lon_e=self.lon_e)
-        self.title = f'Linear Trends of T,S at different depths in the {region_title}'
+        self.title = f'Linear Trends of T,S at different depths in the {region_title} ({self.data.time.dt.year[0].values}-{self.data.time.dt.year[-1].values})'
         plt.suptitle(self.title, fontsize=24)
         return
 
@@ -330,9 +338,7 @@ class multilevel_trend:
         """
         Saves plot data.
         """
-        filename = file_naming(self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e, plot_name=f"{self.model}-{self.exp}-{self.source}_multilevel_t_s_trend")
-        write_data(self.output_dir, filename, data.interp(lev=self.levels[-1]))
-        export_fig(self.output_dir, filename, "pdf", metadata_value=self.title, loglevel=self.loglevel)
+        write_data(self.output_dir, self.filename, data.interp(lev=self.levels[-1]),loglevel=self.loglevel)
         return
 
 class zonal_mean_trend:
@@ -353,19 +359,20 @@ class zonal_mean_trend:
             None
         """
         self.data = area_selection(self.data, self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
-        # Compute the trend data
-        TS_trend_data = TrendCalculator.TS_3dtrend(self.data, loglevel=self.loglevel)
-        TS_trend_data.attrs = self.data.attrs
-        data = TS_trend_data
-
         # Compute the weighted zonal mean
-        data = weighted_zonal_mean(data, self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
-        data = data.compute()
+        self.data = weighted_zonal_mean(self.data, self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
+        # Compute the trend data
+        self.trend_data = TrendCalculator.TS_3dtrend(self.data, loglevel=self.loglevel)
+        self.trend_data.attrs = self.data.attrs
+
+
+        self.trend_data = compute_data(self.trend_data, loglevel = self.loglevel)
+
         # Create the plot
         fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(14, 5))
 
         # Plot temperature
-        data.avg_thetao.plot.contourf(levels=20, ax=axs[0])
+        self.trend_data.thetao.plot.contourf(levels=20, ax=axs[0])
         axs[0].set_ylim((5500, 0))
         axs[0].set_title("Temperature", fontsize=14)
         axs[0].set_ylabel("Depth (in m)", fontsize=9)
@@ -373,7 +380,7 @@ class zonal_mean_trend:
         axs[0].set_facecolor('grey')
 
         # Plot salinity
-        data.avg_so.plot.contourf(levels=20, ax=axs[1])
+        self.trend_data.so.plot.contourf(levels=20, ax=axs[1])
         axs[1].set_ylim((5500, 0))
         axs[1].set_title("Salinity", fontsize=14)
         axs[1].set_ylabel("Depth (in m)", fontsize=12)
@@ -383,7 +390,7 @@ class zonal_mean_trend:
         # Set the title
         region_title = custom_region(region=self.region, lat_s=self.lat_s, lat_n=self.lat_n,
                                      lon_w=self.lon_w, lon_e=self.lon_e)
-        title = f"Zonally-averaged long-term trends in the {region_title}"
+        title = f"Zonally-averaged long-term trends in the {region_title} ({self.data.time.dt.year[0].values}-{self.data.time.dt.year[-1].values})"
         fig.suptitle(title, fontsize=20)
         plt.subplots_adjust(top=0.85)
 
@@ -391,7 +398,8 @@ class zonal_mean_trend:
         if self.output:
             filename = file_naming(self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e,
                                    plot_name=f"{self.model}-{self.exp}-{self.source}_zonal_mean_trend")
-            write_data(self.output_dir, filename, data)
+            write_data(self.output_dir, filename, self.trend_data, loglevel=self.loglevel)
             export_fig(self.output_dir, filename, "pdf", metadata_value=title, loglevel=self.loglevel)
-
+        if not IPython.get_ipython():  
+            plt.close() 
         return

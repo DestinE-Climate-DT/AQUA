@@ -1,5 +1,6 @@
 from .ocean_circulation import *
 from ocean3d import split_ocean3d_req
+import IPython
 
 class stratification:
     def __init__(self, o3d_request):
@@ -69,7 +70,7 @@ class stratification:
         start_year = data_list[0].attrs["start_year"]
         end_year = data_list[0].attrs["end_year"]
 
-        for i, var in zip(range(len(axs)), ["avg_thetao", "avg_so", "rho"]):
+        for i, var in zip(range(len(axs)), ["thetao", "so", "rho"]):
             axs[i].set_ylim((4500, 0))
             data_1 = data_list[0][var]
 
@@ -97,9 +98,9 @@ class stratification:
             if self.obs_data is not None:
                 data_3 = self.obs_data[var]
                 axs[i].plot(data_3, data_3.lev, 'r-', linewidth=2.0)
-                # if var == "avg_thetao":
+                # if var == "thetao":
                 #     axs[i].plot(obs_data["thetao_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
-                # if var == "avg_so":
+                # if var == "so":
                 #     axs[i].plot(obs_data["so_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
                 
                 legend_info = f"Obs {start_year}-{end_year}"
@@ -132,6 +133,7 @@ class stratification:
 
         if self.output:
             export_fig(self.output_dir, filename , "pdf", metadata_value = title, loglevel= self.loglevel)
-
+        if not IPython.get_ipython():  
+            plt.close() 
         return
 

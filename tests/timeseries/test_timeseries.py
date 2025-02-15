@@ -7,22 +7,22 @@ from aqua.diagnostics.timeseries import Timeseries
 approx_rel = 1e-4
 loglevel = 'DEBUG'
 
-models = ['IFS']
-exps = ['test-tco79']
-sources = ['teleconnections']
-var = 'msl'
-lon_limits = [-100, 100]
-lat_limits = [-30, 30]
-plot_ref_kw = {'catalog': 'ci', 'model': 'IFS', 'exp': 'test-tco79', 'source': 'teleconnections'}
-
 
 @pytest.mark.timeseries
 def test_class_timeseries():
     """
     Test that the timeseries class works
     """
+    catalogs = ['ci']
+    models = ['IFS']
+    exps = ['test-tco79']
+    sources = ['teleconnections']
+    var = 'msl'
+    lon_limits = [-100, 100]
+    lat_limits = [-30, 30]
+    plot_ref_kw = {'catalog': 'ci', 'model': 'IFS', 'exp': 'test-tco79', 'source': 'teleconnections'}
 
-    ts = Timeseries(var=var, models=models, exps=exps, sources=sources,
+    ts = Timeseries(var=var, models=models, exps=exps, sources=sources, catalogs=catalogs,
                     loglevel=loglevel, plot_ref_kw=plot_ref_kw,
                     lon_limits=lon_limits, lat_limits=lat_limits)
 
@@ -66,3 +66,34 @@ def test_class_timeseries():
     with pytest.raises(AttributeError):
         assert ts.data_annual is None
         assert ts.data_mon is None
+
+
+@pytest.mark.timeseries
+def test_timeseries_regions():
+
+    catalogs = ['ci']
+    models = ['ERA5']
+    exps = ['era5-hpz3']
+    sources = ['monthly']
+    var = '86400*tprate'
+    region = 'nh'
+
+    ts = Timeseries(var=var, models=models, exps=exps, sources=sources, catalogs=catalogs,
+                    loglevel=loglevel, region=region, formula=True,
+                    save=False, regrid='r100',
+                    longname='Total precipitation rate',
+                    units='mm/day')
+
+    assert ts.lon_limits == [-180, 180]
+    assert ts.lat_limits == [30, 90]
+
+    ts.retrieve_data()
+    # we have no reference data
+    ts.retrieve_ref(extend=False)
+    ts.plot()
+
+    assert ts.data_annual[0].isel(time=4).values == pytest.approx(2.21320749, rel=approx_rel)
+
+    with pytest.raises(KeyError):
+        ts = Timeseries(var=var, models=models, exps=exps, sources=sources,
+                        loglevel=loglevel, region='topolinia', formula=True)

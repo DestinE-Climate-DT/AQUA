@@ -47,6 +47,7 @@ if __name__ == '__main__':
     var = config['var']
     resolution = config.get('resolution')
     extra = config.get('extra')
+    version = config.get('version')
     logger.info('Retrieving %s from %s %s %s', var, model, exp, source)
 
     # Configuration needed to save the file
@@ -128,6 +129,9 @@ if __name__ == '__main__':
 
     if extra:
         filename_tgt = f"{filename_tgt}_{extra}"
+
+    if version:
+        filename_tgt = f"{filename_tgt}_{version}"
 
     filename_tgt = f'{filename_tgt}.nc'
 

@@ -31,20 +31,89 @@ grids:
   icon-R02B08-hp-nested: # NG4, from ICON grid R02B08, corresponding to 10km resolution, 72 depth_full levels
     path:
       2d: '{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc'   # this is the default 2d grid
-      2dm: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce.nc'  # this is an additional and optional 2d grid used if data are masked
-      depth_full: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_full.nc'
-      depth_half: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_half.nc'
+      2dm: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_v1.nc'  # this is an additional and optional 2d grid used if data are masked
+      depth_full: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_full_v1.nc'
+      depth_half: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_half_v1.nc'
     masked:   # This is the attribute used to distinguish variables which should go into the masked category
       component: ocean
     space_coord: ["cell"]
     vert_coord: ["depth_half", "depth_full"]
-  icon-R02B09-hp-nested: # NG3, from ICON grid R02B09, corresponding to 5km resolution, 128 depth_full levels
+  icon-R02B09-hp-nested: # NG3, from ICON grid R02B09, corresponding to 5km resolution, 128 depth_full levels. 
     path:
       2d: '{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc'   # this is the default 2d grid
-      2dm: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce.nc'  # this is an additional and optional 2d grid used if data are masked
-      depth_full: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_full.nc'
-      depth_half: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_half.nc'
+      2dm: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_v1.nc'  # this is an additional and optional 2d grid used if data are masked
+      depth_full: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_full_v1.nc'
+      depth_half: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_half_v1.nc'
     masked:   # This is the attribute used to distinguish variables which should go into the masked category
       component: ocean
     space_coord: ["cell"]
     vert_coord: ["depth_half", "depth_full"]
+
+  icon-R02B08-hpz9-nested-v2: #ClimateDT cycle2, 924355 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/HealPix/icon-R02B08_hpz9_nested_oce_v2.nc'
+    space_coord: ["cell"]
+  icon-R02B08-hpz9-nested-3d-v2: #ClimateDT cycle2, 72 levels starting at 1, 924355 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/HealPix/icon-R02B08_hpz9_nested_oce_level_full_v2.nc'
+    space_coord: ["cell"]
+    vert_coord: ["level"]
+  icon-R02B09-hpz7-nested-v2: #ClimateDT cycle2, 57642 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/HealPix/icon-R02B09_hpz7_nested_oce_v2.nc'
+    space_coord: ["cell"]
+  icon-R02B09-hpz7-nested-3d-v2: #ClimateDT cycle2, 72 levels starting at 1, 57642 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/HealPix/icon-R02B09_hpz7_nested_oce_level_full_v2.nc'
+    space_coord: ["cell"]
+    vert_coord: ["level"]
+  icon-R02B08-hpz6-nested-v2: #ClimateDT cycle2, 14415 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/HealPix/icon-R02B08_hpz6_nested_oce_v2.nc'
+    space_coord: ["cell"]
+  icon-R02B08-hpz6-nested-3d-v2: #ClimateDT cycle2, 72 levels starting at 1, 14415 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/HealPix/icon-R02B08_hpz6_nested_oce_level_full_v2.nc'
+    space_coord: ["cell"]
+    vert_coord: ["level"]
+
+  # ICON v3: These are grids for DestinE O-25.1 cycle.
+  # Interpolation to HealPix is now conservative and this
+  # produced a change in the land sea mask, so all the grids
+  # are different from the previous ones
+  icon-R02B09-hpz10-nested-v3: #ClimateDT cycle2, 3686446 missing values - same as v1
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_v3.nc'
+    space_coord: ["ncells"]
+  icon-R02B09-hpz10-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 3686446 missing values - same as v1
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_level_full_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  icon-R02B08-hpz9-nested-v3: #ClimateDT cycle2, 924355 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_v3.nc'
+    space_coord: ["ncells"]
+  icon-R02B08-hpz9-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 924355 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_level_full_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  icon-R02B09-hpz7-nested-v3: #ClimateDT cycle2, 57642 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_v3.nc'
+    space_coord: ["ncells"]
+  icon-R02B09-hpz7-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 57642 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_level_full_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  icon-R02B08-hpz6-nested-v3: #ClimateDT cycle2, 14415 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_v3.nc'
+    space_coord: ["ncells"]
+  icon-R02B08-hpz6-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 14415 missing values
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_level_full_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]

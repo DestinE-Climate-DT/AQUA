@@ -97,6 +97,48 @@ The list is available in the ``config/grids/default.yaml`` file.
     We are planning to be able to support also irregular grids as target grids in the future (e.g. allowing to regrid everything to
     HealPix grids).
 
+Oceanic grid files naming scheme
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The oceanic grid naming scheme is quite complex and here is reported for internal usage and future memory. 
+Unfortunately, every small change in land sea mask requires a new oceanic grids since interpolation relies on pre-computed weights.
+
+Elements Description
+====================
+- **model**: The model used, e.g., `fesom`, `icon`, `nemo`.
+- **resolution**: The horizontal resolution or specific configuration of the model, e.g., `D3`, `NG5`, `R02B08`, `eORCA025`.
+- **configuration**: Specific configuration details such as HealPix level or grid type, e.g., `hpz7`, `hpz10`.
+- **grid_type**: Type of grid or nested grid structure, e.g., `nested`, `ring`.
+- **domain**: The variable or data type in the file, e.g., `oce` (for 2d) or `oce_{vertical_coordinate}` for 3d data.
+- **version**: The version of the file, indicated by `v1`, `v2`, etc. Missing version is used for single version files
+
+Examples
+========
+1. `fesom-D3_hpz7_nested_oce.nc`
+    - **Model**: FESOM
+    - **Resolution**: D3
+    - **Configuration**: hpz7
+    - **Grid Type**: Nested
+    - **Variable**: Ocean data
+    - **Version**: Not specified
+
+2. `icon-R02B08_hpz6_nested_oce_depth_full_v1.nc`
+    - **Model**: ICON
+    - **Resolution**: R02B08
+    - **Configuration**: hpz6
+    - **Grid Type**: Nested
+    - **Variable**: 3d ocean data with depth as vertical coordinate and full levels
+    - **Version**: v1
+
+3. `nemo-eORCA12_hpz10_nested_oce_level.nc`
+    - **Model**: NEMO
+    - **Resolution**: eORCA12
+    - **Configuration**: hpz10
+    - **Grid Type**: Nested
+    - **Variable**: 3d ocean data with level as vertical coordinate
+    - **Version**: Not specified
+
+
 Vertical interpolation
 ^^^^^^^^^^^^^^^^^^^^^^
 

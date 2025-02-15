@@ -27,11 +27,6 @@ seasonal_cycle: ['2t', 'tprate', 'ie', 'msl',
                  'tnswrf' #Mean top net short-wave radiation flux
                  ]
 
-gregory:
-  ts: '2t'
-  toa: ['tnlwrf', 'tnswrf']
-  monthly: True
-  annual: True
 
 timeseries_plot_params:
 # These are options that specify how the data is plotted

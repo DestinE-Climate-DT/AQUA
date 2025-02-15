@@ -12,7 +12,7 @@ The AQUA console
 The AQUA console has two main purposes:
 
 - A central access to manage where the configuration and catalog files are stored has been added. This can also handle fixes and grids files.
-- A tool for more complex operations, for the moment the LRA generator (see :ref:`aqua-lra` and :ref:`lra`) and the FDB catalog generator (see :ref:`fdb-catalog-generator`).
+- A tool for more complex operations, for the moment the LRA generator (see :ref:`aqua-lra` and :ref:`lra`) and the FDB catalog generator (see :ref:`catalog_generator`).
 
 Here we give a brief overview of the features.
 If you are a developer, you may want to read the :ref:`dev-notes` section.
@@ -31,7 +31,6 @@ It has the following subcommands:
 - :ref:`aqua-fixes`
 - :ref:`aqua-grids`
 - :ref:`aqua-lra`
-- :ref:`fdb-catalog-generator`
 
 The main command has some options listed below:
 
@@ -286,36 +285,4 @@ aqua lra -c <config_file> <lra-options>
 This subcommand launch the LRA generation based on the LRA tool.
 For full description of the LRA generator functionalities, please refer to the :ref:`lra` section.
 In most of cases, it is better to embed this tool within a batch job.
-
-.. _fdb-catalog-generator:
-
-aqua catgen -c <config_file> -p <portfolio>
--------------------------------------------
-
-This subcommand launch the source catalog entry generator, specifically for FDB sources part of the ClimateDT experiments.
-This simplifies the process of adding new experiments to the catalog, based on the data-portfolio structure of the Destination Earth ClimateDT. 
-It exploits the capabilities of the Jinja2 package to obtain a cleaner and more flexible code.
-
-
-.. option:: -c <config>, --config <config>
-
-    The configuration file to use. A ``config.tmpl`` is available to be copied and edited.
-
-.. option:: -p <portfolio>, --portfolio <portfolio>  
-
-    The data portfolio to be used. At moment ``production`` and ``reduced`` are supported.
-
-.. option:: -l <loglevel>, --loglevel <loglevel>
-
-    The logging level, following the python standards.
-    
-Basic usage
-^^^^^^^^^^^
-
-To add a new experiment to the catalog, follow these steps:
-
-1. Clone the two repositories, `DestinE-ClimateDT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog/tree/main>`_ and `data-portfolio <https://earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio>`_, to your preferred location.
-2. Create your own ``config.yaml`` file with the details of your simulation, including the paths of the cloned repositories. A template is provided in ``.aqua/templates/catgen``
-3. Run the command ``aqua catgen -p production -c config.yaml``, where the ``-p`` argument can be either ``production`` or ``reduced`` to specify the Jinja2 template to be used.
-4. The catalog entry will be created in the appropriate location in the ``DestinE-ClimateDT-catalog`` folder as defined by the configuration file.
 

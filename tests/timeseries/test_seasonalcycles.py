@@ -7,6 +7,7 @@ from aqua.diagnostics.timeseries import SeasonalCycle
 approx_rel = 1e-4
 loglevel = 'DEBUG'
 
+catalogs = ['ci']
 models = ['IFS']
 exps = ['test-tco79']
 sources = ['teleconnections']
@@ -22,7 +23,7 @@ def test_class_seasonalcycle():
     Test that the timeseries class works
     """
 
-    sc = SeasonalCycle(var=var, models=models, exps=exps, sources=sources,
+    sc = SeasonalCycle(var=var, models=models, exps=exps, sources=sources, catalogs=catalogs,
                        loglevel=loglevel, plot_ref_kw=plot_ref_kw,
                        lon_limits=lon_limits, lat_limits=lat_limits)
 

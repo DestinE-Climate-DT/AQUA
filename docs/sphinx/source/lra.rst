@@ -97,12 +97,10 @@ Options:
 
     Will generate/update only the catalog entry for the LRA, without running the code for generating the LRA itself
 
-.. option:: -a, --autosubmit
+.. option:: --rebuild
 
-    This enables the ClimateDT workflow LRA generator, which also implies slightly different options. Use it only when necessary. 
-    It is made to work from OPA output and then process them to fix and standardize it via the LRA.
-    A template configuration file ``.aqua/templates/lra/workflow_lra.tmpl`` is included in the folder. 
-
+    This option will force the rebuilding of the areas and weights files for the regridding.
+    If multiple variables or members are present in the configuration, this will be done only once.
 
 Please note that this options override the ones available in the configuration file. 
 

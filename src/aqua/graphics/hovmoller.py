@@ -224,6 +224,7 @@ def plot_hovmoller(data: xr.DataArray,
             if dpi == 100:
                 logger.info("Setting dpi to 100 by default, use dpi kwarg to change it")
 
+        logger.info('Saving figure to {}/{}'.format(outputdir, filename))
         fig.savefig('{}/{}'.format(outputdir, filename),
                     dpi=dpi, bbox_inches='tight')
 

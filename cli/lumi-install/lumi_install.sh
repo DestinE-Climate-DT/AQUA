@@ -80,7 +80,7 @@ install_aqua() {
   log_message INFO "Environment has been cleaned up."
 
   # load modules
-  module load LUMI/23.09
+  module load LUMI/24.03
   module load lumi-container-wrapper
   log_message INFO "Modules have been loaded."
   
@@ -140,17 +140,15 @@ create_aqua_file() {
   # Create a new file
   touch $load_aqua_file
 
-  echo '# Use ClimateDT paths' >> $load_aqua_file
-  echo 'module use /project/project_465000454/software/23.09/modules/C' >> $load_aqua_file
-
-  echo '# Load modules' >> $load_aqua_file
+  #echo '# Use ClimateDT paths' >> $load_aqua_file
+  #echo 'module use /project/project_465000454/software/23.09/modules/C' >> $load_aqua_file
+  #echo '# Load modules' >> $load_aqua_file
   # Removed, see issue #1195
-  # echo 'module purge' >> $load_aqua_file
-  echo 'module load fdb/5.12.1-cpeCray-23.09' >> $load_aqua_file
+  #echo 'module purge' >> $load_aqua_file
+  #echo 'module load fdb/5.12.1-cpeCray-23.09' >> $load_aqua_file
   # These are loaded automatically with the fdb module
-  # echo 'module load eckit/1.26.3-cpeCray-23.09' >> $load_aqua_file
-  # echo 'module load metkit/1.11.14-cpeCray-23.09' >> $load_aqua_file
-  # echo 'module load eccodes/2.36.0-cpeCray-23.09' >> $load_aqua_file
+  # echo 'module load eckit/1.26.3-cpeCray-24.03' >> $load_aqua_file
+  # echo 'module load metkit/1.11.14-cpeCray-24.03' >> $load_aqua_file
     
   log_message INFO "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 
@@ -159,9 +157,10 @@ create_aqua_file() {
   echo 'export GSV_TEST_FILES=/scratch/project_465000454/igonzalez/gsv_test_files' >> $load_aqua_file
   echo 'export GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions' >>  $load_aqua_file
 
-  # Currently (March 2024) this is the recommended setup for bridge access
-  echo 'export PATH=/appl/local/climatedt/mars/versions/current/bin:$PATH' >>  $load_aqua_file
-  echo 'export LD_LIBRARY_PATH=/appl/local/climatedt/mars/versions/current/lib64:$LD_LIBRARY_PATH' >>  $load_aqua_file
+  # Currently (Feb 2025) this is the recommended setup overcoming lumi modules
+  # This points to a stack with fdb 5.14.0 and the required associated modules
+  echo 'export PATH=/appl/local/destine/mars/versions/current/bin:$PATH' >>  $load_aqua_file
+  echo 'export LD_LIBRARY_PATH=/appl/local/destine/mars/versions/current/lib64:$LD_LIBRARY_PATH' >>  $load_aqua_file
 
   log_message INFO "export for GSV has been added to .bashrc. Please run 'source  $load_aqua_file' to load the new configuration."
 

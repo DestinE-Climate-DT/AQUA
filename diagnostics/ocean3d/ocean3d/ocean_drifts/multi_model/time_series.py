@@ -54,12 +54,12 @@ class time_series:
                     data_level = self.data_time_series[data_name].isel(lev=0)
             
                 # Plot the temperature time series
-                data_level.avg_thetao.plot.line(
+                data_level.thetao.plot.line(
                     ax=axs[num,0],
                     label=f"{round(int(data_level.lev.data), -2)}")
 
                 # Plot the salinity time series
-                data_level.avg_so.plot.line(
+                data_level.so.plot.line(
                     ax=axs[num,1],
                     label=f"{round(int(data_level.lev.data),-2)}")
                 

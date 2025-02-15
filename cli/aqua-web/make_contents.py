@@ -9,7 +9,34 @@ import json
 import argparse
 from pypdf import PdfReader
 
-def make_content(catalog, model, exp, diagnostics, experiments, force):
+
+def deep_merge_dicts(d1, d2):
+    """
+    Merge two dictionaries modifying the first one.
+    Values are assumed to be either dictionaries or lists.
+    """
+
+    for key, val in d2.items():
+        if key not in d1:
+            d1[key] = val
+        else:
+            if isinstance(d1[key], dict) and isinstance(val, dict):
+                deep_merge_dicts(d1[key], val)
+            elif isinstance(d1[key], list):
+                # Ensure val behaves like a list
+                items = val if isinstance(val, list) else [val]
+                for item in items:
+                    if item not in d1[key]:
+                        d1[key].append(item)
+            else:
+                d1[key] = val
+
+
+def has_valid_key(d, key):
+    return key in d and d[key] is not None
+
+
+def make_content(catalog, model, exp, diagnostics, config_experiments, force):
     """
     Create content.yaml and content.json files for a specific experiment.
 
@@ -22,37 +49,77 @@ def make_content(catalog, model, exp, diagnostics, experiments, force):
         force (bool): Create content.yaml and content.json even if they exist already
     """
 
+    # Update or create experiments.yaml
+    if not os.path.exists("../experiments.yaml"):
+        experiments = {catalog: {model: [exp]}}
+    else:
+        with open("../experiments.yaml", "r") as file:
+            experiments = yaml.safe_load(file)
+        add = {catalog: {model: [exp]}}
+        deep_merge_dicts(experiments, add)
+
+    # Place the file at the "./contents" level
+    with open("../experiments.yaml", "w") as file:
+        yaml.dump(experiments, file, default_flow_style=False)
+
+    # Make content.yaml/json
     if (not os.path.exists(f"{catalog}/{model}/{exp}/content.yaml") or 
         not os.path.exists(f"{catalog}/{model}/{exp}/content.json") or force):
 
+        if os.path.exists(f"{catalog}/{model}/{exp}/experiment.yaml"):
+            with open(f"{catalog}/{model}/{exp}/experiment.yaml", "r") as file:
+                experiment = yaml.safe_load(file)
+
+                if "dashboard" in experiment:
+                    experiment.update(experiment.pop("dashboard"))
+
+                # rename legacy keys
+                if "exp" in experiment:
+                    experiment["experiment"] = experiment.pop("exp")
+                if "expver" in experiment:
+                    experiment["expid"] = experiment.pop("expver")
+                if "resolution" in experiment:
+                    experiment["resolution_id"] = experiment.pop("resolution")
+
+                # Build title based on resolution and expid if available
+                if has_valid_key(experiment, "menu"):
+                    experiment["title"] = experiment["menu"]
+                else:
+                    experiment["title"] = exp
+                
+                info_parts = []
+                if has_valid_key(experiment, "resolution_id"):
+                    info_parts.append(experiment["resolution_id"])
+                if has_valid_key(experiment, "expid"):
+                    info_parts.append(experiment["expid"])
+                if info_parts:
+                    experiment["title"] += f" ({','.join(info_parts)})"
+
+        else:
+            # No experiment file. Check if some info is still in the config.yaml (legacy, will be removed)
+            
+            exp_metadata = config_experiments.get(f"{catalog}_{model}_{exp}")
+            experiment = {"catalog": catalog, "model": model, "experiment": exp}
+
+            if exp_metadata:
+                experiment['title'] = exp_metadata.get("title", f"{exp}")      
+                experiment['description'] = exp_metadata.get("description", "")
+                experiment['note'] = exp_metadata.get("note", "")
+
+        if "title" in experiment:  # Duplicate to future proof (ultimately we want to switch to 'label')
+            experiment["label"] = experiment["title"]
+
         # Retrieve the date of the latest commit
         infile = f"../pdf/{catalog}/{model}/{exp}/last_update.txt"
-        # check if file "infile" exists
         if os.path.exists(infile):
             with open(infile, "r") as file:
-                date_time = file.read().strip()
-        else:
-            date_time = None
-
-        exp_description = experiments.get(f"{catalog}_{model}_{exp}")
-        if exp_description:
-            title = exp_description.get("title", f"{exp}")         
-            desc = exp_description.get("description", "")
-            note = exp_description.get("note", "")
+                experiment['last_update'] = file.read().strip()     
 
         content = {}
-        content['experiment'] = {"catalog": catalog, "model": model, "experiment": exp}
-        if title:
-            content['experiment']['title'] = title
-        if desc:
-            content['experiment']['description'] = desc
-        if note:
-            content['experiment']['note'] = note
-        if date_time:
-            content['experiment']['last_update'] = date_time
-
+        content['experiment'] = experiment
+        
         filename_list = []
-        description = {}
+        properties = {}
 
         for fn in os.listdir(f"{catalog}/{model}/{exp}"):
             if fn.endswith(".png"):
@@ -62,9 +129,7 @@ def make_content(catalog, model, exp, diagnostics, experiments, force):
                 pdf_path = f"../pdf/{catalog}/{model}/{exp}/" + os.path.splitext(fn)[0] + ".pdf"
                 pdf_reader = PdfReader(pdf_path)
                 metadata = pdf_reader.metadata
-                description[fn_line] = str(metadata.get("/Description"))
-                if description[fn_line] == "None":
-                    description[fn_line] = ""
+                properties[fn_line] = metadata
 
         grouping = {}
         for key, val in diagnostics.items():
@@ -91,10 +156,12 @@ def make_content(catalog, model, exp, diagnostics, experiments, force):
             if val:
                 content['diagnostics'].append(key)
             for v in val:
-                content['files'][v] = {'diagnostic': key}
-                desc = description.get(v, "")
-                if desc:
-                    content['files'][v]['description'] = desc
+                content['files'][v] = {'grouping': str(key)}
+                prop = properties.get(v, {})
+                if prop:
+                    for kk, vv in prop.items():
+                        keystr = str(kk).lstrip('/').lower()
+                        content['files'][v][keystr] = str(vv)
 
         with open(f"{catalog}/{model}/{exp}/content.yaml", "w") as file:
             yaml.dump(content, file, default_style='"')
@@ -107,30 +174,32 @@ def make_content(catalog, model, exp, diagnostics, experiments, force):
             file.write(content_json)
 
 
-def main(force=False, experiment=None):
+def main(force=False, experiment=None, configfile="config.yaml"):
     """
     Main function to create content.yaml and content.json files for each experiment in the content/png directory.
 
     Args:
         force (bool): Create content.yaml and content.json even if they exist already
+        experiment (str): Specific experiment for which to create content (in format "$catalog/$model/$experiment")
+        configfile (str): Alternate confg file path (default "config.yaml" - used by aqua-web)
     """
         
-    with open("config.yaml", "r") as file:
+    with open(configfile, "r") as file:
         config = yaml.safe_load(file)
 
     os.chdir("content/png")
 
     diagnostics = config["diagnostics"]
-    experiments = config["experiments"]
+    config_experiments = config.get("experiments", {})
 
     if experiment:
         catalog, model, exp = experiment.split('/')
-        make_content(catalog, model, exp, diagnostics, experiments, force)
+        make_content(catalog, model, exp, diagnostics, config_experiments, force)
     else:
         for catalog in os.listdir("."):
             for model in os.listdir(f"./{catalog}"):
                 for exp in os.listdir(f"./{catalog}/{model}"): 
-                    make_content(catalog, model, exp, diagnostics, experiments, force)
+                    make_content(catalog, model, exp, diagnostics, config_experiments, force)
                     
 
 def parse_arguments(arguments):
@@ -143,7 +212,9 @@ def parse_arguments(arguments):
     parser.add_argument('-f', '--force', action="store_true",
                         help='create content.yaml and content.json even if they exist already')
     parser.add_argument('-e', '--experiment', type=str,
-                        help='specific experiment for which to create content')
+                        help='specific experiment for which to create content in format $catalog/$model/$experiment')
+    parser.add_argument('-c', '--config', type=str, default="config.yaml",
+                        help='alternate confg file')
     
     return parser.parse_args(arguments)
     
@@ -152,4 +223,5 @@ if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
     force = args.force
     experiment = args.experiment
-    main(force=force, experiment=experiment)
+    config = args.config
+    main(force=force, experiment=experiment, configfile=config)

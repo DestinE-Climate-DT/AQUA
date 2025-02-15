@@ -51,32 +51,87 @@ grids:
   fesom-NG5-hpz7-nested-v2:
     cdo_options: "--force"
     space_coord: ["ncells"]
-    path: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce.nc'
+    path: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_v2.nc'
   fesom-NG5-hpz7-nested-3d-v2:
     cdo_options: "--force"
     path:
-      level: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_level.nc'
+      level: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_level_v2.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
   # for hpz9, 984749 missing values
   fesom-NG5-hpz9-nested-v2:
     cdo_options: "--force"
     space_coord: ["ncells"]
-    path: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce.nc'
+    path: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_v2.nc'
   fesom-NG5-hpz9-nested-3d-v2:
     cdo_options: "--force"
     path:
-      level: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level.nc'
+      level: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level_v2.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
   fesom-NG5-hpz10-nested-v2:
     cdo_options: "--force"
     space_coord: ["ncells"]
-    path: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce.nc'
+    path: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_v2.nc'
   fesom-NG5-hpz10-nested-3d-v2:
     cdo_options: "--force"
     path:
-      level: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_level.nc'
+      level: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_level_v2.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  
+  # FESOM v3: These are grids for DestinE O-25.1 cycle.
+  # Interpolation to HealPix is now conservative and this
+  # produced a change in the land sea mask, so all the grids
+  # are different from the previous ones
+  fesom-NG5-hpz10-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_v3.nc'
+  fesom-NG5-hpz10-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  fesom-NG5-hpz9-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_v3.nc'
+  fesom-NG5-hpz9-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  fesom-NG5-hpz7-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_v3.nc'
+  fesom-NG5-hpz7-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  fesom-CORE2-hpz5-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_v3.nc'
+  fesom-CORE2-hpz5-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_level_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
+  fesom-D3-hpz7-nested-v3:
+    cdo_options: "--force"
+    space_coord: ["ncells"]
+    path: '{{ grids }}/FESOM/fesom-D3_hpz7_nested_oce_v3.nc'
+  fesom-D3-hpz7-nested-3d-v3:
+    cdo_options: "--force"
+    path:
+      level: '{{ grids }}/FESOM/fesom-D3_hpz7_nested_oce_level_v3.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
   

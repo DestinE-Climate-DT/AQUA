@@ -1,0 +1,66 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+data:
+    catalog: null
+    model: 'IFS-NEMO'
+    exp: 'historical-1990'
+    source: 'lra-r100-monthly'
+
+obs: 
+  catalog: null
+  model: 'ERA5'
+  exp: 'era5'
+  source: 'monthly'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  filename_keys: ['diagnostic', 'diagnostic_product', 'catalog', 'model', 'exp',
+                  'var', 'model_2', 'exp_2', 'catalog_2', 'area', 'time_precision'] # null or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostic_attributes:
+  variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
+  plev: null # You can specify a pressure level here
+  seasons: True
+  seasons_stat: 'mean'
+  vertical: True
+  regrid: null
+  startdate_data: null
+  enddate_data: null
+  startdate_obs: "1990-01-01" 
+  enddate_obs: "2020-12-31"
+
+# Here you can specify the colorbar limits for each variable
+# If you don't specify them, the colorbar limits will be automatically calculated
+# based on the data.
+
+biases_plot_params:
+  bias_maps:
+    2t:
+      vmin: -15
+      vmax: 15
+    msl:
+      vmin: -1000
+      vmax: 1000
+    tnlwrf:
+      vmin: -40
+      vmax: 40
+    tprate:
+      vmin: -8
+      vmax: 8
+
+  vertical_plev:
+    t:
+      vmin: -20
+      vmax: 20
+    u:
+      vmin: -50
+      vmax: 50
+    q:
+      vmin: -0.002
+      vmax: 0.002

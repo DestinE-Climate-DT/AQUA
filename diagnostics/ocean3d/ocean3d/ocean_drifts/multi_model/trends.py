@@ -31,7 +31,7 @@ class trend:
             trend_data_name = f"{data_name}"
             data = area_selection(data, self.region, self.lat_s, self.lat_n, self.lon_w, self.lon_e)
             TS_trend_data = self._calculate_trend_data(data)
-            TS_trend_data = TS_trend_data[["avg_thetao","avg_so"]]
+            TS_trend_data = TS_trend_data[["thetao","so"]]
             if self.level != None:
                 TS_trend_data = TS_trend_data.interp(lev=self.level).squeeze()
             else:
@@ -57,10 +57,10 @@ class trend:
         """
         Plots the multilevel trend for temperature and salinity.
         """  
-        # cbar_value = {'max_values': {"avg_thetao": [],
-        #                              "avg_so": []},
-        #               'min_values': {"avg_thetao": [],
-        #                              "avg_so": []}}
+        # cbar_value = {'max_values': {"thetao": [],
+        #                              "so": []},
+        #               'min_values': {"thetao": [],
+        #                              "so": []}}
 
         # for data_name in self.TS_trend_dict:
         #     data = self.TS_trend_dict[data_name]
@@ -90,24 +90,24 @@ class trend:
         if nrows == 1:
             axs = axs.reshape(1, -1)
         
-        # avg_thetao_max = np.round(max(np.abs(self.min_values["avg_thetao"]), np.abs(self.max_values["avg_thetao"])), 1)
+        # thetao_max = np.round(max(np.abs(self.min_values["thetao"]), np.abs(self.max_values["thetao"])), 1)
         
-        # if avg_thetao_max*10 % 2 == 0:
+        # if thetao_max*10 % 2 == 0:
         #     num = 11
         # else:
         #     num = 10
             
-        # avg_thetao_levels = np.linspace(-avg_thetao_max, avg_thetao_max, num=num).round(2)
-        # avg_thetao_levels = np.insert(avg_thetao_levels, np.searchsorted(avg_thetao_levels, 0), 0)
-        # avg_thetao_levels = np.insert(avg_thetao_levels, np.searchsorted(avg_thetao_levels, 0), 0)
+        # thetao_levels = np.linspace(-thetao_max, thetao_max, num=num).round(2)
+        # thetao_levels = np.insert(thetao_levels, np.searchsorted(thetao_levels, 0), 0)
+        # thetao_levels = np.insert(thetao_levels, np.searchsorted(thetao_levels, 0), 0)
         
-        # avg_so_max = np.round(max(np.abs(self.min_values["avg_so"]), np.abs(self.max_values["avg_so"])), 1)
-        # avg_so_levels = np.linspace(-avg_so_max, avg_so_max, num=18).round(2)
-        # avg_so_levels = np.insert(avg_so_levels, np.searchsorted(avg_so_levels, 0), 0)
+        # so_max = np.round(max(np.abs(self.min_values["so"]), np.abs(self.max_values["so"])), 1)
+        # so_levels = np.linspace(-so_max, so_max, num=18).round(2)
+        # so_levels = np.insert(so_levels, np.searchsorted(so_levels, 0), 0)
 
 
-        avg_thetao_levels = np.linspace(-0.5, 0.5, 11)
-        avg_so_levels = np.linspace(-1, 1, 21)
+        thetao_levels = np.linspace(-0.5, 0.5, 11)
+        so_levels = np.linspace(-1, 1, 21)
 
 
 
@@ -117,8 +117,8 @@ class trend:
             start_year = self.data_dict[data_name].time.dt.year[0].values
             end_year = self.data_dict[data_name].time.dt.year[-1].values
             
-            cs1 = axs[num,0].contourf(data.lon, data.lat, data["avg_thetao"], cmap="RdBu_r", levels=avg_thetao_levels)
-            cs2 = axs[num,1].contourf(data.lon, data.lat, data["avg_so"], cmap="RdBu_r", levels=avg_so_levels)
+            cs1 = axs[num,0].contourf(data.lon, data.lat, data["thetao"], cmap="RdBu_r", levels=thetao_levels)
+            cs2 = axs[num,1].contourf(data.lon, data.lat, data["so"], cmap="RdBu_r", levels=so_levels)
             axs[num, 0].set_facecolor('grey')
             axs[num, 1].set_facecolor('grey')
             # axs[num, 0].set_ylabel("Latitude (in deg North)", fontsize=9)
@@ -135,16 +135,16 @@ class trend:
         # cb = fig.colorbar(cs1, ax=axs, location="bottom", pad=0.05, aspect=40, label='Mixed layer depth (in m)')
         # plt.subplots_adjust(bottom=0.30)
         cax = fig.add_axes([0.15, 0.07, 0.3, 0.015])
-        cb1 = fig.colorbar(cs1, cax=cax, orientation='horizontal', label=f'Pot Temp trend in {data.avg_thetao.attrs["units"]}')
+        cb1 = fig.colorbar(cs1, cax=cax, orientation='horizontal', label=f'Pot Temp trend in {data.thetao.attrs["units"]}')
         
-        # cb1 = fig.colorbar(cs1, ax=axs[num,0], location="bottom", pad=0.2, aspect=40, label=f'Pot Temp trend in {data.avg_thetao.attrs["units"]}')
+        # cb1 = fig.colorbar(cs1, ax=axs[num,0], location="bottom", pad=0.2, aspect=40, label=f'Pot Temp trend in {data.thetao.attrs["units"]}')
         # cb_pos = cb1.ax.get_position()
         # cb1.ax.set_position([cb_pos.x0, -0.05, cb_pos.width, cb_pos.height])
         
-        # cb2 = fig.colorbar(cs2, ax=axs[num,1], location="bottom", pad=0.2, aspect=40, label=f'Salinity trend in {data.avg_thetao.attrs["units"]}')
+        # cb2 = fig.colorbar(cs2, ax=axs[num,1], location="bottom", pad=0.2, aspect=40, label=f'Salinity trend in {data.thetao.attrs["units"]}')
         
         cax = fig.add_axes([0.56, 0.07, 0.3, 0.015])
-        cb2 = fig.colorbar(cs2, cax=cax, orientation='horizontal', label=f'Salinity trend in {data.avg_so.attrs["units"]}')
+        cb2 = fig.colorbar(cs2, cax=cax, orientation='horizontal', label=f'Salinity trend in {data.so.attrs["units"]}')
         # cb_pos = cb2.ax.get_position()
         # cb2.ax.set_position([cb_pos.x0, -0.02, cb_pos.width, cb_pos.height])
         

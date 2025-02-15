@@ -3,278 +3,8 @@
 Command Line Interface tools
 ============================
 
-This sections describes the series of Command Line Interface (CLI) tools currently available in AQUA.
+This sections describes a series of Command Line Interface (CLI) tools currently available in AQUA.
 It includes software with a variety of goals, which are mostly made for advanced usage. 
-
-.. _aqua_analysis:
-
-AQUA analysis wrapper
----------------------
-
-A wrapper containing calls to all the state-of-the-art diagnostic available in AQUA
-is provided in the ``cli/aqua-analysis/`` folder.
-
-Basic usage
-^^^^^^^^^^^
-
-.. code-block:: bash
-
-    python aqua-analysis.py
-
-Without any argument, the script will run all the diagnostics available in AQUA on an hard-coded dataset,
-with LUMI configuration and output directory in the ``cli/aqua-analysis/output`` folder.
-
-All the diagnostic logfiles will be saved in this main folder, while the diagnostics output will be saved in subfolders
-named after the diagnostic name.
-Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
-
-The exact list of diagnostics to run and technical details of the analysis
-(such as the number of workers/thread/memory to use for the dask cluster) 
-are specified in the configuration file ``config.aqua-analysis.yaml``. 
-
-.. warning::
-
-    A bash script called ``aqua-analysis.sh`` is also available in the same folder but it is deprecated and will be removed in future releases.
-
-Additional options
-^^^^^^^^^^^^^^^^^^
-
-Some options are available to launch the script without having to modify the script itself,
-so that the script can be used in a batch job or in a workflow.
-
-.. option:: -m <model>
-
-    The  model to use.
-
-.. option:: -e <exp>, --exp <exp>
-
-    The experiment to use.
-
-.. option:: -s <source>, --source <source>
-
-    The source to use.
-
-.. option:: -c <catalog>, --catalog <catalog>
-
-    The catalog to use.
-    Default is using the catalog currently defined by the AQUA console.
-
-.. option:: -f <config>, --config <source>
-
-    The config file to use.
-
-.. option:: -d <dir>, --outputdir <dir>
-
-    The output directory to use.
-    Default is ``$AQUA/cli/aqua-analysis/output``.
-    Prefer to use an absolute path.
-
-.. option:: -l <loglevel>, --loglevel <loglevel>
-
-    The log level to use for the cli and the diagnostics.
-    Default is ``WARNING``.
-
-.. option:: -t <threads>, --threads <threads>
-
-    This is the number of diagnostics running in parallel.
-    Default is ``0``, which means no limit.
-
-.. option:: -p, --parallel
-
-    This flag activates running the diagnostics with multiple dask.distributed workers.
-    By default the script will set up a common dask cluster/scheduler and close it when finished.
-    
-.. option:: --local_clusters
-    
-    This is a legacy feature to run the diagnostics with multiple dask.distributed 'local' clusters (not reccomended)
-    In this case predefined number of workers is used for each diagnostic, set in the configuration file `config.aqua-analysis.yaml`.
-    
-.. option:: 
-    
-.. note ::
-
-    By default the script will run all the state-of-the-art diagnostics available in AQUA.
-    It is possible to run only a subset of the diagnostics by modifying the script itself,
-    where arrays with atmospheric and oceanic diagnostics are defined.
-
-
-.. _aqua_web:
-
-Automatic uploading of figures and documentation to aqua-web
-------------------------------------------------------------
-
-AQUA figures produced by the analysis can be uploaded to the [aqua-web](https://github.com/DestinE-Climate-DT/aqua-web)
-repository to publish them automatically on a dedicated website. The same site is used to host the documentation.
-Two scripts in the ``cli/aqua-web`` folder are available to push figures or documentation to aqua-web.
-
-Basic usage
-^^^^^^^^^^^
-
-.. code-block:: bash
-
-    bash push-analysis.sh [OPTIONS] INDIR EXPS
-
-This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
-``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
-``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
-or a text file containing a list of experiments in the format "catalog model experiment".
-It creates ``content.yaml`` files for each experiment and pushes the images to the aqua-web repository.
-
-Additional options
-^^^^^^^^^^^^^^^^^^
-
-.. option:: -b <branch>, --branch <branch>
-
-    The branch to push to (optional, default is ``main``).
-
-.. option:: -c, --content
-
-    Flag to refresh all content.yaml files (default is only specific experiment).
-
-.. option:: -d, --dry-run
-
-    Do not push to the repository.
-
-.. option:: -l <level>, --loglevel <level>
-
-    Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
-
-.. option:: -u <user:PAT>, --user <user:PAT>
-
-    Credentials (in the format username:PAT) to create an automatic PR for the branch (optional).
-    If this is option is specified and a branch is used, then an automatic PR is generated.
-
-.. option:: -m <message>, --message <message>
-
-    Description of the automatic PR (optional, is generated automatically by default). 
-
-.. option:: -t <title>, --title <title>
-
-    Title for the automatic PR (optional).
-
-.. option:: -w, --wipe
-    
-        Wipe the destination directory before copying the images.
-
-.. option:: -n, --no-convert
-    
-        Do not convert PDFs to PNGs.
-
-.. option:: -l, --loglevel LEVEL
-        
-            Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
-
-Another script is used to upload the documentation to the aqua-web repository.
-
-.. code-block:: bash
-
-    bash make_push_docs.py 
-
-.. _submit-aqua-web:
-
-Multiple experiment analysis submitter
---------------------------------------
-
-A wrapper containing to facilitate automatic submission of analysis of multiple experiments
-in parallel and possible pushing to AQUA Explorer. This is used to implement overnight updates to AQUA Explorer.
-
-Basic usage
-^^^^^^^^^^^
-
-.. code-block:: bash
-
-    python ./submit-aqua-web.py EXPLIST
-
-This will read a text file EXPLIST containing a list of models/experiments in the format
-
-.. code-block:: rst
-
-    # List of experiments to analyze in the format
-    # model exp [source]
-
-    IFS-NEMO  ssp370  lra-r100-monthly
-    IFS-NEMO historical-1990
-    ICON historical-1990
-    ICON ssp370
-
-A sample file ``aqua-web.experiment.list`` is provided in the source code of AQUA.
-Specifying the source is optional ('lra-r100-monthly' is the default).
-
-Before using the script you will need to specify details for SLURM and other options
-in the configuration file ``config.aqua-web.yaml``. This file is searched in the same directories as 
-other AQUA configuration files or in the current directory as last resort.
-
-It is possible to run the analysis on a single experiment specifying model, experiment and source
-with the arguments ``-m``, ``-e`` and ``-s`` respectively.
-
-If run without arguments, the script will run the analysis on the default 
-experiments specified in the list.
-
-Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
-
-The extra ``-w``, ``-f`` and ``-n`` flags are used for maintenance and debugging 
-and can be used to wipe the destination directory before pushing the images to aqua-web,
-use a fresh temporary output directory for the analysis generation and use the
-native (local) AQUA version respectively.
-
-Options
-^^^^^^^
-
-.. option:: -c <config>, --config <config>
-
-    The configuration file to use. Default is ``config.aqua-web.yaml``.
-
-.. option:: -m <model>, --model <model>
-
-    Specify a single model to be processed (alternative to specifying the experiment list).
-
-.. option:: -e <exp>, --exp <exp>
-
-    Experiment to be processed.
-
-.. option:: -s <source>, --source <source>
-
-    Source to be processed.
-
-.. option:: -r, --serial
-
-    Run in serial mode (only one core). This is passed to the ``aqua-analysis.py`` script.
-
-.. option:: -x <max>, --max <max>
-
-    Maximum number of jobs to submit without dependency.
-
-.. option:: -t <template>, --template <template>
-
-    Template jinja file for slurm job. Default is ``aqua-web.job.j2``.
-
-.. option:: -d, --dry
-
-    Perform a dry run for debugging (no job submission). Sets also ``loglevel`` to 'debug'.
-
-.. option:: -l <loglevel>, --loglevel <loglevel>
-
-    Logging level.
-
-.. option:: -p, --push
-    
-    Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
-
-.. option:: -w, --wipe
-    
-    Flag to wipe the destination directory before pushing the images to aqua-web.
-
-.. option:: -f, --fresh
-    
-    Flag to use a fresh temporary output directory for the analysis generation.
-
-.. option:: -n, --native
-    
-    Flag to use the native (local) AQUA version (default is the container version).
-
-.. option:: -j, --jobname
-    
-    Alternative prefix for the job name (the default is specified in the config file)
 
 
 .. _benchmarker:
@@ -315,14 +45,15 @@ by specifying the group of grids to download (usually one per model).
 
 .. _grids-checker:
 
-Checksum verification of grid files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Checksum verifications for obs and grids
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 AQUA built on many grids files to speed up operations for interpolation and area evaluation, especially within
-the ClimateDT workflow. These are available on multiple HPC but sometimes the synchronization
+the ClimateDT workflow. To provide valuable diagnostics, it also builds on a catalog for observations.
+These are available on multiple ClimateDT HPC but sometimes the synchronization
 might not be complete following an update. In order to verify that all the grids files are ported on the used machine
-the `cli/grids-checker/grids-checker.py` script is available to verify the checksum of the grid files
-is the same as it is planned.
+the `cli/checksum-checker/grids-checker.py` and `cli/checksum-checker/obs-checker.py` scripts are available 
+to verify the checksum of the grid and observation files is the same as it is expected.
 
 To verify that everything is at it should be please run:
 
@@ -336,8 +67,9 @@ To generate a new checksum should be please run:
 
     ./grid-checker.py generate -o checksum_file.md5
 
-Please notice that not all the grid folder will be checked, but only those defined in the file with ``GRIDS_FOLDERS`` variable. 
-Option ``-s`` can be used as well to scan a single grid folder (e.g. HealPix, or ERA5)
+Please notice that not all the grid/obs folders will be checked, but only those defined in the file 
+with ``GRIDS_FOLDERS`` and ``OBS_FOLDERS`` variables. 
+Option ``-s`` can be used as well to scan a single grid/obs folder (e.g. HealPix, or ERA5)
 
 .. _grid-from-data:
 

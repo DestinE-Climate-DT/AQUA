@@ -2,10 +2,11 @@ from .tools import *
 from ocean3d import write_data
 from ocean3d import export_fig
 from ocean3d import split_ocean3d_req
+from ocean3d import compute_data
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 from dask.diagnostics import ProgressBar
-
+import IPython
 
 class hovmoller_plot:
     """
@@ -25,6 +26,7 @@ class hovmoller_plot:
             o3d_request: Request object containing necessary data for plot generation.
         """
         split_ocean3d_req(self,o3d_request)
+        self.logger = log_configure(self.loglevel, 'data_for_hovmoller_lev_time_plot')
         
     def define_lev_values(self, data_proc):
         """
@@ -36,26 +38,25 @@ class hovmoller_plot:
         Returns:
             Tuple: A tuple containing arrays of temperature levels and salinity levels.
         """
-        logger = log_configure(self.loglevel, 'define_lev_values')
         # data_proc = args[1]["data_proc"]
         # To center the colorscale around zero when we plot temperature anomalies
-        avg_thetaomin = round(np.nanmin(data_proc.avg_thetao.values), 2)
-        avg_thetaomax = round(np.nanmax(data_proc.avg_thetao.values), 2)
+        thetaomin = round(np.nanmin(data_proc.thetao.values), 2)
+        thetaomax = round(np.nanmax(data_proc.thetao.values), 2)
 
-        if avg_thetaomin < 0:
-            if abs(avg_thetaomin) < avg_thetaomax:
-                avg_thetaomin = avg_thetaomax*-1
+        if thetaomin < 0:
+            if abs(thetaomin) < thetaomax:
+                thetaomin = thetaomax*-1
             else:
-                avg_thetaomax = avg_thetaomin*-1
+                thetaomax = thetaomin*-1
 
-            avg_thetaolevs = np.linspace(avg_thetaomin, avg_thetaomax, 21)
+            thetaolevs = np.linspace(thetaomin, thetaomax, 21)
 
         else:
-            avg_thetaolevs = 20
+            thetaolevs = 20
 
         # And we do the same for salinity
-        somin = round(np.nanmin(data_proc.avg_so.values), 3)
-        somax = round(np.nanmax(data_proc.avg_so.values), 3)
+        somin = round(np.nanmin(data_proc.so.values), 3)
+        somax = round(np.nanmax(data_proc.so.values), 3)
 
         if somin < 0:
             if abs(somin) < somax:
@@ -67,7 +68,7 @@ class hovmoller_plot:
 
         else:
             solevs = 20
-        return avg_thetaolevs, solevs
+        return thetaolevs, solevs
 
                    
     def data_for_hovmoller_lev_time_plot(self):
@@ -77,7 +78,6 @@ class hovmoller_plot:
         Returns:
             None
         """
-        logger = log_configure(self.loglevel, 'data_for_hovmoller_lev_time_plot')
         data = self.data
         region = self.region
         lat_s = self.lat_s
@@ -99,8 +99,8 @@ class hovmoller_plot:
                     
                     region_title = custom_region(region=region, lat_s=lat_s, lat_n=lat_n, lon_w=lon_w, lon_e=lon_e, loglevel=self.loglevel)
 
-                    # avg_thetaolevs, solevs =self.define_lev_values(data_proc)
-                    avg_thetaolevs, solevs = 21, 21
+                    # thetaolevs, solevs =self.define_lev_values(data_proc)
+                    thetaolevs, solevs = 21, 21
                     plot_config = {"anomaly": anomaly,
                                    "standardise": standardise,
                                    "anomaly_ref": anomaly_ref}
@@ -110,7 +110,7 @@ class hovmoller_plot:
                                             "cmap": cmap,
                                             "region_title": region_title,
                                         "solevs": solevs,
-                                        "avg_thetaolevs": avg_thetaolevs,
+                                        "thetaolevs": thetaolevs,
                                             "type": type,
                                             "plot_config": plot_config}
                     counter += 1            
@@ -125,46 +125,43 @@ class hovmoller_plot:
             fig: Figure object for plotting.
             axs: Axes object for plotting.
         """
-        logger = log_configure(self.loglevel, 'loop_details')
         
         key = i + 2
         plot_info = self.plot_info[key]
         data = plot_info['data']
-        avg_thetaolevs = plot_info['avg_thetaolevs']
+        thetaolevs = plot_info['thetaolevs']
         solevs = plot_info['solevs']
         cmap = plot_info['cmap']
         region_title = plot_info['region_title']
         type = plot_info['type']
 
-        logger.debug("Plotting started for %s", type)
+        self.logger.debug("Plotting started for %s", type)
         
-        with ProgressBar():
-            data = data.compute()
-            logger.debug(f"Loaded the data ({type}) into memory before plotting")
+        data = compute_data(data, loglevel= self.loglevel)
             
         if type != "Full values":
-            abs_max_avg_thetao = max(abs(np.nanmax(data.avg_thetao)), abs(np.nanmin(data.avg_thetao)))
-            abs_max_so = max(abs(np.nanmax(data.avg_so)), abs(np.nanmin(data.avg_so)))
-            avg_thetaolevs = np.linspace(-abs_max_avg_thetao, abs_max_avg_thetao, avg_thetaolevs)
+            abs_max_thetao = max(abs(np.nanmax(data.thetao)), abs(np.nanmin(data.thetao)))
+            abs_max_so = max(abs(np.nanmax(data.so)), abs(np.nanmin(data.so)))
+            thetaolevs = np.linspace(-abs_max_thetao, abs_max_thetao, thetaolevs)
             solevs = np.linspace(-abs_max_so, abs_max_so, solevs)
         
         cs1_name = f'cs1_{i}'
         # axs[i, 0].set_yscale('log')
         # axs[i, 1].set_yscale('log')
-        vars()[cs1_name]  = axs[i,0].contourf(data.time, data.lev, data.avg_thetao.transpose(),
-                            levels=avg_thetaolevs, cmap=cmap, extend='both')
+        vars()[cs1_name]  = axs[i,0].contourf(data.time, data.lev, data.thetao.transpose(),
+                            levels=thetaolevs, cmap=cmap, extend='both')
         # cbar_ax = fig.add_axes([.47, 0.77 - i* 0.117, 0.028, 0.08])
         cbar_ax = fig.add_axes([.47, 0.73 - i* 0.2, 0.023, 0.1])
         
-        # fig.colorbar(vars()[cs1_name], cax=cbar_ax, orientation='vertical', label=f'Potential temperature in {data.avg_thetao.attrs["units"]}')
+        # fig.colorbar(vars()[cs1_name], cax=cbar_ax, orientation='vertical', label=f'Potential temperature in {data.thetao.attrs["units"]}')
         fig.colorbar(vars()[cs1_name], cax=cbar_ax, orientation='vertical')
         
         cs2_name = f'cs2_{i}'
-        vars()[cs2_name] = axs[i,1].contourf(data.time, data.lev, data.avg_so.transpose(),
+        vars()[cs2_name] = axs[i,1].contourf(data.time, data.lev, data.so.transpose(),
                             levels=solevs, cmap=cmap, extend='both')
         # cbar_ax = fig.add_axes([.94,  0.77 - i* 0.117, 0.028, 0.08])
         cbar_ax = fig.add_axes([.91,  0.73 - i* 0.2, 0.023, 0.1])
-        # fig.colorbar(vars()[cs2_name], cax=cbar_ax, orientation='vertical', label=f'Salinity in {data.avg_so.attrs["units"]}')
+        # fig.colorbar(vars()[cs2_name], cax=cbar_ax, orientation='vertical', label=f'Salinity in {data.so.attrs["units"]}')
         fig.colorbar(vars()[cs2_name], cax=cbar_ax, orientation='vertical')
         
 
@@ -172,11 +169,11 @@ class hovmoller_plot:
         axs[i,1].invert_yaxis()
         axs[i,0].set_ylim((max(data.lev).data, 0))
         axs[i,1].set_ylim((max(data.lev).data, 0))
-        avg_so_unit = data.avg_so.attrs["units"]
-        avg_thetao_unit = data.avg_thetao.attrs["units"]
+        so_unit = data.so.attrs["units"]
+        thetao_unit = data.thetao.attrs["units"]
         if i==0:
-            axs[i,1].set_title(f"Salinity (in {avg_so_unit})", fontsize=20) 
-            axs[i,0].set_title(f"Pot. Temperature (in {avg_thetao_unit})", fontsize=20) 
+            axs[i,1].set_title(f"Salinity (in {so_unit})", fontsize=20) 
+            axs[i,0].set_title(f"Pot. Temperature (in {thetao_unit})", fontsize=20) 
         axs[i,0].set_ylabel(f"Depth (in {data.lev.units})", fontsize=12)
         if i==2:
             axs[i,0].set_xlabel("Time", fontsize=12)
@@ -196,7 +193,7 @@ class hovmoller_plot:
         #     type = type.replace(" ","_").lower()
         #     filename =  f"{self.filename}_{type}"
         #     write_data(self.output_dir, filename, data)
-        logger.debug("Plotting completed for %s", type)
+        self.logger.debug("Plotting completed for %s", type)
     
 
 
@@ -207,8 +204,7 @@ class hovmoller_plot:
         Returns:
             None
         """
-        logger = log_configure(self.loglevel, 'single_plot')
-        logger.debug("Hovmoller plot started")
+        self.logger.debug("Hovmoller plot started")
         
         self.data_for_hovmoller_lev_time_plot()
         
@@ -229,7 +225,8 @@ class hovmoller_plot:
 
         if self.output:
             export_fig(self.output_dir, self.filename , "pdf", metadata_value = title)
-        logger.debug("Hovmoller plot completed")
-
+        self.logger.debug("Hovmoller plot completed")
+        if not IPython.get_ipython():  
+            plt.close() 
         return
     

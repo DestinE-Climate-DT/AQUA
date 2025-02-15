@@ -2,7 +2,7 @@
 target:
   resolution: r100
   frequency: monthly
-  catalog: climatedt-phase1
+  catalog: lumi-phase2
 
 paths:
   #outdir: /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA
@@ -25,34 +25,23 @@ slurm:
 
 data:
   ICON:
-    historical-1990:
-      hourly-hpz10-atm2d:
-        vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'tsrwe', 'slhtf', 'ishf', 
-           'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf']
-        workers: 12
-      hourly-hpz10-atm3d:
-        vars: ['q', 't', 'u', 'v']
-        workers: 6
-      daily-hpz10-oce2d:
+    control-1990-freeze:
+      hourly-hpz6-atm2d:
+        workers: 24
+        #workers: 1
+        vars: ['tprate', '2t', 'msl', 'tcc', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+          'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews']
+      hourly-hpz6-atm3d:
         workers: 16
-        vars: ['sithick', 'siconc']
-      daily-hpz10-oce3d:
-        workers: 10
-        vars: ['thetao', 'so']
-        
-    ssp370:
-      hourly-hpz10-atm2d:
-        workers: 12
-        vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'tsrwe', 'slhtf', 'ishf', 
-           'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf']
-      hourly-hpz10-atm3d:
-        workers: 6
+        #workers: 1
         vars: ['q', 't', 'u', 'v']
-      daily-hpz10-oce2d:
+      daily-hpz6-oce2d:
+        workers: 32
+        #workers: 1
+        vars: ['tos', 'sithick', 'siconc', 'sos']
+      daily-hpz6-oce3d:
         workers: 16
-        vars: ['sithick', 'siconc']
-      daily-hpz10-oce3d:
-        workers: 10
+        #workers: 1
         vars: ['thetao', 'so']
 
   # IFS-NEMO:

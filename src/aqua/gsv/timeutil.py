@@ -3,7 +3,7 @@
 import pandas as pd
 from datetime import datetime
 import os
-
+import numpy as np
 
 def date2str(dateobj):
     """
@@ -122,7 +122,8 @@ def split_date(datestr, timedefault="0000"):
 
 
 def make_timeaxis(data_startdate, startdate, enddate, timestep=None,
-                  savefreq=None, chunkfreq=None, shiftmonth=False, skiplast=False):
+                  savefreq=None, chunkfreq=None, shiftmonth=False, skiplast=False,
+                  bridge_start_date=None, bridge_end_date=None):
     """
     Compute timeaxis and chunk start and end dates and indices.
 
@@ -136,6 +137,8 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None,
         chunkfreq (str): Frequency at which the data are to be chunked. Can be one of D, M, Y
         shiftmonth (bool): If True, fixes data accumulated at the end of the month. Default is False.
         skiplast (bool): If True, skips the last date. Default is False.
+        bridge_start_date (datetime.datetime): Starting date of bridge data (optional)
+        bridge_end_date (datetime.datetime): Ending date of bridge data (optional)
 
     Returns:
         A tuple containing:
@@ -145,6 +148,7 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None,
             - chunkend_idx (int): The last index of each chunk
             - chunkend (pd.Timestamp): The end date of each chunk
             - chunksize (int): The number of data points in each chunk
+            - chunktype (int): The type of chunk, hpc: 0 or bridge: 1
     """
 
     # these are equivalent, unless specified different
@@ -197,13 +201,24 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None,
         sdate = dates[sidx]
         edate = dates[eidx]
 
+    if bridge_end_date:
+        bridge_start = pd.Timestamp(str(bridge_start_date))
+        bridge_end = pd.Timestamp(str(bridge_end_date))
+        chunktype = np.where((sdate >= bridge_start) & (sdate <= bridge_end), 1, 0)
+        chunktype_end = np.where((edate >= bridge_start) & (edate <= bridge_end), 1, 0)
+    else:
+        chunktype = np.zeros(len(dates), dtype=int)
+        chunktype_end = np.zeros(len(dates), dtype=int)
+
     return {
         'timeaxis': dates[idx],
         'start_idx': sidx + offset,
         'start_date': sdate,
         'end_idx': eidx + offset,
         'end_date': edate,
-        'size': chunksize
+        'size': chunksize,
+        'type': chunktype,
+        'type_end': chunktype_end  # this is used only for chunk alignment sanity check
     }
 
 
@@ -221,7 +236,7 @@ def todatetime(datestr):
     return pd.Timestamp(str(datestr))
 
 
-def read_bridge_end_date(obj):
+def read_bridge_date(obj):
     """
     Reads the bridge end date from a file or string
     """
@@ -230,6 +245,40 @@ def read_bridge_end_date(obj):
         with open(obj, 'r') as file:
             date = file.read()
         date = pd.Timestamp(date.strip())
-        return (date.strftime('%Y%m%d'))
+        return date.strftime('%Y%m%dT%H%M')
     else:
         return obj
+    
+def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
+    """
+    Floors a datetime object to the specified pandas frequency, 
+    using `to_period` and special last string drop for better handling of non-fixed frequencies.
+    
+    Parameters:
+        dt (datetime or pandas.Timestamp): The datetime object to be floored.
+        freq (str): The frequency string (e.g., 'H', 'D', '6H', '1MS', '3YS').
+         output_format (str): The format for output datetime as a string. Default is "%Y%m%dT%H%M".
+        
+    Returns:
+        String with "%Y%m%dT%H%M" format (e.g. 19900101T000)
+    """
+
+    # safety checks
+    if dt is None:
+        return dt
+
+    if not isinstance(dt, pd.Timestamp):
+        dt = pd.Timestamp(str(dt))
+
+    if freq in ['M', 'MS']:  # Floor to the first of the month
+        dt = pd.Timestamp(dt.year, dt.month, 1)
+    elif freq in ['Y', 'YS']:  # Floor to the first of the year
+        dt = pd.Timestamp(dt.year, 1, 1)
+    elif freq in ['ME', 'YE']:
+        raise KeyError(f'Freq {freq} is not supported, please use {freq[0]}S')
+    elif 'W' in freq: 
+        raise KeyError('Weekly frequency not supported')
+    else:
+        dt = dt.floor(freq)
+    
+    return dt.strftime(output_format)

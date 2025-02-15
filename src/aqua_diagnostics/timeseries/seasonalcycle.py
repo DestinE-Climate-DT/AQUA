@@ -1,7 +1,6 @@
 """
 Module to extract the seasonal cycle of a variable from a time series.
 """
-import os
 import gc
 
 import xarray as xr
@@ -199,7 +198,8 @@ class SeasonalCycle(Timeseries):
             output_saver.save_netcdf(self.cycle[i], **common_save_args)
 
         if self.plot_ref:
-            output_saver_ref = self._get_output_saver(model=self.plot_ref_kw['model'], exp=self.plot_ref_kw['exp'])
+            output_saver_ref = self._get_output_saver(catalog=self.plot_ref_kw['catalog'],
+                                                      model=self.plot_ref_kw['model'], exp=self.plot_ref_kw['exp'])
             output_saver_ref.save_netcdf(self.cycle_ref, **common_save_args)
 
     def _get_output_saver(self, catalog=None, model=None, exp=None):
@@ -257,9 +257,9 @@ class SeasonalCycle(Timeseries):
         if self.plot_ref:
             description += f" with {ref_label} as reference,"
             try:
-                description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"
+                description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}"  # noqa: E501
             except ValueError:
-                description += f" std evaluated from {time_to_string(self.ref_mon.time.values[0])} to {time_to_string(self.ref_mon.time.values[-1])}"
+                description += f" std evaluated from {time_to_string(self.ref_mon.time.values[0])} to {time_to_string(self.ref_mon.time.values[-1])}"  # noqa: E501
         description += "."
         if self.lon_limits is not None or self.lat_limits is not None:
             description += " The data have been averaged over a region defined by"

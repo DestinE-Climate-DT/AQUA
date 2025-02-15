@@ -14,34 +14,12 @@ Example ``diagnostic_config.py`` structure:
 .. code-block:: python
 
     diagnostic_config = {
-        'atmglobalmean': [
-            {
-                'config_file': 'atm_mean_bias_config.yaml',
-                'source_path': 'diagnostics/atmglobalmean/cli/config',
-                'target_path': 'diagnostics/atmglobalmean/cli'
-            }
-        ],
-        'ecmean': [
-            {
-                'config_file': 'ecmean_config_destine-v1-levante.yml',
-                'source_path': 'diagnostics/ecmean/config',
-                'target_path': 'diagnostics/ecmean/config'
-            },
-            {
-                'config_file': 'ecmean_config_destine-v1.yml',
-                'source_path': 'diagnostics/ecmean/config',
-                'target_path': 'diagnostics/ecmean/config'
-            },
-            {
-                'config_file': 'interface_AQUA_destine-v1.yml',
-                'source_path': 'diagnostics/ecmean/config',
-                'target_path': 'diagnostics/ecmean/config'
-            },
-            {
-                'config_file': 'config_ecmean_cli.yaml',
-                'source_path': 'diagnostics/ecmean/cli',
-                'target_path': 'diagnostics/ecmean/cli'
-            }
+        'global_biases': [
+        {
+            'config_file': 'config_global_biases.yaml',
+            'source_path': 'config/diagnostics/global_biases',
+            'target_path': 'diagnostics/global_biases/cli'
+        },
         ]
     }
 
@@ -54,16 +32,10 @@ The target folder structure should follow this pattern:
 
     $HOME/.aqua/
         ├── diagnostics/
-        │   ├── atmglobalmean/
-        │   │   └── cli/
-        │   │       └── atm_mean_bias_config.yaml
-        │   ├── ecmean/
+        │   ├── global_biases/
         │   │   ├── config/
-        │   │   │   ├── ecmean_config_destine-v1-levante.yml
-        │   │   │   ├── ecmean_config_destine-v1.yml
-        │   │   │   ├── interface_AQUA_destine-v1.yml
         │   │   └── cli/
-        │   │       └── config_ecmean_cli.yaml
+        │   │       └── config_global_biases.yaml
 
 .. note::
     After the implementation of the diagnostic in the aqua console, be sure that the configuration files are

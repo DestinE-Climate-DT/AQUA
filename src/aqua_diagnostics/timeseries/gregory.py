@@ -1,5 +1,4 @@
 """Gregory plot module."""
-import os
 import gc
 
 import matplotlib.pyplot as plt
@@ -332,11 +331,10 @@ class GregoryPlot():
 
     def save_image(self, fig):
         """Save the figure to an image file (PDF/PNG).
-        
+
         Args:
             fig (matplotlib.figure.Figure): Figure to save.
         """
-    
         # Get OutputSaver instance for the first model
         output_saver = self._get_output_saver(catalog=self.catalogs[0], model=self.models[0], exp=self.exps[0])
         common_save_args = {'diagnostic_product': self.diagnostic_product, 'dpi': self.dpi}
@@ -362,13 +360,17 @@ class GregoryPlot():
             common_save_args = {'diagnostic_product': self.diagnostic_product}
 
             if self.monthly:
-                self._save_frequency_data(output_saver, frequency='monthly', data_ts=self.data_ts_mon[i], data_toa=self.data_toa_mon[i], **common_save_args)
+                self._save_frequency_data(output_saver, frequency='monthly', data_ts=self.data_ts_mon[i],
+                                          data_toa=self.data_toa_mon[i], **common_save_args)
             if self.annual:
-                self._save_frequency_data(output_saver, frequency='annual', data_ts=self.data_ts_annual[i], data_toa=self.data_toa_annual[i], **common_save_args)
+                self._save_frequency_data(output_saver, frequency='annual', data_ts=self.data_ts_annual[i],
+                                          data_toa=self.data_toa_annual[i], **common_save_args)
 
         # Save the reference data if required
         if self.ref:
-            output_saver_ref = self._get_output_saver(model='ERA5', exp='CERES')
+            # HACK: The output saver will look for a catalog, model, exp and source match, which
+            # is not the case for this reference data. This will be solved in future output saver updates.
+            output_saver_ref = self._get_output_saver(catalog='obs', model='ERA5', exp='CERES')
             ref_dataset = xr.Dataset({'ts_mean': self.ref_ts_mean, 'ts_std': self.ref_ts_std,
                                       'toa_mean': self.ref_toa_mean, 'toa_std': self.ref_toa_std})
             output_saver_ref.save_netcdf(ref_dataset, diagnostic_product=self.diagnostic_product)
@@ -420,7 +422,7 @@ class GregoryPlot():
 
     def _save_frequency_data(self, output_saver, frequency, data_ts, data_toa, **common_save_args):
         """Helper function to save data for a specific frequency.
-        
+
         Args:
             output_saver (OutputSaver): OutputSaver instance.
             frequency (str): Frequency of the data (e.g., 'monthly', 'annual').

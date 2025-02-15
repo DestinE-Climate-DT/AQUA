@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import sys
@@ -6,7 +8,8 @@ import argparse
 import logging
 from dask.distributed import LocalCluster
 from aqua.logger import log_configure
-from aqua.util import load_yaml, create_folder
+from aqua.util import load_yaml, create_folder, ConfigPath
+
 
 def run_command(cmd: str, log_file: str = None, logger=None) -> int:
     """
@@ -33,7 +36,9 @@ def run_command(cmd: str, log_file: str = None, logger=None) -> int:
             logger.error(f"Error running command {cmd}: {e}")
         raise
 
-def run_diagnostic(diagnostic: str, script_path: str, extra_args: str, loglevel: str = 'INFO', logger=None, logfile: str = 'diagnostic.log'):
+
+def run_diagnostic(diagnostic: str, script_path: str, extra_args: str,
+                   loglevel: str = 'INFO', logger=None, logfile: str = 'diagnostic.log'):
     """
     Run the diagnostic script with specified arguments.
 
@@ -63,9 +68,10 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str, loglevel:
     except Exception as e:
         logger.error(f"Failed to run diagnostic {diagnostic}: {e}")
 
-def run_diagnostic_func(diagnostic: str, parallel: bool = False, 
-                        config=None, model='default_model', exp='default_exp', 
-                        source='default_source', output_dir='./output', loglevel='INFO', 
+
+def run_diagnostic_func(diagnostic: str, parallel: bool = False,
+                        config=None, catalog=None, model='default_model', exp='default_exp',
+                        source='default_source', output_dir='./output', loglevel='INFO',
                         logger=None, aqua_path='', cluster=None):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
@@ -74,6 +80,7 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
         diagnostic (str): Name of the diagnostic to run.
         parallel (bool): Whether to run in parallel mode.
         config (dict): Configuration dictionary loaded from YAML.
+        catalog (str): Catalog name.
         model (str): Model name.
         exp (str): Experiment name.
         source (str): Source name.
@@ -83,6 +90,11 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
         aqua_path (str): AQUA path.
         cluster: Dask cluster scheduler address.
     """
+
+    script_dir = config.get('job', {}).get("script_path_base")  # we were not using this key
+    if not script_dir:
+        script_dir=os.path.join(aqua_path, "diagnostics")
+
     diagnostic_config = config.get('diagnostics', {}).get(diagnostic)
     if diagnostic_config is None:
         logger.error(f"Diagnostic '{diagnostic}' not found in the configuration.")
@@ -92,7 +104,11 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
     create_folder(output_dir)
 
     logfile = f"{output_dir}/{diagnostic}.log"
+
     extra_args = diagnostic_config.get('extra', "")
+    cfg = diagnostic_config.get('config')
+    if cfg:
+        extra_args += f" --config {cfg}"
 
     if parallel:
         nworkers = diagnostic_config.get('nworkers')
@@ -100,19 +116,23 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
             extra_args += f" --nworkers {nworkers}"
 
     if cluster and not diagnostic_config.get('nocluster', False):  # This is needed for ECmean which uses multiprocessing
-        extra_args += f" --cluster {cluster}"  
+        extra_args += f" --cluster {cluster}"
+
+    if catalog:
+        extra_args += f" --catalog {catalog}"
 
     outname = f"{output_dir}/{diagnostic_config.get('outname', diagnostic)}"
     args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args}"
 
     run_diagnostic(
         diagnostic=diagnostic,
-        script_path=os.path.join(aqua_path, "diagnostics", diagnostic_config.get('script_path', f"{diagnostic}/cli/cli_{diagnostic}.py")),
+        script_path=os.path.join(script_dir, diagnostic_config.get('script_path', f"{diagnostic}/cli/cli_{diagnostic}.py")),
         extra_args=args,
         loglevel=loglevel,
         logger=logger,
         logfile=logfile
     )
+
 
 def get_args():
     """
@@ -120,8 +140,6 @@ def get_args():
     """
     parser = argparse.ArgumentParser(description="Run diagnostics for the AQUA project.")
 
-    parser.add_argument("-a", "--model_atm", type=str, help="Atmospheric model")
-    parser.add_argument("-o", "--model_oce", type=str, help="Oceanic model")
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
@@ -129,7 +147,8 @@ def get_args():
     parser.add_argument("-f", "--config", type=str, default="$AQUA/cli/aqua-analysis/config.aqua-analysis.yaml",
                         help="Configuration file")
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
-    parser.add_argument("--local_clusters", action="store_true", help="Use separate local clusters instead of single global one")
+    parser.add_argument("--local_clusters", action="store_true",
+                        help="Use separate local clusters instead of single global one")
     parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostics in parallel with a cluster")
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
     parser.add_argument("-l", "--loglevel", type=lambda s: s.upper(),
@@ -183,51 +202,62 @@ def main():
 
     model = args.model or config.get('job', {}).get('model')
     exp = args.exp or config.get('job', {}).get('exp')
-    source = args.source or config.get('job', {}).get('source')
-    outputdir = os.path.expandvars(args.outputdir or config.get('job', {}).get('outputdir', './output'))
-    max_threads = args.threads
-    catalog = args.catalog or config.get('job', {}).get('catalog')
-
-    logger.debug(f"outputdir: {outputdir}")
-    logger.debug(f"max_threads: {max_threads}")
-    logger.debug(f"catalog: {catalog}")
-
-    diagnostics = config.get('diagnostics', {}).get('run')
-    if not diagnostics:
-        logger.error("No diagnostics found in configuration.")
-        sys.exit(1)
+    source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
 
     if not all([model, exp, source]):
         logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
         sys.exit(1)
     else:
-        logger.info(f"Successfully validated inputs: Model = {model}, Experiment = {exp}, Source = {source}.")
+        logger.info(f"Requested experiment: Model = {model}, Experiment = {exp}, Source = {source}.")
 
-    output_dir = f"{outputdir}/{model}/{exp}"
+    catalog = args.catalog or config.get('job', {}).get('catalog')
+    if catalog:
+        logger.info(f"Requested catalog: {catalog}")
+    else:
+        cat, _ = ConfigPath().browse_catalogs(model, exp, source)
+        if cat:
+            catalog = cat[0]
+            logger.info(f"Automatically determined catalog: {catalog}")
+        else:
+            logger.error("Model, experiment, and source triplet not found in any installed catalog.")
+            sys.exit(1)
+
+    outputdir = os.path.expandvars(args.outputdir or config.get('job', {}).get('outputdir', './output'))
+    max_threads = args.threads
+
+    logger.debug(f"outputdir: {outputdir}")
+    logger.debug(f"max_threads: {max_threads}")
+
+    output_dir = f"{outputdir}/{catalog}/{model}/{exp}"
     output_dir = os.path.expandvars(output_dir)
+
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA"] = aqua_path
     create_folder(output_dir)
 
-    run_dummy = config.get('job', {}).get('run_dummy')
-    logger.debug(f"run_dummy: {run_dummy}")
-    if run_dummy:
-        dummy_script = os.path.join(aqua_path, "diagnostics/dummy/cli/cli_dummy.py")
-        output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        command = f"python {dummy_script} --model_atm {model} --model_oce {model} --exp {exp} --source {source} -l {loglevel}"
+    run_checker = config.get('job', {}).get('run_checker', False)
+    if run_checker:
         logger.info("Running setup checker")
+        checker_script = os.path.join(aqua_path, "src/aqua_diagnostics/cli/cli_checker.py")
+        output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
+        command = f"python {checker_script} --model {model} --exp {exp} --source {source} -l {loglevel} --yaml {output_dir}"
+        if catalog:
+            command += f" --catalog {catalog}"
         logger.debug(f"Command: {command}")
         result = run_command(command, log_file=output_log_path, logger=logger)
 
         if result == 1:
             logger.critical("Setup checker failed, exiting.")
             sys.exit(1)
-        elif result == 2:
-            logger.warning("Atmospheric model not found, it will be skipped.")
-        elif result == 3:
-            logger.warning("Oceanic model not found, it will be skipped.")
-        else:
+        elif result == 0:
             logger.info("Setup checker completed successfully.")
+        else:
+            logger.error(f"Setup checker returned exit code {result}, check the logs for more information.")
+
+    diagnostics = config.get('diagnostics', {}).get('run')
+    if not diagnostics:
+        logger.error("No diagnostics found in configuration.")
+        sys.exit(1)
 
     if args.parallel:
         if args.local_clusters:
@@ -239,14 +269,15 @@ def main():
             nworkers = config.get('cluster', {}).get('workers', 64)
             mem_limit = config.get('cluster', {}).get('memory_limit', "3.1GiB")
 
-            cluster = LocalCluster(threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR)  # avoids excessive logging (see https://github.com/dask/dask/issues/9888)
+            cluster = LocalCluster(threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit,
+                                   silence_logs=logging.ERROR)  # avoids excessive logging (see https://github.com/dask/dask/issues/9888)
             cluster_address = cluster.scheduler_address
             logger.info(f"Initialized global dask cluster {cluster_address} providing {len(cluster.workers)} workers.")
     else:
         logger.info("Running diagnostics without a dask cluster.")
         cluster = None
         cluster_address = None
-    
+
     with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
         futures = []
         for diagnostic in diagnostics:
@@ -255,6 +286,7 @@ def main():
                 diagnostic=diagnostic,
                 parallel=args.parallel,
                 config=config,
+                catalog=catalog,
                 model=model,
                 exp=exp,
                 source=source,
@@ -274,7 +306,7 @@ def main():
     if cluster:
         cluster.close()
         logger.info("Dask cluster closed.")
-    
+
     logger.info("All diagnostics finished.")
 
 

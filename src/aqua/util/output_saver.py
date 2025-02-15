@@ -2,7 +2,6 @@ from aqua.logger import log_configure, log_history
 from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata, ConfigPath
 import os
 import xarray as xr
-from datetime import datetime
 from dateutil.parser import parse
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -14,7 +13,8 @@ class OutputSaver:
     customized naming based on provided parameters and metadata.
     """
 
-    def __init__(self, diagnostic: str, catalog: str = None, model: str = None, exp: str = None, diagnostic_product: str = None, loglevel: str = 'WARNING',
+    def __init__(self, diagnostic: str, catalog: str = None, model: str = None, exp: str = None,
+                 diagnostic_product: str = None, loglevel: str = 'WARNING',
                  default_path: str = '.', rebuild: bool = True, filename_keys: list = None):
         """
         Initialize the OutputSaver class to manage output file saving.
@@ -31,7 +31,16 @@ class OutputSaver:
             filename_keys (list, optional): List of keys to keep in the filename. Default is None, which includes all keys.
         """
         self.diagnostic = diagnostic
-        self.catalog = catalog if catalog is not None else ConfigPath().catalog
+
+        if catalog:
+            self.catalog = catalog
+        else:
+            # HACK: This is a temporary solution to get the catalog with the complete triplet.
+            # At the moment we assume that the source is the 'lra-r100-monthly'.
+            config = ConfigPath()
+            _ = config.deliver_intake_catalog(model=model, exp=exp, source='lra-r100-monthly')
+            self.catalog = config.catalog
+
         self.model = model
         self.exp = exp
         self.diagnostic_product = diagnostic_product
@@ -50,7 +59,7 @@ class OutputSaver:
         else:
             self.filename_keys = self.all_keys
         self.logger = log_configure(log_level=self.loglevel, log_name='OutputSaver')
-        
+
     def update_diagnostic_product(self, diagnostic_product: str):
         """
         Update the diagnostic product for the instance.
@@ -78,7 +87,8 @@ class OutputSaver:
             time_precision (str, optional): Precision for time representation ('y', 'ym', 'ymd', 'ymdh', etc.).
             area (str, optional): The geographical area covered by the data.
             suffix (str, optional): The file extension/suffix indicating file type.
-            catalog_2 (str, optional): The second catalog, for comparative studies. Default to None will allow for autosearch in the installed catalogs.
+            catalog_2 (str, optional): The second catalog, for comparative studies.
+                                       Default to None will allow for autosearch in the installed catalogs.
             **kwargs: Arbitrary keyword arguments provided by the user for additional customization.
 
         Returns:
@@ -134,7 +144,8 @@ class OutputSaver:
         if self.filename_keys == self.all_keys:
             additional_parts = [f"{key}_{value}" for key, value in sorted(kwargs.items()) if key not in parts_dict]
         else:
-            additional_parts = [f"{key}_{value}" for key, value in sorted(kwargs.items()) if key in self.filename_keys and key not in parts_dict]
+            additional_parts = [f"{key}_{value}" for key,
+                                value in sorted(kwargs.items()) if key in self.filename_keys and key not in parts_dict]
 
         # Ensure catalog_2 always comes before model_2 if both are provided
         ordered_keys = []
@@ -177,7 +188,8 @@ class OutputSaver:
             time_precision (str, optional): Precision for time representation ('y', 'ym', 'ymd', 'ymdh', etc.).
             area (str, optional): The geographical area covered by the data.
             metadata (dict, optional): Additional metadata to include in the netCDF file.
-            catalog_2 (str, optional): The second catalog, for comparative studies. Default to None will allow for autosearch in the installed catalogs.
+            catalog_2 (str, optional): The second catalog, for comparative studies.
+                                       Default to None will allow for autosearch in the installed catalogs.
             mode (str, optional): Mode to write the netCDF file ('w' for write, 'a' for append). Default is 'w'.
             **kwargs: Additional keyword arguments for more flexible filename customization.
 
@@ -241,7 +253,8 @@ class OutputSaver:
 
     def save_pdf(self, fig: Figure, path: str = None, diagnostic_product: str = None, var: str = None,
                  model_2: str = None, exp_2: str = None, time_start: str = None, time_end: str = None,
-                 time_precision: str = 'ymd', area: str = None, metadata: dict = None, dpi: int = 300, catalog_2: str = None, **kwargs) -> str:
+                 time_precision: str = 'ymd', area: str = None, metadata: dict = None, dpi: int = 300,
+                 catalog_2: str = None, **kwargs) -> str:
         """
         Save a PDF file with a matplotlib figure to the provided path, with support for additional filename keywords and
         precise time intervals.
@@ -259,7 +272,8 @@ class OutputSaver:
             area (str, optional): The geographical area covered by the data.
             metadata (dict, optional): Additional metadata to include in the PDF file.
             dpi (int, optional): The resolution of the saved PDF file. Default is 300.
-            catalog_2 (str, optional): The second catalog, for comparative studies. Default to None will allow for autosearch in the installed catalogs.
+            catalog_2 (str, optional): The second catalog, for comparative studies.
+                                       Default to None will allow for autosearch in the installed catalogs.
             **kwargs: Additional keyword arguments for more flexible filename customization.
 
         Returns:
@@ -269,8 +283,8 @@ class OutputSaver:
             ValueError: If the provided fig parameter is not a valid matplotlib Figure.
         """
         filename = self.generate_name(diagnostic_product=diagnostic_product, var=var, model_2=model_2, exp_2=exp_2,
-                                        time_start=time_start, time_end=time_end, time_precision=time_precision, area=area,
-                                        suffix='pdf', catalog_2=catalog_2, **kwargs)
+                                      time_start=time_start, time_end=time_end, time_precision=time_precision, area=area,
+                                      suffix='pdf', catalog_2=catalog_2, **kwargs)
 
         if path is None:
             path = os.path.join(self.default_path, 'pdf')
@@ -285,7 +299,7 @@ class OutputSaver:
         # Ensure fig is a Figure object
         if isinstance(fig, plt.Axes):
             fig = fig.figure
-        # Save the figure as a PDF
+
         if isinstance(fig, (plt.Figure, Figure)):
             fig.savefig(full_path, dpi=dpi, bbox_inches='tight')
         else:
@@ -324,7 +338,8 @@ class OutputSaver:
 
     def save_png(self, fig: Figure, path: str = None, diagnostic_product: str = None, var: str = None,
                  model_2: str = None, exp_2: str = None, time_start: str = None, time_end: str = None,
-                 time_precision: str = 'ymd', area: str = None, metadata: dict = None, dpi: int = 300, catalog_2: str = None, **kwargs) -> str:
+                 time_precision: str = 'ymd', area: str = None, metadata: dict = None, dpi: int = 300,
+                 catalog_2: str = None, **kwargs) -> str:
         """
         Save a PNG file with a matplotlib figure to a provided path, with support for additional filename keywords and
         precise time intervals.
@@ -342,7 +357,8 @@ class OutputSaver:
             area (str, optional): The geographical area covered by the data.
             metadata (dict, optional): Additional metadata to include in the PNG file.
             dpi (int, optional): The resolution of the saved PNG file. Default is 300.
-            catalog_2 (str, optional): The second catalog, for comparative studies. Default to None will allow for autosearch in the installed catalogs.
+            catalog_2 (str, optional): The second catalog, for comparative studies.
+                                       Default to None will allow for autosearch in the installed catalogs.
             **kwargs: Additional keyword arguments for more flexible filename customization.
 
         Returns:

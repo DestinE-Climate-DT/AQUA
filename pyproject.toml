@@ -34,11 +34,12 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
+    "boto3",
     "cartopy",
     "cfgrib",
     "dask",
     "dask_jobqueue",
-    "eccodes==2.39.0",
+    "eccodes==2.39.2",
     "docker",
     "gcsfs", # Google Cloud Storage File System
     "gribscan",
@@ -60,8 +61,9 @@ dependencies = [
     "kerchunk",
     "h5py@git+https://github.com/h5py/h5py.git@3.12.1", #specific github pin to avoid installation of binaries
     "fastparquet",
-    "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "gsv@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.8.2"
+    "pyfdb==0.1.1",
+    "gsv-interface==2.9.0",
+    "ECmean4>=0.1.12"
 ]
 
 [project.optional-dependencies]
@@ -80,14 +82,10 @@ tests = [
     "pandoc",
     "pycobertura"
 ]
-diagnostics = [
-    "ECmean4"
-]
 all = [
     "aqua[docs]",
     "aqua[notebooks]",
-    "aqua[tests]",
-    "aqua[diagnostics]"
+    "aqua[tests]"
 ]
 
 [project.scripts]
@@ -124,7 +122,8 @@ markers = [
     "dummy: mark test for dummy diagnostic",
     "teleconnections: mark test for teleconnections diagnostic",
     "tropical_rainfall: mark test for tropical_rainfall diagnostic",
-    "catgen: mark test for catalog generator"
+    "catgen: mark test for catalog generator",
+    "ecmean: mark for ecmean performance indices and global mean"
 ]
 
 # This appears to be the correct configuration, but for some reason

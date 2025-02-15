@@ -12,6 +12,8 @@ def parse_arguments(args):
     parser.add_argument('-n', '--nworkers', type=int,
                         help='number of dask distributed workers')
     # This arguments will override the configuration file if provided
+    parser.add_argument('--catalog', type=str, help='catalog name',
+                        required=False) # Not used yet
     parser.add_argument('--model', type=str, help='model name',
                         required=False)
     parser.add_argument('--exp', type=str, help='experiment name',
