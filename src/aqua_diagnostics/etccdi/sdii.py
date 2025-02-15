@@ -24,14 +24,14 @@ class SDII(DailyETCCDI):
         super().__init__(catalog=catalog, model=model, exp=exp,
                          source=source, year=year, month=month, loglevel=loglevel)
 
-    def compute_index(self, var: str = 'tprate', output_dir: str = '.',
+    def compute_index(self, var: str = 'tprate', outputdir: str = '.',
                       rebuild: bool = False, threshold: float = 1.0, **kwargs):
         """
         Compute the Simple pricipitation intensity index (SDII) for the given month.
 
         Args:
             var (str): The variable to use for the computation. Default is 'tprate'.
-            output_dir (str): The output directory to save the index. Default is '.'.
+            outputdir (str): The output directory to save the index. Default is '.'.
             rebuild (bool): Whether to rebuild the index. Default is True.
             threshold (float): The threshold to use for the computation. Default is 1.0 mm/day.
             **kwargs: Arbitrary keyword arguments.
@@ -54,9 +54,9 @@ class SDII(DailyETCCDI):
                 if new_month != month:
                     # Save the index on disk
                     super().save_monthly_index(data=index, diagnostic_product='SDII_days', month=month,
-                                               default_path=output_dir, rebuild=rebuild, **kwargs)
+                                               default_path=outputdir, rebuild=rebuild, **kwargs)
                     super().save_monthly_index(data=index_cumulated, diagnostic_product='SDII_cumulated', month=month,
-                                               default_path=output_dir, rebuild=rebuild, **kwargs)
+                                               default_path=outputdir, rebuild=rebuild, **kwargs)
 
                     self.logger.debug('New month: %d', new_month)
                     month = new_month
@@ -69,9 +69,9 @@ class SDII(DailyETCCDI):
             else:
                 self.logger.info('No more data to compute the index')
                 super().save_monthly_index(data=index, diagnostic_product='SDII_days', month=month,
-                                           default_path=output_dir, rebuild=rebuild, **kwargs)
+                                           default_path=outputdir, rebuild=rebuild, **kwargs)
                 super().save_monthly_index(data=index_cumulated, diagnostic_product='SDII_cumulated', month=month,
-                                           default_path=output_dir, rebuild=rebuild, **kwargs)
+                                           default_path=outputdir, rebuild=rebuild, **kwargs)
 
     def _check_data(self, var: str):
         """
@@ -136,27 +136,27 @@ class SDII(DailyETCCDI):
 
         return index_day, index_cumulated
 
-    def combine_monthly_index(self, output_dir: str = '.', rebuild: bool = False, **kwargs):
+    def combine_monthly_index(self, outputdir: str = '.', rebuild: bool = False, **kwargs):
         """
         Combine the monthly indices to get the annual index.
 
         Args:
-            output_dir (str): The output directory to save the index. Default is '.'.
+            outputdir (str): The output directory to save the index. Default is '.'.
             rebuild (bool): Whether to rebuild the index. Default is True.
             **kwargs: Arbitrary keyword arguments.
 
         Returns:
             xr.DataArray: The annual index.
         """
-        days = super().combine_monthly_index(diagnostic_product='SDII_days', default_path=output_dir,
+        days = super().combine_monthly_index(diagnostic_product='SDII_days', default_path=outputdir,
                                              rebuild=rebuild, **kwargs)
-        cumulated = super().combine_monthly_index(diagnostic_product='SDII_cumulated', default_path=output_dir,
+        cumulated = super().combine_monthly_index(diagnostic_product='SDII_cumulated', default_path=outputdir,
                                                   rebuild=rebuild, **kwargs)
 
         sdii = cumulated / days
 
-        super().save_annual_index(data=cumulated, diagnostic_product='SDII_cumulated', default_path=output_dir, rebuild=rebuild, **kwargs)
-        super().save_annual_index(data=days, diagnostic_product='SDII_days', default_path=output_dir, rebuild=rebuild, **kwargs)
-        super().save_annual_index(data=sdii, diagnostic_product='SDII', default_path=output_dir, rebuild=rebuild, **kwargs)
+        super().save_annual_index(data=cumulated, diagnostic_product='SDII_cumulated', default_path=outputdir, rebuild=rebuild, **kwargs)
+        super().save_annual_index(data=days, diagnostic_product='SDII_days', default_path=outputdir, rebuild=rebuild, **kwargs)
+        super().save_annual_index(data=sdii, diagnostic_product='SDII', default_path=outputdir, rebuild=rebuild, **kwargs)
 
         return sdii
