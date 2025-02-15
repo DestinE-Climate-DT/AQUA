@@ -9,7 +9,7 @@ from aqua.logger import log_configure
 from aqua.util import get_arg, load_yaml
 from aqua.util import ConfigPath
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.etccdi import SDII
+from aqua.diagnostics.etccdi import SDII, PlotETCCDI
 
 
 def parse_arguments(cli_args):
@@ -59,14 +59,22 @@ if __name__ == "__main__":
     source = get_arg(args, 'source', models[0]['source'])
     year = get_arg(args, 'year', config['year'])
     month = get_arg(args, 'month', 1)
+    outputdir = get_arg(args, 'outputdir', config['outputdir'])
 
     sdii_flag = config['indices'].get('SDII', False)
 
     if sdii_flag:
         sdii = SDII(model=model, exp=exp, source=source, catalog=catalog,
                     year=year, loglevel=loglevel, month=month)
-        sdii.compute_index()
-        sdii.combine_monthly_index()
+        sdii.compute_index(outputdir=outputdir)
+        sdii_index = sdii.combine_monthly_index(outputdir=outputdir)
+
+        plot_sdii = PlotETCCDI(model=model, exp=exp, source=source, catalog=catalog,
+                               index='SDII', loglevel=loglevel)
+        plot_args = {'outputdir': outputdir, 'unit': 'mm/day', 'norm': 'log',
+                     'cmap': 'YlGnBu', 'min': 1.0, 'max': 40.0, 'year': year}
+        plot_sdii.plot_index(sdii_index, format='pdf', **plot_args)
+        plot_sdii.plot_index(sdii_index, format='png', **plot_args)
 
     close_cluster(client, cluster, private_cluster, loglevel)
 
