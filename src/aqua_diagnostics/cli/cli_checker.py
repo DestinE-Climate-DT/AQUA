@@ -10,27 +10,29 @@ import os
 import argparse
 import yaml
 
+from aqua.diagnostics.core import template_parse_arguments
+
+
 def parse_arguments(args):
-    """Parse command line arguments"""
+    """Parse command line arguments
+
+    Arguments:
+        args {list} -- list of arguments
+
+    Returns:
+        argparse.Namespace -- parsed arguments
+    """
 
     parser = argparse.ArgumentParser(description='Check setup CLI')
+    parser = template_parse_arguments(parser)
 
-    parser.add_argument("--loglevel", "-l", type=str,
-                        required=False, help="loglevel")
-    parser.add_argument("--catalog", type=str,
-                        required=False, help="catalog name")
-    parser.add_argument("--model", type=str,
-                        required=False, help="model name")
-    parser.add_argument("--exp", type=str,
-                        required=False, help="experiment name")
-    parser.add_argument("--source", type=str,
-                        required=False, help="source name")
     parser.add_argument("--yaml", type=str,
                         required=False, help="write an experiment.yaml file to a given directory")
     parser.add_argument("--no-read", action="store_false",
-                        required=False, help="do not attempt to read data (used with --yaml to speed up when creating only yaml)")
+                        required=False, help="do not attempt to read data (used with --yaml to speed up when creating only yaml)") # noqa
     parser.add_argument("--no-rebuild", action="store_false",
                         required=False, help="by default rebuild of areas is forced, this prevents it")
+
     return parser.parse_args(args)
 
 

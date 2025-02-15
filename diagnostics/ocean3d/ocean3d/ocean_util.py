@@ -10,6 +10,10 @@ from aqua.exceptions import NoObservationError
 from aqua.util import find_vert_coord, load_yaml, add_pdf_metadata
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
+import math
+from dask.diagnostics import ProgressBar
+import psutil
+
 
 def kelvin_to_celsius(data, variable_name, loglevel= "WARNING"):
     """
@@ -46,7 +50,7 @@ def check_variable_name(data, loglevel= "WARNING"):
     logger = log_configure(loglevel, 'Check Variables')
     vars = list(data.variables)
     required_vars= []
-    var_list= ["SO","avg_so","thetao","THETAO","avg_SO","avg_so","avg_thetao","avg_THETAO",
+    var_list= ["SO","so","thetao","THETAO","so","so","thetao","thetao",
                "toce_mean","soce_mean", "so"]
     for var in vars:
         if var in var_list:
@@ -56,20 +60,20 @@ def check_variable_name(data, loglevel= "WARNING"):
         data = data[required_vars]
         for var in required_vars:
             if 'so' in var.lower():
-                data = data.rename({var: "avg_so"})
-                logger.debug("renaming %s as avg_so", var)
-            if var.lower() in ['avg_thetao', 'toce', "thetao"]:
-                data = data.rename({var: "avg_thetao"})
-                logger.debug("renaming %s as avg_thetao", var)
+                data = data.rename({var: "so"})
+                logger.debug("renaming %s as so", var)
+            if var.lower() in ['thetao', 'toce', "thetao"]:
+                data = data.rename({var: "thetao"})
+                logger.debug("renaming %s as thetao", var)
     else:
-        raise ValueError("Required variable avg_so and avg_thetao is not available in the catalog")
+        raise ValueError("Required variable so and thetao is not available in the catalog")
     #HACK
     if "level" in data:
         if data['level'].attrs['units'] == 'NEMO model layers':
             data['level'].attrs['units'] = 'm'
     vertical_coord = find_vert_coord(data)[0]
     data = data.rename({vertical_coord: "lev"})
-    data = kelvin_to_celsius(data, "avg_thetao")
+    data = kelvin_to_celsius(data, "thetao")
     # if "thetao_uncertainty" in data:
     #     data = kelvin_to_celsius(data, "thetao_uncertainty")
     data = data.resample(time="MS").mean()
@@ -307,7 +311,7 @@ def load_obs_data(model='EN4', exp='en4', source='monthly', loglevel= "WARNING")
     # We standardise the name for the vertical dimension
     den4 = den4.rename({find_vert_coord(den4)[0]: "lev"}).resample(time="MS").mean()
     # den4 = check_variable_name(den4).resample(time="MS").mean()
-    # den4 = den4[["avg_thetao", "avg_so"]].resample(time="MS").mean()
+    # den4 = den4[["thetao", "so"]].resample(time="MS").mean()
     
     logger.debug("loaded %s data", model)
     return den4
@@ -553,8 +557,34 @@ def split_ocean3d_req(self, o3d_request, loglevel= "WARNING"):
     self.lon_e = o3d_request.get('lon_e', None)
     self.customise_level = o3d_request.get('customise_level', None)
     self.levels = o3d_request.get('levels', None)
-    self.overlap = o3d_request.get('overlap', None)
     self.output = o3d_request.get('output')
     self.output_dir = o3d_request.get('output_dir', None)
     self.loglevel= o3d_request.get('loglevel',"WARNING")
     return self
+
+def round_up(value):
+    if value % 100 == 0:
+        return value  # Already a multiple of 100
+    elif value % 100 <= 50:
+        return math.ceil(value / 50) * 50  # Round up to next 50
+    else:
+        return math.ceil(value / 100) * 100  # Round up to next 100
+
+def compute_data(data, loglevel="WARNING"):
+    logger = log_configure(loglevel, 'compute data')
+    logger.debug(f"Loading the data in the memory")
+    if loglevel == "DEBUG":
+        total_memory = psutil.virtual_memory().total / 1e9  # GB
+        available_memory = psutil.virtual_memory().available / 1e9  # GB
+        estimated_size = data.nbytes / 1e9  # GB
+
+        logger.debug(f"Estimated Data Size: {estimated_size:.2f} GB")
+        logger.debug(f"Available Memory Before Load: {available_memory:.2f} GB")
+
+        with ProgressBar():
+            data = data.compute()
+    else:
+        data = data.compute()
+    logger.debug(f"Loaded the data in the memory")
+    return data
+    

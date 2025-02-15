@@ -1,6 +1,8 @@
+![maintenance-status](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
+
 # AQUA
 
-The Application for Quality assessment and Uncertainity quAntification (AQUA) is a model evaluation framework designed for running diagnostics on high-resolution climate models, specifically for Climate DT climate simulations being part of Destination Earth activity. The package provides a flexible and efficient python3 framework to process and analyze large volumes of climate data. With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic tools that can be run in parallel. AQUA offers:
+The Application for QUality Assessment (AQUA) is a model evaluation framework designed for running diagnostics on high-resolution climate models, specifically for Climate DT climate simulations being part of Destination Earth activity. The package provides a flexible and efficient python3 framework to process and analyze large volumes of climate data. With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic tools that can be run in parallel. AQUA offers:
 
 - Efficient handling of large datasets from high-resolution climate models;
 - Support for various data formats, such as NetCDF, GRIB, Zarr or FDB;
@@ -10,7 +12,7 @@ The Application for Quality assessment and Uncertainity quAntification (AQUA) is
 
 ## Installation
 
-AQUA requires python>=3.9. Recommended installation should be done through mamba (a package manager for conda-forge).
+AQUA requires python>=3.9. Recommended installation should be done through any package manager for conda-forge.
 
 ### Create conda/mamba environment and install packages
 ```
@@ -29,7 +31,7 @@ An alternative deployment making use of containers is available. Please refer to
 ## Documentation
 
 Full [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html) is available.
-Please notice that the webpage is password protected.
+Please notice that the webpage is password protected. A deployment on ReadTheDocs is planned for the short future.
 You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/AQUA+-+Meetings) or please contact the AQUA team to get access.
 
 ## Examples
@@ -43,4 +45,3 @@ Please look at the `cli` folder to have access to the AQUA command line tools.
 ## Contributing guide
 
 Please refer to the [Guidelines for Contributors](https://github.com/DestinE-Climate-DT/AQUA/blob/main/CONTRIBUTING.md) if you want to join AQUA team!
-

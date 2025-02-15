@@ -79,7 +79,7 @@ def plot_hovmoller(data: xr.DataArray,
     dim_max = data.coords[dim].max()
     dim_min = np.round(dim_min, 0)
     dim_max = np.round(dim_max, 0)
-    
+
     data_mean = data.mean(dim=dim)
 
     # Create figure and axes
@@ -130,10 +130,10 @@ def plot_hovmoller(data: xr.DataArray,
     else:  # pcolormesh
         if invert_axis:
             im = ax.pcolormesh(x, y, data_mean, cmap=cmap,
-                               vmin=vmin, vmax=vmax, extend='both')
+                               vmin=vmin, vmax=vmax)
         else:
             im = ax.pcolormesh(x, y, data_mean.T, cmap=cmap,
-                               vmin=vmin, vmax=vmax, extend='both')
+                               vmin=vmin, vmax=vmax)
 
     # Adjust the location of the subplots on the page to make room for the colorbar
     fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
@@ -171,7 +171,7 @@ def plot_hovmoller(data: xr.DataArray,
             logger.warning('Could not find a label for the colorbar')
 
     fig.colorbar(im, cax=cbar_ax, orientation='horizontal',
-                label=cbar_label)
+                 label=cbar_label)
 
     # Save the figure
     if save:
@@ -192,14 +192,14 @@ def plot_hovmoller(data: xr.DataArray,
             if dpi == 100:
                 logger.info("Setting dpi to 100 by default, use dpi kwarg to change it")
 
+        logger.info('Saving figure to {}/{}'.format(outputdir, filename))
         fig.savefig('{}/{}'.format(outputdir, filename),
                     dpi=dpi, bbox_inches='tight')
 
-        if display is False:
-            logger.debug("Display is set to False, closing figure")
-            plt.close(fig)
-        logger.info('Saving figure to {}/{}'.format(outputdir, filename))
+    if display is False and not return_fig:
+        logger.debug("Display is set to False, closing figure")
+        plt.close(fig)
 
-        if return_fig:
-            logger.debug("Returning figure and axes")
-            return fig, ax
+    if return_fig:
+        logger.debug("Returning figure and axes")
+        return fig, ax

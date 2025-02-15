@@ -129,6 +129,7 @@ The configuration file is a YAML file that contains the following information:
     * ``seasons``: a boolean that enables the seasonal analysis.
     * ``seasons_stat``: the statistic to use for the seasonal analysis (e.g., 'mean').
     * ``vertical``: a boolean that enables the vertical profiles.
+    * ``regrid``: the grid you want your data to be regridded to (e.g. 'r100').
     * ``startdate_data``: the start date of the dataset.
     * ``enddate_data``: the end date of the dataset.
     * ``startdate_obs``: the start date of the reference dataset.

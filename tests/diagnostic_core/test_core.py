@@ -3,6 +3,7 @@ from aqua.diagnostics.core import Diagnostic
 
 loglevel = 'DEBUG'
 
+
 @pytest.mark.aqua
 def test_class_diagnostic(tmp_path):
     """

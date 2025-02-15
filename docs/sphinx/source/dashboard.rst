@@ -93,6 +93,11 @@ Additional options
 
     The bucket to use for the LUMI-O push (default is 'aqua-web').
 
+.. option:: -c <configfile>, --config <configfile>
+
+    Alternate config file for make_contents (default is 'config.yaml' from aqua-web). 
+    To be used together with the rsync option.
+
 .. option:: -d, --dry-run
 
     Do not push to the repository.
@@ -117,6 +122,12 @@ Additional options
 .. option:: --branch <branch>
 
     The branch to push to (default is 'main').
+
+.. option:: --rsync <target>
+    
+    Remote rsync target (takes priority over s3 bucket if specified).
+    The syntax is for example:
+    ``--rsync user@myremotemachine.csc.fi:/path/to/my/dest/dir``
 
 Configuration file
 ^^^^^^^^^^^^^^^^^^

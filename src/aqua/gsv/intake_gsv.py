@@ -1,6 +1,6 @@
 """An intake driver for FDB/GSV access"""
 import os
-import glob
+import fnmatch
 import datetime
 import eccodes
 import xarray as xr
@@ -626,7 +626,11 @@ class GSVSource(base.DataSource):
             expver = self.hpc_expver
 
         file_mask = f"{req['class']}:{req['dataset']}:{req['activity']}:{req['experiment']}:{req['generation']}:{req['model']}:{req['realization']}:{expver}:{req['stream']}:*"
-        file_list = glob.glob(os.path.join(root, file_mask))
+        
+        file_mask = file_mask.lower()
+        file_list = [
+            f for f in os.listdir(root) if fnmatch.fnmatch(f.lower(), file_mask)
+        ]
 
         datesel = [filename[-8:] for filename in file_list if (filename[-8:].isdigit() and len(filename[-8:]) == 8)]
         datesel.sort()

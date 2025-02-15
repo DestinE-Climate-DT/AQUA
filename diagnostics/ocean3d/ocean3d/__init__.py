@@ -5,9 +5,8 @@ from .ocean_drifts import hovmoller_plot
 from .ocean_drifts import multilevel_trend
 from .ocean_drifts import zonal_mean_trend
 from .ocean_drifts import time_series
-# from .ocean_circulation. import 
 from .ocean_circulation import stratification
-from .ocean_circulation import plot_spatial_mld_clim
+from .ocean_circulation import mld
 # Optional but recommended
 __version__ = '0.0.5'
 
@@ -16,7 +15,7 @@ __all__ = ["hovmoller_plot",
             "time_series",
            "multilevel_trend",
            "zonal_mean_trend",
-           "plot_spatial_mld_clim",
+           "mld",
            "plot_stratification"]
 
 # CHANGELOG

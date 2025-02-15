@@ -24,7 +24,7 @@ def data_process_by_type(**kwargs):
     Selects the type of timeseries and colormap based on the given parameters.
 
     Args:
-        data (DataArray): Input data containing temperature (avg_thetao) and salinity (avg_so).
+        data (DataArray): Input data containing temperature (thetao) and salinity (so).
         anomaly (bool, optional): Specifies whether to compute anomalies. Defaults to False.
         standardise (bool, optional): Specifies whether to standardize the data. Defaults to False.
         anomaly_ref (str, optional): Reference for the anomaly computation. Valid options: "t0", "tmean". Defaults to None.

@@ -39,12 +39,15 @@ jobs:
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
+
+      # This is needed to avoid FDB errors with ClimateDT specific keys.
+      # METKIT_RAW_PARAM: 1
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      image: ghcr.io/destine-climate-dt/ubuntu22.04-fdb-aqua:ubuntu-docker
+      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.14-eccodes2.39.2-aqua:docker24.04_updated
       credentials:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -78,7 +81,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
-          token: github_pat_${{ secrets.CLIMATEDT_TOKEN }}
           path: Climate-DT-catalog 
       - name: Clone GitLab data-portfolio repository
         run: |
