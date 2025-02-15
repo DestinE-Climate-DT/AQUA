@@ -23,7 +23,7 @@ class SDII(DailyETCCDI):
         """
         super().__init__(catalog=catalog, model=model, exp=exp,
                          source=source, year=year, month=month, loglevel=loglevel)
-    
+
     def compute_index(self, var: str = 'tprate', output_dir: str = '.',
                       rebuild: bool = False, threshold: float = 1.0, **kwargs):
         """
@@ -43,7 +43,7 @@ class SDII(DailyETCCDI):
         index = None
         index_cumulated = None
 
-        while(index is None or self.data is not None):
+        while (index is None or self.data is not None):
             super().retrieve(var=var)
 
             if self.data is not None:
@@ -62,7 +62,7 @@ class SDII(DailyETCCDI):
                     month = new_month
                     index = None
                     index_cumulated = None
-                
+
                 self._check_data(var=var)
                 index, index_cumulated = self._index_evaluation(index_day=index, index_cumulated=index_cumulated,
                                                                 threshold=threshold)
@@ -72,7 +72,7 @@ class SDII(DailyETCCDI):
                                            default_path=output_dir, rebuild=rebuild, **kwargs)
                 super().save_monthly_index(data=index_cumulated, diagnostic_product='SDII_cumulated', month=month,
                                            default_path=output_dir, rebuild=rebuild, **kwargs)
-    
+
     def _check_data(self, var: str):
         """
         Make sure that the data is in mm/day.
@@ -95,7 +95,7 @@ class SDII(DailyETCCDI):
                           threshold: float):
         """
         Evaluate the index for the given day.
-        
+
         Args:
             index_day (xr.DataArray): The index for the given day.
             index_cumulated (xr.DataArray): The index for the cumulated days.
@@ -112,7 +112,7 @@ class SDII(DailyETCCDI):
             return
         else:
             daily = self.reader.timmean(self.data, freq='D')
-        
+
         wet_day = xr.where(daily >= threshold, 1, 0)
         wet_value = xr.where(daily >= threshold, daily, 0)
 
@@ -133,7 +133,7 @@ class SDII(DailyETCCDI):
             index_cumulated = wet_value
         else:
             index_cumulated += wet_value
-        
+
         return index_day, index_cumulated
 
     def combine_monthly_index(self, output_dir: str = '.', rebuild: bool = False, **kwargs):
