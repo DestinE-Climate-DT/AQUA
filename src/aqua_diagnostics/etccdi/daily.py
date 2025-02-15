@@ -39,7 +39,7 @@ class DailyETCCDI():
         self.reader = Reader(catalog=catalog, model=self.model, exp=self.exp, source=self.source,
                              startdate=self.startdate, enddate=self.enddate,
                              streaming=True, aggregation='D', loglevel=loglevel)
-        
+
         self.catalog = catalog if catalog is not None else self.reader.catalog
 
         # Data to be retrieved
@@ -56,9 +56,9 @@ class DailyETCCDI():
             var (str): The variable to be retrieved. Default all variables.
         """
         self.data = self.reader.retrieve(var=var)
-    
-    def save_monthly_index(self, data, diagnostic_product : str, month : int,
-                           default_path: str = '.', rebuild : bool = True, **kwargs):
+
+    def save_monthly_index(self, data, diagnostic_product: str, month: int,
+                           default_path: str = '.', rebuild: bool = True, **kwargs):
         """
         Save the monthly index as netcdf for the given diagnostic.
 
@@ -74,14 +74,14 @@ class DailyETCCDI():
         outputsaver = OutputSaver(diagnostic='ETCCDI', diagnostic_product=diagnostic_product,
                                   default_path=default_path, rebuild=rebuild, catalog=self.catalog,
                                   model=self.model, exp=self.exp, loglevel=self.logger.level)
-        
+
         time_start = f'{self.year}{month:02d}'
 
-        #HACK: If I use time_start I need to define time_end as well, which I don't want
+        # HACK: If I use time_start I need to define time_end as well, which I don't want
         outputsaver.save_netcdf(dataset=data, model_2=time_start, **kwargs)
 
-    def save_annual_index(self, data, diagnostic_product : str, 
-                          default_path: str = '.', rebuild : bool = True, **kwargs):
+    def save_annual_index(self, data, diagnostic_product: str,
+                          default_path: str = '.', rebuild: bool = True, **kwargs):
         """
         Save the annual index as netcdf for the given diagnostic.
 
@@ -93,16 +93,16 @@ class DailyETCCDI():
         """
         if isinstance(data, xr.Dataset) is False and isinstance(data, xr.DataArray) is False:
             self.logger.error('Data to save as netcdf must be an xarray Dataset or DataArray')
-        
+
         outputsaver = OutputSaver(diagnostic='ETCCDI', diagnostic_product=diagnostic_product,
                                   default_path=default_path, rebuild=rebuild, catalog=self.catalog,
                                   model=self.model, exp=self.exp, loglevel=self.logger.level)
-        
-        #HACK: If I use time_start I need to define time_end as well, which I don't want
+
+        # HACK: If I use time_start I need to define time_end as well, which I don't want
         outputsaver.save_netcdf(dataset=data, model_2=f"{self.year}", **kwargs)
 
-    def combine_monthly_index(self, diagnostic_product : str,
-                              default_path: str = '.', rebuild : bool = True, **kwargs):
+    def combine_monthly_index(self, diagnostic_product: str,
+                              default_path: str = '.', rebuild: bool = True, **kwargs):
         """
         Combine the monthly index into a single dataset for the given diagnostic.
 
