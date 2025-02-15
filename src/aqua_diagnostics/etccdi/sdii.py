@@ -144,6 +144,9 @@ class SDII(DailyETCCDI):
             output_dir (str): The output directory to save the index. Default is '.'.
             rebuild (bool): Whether to rebuild the index. Default is True.
             **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            xr.DataArray: The annual index.
         """
         days = super().combine_monthly_index(diagnostic_product='SDII_days', default_path=output_dir,
                                              rebuild=rebuild, **kwargs)
@@ -155,3 +158,5 @@ class SDII(DailyETCCDI):
         super().save_annual_index(data=cumulated, diagnostic_product='SDII_cumulated', default_path=output_dir, rebuild=rebuild, **kwargs)
         super().save_annual_index(data=days, diagnostic_product='SDII_days', default_path=output_dir, rebuild=rebuild, **kwargs)
         super().save_annual_index(data=sdii, diagnostic_product='SDII', default_path=output_dir, rebuild=rebuild, **kwargs)
+
+        return sdii
