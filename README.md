@@ -1,3 +1,6 @@
+![maintenance-status](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
+[![Documentation Status](https://readthedocs.org/projects/aqua/badge/?version=v0.13-operational)](https://aqua.readthedocs.io/en/aqua/?badge=v0.13-operational)
+
 # AQUA
 
 The Application for Quality assessment and Uncertainity quAntification (AQUA) is a model evaluation framework designed for running diagnostics on high-resolution climate models, specifically for Climate DT climate simulations being part of Destination Earth activity. The package provides a flexible and efficient python3 framework to process and analyze large volumes of climate data. With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic tools that can be run in parallel. AQUA offers:
@@ -20,17 +23,15 @@ mamba env create -f environment.yml
 mamba activate aqua
 ```
 
-This installation will provide both the AQUA framework and the AQUA diagnostics, which can be found in the `diagnostics` folder.
+This installation will provide both the AQUA framework and the AQUA diagnostics.
 
 ### Use of AQUA container 
 
-An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/container.html).
+An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua.readthedocs.io/en/v0.13-operational/container.html).
 
 ## Documentation
 
-Full [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html) is available.
-Please notice that the webpage is password protected.
-You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/AQUA+-+Meetings) or please contact the AQUA team to get access.
+Full [AQUA Documentation](https://aqua.readthedocs.io/en/v0.13-operational/) is available on ReadTheDocs.
 
 ## Examples
 
