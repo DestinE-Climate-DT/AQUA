@@ -6,6 +6,7 @@ import eccodes
 import xarray as xr
 import numpy as np
 import dask
+from dask.distributed import get_worker
 from ruamel.yaml import YAML
 from aqua.util.eccodes import get_eccodes_attr
 from aqua.util import to_list
@@ -31,6 +32,7 @@ class GSVSource(base.DataSource):
     name = 'gsv'
     version = '0.0.2'
     partition_access = True
+    gsv = None # This is necessary to be shared or not depending on the dask cluster or not
 
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
@@ -481,7 +483,7 @@ class GSVSource(base.DataSource):
 
         # this is needed here and not in init because each worker spawns a new environment
         gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
-        gsv = GSVRetriever(logging_level=gsv_log_level)
+        gsv = self.get_gsv(gsv_log_level)
 
         self.logger.debug('Request %s', request)
         dataset = gsv.request_data(request, use_stream_iterator=fstream_iterator, 
@@ -641,6 +643,19 @@ class GSVSource(base.DataSource):
             self.logger.info('Automatic FDB date range: %s - %s', start_date, end_date)
 
         return start_date, end_date
+
+    def get_gsv(self, gsv_log_level):
+        if "DASK_WORKER" in os.environ:
+            # Running inside a Dask worker → create a new instance per worker
+            worker = get_worker()  # Get current worker
+            if not hasattr(worker, "gsv"):
+                worker.gsv = GSVRetriever(logging_level=gsv_log_level)
+            return worker.gsv
+        else:
+            # Running in serial → use a single shared instance
+            if GSVSource.gsv is None:
+                GSVSource.gsv = GSVRetriever(logging_level=gsv_log_level)
+            return GSVSource.gsv
 
 
 # This function is repeated here in order not to create a cross dependency between GSVSource and AQUA
