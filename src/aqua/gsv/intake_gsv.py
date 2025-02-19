@@ -642,15 +642,15 @@ class GSVSource(base.DataSource):
             return None
 
         try: 
-            fdb_info['hpc']['data_start_date'] = todatetime(fdb_info['hpc']['data_start_date']).strftime('%Y%m%dT%H%M')
-            fdb_info['hpc']['data_end_date'] = todatetime(fdb_info['hpc']['data_end_date']).strftime('%Y%m%dT%H%M')
+            fdb_info['hpc']['data_start_date'] = self._validate_info_date(fdb_info, 'hpc', 'start')
+            fdb_info['hpc']['data_end_date'] = self._validate_info_date(fdb_info, 'hpc', 'end')
         except KeyError:
             self.logger.error("FDB info file %s does not contain HPC dates in correct format", fdb_info_file)
             return None
         if self.fdbhome_bridge or self.fdbpath_bridge:
                 try:
-                    fdb_info['bridge']['bridge_start_date'] = todatetime(fdb_info['bridge']['bridge_start_date']).strftime('%Y%m%dT%H%M')
-                    fdb_info['bridge']['bridge_end_date'] = todatetime(fdb_info['bridge']['bridge_end_date']).strftime('%Y%m%dT%H%M')
+                    fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
+                    fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
                 except KeyError:
                     self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
                     return None
@@ -658,6 +658,26 @@ class GSVSource(base.DataSource):
             fdb_info['bridge'] = None
 
         return fdb_info
+    
+    @staticmethod
+    def _validate_info_date(fdb_info_file, location='hpc', kind='start'):
+    
+        if location not in ['hpc', 'bridge']:
+            raise ValueError('location should be either hpc or local')
+        
+        if kind not in ['start', 'end']:
+            raise ValueError('kind should be either start or end')
+        
+        identifier = 'data' if location == 'hpc' else 'hpc'
+
+        date = f'{identifier}_{kind}_date'
+        hour = f'{identifier}_{kind}_hour'
+
+        # hour timestamp is required now
+        if hour not in fdb_info_file[location]:
+            raise ValueError(f'No {hour} found in {location} section of fdb_info_file')
+
+        return todatetime(f'{fdb_info_file[location][date]}{fdb_info_file[location][hour]}').strftime('%Y%m%dT%H%M')
 
 
     def parse_fdb(self, start_date, end_date):
