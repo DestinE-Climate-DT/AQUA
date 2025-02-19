@@ -1,4 +1,5 @@
 ![maintenance-status](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
+[![Documentation Status](https://readthedocs.org/projects/aqua/badge/?version=latest)](https://aqua.readthedocs.io/en/latest/)
 
 # AQUA
 
@@ -22,17 +23,15 @@ mamba env create -f environment.yml
 mamba activate aqua
 ```
 
-This installation will provide both the AQUA framework and the AQUA diagnostics, which can be found in the `diagnostics` folder.
+This installation will provide both the AQUA framework and the AQUA diagnostics.
 
 ### Use of AQUA container 
 
-An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/container.html).
+An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua.readthedocs.io/en/latest/container.html).
 
 ## Documentation
 
-Full [AQUA Documentation](https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html) is available.
-Please notice that the webpage is password protected. A deployment on ReadTheDocs is planned for the short future.
-You can find the credentials in the [wiki page](https://wiki.eduuni.fi/display/cscRDIcollaboration/AQUA+-+Meetings) or please contact the AQUA team to get access.
+Full [AQUA Documentation](https://aqua.readthedocs.io/en/latest/) is available on ReadTheDocs.
 
 ## Examples
 

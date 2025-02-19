@@ -6,16 +6,22 @@ models:
       model: 'IFS-NEMO'
       exp: 'historical-1990'
       source: 'lra-r100-monthly'
+      startdate: null
+      enddate: null
 
     - catalog: null
       model: 'ERA5'
       exp: 'era5'
       source: 'monthly'
+      startdate: '1990-01-01'
+      enddate: '2020-12-31'
       
     - catalog: null
       model: 'CERES'
       exp: 'ebaf-toa41'
       source: 'monthly'
+      startdate: '2000-01-01'
+      enddate: '2020-12-31'
 
 output:
   outputdir: "./"

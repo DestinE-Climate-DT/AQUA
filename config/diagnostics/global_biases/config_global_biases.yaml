@@ -25,7 +25,8 @@ output:
 
 diagnostic_attributes:
   variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
-  plev: null # You can specify a pressure level here
+  # Level plot for 2D bias map if variable 3d
+  plev: [85000, 25000]
   seasons: True
   seasons_stat: 'mean'
   vertical: True

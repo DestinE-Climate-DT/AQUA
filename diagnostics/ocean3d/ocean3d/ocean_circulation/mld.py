@@ -61,7 +61,7 @@ class mld:
         cbar = fig.colorbar(cs1, cax=cbar_ax, orientation='horizontal')
         cbar.set_label('Mixed layer depth (in m)')
 
-        axs[0].set_title(f"Model climatology {self.mod_clim.attrs["start_year"]}-{self.mod_clim.attrs["end_year"]}", fontsize=18)
+        axs[0].set_title(f"Model climatology {self.mod_clim.attrs['start_year']}-{self.mod_clim.attrs['end_year']}", fontsize=18)
         axs[0].set_ylabel("Latitude", fontsize=14)
         axs[0].set_xlabel("Longitude", fontsize=14)
         axs[0].set_facecolor('grey')
@@ -69,7 +69,7 @@ class mld:
             cs1 = axs[1].contourf(self.obs_clim.lon, self.obs_clim.lat, self.obs_clim["mld"],
                                 levels=np.linspace(clev1, clev2, nclev), cmap='jet')
 
-            axs[1].set_title(f"EN4 OBS climatology {self.obs_clim.attrs["start_year"]}-{self.obs_clim.attrs["end_year"]}", fontsize=18)
+            axs[1].set_title(f"EN4 OBS climatology {self.obs_clim.attrs['start_year']}-{self.obs_clim.attrs['end_year']}", fontsize=18)
             # axs[1].set_ylabel("Latitude", fontsize=12)
             axs[1].set_xlabel("Longitude", fontsize=14)
             axs[1].set_yticklabels([])

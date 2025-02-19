@@ -49,7 +49,7 @@ class OutputSaver:
         self.rebuild = rebuild
         self.all_keys = [
             'diagnostic', 'diagnostic_product', 'catalog', 'model', 'exp',
-            'var', 'model_2', 'exp_2', 'catalog_2', 'area', 'time_start', 'time_end', 'time_precision']
+            'var', 'model_2', 'exp_2', 'catalog_2',  'plev', 'area', 'time_start', 'time_end', 'time_precision']
         if filename_keys is not None:
             # Validate that filename_keys are part of the allowed keys
             for key in filename_keys:
@@ -71,7 +71,7 @@ class OutputSaver:
             self.diagnostic_product = diagnostic_product
 
     def generate_name(self, diagnostic_product: str = None, var: str = None, model_2: str = None, exp_2: str = None,
-                      time_start: str = None, time_end: str = None, time_precision: str = 'ymd', area: str = None,
+                      time_start: str = None, time_end: str = None, time_precision: str = 'ymd', plev: str = None, area: str = None,
                       suffix: str = 'nc', catalog_2: str = None, **kwargs) -> str:
         """
         Generate a filename based on provided parameters and additional user-defined keywords,
@@ -85,6 +85,7 @@ class OutputSaver:
             time_start (str, optional): The start time for the data, in format consistent with time_precision.
             time_end (str, optional): The finish (end) time for the data, in format consistent with time_precision.
             time_precision (str, optional): Precision for time representation ('y', 'ym', 'ymd', 'ymdh', etc.).
+            plev (str, optional): Pressure level
             area (str, optional): The geographical area covered by the data.
             suffix (str, optional): The file extension/suffix indicating file type.
             catalog_2 (str, optional): The second catalog, for comparative studies.
@@ -134,6 +135,7 @@ class OutputSaver:
             'catalog_2': catalog_2,
             'model_2': model_2,
             'exp_2': exp_2,
+            'plev': plev,
             'area': area,
             'time_start': time_parts[0] if time_parts else None,
             'time_end': time_parts[1] if time_parts else None,
@@ -170,7 +172,7 @@ class OutputSaver:
 
     def save_netcdf(self, dataset, path: str = None, diagnostic_product: str = None, var: str = None,
                     model_2: str = None, exp_2: str = None, time_start: str = None, time_end: str = None,
-                    time_precision: str = 'ymd', area: str = None, metadata: dict = None, catalog_2: str = None,
+                    time_precision: str = 'ymd', plev: str = None, area: str = None, metadata: dict = None, catalog_2: str = None,
                     mode: str = 'w', **kwargs) -> str:
         """
         Save a netCDF file with a dataset to a specified path, with support for additional filename keywords and
@@ -186,6 +188,7 @@ class OutputSaver:
             time_start (str, optional): The start time for the data, in format consistent with time_precision.
             time_end (str, optional): The finish (end) time for the data, in format consistent with time_precision.
             time_precision (str, optional): Precision for time representation ('y', 'ym', 'ymd', 'ymdh', etc.).
+            plev (str, optional): Pressure level
             area (str, optional): The geographical area covered by the data.
             metadata (dict, optional): Additional metadata to include in the netCDF file.
             catalog_2 (str, optional): The second catalog, for comparative studies.
@@ -198,7 +201,7 @@ class OutputSaver:
         """
         filename = self.generate_name(diagnostic_product=diagnostic_product, var=var,
                                       model_2=model_2, exp_2=exp_2, time_start=time_start, time_end=time_end,
-                                      time_precision=time_precision, area=area, suffix='nc', catalog_2=catalog_2, **kwargs)
+                                      time_precision=time_precision, plev=plev, area=area, suffix='nc', catalog_2=catalog_2, **kwargs)
         
         # If dataset is an xarray DataArray, convert it to a Dataset
         if isinstance(dataset, xr.DataArray):
@@ -226,6 +229,7 @@ class OutputSaver:
             'time_start': time_start,
             'time_end': time_end,
             'time_precision': time_precision,
+            'plev': plev,
             'area': area,
             'catalog': self.catalog,
             'catalog_2': catalog_2,
@@ -258,7 +262,7 @@ class OutputSaver:
 
     def save_pdf(self, fig: Figure, path: str = None, diagnostic_product: str = None, var: str = None,
                  model_2: str = None, exp_2: str = None, time_start: str = None, time_end: str = None,
-                 time_precision: str = 'ymd', area: str = None, metadata: dict = None, dpi: int = 300,
+                 time_precision: str = 'ymd', plev: str = None, area: str = None, metadata: dict = None, dpi: int = 300,
                  catalog_2: str = None, **kwargs) -> str:
         """
         Save a PDF file with a matplotlib figure to the provided path, with support for additional filename keywords and
@@ -274,6 +278,7 @@ class OutputSaver:
             time_start (str, optional): The start time for the data, in format consistent with time_precision.
             time_end (str, optional): The finish (end) time for the data, in format consistent with time_precision.
             time_precision (str, optional): Precision for time representation ('y', 'ym', 'ymd', 'ymdh', etc.).
+            plev (str, optional): Pressure level
             area (str, optional): The geographical area covered by the data.
             metadata (dict, optional): Additional metadata to include in the PDF file.
             dpi (int, optional): The resolution of the saved PDF file. Default is 300.
@@ -288,7 +293,7 @@ class OutputSaver:
             ValueError: If the provided fig parameter is not a valid matplotlib Figure.
         """
         filename = self.generate_name(diagnostic_product=diagnostic_product, var=var, model_2=model_2, exp_2=exp_2,
-                                      time_start=time_start, time_end=time_end, time_precision=time_precision, area=area,
+                                      time_start=time_start, time_end=time_end, time_precision=time_precision, plev=plev, area=area,
                                       suffix='pdf', catalog_2=catalog_2, **kwargs)
 
         if path is None:
@@ -322,6 +327,7 @@ class OutputSaver:
             'time_start': time_start,
             'time_end': time_end,
             'time_precision': time_precision,
+            'plev': plev,
             'area': area,
             'catalog': self.catalog,
             'catalog_2': catalog_2,
@@ -343,7 +349,7 @@ class OutputSaver:
 
     def save_png(self, fig: Figure, path: str = None, diagnostic_product: str = None, var: str = None,
                  model_2: str = None, exp_2: str = None, time_start: str = None, time_end: str = None,
-                 time_precision: str = 'ymd', area: str = None, metadata: dict = None, dpi: int = 300,
+                 time_precision: str = 'ymd', plev: str = None, area: str = None, metadata: dict = None, dpi: int = 300,
                  catalog_2: str = None, **kwargs) -> str:
         """
         Save a PNG file with a matplotlib figure to a provided path, with support for additional filename keywords and
@@ -359,6 +365,7 @@ class OutputSaver:
             time_start (str, optional): The start time for the data, in format consistent with time_precision.
             time_end (str, optional): The finish (end) time for the data, in format consistent with time_precision.
             time_precision (str, optional): Precision for time representation ('y', 'ym', 'ymd', 'ymdh', etc.).
+            plev (str, optional): Pressure level
             area (str, optional): The geographical area covered by the data.
             metadata (dict, optional): Additional metadata to include in the PNG file.
             dpi (int, optional): The resolution of the saved PNG file. Default is 300.
@@ -373,7 +380,7 @@ class OutputSaver:
             ValueError: If the provided fig parameter is not a valid matplotlib Figure.
         """
         filename = self.generate_name(diagnostic_product=diagnostic_product, var=var, model_2=model_2, exp_2=exp_2,
-                                      time_start=time_start, time_end=time_end, time_precision=time_precision,
+                                      time_start=time_start, time_end=time_end, time_precision=time_precision, plev=plev,
                                       area=area, suffix='png', catalog_2=catalog_2, **kwargs)
 
         if path is None:
@@ -407,6 +414,7 @@ class OutputSaver:
             'time_start': time_start,
             'time_end': time_end,
             'time_precision': time_precision,
+            'plev': plev,
             'area': area,
             'catalog': self.catalog,
             'catalog_2': catalog_2,

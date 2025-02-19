@@ -86,6 +86,13 @@ def plot_single_map(data: xr.DataArray,
     logger.info("Loading data in memory")
     data = data.load(keep_attrs=True)
 
+    plt.rcParams.update({
+    'axes.labelsize': 13,  # X and Y axis labels
+    'xtick.labelsize': 12,  # X-axis tick labels
+    'ytick.labelsize': 12,  # Y-axis tick labels
+    'axes.titlesize': 14,   # Title size
+    })
+
     cycling = kwargs.get('cyclic_lon', True)
     if cycling:
         logger.info("Adding cyclic longitude")
@@ -174,6 +181,7 @@ def plot_single_map(data: xr.DataArray,
         logger.debug("Setting colorbar ticks rounding to %s", cbar_ticks_rounding)
         cbar_ticks = ticks_round(cbar_ticks, cbar_ticks_rounding)
     cbar.set_ticks(cbar_ticks)
+    cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
 
     # Set x-y labels
     ax.set_xlabel('Longitude [deg]')
@@ -268,6 +276,10 @@ def plot_single_map_diff(data: xr.DataArray,
     # Plot the difference
     diff_map = data - data_ref
 
+    if np.allclose(diff_map, 0):
+        logger.warning("The difference map is zero or constant, skipping contour plot.")
+        contour = False  # Disable contour
+        
     return_main_fig = kwargs.get('return_fig', False)
     
     for key in ['return_fig', 'contour']:
@@ -313,7 +325,8 @@ def plot_single_map_diff(data: xr.DataArray,
                                linewidths=0.5,
                                vmin=vmin_contour, vmax=vmax_contour)
 
-        ax.clabel(ds, fmt='%1.1f', fontsize=6, inline=True)
+        fmt = {level: f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}" for level in ds.levels}
+        ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)

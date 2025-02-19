@@ -50,9 +50,9 @@ class GlobalBiases:
         self.startdate_obs = startdate_obs or pd.to_datetime(data_ref.time[0].values).strftime('%Y-%m-%d')
         self.enddate_obs = enddate_obs or pd.to_datetime(data_ref.time[-1].values).strftime('%Y-%m-%d')
 
-        self._process_data(self.data)
+        self.data = self._process_data(self.data)
         if self.data_ref is not None:
-            self._process_data(self.data_ref)
+            self.data_ref = self._process_data(self.data_ref)
 
     def _process_data(self, data):
         """
@@ -72,6 +72,7 @@ class GlobalBiases:
         elif 'plev' in data[self.var_name].dims:
             self.logger.warning(f"Variable {self.var_name} has multiple pressure levels but none selected. Skipping 2D plotting for bias maps.")
 
+        return data
 
     @staticmethod
     def select_pressure_level(data, plev, var_name):
@@ -137,7 +138,8 @@ class GlobalBiases:
         if self.data_ref is None:
             self.logger.warning('Plotting single dataset map since no reference dataset is provided.')
 
-            title = (f"{self.var_name} map {self.model} {self.exp} {self.startdate_data}/{self.enddate_data}")
+            title = (f"{self.var_name} map {self.model} {self.exp} {self.startdate_data}/{self.enddate_data}" 
+                    + (f" at {int(self.plev / 100)} hPa" if self.plev else ""))
 
             fig, ax = plot_single_map(self.data[self.var_name].mean(dim='time'), 
                                       return_fig=True, 
@@ -154,7 +156,8 @@ class GlobalBiases:
             sym = vmin is None or vmax is None
 
             title = (f"{self.var_name} global bias of {self.model} {self.exp} {self.startdate_data}/{self.enddate_data}\n"
-                     f"relative to {self.model_obs} climatology {self.startdate_obs}/{self.enddate_obs}\n" )
+                    f"relative to {self.model_obs} climatology {self.startdate_obs}/{self.enddate_obs}"
+                    + (f" at {int(self.plev / 100)} hPa" if self.plev else ""))
 
             fig, ax = plot_single_map_diff(data=self.data[self.var_name].mean(dim='time'), 
                                            data_ref=self.data_ref[self.var_name].mean(dim='time'),
@@ -257,10 +260,10 @@ class GlobalBiases:
         data, data_ref, var_name = data or self.data, data_ref or self.data_ref, var_name or self.var_name
 
         # Compute climatology for reference dataset
-        ref_climatology = self.data_ref[var_name].mean(dim='time')
+        ref_climatology = data_ref[var_name].mean(dim='time')
 
         # Calculate the bias between the two datasets
-        bias = self.data[var_name] - ref_climatology
+        bias = data[var_name] - ref_climatology
 
         # Filter pressure levels
         if plev_min is None:
@@ -297,7 +300,7 @@ class GlobalBiases:
         ax.set_ylabel('Pressure Level (Pa)')
         ax.set_xlabel('Latitude')
         ax.invert_yaxis()
-        fig.colorbar(cax, ax=ax, label=f'{var_name} [{self.data[var_name].attrs.get("units", "")}]')
+        fig.colorbar(cax, ax=ax, label=f'{var_name} [{data[var_name].attrs.get("units", "")}]')
         ax.grid(True)
 
         return fig, ax, zonal_bias
