@@ -251,7 +251,7 @@ if [ -f "$exps" ]; then
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"
-    collect_figures "$indir" "$exps" $wipe
+    collect_figures "$indir" "$exps"
     convert_pdf_to_png "$exps"
     make_contents "$exps" "$config" # create catalog.yaml and catalog.json
     push_lumio $bucket "$exps" "$rsync"
