@@ -668,7 +668,7 @@ class GSVSource(base.DataSource):
         if kind not in ['start', 'end']:
             raise ValueError('kind should be either start or end')
         
-        identifier = 'data' if location == 'hpc' else 'hpc'
+        identifier = 'data' if location == 'hpc' else 'bridge'
 
         date = f'{identifier}_{kind}_date'
         hour = f'{identifier}_{kind}_hour'
