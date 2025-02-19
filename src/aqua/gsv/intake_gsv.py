@@ -146,7 +146,7 @@ class GSVSource(base.DataSource):
         if self.fdb_info_file:
             fdb_info = self.get_fdb_definitions_from_file(self.fdb_info_file)
         
-
+        # get from fdb_info if available
         if self.fdb_info_file and fdb_info:
             data_start_date = fdb_info['hpc']['data_start_date']
             data_end_date = fdb_info['hpc']['data_end_date']
@@ -651,6 +651,9 @@ class GSVSource(base.DataSource):
                 try:
                     fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
                     fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
+                    if fdb_info['bridge']['bridge_end_date'] == fdb_info['hpc']['data_end_date']:
+                        self.logger.warning('Bridge end date is the same as HPC end date. Setting bridge_end_date to complete.')
+                        fdb_info['bridge']['bridge_end_date'] = 'complete'
                 except KeyError:
                     self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
                     return None
