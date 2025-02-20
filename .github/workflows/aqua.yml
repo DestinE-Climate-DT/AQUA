@@ -2,9 +2,9 @@ name: AQUA tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, v0.13-operational ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, v0.13-operational ]
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
@@ -78,7 +78,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
-          token: github_pat_${{ secrets.CLIMATEDT_TOKEN }}
           path: Climate-DT-catalog 
       - name: Clone GitLab data-portfolio repository
         run: |
