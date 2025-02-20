@@ -7,8 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
-AQUA diagnostics complete list:
+AQUA core complete list:
+- Enable tests for the operational v0.13-operational branch (#1730)
 - push_s3 compatibility with boto3>=1.36.0 (#1709)
+
+AQUA diagnostics complete list:
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1697)
 - Tropical Rainfall: Update of the precomputed histograms paths for lumi and MN5 operational (#1702)
 
