@@ -1,5 +1,6 @@
 """An intake driver for FDB/GSV access"""
 import os
+import gc
 import glob
 import datetime
 import eccodes
@@ -74,7 +75,7 @@ class GSVSource(base.DataSource):
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
-        self.logger.debug("Init of the GSV source class")
+        self.logger.warning("Init of the GSV source class")
 
         if not gsv_available:
             raise ImportError(gsv_error_cause)
@@ -460,8 +461,11 @@ class GSVSource(base.DataSource):
             request["param"] = self._var
 
         # Select based on type of FDB
-        fstream_iterator = False
+        fstream_iterator = True
+        current_fdb_home = os.environ.get("FDB_HOME", None)
+        current_fdb_path = os.environ.get("FDB5_CONFIG_FILE", None)
         if self.chk_type[i]:
+            self.logger.warning("Reading from bridge")
             # Bridge FDB type
             if self.fdbhome_bridge:
                 os.environ["FDB_HOME"] = self.fdbhome_bridge
@@ -469,6 +473,7 @@ class GSVSource(base.DataSource):
                 os.environ["FDB5_CONFIG_FILE"] = self.fdbpath_bridge
             fstream_iterator = True
         else:
+            self.logger.warning("Reading from HPC")
             # HPC FDB type
             if self.fdbhome:  # if fdbhome is provided, use it, since we are creating a new gsv
                 os.environ["FDB_HOME"] = self.fdbhome
@@ -476,16 +481,34 @@ class GSVSource(base.DataSource):
                 os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
             if self.hpc_expver:
                 request["expver"] = self.hpc_expver
+        
+        # A rebuild of the GSV is needed if the FDB_HOME or FDB5_CONFIG_FILE has changed
+        rebuild_gsv = False
+        if current_fdb_home != os.environ.get("FDB_HOME", None):
+            self.logger.warning("FDB_HOME has been changed to from %s to %s", current_fdb_home, os.environ.get("FDB_HOME", None))
+            rebuild_gsv = True
+        if current_fdb_path != os.environ.get("FDB5_CONFIG_FILE", None):
+            self.logger.warning("FDB5_CONFIG_FILE has been changed to from %s to %s", current_fdb_path, os.environ.get("FDB5_CONFIG_FILE", None))
+            rebuild_gsv = True
 
         self._switch_eccodes()
 
         # this is needed here and not in init because each worker spawns a new environment
         gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
-        gsv = GSVRetriever(logging_level=gsv_log_level)
 
-        self.logger.debug('Request %s', request)
+        # if not hasattr(GSVSource, 'gsv') or not GSVSource.gsv or rebuild_gsv:
+        #     self.logger.warning("Rebuilding GSV")
+        #     GSVSource.gsv = GSVRetriever(logging_level=gsv_log_level)
+        #     self.logger.warning("GSV has been rebuilt")
+
+        self.logger.warning('Request %s', request)
+        gsv = GSVRetriever(logging_level='DEBUG')
+
         dataset = gsv.request_data(request, use_stream_iterator=fstream_iterator, 
                                    process_derived_variables=False) #following 2.9.2 we avoid derived variables
+
+        del gsv
+        gc.collect()
 
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)
@@ -525,6 +548,7 @@ class GSVSource(base.DataSource):
 
     def to_dask(self):
         """Return a dask xarray dataset for this data source"""
+        self.logger.warning("Dask access requested")
 
         self.dask_access = True  # This is used to tell _get_schema() to load dask info
         self._load_metadata()
