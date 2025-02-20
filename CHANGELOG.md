@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 
 AQUA core complete list:
+- Fix push_analysis options and aqua_analysis config paths (#1731)
 - Enable tests for the operational v0.13-operational branch (#1730)
 - push_s3 compatibility with boto3>=1.36.0 (#1709)
 
