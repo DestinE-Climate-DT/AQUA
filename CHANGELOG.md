@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+## [v0.13.2]
+
 AQUA core complete list:
 - Fix push_analysis options and aqua_analysis config paths (#1731)
 - Enable tests for the operational v0.13-operational branch (#1730)
@@ -820,6 +822,7 @@ This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
 [unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...HEAD
+[v0.13.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.13.2
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
 [v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0
 [v0.13-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-alpha...v0.13-beta
