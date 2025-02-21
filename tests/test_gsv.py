@@ -211,3 +211,17 @@ class TestGsv():
 
         client.shutdown()
         cluster.close()
+
+    def test_fdb_from_file(self) -> None:
+        """
+        Reading fdb dates from a file
+        """
+        source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
+                           metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
+                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'},
+                            loglevel=loglevel)
+        
+        assert source.data_start_date == '19900101T0000'
+        assert source.data_end_date == '19900103T2300'
+        assert source.bridge_start_date == '19900101T0000'
+        assert source.bridge_end_date == '19900102T2300'
