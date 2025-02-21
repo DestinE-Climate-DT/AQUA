@@ -10,6 +10,7 @@ Unreleased in the current development version:
 AQUA core complete list:
 - Enable tests for the operational v0.13-operational branch (#1730)
 - push_s3 compatibility with boto3>=1.36.0 (#1709)
+- Enable the option to read FDB data info from file, and refactor start/end hpc/bridge dates handling (#1656)
 
 AQUA diagnostics complete list:
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1697)
