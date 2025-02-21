@@ -137,41 +137,42 @@ We report here an example and we later describe the different elements.
     sources:
         hourly-hpz7-atm2d:
             args:
-            bridge_end_date: complete
-            request:
-                class: d1
-                dataset: climate-dt
-                activity: ScenarioMIP
-                experiment: SSP3-7.0
-                generation: 1
-                model: IFS-NEMO
-                realization: 1
-                resolution: standard
-                expver: '0001'
-                type: fc
-                stream: clte
-                date: 20210101
-                time: '0000'
-                param: 167
-                levtype: sfc
-                step: 0
-            data_start_date: 20200101T0000
-            data_end_date: 20391231T2300
-            chunks: D  # Default time chunk size
-            savefreq: h  # at what frequency are data saved
-            timestep: h  # base timestep for step timestyle
-            timestyle: date  # variable date or variable step
-            metadata: &metadata-default
-            fdb_home: '{{ FDB_PATH }}'
-            fdb_home_bridge: '{{ FDB_PATH }}/databridge'
-            eccodes_path: '{{ ECCODES_PATH }}/eccodes-2.32.5/definitions'
-            variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
-                187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
-                180, 181, 182, 212, 228]
-            source_grid_name: hpz7-nested
-            fixer_name: ifs-destine-v1
+                request:
+                    class: d1
+                    dataset: climate-dt
+                    activity: ScenarioMIP
+                    experiment: SSP3-7.0
+                    generation: 1
+                    model: IFS-NEMO
+                    realization: 1
+                    resolution: standard
+                    expver: '0001'
+                    type: fc
+                    stream: clte
+                    date: 20210101
+                    time: '0000'
+                    param: 167
+                    levtype: sfc
+                    step: 0
+                data_start_date: 20200101T0000
+                data_end_date: 20391231T2300
+                chunks: D  # Default time chunk size
+                savefreq: h  # at what frequency are data saved
+                timestep: h  # base timestep for step timestyle
+                timestyle: date  # variable date or variable step
             description: hourly 2D atmospheric data on healpix grid (zoom=7, h128).
             driver: gsv
+            metadata: &metadata-default
+                fdb_home: '{{ FDB_PATH }}'
+                fdb_home_bridge: '{{ FDB_PATH }}/databridge'
+                eccodes_path: '{{ ECCODES_PATH }}/eccodes-2.32.5/definitions'
+                variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
+                    187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
+                    180, 181, 182, 212, 228]
+                source_grid_name: hpz7-nested
+                fixer_name: ifs-destine-v1
+                fdb_info_file: '{{ FDB_PATH }}/0001.yaml'
+
 
 This is a source entry from the FDB of one of the AQUA control simulation from the IFS model. 
 The source name is ``hourly-native``, because is suggesting that the catalog is made hourly data at the native model resolution.
@@ -313,6 +314,8 @@ Some of the parameters are here described:
     - ``levels``: for 3D FDB data with a `levelist` in the request, this is the list of physical levels 
                   (e.g. [0.5, 10, 100, ...] meters while levelist contains [1, 2, 3, ...]).
     - ``deltat`` (optional): the cumulation window of fluxes in the dataset. This is a fixer option. If not present, the default is 1 second.
+    - ``fdb_info_file``(optional): the path to the YAML file written by the workflow that can be used to infer `data_start_date`, `data_end_date`
+                  and other information as `bridge_start_date` and `bridge_end_date`. If not present, default values are used.     
 
     If the ``levels`` key is defined, then retrieving 3D data is greatly accelerated, since only one level 
     of each variable will actually have to be retrieved in order to define the Dataset.

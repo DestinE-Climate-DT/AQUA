@@ -266,6 +266,8 @@ def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
     # safety checks
     if dt is None:
         return dt
+    if dt == 'complete':
+        return dt
 
     if not isinstance(dt, pd.Timestamp):
         dt = pd.Timestamp(str(dt))

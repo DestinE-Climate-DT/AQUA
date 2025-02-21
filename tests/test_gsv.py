@@ -5,6 +5,7 @@ import xarray as xr
 from dask.distributed import LocalCluster, Client
 
 from aqua.gsv.intake_gsv import GSVSource, gsv_available
+from aqua.util import ConfigPath
 from aqua import Reader
 
 if not gsv_available:
@@ -34,6 +35,11 @@ DEFAULT_GSV_PARAMS = {
 }
 
 loglevel = 'DEBUG'
+FDB_HOME = '/app'
+# to enable for local testing on Lumi
+if ConfigPath().machine == 'lumi':
+    FDB_HOME = '/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST'
+
 
 @pytest.fixture()
 def gsv(request) -> GSVSource:
@@ -42,7 +48,7 @@ def gsv(request) -> GSVSource:
         request = DEFAULT_GSV_PARAMS
     else:
         request = request.param
-    return GSVSource(**request, metadata={'fdb_home': '/app'})
+    return GSVSource(**request, metadata={'fdb_home': FDB_HOME})
 
 
 @pytest.mark.gsv
@@ -54,7 +60,7 @@ class TestGsv():
         """Simplest test, to check that we can create it correctly."""
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167', metadata={'fdb_home': '/app'})
+                           chunks="S", var='167', metadata={'fdb_home': FDB_HOME})
         assert source is not None
 
     def test_gsv_constructor_bridge(self) -> None:
@@ -62,7 +68,7 @@ class TestGsv():
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
                            chunks="S", var='167', bridge_end_date='complete',
-                           metadata={'fdb_home_bridge': '/app'})
+                           metadata={'fdb_home_bridge': FDB_HOME})
         assert source is not None
             
     def test_gsv_constructor_raise(self) -> None:
@@ -205,3 +211,17 @@ class TestGsv():
 
         client.shutdown()
         cluster.close()
+
+    def test_fdb_from_file(self) -> None:
+        """
+        Reading fdb dates from a file
+        """
+        source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
+                           metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
+                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'},
+                            loglevel=loglevel)
+        
+        assert source.data_start_date == '19900101T0000'
+        assert source.data_end_date == '19900103T2300'
+        assert source.bridge_start_date == '19900101T0000'
+        assert source.bridge_end_date == '19900102T2300'
