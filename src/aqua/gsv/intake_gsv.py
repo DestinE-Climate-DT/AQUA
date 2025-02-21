@@ -138,6 +138,7 @@ class GSVSource(base.DataSource):
 
         # set all the start/end dates for data and bridge
         self._define_start_end_dates(data_start_date, data_end_date, bridge_start_date, bridge_end_date)
+        # set all the start/end dates for the retrieval
         self._define_retrieve_dates(startdate, enddate)
 
         # flooring to the frequency the time to ensure that hourly, daily and monthly data
@@ -149,7 +150,7 @@ class GSVSource(base.DataSource):
 
         self.logger.debug('Data frequency (i.e. savefreq): %s', savefreq)
         self.logger.debug('Data_start_date: %s, Data_end_date: %s, Bridge_start_date: %s, Bridge_end_date: %s',
-        self.data_start_date, self.data_end_date, self.bridge_start_date, self.bridge_end_date)
+                           self.data_start_date, self.data_end_date, self.bridge_start_date, self.bridge_end_date)
         self.logger.debug('Request startdate: %s, Request enddate: %s', self.startdate, self.enddate)
 
         if self.timestyle != "yearmonth":
@@ -693,14 +694,7 @@ class GSVSource(base.DataSource):
         if kind not in ['start', 'end']:
             raise ValueError(f'kind {kind} should be either start or end')
 
-        date = f'{location}_{kind}_date'
-        hour = f'{location}_{kind}_hour'
-
-        # hour timestamp is required now
-        if hour not in fdb_info_file[location]:
-            raise ValueError(f'No {hour} found in {location} section of fdb_info_file')
-
-        return todatetime(f'{fdb_info_file[location][date]}{fdb_info_file[location][hour]}').strftime('%Y%m%dT%H%M')
+        return todatetime(fdb_info_file[location][f'{location}_{kind}_date']).strftime('%Y%m%dT%H%M')
 
 
     def parse_fdb(self, start_date, end_date):
