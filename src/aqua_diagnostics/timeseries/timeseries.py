@@ -113,7 +113,7 @@ class Timeseries():
         self.ref_mon_std = None
         self.ref_ann = None
         self.ref_ann_std = None
-        self.plot_ref_kw = plot_ref_kw
+        self.plot_ref_kw = self._plot_ref_kw(plot_ref_kw)
         self.monthly_std = monthly_std if monthly else False
         self.annual_std = annual_std if annual else False
         self.std_startdate = std_startdate
@@ -406,7 +406,8 @@ class Timeseries():
                 output_saver.save_netcdf(self.data_annual[i], frequency='annual', **common_save_args)
 
         if self.plot_ref:
-            output_saver_ref = self._get_output_saver(catalog=self.plot_ref_kw['catalog'], model=self.plot_ref_kw['model'], exp=self.plot_ref_kw['exp'])
+            output_saver_ref = self._get_output_saver(catalog=self.plot_ref_kw['catalog'],
+                                                      model=self.plot_ref_kw['model'], exp=self.plot_ref_kw['exp'])
             common_save_args = self._get_common_save_args()
             common_save_args.pop('dpi', None)
 
@@ -510,9 +511,9 @@ class Timeseries():
                 if startdate > self.startdate:
                     self.logger.debug("Adding a seasonal cycle to the start of the reference data")
                     ref_mon_loop = loop_seasonalcycle(data=self.ref_mon,
-                                                       startdate=self.startdate,
-                                                       enddate=startdate,
-                                                       freq='MS')
+                                                      startdate=self.startdate,
+                                                      enddate=startdate,
+                                                      freq='MS')
                     self.ref_mon = xr.concat([ref_mon_loop, self.ref_mon], dim='time')
 
                 if enddate < self.enddate:
@@ -541,9 +542,9 @@ class Timeseries():
                 if startdate > self.startdate:
                     self.logger.debug("Adding a band to the start of the reference data")
                     ref_ann_loop = loop_seasonalcycle(data=self.ref_ann,
-                                                       startdate=self.startdate,
-                                                       enddate=startdate,
-                                                       freq='YS')
+                                                      startdate=self.startdate,
+                                                      enddate=startdate,
+                                                      freq='YS')
                     self.ref_ann = xr.concat([ref_ann_loop, self.ref_ann], dim='time')
 
                 if enddate < self.enddate:
@@ -597,6 +598,27 @@ class Timeseries():
             self.catalogs = [None] * len(self.models)
         else:
             self.catalogs = catalogs
+
+    def _plot_ref_kw(self, plot_ref_kw):
+        """
+        Fill in the missing keys in plot_ref_kw.
+        Raise an error if model, exp or source are missing.
+        Find the catalog if not provided.
+
+        Args:
+            plot_ref_kw (dict): Dictionary with keys model, exp, source and (optional) catalog.
+
+        Returns:
+            plot_ref_kw (dict): Dictionary with keys model, exp, source, catalog.
+        """
+        if 'model' not in plot_ref_kw or 'exp' not in plot_ref_kw or 'source' not in plot_ref_kw:
+            raise ValueError("Missing model, exp or source in plot_ref_kw")
+        if 'catalog' not in plot_ref_kw:
+            cat, _ = ConfigPath().browse_catalogs(model=plot_ref_kw['model'],
+                                                  exp=plot_ref_kw['exp'],
+                                                  source=plot_ref_kw['source'])
+            plot_ref_kw['catalog'] = cat[0]
+        return plot_ref_kw
 
     def cleanup(self):
         """Clean up"""

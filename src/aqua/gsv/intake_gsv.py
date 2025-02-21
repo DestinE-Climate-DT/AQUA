@@ -527,7 +527,8 @@ class GSVSource(base.DataSource):
         gsv = GSVRetriever(logging_level=gsv_log_level)
 
         self.logger.debug('Request %s', request)
-        dataset = gsv.request_data(request, use_stream_iterator=fstream_iterator)
+        dataset = gsv.request_data(request, use_stream_iterator=fstream_iterator, 
+                                   process_derived_variables=False) #following 2.9.2 we avoid derived variables
 
         if self.timeshift:  # shift time by one month (special case)
             dataset = shift_time_dataset(dataset)

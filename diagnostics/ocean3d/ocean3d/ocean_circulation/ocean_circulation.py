@@ -18,13 +18,13 @@ from ocean3d import write_data
 from ocean3d import export_fig
 from aqua.logger import log_configure
 
-def convert_so(avg_so, loglevel= "WARNING"):
+def convert_so(so, loglevel= "WARNING"):
     """
     Convert practical salinity to absolute.
 
     Parameters
     ----------
-    avg_so: dask.array.core.Array
+    so: dask.array.core.Array
         Masked array containing the practical salinity values (psu or 0.001).
 
     Returns
@@ -40,10 +40,10 @@ def convert_so(avg_so, loglevel= "WARNING"):
 
     """
     logger = log_configure(loglevel, 'convert_so')
-    return avg_so / 0.99530670233846
+    return so / 0.99530670233846
 
 
-def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
+def convert_thetao(absso, thetao, loglevel= "WARNING"):
     """
     convert potential temperature to conservative temperature
 
@@ -51,12 +51,12 @@ def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values.
-    avg_thetao: dask.array.core.Array
+    thetao: dask.array.core.Array
         Masked array containing the potential temperature values (degC).
 
     Returns
     -------
-    bigavg_thetao: dask.array.core.Array
+    bigthetao: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
 
     Note
@@ -64,9 +64,9 @@ def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
     http://www.teos-10.org/pubs/gsw/html/gsw_CT_from_pt.html
 
     """
-    logger = log_configure(loglevel, 'convert_avg_thetao')
+    logger = log_configure(loglevel, 'convert_thetao')
     x = xr.ufuncs.sqrt(0.0248826675584615 * absso)
-    y = avg_thetao*0.025e0
+    y = thetao*0.025e0
     enthalpy = 61.01362420681071e0 + y*(168776.46138048015e0 +
                                         y*(-2735.2785605119625e0 + y*(2574.2164453821433e0 +
                                                                       y*(-1536.6644434977543e0 + y*(545.7340497931629e0 +
@@ -87,7 +87,7 @@ def convert_avg_thetao(absso, avg_thetao, loglevel= "WARNING"):
     return enthalpy/3991.86795711963
 
 
-def compute_rho(absso, bigavg_thetao, ref_pressure, loglevel= "WARNING"):
+def compute_rho(absso, bigthetao, ref_pressure, loglevel= "WARNING"):
     """
     Computes the potential density in-situ.
 
@@ -95,7 +95,7 @@ def compute_rho(absso, bigavg_thetao, ref_pressure, loglevel= "WARNING"):
     ----------
     absso: dask.array.core.Array
         Masked array containing the absolute salinity values (g/kg).
-    bigavg_thetao: dask.array.core.Array
+    bigthetao: dask.array.core.Array
         Masked array containing the conservative temperature values (degC).
     ref_pressure: float
         Reference pressure (dbar).
@@ -117,7 +117,7 @@ def compute_rho(absso, bigavg_thetao, ref_pressure, loglevel= "WARNING"):
     Zu = 1e4
     deltaS = 32.
     ss = xr.ufuncs.sqrt((absso+deltaS)/SAu)
-    tt = bigavg_thetao / CTu
+    tt = bigthetao / CTu
     pp = ref_pressure / Zu
 
     # vertical reference profile of density
@@ -214,8 +214,8 @@ def convert_variables(data, loglevel= "WARNING"):
     Returns
     -------
     converted_data : xarray.Dataset
-        Dataset containing the converted variables: absolute salinity (avg_so),
-        conservative temperature (avg_thetao),
+        Dataset containing the converted variables: absolute salinity (so),
+        conservative temperature (thetao),
         and potential density (rho) at reference pressure 0 dbar.
 
     """
@@ -223,21 +223,21 @@ def convert_variables(data, loglevel= "WARNING"):
     converted_data = xr.Dataset()
 
     # Convert practical salinity to absolute salinity
-    absso = convert_so(data.avg_so)
+    absso = convert_so(data.so)
     logger.debug("Practical salinity converted to absolute salinity")
     # Convert potential temperature to conservative temperature
-    avg_thetao = convert_avg_thetao(absso, data.avg_thetao)
+    thetao = convert_thetao(absso, data.thetao)
     logger.debug("Potential temperature converted to conservative temperature")
     # Compute potential density in-situ at reference pressure 0 dbar
-    rho = compute_rho(absso, avg_thetao, 0)
+    rho = compute_rho(absso, thetao, 0)
     logger.debug(
         "Calculated potential density in-situ at reference pressure 0 dbar ")
     # Merge the converted variables into a new dataset
-    data["avg_thetao"] = avg_thetao
+    data["thetao"] = thetao
     data["rho"] = rho
 
     # data = converted_data.merge(
-    #     {"avg_thetao": avg_thetao, "avg_so": absso, "rho": rho})
+    #     {"thetao": thetao, "so": absso, "rho": rho})
 
     return data
 
@@ -248,7 +248,7 @@ def prepare_data_for_stratification_plot(data, region=None, time=None, lat_s: fl
     Prepare data for plotting stratification profiles.
 
     Parameters:
-        data (xarray.Dataset): Input data containing temperature (avg_thetao) and salinity (avg_so).
+        data (xarray.Dataset): Input data containing temperature (thetao) and salinity (so).
         region (str, optional): Region name.
         time (str or list, optional): Time period to select. Can be a single date or a list of start and end dates.
         lat_s (float, optional): Southern latitude bound. Required if region is not provided or None.

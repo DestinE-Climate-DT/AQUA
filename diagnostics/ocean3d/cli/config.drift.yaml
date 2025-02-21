@@ -5,6 +5,10 @@ source: lra-r100-monthly
 loglevel: warning
 outputdir: ./output
 
+# nworkers: 2
+
+variables: ["thetao", "so"]
+
 # select_time:
 #   start_year : 1991
 #   end_year : 1991
@@ -12,10 +16,10 @@ outputdir: ./output
 ocean_drift:
   regions:
     - Indian Ocean
-    - Pacific Ocean
     - Atlantic Ocean
     - Arctic Ocean
     - Southern Ocean
+    - Pacific Ocean
     - Global Ocean 
   plots: [
           hovmoller,
@@ -23,3 +27,5 @@ ocean_drift:
           multilevel_trend,
           zonal_trend
           ]
+
+    

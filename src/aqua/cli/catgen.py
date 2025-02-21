@@ -56,7 +56,7 @@ class AquaFDBGenerator:
         self.atm_grid = self.config.get("atm_grid")
         self.num_of_realizations = int(self.config.get("num_of_realizations", 1))
 
-        #sefaty check
+        #safety check
         if (data_portfolio == 'production' and self.resolution not in ['production', 'lowres', 'develop'] or
             data_portfolio == 'reduced' and self.resolution not in ['intermediate']):
             raise KeyError(f'Wrong match between data portfolio {data_portfolio} and data resolution {self.resolution}')
@@ -244,6 +244,11 @@ class AquaFDBGenerator:
         self.logger.debug('Time dict: %s', time_dict)
         self.logger.debug('Number of realizations %s', self.num_of_realizations)
 
+        self.description = (
+            self.config.get("description")
+            or f'"{self.model} {self.config["exp"]} {self.config["data_start_date"][:4]}, '
+            f'grids: {self.atm_grid} {self.ocean_grid}"' )
+
         kwargs = {
             "dp_version": self.dp_version,
             "resolution": grid_resolution,
@@ -258,6 +263,7 @@ class AquaFDBGenerator:
             "time": time_dict['time'],
             "chunks": time_dict['chunks'],
             "savefreq": time_dict['savefreq'], 
+            "description": self.description
         }
         return kwargs
 
@@ -307,12 +313,7 @@ class AquaFDBGenerator:
         forcing = self.config.get('forcing') or self.get_value_from_map(self.config['experiment'], forcing_map, 'experiment')
 
         main_yaml['sources'][self.config['exp']] = {
-            'description': (
-                self.config['description']
-                if 'description' in self.config and self.config['description']
-                else f"{self.model} {self.config['exp']}, {self.config['data_start_date'][:4]}, "
-                     f"grids: {self.atm_grid} {self.ocean_grid}"
-            ),
+            'description': self.description,
             'metadata': {
                 'expid': self.config['expver'],
                 'resolution_atm': self.atm_grid,
@@ -404,8 +405,6 @@ class AquaFDBGenerator:
         self.create_catalog_entry(all_content)
 
 def catgen_execute(args):
-
-
     """Useful wrapper for the FDB catalog generator class"""
 
     dp_version = get_arg(args, 'portfolio', 'production')
@@ -414,6 +413,7 @@ def catgen_execute(args):
 
     generator = AquaFDBGenerator(dp_version, config_file, loglevel)
     generator.generate_catalog()
+
 
 if __name__ == '__main__':
 

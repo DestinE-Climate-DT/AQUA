@@ -5,9 +5,9 @@ from ocean3d import split_ocean3d_req
 import matplotlib.pyplot as plt
 from .hovmoller_plot import hovmoller_plot
 from aqua.logger import log_configure
-from dask.diagnostics import ProgressBar
+import IPython
 
-
+from ocean3d import compute_data
 
 
 class time_series(hovmoller_plot):
@@ -45,7 +45,7 @@ class time_series(hovmoller_plot):
         key = i + 2
         plot_info = self.plot_info[key]
         data = plot_info['data']
-        avg_thetaolevs = plot_info['avg_thetaolevs']
+        thetaolevs = plot_info['thetaolevs']
         solevs = plot_info['solevs']
         cmap = plot_info['cmap']
         region_title = plot_info['region_title']
@@ -53,10 +53,8 @@ class time_series(hovmoller_plot):
         customise_level = False
         
         logger.debug("Plotting started for %s", type)
+        data = compute_data(data, loglevel= self.loglevel)
 
-        with ProgressBar():
-            data = data.compute()
-            logger.debug(f"Loaded data ({type}) into memory before plotting")
         if customise_level:
             if levels is None:
                 raise ValueError(
@@ -73,15 +71,15 @@ class time_series(hovmoller_plot):
                 data_level = data.isel(lev=0)
 
             # Plot the temperature time series
-            data_level.avg_thetao.plot.line(
+            data_level.thetao.plot.line(
                 ax=axs[i,0], label=f"{round(int(data_level.lev.data), -2)}")
 
             # Plot the salinity time series
-            data_level.avg_so.plot.line(
+            data_level.so.plot.line(
                 ax=axs[i,1], label=f"{round(int(data_level.lev.data), -2)}")
 
-        tunits = data_level.avg_thetao.attrs['units']
-        sunits = data_level.avg_so.attrs['units']
+        tunits = data_level.thetao.attrs['units']
+        sunits = data_level.so.attrs['units']
         axs[i,0].set_title('')
         axs[i,1].set_title('')
 
@@ -158,7 +156,8 @@ class time_series(hovmoller_plot):
         if self.output:
             export_fig(self.output_dir, self.filename , "pdf",
                         metadata_value = title)
-        
+        if not IPython.get_ipython():  
+            plt.close() 
         logger.debug("Time series plot completed")
         return
 

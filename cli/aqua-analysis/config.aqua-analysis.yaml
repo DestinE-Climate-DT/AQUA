@@ -41,11 +41,10 @@ cluster:  # options for dask cluster (this works well on lumi)
 
 diagnostics:
 
-  # List of diagnostics to run
   run: ["global_biases", "timeseries_atm", "timeseries_oce", "seasonal_cycles",
         "radiation-boxplots", "radiation-timeseries", "radiation-biases", 
         "teleconnections_atm", "teleconnections_oce",
-        "tropical_rainfall", "ecmean", "ocean3d_drift", "ocean3d_circulation",
+        "tropical_rainfall", "ecmean", "ocean3d_circulation", "ocean3d_drift",
         "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
 
   # List of diagnostics

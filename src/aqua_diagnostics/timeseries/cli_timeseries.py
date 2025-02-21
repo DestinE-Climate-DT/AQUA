@@ -67,7 +67,8 @@ def get_plot_options(config: dict = None,
         annual = plot_options.get("annual", True)
         regrid = plot_options.get("regrid", None)
         plot_ref = plot_options.get("plot_ref", True)
-        plot_ref_kw = plot_options.get("plot_ref_kw", {'model': 'ERA5',
+        plot_ref_kw = plot_options.get("plot_ref_kw", {'catalog': 'obs',
+                                                       'model': 'ERA5',
                                                        'exp': 'era5',
                                                        'source': 'monthly'})
         startdate = plot_options.get("startdate", None)
@@ -86,7 +87,8 @@ def get_plot_options(config: dict = None,
         annual = config["timeseries_plot_params"]["default"].get("annual", True)
         regrid = config["timeseries_plot_params"]["default"].get("regrid", None)
         plot_ref = config["timeseries_plot_params"]["default"].get("plot_ref", True)
-        plot_ref_kw = config["timeseries_plot_params"]["default"].get("plot_ref_kw", {'model': 'ERA5',
+        plot_ref_kw = config["timeseries_plot_params"]["default"].get("plot_ref_kw", {'catalog': 'obs',
+                                                                                      'model': 'ERA5',
                                                                                       'exp': 'era5',
                                                                                       'source': 'monthly'})
         startdate = config["timeseries_plot_params"]["default"].get("startdate", None)

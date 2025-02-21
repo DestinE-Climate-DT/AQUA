@@ -654,7 +654,7 @@ class FixerMixin():
         """
 
         # remove variables which should be deleted
-        dellist = [x for x in self.fixes.get("delete", []) if x in data.variables]
+        dellist = [x for x in to_list(self.fixes.get("delete", [])) if x in data.variables]
         if dellist:
             data = data.drop_vars(dellist)
 

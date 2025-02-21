@@ -7,11 +7,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+AQUA core complete list:
+- Enable tests for the operational v0.13-operational branch (#1730)
+- push_s3 compatibility with boto3>=1.36.0 (#1709)
+
+AQUA diagnostics complete list:
+- Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1697)
+- Tropical Rainfall: Update of the precomputed histograms paths for lumi and MN5 operational (#1702)
+
+## [v0.13.1]
+
+Main changes are:
+1. Ocean3d major refactoring
+
+AQUA core complete list:
+- Fixer delete option accepts non-lists (#1687)
+- Ansi color 8-bit fix for logger (#1671)
+- Hotfix for unmatched string in catgen (#1672)
+- Test for aqua-analysis.py (#1664)
+- Fix in the catgen now correctly generating an automatic description if not provided (#1662)
+
+AQUA diagnostics complete list:
+- Diagnostic core: added a Diagnostic class to be inherited by all diagnostics (#1681)
+- Timeseries: hotfix of problems with the catalog usage in output saving (#1669)
+- Tropical Rainfall: Update of the precomputed histograms paths for lumi and MN5 (#1661)
+- Ocean3d: Trend is calculating using polyfit. Restructed the mixed layer depth function. (#1651)
+- Global bias: hotfix for regrid option (#1670)
+
+## [v0.13.0]
+
+Main changes are:
+1. Grids updated to work with operational O-25.1
+2. Compliance of the catalog generator to the O-25.1 data portfolio
+3. New 'Biases and Radiation' diagnostics replace the old 'AtmGlobalMean and Radiation'
+4. Push of figures to LUMI-O and improvements for aqua-web
+
 Deprecated:
 - `aqua-analysis.sh` script is deprecated and has been removed. Use `aqua-analysis.py` instead.
 - `cli_dummy.py` script is deprecated and will be removed in the next release. Use the `cli_checker.py` instead.
  
 AQUA core complete list:
+- More general checksum checker for grids and observations ( #1550)
 - Output dir including catalogue for aqua-analysis.py (#1640)
 - Grids for O-25.1 cycle are added in the grids folder (they are v3) (#1647)
 - `deltat` for fixer can now be specified in source metadata and not only in fixes (#1626)
@@ -23,7 +59,6 @@ AQUA core complete list:
 - Automatic identification of ocean grid in the catalog generator (#1621)
 - `OutputSaver` can deduce the catalog name from the model, exp (#1627)
 - Pin zarr<3.0.0 to avoid breaking changes (#1625)
-- LRA generator integrates ``-rebuild`` option to regenerate areas and weights. The `--autosubmit` option is removed (#1623)
 - Units utility are now functions and not methods of FixerMixin (#1558)
 - New `cli_checker.py` tool to check the existance of the required model in the catalog and rebuild the area files (#1619)
 - Update the catalog generator to align with changes in the data portfolio (#1593)
@@ -782,7 +817,9 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...HEAD
+[v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
+[v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0
 [v0.13-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-alpha...v0.13-beta
 [v0.13-alpha]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.2...v0.13-alpha
 [v0.12.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.12.1...v0.12.2

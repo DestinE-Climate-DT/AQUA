@@ -444,9 +444,7 @@ class AquaConsole():
             # before going open source, we will use a basic token and PD account.
             fs = fsspec.filesystem("github",
                                     org="DestinE-Climate-DT",
-                                    repo="Climate-DT-catalog",
-                                    username="mnurisso",
-                                    token="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") # noqa
+                                    repo="Climate-DT-catalog")
             self.logger.info('Accessed remote repository https://github.com/DestinE-Climate-DT/Climate-DT-catalog')
         except HTTPError:
             self.logger.error('Permission issues in accessing Climate-DT catalog, please contact AQUA mantainers')
@@ -571,7 +569,7 @@ class AquaConsole():
                 cfg['catalog'] = [catalog] + to_list(cfg['catalog'])
             else:
                 if isinstance(cfg['catalog'], list):
-                    other_catalogs = [x for x in to_list(cfg['catalog']) if x != catalog]
+                    other_catalogs = [x for x in cfg['catalog'] if x != catalog]
                     self.logger.debug('Catalog %s is already there, setting it as first entry before %s',
                                       catalog, other_catalogs)
                     cfg['catalog'] = [catalog] + other_catalogs

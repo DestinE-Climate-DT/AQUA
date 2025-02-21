@@ -228,11 +228,6 @@ def main():
     logger.debug(f"outputdir: {outputdir}")
     logger.debug(f"max_threads: {max_threads}")
 
-    diagnostics = config.get('diagnostics', {}).get('run')
-    if not diagnostics:
-        logger.error("No diagnostics found in configuration.")
-        sys.exit(1)
-
     output_dir = f"{outputdir}/{catalog}/{model}/{exp}"
     output_dir = os.path.expandvars(output_dir)
 
@@ -258,6 +253,11 @@ def main():
             logger.info("Setup checker completed successfully.")
         else:
             logger.error(f"Setup checker returned exit code {result}, check the logs for more information.")
+
+    diagnostics = config.get('diagnostics', {}).get('run')
+    if not diagnostics:
+        logger.error("No diagnostics found in configuration.")
+        sys.exit(1)
 
     if args.parallel:
         if args.local_clusters:

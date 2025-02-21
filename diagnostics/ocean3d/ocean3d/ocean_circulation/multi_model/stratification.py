@@ -53,7 +53,7 @@ class stratification:
         for row, region_name in enumerate(self.region_data):
             axs[row, 0].text(-0.35, 0.33, region_name, fontsize=18, color='dimgray', rotation=90, transform=axs[row, 0].transAxes, ha='center')
             data_list = self.region_data[region_name]
-            for column, var in enumerate(["avg_thetao", "avg_so", "rho"]):
+            for column, var in enumerate(["thetao", "so", "rho"]):
                 for data_name in data_list:
                     data = data_list[data_name][var]
 
@@ -114,7 +114,7 @@ class stratification:
         #     start_year = data_list[0].time[0].dt.year.data
         #     end_year = data_list[0].time[-1].dt.year.data
 
-        # for i, var in zip(range(len(axs)), ["avg_thetao", "avg_so", "rho"]):
+        # for i, var in zip(range(len(axs)), ["thetao", "so", "rho"]):
         #     axs[0,i].set_ylim((4500, 0))
         #     data_1 = data_list[0][var].mean("time")
 
@@ -146,9 +146,9 @@ class stratification:
         #     if self.obs_data is not None:
         #         data_3 = self.obs_data[var].mean("time")
         #         axs[0,i].plot(data_3, data_3.lev, 'r-', linewidth=2.0)
-        #         if var == "avg_thetao":
+        #         if var == "thetao":
         #             axs[i].plot(obs_data["thetao_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
-        #         if var == "avg_so":
+        #         if var == "so":
         #             axs[i].plot(obs_data["so_uncertainty"].mean("time"), data_3.lev, 'b-', linewidth=1.0)
                 
         #         legend_info = f"Obs {start_year}-{end_year}"

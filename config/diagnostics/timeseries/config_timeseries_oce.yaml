@@ -37,4 +37,8 @@ timeseries_plot_params:
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
   tos:
+    plot_ref: True
+    monthly: True
+    annual: True
+    regrid: null
     regions: ['nh', 'sh']

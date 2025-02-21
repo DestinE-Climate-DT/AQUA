@@ -53,10 +53,18 @@ timeseries_plot_params:
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
   tnlwrf+tnswrf:
+    plot_ref: True
+    monthly: True
+    annual: True
+    regrid: null
     longname: "Net top radiation" # This is to override title and ylabel
     std_startdate: '1990-01-01'
     std_enddate: '2020-12-31'
   86400*tprate:
+    plot_ref: True
+    monthly: True
+    annual: True
+    regrid: null
     longname: "Precipitation" # This is to override title and ylabel
     regions: ['tropics', 'europe']
     units: "mm/day" # This is to override units

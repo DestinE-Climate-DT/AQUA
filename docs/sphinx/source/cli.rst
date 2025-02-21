@@ -45,14 +45,15 @@ by specifying the group of grids to download (usually one per model).
 
 .. _grids-checker:
 
-Checksum verification of grid files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Checksum verifications for obs and grids
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 AQUA built on many grids files to speed up operations for interpolation and area evaluation, especially within
-the ClimateDT workflow. These are available on multiple HPC but sometimes the synchronization
+the ClimateDT workflow. To provide valuable diagnostics, it also builds on a catalog for observations.
+These are available on multiple ClimateDT HPC but sometimes the synchronization
 might not be complete following an update. In order to verify that all the grids files are ported on the used machine
-the `cli/grids-checker/grids-checker.py` script is available to verify the checksum of the grid files
-is the same as it is planned.
+the `cli/checksum-checker/grids-checker.py` and `cli/checksum-checker/obs-checker.py` scripts are available 
+to verify the checksum of the grid and observation files is the same as it is expected.
 
 To verify that everything is at it should be please run:
 
@@ -66,8 +67,9 @@ To generate a new checksum should be please run:
 
     ./grid-checker.py generate -o checksum_file.md5
 
-Please notice that not all the grid folder will be checked, but only those defined in the file with ``GRIDS_FOLDERS`` variable. 
-Option ``-s`` can be used as well to scan a single grid folder (e.g. HealPix, or ERA5)
+Please notice that not all the grid/obs folders will be checked, but only those defined in the file 
+with ``GRIDS_FOLDERS`` and ``OBS_FOLDERS`` variables. 
+Option ``-s`` can be used as well to scan a single grid/obs folder (e.g. HealPix, or ERA5)
 
 .. _grid-from-data:
 
