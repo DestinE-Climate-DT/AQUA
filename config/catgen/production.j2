@@ -51,10 +51,7 @@
         {% endif %}
         variables: {{ variables }}
         source_grid_name: {{ grid }}
-        fixer_name: {% if fixer_name %}{{ fixer_name }}{% else %}{% raw %}climatedt-phase2-production{% endraw %}{% endif %}
+        fixer_name: {{ fixer_name | default('climatedt-phase2-production') }}
         {% if fdb_info_file %}
         fdb_info_file: {{ fdb_info_file }}
         {% endif %}
-
-
-        
