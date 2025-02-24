@@ -174,7 +174,7 @@ def get_aqua_paths(*, args, logger):
     aqua_path = os.path.abspath(os.path.join(pypath[0], "..", ".."))
     logger.info(f"AQUA path: {aqua_path}")
 
-    aqua_configdir = os.path.join(ConfigPath().configdir, "diagnostics")
+    aqua_configdir = ConfigPath().configdir
     logger.info(f"AQUA config dir: {aqua_configdir}")
 
     aqua_analysis_config_path = os.path.expandvars(args.config) if args.config and args.config.strip() else os.path.join(aqua_path, "cli/aqua-analysis/config.aqua-analysis.yaml")
