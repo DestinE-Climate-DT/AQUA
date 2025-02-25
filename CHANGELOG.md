@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
+- Fix for the `aqua-analysis` that was changing the AQUA_CONFIG environment variable with a wrong path (#1752)
 - Fix catalog generator when fdb_info_file is used (#1742)
 
 ## [v0.13.2]
