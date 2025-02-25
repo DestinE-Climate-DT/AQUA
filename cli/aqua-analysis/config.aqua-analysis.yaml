@@ -62,36 +62,36 @@ diagnostics:
   global_biases:
     nworkers: 16
     script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
-    config: "${AQUA_CONFIG}/global_biases/cli/config_global_biases.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/global_biases/cli/config_global_biases.yaml"
   timeseries_atm:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
-    config: "${AQUA_CONFIG}/timeseries/config_timeseries_atm.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_atm.yaml"
     nworkers: 16
     outname: timeseries
   timeseries_oce:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
-    config: "${AQUA_CONFIG}/timeseries/config_timeseries_oce.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_oce.yaml"
     nworkers: 8
     outname: timeseries
   seasonal_cycles:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
     nworkers: 16
-    config: "${AQUA_CONFIG}/timeseries/config_seasonalcycles_atm.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
     outname: timeseries
   radiation-biases:
     script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/radiation/cli/config_radiation-biases.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-biases.yaml"
     outname: radiation
   radiation-boxplots:
     script_path: "../src/aqua_diagnostics/radiation/cli_radiation.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/radiation/cli/config_radiation-boxplots.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-boxplots.yaml"
     outname: radiation
   radiation-timeseries:
     script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/radiation/cli/config_radiation-timeseries.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-timeseries.yaml"
     outname: radiation
   teleconnections_atm:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
@@ -101,32 +101,32 @@ diagnostics:
     # --ref (if set it will analyze also the reference data, it is set
     #        by default)
     # --interface (custom interface file)
-    config: "${AQUA_CONFIG}/teleconnections/cli_config_atm.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/teleconnections/cli_config_atm.yaml"
     extra: "--ref"
     outname: teleconnections
   teleconnections_oce:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 4
-    config: "${AQUA_CONFIG}/teleconnections/cli_config_oce.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/teleconnections/cli_config_oce.yaml"
     extra: "--ref"
     outname: teleconnections
   tropical_rainfall:
     nworkers: 16
-    config: "${AQUA_CONFIG}/tropical_rainfall/cli/cli_config_trop_rainfall.yml"
+    config: "${AQUA_CONFIG}/diagnostics/tropical_rainfall/cli/cli_config_trop_rainfall.yml"
     extra: "--regrid=r100 --freq=M --xmax=75 --bufferdir=${OUTPUT}/tropical_rainfall/"
   ecmean:
     script_path: "../src/aqua_diagnostics/ecmean/cli_ecmean.py"
     nworkers: 4
     nocluster: true  # ECmean does not use the global dask cluster
-    config: "${AQUA_CONFIG}/ecmean/config_ecmean_cli.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/ecmean/config_ecmean_cli.yaml"
   ocean3d_drift:
     script_path: "ocean3d/cli/cli_ocean3d.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/ocean3d/cli/config.drift.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.drift.yaml"
   ocean3d_circulation:
     script_path: "ocean3d/cli/cli_ocean3d.py"
     nworkers: 4
-    config: "${AQUA_CONFIG}/ocean3d/cli/config.circulation.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.circulation.yaml"
   seaice_volume:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
@@ -135,16 +135,16 @@ diagnostics:
     #               (default is False)
     # --config (seaice config file)
     # --regrid (regrid data to a different grid)
-    config: "${AQUA_CONFIG}/seaice/cli/config_Volume.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Volume.yaml"
   seaice_thick:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
-    config: "${AQUA_CONFIG}/seaice/cli/config_Thickness.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Thickness.yaml"
   seaice_conc:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
-    config: "${AQUA_CONFIG}/seaice/cli/config_Concentration.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Concentration.yaml"
   seaice_extent:
     script_path: "seaice/cli/cli_seaice.py"
     nworkers: 4
-    config: "${AQUA_CONFIG}/seaice/cli/config_Extent.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Extent.yaml"
