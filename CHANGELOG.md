@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
+
+## [v0.13.3]
+
+Hotfixes:
 - Fix for the `aqua-analysis` that was changing the AQUA_CONFIG environment variable with a wrong path (#1752)
 - Fix catalog generator when fdb_info_file is used (#1742)
 
@@ -823,7 +827,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.3...HEAD
+[v0.13.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.2...v0.13.3
 [v0.13.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.13.2
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
 [v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0
