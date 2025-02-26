@@ -1,4 +1,3 @@
-"""Test ensemble 2D lat-lon EnsembleLatLon module"""
 import os
 import subprocess
 import pytest
@@ -10,28 +9,30 @@ try:
 except ModuleNotFoundError:
     print("Import error for the ensemble module.")
 
-@pytest.mark.ensemble
-def test_2D_datasets():
+# Fixture to load the dataset
+@pytest.fixture
+def sample_dataset():
     """
-    load aqua-analysis output of timeseries.
+    Load aqua-analysis output of timeseries and return the concatenated dataset.
     """
     dataset = xr.open_dataset('atmglobalmean.statistics_maps.2t.IFS-FESOM_historical-1990.nc')
-    dataset_list = [dataset,dataset]
+    dataset_list = [dataset, dataset]
     dataset = xr.concat(dataset_list, "Ensembles")
     del dataset_list
     return dataset
 
+# Test to compute ensemble 2D LatLon
 @pytest.mark.ensemble
-def test_ensemble_2D_compute():
-    """Test the compute method of EnsembleLatLons."""
-    sample_dataset = test_2D_datasets()
+def test_ensemble_2D_compute(sample_dataset):
+    """Test the compute method of EnsembleLatLon."""
     latlon = EnsembleLatLon(var="2t", dataset=sample_dataset)
     latlon.run()
 
     assert latlon.dataset_mean is not None
-    assert latlon.dataset_std.all() == 0 
+    assert latlon.dataset_std.all() == 0
 
-@pytest.mark.ensemble
+# Test to edit attributes of EnsembleLatLon
+@pytest.mark.edit
 def test_edit_attributes():
     """Test the edit_attributes method."""
     latlon = EnsembleLatLon(var="2t")
@@ -39,3 +40,5 @@ def test_edit_attributes():
 
     assert latlon.loglevel == "DEBUG"
     assert latlon.cbar_label == "Test Label"
+
+
