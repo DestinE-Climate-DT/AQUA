@@ -302,6 +302,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                 cfg_regrid["paths"]["weights"],
                 template_file)})
 
+            original_grid_size = self.grid_area.size if self.grid_area is not None else None
+
             # If weights do not exist, create them
             if rebuild or not os.path.exists(self.weightsfile[vc]):
                 if os.path.exists(self.weightsfile[vc]):
@@ -310,15 +312,14 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                                         cfg_regrid, regrid=self.dst_grid_name,
                                         vert_coord=vc, extra=[],
                                         method=self.regrid_method,
-                                        original_grid_size=self.grid_area.size,
-                                        nproc = self.nproc)
-
+                                        original_grid_size=original_grid_size,
+                                        nproc=self.nproc)
 
             self.weights.update({vc: xr.open_mfdataset(self.weightsfile[vc])})
             vc2 = None if vc == "2d" or vc == "2dm" else vc
             self.regridder.update({vc: Regridder(weights=self.weights[vc],
-                                                    vert_coord=vc2,
-                                                    space_dims=default_space_dims)})
+                                                 vert_coord=vc2,
+                                                 space_dims=default_space_dims)})
 
     def _configure_coords(self, cfg_regrid):
         """
@@ -425,8 +426,17 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         if rebuild or not os.path.exists(self.dst_areafile):
             if os.path.exists(self.dst_areafile):
                 os.unlink(self.dst_areafile)
+            # We added the possibility to have target grids
+            # with a dictionary so we may need to extract the grid
+            # name and the grid dictionary.
             grid = cfg_regrid["grids"][self.dst_grid_name]
-            self._make_dst_area_file(self.dst_areafile, grid)
+            if isinstance(grid, dict):
+                grid_name = self.dst_grid_name
+                grid_dict = grid
+            else:
+                grid_name = grid
+                grid_dict = None
+            self._make_dst_area_file(self.dst_areafile, grid_name, grid_dict)
 
         # open the area file and possibily fix it
         self.dst_grid_area = xr.open_mfdataset(self.dst_areafile).cell_area
@@ -764,7 +774,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         out = log_history(out, f"Regrid from {self.src_grid_name} to {self.dst_grid_name}")
 
         return out
-
 
     def _check_if_regridded(self, data):
         """
