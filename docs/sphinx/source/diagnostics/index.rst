@@ -170,3 +170,4 @@ In this section we provide some guidelines for the development of new diagnostic
    guidelines/output_management
    guidelines/configuration_files
    guidelines/default_parser
+   guidelines/core_functions
