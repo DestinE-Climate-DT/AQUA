@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
+- Fix for the `fdb_info_file` feature, that now can have a `data` only block when no data is on the bridge (#1761)
 
 ## [v0.13.3]
 
