@@ -43,28 +43,35 @@ class Diagnostic():
         # Data to be retrieved
         self.data = None
 
-    def retrieve(self, var: str = None):
+    def retrieve(self, var: str = None, return_data: bool = False):
         """
         Retrieve the data from the model.
 
         Args:
             var (str): The variable to be retrieved. If None, all variables will be retrieved.
+            return_data (bool): If True, the data will be returned. Default is False.
 
         Attributes:
-            self.data: The data retrieved from the model.
+            self.data: The data retrieved from the model. If return_data is True, the data will be returned.
             self.catalog: The catalog used to retrieve the data if no catalog was provided.
+                          If return_data is True, the catalog attribute will not be changed.
         """
 
         self.reader = Reader(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                              regrid=self.regrid, startdate=self.startdate, enddate=self.enddate)
 
-        if self.catalog is None:
+        if self.catalog is None and return_data is False:
             self.catalog = self.reader.catalog
 
-        self.data = self.reader.retrieve(var=var)
+        data = self.reader.retrieve(var=var)
 
         if self.regrid is not None:
-            self.data = self.reader.regrid(self.data)
+            data = self.reader.regrid(data)
+
+        if return_data is True:
+            return data
+        else:
+            self.data = data
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
                     default_path: str = '.', rebuild: bool = True, **kwargs):
