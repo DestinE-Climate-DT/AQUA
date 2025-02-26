@@ -1,7 +1,7 @@
 from .gregory import GregoryPlot
-from .seasonalcycle import SeasonalCycle
+from .seasonalcycle import SeasonalCycles
 from .timeseries import Timeseries
 
 __all__ = ["GregoryPlot",
-           "SeasonalCycle",
+           "SeasonalCycles",
            "Timeseries"]

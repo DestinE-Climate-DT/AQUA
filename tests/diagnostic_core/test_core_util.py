@@ -2,6 +2,7 @@ import pytest
 import argparse
 from unittest.mock import patch
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
+from aqua.diagnostics.core import start_end_dates
 
 loglevel = 'DEBUG'
 
@@ -53,3 +54,18 @@ def test_cluster(mock_cluster, mock_client):
     assert private_cluster is False
 
     close_cluster(client, cluster, private_cluster)
+
+
+@pytest.mark.aqua
+def test_start_end_dates():
+    # All None inputs
+    assert start_end_dates() == (None, None)
+    
+    # Only startdate provided
+    assert start_end_dates(startdate="2020-01-01") == ("2020-01-01", None)
+    assert start_end_dates(startdate="20200101") == ("20200101", None)
+
+    # Two dates provided
+    assert start_end_dates(startdate="2020-01-01", enddate="2020-01-02") == ("2020-01-01", "2020-01-02")
+    assert start_end_dates(startdate="20200101", enddate="20200102") == ("20200101", "20200102")
+    assert start_end_dates(startdate="20200101", start_std="20200102") == ("20200101", None)

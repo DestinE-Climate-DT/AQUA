@@ -28,6 +28,7 @@ class Diagnostic():
         """
 
         self.logger = log_configure(log_name='Diagnostic', log_level=loglevel)
+        self.loglevel = loglevel
         self.catalog = catalog
         self.model = model
         self.exp = exp
@@ -56,7 +57,8 @@ class Diagnostic():
         """
 
         self.reader = Reader(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
-                             regrid=self.regrid, startdate=self.startdate, enddate=self.enddate)
+                             regrid=self.regrid, startdate=self.startdate, enddate=self.enddate,
+                             loglevel=self.loglevel)
 
         if self.catalog is None:
             self.catalog = self.reader.catalog
@@ -65,6 +67,13 @@ class Diagnostic():
 
         if self.regrid is not None:
             self.data = self.reader.regrid(self.data)
+
+        if self.startdate is None:
+            self.startdate = self.data.time.values[0]
+            self.logger.debug(f'Start date: {self.startdate}')
+        if self.enddate is None:
+            self.enddate = self.data.time.values[-1]
+            self.logger.debug(f'End date: {self.enddate}')
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
                     default_path: str = '.', rebuild: bool = True, **kwargs):
