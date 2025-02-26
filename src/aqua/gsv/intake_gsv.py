@@ -662,24 +662,26 @@ class GSVSource(base.DataSource):
         except (OSError, yaml.YAMLError) as e:
             self.logger.error("Error reading or parsing YAML file %s: %s", fdb_info_file, str(e))
             return None
-
-        if not all(key in fdb_info for key in ['data', 'bridge']):
-            self.logger.error("FDB info file %s does not contain expected sections ('data' and 'bridge')", fdb_info_file)
+        
+        # The 'data' block is mandatory and present since the first chunck of simulation
+        # The 'bridge' block is written only if some data is on bridge (see #1760)
+        if 'data' in fdb_info:
+            try: 
+                fdb_info['data']['data_start_date'] = self._validate_info_date(fdb_info, 'data', 'start')
+                fdb_info['data']['data_end_date'] = self._validate_info_date(fdb_info, 'data', 'end')
+            except KeyError:
+                self.logger.error("FDB info file %s does not contain HPC dates in correct format", fdb_info_file)
+                return None
+        else:
+            self.logger.error("FDB info file %s does not contain 'data' section, which is mandatory", fdb_info_file)
             return None
-
-        try: 
-            fdb_info['data']['data_start_date'] = self._validate_info_date(fdb_info, 'data', 'start')
-            fdb_info['data']['data_end_date'] = self._validate_info_date(fdb_info, 'data', 'end')
-        except KeyError:
-            self.logger.error("FDB info file %s does not contain HPC dates in correct format", fdb_info_file)
-            return None
-        if self.fdbhome_bridge or self.fdbpath_bridge:
-                try:
-                    fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
-                    fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
-                except KeyError:
-                    self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
-                    return None
+        if 'bridge' in fdb_info and (self.fdbhome_bridge or self.fdbpath_bridge):
+            try:
+                fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
+                fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
+            except KeyError:
+                self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
+                return None
         else:
             fdb_info['bridge'] = None
 
