@@ -52,7 +52,6 @@ def to_list(arg):
     return [arg]
 
 
-
 def files_exist(path):
     """
     Verify that a list or path includes files

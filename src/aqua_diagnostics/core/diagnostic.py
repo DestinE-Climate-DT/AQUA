@@ -28,6 +28,7 @@ class Diagnostic():
         """
 
         self.logger = log_configure(log_name='Diagnostic', log_level=loglevel)
+        self.loglevel = loglevel
         self.catalog = catalog
         self.model = model
         self.exp = exp
