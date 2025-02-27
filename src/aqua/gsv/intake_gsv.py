@@ -679,9 +679,10 @@ class GSVSource(base.DataSource):
             try:
                 fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
                 fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
+            # if bridge dates are wrongly defined, set the bridge block to None
             except KeyError:
                 self.logger.error("FDB info file %s does not contain bridge dates in correct form", fdb_info_file)
-                return None
+                fdb_info['bridge'] = None
         else:
             fdb_info['bridge'] = None
 
