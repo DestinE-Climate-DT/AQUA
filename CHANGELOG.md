@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
+Hotfixes:
+- Fix for the Timeseries diagnostic which was not creating a ylabel in the plot for some variables (#1783)
 
 ## [v0.13.4]
 
