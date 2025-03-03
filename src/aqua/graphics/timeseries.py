@@ -60,6 +60,8 @@ def plot_timeseries(monthly_data=None,
                     label += ' monthly'
                 else:
                     label = None
+                if 'long_name' in mon_data.attrs and 'units' in mon_data.attrs:
+                    ylabel = mon_data.attrs['long_name'] + ' (' + mon_data.attrs['units'] + ')'
                 mon_data.plot(ax=ax, label=label, color=color)
             except Exception as e:
                 logger.debug(f"Error plotting monthly data: {e}")
@@ -74,6 +76,8 @@ def plot_timeseries(monthly_data=None,
                     label += ' annual'
                 else:
                     label = None
+                if 'long_name' in ann_data.attrs and 'units' in ann_data.attrs:
+                    ylabel = ann_data.attrs['long_name'] + ' (' + ann_data.attrs['units'] + ')'
                 ann_data.plot(ax=ax, label=label, color=color, linestyle='--')
             except Exception as e:
                 logger.debug(f"Error plotting annual data: {e}")
@@ -109,6 +113,10 @@ def plot_timeseries(monthly_data=None,
                                 facecolor='black', alpha=0.2)
         except Exception as e:
             logger.debug(f"Error plotting annual std data: {e}")
+
+    if not ax.get_ylabel():  # Checks if the label is empty or None
+        logger.debug(f"Default y-label will be set: {ylabel}")
+        ax.set_ylabel(ylabel)
 
     ax.legend(fontsize='small')
     ax.grid(axis="x", color="k")

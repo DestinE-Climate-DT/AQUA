@@ -464,7 +464,7 @@ class Timeseries():
         """
         description = "Time series of the global mean of"
         if self.monthly:
-            description += f" {self.data_annual[0].attrs['long_name']}"
+            description += f" {self.data_mon[0].attrs['long_name']}"
         elif self.annual:
             description += f" {self.data_annual[0].attrs['long_name']}"
         else:
