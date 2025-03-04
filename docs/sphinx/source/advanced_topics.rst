@@ -179,34 +179,6 @@ It is also possible to specify vertical chunking by passing a dictionary with th
 In this case ``time`` will follow the notation discussed above, while ``vertical`` specifies the number of vertical
 levels to use for each chunk.
 
-.. _iterators:
-
-Iterator access to data
------------------------
-
-In alternative to the lazy access it is also possible to ask the reader to return an *iterator/generator* object passing the ``stream_generator=True`` 
-keyword to the ``retrieve()`` method.
-In that case the next block of data can be read from the iterator with ``next()`` as follows:
-
-.. code-block:: python
-
-    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D",
-                    regrid="r025")
-    data = reader.retrieve(startdate='20200120', enddate='20200413', var='ci',
-                           stream_generator=True)
-    dd = next(data)
-
-or with a loop iterating over ``data``. The result of these operations is in turn a regular xarray.Dataset containg the data.
-Since this is a data stream the user should also specify the desired initial time and the final time (the latter can be omitted and will default to the end of the dataset).
-When using an iterator it is possible to specify the size of the data blocks read at each iteration with the ``aggregation`` keyword
-(``M`` is month, ``D`` is day etc.). 
-The default is ``S`` (step), i.e. single saved timesteps are read at each iteration.
-
-Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
-Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
-
-In the special case where the source is FDB/GSV and iterator access is requested, ``aggregation`` takes precedence over ``chunks`` and chunking is set to the value specified by it.
-
 .. _lev-selection-regrid:
 
 Level selection and regridding

@@ -315,9 +315,6 @@ class RegridMixin():
         self.enddate = enddate
         self.preproc = preproc
 
-        if isinstance(data, types.GeneratorType):
-            data = next(data)
-
         # select only first relevant variable
         variables = [var for var in data.data_vars if
                 not var.endswith("_bnds") and not var.startswith("bounds") and not var.endswith("_bounds")]

@@ -47,38 +47,6 @@ class TimStatMixin():
                             time_bounds=time_bounds, center_time=center_time)
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
-                time_bounds=False, center_time=False):
-        """
-        Perform daily, monthly and yearly time statistics.
-        Wrapper for _timstat function, which is called differently if data is a generator or not.
-
-        Arguments:
-            data (xr.Dataset):  the input xarray.Dataset
-            stat (string):      the statistical operation to be performed ('mean' is default)
-                                supported also 'min', 'max' and 'std'
-            freq (str):         the frequency of the time averaging.
-                                Valid values are monthly, daily, yearly. Defaults to None.
-            exclude_incomplete (bool):  Check if averages is done on complete chunks, and remove from the output
-                                        chunks which have not all the expected records.
-            time_bound (bool):  option to create the time bounds.
-            center_time (bool): option to center the time coordinate to the middle of the averaging period.
-
-        Returns:
-            A xarray.Dataset containing the time averaged data.
-        """
-        if isinstance(data, types.GeneratorType):
-            return self._timstatgen(data, freq=freq, stat=stat, exclude_incomplete=exclude_incomplete,
-                                    time_bounds=time_bounds, center_time=center_time)
-        else:
-            return self._timstat(data, freq=freq, stat=stat, exclude_incomplete=exclude_incomplete,
-                                 time_bounds=time_bounds, center_time=center_time)
-
-    def _timstatgen(self, data, **kwargs):
-        """Call the timstat function for iterators"""
-        for ds in data:
-            yield self._timstat(ds, **kwargs)
-
-    def _timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                  time_bounds=False, center_time=False):
         """
         Perform daily, monthly and yearly time statistics.

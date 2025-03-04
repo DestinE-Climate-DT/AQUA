@@ -156,26 +156,6 @@ the internal state of the streaming process.
 
 If we want to reset the state of the streaming process, we can call the ``reset_stream()`` method.
 
-Iterator streaming
-^^^^^^^^^^^^^^^^^^
-
-Another possibility to deal with data streaming is to use the argument
-``stream_generator=True`` in the Reader initialization:
-
-.. code-block:: python
-
-    reader = Reader(model="IFS", exp= "tco2559-ng5", source="ICMGG_atm2d",
-                    stream_generator = 'True', aggregation = 'monthly')
-    data_gen = reader.retrieve()
-    
-``data_gen`` is now a generator object that yields the requested one-month-long chunks of data
-(See :ref:`iterators` for more info).
-We can do operations with them by iterating on the generator object like:
-
-.. code-block:: python
-
-    for data in data_gen:
-        # Do something with the data
 
 .. _accessors:
 
