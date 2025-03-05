@@ -15,7 +15,7 @@ outputdir: "./"
 
 # This is the variable that will be plotted from aqua-analysis output
 
-atmglobalmean: '2t'
+variable: '2t'
 
 atmglobalmean_plot_params:
   figure_size: [15,15]

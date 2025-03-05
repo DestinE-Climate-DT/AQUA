@@ -118,7 +118,7 @@ def retrieve_data(variable=None, models=None, exps=None, sources=None, ens_dim="
         raise NoDataError("No models, exps or sources provided")
     else:
         for i, model in enumerate(models):
-            reader = Reader(model=model, exp=exps[i], source=sources[i], areas=False, variable=variable)
+            reader = Reader(model=model, exp=exps[i], source=sources[i], areas=False)
             data = reader.retrieve(var=variable)
             dataset_list.append(data)
     merged_dataset = xr.concat(dataset_list, ens_dim)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     logger.info(f"Reading configuration file {file}")
     config = load_yaml(file)
 
-    variable = config['atmglobalmean']
+    variable = config['variable']
     logger.info(f"Plotting {variable} atmglobalmean map")
     figure_size, plot_std, plot_label, pdf_save, units, mean_plot_title, std_plot_title, cbar_label = get_plot_options(
         config,  variable)
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     outfile = 'aqua-analysis-ensemble-atmglobalmean-map'
     atmglobalmean_ens = EnsembleLatLon(var= variable, dataset=atm_dataset)
     try:
-        atmglobalmean_ens.edit_attributes(cbar_label=cbar_label)  # to change class attributes
+        atmglobalmean_ens.edit_attributes(figure_size=figure_size, cbar_label=cbar_label)  # to change class attributes
         atmglobalmean_ens.run()
 
     except Exception as e:
