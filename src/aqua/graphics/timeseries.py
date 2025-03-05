@@ -15,6 +15,7 @@ def plot_timeseries(monthly_data=None,
                     std_annual_data=None,
                     data_labels: list = None,
                     ref_label: str = None,
+                    std_label: str = None,
                     loglevel: str = 'WARNING',
                     **kwargs):
     """
@@ -55,6 +56,11 @@ def plot_timeseries(monthly_data=None,
             color = color_list[i]
             try:
                 mon_data = monthly_data[i]
+                
+                # Convert single string to a list to avoid splitting chars
+                if isinstance(data_labels, str):
+                    data_labels = to_list(data_labels)
+
                 if data_labels:
                     label = data_labels[i]
                     label += ' monthly'
@@ -86,11 +92,15 @@ def plot_timeseries(monthly_data=None,
                 ref_label_mon = None
             ref_monthly_data.plot(ax=ax, label=ref_label_mon, color='black', lw=0.6)
             if std_monthly_data is not None:
+                if std_label:
+                    std_label_mon = std_label + ' std monthly'
+                else:
+                    std_label_mon = None
                 std_monthly_data.compute()
                 ax.fill_between(ref_monthly_data.time,
                                 ref_monthly_data - 2.*std_monthly_data.sel(month=ref_monthly_data["time.month"]),
                                 ref_monthly_data + 2.*std_monthly_data.sel(month=ref_monthly_data["time.month"]),
-                                facecolor='grey', alpha=0.25)
+                                label=std_label_mon, facecolor='grey', alpha=0.25)
         except Exception as e:
             logger.debug(f"Error plotting monthly std data: {e}")
 
@@ -102,11 +112,15 @@ def plot_timeseries(monthly_data=None,
                 ref_label_ann = None
             ref_annual_data.plot(ax=ax, label=ref_label_ann, color='black', linestyle='--', lw=0.6)
             if std_annual_data is not None:
+                if std_label:
+                    std_label_ann = std_label + ' std annual'
+                else:
+                    std_label_ann = None
                 std_annual_data.compute()
                 ax.fill_between(ref_annual_data.time,
                                 ref_annual_data - 2.*std_annual_data,
                                 ref_annual_data + 2.*std_annual_data,
-                                facecolor='black', alpha=0.2)
+                                label=std_label_ann, facecolor='black', alpha=0.2)
         except Exception as e:
             logger.debug(f"Error plotting annual std data: {e}")
 
