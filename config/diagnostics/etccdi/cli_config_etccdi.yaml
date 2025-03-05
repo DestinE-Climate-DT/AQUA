@@ -1,0 +1,21 @@
+# you can turn on/off the indices to be calculated
+indices:
+  SDII: true
+
+year: null # year to calculate the indices, overwritten by the script with the flag --year
+
+# It is overwritten if the script with the flags --catalog, --model, --exp, --source
+models:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+
+# This is overwritten if the script with the flags --configdir
+# Common output directory for all the indices
+# Structure of the output directory:
+# outputdir
+# ├── png
+# ├── pdf
+# └── netcdf
+outputdir: './output' # common output directory for figures and netcdf files
