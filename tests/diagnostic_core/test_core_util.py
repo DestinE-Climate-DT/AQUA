@@ -3,6 +3,7 @@ import argparse
 from unittest.mock import patch
 from aqua.diagnostics.core import template_parse_arguments, load_diagnostic_config
 from aqua.diagnostics.core import open_cluster, close_cluster, merge_config_args
+from aqua.diagnostics.core import start_end_dates
 
 loglevel = 'DEBUG'
 
@@ -69,7 +70,7 @@ def test_load_diagnostic_config():
                                      default_config='config_timeseries_atm.yaml',
                                      args=args, loglevel=loglevel)
 
-    assert ts_dict['models'] == [{'catalog': None, 'exp': None, 'model': None, 'source': 'lra-r100-monthly'}]
+    assert ts_dict['datasets'] == [{'catalog': None, 'exp': None, 'model': None, 'source': 'lra-r100-monthly', 'regrid': None}]
 
 
 @pytest.mark.aqua
@@ -89,3 +90,18 @@ def test_merge_config_args():
     assert merged_config['datasets'] == [{'catalog': 'test_catalog', 'exp': 'test_exp',
                                           'model': 'test_model', 'source': 'test_source'}]
     assert merged_config['output']['outputdir'] == 'test_outputdir'
+
+
+@pytest.mark.aqua
+def test_start_end_dates():
+    # All None inputs
+    assert start_end_dates() == (None, None)
+
+    # Only startdate provided
+    assert start_end_dates(startdate="2020-01-01") == ("2020-01-01", None)
+
+    # Two dates provided
+    assert start_end_dates(startdate="2020-01-01", enddate="2020-01-02") == ("2020-01-01", "2020-01-02")
+    assert start_end_dates(startdate="20200101", enddate="20200102") == ("2020-01-01", "2020-01-02")
+    assert start_end_dates(startdate="20200101", start_std="20200102") == ("2020-01-01", None)
+    assert start_end_dates(startdate="2020-01-01", enddate="20200102") == ("2020-01-01", "2020-01-02")
