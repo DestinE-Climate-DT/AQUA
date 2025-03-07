@@ -1,0 +1,11 @@
+catalog: nextgems4
+model: IFS-FESOM
+exp: ssp370
+source: 2D_hourly_healpix512
+
+aggregation: D
+year: 2025
+
+loglevel: WARNING
+outputdir: /work/bb1153/b382289/nextgems_analysis/ETCCDI/TXX
+index: txx

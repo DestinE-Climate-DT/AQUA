@@ -1,0 +1,37 @@
+index:
+  fd:
+    longname: Frost days
+    var: 2t
+    aggregation: D
+    statistic: min
+    condition: '273.15'
+    condition_sign: '<'
+    units: days
+    cmap: Blues
+  id:
+    longname: Ice days
+    var: 2t
+    aggregation: D
+    statistic: max
+    condition: '273.15'
+    condition_sign: '<'
+    units: days
+    cmap: Blues
+  su:
+    longname: Summer days
+    var: 2t
+    aggregation: D
+    statistic: max
+    condition: '273.15 + 25'
+    condition_sign: '>'
+    units: days
+    cmap: Blues
+  tr:
+    longname: Tropical nights
+    var: 2t
+    aggregation: D
+    statistic: min
+    condition: '273.15 + 20'
+    condition_sign: '>'
+    units: days
+    cmap: Blues
