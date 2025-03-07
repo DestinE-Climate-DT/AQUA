@@ -6,8 +6,8 @@ coverage:
         target: 55%   
         threshold: 0.1%  # Allow a 0.1% drop without failing
     
-fixes:
-  - "/__w/AQUA/AQUA/AQUA/src/::"
+# fixes:
+#   - "/__w/AQUA/AQUA/AQUA/src/::"
 
 ignore:
   - "tests/*"          # Ignore test files
