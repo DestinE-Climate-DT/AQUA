@@ -57,10 +57,8 @@ def test_catalog(reader):
     """
     aaa, bbb = reader
     assert isinstance(aaa, Reader)
-    try:
-        assert isinstance(bbb, xarray.Dataset)
-    except AssertionError: #fdb is a generator
-        assert isinstance(bbb, types.GeneratorType)
+    assert isinstance(bbb, xarray.Dataset)
+
 
 @pytest.mark.sbatch
 def test_catalog_reader(reader_regrid):

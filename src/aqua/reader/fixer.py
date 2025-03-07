@@ -369,19 +369,7 @@ class FixerMixin():
 
         return default_fixes
 
-    def fixer(self, data, var, **kwargs):
-        """Call the fixer function returning container or iterator"""
-        if isinstance(data, types.GeneratorType):
-            return self._fixergen(data, var, **kwargs)
-        else:
-            return self._fixer(data, var, **kwargs)
-
-    def _fixergen(self, data, var, **kwargs):
-        """Iterator version of the fixer"""
-        for ds in data:
-            yield self._fixer(ds, var, keep_memory=True, **kwargs)
-
-    def _fixer(self, data, destvar, apply_unit_fix=True, keep_memory=False):
+    def fixer(self, data, destvar, apply_unit_fix=True, keep_memory=False):
         """
         Perform fixes (var name, units, coord name adjustments) of the input dataset.
 

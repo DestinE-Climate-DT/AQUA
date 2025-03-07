@@ -529,9 +529,6 @@ class LRAgenerator():
         """Call write var for generator or catalog access"""
         t_beg = time()
 
-        if isinstance(self.data, types.GeneratorType):
-            raise ValueError('Generator no longer supported by AQUA LRA.')
-
         self._write_var_catalog(var)
 
         t_end = time()

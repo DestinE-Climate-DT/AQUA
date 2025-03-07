@@ -285,7 +285,7 @@ class RegridMixin():
     def _retrieve_plain(self, *args, **kwargs):
         """
         Retrieves making sure that no fixer and agregation are used,
-        read only first variable and converts iterator to data
+        read only first variable
         """
         if self.sample_data is not None:
             self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
@@ -319,9 +319,6 @@ class RegridMixin():
         self.startdate = startdate
         self.enddate = enddate
         self.preproc = preproc
-
-        if isinstance(data, types.GeneratorType):
-            data = next(data)
 
         # select only first relevant variable
         variables = [var for var in data.data_vars if

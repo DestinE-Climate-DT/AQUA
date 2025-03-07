@@ -110,21 +110,16 @@ class TestGsv():
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", chunks="D",
-                        stream_generator=True, loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
         data = reader.retrieve(startdate='20080101T1200', enddate='20080101T1200', var='t')
-        assert isinstance(data, types.GeneratorType), 'Reader does not return iterator'
-        dd = next(data)
-        assert dd.t.GRIB_paramId == 130, 'Wrong GRIB param in data'
+        assert data.t.GRIB_paramId == 130, 'Wrong GRIB param in data'
 
     def test_reader_novar(self) -> None:
         """Simple test, to check that catalog access works and reads correctly, no var"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb",
-                        stream_generator=True, loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
         data = reader.retrieve()
-        dd = next(data)
-        assert dd.t.GRIB_paramId == 130, 'Wrong GRIB param in data'
+        assert data.t.GRIB_paramId == 130, 'Wrong GRIB param in data'
 
     def test_reader_xarray(self) -> None:
         """Reading directly into xarray"""
@@ -133,7 +128,7 @@ class TestGsv():
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
-
+        
     def test_reader_paramid(self) -> None:
         """
         Reading with the variable paramid, we use '130' instead of 't'

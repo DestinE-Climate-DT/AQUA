@@ -49,7 +49,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                  fix=True,
                  regrid=None, regrid_method=None,
                  areas=True, datamodel=None,
-                 streaming=False, stream_generator=False,
+                 streaming=False,
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
                  aggregation=None, chunks=None,
@@ -73,7 +73,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             datamodel (str, optional): Destination data model for coordinates, overrides the one in fixes.yaml.
                                        Defaults to None.
             streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
-            stream_generator (bool, optional): if to return a generator object for data streaming. Defaults to False
             startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
@@ -122,9 +121,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         self.src_grid_area = None
         self.dst_grid_area = None
 
-        if stream_generator:  # Stream generator also implies streaming
-            streaming = True
-
         if streaming:
             self.streamer = Streaming(startdate=startdate,
                                       enddate=enddate,
@@ -133,8 +129,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             # Export streaming methods TO DO: probably useless
             self.reset_stream = self.streamer.reset
             self.stream = self.streamer.stream
-
-        self.stream_generator = stream_generator
         self.streaming = streaming
 
         self.startdate = startdate
@@ -506,9 +500,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             A xarray.Dataset containing the required data.
         """
 
-        # Streaming emulator require these to be defined in __init__
-        if (self.streaming and not self.stream_generator) and (startdate or enddate):
-            raise KeyError("In case of streaming=true the arguments startdate/enddate have to be specified when initializing the class.")  # noqa E501
 
         if not startdate:  # In case the streaming startdate is used also for FDB copy it
             startdate = self.startdate
@@ -544,7 +535,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             else:
                 loadvar = None
 
-        fiter = False
         ffdb = False
         # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
@@ -552,8 +542,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         # If this is an fdb entry
         elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
-                                   dask=(not self.stream_generator), level=level)
-            fiter = self.stream_generator  # this returs an iterator unless dask is set
+                                   dask=True, level=level)
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
@@ -578,14 +567,10 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                 if not hasattr(data[var], 'units'):
                     self.logger.warning('Variable %s has no units!', var)
 
-        if not fiter:  # This is not needed if we already have an iterator
-            if self.streaming:
-                if self.stream_generator:
-                    data = self.streamer.generator(data, startdate=startdate, enddate=enddate)
-                else:
-                    data = self.streamer.stream(data)
-            elif startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
-                data = data.sel(time=slice(startdate, enddate))
+        if self.streaming:
+            data = self.streamer.stream(data)
+        elif startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+            data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
@@ -645,19 +630,13 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         Reader.instance = self  # Refresh the latest reader instance used
 
     def regrid(self, data):
-        """Call the regridder function returning container or iterator"""
+        """Call the regridder function returning container"""
 
         if self.dst_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
 
-        if isinstance(data, types.GeneratorType):
-            return self._regridgen(data)
-        else:
-            return self._regrid(data)
+        return self._regrid(data)
 
-    def _regridgen(self, data):
-        for ds in data:
-            yield self._regrid(ds)
 
     def _regrid(self, datain):
         """
@@ -1050,18 +1029,18 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
-        Read fdb data. Returns an iterator or dask array.
+        Read fdb data. Returns a dask array.
 
         Args:
             esmcat (intake catalog): the intake catalog to read
             var (str, int or list): the variable(s) to read
             startdate (str): a starting date and time in the format YYYYMMDD:HHTT
             enddate (str): an ending date and time in the format YYYYMMDD:HHTT
-            dask (bool): return directly a dask array instead of an iterator
+            dask (bool): return directly a dask array
             level (list, float, int): level to be read, overriding default in catalog
 
         Returns:
-            An xarray.Dataset or an iterator over datasets
+            An xarray.Dataset 
         """
         # Var can be a list or a single one of these cases:
         # - an int, in which case it is a paramid
