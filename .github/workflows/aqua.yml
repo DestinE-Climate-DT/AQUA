@@ -155,6 +155,11 @@ jobs:
           pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or catgen or diagnostics"
       - name: Display coverage.xml contents
         run: cat AQUA/coverage.xml
+      - name: Debug Coverage Paths Before Upload
+        run: |
+          echo "Current working directory: $(pwd)"
+          ls -l AQUA/
+          cat AQUA/coverage.xml | grep "<source>"
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
