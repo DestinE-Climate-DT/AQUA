@@ -30,10 +30,20 @@ plot:
 output:
   levante: "/work/bb1153/b382267/tropical_rainfall_cicle3/cli_test/"
   lumi: "/pfs/lustrep3/projappl/project_465000454/nazarova/output/cli_test/"
+  lumi-e25.1: "/pfs/lustrep3/projappl/project_465000454/nazarova/output/cli_test/"
+  lumi-o25.1: "/pfs/lustrep3/projappl/project_465000454/nazarova/output/cli_test/"
+  MN5: "/gpfs/scratch/ehpc01/output/cli_test/"
+  MN5-e25.1: "/gpfs/scratch/ehpc01/output/cli_test/"
+  MN5-o25.1: "/gpfs/scratch/ehpc01/output/cli_test/"
 
 buffer:
   levante: "/scratch/b/b382267/cli_test/"
   lumi: "/pfs/lustrep3/scratch/project_465000454/nazarova/cli_test/"
+  lumi-e25.1: "/pfs/lustrep3/scratch/project_465000454/nazarova/cli_test/"
+  lumi-o25.1: "/pfs/lustrep3/scratch/project_465000454/nazarova/cli_test/"
+  MN5: "/gpfs/scratch/ehpc01/cli_test/"
+  MN5-e25.1: "/gpfs/scratch/ehpc01/cli_test/"
+  MN5-o25.1: "/gpfs/scratch/ehpc01/cli_test/"
 
 # Observation Datasets
 mswep: &mswep_settings
@@ -41,7 +51,7 @@ mswep: &mswep_settings
   lumi: "/pfs/lustrep3/appl/local/climatedt/data/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
   lumi-e25.1: "/pfs/lustrep3/appl/local/climatedt/input_data/applications/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
   lumi-o25.1: "/pfs/lustrep3/appl/local/climatedt/input_data/applications/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
-  MN5: "/gpfs/scratch/ehpc01/inpult_data/applications/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
+  MN5: "/gpfs/scratch/ehpc01/input_data/applications/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
   MN5-e25.1: "/gpfs/scratch/ehpc01/input_data/applications/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
   MN5-o25.1: "/gpfs/scratch/ehpc01/input_data/applications/AQUA-obs_v1.0/diagnostics/tropical_rainfall/MSWEP/"
   s_year: 1990                        # Start year for MSWEP analysis
