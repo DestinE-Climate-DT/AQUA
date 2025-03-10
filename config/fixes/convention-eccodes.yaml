@@ -188,12 +188,13 @@ convention_name:
           - 164 # original GRIB2 code
           - 228006 # meantcc in 0-1 GRIB2 code
           - 228164 # avg_tcc in %
+          - 131164 # ICON used this at some point
           - tcc
           - clt # cmor
           - meantcc #legacy eccodes name
           - avg_tcc
           - TCC # AQUA ERA5
-        grib: 131164
+        grib: 228164
       tciw: # Total column vertically-integrated cloud ice water
         source:
           - 79 # original GRIB2 code
