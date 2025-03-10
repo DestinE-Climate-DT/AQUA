@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version:
 Hotfixes:
 - Fix for Tropical Rainfall diagnostic to work with new E cycle and O cycle machines (#1814)
+- Update GSV to 2.9.6 (#1813)
+- Fix for target tcc grib code (#1812)
 - Fix for the Timeseries diagnostic which was not creating a ylabel in the plot for some variables (#1783)
 
 ## [v0.13.4]
