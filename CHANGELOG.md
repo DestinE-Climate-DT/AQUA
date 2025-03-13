@@ -6,12 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 Unreleased in the current development version:
+
+## [v0.13.5]
+
 Hotfixes:
 - Fix for Healpix zoom 7 grid for ICON R02B08 native oceanic grid, missing in yaml files (#1821)
 - Fix for Tropical Rainfall diagnostic to work with new E cycle and O cycle machines (#1814)
-- Update GSV to 2.9.6 (#1813)
 - Fix for target tcc grib code (#1812)
 - Fix for the Timeseries diagnostic which was not creating a ylabel in the plot for some variables (#1783)
+
+AQUA core complete list:
+- Update GSV to 2.9.6 (#1813)
 
 ## [v0.13.4]
 
@@ -838,7 +843,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.4...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.5...HEAD
+[v0.13.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.4...v0.13.5
 [v0.13.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.3...v0.13.4
 [v0.13.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.2...v0.13.3
 [v0.13.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.13.2
