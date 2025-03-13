@@ -99,6 +99,15 @@ grids:
     path: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_level_full_v3.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
+  icon-R02B08-hpz7-nested-v3:
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_v3.nc'
+    space_coord: ["ncells"]
+  icon-R02B08-hpz7-nested-3d-v3:
+    cdo_options: '--force'
+    path: '{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_level_full_v3.nc'
+    space_coord: ["ncells"]
+    vert_coord: ["level"]
   icon-R02B09-hpz7-nested-v3: #ClimateDT cycle2, 57642 missing values
     cdo_options: '--force'
     path: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_v3.nc'

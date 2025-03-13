@@ -10,6 +10,7 @@ Unreleased in the current development version:
 ## [v0.13.5]
 
 Hotfixes:
+- Fix for Healpix zoom 7 grid for ICON R02B08 native oceanic grid, missing in yaml files (#1821)
 - Fix for Tropical Rainfall diagnostic to work with new E cycle and O cycle machines (#1814)
 - Fix for target tcc grib code (#1812)
 - Fix for the Timeseries diagnostic which was not creating a ylabel in the plot for some variables (#1783)
