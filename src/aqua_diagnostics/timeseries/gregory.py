@@ -7,6 +7,7 @@ from aqua import Reader
 from aqua.logger import log_configure
 from aqua.util import OutputSaver
 from aqua.util import time_to_string, evaluate_colorbar_limits
+from aqua.graphics import ConfigStyle
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from .reference_data import get_reference_ts_gregory, get_reference_toa_gregory
 
@@ -223,9 +224,15 @@ class GregoryPlot():
             self.ref_toa_mean = ref_toa_mean
             self.ref_toa_std = ref_toa_std
 
-    def plot(self):
-        """Plot the Gregory plot."""
+    def plot(self, style: str = None,):
+        """Plot the Gregory plot.
+
+        Arguments: 
+            style (str): style to use for the plot. By default the schema specified in the configuration file is used.
+        """
         self.logger.debug("Plotting")
+        ConfigStyle(style=style)
+
         ax1 = None
         ax2 = None
 
@@ -236,9 +243,6 @@ class GregoryPlot():
         elif self.annual:
             fig, ax2 = plt.subplots(1, 1, figsize=(6, 6))
 
-        color_list = ["#1898e0", "#8bcd45", "#f89e13", "#d24493",
-                      "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf",
-                      "#00bb62", "#f9c410", "#fb4865", "#645ccc"]
 
         if self.monthly:
             ax1.axhline(0, color="k")
@@ -261,7 +265,7 @@ class GregoryPlot():
             for i, model in enumerate(self.models):
                 if self.data_ts_mon[i] is not None and self.data_toa_mon[i] is not None:
                     ax1.plot(self.data_ts_mon[i], self.data_toa_mon[i], marker=".",
-                             label=f"{model} {self.exps[i]}", color=color_list[i])
+                             label=f"{model} {self.exps[i]}")
 
             for i, model in enumerate(self.models):  # Last so that legend is at the end
                 if self.data_ts_mon[i] is not None and self.data_toa_mon[i] is not None:
@@ -284,7 +288,7 @@ class GregoryPlot():
             if ax1 is None:
                 ax2.set_ylabel(r"Net radiation TOA [$\rm Wm^{-2}$]")
             ax2.grid(True)
-            ax2.set_title("Annual Mean")
+            ax2.set_title("Annual Mean", fontsize=13, fontweight='bold')
 
             toa_min, toa_max = evaluate_colorbar_limits(self.data_toa_annual, sym=False)
             toa_min = min(toa_min, -2.)
@@ -300,7 +304,7 @@ class GregoryPlot():
             for i, model in enumerate(self.models):
                 if self.data_ts_annual[i] is not None and self.data_toa_annual[i] is not None:
                     ax2.plot(self.data_ts_annual[i], self.data_toa_annual[i], marker=".",
-                             label=f"{model} {self.exps[i]}", color=color_list[i])
+                             label=f"{model} {self.exps[i]}")
                     if i == 0 and ax1 is None:
                         label_b = "First Time-step"
                         label_e = "Last Time-step"

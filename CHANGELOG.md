@@ -38,6 +38,7 @@ AQUA core complete list:
 - Multiple updates to allow for AQUA open source, including Dockerfiles, actions, dependencies and containers (#1574)
 
 AQUA diagnostics complete list:
+- Diagnostic graphics refactoring for timeseries plot functions (#1729)
 - Ocean3d: Tests for the Ocean3d diagnostic (#1780)
 - Diagnostic core: A common function to check and convert variable units is provided as `convert_data_units()` (#1806)
 - Ocean3d: Bug fix to regridding of observations in cli (#1811)

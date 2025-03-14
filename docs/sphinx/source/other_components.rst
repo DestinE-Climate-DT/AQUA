@@ -260,6 +260,20 @@ Graphic tools
 
 The *aqua.graphics* module provides a set of simple functions to easily plot the result of analysis done within AQUA.
 
+Plot styles customisation
+^^^^^^^^^^
+
+A default for the plot appearance is present in the ``aqua.mplstyle`` file (in ``config/styles``), 
+and this includes all the default settings for the plot functions.
+This file can be modified to change the default appearance of the plots. 
+In addition, other styles can be created and used with the ``plt.style.use()`` function. 
+If you want to create a new style, you can create a new file in the same folder and adjust
+``config/config-aqua.yaml`` to point to the new file, replacing ``aqua`` option.
+`Here <https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style>`_ 
+multiple options are available to customize the plot appearance via matplotlib.
+
+Warning: note that not all the functions in the *aqua.graphics* module are using the style file yet.
+
 Single map
 ^^^^^^^^^^
 
