@@ -21,6 +21,7 @@ def frequency_string_to_pandas(freq):
         'daily': 'D',
         'weekly': 'W',
         'monthly': 'MS', #this implies start of the month
+        'annual': 'YS', #this implies start of the year
         'yearly': 'YS', #this implies start of the year
         'hour': 'h',
         'day': 'D',
@@ -161,14 +162,15 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     return boolean_mask
 
 
-def time_to_string(time=None):
+def time_to_string(time=None, format='%Y-%m-%d'):
     """Convert a time object to a string in the format YYYY-MM-DD
 
     Args:
         time: a time object, either a string or a datetime64 object
+        format: the format of the output string (YYYY-MM-DD by default, YYYYMMDD tested)
 
     Returns:
-        A string in the format YYYY-MM-DD
+        A string in the format defined by the format argument
 
     Raises:
         ValueError if time is None
@@ -178,7 +180,7 @@ def time_to_string(time=None):
     else:
         try:
             time_str = time.astype('datetime64[s]').astype('O')
-            time_str = time_str.strftime('%Y-%m-%d')
+            time_str = time_str.strftime(format)
         except AttributeError:
             time_str = time
         return time_str

@@ -61,6 +61,13 @@ class Diagnostic():
                                                               enddate=self.enddate, regrid=self.regrid,
                                                               loglevel=self.logger.level)
 
+        if self.startdate is None:
+            self.startdate = self.data.time.values[0]
+            self.logger.debug(f'Start date: {self.startdate}')
+        if self.enddate is None:
+            self.enddate = self.data.time.values[-1]
+            self.logger.debug(f'End date: {self.enddate}')
+
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
                     default_path: str = '.', rebuild: bool = True, **kwargs):
         """
