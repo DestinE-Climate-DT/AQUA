@@ -102,7 +102,8 @@ def shift_time_dataset(data):
         A revised xarray.DataSet
     """
 
-    newtime = [d + pd.DateOffset(months=-1) for d in data.time.data]
+    newtime = pd.DatetimeIndex(data.time.data) + pd.DateOffset(months=-1)
+    #newtime = [d + pd.DateOffset(months=-1) for d in data.time.data]
     return data.assign_coords(time=newtime)
 
 
