@@ -59,13 +59,13 @@ To verify that everything is at it should be please run:
 
 .. code-block:: bash
 
-    ./grid-checker.py verify
+    ./grids-checker.py verify
 
 To generate a new checksum should be please run:
 
 .. code-block:: bash
 
-    ./grid-checker.py generate -o checksum_file.md5
+    ./grids-checker.py generate -o checksum_file.md5
 
 Please notice that not all the grid/obs folders will be checked, but only those defined in the file 
 with ``GRIDS_FOLDERS`` and ``OBS_FOLDERS`` variables. 

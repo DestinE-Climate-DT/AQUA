@@ -3,6 +3,8 @@
 Advanced Topics
 ===============
 
+.. _config-file:
+
 Set up the configuration file
 -----------------------------
 
@@ -26,6 +28,21 @@ The configuration file is used to specify the following parameters:
   These paths are required to be inside the AQUA repository,
   so these paths should not be changed unless strictly necessary.
   Refer to :ref:`add-data` for more information.
+- **paths**: this is an optional block, which can be used to specify and override the paths specified in the catalog where grids, areas and weights are stored.
+  This is useful if you want to store the grids, areas and weights in a different location than the default one, you don't have access to the default location or
+  you are setting up a new machine.
+
+  The paths block should have the following structure:
+
+.. code-block:: yaml
+
+    paths:
+        grids: /path/to/aqua/data/grids
+        weights: /path/to/aqua/data/weights
+        areas: /path/to/aqua/data/areas
+
+One or all the paths can be specified in the configuration file.
+If a path is not specified in the configuration file, the default path specified in the catalog will be used.
 
 The configuration folder has this structure:
 

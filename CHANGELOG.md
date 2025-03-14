@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version (target v0.14):
 
 AQUA core complete list:
+- Custom `paths` in the `confi-aqua.yaml` can now be defined and will take priority over the catalog paths (#1809)
 - Remove generators from Reader (#1791)
 - Fix tcc grib code and add some cmor codes in the convention file (#1800)
 - Add a regrid option to cli of relevant diagnostics (#1792)
