@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Unreleased in the current development version (target v0.14):
 
 AQUA core complete list:
+
+- Major refactor of the regrid options, with new modular `Regridder()` class replacing `Regrid()` mixin (#1768)
+- Refactor of the `retrieve_plain()` function with contextmanager and smmregrid GridInspector (#1768)
 - Added Healpix zoom 7 grid for ICON R02B08 native oceanic grid (#1823)
 - Remove generators from Reader (#1791)
 - Fix tcc grib code and add some cmor codes in the convention file (#1800)

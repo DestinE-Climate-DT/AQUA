@@ -5,11 +5,13 @@ Regrid and interpolation capabilities
 
 AQUA provides functions to interpolate and regrid data to match the spatial resolution of different datasets. 
 AQUA regridding functionalities are based on the external tool `smmregrid <https://github.com/jhardenberg/smmregrid>`_ which 
-operates sparse matrix computation based on pre-computed weights.
+operates sparse matrix computation based on pre-computed weights. They are wrapper within a `Regridder()` class
+that can be used in a modular way to regrid data to a target grid, or seamlessy within the `Reader()`
 
-Basic usage
-^^^^^^^^^^^
+Basic usage within the Reader()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+This is the reccomended usage. 
 When the ``Reader`` is called, if regrid functionalities are needed, the target grid has to be specified
 during the class initialization:
 
@@ -27,6 +29,7 @@ will be loaded in memory only when necessary, allowing for further subsetting an
 The default regrid method is ``ycon`` which is a conservative regrid method.
 If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
 following the CDO convention.
+
 
 Concept
 ^^^^^^^
@@ -61,8 +64,11 @@ Such an approach has two main advantages:
 Available target grids
 ^^^^^^^^^^^^^^^^^^^^^^
 
-At the current stage, AQUA supports only target grids with CDO conventions.
-The available target grids are:
+.. note::
+
+    From AQUA version v0.14, all CDO grids are supported natively by AQUA, so it is possible to target `r360x180` without the need to specify `r100``
+
+The "predefined" target grids are:
 
 .. code-block:: yaml
 
@@ -82,12 +88,6 @@ The available target grids are:
   r200: r180x90
   r250s: r144x73
   r250: r144x72
-
-  # full Gaussian grids
-  F80: F80    # TL159
-  F128: F128  # TL255
-  F160: F160  # TL319
-  F256: F256  # TL511
 
 For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, etc.
 The list is available in the ``config/grids/default.yaml`` file.
