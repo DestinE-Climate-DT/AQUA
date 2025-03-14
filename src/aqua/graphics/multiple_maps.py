@@ -208,6 +208,8 @@ def plot_maps(maps: list = None,
         cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
     else:
         cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+    
+    cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
 
     # Set x-y labels
     for ax in axs:
@@ -486,6 +488,8 @@ def plot_maps_diff(maps: list,
         cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
     else:
         cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+    
+    cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
 
     # Set x-y labels
     for ax in axs:
