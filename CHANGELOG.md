@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.14.1):
 
 AQUA core complete list:
+- Support for python 3.13 (#1838)
 - Matplotlib styles can be set in the configuration file (#1729)
 - Graphics refactoring for timeseries plot functions (#1729)
 - Major refactor of the regrid options, with new modular `Regridder()` class replacing `Regrid()` mixin (#1768)
