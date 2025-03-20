@@ -9,7 +9,7 @@ channels:
   - nodefaults
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
-  - python>=3.10,<3.13
+  - python>=3.10
   - cdo>=2.2.0 #for healpix support
   - eccodes==2.40.0
   # for eccodes see issues #252, #634, #870, #1282
