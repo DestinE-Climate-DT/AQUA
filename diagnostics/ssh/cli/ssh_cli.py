@@ -10,7 +10,7 @@ By default, it will read configurations from 'config.yaml' unless specified by t
 import argparse
 import os
 import sys
-from datetime import datetime
+import pandas as pd
 
 # Add the directory containing the `ssh` module to the Python path.
 # Since the module is in the parent directory of this script, we calculate the script's directory
@@ -28,7 +28,7 @@ from aqua.util import get_arg
 
 def valid_date(s):
     try:
-        datetime.strptime(s, "%Y-%m-%d")
+        pd.Timestamp(s)
         return s
     except ValueError:
         msg = "Not a valid date: '{0}'.".format(s)
