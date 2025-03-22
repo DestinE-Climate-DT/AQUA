@@ -1,11 +1,26 @@
+# Template according to #1613
 # The first model in this block can be overridden
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
-models:
+datasets:
   - catalog: null
     model: null
     exp: null
     source: 'lra-r100-monthly'
+    regrid: null
+  # Possible second/third/fourth datasets here, no present by default
+  # - catalog: 'obs'
+  #   model: 'ERA5'
+  #   exp: 'era5'
+  #   source: 'monthly'
+  #   regrid: r100
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: null
 
 output:
   outputdir: "./"
@@ -14,31 +29,25 @@ output:
   save_png: true
   dpi: 300
 
-# This is the list of variables that will be plotted as timeseries
-timeseries: ['tos', 'siconc']
-seasonal_cycle: ['tos', 'siconc']
-
-timeseries_plot_params:
-# These are options that specify how the data is plotted
-# Default values are used if the variable that is being
-# plotted is not specified here.
-# If you need specific options for a variable, you can
-# add it here.
-  default:
-    plot_ref: True
-    monthly: True
-    annual: True
-    # List of regions to plot.
-    # The regions are defined in config/diagnostics/timeseries/interface/regions.yaml
-    # and installed with the aqua install command.
-    # Global timeseries are always plotted.
-    # regions: ['nh', 'sh', 'tropics', 'europe']
-    regrid: null
-    std_startdate: '1990-01-01'
-    std_enddate: '2020-12-31'
-  tos:
-    plot_ref: True
-    monthly: True
-    annual: True
-    regrid: null
-    regions: ['nh', 'sh']
+diagnostics:
+  timeseries:
+    run: true
+    variables: ['tos', 'siconc']
+    params:
+      default:
+        hourly: False
+        daily: False
+        monthly: True
+        annual: True
+        std_startdate: '19900101'
+        std_enddate: '20201231'
+      tos:
+        regions: ['nh', 'sh']
+  
+  seasonalcycles:
+    run: true
+    variables: ['tos', 'siconc']
+    params:
+      default:
+        std_startdate: '1990-01-01'
+        std_enddate: '2020-12-31'
