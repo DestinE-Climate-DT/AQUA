@@ -14,11 +14,11 @@ outputdir: "./"
 
 # This is the variable that will be plotted from aqua-analysis output
 
-aqua-zonalmean: 'arctic'
-_var: 'so'
+region: 'arctic'
+variable: 'so'
 
 zonalmean_plot_params:
-  figure_size: [5,5]
+  figure_size: [15,15]
   plot_label: True
   plot_std: True
   unit:
