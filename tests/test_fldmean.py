@@ -1,10 +1,25 @@
 """Testing if fldmean method works"""
 
 import pytest
-from aqua import Reader
+from aqua import Reader, FldStat
 
 loglevel = "DEBUG"
 
+
+@pytest.mark.aqua
+class TestFldModule():
+    """Class for fldmean standalone"""
+
+    def test_fldmean_from_data(self):
+        """test Fldmean class native from data"""
+
+        reader = Reader(catalog='ci', model='IFS', exp='test-tco79', 
+                        source='short', regrid='r100', rebuild=True)
+        data = reader.retrieve()
+        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel='debug')
+        assert fldmodule.fldmean(data)['2t'].size == 2
+        fldmodule = FldStat(loglevel='debug')
+        assert fldmodule.fldmean(data)['2t'].size == 2
 
 @pytest.mark.aqua
 class TestFldmean():
