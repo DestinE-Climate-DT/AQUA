@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME_FDB: ubuntu24.04-fdb5.14-eccodes2.40.0-aqua
+  IMAGE_NAME_FDB: ubuntu24.04-fdb5.15.11-eccodes2.40.0-aqua
 jobs:
   build:
     runs-on: ubuntu-latest

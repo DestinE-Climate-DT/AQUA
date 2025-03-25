@@ -7,7 +7,7 @@
 FROM ubuntu:24.04
 
 LABEL maintainer="jost.hardenberg@polito.it"
-LABEL version="0.3"
+LABEL version="0.4"
 LABEL description="Custom docker image based ion Ubuntu 24.04 with FDB5 and ECCODES for CA DestinE"
 
 #ARG DEBIAN_FRONTEND=noninteractive
@@ -18,10 +18,11 @@ RUN apt -y install libaec-dev gfortran
 
 # DIR definitions
 ENV INSTALL_DIR=/usr/local
-ENV ECKIT_VER=1.28.5
+ENV ECKIT_VER=1.28.6
 ENV ECCODES_VER=2.40.0
-ENV METKIT_VER=1.12.0
-ENV FDB5_VER=5.14.0
+ENV METKIT_VER=1.12.4
+ENV FDB5_VER=5.15.11
+# mars client 7.0.2
 
 # ECBUILD
 WORKDIR /usr/local

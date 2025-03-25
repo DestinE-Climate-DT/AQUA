@@ -5,7 +5,7 @@ FROM mambaorg/micromamba:2.0.7 as micromamba
 # -----------------------------------------------------------------------------
 # The container is created by the AQUA team, with the Dockerfile.ubuntu
 # it includes updated FDB and ECCODES libraries.
-FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.14-eccodes2.40.0-aqua:aqua-base-container as fdb
+FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.15.11-eccodes2.40.0-aqua:aqua-base-container as fdb
 
 # Install dependencies
 RUN export DEBIAN_FRONTEND=noninteractive && \
