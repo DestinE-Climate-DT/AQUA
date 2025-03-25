@@ -1,0 +1,57 @@
+
+variable: 'zos'
+regrid: 'r100'
+# Models for which sea surface height (SSH) variability is to be evaluated.
+data:
+  catalog: null
+  model: IFS-FESOM
+  exp: ssp370
+  source: lra-r100-monthly
+  #zoom: 10
+  #regrid: 'r100'
+  startdate: '2021-01-01'
+  enddate:  '2021-01-07'
+
+# This is the reference model against which other models are compared.
+obs:
+  catalog: null 
+  model: AVISO
+  exp: ssh-L4
+  source: daily
+  #regrid: 'r100'
+  startdate: '2021-01-01'
+  enddate: '2021-01-07'
+
+# These are options to adjust subplots visualizations.
+plot_options:
+  #regrid: 'r100'
+  scale_min: 0.1
+  scale_max: 0.4
+  cmap: "viridis"
+  difference_plots: True
+  region_selection: True
+  #fig_format: png
+  contours: 21  # Number of contours for the contour plot. If not set (or 0) then pcolormesh is used
+ 
+sub_region : 
+  name: Agulhas
+  lon_lim: [5, 50]
+  lat_lim: [-10, -50]
+
+# ONLY FOR ICON: Flags for northern and southern boundaries to mask out specific latitudes.
+# As AVISO does not have data under the sea ice, which ICON does, to make the datasets comparable - SSH under sea ice for ICON can be masked out.
+mask_options:
+  mask_northern_boundary: true
+  mask_southern_boundary: true
+  northern_boundary_latitude: 70
+  southern_boundary_latitude: -62
+
+# Please specify the path to the directory where the outputs should be saved. If output directory/ folder does not exist, another directory called output will be created in your current working directory.
+outputdir: /scratch/project_465000454/maqsood
+
+# This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
+cluster:
+  nworkers: 8
+  threads_per_worker: 1
+  memory_limit: 30e9
+

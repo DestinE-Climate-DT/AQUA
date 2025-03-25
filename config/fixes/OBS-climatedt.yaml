@@ -258,4 +258,20 @@ fixer_name:
                 source: sftof
                 src_units: frac
                 units: frac
-    
+   
+    ssh-adt:
+        data_model: false  # Do not attempt to fix coordinates
+        #delete: [latitude, longitude]
+        #deltat: 86400 #  on daily basis
+        #coords:
+        #  lat:
+        #    source: latitude
+        #  lon:
+        #    source: longitude
+        vars:
+            lat:
+              source: latitude
+            lon:
+              source: longitude
+            zos:
+                source: adt 
