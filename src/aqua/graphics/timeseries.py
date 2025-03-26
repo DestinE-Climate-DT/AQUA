@@ -17,6 +17,7 @@ def plot_timeseries(monthly_data=None,
                     std_annual_data=None,
                     data_labels: list = None,
                     ref_label: str = None,
+                    legend_outside: bool = True,
                     style: str = None,
                     fig: plt.Figure = None,
                     ax: plt.Axes = None,
@@ -36,6 +37,7 @@ def plot_timeseries(monthly_data=None,
         std_annual_data (xr.DataArray): standard deviation of the reference annual data
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
+        legend_outside (bool): if True, the legend is placed outside the plot. True by default.
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
@@ -55,7 +57,6 @@ def plot_timeseries(monthly_data=None,
         fig_size = kwargs.get('figsize', (10, 5))
         fig, ax = plt.subplots(1, 1, figsize=fig_size)
 
-
     if monthly_data is not None:
         plot_monthly_data(ax, monthly_data, data_labels, logger, lw=3)
 
@@ -67,8 +68,11 @@ def plot_timeseries(monthly_data=None,
 
     if ref_annual_data is not None:
         plot_ref_annual_data(ax, ref_annual_data, std_annual_data, ref_label, logger, lw=0.8)
-    
-    ax.legend(fontsize='small')
+
+    if legend_outside:
+        ax.legend(fontsize='small', bbox_to_anchor=(0.5, -0.2), loc='center', ncol=2)
+    else:
+        ax.legend(fontsize='small')
     ax.grid(True, axis="y", linestyle='-', color='silver', alpha=0.8)
 
     title = kwargs.get('title', None)
@@ -83,6 +87,7 @@ def plot_seasonalcycle(data=None,
                        std_data=None,
                        data_labels: list = None,
                        ref_label: str = None,
+                       legend_outside: bool = True,
                        style: str = None,
                        loglevel: str = 'WARNING',
                        **kwargs):
@@ -95,6 +100,7 @@ def plot_seasonalcycle(data=None,
         std_data (xr.DataArray): standard deviation of the reference data
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
+        legend_outside (bool): if True, the legend is placed outside the plot. True by default.
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
         loglevel (str): logging level
 
@@ -114,7 +120,6 @@ def plot_seasonalcycle(data=None,
 
     monthsNumeric = range(0, 13 + 1)  # Numeric months
     monthsNames = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
-
 
     if data is not None:
         if isinstance(data, xr.DataArray):
@@ -145,7 +150,11 @@ def plot_seasonalcycle(data=None,
         except Exception as e:
             logger.debug(f"Error plotting std data: {e}")
 
-    ax.legend(fontsize='small')
+    if legend_outside:
+        ax.legend(fontsize='small', bbox_to_anchor=(0.5, -0.2), loc='center', ncol=2)
+    else:
+        ax.legend(fontsize='small')
+
     ax.set_xticks(monthsNumeric)
     ax.set_xticklabels(monthsNames)
     ax.set_xlim(0.5, 12.5)
