@@ -108,7 +108,7 @@ class Teleconnection():
         self.outputdir = outputdir
 
         # Teleconnection variables
-        avail_telec = ['NAO', 'ENSO', 'MJO']
+        avail_telec = ['NAO', 'ENSO', 'MJO', "QBO"]
         if telecname in avail_telec:
             self.telecname = telecname
             if self.telecname == 'MJO':
@@ -116,6 +116,7 @@ class Teleconnection():
         else:
             raise ValueError('telecname must be one of {}'.format(avail_telec))
 
+        # Define the namelist attribute
         self._load_namelist(configdir=configdir, interface=interface)
 
         # Variable to be used for teleconnection
