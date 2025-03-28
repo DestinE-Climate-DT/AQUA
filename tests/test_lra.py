@@ -2,7 +2,7 @@ import os
 import pytest
 import shutil
 import xarray as xr
-from datetime import datetime
+import pandas as pd
 from aqua import LRAgenerator, Reader
 
 LOGLEVEL = "DEBUG"
@@ -160,7 +160,7 @@ class TestLRA:
         for month in range(1, 13):
             mm = f'{month:02d}'
             filename = test.get_filename(args["var"], year, month=mm)
-            timeobj = datetime.strptime(f'{year}-{mm}-01', "%Y-%m-%d")
+            timeobj = pd.Timestamp(f'{year}-{mm}-01')
             ds = xr.Dataset({args["var"]: xr.DataArray([0], dims=['time'], coords={'time': [timeobj]})})
             ds.to_netcdf(filename)
 

@@ -1,7 +1,6 @@
 """Test for some of the utils"""
 
 import pytest
-import datetime
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -33,7 +32,7 @@ class TestFileIsComplete:
         """Create a sample Dataset and its file"""
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i) for i in range(3)]
+        time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
         dataset = xr.Dataset({"sample_data": data})
@@ -48,7 +47,7 @@ class TestFileIsComplete:
     def test_file_is_complete_full_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i) for i in range(3)]
+        time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
         data[:,:,:] = np.nan
@@ -62,7 +61,7 @@ class TestFileIsComplete:
     def test_file_is_complete_partial_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i*40) for i in range(3)]
+        time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i * 40) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
         data[0,:,:] = np.nan

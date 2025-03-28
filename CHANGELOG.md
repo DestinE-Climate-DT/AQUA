@@ -33,6 +33,7 @@ Workflow modifications:
 - `push_analysis.sh`: now has an option to rsync the figures to a specified location. Extra flags have been added (see Dashboard section in the documentation).
 
 AQUA core complete list:
+- Refactor Time Handling: replacement of datetime objects and of pd.Timestamp lists (#1828)
 - Updated AQUA development container to micromamba 2.0.7 (#1834)
 - Updated base container to eccodes 2.40 (#1833)
 - Added Healpix zoom 7 grid for ICON R02B08 native oceanic grid (#1823)
