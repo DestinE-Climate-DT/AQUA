@@ -23,7 +23,7 @@ def catgen_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA FDB entries generator')
 
-    parser.add_argument("-p", "--portfolio", help="Type of Data Portfolio utilized (production/reduced)")
+    parser.add_argument("-p", "--portfolio", help="Type of Data Portfolio utilized (full/reduced/minimal)")
     parser.add_argument('-c', '--config', type=str, help='yaml configuration file', required=True)
     parser.add_argument('-l', '--loglevel', type=str, help='loglevel', default='INFO')
 
@@ -55,11 +55,6 @@ class AquaFDBGenerator:
         self.ocean_grid = self.config.get("ocean_grid") 
         self.atm_grid = self.config.get("atm_grid")
         self.num_of_realizations = int(self.config.get("num_of_realizations", 1))
-
-        #safety check
-        if (data_portfolio == 'production' and self.resolution not in ['production', 'lowres', 'develop'] or
-            data_portfolio == 'reduced' and self.resolution not in ['intermediate']):
-            raise KeyError(f'Wrong match between data portfolio {data_portfolio} and data resolution {self.resolution}')
 
         # portfolio
         self.logger.info("Running FDB catalog generator for %s portfolio for model %s", data_portfolio, self.model)
@@ -248,6 +243,9 @@ class AquaFDBGenerator:
             self.config.get("description")
             or f'"{self.model} {self.config["exp"]} {self.config["data_start_date"][:4]}, '
             f'grids: {self.atm_grid} {self.ocean_grid}"' )
+        
+        # Set the stream based on the frequency
+        stream = 'clmn' if profile['frequency'] == 'monthly' else 'clte'
 
         kwargs = {
             "dp_version": self.dp_version,
@@ -258,6 +256,7 @@ class AquaFDBGenerator:
             "num_of_realizations": self.num_of_realizations,
             "levels": levels_values,
             "levtype": profile["levtype"],
+            "stream": stream,
             "variables": profile["variables"],
             "param": profile["variables"][0],
             "time": time_dict['time'],
@@ -407,7 +406,7 @@ class AquaFDBGenerator:
 def catgen_execute(args):
     """Useful wrapper for the FDB catalog generator class"""
 
-    dp_version = get_arg(args, 'portfolio', 'production')
+    dp_version = get_arg(args, 'portfolio', 'full')
     config_file = get_arg(args, 'config', 'config.yaml')
     loglevel = get_arg(args, 'loglevel', 'INFO')
 
