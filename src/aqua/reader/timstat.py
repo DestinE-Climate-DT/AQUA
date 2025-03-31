@@ -1,57 +1,34 @@
 """Timmean mixin for the Reader class"""
-import types
 import pandas as pd
 import xarray as xr
 import numpy as np
 from aqua.util import check_chunk_completeness, frequency_string_to_pandas
 from aqua.util import extract_literal_and_numeric
-from aqua.logger import log_history
+from aqua.logger import log_history, log_configure
 
 
-class TimStatMixin():
+class TimStat():
+    """
+    Time statistic AQUA module
+    """
 
-    def timmean(self, data, freq=None, exclude_incomplete=False,
-                time_bounds=False, center_time=False):
-        """
-        Exposed method for time averaging statistic. Wrapper for timstat()
-        """
-
-        return self.timstat(data, stat='mean', freq=freq, exclude_incomplete=exclude_incomplete,
-                            time_bounds=time_bounds, center_time=center_time)
-
-    def timmax(self, data, freq=None, exclude_incomplete=False,
-               time_bounds=False, center_time=False):
-        """
-        Exposed method for time maximum statistic. Wrapper for timstat()
-        """
-
-        return self.timstat(data, stat='max', freq=freq, exclude_incomplete=exclude_incomplete,
-                            time_bounds=time_bounds, center_time=center_time)
-
-    def timmin(self, data, freq=None, exclude_incomplete=False,
-               time_bounds=False, center_time=False):
-        """
-        Exposed method for time maximum statistic. Wrapper for timstat()
-        """
-
-        return self.timstat(data, stat='min', freq=freq, exclude_incomplete=exclude_incomplete,
-                            time_bounds=time_bounds, center_time=center_time)
-
-    def timstd(self, data, freq=None, exclude_incomplete=False,
-               time_bounds=False, center_time=False):
-        """
-        Exposed method for time standard deviation statistic. Wrapper for timstat()
-        """
-
-        return self.timstat(data, stat='std', freq=freq, exclude_incomplete=exclude_incomplete,
-                            time_bounds=time_bounds, center_time=center_time)
+    def __init__(self, loglevel='INFO'):
+        self.loglevel = loglevel
+        self.orig_freq = None
+        self.logger = log_configure(self, loglevel)
+    
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
-                 time_bounds=False, center_time=False):
+                time_bounds=False, center_time=False):
+        
+        """"
+        Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
+        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object. The statistic can be
+        'mean', 'std', 'max', 'min'. The output is a new xarray dataset with the time dimension resampled to the desired
+        frequency and the statistic computed over the time window.
         """
-        Perform daily, monthly and yearly time statistics.
-        See timstat for more details.
-        """
+
+
         resample_freq = frequency_string_to_pandas(freq)
 
         # disabling all options if total averaging is selected
