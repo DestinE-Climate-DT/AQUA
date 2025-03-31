@@ -1,5 +1,5 @@
-from ocean3d.ocean_drifts.tools import *
-from ocean3d.ocean_drifts.hovmoller_plot import hovmoller_plot
+from aqua.diagnostics.ocean3d.ocean_drifts.tools import *
+from aqua.diagnostics.ocean3d.ocean_drifts.hovmoller_plot import hovmoller_plot
 import re
 from datetime import datetime
 

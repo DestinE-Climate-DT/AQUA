@@ -189,5 +189,16 @@ diagnostic_config = {
             'target_path': 'diagnostics/tropical_rainfall/cli'
         }
     ],
+    'ocean3d': [
+        {
+            'config_file': 'config.circulation.yaml',
+            'source_path': 'diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d/config'
+        },
+                {
+            'config_file': 'config.drift.yaml',
+            'source_path': 'diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d/config'
+        }
     # Add other diagnostic configurations here
 }

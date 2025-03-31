@@ -1,5 +1,5 @@
-from ocean3d.ocean_drifts.tools import *
-from ocean3d.ocean_drifts.trends import TrendCalculator 
+from aqua.diagnostics.ocean3d.ocean_drifts.tools import *
+from aqua.diagnostics.ocean3d.ocean_drifts.trends import TrendCalculator 
 
 
 

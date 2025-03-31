@@ -1,8 +1,8 @@
 from .ocean_circulation import *
-from ocean3d import write_data
-from ocean3d import export_fig
-from ocean3d import split_ocean3d_req
-from ocean3d import round_up
+from aqua.diagnostics.ocean3d import write_data
+from aqua.diagnostics.ocean3d import export_fig
+from aqua.diagnostics.ocean3d import split_ocean3d_req
+from aqua.diagnostics.ocean3d import round_up
 import IPython
 
 

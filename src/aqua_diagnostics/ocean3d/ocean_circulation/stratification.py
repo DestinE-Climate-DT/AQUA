@@ -1,5 +1,5 @@
 from .ocean_circulation import *
-from ocean3d import split_ocean3d_req
+from aqua.diagnostics.ocean3d import split_ocean3d_req
 import IPython
 
 class stratification:

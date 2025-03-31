@@ -8,13 +8,13 @@ import xarray as xr
 import numpy as np
 import dask.array as da
 from scipy.stats import t as statt
-from ocean3d import weighted_area_mean
-from ocean3d import area_selection
-from ocean3d import weighted_zonal_mean
-from ocean3d import file_naming
-from ocean3d import custom_region
-from ocean3d import write_data
-from ocean3d import export_fig
+from aqua.diagnostics.ocean3d import weighted_area_mean
+from aqua.diagnostics.ocean3d import area_selection
+from aqua.diagnostics.ocean3d import weighted_zonal_mean
+from aqua.diagnostics.ocean3d import file_naming
+from aqua.diagnostics.ocean3d import custom_region
+from aqua.diagnostics.ocean3d import write_data
+from aqua.diagnostics.ocean3d import export_fig
 from aqua.logger import log_configure
 
 

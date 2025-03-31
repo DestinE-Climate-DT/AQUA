@@ -3,8 +3,8 @@ Calculating Trends
 """
 
 from .tools import *
-from ocean3d import split_ocean3d_req
-from ocean3d import compute_data
+from aqua.diagnostics.ocean3d import split_ocean3d_req
+from aqua.diagnostics.ocean3d import compute_data
 import pandas as pd
 import IPython
 

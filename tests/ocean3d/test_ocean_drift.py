@@ -1,11 +1,11 @@
 import pytest
 from aqua import Reader
-from ocean3d import check_variable_name
+from aqua.diagnostics.ocean3d import check_variable_name
 
-from ocean3d import hovmoller_plot
-from ocean3d import time_series
-from ocean3d import multilevel_trend
-from ocean3d import zonal_mean_trend
+from aqua.diagnostics import hovmoller_plot
+from aqua.diagnostics import time_series
+from aqua.diagnostics import multilevel_trend
+from aqua.diagnostics import zonal_mean_trend
 
 approx_rel = 1e-4
 

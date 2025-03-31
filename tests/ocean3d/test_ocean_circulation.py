@@ -1,9 +1,9 @@
 import pytest
 from aqua import Reader
-from ocean3d import check_variable_name
+from aqua.diagnostics.ocean3d import check_variable_name
 
-from ocean3d import stratification
-from ocean3d import mld
+from aqua.diagnostics import stratification
+from aqua.diagnostics import mld
 
 approx_rel = 1e-4
 

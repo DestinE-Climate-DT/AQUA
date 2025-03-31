@@ -1,18 +1,18 @@
 from .tools import *
-from ocean3d import write_data
-from ocean3d import export_fig
-from ocean3d import split_ocean3d_req
+from aqua.diagnostics.ocean3d import write_data
+from aqua.diagnostics.ocean3d import export_fig
+from aqua.diagnostics.ocean3d import split_ocean3d_req
 import matplotlib.pyplot as plt
 from .hovmoller_plot import hovmoller_plot
 from aqua.logger import log_configure
 import IPython
 
-from ocean3d import compute_data
+from aqua.diagnostics.ocean3d import compute_data
 
 
 class time_series(hovmoller_plot):
     """
-    A class for generating time series plots from ocean3d data.
+    A class for generating time series plots from aqua.diagnostics.ocean3d data.
 
     Inherits from hovmoller_plot.
 
