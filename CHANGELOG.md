@@ -12,6 +12,7 @@ Removed:
 
 AQUA core complete list:
 - Remove deprecated `aqua.slurm` module (#1860)
+- Fix the `regrid_method` option in the Reader (#1859)
 - Add a GitHub Token for downloading ClimateDT catalogs (#1855)
 - Ignore `nonlocal` complaints by flake8 (#1855)
 - WOCE-ARGO ocean dataset grids and fixes added (#1846)

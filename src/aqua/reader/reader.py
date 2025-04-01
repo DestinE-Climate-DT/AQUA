@@ -23,6 +23,7 @@ from .reader_utils import set_attrs
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
+
 class Reader(FixerMixin, TimStatMixin):
     """General reader for climate data."""
 
@@ -228,7 +229,7 @@ class Reader(FixerMixin, TimStatMixin):
             # generate source areas and expose them in the reader
             self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
             if self.fix:
-                # TODO: this should include the latitudes flipping fix. 
+                # TODO: this should include the latitudes flipping fix.
                 # TODO: No check is done on the areas coords vs data coords
                 self.src_grid_area = self._fix_area(self.src_grid_area)
 
@@ -238,6 +239,7 @@ class Reader(FixerMixin, TimStatMixin):
             self.regridder.weights(
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
+                regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
 
         # generate destination areas, expost them and the associated space coordinates
@@ -410,7 +412,6 @@ class Reader(FixerMixin, TimStatMixin):
         data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
         return data
 
-
     def set_default(self):
         """Sets this reader as the default for the accessor."""
 
@@ -532,7 +533,7 @@ class Reader(FixerMixin, TimStatMixin):
                     if not grid_area[coord].equals(xcoord):
                         # if they are fine when sorted, there is a sorting mismatch
                         if grid_area[coord].sortby(coord).equals(xcoord.sortby(coord)):
-                            self.logger.warning('%s is sorted in different way between area files and your dataset. Flipping it!',
+                            self.logger.warning('%s is sorted in different way between area files and your dataset. Flipping it!', # noqa E501
                                                 coord)
                             grid_area = grid_area.reindex({coord: list(reversed(grid_area[coord]))})
                         else:
@@ -625,7 +626,7 @@ class Reader(FixerMixin, TimStatMixin):
             raise ValueError('This is not an xarray object!')
 
         final = log_history(
-            final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.")
+            final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.") # noqa E501
 
         final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
@@ -836,7 +837,7 @@ class Reader(FixerMixin, TimStatMixin):
                 chunks['time'] = self.aggregation
             if self.streaming and not self.aggregation:
                 self.logger.warning(
-                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value")
+                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value") # noqa E501
 
         if dask:
             if chunks:  # if the chunking or aggregation option is specified override that from the catalog

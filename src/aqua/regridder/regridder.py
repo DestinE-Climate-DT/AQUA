@@ -27,6 +27,7 @@ DEFAULT_DIMENSION_MASK = '2dm'  # masked grid
 # a file on the disk or xarray dataset. Possible inclusion of CDOgrid object is considered
 # but should be likely developed on the smmregrid side.
 
+
 class Regridder():
     """AQUA Regridder class"""
 
@@ -77,8 +78,8 @@ class Regridder():
         self.src_grid_name = src_grid_name  # source grid name
 
         # we want all the grid dictionary to be real dictionaries
-        self.handler = GridDictHandler(cfg_grid_dict, 
-                                       default_dimension=DEFAULT_DIMENSION, 
+        self.handler = GridDictHandler(cfg_grid_dict,
+                                       default_dimension=DEFAULT_DIMENSION,
                                        loglevel=loglevel)
         self.src_grid_dict = self.handler.normalize_grid_dict(self.src_grid_name)
         self.src_grid_path = self.src_grid_dict.get('path')
@@ -155,9 +156,9 @@ class Regridder():
             self.logger.debug("Found CDO path: %s", cdo)
             return cdo
 
-        raise FileNotFoundError(    
+        raise FileNotFoundError(
                 "CDO not found in path: Weight and area generation will fail.")
-    
+
     def _get_info_from_data(self, data):
         """
         Extract information from the dataset to be used in the regridding process
@@ -185,13 +186,13 @@ class Regridder():
             self.logger.info("Using provided dataset as a grid path for %s", vdim)
             self.src_grid_dict = {"path": {vdim: data}}
             self.src_grid_path = self.src_grid_dict.get('path')
-    
+
     def areas(self, tgt_grid_name=None, rebuild=False, reader_kwargs=None):
         """
         Load or generate regridding areas for the source or target grid.
 
         Args:
-            tgt_grid_name (str, optional): Name of the target grid. 
+            tgt_grid_name (str, optional): Name of the target grid.
                                            If None, the self.src_grid_name is used.
             rebuild (bool, optional): If True, forces regeneration of the area.
             reader_kwargs (dict, optional): Additional parameters for the reader.
@@ -295,7 +296,7 @@ class Regridder():
             loglevel=self.loglevel
         ).areas(target=bool(grid_name))
 
-    def weights(self, tgt_grid_name, regrid_method=DEFAULT_GRID_METHOD, nproc=1,
+    def weights(self, tgt_grid_name, regrid_method=None, nproc=1,
                 rebuild=False, reader_kwargs=None):
         """
         Load or generate regridding weights calling smmregrid
@@ -305,11 +306,13 @@ class Regridder():
             regrid_method (str): The regrid method.
             nproc (int): The number of processors to use.
             rebuild (bool): If True, rebuild the weights.
-            reader_kwargs (dict): The reader kwargs for filename definition, 
+            reader_kwargs (dict): The reader kwargs for filename definition,
                                   including info on model, exp, source, etc.
         """
 
         # define regrid method
+        default_regrid_method = self.src_grid_dict.get('regrid_method', DEFAULT_GRID_METHOD)
+        regrid_method = regrid_method if regrid_method else default_regrid_method
         if regrid_method is not DEFAULT_GRID_METHOD:
             self.logger.info("Regrid method: %s", regrid_method)
 
@@ -326,7 +329,7 @@ class Regridder():
             # define the vertical coordinate in the smmregrid world
             smm_vertical_dim = None if vertical_dim in [
                 DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else vertical_dim
-        
+
             weights_filename = self._weights_filename(tgt_grid_name, regrid_method,
                                                       vertical_dim, reader_kwargs)
 
@@ -341,12 +344,12 @@ class Regridder():
                 else:
                     self.logger.info(
                         "Generating weights for %s grid: %s", tgt_grid_name, vertical_dim)
-                    
+
                 if smm_vertical_dim:
                     self.logger.warning("Mask-changing vertical dimension identified, weights generation might take a few!")
-                    
+
                 # smmregrid call
-                #TODO: here or better in smmregird, we could use GridInspect to get the grid info
+                # TODO: here or better in smmregird, we could use GridInspect to get the grid info
                 # and reduce the dimensionality of the input data.
                 generator = CdoGenerate(source_grid=self.src_grid_path[vertical_dim],
                                         target_grid=self._get_grid_path(tgt_grid_dict.get('path')),
@@ -438,7 +441,6 @@ class Regridder():
             self.logger.warning(
                 "Weights block not found in the configuration file, using fallback naming scheme.")
             return f"weights_{tgt_grid_name}_{regrid_method}_l{levname}.nc"
-            
 
         # destination grid name is provided, use grid template
         if check_gridfile(self.src_grid_path[vertical_dim]) != 'xarray':
@@ -524,7 +526,7 @@ class Regridder():
             variables = list(gridtype.variables.keys())
 
             if gridtype.vertical_dim:
-                self.logger.debug("Variables for dimension %s: %s", 
+                self.logger.debug("Variables for dimension %s: %s",
                                   gridtype.vertical_dim, variables)
                 shared_vars[gridtype.vertical_dim] = [var for var in variables if var not in masked_vars]
             else:
@@ -566,7 +568,7 @@ class Regridder():
 
     def _apply_regrid(self, data, shared_vars):
         """
-        Core regridding function. 
+        Core regridding function.
         Apply regridding on the different vertical coordinates, including 2d and 2dm
         """
 
@@ -595,7 +597,7 @@ class Regridder():
                         filename)
 
         return filename
-    
+
     @staticmethod
     def configure_masked_fields(src_grid_dict):
         """

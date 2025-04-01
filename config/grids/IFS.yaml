@@ -61,10 +61,10 @@ grids:
     vert_coord: ["2d"]
     path: '{{ grids }}/IFS/ifs-multiIO-r025s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r025s.nc'
-    cellarea_var: cell_area
+    cellareas_var: cell_area
   multio-r100s-unstructured:
     space_coord: ["value"]
     vert_coord: ["2d"]
     path: '{{ grids }}/IFS/ifs-multiIO-r100s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r100s.nc'
-    cellarea_var: cell_area
+    cellareas_var: cell_area

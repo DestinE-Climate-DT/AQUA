@@ -247,11 +247,29 @@ def test_non_latlon_interpolation():
     checking appropriate logging message
     """
     reader = Reader(model="IFS", exp="test-tco79", source="short", regrid="F80",
-                    fix=True, loglevel='DEBUG', rebuild=True)
+                    fix=True, loglevel=LOGLEVEL, rebuild=True)
 
     data = reader.retrieve(var='2t')['2t'].isel(time=0).aqua.regrid()
 
     assert data.shape == (160, 320)
     assert data.values[0, 0] == pytest.approx(246.71156470963325)
+
+@pytest.mark.aqua
+def test_regrid_method():
+    """Test different regridding method from the grid file"""
+    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly-nn", regrid="r100",
+                    fix=True, loglevel=LOGLEVEL, rebuild=True)
+
+    data = reader.retrieve(var='2t')['2t'].isel(time=0).aqua.regrid()
+
+    assert data.shape == (180, 360)
+    assert data.values[0, 0] == pytest.approx(242.4824981689453)
+
+    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly-nn", regrid="r100",
+                    fix=True, loglevel=LOGLEVEL, rebuild=True, regrid_method="bil")
+    data = reader.retrieve(var='2t')['2t'].isel(time=0).aqua.regrid()
+
+    assert data.shape == (180, 360)
+    assert data.values[0, 0] == pytest.approx(252.35510736926696)
 
 # missing test for ICON-Healpix

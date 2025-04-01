@@ -452,7 +452,7 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   Specific for oceanic models where interpolation is changing at each depth level.
 - ``cdo_extra``: (if applicable): Additional CDO command to be used to process the files defined in ``path``.
 - ``cdo_options``: (if applicable): Additional CDO options to be used to process the files defined in ``path``.
-- ``cellareas``, ``cellarea_var``: (if applicable): Optional path and variable name where to specify a file to retrieve
+- ``cellareas``, ``cellareas_var``: (if applicable): Optional path and variable name where to specify a file to retrieve
   the grid area cells when the grid shape is too complex for being automatically computed by CDO.
 - ``regrid_method``: (if applicable): Alternative CDO regridding method which is not the ``ycon`` default.
   To be used when grid corners are not available. Alterntives might be ``bil``, ``bic`` or ``nn``.
