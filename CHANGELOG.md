@@ -7,7 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.14.1):
 
+Removed:
+- `aqua.slurm` has been removed.
+
 AQUA core complete list:
+- Remove deprecated `aqua.slurm` module (#1860)
 - Add a GitHub Token for downloading ClimateDT catalogs (#1855)
 - Ignore `nonlocal` complaints by flake8 (#1855)
 - WOCE-ARGO ocean dataset grids and fixes added (#1846)
