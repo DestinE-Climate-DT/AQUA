@@ -21,3 +21,9 @@ fixer_name:
         vars:
             tcc:
                 src_units: frac
+
+    story-cerra:
+        convention: eccodes
+        timeshift: -6H
+        data_model: ifs
+        deltat: 3600
