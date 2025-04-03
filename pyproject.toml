@@ -37,7 +37,6 @@ dependencies = [
     "cartopy",
     "cfgrib",
     "dask",
-    "dask_jobqueue",
     "eccodes==2.40.0",
     "docker",
     "gcsfs", # Google Cloud Storage File System
