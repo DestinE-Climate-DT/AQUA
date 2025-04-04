@@ -11,6 +11,7 @@ reader = Reader(model='ERA5', exp='era5-hpz3', source='monthly', catalog='ci', r
 data = reader.retrieve()
 data = reader.regrid(data)
 
+
 @pytest.mark.diagnostics
 def test_global_bias():
     """
@@ -22,17 +23,18 @@ def test_global_bias():
     assert ax is not None
     assert np.allclose(np.nanmean(bias.values), 0, atol=approx_rel)
 
+
 @pytest.mark.diagnostics
 def test_seasonal_bias():
     """
     Test for seasonal bias computation.
     """
     global_biases = GlobalBiases(data=data, data_ref=data, var_name='2t')
-    fig, ax, bias = global_biases.plot_seasonal_bias(vmin=-15, vmax=15)
+    fig, bias = global_biases.plot_seasonal_bias(vmin=-15, vmax=15)
     assert fig is not None
-    assert ax is not None
     for season in ['DJF', 'MAM', 'JJA', 'SON']:
         assert np.allclose(np.nanmean(bias[season].values), 0, atol=approx_rel)
+
 
 @pytest.mark.diagnostics
 def test_plev():
@@ -45,7 +47,8 @@ def test_plev():
     assert ax is not None
     assert np.allclose(np.nanmean(bias.values), 0, atol=approx_rel)
     assert getattr(bias, "plev", None) == 85000
-    
+
+
 @pytest.mark.diagnostics
 def test_vertical_bias():
     """

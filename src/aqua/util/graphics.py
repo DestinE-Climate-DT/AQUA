@@ -175,30 +175,15 @@ def set_map_title(data: xr.DataArray, title: str = None,
 
     if title is None:
         title = ""
+        # Getting the variables from the possible attributes
         for attr in ['long_name', 'short_name', 'shortName']:
-            try:
-                varname = getattr(data, attr, None)
-                if varname is not None:
-                    break
-            except AttributeError:
-                pass
-
-        try:
-            units = getattr(data, 'units', None)
-        except AttributeError:
-            units = None
-
-        try:
-            model = data.attrs['AQUA_model']
-            exp = data.attrs['AQUA_exp']
-        except KeyError:
-            model = None
-            exp = None
-
-        try:
-            time = data.time.values
-        except AttributeError:
-            time = None
+            varname = data.attrs[attr] if attr in data.attrs else None
+            if varname is not None:
+                break
+        units = data.attrs['units'] if 'units' in data.attrs else None
+        model = data.attrs["AQUA_model"] if 'AQUA_model' in data.attrs else None
+        exp = data.attrs["AQUA_exp"] if 'AQUA_exp' in data.attrs else None
+        time = data.time.values if 'time' in data.dims else None
 
         if varname:
             title += varname

@@ -191,7 +191,7 @@ def main():
                 if seasons_bool:
                     result = global_biases.plot_seasonal_bias(vmin=vmin, vmax=vmax)
                     if result:
-                        fig, ax, netcdf = result
+                        fig, netcdf = result
                         description = (
                             f"Seasonal bias map of the variable {var_name} for the {model_data} model, experiment {exp_data} "
                             f"from the {reader.catalog} catalog, using {model_obs} (experiment {exp_obs}, catalog {reader_obs.catalog}) as reference data. "

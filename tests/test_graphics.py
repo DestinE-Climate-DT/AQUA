@@ -4,7 +4,7 @@ import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
-from aqua.graphics import plot_maps, plot_hovmoller
+from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
 
 loglevel = "DEBUG"
 
@@ -95,25 +95,46 @@ class TestMaps:
         """Test plot_maps function"""
         plot_data = self.data["sst"].isel(time=0).aqua.regrid()
         plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
-        fig, ax = plot_maps(maps=[plot_data, plot_data2],
-                            save=True,
-                            figsize=(16, 6),
-                            nlevels=5,
-                            vmin=-2, vmax=30,
-                            sym=False,
-                            cmap='viridis',
-                            gridlines=True,
-                            title='Test plot',
-                            cbar_label='Sea surface temperature [°C]',
-                            dpi=100,
-                            nxticks=5,
-                            nyticks=6,
-                            loglevel=loglevel)
+        fig = plot_maps(maps=[plot_data, plot_data2],
+                        nlevels=5,
+                        vmin=-2, vmax=30,
+                        sym=False,
+                        cmap='viridis',
+                        title='Test plot',
+                        titles=['Test plot 1', 'Test plot 2'],
+                        cbar_label='Sea surface temperature [°C]',
+                        nxticks=5, nyticks=6,
+                        return_fig=True, loglevel=loglevel)
         assert fig is not None
-        assert ax is not None
 
         fig.savefig(tmp_path / 'test_plot_maps.png')
         assert os.path.exists(tmp_path / 'test_plot_maps.png')
+
+        fig2 = plot_maps_diff(maps=[plot_data, plot_data],
+                              maps_ref=[plot_data2, plot_data2],
+                              nlevels=5,
+                              vmin_fill=-2, vmax_fill=2,
+                              vmin_contour=-2, vmax_contour=30,
+                              sym=False, sym_contour=True,
+                              cmap='viridis',
+                              title='Test plot',
+                              titles=['Test plot 1', 'Test plot 2'],
+                              cbar_label='Sea surface temperature [°C]',
+                              nxticks=5, nyticks=6,
+                              return_fig=True, loglevel=loglevel)
+
+        assert fig2 is not None
+
+        fig2.savefig(tmp_path / 'test_plot_maps_diff.png')
+        assert os.path.exists(tmp_path / 'test_plot_maps_diff.png')
+
+    def test_maps_error(self):
+        """Test plot_maps function with error"""
+        with pytest.raises(ValueError):
+            plot_maps(maps="test")
+
+        with pytest.raises(ValueError):
+            plot_maps_diff(maps="test", maps_ref="test")
 
 
 @pytest.mark.graphics
