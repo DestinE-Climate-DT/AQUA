@@ -13,6 +13,7 @@ from aqua.logger import log_configure, log_history
 from aqua.exceptions import NoDataError, NoRegridError
 from aqua.version import __version__ as aqua_version
 from aqua.regridder import Regridder
+from aqua.util import flip_lat_dir
 import aqua.gsv
 
 from .streaming import Streaming
@@ -419,6 +420,9 @@ class Reader(FixerMixin, TimStatMixin):
 
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
+
+        # Check if original lat has been flipped and in case flip back, returns a deep copy in that case
+        data = flip_lat_dir(data)
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
