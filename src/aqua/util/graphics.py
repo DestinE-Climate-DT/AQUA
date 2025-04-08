@@ -20,12 +20,11 @@ def add_cyclic_lon(da: xr.DataArray):
     It assumes that the longitude coordinate is named 'lon' and
     the latitude coordinate is named 'lat'.
 
-    Parameters:
-    da (xarray.DataArray): Input data array with longitude coordinate
+    Args:
+        da (xarray.DataArray): Input data array with longitude coordinate
 
     Returns:
-    xarray.DataArray: The same input data array with the cyclic point added
-                      along longitude
+        xarray.DataArray: The same input data array with the cyclic point added along longitude
     """
     if not isinstance(da, xr.DataArray) or da is None:
         raise ValueError("Input must be an xarray.DataArray object.")
@@ -160,7 +159,6 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
 
 
 def set_map_title(data: xr.DataArray, title: str = None,
-                  model: str = None, exp: str = None,
                   loglevel='WARNING'):
     """
     Evaluate the map title.
@@ -176,19 +174,46 @@ def set_map_title(data: xr.DataArray, title: str = None,
     logger = log_configure(loglevel, 'set map title')
 
     if title is None:
-        try:
-            title = data.long_name
-            logger.debug("Using long_name as map title")
-
+        title = ""
+        for attr in ['long_name', 'short_name', 'shortName']:
             try:
-                logger.debug("Adding time to map title")
-                title = f"{title} {data.time.values}"
+                varname = getattr(data, attr, None)
+                if varname is not None:
+                    break
             except AttributeError:
-                logger.debug("No time found")
+                pass
+
+        try:
+            units = getattr(data, 'units', None)
         except AttributeError:
-            if model is not None and exp is not None:
-                title = f"{model} {exp}"
-                logger.debug("Using model and exp as map title")
+            units = None
+
+        try:
+            model = data.attrs['AQUA_model']
+            exp = data.attrs['AQUA_exp']
+        except KeyError:
+            model = None
+            exp = None
+
+        try:
+            time = data.time.values
+        except AttributeError:
+            time = None
+
+        if varname:
+            title += varname
+            if units:
+                title += f" [{units}]"
+        if model is not None and exp is not None:
+            title += f" {model} {exp}"
+        if time is not None:
+            time = np.datetime_as_string(time, unit='h')
+            title += f" {time}"
+        if title == "":
+            logger.warning("No title found, please specify one with the title argument.")
+            title = None
+        else:
+            logger.debug("Using %s as map title", title)
 
     return title
 

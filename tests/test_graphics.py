@@ -1,6 +1,6 @@
 import pytest
 import os
-
+import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
@@ -17,38 +17,38 @@ class TestMaps:
                         regrid="r200", fix=False, loglevel=loglevel)
         self.data = reader.retrieve(var='sst')
 
-    def test_plot_single_map(self):
+    def test_plot_single_map(self, tmp_path):
         """
         Test the plot_single_map function
         """
         plot_data = self.data["sst"].isel(time=0).aqua.regrid()
         fig, ax = plot_single_map(data=plot_data,
-                                  save=True,
+                                  proj=ccrs.PlateCarree(),
+                                  contour=False,
+                                  extent=[-180, 180, -90, 90],
                                   nlevels=5,
                                   vmin=-2.0,
                                   vmax=30.0,
-                                  outputdir='tests/figures/',
+                                  sym=True,
                                   cmap='viridis',
-                                  gridlines=True,
                                   display=False,
                                   return_fig=True,
+                                  transform_first=False,
                                   title='Test plot',
                                   cbar_label='Sea surface temperature [°C]',
                                   dpi=100,
-                                  model='FESOM',
-                                  exp='test-pi',
-                                  filename='test_single_map',
-                                  format='png',
                                   nxticks=5,
                                   nyticks=5,
+                                  ticks_rounding=1,
+                                  cbar_ticks_rounding=1,
                                   loglevel=loglevel)
         assert fig is not None
         assert ax is not None
 
-        # Check the file was created
-        assert os.path.exists('tests/figures/test_single_map.png')
+        fig.savefig(tmp_path / 'test_plot_single_map.png')
+        assert os.path.exists(tmp_path / 'test_plot_single_map.png')
 
-    def test_plot_single_map_diff(self):
+    def test_plot_single_map_diff(self, tmp_path):
         """
         Test the plot_single_map_diff function
         """
@@ -56,35 +56,42 @@ class TestMaps:
         plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
         fig, ax = plot_single_map_diff(data=plot_data,
                                        data_ref=plot_data2,
-                                       save=True,
                                        nlevels=5,
                                        vmin_fill=-5.0,
                                        vmax_fill=5.0,
                                        sym=False,
                                        vmin_contour=-2.0,
                                        vmax_contour=30.0,
-                                       outputdir='tests/figures/',
+                                       sym_contour=True,
                                        cmap='viridis',
-                                       gridlines=True,
                                        display=False,
                                        return_fig=True,
                                        title='Test plot',
                                        cbar_label='Sea surface temperature [°C]',
                                        dpi=100,
-                                       model='FESOM',
-                                       exp='test-pi',
-                                       filename='test_single_map_diff',
-                                       format='png',
                                        nxticks=5,
                                        nyticks=5,
                                        loglevel=loglevel)
         assert fig is not None
         assert ax is not None
 
-        # Check the file was created
-        assert os.path.exists('tests/figures/test_single_map_diff.png')
+        fig.savefig(tmp_path / 'test_plot_single_map_diff.png')
+        assert os.path.exists(tmp_path / 'test_plot_single_map_diff.png')
 
-    def test_maps(self):
+    def test_plot_single_map_no_diff(self):
+        """
+        Test the plot_single_map_diff function
+        """
+        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        plot_data2 = plot_data.copy()
+
+        fig, ax = plot_single_map_diff(data=plot_data, return_fig=True,
+                                       data_ref=plot_data2, loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+    def test_maps(self, tmp_path):
         """Test plot_maps function"""
         plot_data = self.data["sst"].isel(time=0).aqua.regrid()
         plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
@@ -94,22 +101,19 @@ class TestMaps:
                             nlevels=5,
                             vmin=-2, vmax=30,
                             sym=False,
-                            outputdir='tests/figures/',
                             cmap='viridis',
                             gridlines=True,
                             title='Test plot',
                             cbar_label='Sea surface temperature [°C]',
                             dpi=100,
-                            filename='test_maps',
-                            format='png',
                             nxticks=5,
                             nyticks=6,
                             loglevel=loglevel)
         assert fig is not None
         assert ax is not None
 
-        # Check the file was created
-        assert os.path.exists('tests/figures/test_maps.png')
+        fig.savefig(tmp_path / 'test_plot_maps.png')
+        assert os.path.exists(tmp_path / 'test_plot_maps.png')
 
 
 @pytest.mark.graphics
@@ -117,6 +121,7 @@ class TestTimeseries:
     """Basic tests for the Timeseries functions"""
 
     def setup_method(self):
+        """Setup method to retrieve data for testing"""
         model = 'IFS'
         exp = 'test-tco79'
         source = 'teleconnections'
@@ -127,7 +132,8 @@ class TestTimeseries:
         self.t1 = data[var].isel(lat=1, lon=1)
         self.t2 = data[var].isel(lat=10, lon=10)
 
-    def test_plot_timeseries(self):
+    def test_plot_timeseries(self, tmp_path):
+        """Test the plot_timeseries function"""
         t1_yearly = self.reader.timmean(self.t1, freq='YS', center_time=True)
         t2_yearly = self.reader.timmean(self.t2, freq='YS', center_time=True)
 
@@ -140,12 +146,13 @@ class TestTimeseries:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig('tests/figures/test_timeseries.png')
+        fig.savefig(tmp_path / 'test_plot_timeseries.png')
 
         # Check the file was created
-        assert os.path.exists('tests/figures/test_timeseries.png')
+        assert os.path.exists(tmp_path / 'test_plot_timeseries.png')
 
-    def test_plot_seasonalcycle(self):
+    def test_plot_seasonalcycle(self, tmp_path):
+        """Test the plot_seasonalcycle function"""
         t1_seasonal = self.t1.groupby('time.month').mean('time')
         t2_seasonal = self.t2.groupby('time.month').mean('time')
 
@@ -158,10 +165,10 @@ class TestTimeseries:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig('tests/figures/test_seasonalcycle.png')
+        fig.savefig(tmp_path / 'test_seasonalcycle.png')
 
         # Check the file was created
-        assert os.path.exists('tests/figures/test_seasonalcycle.png')
+        assert os.path.exists(tmp_path / 'test_seasonalcycle.png')
 
 
 @pytest.mark.graphics
@@ -178,20 +185,21 @@ class TestHovmoller:
 
         self.data = data[var]
 
-    def test_plot_hovmoller(self):
+    def test_plot_hovmoller(self, tmp_path):
+        """Test the plot_hovmoller function"""
         fig, ax = plot_hovmoller(data=self.data,
                                  return_fig=True,
-                                 outputdir='tests/figures/',
+                                 outputdir=tmp_path,
                                  save=True,
                                  loglevel=loglevel)
 
         assert fig is not None
         assert ax is not None
-        assert os.path.exists('tests/figures/hovmoller.pdf')
+        assert os.path.exists(tmp_path / 'hovmoller.pdf')
 
         fig2, ax2 = plot_hovmoller(data=self.data,
                                    return_fig=True,
-                                   outputdir='tests/figures/',
+                                   outputdir=tmp_path,
                                    filename='test_hovmoller2.png',
                                    format='png',
                                    cmap='RdBu_r',
@@ -206,12 +214,12 @@ class TestHovmoller:
 
         assert fig2 is not None
         assert ax2 is not None
-        assert os.path.exists('tests/figures/test_hovmoller2.png')
+        assert os.path.exists(tmp_path / 'test_hovmoller2.png')
 
         plot_hovmoller(data=self.data,
                        return_fig=False,
                        contour=False,
-                       outputdir='tests/figures/',
+                       outputdir=tmp_path,
                        filename='test_hovmoller3',
                        format='png',
                        cmap='RdBu_r',
@@ -220,7 +228,7 @@ class TestHovmoller:
                        dpi=300,
                        loglevel=loglevel)
 
-        assert os.path.exists('tests/figures/test_hovmoller3.png')
+        assert os.path.exists(tmp_path / 'test_hovmoller3.png')
 
     def test_plot_hovmoller_error(self):
 

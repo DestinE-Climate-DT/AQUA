@@ -390,7 +390,7 @@ if __name__ == '__main__':
                     for i, data_map in enumerate(maps):
                         vmin = -1
                         vmax = 1
-                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'save': False, 'sym': False,
+                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'sym': False,
                                      'cbar_label': cbar_labels[i], 'outputdir': outputdir,
                                      'title': titles[i], 'vmin_contour': vmin, 'vmax_contour': vmax,
                                      'return_fig': True, 'vmin_fill': vmin, 'vmax_fill': vmax,
@@ -437,7 +437,7 @@ if __name__ == '__main__':
                             sym = True
                         else:
                             sym = False
-                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'save': False, 'sym': sym,
+                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'sym': sym,
                                      'cbar_label': cbar_labels[i], 'outputdir': outputdir,
                                      'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
                                      'loglevel': loglevel}
@@ -481,7 +481,7 @@ if __name__ == '__main__':
                     for i, data_map in enumerate(maps):
                         vmin = -1
                         vmax = 1
-                        plot_args = {'data': data_map, 'save': False, 'sym': False,
+                        plot_args = {'data': data_map, 'sym': False,
                                      'cbar_label': cbar_labels[i], 'outputdir': outputdir,
                                      'title': titles[i], 'vmin': vmin, 'vmax': vmax, 'return_fig': True,
                                      'loglevel': loglevel}
@@ -522,7 +522,7 @@ if __name__ == '__main__':
                             sym = True
                         else:
                             sym = False
-                        plot_args = {'data': data_map, 'save': False, 'sym': sym,
+                        plot_args = {'data': data_map, 'sym': sym,
                                      'cbar_label': cbar_labels[i], 'outputdir': outputdir,
                                      'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
                                      'loglevel': loglevel}

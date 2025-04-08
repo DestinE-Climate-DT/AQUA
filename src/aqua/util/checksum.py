@@ -3,8 +3,8 @@
 
 import os
 import sys
-from datetime import datetime
 import hashlib
+import pandas as pd
 from aqua.util import to_list
 
 
@@ -27,7 +27,7 @@ def generate_checksums(folder, grids, output_file):
     """
 
     print(f"Generating datachecker to {output_file}...")
-    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_date = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(output_file, "w", encoding='utf8') as f:
         f.write("# MD5 checksum file for AQUA\n")
         f.write(f"# Folder: {folder}\n")

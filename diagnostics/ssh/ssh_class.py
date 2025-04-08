@@ -11,7 +11,6 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from dateutil.parser import parse
 from aqua import Reader, util, logger
-from datetime import datetime
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.util import create_folder, coord_names
 import pandas as pd
@@ -35,8 +34,8 @@ def check_time_span(config, ds, start, end):
     aqua_logger = logger.log_configure(log_level=config['log_level'], log_name=config['log_name'])
 
     # Convert start and end strings to datetime objects
-    start_date = datetime.strptime(start, '%Y-%m-%d')
-    end_date = datetime.strptime(end, '%Y-%m-%d')
+    start_date = pd.Timestamp(start)
+    end_date = pd.Timestamp(end)
 
     aqua_logger.debug("start_date: %s", start_date)
     aqua_logger.debug("end_date: %s", end_date)

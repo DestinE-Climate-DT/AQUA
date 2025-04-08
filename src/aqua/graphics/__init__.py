@@ -26,6 +26,7 @@ __all__ = ["plot_hovmoller",
            "plot_timeseries", "plot_seasonalcycle",
            "plot_maps", "plot_maps_diff"]
 
+
 def activate_style(style: str = None,
                    loglevel: str = 'WARNING'):
     """Activate the style for graphical utilities

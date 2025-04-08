@@ -6,6 +6,7 @@ from pypdf import PdfReader
 from aqua import Reader
 from aqua.util.graphics import add_cyclic_lon, plot_box, minmax_maps
 from aqua.util import cbar_get_label, evaluate_colorbar_limits, add_pdf_metadata
+from aqua.util import coord_names, set_map_title
 from aqua.graphics import plot_single_map
 
 loglevel = 'DEBUG'
@@ -34,6 +35,9 @@ def test_add_cyclic_lon(da):
     assert np.allclose(new_da.isel(lon=-1).values, old_da.isel(lon=0).values), \
            "First and last longitude values should be equal"
     assert new_da.shape == (18, 37), "Output shape is incorrect"
+
+    with pytest.raises(ValueError):
+        add_cyclic_lon(da='test')  # Test with invalid input
 
 
 @pytest.mark.graphics
@@ -100,24 +104,53 @@ def test_label():
     assert vmin == -310.61033630371094, "Minimum value is incorrect"
     assert vmax == 310.61033630371094, "Maximum value is incorrect"
 
+    with pytest.raises(ValueError):
+        evaluate_colorbar_limits(maps=None)
+
 
 @pytest.mark.graphics
-def test_pdf_metadata():
+def test_pdf_metadata(tmp_path):
     """Test the add_pdf_metadata function"""
     # Generate a test figure from a random xarray DataArray
     da = xr.DataArray(np.random.rand(18, 36), dims=['lat', 'lon'], coords={'lon': np.linspace(0, 360, 36),
-                                                                          'lat': np.linspace(-90, 90, 18)})
-    plot_single_map(da, title='Test', save=True, filename='test', format='pdf', loglevel=loglevel)
+                                                                           'lat': np.linspace(-90, 90, 18)})
+    fig, _ = plot_single_map(da, title='Test', filename='test', format='pdf',
+                             return_fig=True, loglevel=loglevel)
 
+    fig.savefig(tmp_path / 'test.pdf')
+    filename = str(tmp_path / 'test.pdf')
     # Test the function
-    add_pdf_metadata(filename='./test.pdf', metadata_value='Test',
+    add_pdf_metadata(filename=filename, metadata_value='Test',
                      metadata_name='/Test description', loglevel=loglevel)
-    add_pdf_metadata(filename='./test.pdf', metadata_value='Test caption',
+    add_pdf_metadata(filename=filename, metadata_value='Test caption',
                      loglevel=loglevel)
 
     # Open the PDF and check the metadata
-    pdf_reader = PdfReader("./test.pdf")
+    pdf_reader = PdfReader(filename)
     metadata = pdf_reader.metadata
 
     assert metadata['/Test description'] == 'Test', "Old metadata should be kept"
     assert metadata['/Description'] == 'Test caption', "Description should be added to metadata"
+
+
+@pytest.mark.graphics
+def test_set_map_title(da):
+    title = set_map_title(da)
+
+    assert title is None, "Title should be None"
+
+
+@pytest.mark.graphics
+def test_coord_names():
+    """Test the coord_names function"""
+    # Create a test DataArray
+    lon_values = np.linspace(0, 360, 36)
+    lat_values = np.linspace(-90, 90, 18)
+    data = np.random.rand(18, 36)
+    da = xr.DataArray(data, dims=['latitude', 'longitude'],
+                      coords={'longitude': lon_values, 'latitude': lat_values})
+
+    # Test the function
+    lon_name, lat_name = coord_names(da)
+    assert lon_name == 'longitude', "Longitude name is incorrect"
+    assert lat_name == 'latitude', "Latitude name is incorrect"
