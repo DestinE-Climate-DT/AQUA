@@ -18,13 +18,14 @@ authors = [ # AQUA core team reported here
 description = "AQUA; a model evaluation framework for high-resolution climate model simulations"
 readme = "README.md"
 keywords = ["climate", "modeling", "diagnostics", "high-resolution"]
-license = {text = "Private"}
+license = {file = "LICENSE"}
 requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "Intended Audience :: Science/Research",
     "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
