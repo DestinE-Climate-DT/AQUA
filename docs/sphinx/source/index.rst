@@ -17,6 +17,7 @@ Welcome to AQUA's documentation!
    aqua_console
    regrid
    fixer
+   graphics
    other_components
    container
    diagnostics/index

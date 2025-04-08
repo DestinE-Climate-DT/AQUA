@@ -12,6 +12,7 @@ Removed:
 
 AQUA core complete list:
 - Remove deprecated `aqua.slurm` module (#1860)
+- Refactor of `plot_maps()` and `plot_maps_diff()` functions with projection support and use their single map version internally (#1865)
 - Refactor of `plot_single_map()` and `plot_single_map_diff()` functions with projection support (#1854)
 - Refactor time handling: replacement of `datetime` objects and of `pd.Timestamp` lists (#1828)
 - Fix the `regrid_method` option in the Reader (#1859)

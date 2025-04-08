@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from aqua.logger import log_configure
-from aqua.util import add_cyclic_lon, evaluate_colorbar_limits, create_folder
+from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
 from aqua.util import cbar_get_label, set_map_title
 from aqua.util import coord_names, set_ticks, ticks_round
 from .styles import ConfigStyle
@@ -23,8 +23,11 @@ def plot_single_map(data: xr.DataArray,
                     contour=True, sym=False,
                     proj: ccrs.Projection = ccrs.Robinson(), extent=None,
                     style=None, figsize=(11, 8.5), nlevels=11,
-                    vmin=None, vmax=None, cmap='RdBu_r', cbar_label=None,
+                    vmin=None, vmax=None, cmap='RdBu_r',
+                    cbar: bool = True, cbar_label=None,
                     title=None, transform_first=False, cyclic_lon=True,
+                    fig: plt.Figure = None, ax: plt.Axes = None,
+                    ax_pos: tuple = (1, 1, 1),
                     return_fig=False, loglevel='WARNING',  **kwargs):
     """
     Plot contour or pcolormesh map of a single variable. By default the contour map is plotted.
@@ -42,10 +45,14 @@ def plot_single_map(data: xr.DataArray,
         vmax (float, optional):      Maximum value for the colorbar.
                                      Defaults to None.
         cmap (str, optional):        Colormap. Defaults to 'RdBu_r'.
+        cbar (bool, optional):      If True, add a colorbar. Defaults to True.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
         title (str, optional):       Title of the figure. Defaults to None.
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
+        fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
+        ax (plt.Axes, optional):    Axes to plot on. By default a new axes is created.
+        ax_pos (list, optional):  Axes position. Used if the axes has to be created. Defaults to (1, 1, 1).
         return_fig (bool, optional): If True, return the figure and axes. Defaults to False.
         loglevel (str, optional):    Log level. Defaults to 'WARNING'.
 
@@ -62,7 +69,7 @@ def plot_single_map(data: xr.DataArray,
         tuple: Figure and axes.
     """
     logger = log_configure(loglevel, 'plot_single_map')
-    ConfigStyle(style=style)
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # We load in memory the data, to speed up the plotting, Dask is slow with matplotlib
     logger.debug("Loading data in memory")
@@ -75,8 +82,10 @@ def plot_single_map(data: xr.DataArray,
         except Exception as e:
             logger.error("Cannot add cyclic longitude: %s", e)
 
-    fig = plt.figure(figsize=figsize)
-    ax = fig.add_subplot(111, projection=proj)
+    if fig is None:
+        fig = plt.figure(figsize=figsize)
+    if ax is None:
+        ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2], projection=proj)
 
     # For certain projections, we may need to set the extent
     if extent:
@@ -149,26 +158,27 @@ def plot_single_map(data: xr.DataArray,
     fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
                         wspace=0.1, hspace=0.5)
 
-    # Add a colorbar axis at the bottom of the graph
-    cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
+    if cbar:
+        # Add a colorbar axis at the bottom of the graph
+        cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
 
-    cbar_label = cbar_get_label(data, cbar_label=kwargs.get('cbar_label', None), loglevel=loglevel)
-    logger.debug("Setting colorbar label to %s", cbar_label)
+        cbar_label = cbar_get_label(data, cbar_label=kwargs.get('cbar_label', None), loglevel=loglevel)
+        logger.debug("Setting colorbar label to %s", cbar_label)
 
-    cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', label=cbar_label)
+        cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', label=cbar_label)
 
-    # Make tick of colorbar simmetric if sym=True
-    cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
-    if sym:
-        logger.debug("Setting colorbar ticks to be symmetrical")
-        cbar_ticks = np.linspace(-vmax, vmax, nlevels + 1)
-    else:
-        cbar_ticks = np.linspace(vmin, vmax, nlevels + 1)
-    if cbar_ticks_rounding is not None:
-        logger.debug("Setting colorbar ticks rounding to %s", cbar_ticks_rounding)
-        cbar_ticks = ticks_round(cbar_ticks, cbar_ticks_rounding)
-    cbar.set_ticks(cbar_ticks)
-    cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
+        # Make tick of colorbar simmetric if sym=True
+        cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
+        if sym:
+            logger.debug("Setting colorbar ticks to be symmetrical")
+            cbar_ticks = np.linspace(-vmax, vmax, nlevels + 1)
+        else:
+            cbar_ticks = np.linspace(vmin, vmax, nlevels + 1)
+        if cbar_ticks_rounding is not None:
+            logger.debug("Setting colorbar ticks rounding to %s", cbar_ticks_rounding)
+            cbar_ticks = ticks_round(cbar_ticks, cbar_ticks_rounding)
+        cbar.set_ticks(cbar_ticks)
+        cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
 
     # Set x-y labels
     ax.set_xlabel('Longitude [deg]')
