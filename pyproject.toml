@@ -40,7 +40,6 @@ dependencies = [
     "eccodes==2.40.0",
     "docker",
     "gcsfs", # Google Cloud Storage File System
-    "gribscan",
     "pandas",
     "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-esm",
