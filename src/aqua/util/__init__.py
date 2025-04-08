@@ -14,7 +14,7 @@ from .util import extract_literal_and_numeric, add_pdf_metadata, add_png_metadat
 from .util import open_image, username, update_metadata
 from .yaml import load_yaml, dump_yaml, load_multi_yaml, eval_formula
 from .time import check_chunk_completeness, frequency_string_to_pandas
-from .time import time_to_string
+from .time import time_to_string, std_timerange
 from .coord import flip_lat_dir, find_lat_dir, check_direction
 from .zarr import create_zarr_reference
 from .output_saver import OutputSaver
@@ -33,6 +33,6 @@ __all__ = ['ConfigPath',
            'open_image', 'username', 'update_metadata',
            'load_yaml', 'dump_yaml', 'load_multi_yaml', 'eval_formula',
            'check_chunk_completeness', 'frequency_string_to_pandas',
-           'time_to_string',
+           'time_to_string', 'std_timerange',
            'flip_lat_dir', 'find_lat_dir', 'check_direction',
            'create_zarr_reference', 'OutputSaver']
