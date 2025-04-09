@@ -1,0 +1,27 @@
+# templates for LRA generation. Please modify everything between {{ }} according to your configuration
+
+#This include the option for the regridding
+target:
+  resolution: r005
+  frequency: daily
+  catalog: climatedt-phase1
+  region:
+    name: Italy
+    lat: [35, 50]
+    lon: [6, 18]
+
+paths:
+  outdir: /scratch/project_465000454/nurissom/prec_italy
+  tmpdir: /scratch/project_465000454/nurissom/prec_italy/tmp
+
+options:
+  loglevel: INFO
+  zarr: False
+  verify_zarr: False
+
+data:
+  IFS-FESOM:
+    story-2017-historical:
+      hourly-hpz9-atm2d:
+        vars: ['tprate', 'tcwv', '2t']
+        workers: 4

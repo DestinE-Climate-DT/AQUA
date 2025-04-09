@@ -21,15 +21,7 @@ options:
 
 data:
   IFS-FESOM:
-    # story-2017-control:
-    #   hourly-hpz9-atm2d:
-    #     vars: ['tprate']
-    #     workers: 1 
-    # story-2017-historical:
-    #   hourly-hpz9-atm2d:
-    #     vars: ['tprate']
-    #     workers: 1
     story-2017-T2K:
       hourly-hpz9-atm2d:
-        vars: ['tprate']
-        workers: 1
+        vars: ['tprate', 'tcwv', '2t']
+        workers: 4
