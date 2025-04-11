@@ -9,6 +9,9 @@ target:
     name: Italy
     lat: [35, 50]
     lon: [6, 18]
+  level:
+    level_name: 'plev'
+    level: [70000, 50000] # Pa
 
 paths:
   outdir: /scratch/project_465000454/nurissom/prec_italy
@@ -24,12 +27,12 @@ data:
     story-2017-control:
       hourly-hpz9-atm3d:
         vars: ['w']
-        workers: 1
+        workers: 4
     story-2017-historical:
       hourly-hpz9-atm3d:
         vars: ['w']
-        workers: 1
+        workers: 4
     story-2017-T2K:
       hourly-hpz9-atm3d:
         vars: ['w']
-        workers: 1
+        workers: 4

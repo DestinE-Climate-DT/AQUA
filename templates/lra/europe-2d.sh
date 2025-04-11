@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=small
-#SBATCH --job-name=2d-t2k_italy
-#SBATCH --output=t2k_italy_%j.out
-#SBATCH --error=t2k_italy_%j.err
+#SBATCH --job-name=2d-europe
+#SBATCH --output=2d_europe_%j.out
+#SBATCH --error=2d_europe_%j.err
 #SBATCH --account=project_465000454
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
@@ -20,4 +20,4 @@ workers=4
 # -d to perform a dry run (to check generated lra)
 # -o to overwrite existing lra
 # -l to set the log level (default is WARNING)
-aqua lra --config lra_italy_prec-t2k.yaml -w 4 -d -l INFO
+aqua lra --config lra_europe_prec-lowres.yaml -w 4 -d -l INFO

@@ -2,12 +2,12 @@
 
 #This include the option for the regridding
 target:
-  resolution: r005
+  resolution: r050
   frequency: daily
   catalog: climatedt-phase1
   region:
-    name: Italy
-    lat: [35, 50]
+    name: Europe
+    lat: [25, 70]
     lon: [-30, 40]
 
 paths:
@@ -23,5 +23,13 @@ data:
   IFS-FESOM:
     story-2017-T2K:
       hourly-hpz9-atm2d:
-        vars: ['2t'] # 'tprate', 'tcwv'
+        vars: ['skt', 'msl']
+        workers: 4
+    story-2017-historical:
+      daily-hpz9-atm2d:
+        vars: ['skt', 'msl']
+        workers: 4
+    story-2017-control:
+      daily-hpz9-atm2d:
+        vars: ['skt', 'msl']
         workers: 4
