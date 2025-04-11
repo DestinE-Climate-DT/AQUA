@@ -8,7 +8,7 @@ import re
 import sys
 import numpy as np
 import xarray as xr
-import datetime
+import pandas as pd
 from glob import glob
 from pypdf import PdfReader, PdfWriter
 from PIL import Image, PngImagePlugin
@@ -412,7 +412,7 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
         metadata = {}
 
     # Add current date and time to metadata
-    now = datetime.datetime.now()
+    now = pd.Timestamp.now()
     date_now = now.strftime("%Y-%m-%d %H:%M:%S")
     metadata['timestamp'] = date_now
     metadata['aqua_version'] = version

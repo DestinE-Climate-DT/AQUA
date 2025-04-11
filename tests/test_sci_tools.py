@@ -81,7 +81,7 @@ def test_missing_data():
 def test_select_season():
     """Test the select_season function with valid and invalid inputs."""
     # Sample DataArray with a time dimension
-    times = xr.cftime_range(start="2000-01-01", periods=12, freq="M")
+    times = xr.date_range(start="2000-01-01", periods=12, freq="MS")
     data = xr.DataArray(np.random.rand(12), coords={"time": times}, dims=["time"])
 
     # Valid season tests

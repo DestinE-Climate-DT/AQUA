@@ -183,7 +183,7 @@ class GlobalBiases:
             vmax (float, optional): Maximum colorbar value.
 
         Returns:
-            tuple: Matplotlib figure, axis objects, and an xarray.Dataset of the calculated seasonal biases.
+            tuple: Matplotlib figure and an xarray.Dataset of the calculated seasonal biases.
         """
         self.logger.info('Plotting seasonal biases.')
 
@@ -234,9 +234,9 @@ class GlobalBiases:
         if vmax is not None:
             plot_kwargs['vmax'] = vmax
 
-        fig, ax = plot_maps(**plot_kwargs)
+        fig = plot_maps(**plot_kwargs)
 
-        return fig, ax, bias_dataset
+        return fig, bias_dataset
 
     def plot_vertical_bias(self, data=None, data_ref=None, var_name=None, plev_min=None, plev_max=None, vmin=None, vmax=None):
         """
@@ -271,22 +271,25 @@ class GlobalBiases:
         if plev_max is None:
             plev_max = bias['plev'].max().item()
 
-        bias = bias.sel(plev=slice(plev_max, plev_min))
+        if plev_min < plev_max:
+            bias = bias.sel(plev=slice(plev_min, plev_max))
+        else:
+            bias = bias.sel(plev=slice(plev_max, plev_min))
 
         # Calculate the mean bias along the time axis
         mean_bias = bias.mean(dim='time')
         nlevels = 18
 
         # Calculate the zonal mean bias
-        zonal_bias = mean_bias.mean(dim='lon')
+        zonal_bias = mean_bias.mean(dim='lon').compute()
 
         # Determine colorbar limits if not provided
         if vmin is None or vmax is None:
-            vmin, vmax = zonal_bias.min(), zonal_bias.max()
+            vmin, vmax = zonal_bias.min().values, zonal_bias.max().values
             if vmin * vmax < 0:  # if vmin and vmax have different signs
                 vmax = max(abs(vmin), abs(vmax))
                 vmin = -vmax
-
+    
         levels = np.linspace(vmin, vmax, nlevels)
 
         title = (f"{var_name} vertical bias of {self.model} {self.exp} {self.startdate_data}/{self.enddate_data}\n" 

@@ -74,14 +74,14 @@ class TestTimmean():
         data = reader.retrieve(var='ttr')
         avg = reader.timmean(data, freq='yearly', center_time=True)
         assert avg['ttr'].shape == (1, 9, 18)
-        assert avg['ttr'].time[0].values == np.datetime64('2020-07-01T00:00:00.000000000')
+        assert avg['ttr'].time[0].values == np.datetime64('2020-07-02T00:00:00.000000000')
 
     def test_timmean_monthly_center_time(self, reader):
         """Timmean test for monthly aggregation with center_time=True"""
         data = reader.retrieve(var='2t')
         avg = reader.timmean(data, freq='monthly', center_time=True)
         assert avg['2t'].shape == (8, 9, 18)
-        assert avg['2t'].time[1].values == np.datetime64('2020-02-15T00:00:00.000000000')
+        assert avg['2t'].time[1].values == np.datetime64('2020-02-15T12:00:00.000000000')
 
     def test_timstd_daily_center_time(self, reader):
         """Timmean test for daily aggregation with center_time=True and exclude_incomplete=True"""

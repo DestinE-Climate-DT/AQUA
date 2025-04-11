@@ -67,11 +67,11 @@ An example of the structure is the following:
 
     datasets:
         - catalog: null # mandatory as null
-            model: 'IFS-NEMO' # mandatory
-            exp: 'historical-1990' # mandatory
-            source: 'lra-r100-monthly' # mandatory
-            regrid: null # if the diagnostic supports it
-            freq: null # if the diagnostic supports it
+          model: 'IFS-NEMO' # mandatory
+          exp: 'historical-1990' # mandatory
+          source: 'lra-r100-monthly' # mandatory
+          regrid: null # if the diagnostic supports it
+          freq: null # if the diagnostic supports it
         # Possible second/third/fourth datasets here, no present by default
         # - catalog: 'obs'
         #   model: 'ERA5'

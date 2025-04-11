@@ -1,20 +1,15 @@
 """Fixer mixin for the Reader class"""
 
-import os
 import re
-import json
-import warnings
-import types
 from datetime import timedelta
 import xarray as xr
 import numpy as np
 import pandas as pd
-from metpy.units import units
 
-from aqua.util import eval_formula, get_eccodes_attr, find_lat_dir
-from aqua.util import check_direction, to_list, normalize_units, convert_units
+from aqua.util import eval_formula, get_eccodes_attr
+from aqua.util import to_list, normalize_units, convert_units
 from aqua.logger import log_history
-from aqua.data_models import translate_coords
+from aqua.data_model import CoordTransformer
 
 
 class FixerMixin():
@@ -399,8 +394,6 @@ class FixerMixin():
         # for var in data.data_vars:
         #    data[var].attrs = {key.split("GRIB_")[-1]: value for key, value in data[var].attrs.items()}
 
-        units_extra_definition()
-
         # if there are no fixes defined, return
         if self.fixes is None:
             return data
@@ -601,9 +594,7 @@ class FixerMixin():
         # Fix coordinates according to a given data model
         src_datamodel = self.fixes.get("data_model", src_datamodel)
         if src_datamodel:
-            data = self.change_coord_datamodel(data, src_datamodel, self.dst_datamodel)
-            self.logger.info(f"coordinates adjusted to {src_datamodel} by AQUA fixer")
-            data = log_history(data, f"Coordinates adjusted to {src_datamodel} by fixer")
+            data = CoordTransformer(data, loglevel=self.loglevel).transform_coords()
 
         # Extra coordinate handling
         data = self._fix_dims(data)
@@ -621,8 +612,8 @@ class FixerMixin():
         # First case: get from metadata
         metadata_deltat = self.esmcat.metadata.get('deltat')
         if metadata_deltat:
-                self.logger.debug('deltat = %s read from metadata', metadata_deltat)
-                return metadata_deltat
+            self.logger.debug('deltat = %s read from metadata', metadata_deltat)
+            return metadata_deltat
 
         # Second case if not available: get from fixes
         fix_deltat = self.fixes.get("deltat")
@@ -858,11 +849,12 @@ class FixerMixin():
         else:
             self.logger.debug("Applying fixes to area file")
             # This operation is a duplicate, rationalization with fixer method is needed
-            src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
-            src_datamodel = self.fixes.get("data_model", src_datamodel)
+            #src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
+            #src_datamodel = self.fixes.get("data_model", src_datamodel)
 
-            if src_datamodel:
-                area = self.change_coord_datamodel(area, src_datamodel, self.dst_datamodel)
+            #if src_datamodel:
+            #    area = self.change_coord_datamodel(area, src_datamodel, self.dst_datamodel)
+            area = CoordTransformer(area, loglevel=self.loglevel).transform_coords()
 
             return area
 
@@ -1042,47 +1034,47 @@ class FixerMixin():
 
         return deltas
 
-    def change_coord_datamodel(self, data, src_datamodel, dst_datamodel):
-        """
-        Wrapper around cfgrib.cf2cdm to perform coordinate conversions
+    # def change_coord_datamodel(self, data, src_datamodel, dst_datamodel):
+    #     """
+    #     Wrapper around cfgrib.cf2cdm to perform coordinate conversions
 
-        Arguments:
-            data (xr.DataSet):      input dataset to process
-            src_datamodel (str):    input datamodel (e.g. "cf")
-            dst_datamodel (str):    output datamodel (e.g. "cds")
+    #     Arguments:
+    #         data (xr.DataSet):      input dataset to process
+    #         src_datamodel (str):    input datamodel (e.g. "cf")
+    #         dst_datamodel (str):    output datamodel (e.g. "cds")
 
-        Returns:
-            The processed input dataset
-        """
-        fn = os.path.join(self.configdir, 'data_models', f'{src_datamodel}2{dst_datamodel}.json')
-        self.logger.debug("Data model: %s", fn)
-        with open(fn, 'r', encoding="utf8") as f:
-            dm = json.load(f)
+    #     Returns:
+    #         The processed input dataset
+    #     """
+    #     fn = os.path.join(self.configdir, 'data_models', f'{src_datamodel}2{dst_datamodel}.json')
+    #     self.logger.debug("Data model: %s", fn)
+    #     with open(fn, 'r', encoding="utf8") as f:
+    #         dm = json.load(f)
 
-        if "IFSMagician" in data.attrs.get("history", ""):  # Special fix for gribscan levels
-            if "level" in data.coords:
-                if data.level.max() >= 1000:  # IS THERE A REASON FOR THIS CHECK?
-                    data.level.attrs["units"] = "hPa"
-                    data.level.attrs["standard_name"] = "air_pressure"
-                    data.level.attrs["long_name"] = "pressure"
+    #     if "IFSMagician" in data.attrs.get("history", ""):  # Special fix for gribscan levels
+    #         if "level" in data.coords:
+    #             if data.level.max() >= 1000:  # IS THERE A REASON FOR THIS CHECK?
+    #                 data.level.attrs["units"] = "hPa"
+    #                 data.level.attrs["standard_name"] = "air_pressure"
+    #                 data.level.attrs["long_name"] = "pressure"
 
-        if "GSV interface" in data.attrs.get("history", ""):  # Special fix for FDB retrieved data
-            if "height" in data.coords:
-                data.height.attrs["units"] = "hPa"
-                data.height.attrs["standard_name"] = "air_pressure"
-                data.height.attrs["long_name"] = "pressure"
+    #     if "GSV interface" in data.attrs.get("history", ""):  # Special fix for FDB retrieved data
+    #         if "height" in data.coords:
+    #             data.height.attrs["units"] = "hPa"
+    #             data.height.attrs["standard_name"] = "air_pressure"
+    #             data.height.attrs["long_name"] = "pressure"
 
-        lat_coord, lat_dir = find_lat_dir(data)
-        # this is needed since cf2cdm issues a (useless) UserWarning
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=UserWarning)
-            data = translate_coords(data, dm)
-            # Hack needed because cfgrib.cf2cdm mixes up coordinates with dims
-            if "forecast_reference_time" in data.dims:
-                data = data.swap_dims({"forecast_reference_time": "time"})
+    #     lat_coord, lat_dir = find_lat_dir(data)
+    #     # this is needed since cf2cdm issues a (useless) UserWarning
+    #     with warnings.catch_warnings():
+    #         warnings.filterwarnings("ignore", category=UserWarning)
+    #         data = translate_coords(data, dm)
+    #         # Hack needed because cfgrib.cf2cdm mixes up coordinates with dims
+    #         if "forecast_reference_time" in data.dims:
+    #             data = data.swap_dims({"forecast_reference_time": "time"})
 
-        check_direction(data, lat_coord, lat_dir)  # set 'flipped' attribute if lat direction has changed
-        return data
+    #     check_direction(data, lat_coord, lat_dir)  # set 'flipped' attribute if lat direction has changed
+    #     return data
 
     def apply_unit_fix(self, data):
         """
@@ -1115,16 +1107,3 @@ class FixerMixin():
                 data += offset
             log_history(data, f"Units changed to {tgt_units} by fixer")
             data.attrs.pop('tgt_units', None)
-
-
-def units_extra_definition():
-    """Add units to the pint registry"""
-
-    # special units definition
-    # needed to work with metpy 1.4.0 see
-    # https://github.com/Unidata/MetPy/issues/2884
-    units._on_redefinition = 'ignore'
-    units.define('fraction = [] = Fraction = frac')
-    units.define('psu = 1e-3 frac')
-    units.define('PSU = 1e-3 frac')
-    units.define('Sv = 1e+6 m^3/s')

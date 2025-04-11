@@ -16,7 +16,7 @@ The Application for QUality Assessment (AQUA) is a model evaluation framework de
 
 ## Installation
 
-AQUA requires python>=3.10. Recommended installation should be done through any package manager for conda-forge.
+AQUA requires python>=3.10. Recommended installation should be done through a package manager for conda-forge (e.g. [Miniforge](https://github.com/conda-forge/miniforge)).
 
 ### Create conda/mamba environment and install packages
 ```

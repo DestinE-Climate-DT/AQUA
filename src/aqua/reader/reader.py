@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import intake_esm
 import intake_xarray
 import xarray as xr
+from metpy.units import units
 
 from smmregrid import GridInspector
 
@@ -13,18 +14,18 @@ from aqua.logger import log_configure, log_history
 from aqua.exceptions import NoDataError, NoRegridError
 from aqua.version import __version__ as aqua_version
 from aqua.regridder import Regridder
+from aqua.timstat import TimStat
+from aqua.data_model import counter_reverse_coordinate
 import aqua.gsv
 
 from .streaming import Streaming
 from .fixer import FixerMixin
-from .timstat import TimStatMixin
 from .reader_utils import set_attrs
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
-
-class Reader(FixerMixin, TimStatMixin):
+class Reader(FixerMixin):
     """General reader for climate data."""
 
     instance = None  # Used to store the latest instance of the class
@@ -149,6 +150,8 @@ class Reader(FixerMixin, TimStatMixin):
         # store the kwargs for further usage
         self.kwargs = self._check_kwargs_parameters(kwargs, intake_vars)
 
+        # extend the unit registry
+        units_extra_definition()
         # Get fixes dictionary and find them
         self.fix = fix  # fix activation flag
         self.fixer_name = self.esmcat.metadata.get('fixer_name', None)
@@ -164,11 +167,11 @@ class Reader(FixerMixin, TimStatMixin):
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
             self.fixes = self.find_fixes()  # find fixes for this model/exp/source
-            self.dst_datamodel = datamodel
+            self.tgt_datamodel = datamodel
             # Default destination datamodel
             # (unless specified in instantiating the Reader)
-            if not self.dst_datamodel:
-                self.dst_datamodel = self.fixes_dictionary["defaults"].get("dst_datamodel", None)
+            if not self.tgt_datamodel:
+                self.tgt_datamodel = self.fixes_dictionary["defaults"].get("dst_datamodel", None)
 
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
@@ -250,6 +253,9 @@ class Reader(FixerMixin, TimStatMixin):
                 self.tgt_grid_area = self._fix_area(self.tgt_grid_area)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
+        # activste time statistics
+        self.timemodule = TimStat(loglevel=self.loglevel)
+
     def retrieve(self, var=None, level=None,
                  startdate=None, enddate=None,
                  history=True, sample=False):
@@ -322,12 +328,13 @@ class Reader(FixerMixin, TimStatMixin):
                 fkind = "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
 
-        if self.fix:
-            data = self.fixer(data, var)
 
         if not ffdb:  # FDB sources already have the index, already selected levels
             data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
+
+        if self.fix:
+            data = self.fixer(data, var)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -422,11 +429,13 @@ class Reader(FixerMixin, TimStatMixin):
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
+        
+        data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
 
         # set regridded attribute to 1 for all vars
-        out = set_attrs(out, {"regridded": 1})
+        out = set_attrs(out, {"AQUA_regridded": 1})
         return out
 
     def _check_if_regridded(self, data):
@@ -444,7 +453,7 @@ class Reader(FixerMixin, TimStatMixin):
         else:
             att = data.attrs
 
-        return att.get("regridded", False)
+        return att.get("AQUA_regridded", False)
 
     # def _clean_spourious_coords(self, data, name=None):
     #     """
@@ -1020,4 +1029,52 @@ class Reader(FixerMixin, TimStatMixin):
             print("GSV request for this source:")
             for k, v in self.esmcat._request.items():
                 if k not in ["time", "param", "step", "expver"]:
-                    print(f"  {k}: {v}")
+                    print("  %s: %s" % (k, v))
+
+    def timstat(self, data, stat, freq=None, exclude_incomplete=False,
+             time_bounds=False, center_time=False):
+        """
+        Time averaging wrapper which is calling the timstat module
+
+        Args:
+            data (xr.DataArray or xarray.Dataset):  the input data
+            stat (str):  the statistical function to be applied
+            freq (str):  the frequency of the time average
+            exclude_incomplete (bool):  exclude incomplete time averages
+            time_bounds (bool):  produce time bounds after averaging
+            center_time (bool):  center time for averaging
+        """
+
+        data = self.timemodule.timstat(
+            data, stat=stat, freq=freq,
+            exclude_incomplete=exclude_incomplete,
+            time_bounds=time_bounds,
+            center_time=center_time)
+        data.aqua.set_default(self) #accessor linking
+        return data
+    
+    def timmean(self, data, **kwargs):
+        return self.timstat(data, stat='mean', **kwargs)
+
+    def timmax(self, data, **kwargs):
+        return self.timstat(data, stat='max', **kwargs)
+    
+    def timmin(self, data, **kwargs):
+       return self.timstat(data, stat='min', **kwargs)
+    
+    def timstd(self, data, **kwargs):
+       return self.timstat(data, stat='std', **kwargs)
+
+def units_extra_definition():
+    """Add units to the pint registry"""
+
+    # special units definition
+    # needed to work with metpy 1.4.0 see
+    # https://github.com/Unidata/MetPy/issues/2884
+    units._on_redefinition = 'ignore'
+    units.define('fraction = [] = Fraction = frac')
+    units.define('psu = 1e-3 frac')
+    units.define('PSU = 1e-3 frac')
+    units.define('Sv = 1e+6 m^3/s')
+    units.define("North = degrees_north = degreesN = degN")
+    units.define("East = degrees_east = degreesE = degE")

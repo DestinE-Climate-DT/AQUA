@@ -154,8 +154,7 @@ jobs:
           # Produce the XML report
           cd AQUA
           # produce a xml report and a junit report to be used by codecov. Please notice other options are set in pyproject.toml
-          # pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or catgen or diagnostics"
-          pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or diagnostics"
+          pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or catgen or diagnostics"
       - name: Display coverage.xml contents
         run: cat AQUA/coverage.xml
       - name: Upload coverage reports to Codecov

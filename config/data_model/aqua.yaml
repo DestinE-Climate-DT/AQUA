@@ -1,0 +1,44 @@
+# Basic data model for AQUA
+# name, direction, positive and units are checked
+# other attributes (e.g. standard_name, axis) can be added
+name: aqua
+description: "AQUA minimal data model"
+version: 1.0
+data_model:
+  latitude:
+    name: lat
+    standard_name: latitude
+    long_name: latitude
+    stored_direction: increasing
+    units: degrees_north
+    axis: Y
+
+  longitude:
+    name: lon
+    standard_name: longitude
+    long_name: longitude
+    stored_direction: increasing
+    units: degrees_east
+    axis: X
+
+  isobaric:
+    name: plev
+    standard_name: air_pressure
+    long_name: pressure
+    positive: down
+    units: Pa
+    axis: Z
+
+  depth:
+    name: depth
+    standard_name: depth
+    long_name: depth below sea level
+    positive: down
+    units: m
+    axis: Z
+
+  time:
+    name: time
+    standard_name: time
+    long_name: time
+    axis: T

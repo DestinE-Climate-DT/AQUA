@@ -145,7 +145,7 @@ class TestAquaConsole():
         # do it twice!
         run_aqua_console_with_input(['-vv', 'install', machine], 'yes')
         assert os.path.exists(os.path.join(mydir, '.aqua'))
-        for folder in ['fixes', 'data_models', 'grids']:
+        for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.isdir(os.path.join(mydir, '.aqua', folder))
 
         # add two catalogs
@@ -417,7 +417,7 @@ class TestAquaConsole():
         # install from path with grids
         run_aqua(['-vv', 'install', machine, '--editable', 'config'])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
-        for folder in ['fixes', 'data_models', 'grids']:
+        for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.islink(os.path.join(mydir, '.aqua', folder))
         assert os.path.isdir(os.path.join(mydir, '.aqua', 'catalogs'))
 
@@ -460,7 +460,6 @@ class TestAquaConsole():
         assert 'ciccio (editable' in out
         assert 'IFS.yaml' in out
         assert 'HealPix.yaml' in out
-        assert 'ifs2cds.json' in out
 
         run_aqua(['avail'])
         out, _ = capfd.readouterr()

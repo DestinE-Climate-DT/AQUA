@@ -21,8 +21,8 @@ Concept
 
 The fixer performs a range of operations on data:
 
-- adopts a **common data model** for coordinates (default is the CDS common data model):
-  names of coordinates and dimensions (lon, lat, etc.),
+- adopts a **common data model** for coordinates:
+  names of coordinates and dimensions (lon, lat, plev, depth, etc.),
   coordinate units and direction, name (and meaning) of the time dimension. (See :ref:`coord-fix` for more details)
 - **changes variable names and metadata**.
   The fixer can match the available and target variables with a convention table (see :ref:`convention-structure`)
@@ -300,9 +300,11 @@ Data Model and Coordinates/Dimensions Correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The fixer can adopt a common **coordinate data model**
-(default is the CDS data model).
 If this data model is not appropriate for a specific source,
 it is possible to specify a different one in the catalog source.
+
+.. warning ::
+  Data model is being refactored which means that behaviour may change in the future.
 
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
 it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks

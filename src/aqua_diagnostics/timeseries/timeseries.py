@@ -361,6 +361,7 @@ class Timeseries():
                                  std_annual_data=self.ref_ann_std,
                                  ref_label=ref_label,
                                  data_labels=data_labels,
+                                 return_fig=True,
                                  title=title)
 
         if self.save:

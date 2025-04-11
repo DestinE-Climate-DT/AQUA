@@ -479,6 +479,11 @@ class Regridder():
                 self.logger.warning(
                     "%s block not found in the paths block, using present directory.", kind)
             else:
+                # if path does not exist, create it
+                if not os.path.exists(self.cfg_grid_dict["paths"][kind]):
+                    self.logger.warning(
+                        "%s path in %s does not exist: creating!", kind, self.cfg_grid_dict["paths"][kind])
+                    os.makedirs(self.cfg_grid_dict["paths"][kind], exist_ok=True)
                 filename = os.path.join(
                     self.cfg_grid_dict["paths"][kind], filename)
         return filename
