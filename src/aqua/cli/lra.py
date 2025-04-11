@@ -14,7 +14,7 @@ from aqua.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
 
 
-def lra_parser(parser = None):
+def lra_parser(parser=None):
     """
     Parse command line arguments for the LRA CLI
 
@@ -24,7 +24,7 @@ def lra_parser(parser = None):
 
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA LRA generator')
-    
+
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
     parser.add_argument('-f', '--fix', action="store_true",
@@ -52,18 +52,19 @@ def lra_parser(parser = None):
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
-    #parser.add_argument('-r', '--realization', type=str,
+    # parser.add_argument('-r', '--realization', type=str,
     #                    help="realization to be processed. Use with coherence with --var")
 
-    #return parser.parse_args(arguments)
+    # return parser.parse_args(arguments)
     return parser
+
 
 def lra_execute(args):
     """
     Executing the LRA by parsing the arguments and configuring the machinery
     """
 
-        # to check if GSV is available and return the version
+    # to check if GSV is available and return the version
     try:
         import gsv
         print('GSV version is: ' + gsv.__version__)
@@ -80,9 +81,9 @@ def lra_execute(args):
     # basic from configuration
     config = load_yaml(file)
 
-    #safety check
+    # safety check
     for item in ['target', 'paths', 'data', 'options']:
-        if not item in config:
+        if item not in config:
             raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
 
     # mandatory arguments
@@ -92,12 +93,11 @@ def lra_execute(args):
     # optional arguments
     region = config['target'].get('region', None)
     catalog = config['target'].get('catalog', None)
-    
+
     # assig paths
     paths = config['paths']
     outdir = paths['outdir']
     tmpdir = paths['tmpdir']
-
 
     # options
     loglevel = config['options'].get('loglevel', 'WARNING')
@@ -123,6 +123,7 @@ def lra_execute(args):
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
+
 
 def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
             region=None,
@@ -186,25 +187,23 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                         zoom = config['data'][model][exp][source].get('zoom', None)
                         if zoom is not None:
                             extra_args = {**extra_args, **{'zoom': zoom}}
-                        
+
                         # disabling rebuild if we are not in the first realization and first varname
                         if varname != varnames[0] or realization != loop_realizations[0]:
                             rebuild = False
                         # init the LRA
                         lra = LRAgenerator(catalog=catalog, model=model, exp=exp, source=source,
-                                        var=varname, resolution=resolution,
-                                        frequency=frequency, fix=fix,
-                                        outdir=outdir, tmpdir=tmpdir,
-                                        nproc=workers, loglevel=loglevel,
-                                        region=region,
-                                        definitive=definitive, overwrite=overwrite,
-                                        rebuild=rebuild,
-                                        performance_reporting=monitoring,
-                                        exclude_incomplete=True,
-                                        **extra_args)
+                                           var=varname, resolution=resolution,
+                                           frequency=frequency, fix=fix,
+                                           outdir=outdir, tmpdir=tmpdir,
+                                           nproc=workers, loglevel=loglevel,
+                                           region=region,
+                                           definitive=definitive, overwrite=overwrite,
+                                           rebuild=rebuild,
+                                           performance_reporting=monitoring,
+                                           exclude_incomplete=True,
+                                           **extra_args)
 
-
-                        
                         if not only_catalog:
                             # check that your LRA is not already there (it will not work in streaming mode)
                             lra.check_integrity(varname)
@@ -220,9 +219,9 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
 
     print('CLI LRA run completed. Have yourself a tasty pint of beer!')
 
+
 # if you want to execute the script from terminal without the aqua entry point
 if __name__ == '__main__':
 
     args = lra_parser().parse_args(sys.argv[1:])
     lra_execute(args)
-   
