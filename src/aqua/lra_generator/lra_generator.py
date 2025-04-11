@@ -19,7 +19,7 @@ from aqua.util import create_folder, generate_random_string
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
-from aqua.util import area_selection
+from aqua.util import area_selection, to_list
 from aqua.lra_generator.lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
 
 
@@ -39,7 +39,7 @@ class LRAgenerator():
                  resolution=None, frequency=None, fix=True,
                  outdir=None, tmpdir=None, nproc=1,
                  loglevel=None,
-                 region=None,
+                 region=None, level=None,
                  overwrite=False, definitive=False,
                  performance_reporting=False,
                  rebuild=False,
@@ -70,6 +70,8 @@ class LRAgenerator():
             region (dict, opt):      Region to be processed, default is None,
                                      meaning the full globe.
                                      Requires 'name' (str), 'lon' (list) and 'lat' (list)
+            level (dict, opt):      Level to be processed, default is None, meaning no level selection.
+                                    Requires a dictionary {'level_name': (str), 'level': (value or list)}
             overwrite (bool, opt):   True to overwrite existing files in LRA,
                                      default is False
             definitive (bool, opt):  True to create the output file,
@@ -155,9 +157,16 @@ class LRAgenerator():
                 raise KeyError('Please specify name in region.')
             if self.region['lon'] is None and self.region['lat'] is None:
                 raise KeyError(f'Please specify at least one between lat and lon for {region['name']}.')
-
         else:
             self.region = None
+
+        if level is not None:
+            self.lev_name = level['level_name']
+            self.lev = level['level']
+            self.logger.info(f"Level selection active! selecting {self.lev_name} levels {self.lev}")
+        else:
+            self.lev_name = None
+            self.lev = None
 
         self.kwargs = kwargs
 
@@ -482,19 +491,32 @@ class LRAgenerator():
                 os.remove(infile)
 
     def get_filename(self, var, year=None, month=None, tmp=False):
-        """Create output filenames"""
+        """
+        Create output filenames
 
-        # modify filename if realization is in the kwargs
+        Args:
+            var (str): variable name
+            year (int): year to be processed
+            month (int): month to be processed
+            tmp (bool): True if the file is temporary, default is False
+        """
+        keys = [var, self.exp]
         if 'realization' in self.kwargs:
-            if self.region:
-                filestring = f"{var}_{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_{self.region['name']}_*.nc"
-            else:
-                filestring = f"{var}_{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc"
-        else:
-            if self.region:
-                filestring = f"{var}_{self.exp}_{self.resolution}_{self.frequency}_{self.region['name']}_*.nc"
-            else:
-                filestring = f"{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc"
+            keys.append(self.kwargs['realization'])
+        keys.append(self.resolution)
+        if self.frequency:
+            keys.append(self.frequency)
+        if self.region:
+            keys.append(self.region['name'])
+        if self.lev:
+            for lev in to_list(self.lev):
+                keys.append(lev)
+        keys = [str(key) for key in keys]
+
+        filestring = '_'.join(keys)
+        filestring += '_*.nc'
+        self.logger.debug('Filestring is %s', filestring)
+
         if tmp:
             filename = os.path.join(self.tmpdir, filestring)
         else:
@@ -613,6 +635,10 @@ class LRAgenerator():
         self.logger.info('Processing variable %s...', var)
         temp_data = self.data[var]
 
+        if self.lev_name is not None and self.lev is not None and self.lev_name in temp_data.coords:
+            self.logger.info('Selecting %s levels %s', self.lev_name, self.lev)
+            temp_data = temp_data.sel({self.lev_name: self.lev})
+
         if self.frequency:
             temp_data = self.reader.timmean(temp_data, freq=self.frequency,
                                             exclude_incomplete=self.exclude_incomplete)
@@ -691,6 +717,9 @@ class LRAgenerator():
             log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} through LRA generator')
         else:
             log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator')
+
+        if self.lev is not None and self.lev_name is not None:
+            log_history(data, f'selected {self.lev_name} levels {self.lev} through LRA generator')
 
         # File to be written
         if os.path.exists(outfile):
