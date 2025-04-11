@@ -23,5 +23,5 @@ data:
   IFS-FESOM:
     story-2017-historical:
       hourly-hpz9-atm2d:
-        vars: ['tprate', 'tcwv', '2t']
+        vars: ['tcwv', '2t'] # 'tprate'
         workers: 4
