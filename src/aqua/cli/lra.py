@@ -93,6 +93,7 @@ def lra_execute(args):
     # optional arguments
     region = config['target'].get('region', None)
     catalog = config['target'].get('catalog', None)
+    level = config['target'].get('level', None)  # Dictionary containing level_name and level (list or value)
 
     # assig paths
     paths = config['paths']
@@ -119,14 +120,14 @@ def lra_execute(args):
     lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-            region=region,
+            region=region, level=level,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 
 def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
-            region=None,
+            region=None, level=None,
             definitive=False, overwrite=False,
             rebuild=False, monitoring=False,
             default_workers=1, do_zarr=False, verify_zarr=False,
@@ -147,6 +148,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
         tmpdir: temporary directory
         loglevel: log level
         region: region to be processed
+        level: level to be processed (if not, all levels will be processed)
         definitive: bool flag to create definitive files
         overwrite: bool flag to overwrite existing files
         rebuild: bool flag to rebuild the areas and weights
@@ -197,7 +199,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                                            frequency=frequency, fix=fix,
                                            outdir=outdir, tmpdir=tmpdir,
                                            nproc=workers, loglevel=loglevel,
-                                           region=region,
+                                           region=region, level=level,
                                            definitive=definitive, overwrite=overwrite,
                                            rebuild=rebuild,
                                            performance_reporting=monitoring,
