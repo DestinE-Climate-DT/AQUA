@@ -11,12 +11,12 @@ import sys
 import gc
 import xarray as xr
 from dask.distributed import Client, LocalCluster
-
-from aqua.util import load_yaml, get_arg
+import numpy as np
+import pandas as pd
+from aqua.util import load_yaml, get_arg, ConfigPath
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.logger import log_configure
 from aqua import Reader
-
 from aqua.diagnostics import EnsembleTimeseries
 
 def parse_arguments(args):
@@ -132,23 +132,25 @@ def retrieve_data(variable=None, models=None, exps=None, sources=None, startdate
         raise NoDataError("No models, exps or sources provided")
     else:
         for i, model in enumerate(models):
-            reader = Reader(model=model, exp=exps[i], source=sources[i], areas=False,variable=variable)
+            reader = Reader(model=model, exp=exps[i], source=sources[i], areas=False, startdate=startdate, enddate=enddate)
             data = reader.retrieve(var=variable)
             dataset_list.append(data)
             startdate_list.append(data.time[0].values)
             enddate_list.append(data.time[-1].values)
-
     merged_dataset = xr.concat(dataset_list, ens_dim)
-    if startdate == None:
-        istartdate = max(startdate_list)
-    if enddate == None:
-        ienddate = min(enddate_list)
+    
     if startdate != None:
         istartdate = max(startdate_list)
+        startdate = pd.to_datetime(startdate) 
         startdate = max(istartdate, startdate)
     if enddate != None:
         ienddate = min(enddate_list)
+        enddate = pd.to_datetime(enddate)
         enddate = min(ienddate, enddate)
+    if startdate == None:        
+        startdate = max(startdate_list)
+    if enddate == None:
+        enddate = min(enddate_list)
 
     merged_dataset = merged_dataset.sel(time=slice(startdate, enddate))
     del reader
@@ -183,11 +185,17 @@ if __name__ == '__main__':
         logger.info(f"Running with {nworkers} dask distributed workers.")
 
     # Load configuration file
-    file = get_arg(args, "config", "config_timeseries_ensemble.yaml")
+    configdir = ConfigPath(loglevel=loglevel).configdir
+    default_config = os.path.join(configdir, "diagnostics", "ensemble",
+                                  "config_timeseries_ensemble.yaml")
+    file = get_arg(args, "config", default_config)
     logger.info(f"Reading configuration file {file}")
     config = load_yaml(file)
+    #file = get_arg(args, "config", "config_timeseries_ensemble.yaml")
+    #logger.info(f"Reading configuration file {file}")
+    #config = load_yaml(file)
 
-    variable = config['timeseries']
+    variable = config['variable']
     logger.info(f"Plotting {variable} timeseries")
     startdate, enddate, plot_std, plot_ensemble_members, ensemble_label, figure_size, ref_label, label_ncol, label_size, pdf_save, units = get_plot_options(
         config, variable)
@@ -209,7 +217,7 @@ if __name__ == '__main__':
             mon_source_list.append(model['source'])
 
     mon_startdate, mon_enddate, mon_dataset = retrieve_data(
-        variable, models=mon_model_list, exps=mon_exp_list, sources=mon_source_list)
+        variable, models=mon_model_list, exps=mon_exp_list, sources=mon_source_list, startdate=startdate, enddate=enddate)
 
     # Annual model data
     ann_model = config['models_annual']
@@ -226,7 +234,7 @@ if __name__ == '__main__':
             ann_source_list.append(model['source'])
 
     ann_startdate, ann_enddate, ann_dataset = retrieve_data(
-        variable, models=mon_model_list, exps=mon_exp_list, sources=ann_source_list)
+        variable, models=mon_model_list, exps=mon_exp_list, sources=ann_source_list, startdate=startdate, enddate=enddate)
 
     # Reference monthly data
     ref_mon = config['reference_model_monthly']
