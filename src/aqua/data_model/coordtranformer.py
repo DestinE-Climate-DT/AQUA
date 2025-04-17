@@ -5,7 +5,6 @@ import xarray as xr
 from metpy.units import units
 from aqua.logger import log_configure, log_history
 from aqua.util import load_yaml, ConfigPath
-from aqua import __path__ as pypath
 from .coordidentifier import CoordIdentifier
 
 
@@ -229,13 +228,13 @@ class CoordTransformer():
         Convert units of the coordinate.
         """
         if 'units' not in tgt_coord:
-            self.logger.warning("%s not found. Disabling unit conversion.", tgt_coord['name'])
+            self.logger.debug("%s unit not found in target data model. Disabling unit conversion.", tgt_coord['name'])
             return data
         if 'units' not in src_coord:
-            self.logger.warning("%s not found. Disabling unit conversion.", src_coord['name'])
+            self.logger.warning("%s unit not found source data model. Disabling unit conversion.", src_coord['name'])
             return data
         if 'units' not in data[tgt_coord['name']].attrs:
-            self.logger.warning("%s not found in data. Disabling unit conversion.", tgt_coord['name'])
+            self.logger.warning("%s unit not found in data. Disabling unit conversion.", tgt_coord['name'])
             return data
         if src_coord['units'] != tgt_coord['units']:
             self.logger.info("Converting units of coordinate %s from %s to %s",

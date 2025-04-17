@@ -14,7 +14,7 @@ AQUA core complete list:
 - New OutputSaver class (#1837)
 - Introduce a `Timstat()` module independent from the `Reader()` (#1832)
 - Adapt Catalog Generator to Data-Portfolio v1.3.0 (#1848)
-- Introduction of a internal AQUA data model able to guess coordinates and convert toward required target data convention definition (#1862, #1877)
+- Introduction of a internal AQUA data model able to guess coordinates and convert toward required target data convention definition (#1862, #1877, #1883)
 - Custom `paths` in the `confi-aqua.yaml` can now be defined and will take priority over the catalog paths (#1809)
 - Remove deprecated `aqua.slurm` module (#1860)
 - Refactor of `plot_maps()` and `plot_maps_diff()` functions with projection support and use their single map version internally (#1865)
