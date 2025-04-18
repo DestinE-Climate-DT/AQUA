@@ -12,7 +12,7 @@ set -e
 
 # set the number of dask workers
 # should be equal to the number of the total tasks available
-workers=4
+workers=12
 
 # run the Python script
 # -c to specify the configuration file
@@ -20,4 +20,4 @@ workers=4
 # -d to perform a dry run (to check generated lra)
 # -o to overwrite existing lra
 # -l to set the log level (default is WARNING)
-aqua lra --config lra_italy_prec-historical.yaml -w 4 -d -l INFO
+aqua lra --config lra_italy_prec-historical.yaml -w 12 -d -l INFO
