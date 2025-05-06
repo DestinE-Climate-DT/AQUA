@@ -49,7 +49,7 @@ class TestLRA:
         test.data = test.data.sel(time="2020-01")
         test.generate_lra()
 
-        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_202001.nc")
+        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_mean_202001.nc")
         test.check_integrity(varname=args["var"])
         assert os.path.isfile(file_path)
 
@@ -74,7 +74,7 @@ class TestLRA:
         test.data = test.data.sel(time="2020-01-20")
         test.generate_lra()
 
-        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH_DAILY, "2t_test-tco79_r100_daily_europe_202001.nc")
+        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH_DAILY, "2t_test-tco79_r100_daily_mean_europe_202001.nc")
         assert os.path.isfile(file_path)
 
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
@@ -133,8 +133,8 @@ class TestLRA:
         test.retrieve()
         test.generate_lra()
 
-        missing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_202008.nc")
-        existing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_202002.nc")
+        missing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_mean_202008.nc")
+        existing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_mean_202002.nc")
 
         assert not os.path.exists(missing_file)
         assert os.path.exists(existing_file)
@@ -154,6 +154,32 @@ class TestLRA:
         test = LRAgenerator(
             catalog='ci', model=args["model"], exp=args["exp"], source=args["source"],
             var=args["var"], outdir=args["outdir"], tmpdir=str(tmp_path),
+            resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
+        )
+
+        for month in range(1, 13):
+            mm = f'{month:02d}'
+            filename = test.get_filename(args["var"], year, month=mm)
+            timeobj = pd.Timestamp(f'{year}-{mm}-01')
+            ds = xr.Dataset({args["var"]: xr.DataArray([0], dims=['time'], coords={'time': [timeobj]})})
+            ds.to_netcdf(filename)
+
+        test._concat_var_year(args["var"], year)
+        outfile = test.get_filename(args["var"], year)
+
+        assert os.path.exists(outfile)
+        shutil.rmtree(os.path.join(args["outdir"]))
+
+    def test_concat_var_year_cdo(self, lra_arguments, tmp_path):
+        """Test concatenation of monthly files into a single yearly file using cdo."""
+        args = lra_arguments
+        resolution = 'r100'
+        frequency = 'monthly'
+        year = 2022
+
+        test = LRAgenerator(
+            catalog='ci', model=args["model"], exp=args["exp"], source=args["source"],
+            var=args["var"], outdir=args["outdir"], tmpdir=str(tmp_path), compact="cdo",
             resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )
 

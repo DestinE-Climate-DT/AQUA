@@ -1,457 +1,174 @@
-"""Gregory plot module."""
-import gc
-
-import matplotlib.pyplot as plt
+"""Gregory module."""
 import xarray as xr
-from aqua import Reader
-from aqua.logger import log_configure
-from aqua.util import OutputSaver
-from aqua.util import time_to_string, evaluate_colorbar_limits
-from aqua.graphics import ConfigStyle
-from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
-from .reference_data import get_reference_ts_gregory, get_reference_toa_gregory
+from aqua.util import eval_formula
+from aqua.diagnostics.core import Diagnostic, convert_data_units
 
-xr.set_options(keep_attrs=True)  # Keep attributes after operations
+xr.set_options(keep_attrs=True)
 
 
-class GregoryPlot():
-    """
-    Gregory plot class.
-    Retrieve data, obs reference and plot the Gregory plot.
-    Can work with a list of models, experiments and sources.
-    """
-    def __init__(self, catalogs=None,
-                 models=None, exps=None, sources=None,
-                 monthly=True, annual=True,
-                 regrid=None,
-                 ts_name='2t', toa_name=['tnlwrf', 'tnswrf'],
-                 ts_std_start='1980-01-01', ts_std_end='2010-12-31',
-                 toa_std_start='2001-01-01', toa_std_end='2020-12-31',
-                 ref=True, save=True,
-                 outdir='./',
-                 loglevel='WARNING',
-                 rebuild=True, filename_keys=None,
-                 save_pdf=True, save_png=True, dpi=300):
+class Gregory(Diagnostic):
+
+    def __init__(self, catalog: str = None, model: str = None,
+                 exp: str = None, source: str = None, regrid: str = None,
+                 startdate: str = None, enddate: str = None, loglevel: str = 'WARNING'):
         """
-        Args:
-            catalogs (list, opt): List of catalogs to search for the data.
-            models (list): List of model IDs.
-            exps (list): List of experiment IDs.
-            sources (list): List of source IDs.
-            monthly (bool): If True, plot monthly data.
-                            Default is True.
-            annual (bool): If True, plot annual data.
-                           Default is True.
-            regrid (str): Optional regrid resolution.
-                          Default is None.
-            ts (str): variable name for 2m temperature, default is '2t'.
-            toa (list): list of variable names for net radiation at TOA,
-                        default is ['tnlwrf', 'tnswrf'].
-            ts_std_start (str): Start date for standard deviation calculation for 2m temperature.
-                                Default is '1980-01-01'.
-            ts_std_end (str): End date for standard deviation calculation for 2m temperature.
-                                Default is '2010-12-31'.
-            toa_std_start (str): Start date for standard deviation calculation for net radiation at TOA.
-                                Default is '2001-01-01'.
-            toa_std_end (str): End date for standard deviation calculation for net radiation at TOA.
-                                Default is '2020-12-31'.
-            ref (bool): If True, reference data is plotted.
-                        Default is True. Reference data are ERA5 for 2m temperature
-                        and CERES for net radiation at TOA.
-            save (bool): If True, save the figure. Default is True.
-            outdir (str): Output directory. Default is './'.
-            loglevel (str): Logging level. Default is WARNING.
-            rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
-            filename_keys (list, optional): List of keys to keep in the filename.
-                                            Default is None, which includes all keys (see OutputNamer class).
-            save_pdf (bool): If True, save the figure as a PDF. Default is True.
-            save_png (bool): If True, save the figure as a PNG. Default is True.
-            dpi (int, optional): Dots per inch (DPI) for saving figures. Default is 300.
-
-        """
-        self.loglevel = loglevel
-        self.logger = log_configure(loglevel, 'Gregory plot')
-
-        self.models = models
-        self.exps = exps
-        self.sources = sources
-        self._catalogs(catalogs=catalogs)  # Define self.catalogs
-
-        if self.models is None or self.exps is None or self.sources is None:
-            raise NoDataError("No models, experiments or sources given. No plot will be drawn.")
-        if isinstance(self.models, str):
-            self.models = [self.models]
-        if isinstance(self.exps, str):
-            self.exps = [self.exps]
-        if isinstance(self.sources, str):
-            self.sources = [self.sources]
-        if isinstance(self.catalogs, str):
-            self.catalogs = [self.catalogs]
-
-        self.monthly = monthly
-        self.annual = annual
-        self.regrid = regrid
-
-        self.ref = ref
-        self.ts_name = ts_name
-        self.toa_name = toa_name
-        self.retrieve_list = [self.ts_name] + self.toa_name
-        self.ts_std_start = ts_std_start
-        self.ts_std_end = ts_std_end
-        self.toa_std_start = toa_std_start
-        self.toa_std_end = toa_std_end
-        self.logger.debug(f"Retrieving {self.retrieve_list}, for standard deviation calculation: "
-                          f"2m temperature from {time_to_string(self.ts_std_start)} to {time_to_string(self.ts_std_end)}, "
-                          f"net radiation at TOA from {time_to_string(self.toa_std_start)} to {time_to_string(self.toa_std_end)}") # noqa
-
-        self.save = save
-        if self.save is False:
-            self.logger.info("No output file will be saved.")
-        self.outdir = outdir
-
-        self.diagnostic_product = 'gregory_plot'
-        self.diagnostic = 'timeseries'
-        self.rebuild = rebuild
-        self.filename_keys = filename_keys
-        self.save_pdf = save_pdf
-        self.save_png = save_png
-        self.dpi = dpi
-
-    def run(self):
-        """
-        Retrieve ref, retrieve data and plot
-        """
-        self.retrieve_data()
-        self.retrieve_ref()
-        self.plot()
-        if self.save:
-            self.save_netcdf()
-        self.cleanup()
-
-    def retrieve_data(self):
-        """Retrieve data from the given models, experiments and sources."""
-        self.logger.debug("Retrieving data")
-        self.data_ts_mon = len(self.models) * [None]
-        self.data_toa_mon = len(self.models) * [None]
-        self.data_ts_annual = len(self.models) * [None]
-        self.data_toa_annual = len(self.models) * [None]
-
-        for i, model in enumerate(self.models):
-            self.logger.info(f'Retrieving data for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}')
-            try:
-                reader = Reader(catalog=self.catalogs[i], model=model,
-                                exp=self.exps[i], source=self.sources[i],
-                                regrid=self.regrid, loglevel=self.loglevel)
-                data = reader.retrieve(var=self.retrieve_list)
-                # We're assuming the ts is in K and we want it in C
-                ts = reader.fldmean(data[self.ts_name]) - 273.15
-                toa = reader.fldmean(data[self.toa_name[0]] + data[self.toa_name[1]])
-            except Exception as e:
-                self.logger.error(f"Error: {e}")
-                raise NoDataError(f"Could not retrieve data for {model} {self.exps[i]}. No plot will be drawn.") from e
-
-            if self.monthly:
-                if 'monthly' in self.sources[i] or 'mon' in self.sources[i]:
-                    self.logger.debug(f"No monthly resample needed for {model} {self.exps[i]} {self.sources[i]}")
-                    data_ts_mon = ts
-                    data_toa_mon = toa
-                else:
-                    self.logger.debug("Resampling data to monthly")
-                    data_ts_mon = reader.timmean(data=ts, freq='MS',
-                                                 exclude_incomplete=True)
-                    data_toa_mon = reader.timmean(data=toa, freq='MS',
-                                                  exclude_incomplete=True)
-                if len(data_ts_mon) < 2 or len(data_toa_mon) < 2:
-                    self.logger.warning(f"Not enough data for {model} {self.exps[i]}. No monthly data will be plotted.")
-                    self.data_ts_mon[i] = None
-                    self.data_toa_mon[i] = None
-                else:
-                    self.data_ts_mon[i] = data_ts_mon
-                    self.data_toa_mon[i] = data_toa_mon
-
-            if self.annual:
-                self.logger.debug("Resampling data to annual")
-                data_ts_annual = reader.timmean(data=ts, freq='YS',
-                                                exclude_incomplete=True)
-                data_toa_annual = reader.timmean(data=toa, freq='YS',
-                                                 exclude_incomplete=True)
-                if len(data_ts_annual) < 2 or len(data_toa_annual) < 2:
-                    self.logger.warning(f"Not enough data for {model} {self.exps[i]}. No annual data will be plotted.")
-                    self.data_ts_annual[i] = None
-                    self.data_toa_annual[i] = None
-                else:
-                    self.data_ts_annual[i] = data_ts_annual
-                    self.data_toa_annual[i] = data_toa_annual
-
-            # Clean up
-            del data, ts, toa, reader
-            if self.monthly:
-                del data_ts_mon, data_toa_mon
-            if self.annual:
-                del data_ts_annual, data_toa_annual
-            gc.collect()
-
-        # Check at least one dataset has been retrieved
-        if all([d is None for d in self.data_ts_mon]) and all([d is None for d in self.data_ts_annual]):
-            raise NotEnoughDataError("Not enough data available. No plot will be drawn.")
-        elif all([d is None for d in self.data_ts_mon]):
-            self.monthly = False
-            self.logger.warning("No monthly data available. Monthly plot will not be drawn.")
-        elif all([d is None for d in self.data_ts_annual]):
-            self.annual = False
-            self.logger.warning("No annual data available. Annual plot will not be drawn.")
-
-    def retrieve_ref(self):
-        """Retrieve reference data."""
-        if self.ref:
-            self.logger.debug("Retrieving reference data")
-            try:
-                ref_ts_mean, ref_ts_std = get_reference_ts_gregory(ts_name=self.ts_name,
-                                                                   startdate=self.ts_std_start,
-                                                                   enddate=self.ts_std_end,
-                                                                   loglevel=self.loglevel)
-                ref_toa_mean, ref_toa_std = get_reference_toa_gregory(toa_name=self.toa_name,
-                                                                      startdate=self.toa_std_start,
-                                                                      enddate=self.toa_std_end,
-                                                                      loglevel=self.loglevel)
-            except NoObservationError as e:
-                self.logger.debug(f"Error: {e}")
-                self.logger.error("No reference data available. No reference plot will be drawn.")
-                self.ref = False
-            # We're assuming the ts is in K and we want it in C
-            self.ref_ts_mean = ref_ts_mean - 273.15
-            self.ref_ts_std = ref_ts_std
-            self.ref_toa_mean = ref_toa_mean
-            self.ref_toa_std = ref_toa_std
-
-    def plot(self, style: str = None,):
-        """Plot the Gregory plot.
-
-        Arguments: 
-            style (str): style to use for the plot. By default the schema specified in the configuration file is used.
-        """
-        self.logger.debug("Plotting")
-        ConfigStyle(style=style)
-
-        ax1 = None
-        ax2 = None
-
-        if self.monthly and self.annual:
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-        elif self.monthly:
-            fig, ax1 = plt.subplots(1, 1, figsize=(6, 6))
-        elif self.annual:
-            fig, ax2 = plt.subplots(1, 1, figsize=(6, 6))
-
-
-        if self.monthly:
-            ax1.axhline(0, color="k")
-            ax1.set_xlabel("2m temperature [C]")
-            ax1.set_ylabel(r"Net radiation TOA [$\rm Wm^{-2}$]")
-            ax1.grid(True)
-            ax1.set_title("Monthly Mean")
-
-            toa_min, toa_max = evaluate_colorbar_limits(self.data_toa_mon, sym=False)
-            toa_min = min(toa_min, -12.)
-            toa_max = max(toa_max, 12.)
-            ax1.set_ylim(toa_min, toa_max)
-            ts_min, ts_max = evaluate_colorbar_limits(self.data_ts_mon, sym=False)
-            ts_min = min(ts_min, 10.)
-            ts_max = max(ts_max, 16.5)
-            ax1.set_xlim(ts_min, ts_max)
-            self.logger.debug(f"Monthly x-axis limits: {ts_min} to {ts_max}")
-            self.logger.debug(f"Monthly y-axis limits: {toa_min} to {toa_max}")
-
-            for i, model in enumerate(self.models):
-                if self.data_ts_mon[i] is not None and self.data_toa_mon[i] is not None:
-                    ax1.plot(self.data_ts_mon[i], self.data_toa_mon[i], marker=".",
-                             label=f"{model} {self.exps[i]}")
-
-            for i, model in enumerate(self.models):  # Last so that legend is at the end
-                if self.data_ts_mon[i] is not None and self.data_toa_mon[i] is not None:
-                    if i == 0:
-                        label_b = "First Time-step"
-                        label_e = "Last Time-step"
-                    else:
-                        label_b = None
-                        label_e = None
-                    ax1.plot(self.data_ts_mon[i][0], self.data_toa_mon[i][0], marker=">",
-                             color="tab:blue", label=label_b)  # Blue to be colorblind friendly
-                    ax1.plot(self.data_ts_mon[i][-1], self.data_toa_mon[i][-1], marker="<",
-                             color="tab:red", label=label_e)
-
-            ax1.legend()
-
-        if self.annual:
-            ax2.axhline(0, color="k", lw=0.7)
-            ax2.set_xlabel("2m temperature [C]")
-            if ax1 is None:
-                ax2.set_ylabel(r"Net radiation TOA [$\rm Wm^{-2}$]")
-            ax2.grid(True)
-            ax2.set_title("Annual Mean", fontsize=13, fontweight='bold')
-
-            toa_min, toa_max = evaluate_colorbar_limits(self.data_toa_annual, sym=False)
-            toa_min = min(toa_min, -2.)
-            toa_max = max(toa_max, 2.)
-            ts_min, ts_max = evaluate_colorbar_limits(self.data_ts_annual, sym=False)
-            ts_min = min(ts_min, 13.5)
-            ts_max = max(ts_max, 15.)
-            ax2.set_xlim(ts_min, ts_max)
-            ax2.set_ylim(toa_min, toa_max)
-            self.logger.debug(f"Annual x-axis limits: {ts_min} to {ts_max}")
-            self.logger.debug(f"Annual y-axis limits: {toa_min} to {toa_max}")
-
-            for i, model in enumerate(self.models):
-                if self.data_ts_annual[i] is not None and self.data_toa_annual[i] is not None:
-                    ax2.plot(self.data_ts_annual[i], self.data_toa_annual[i], marker=".",
-                             label=f"{model} {self.exps[i]}")
-                    if i == 0 and ax1 is None:
-                        label_b = "First Time-step"
-                        label_e = "Last Time-step"
-                    else:
-                        label_b = None
-                        label_e = None
-                    ax2.plot(self.data_ts_annual[i][0], self.data_toa_annual[i][0], marker=">",
-                             color="tab:blue", label=label_b)
-                    ax2.plot(self.data_ts_annual[i][-1], self.data_toa_annual[i][-1], marker="<",
-                             color="tab:red", label=label_e)
-                    ax2.text(self.data_ts_annual[i][0], self.data_toa_annual[i][0],
-                             str(self.data_ts_annual[i].time.dt.year[0].values),
-                             fontsize=8, ha='right')
-                    ax2.text(self.data_ts_annual[i][-1], self.data_toa_annual[i][-1],
-                             str(self.data_ts_annual[i].time.dt.year[-1].values),
-                             fontsize=8, ha='right')
-
-            if self.ref:
-                ax2.axhspan(self.ref_toa_mean - self.ref_toa_std, self.ref_toa_mean + self.ref_toa_std,
-                            color="lightgreen", alpha=0.3, label=r"$\sigma$ band")
-                ax2.axvspan(self.ref_ts_mean - self.ref_ts_std, self.ref_ts_mean + self.ref_ts_std,
-                            color="lightgreen", alpha=0.3)
-
-            ax2.legend()
-
-        if self.save:
-            self.save_image(fig)
-
-    def save_image(self, fig):
-        """Save the figure to an image file (PDF/PNG).
+        Initialize the Gregory Plot class. This evaluates values necessary for the Gregory Plot
+        from a single model and to save the data to a netcdf file.
 
         Args:
-            fig (matplotlib.figure.Figure): Figure to save.
+            catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
+            model (str): The model to be used.
+            exp (str): The experiment to be used.
+            source (str): The source to be used.
+            regrid (str): The target grid to be used for regridding. If None, no regridding will be done.
+            startdate (str): The start date of the data to be retrieved.
+                             If None, all available data will be retrieved.
+            enddate (str): The end date of the data to be retrieved.
+                           If None, all available data will be retrieved.
+            loglevel (str): The log level to be used. Default is 'WARNING'.
         """
-        # Get OutputSaver instance for the first model
-        output_saver = self._get_output_saver(catalog=self.catalogs[0], model=self.models[0], exp=self.exps[0])
-        common_save_args = {'diagnostic_product': self.diagnostic_product, 'dpi': self.dpi}
+        super().__init__(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
+                         startdate=startdate, enddate=enddate, loglevel=loglevel)
+        # Initialize the variables
+        self.t2m = None
+        self.net_toa = None
 
-        # Use the helper function to generate the description
-        description = self._construct_description(plot_type="Gregory plot", ref_label="ERA5 and CERES")
-        self.logger.debug(f"Description: {description}")
+        # Initialize the possible results
+        self.t2m_monthly = None
+        self.t2m_annual = None
+        self.t2m_std = None
+        self.net_toa_monthly = None
+        self.net_toa_annual = None
+        self.net_toa_std = None
 
-        metadata = {"Description": description}
+    def run(self, freq: list = ['monthly', 'annual'],
+            t2m: bool = True, net_toa: bool = True, std: bool = False,
+            t2m_name: str = '2t', net_toa_name: str = 'tnlwrf+tnswrf',
+            t2m_units: str = 'degC',
+            exclude_incomplete: bool = True, outputdir: str = './',
+            rebuild: bool = True):
+        """Run the Gregory Plot."""
+        self.retrieve(t2m=t2m, net_toa=net_toa, t2m_name=t2m_name, net_toa_name=net_toa_name)
 
-        # Save the figure as PDF/PNG as per user preferences
-        if self.save_pdf:
-            output_saver.save_pdf(fig, metadata=metadata, **common_save_args)
-        if self.save_png:
-            output_saver.save_png(fig, metadata=metadata, **common_save_args)
+        self.logger.info(f'Computing the Gregory Plot for the {freq} frequency.')
+        if t2m:
+            self.compute_t2m(freq=freq, std=std, units=t2m_units, var=t2m_name,
+                             exclude_incomplete=exclude_incomplete)
+        if net_toa:
+            # TODO: If needed add the units conversion for net_toa
+            self.compute_net_toa(freq=freq, std=std,
+                                 exclude_incomplete=exclude_incomplete)
 
-    def save_netcdf(self):
-        """Save the data to a netCDF file."""
+        self.save_netcdf(freq=freq, std=std, t2m=t2m, net_toa=net_toa,
+                         outputdir=outputdir, rebuild=rebuild)
 
-        # Loop through the models and save their corresponding data
-        for i, model in enumerate(self.models):
-            output_saver = self._get_output_saver(catalog=self.catalogs[i], model=model, exp=self.exps[i])
-            common_save_args = {'diagnostic_product': self.diagnostic_product}
-
-            if self.monthly:
-                self._save_frequency_data(output_saver, frequency='monthly', data_ts=self.data_ts_mon[i],
-                                          data_toa=self.data_toa_mon[i], **common_save_args)
-            if self.annual:
-                self._save_frequency_data(output_saver, frequency='annual', data_ts=self.data_ts_annual[i],
-                                          data_toa=self.data_toa_annual[i], **common_save_args)
-
-        # Save the reference data if required
-        if self.ref:
-            # HACK: The output saver will look for a catalog, model, exp and source match, which
-            # is not the case for this reference data. This will be solved in future output saver updates.
-            output_saver_ref = self._get_output_saver(catalog='obs', model='ERA5', exp='CERES')
-            ref_dataset = xr.Dataset({'ts_mean': self.ref_ts_mean, 'ts_std': self.ref_ts_std,
-                                      'toa_mean': self.ref_toa_mean, 'toa_std': self.ref_toa_std})
-            output_saver_ref.save_netcdf(ref_dataset, diagnostic_product=self.diagnostic_product)
-
-    def _construct_description(self, plot_type: str = "Gregory plot", ref_label: str = None) -> str:
+    def retrieve(self, t2m: bool = True, net_toa: bool = True,
+                 t2m_name: str = '2t', net_toa_name: str = 'tnlwrf+tnswrf'):
         """
-        Construct a descriptive string for the output files.
+        Retrieve the necessary data for the Gregory Plot.
 
         Args:
-            plot_type (str): Type of plot (e.g., "Gregory plot").
-            ref_label (str, optional): Label for the reference data.
-
-        Returns:
-            str: A description of the figure or NetCDF dataset.
+            t2m (bool): Whether to retrieve the 2m temperature data. Default is True.
+            net_toa (bool): Whether to retrieve the net TOA radiation data. Default is True.
+            t2m_name (str): The name of the 2m temperature data.
+            net_toa_name (str): The name of the net TOA radiation data.
         """
-        description = f"{plot_type}"
+        data, self.reader, self.catalog = super()._retrieve(catalog=self.catalog, model=self.model,
+                                                            exp=self.exp, source=self.source,
+                                                            regrid=self.regrid, startdate=self.startdate,
+                                                            enddate=self.enddate)
 
-        # Add model and experiment details
-        models_info = ' '.join(f"{model} {exp}" for model, exp in zip(self.models, self.exps))
-        description += f" {models_info}"
+        if t2m:
+            self.t2m = data[t2m_name]
+        if net_toa:
+            self.net_toa = eval_formula(mystring=net_toa_name, xdataset=data)
 
-        # Add reference data information if available
-        # TODO: Make the reference data source more generic
-        if self.ref:
-            description += (
-                f" with reference data ERA5 for 2m temperature from {self.ts_std_start} to {self.ts_std_end}"
-                f" and CERES for net radiation at TOA from {self.toa_std_start} to {self.toa_std_end}."
-            )
-            if ref_label:
-                description += f" with {ref_label} as reference."
-
-        return description
-
-    def _get_output_saver(self, catalog=None, model=None, exp=None):
+    def compute_t2m(self, freq: list = ['monthly', 'annual'], std: bool = False,
+                    var: str = '2t', units: str = 'degC', exclude_incomplete=True):
         """
-        Create and return an OutputSaver instance.
+        Compute the 2m temperature data.
 
         Args:
-            catalog (str): Catalog to use.
-            model (str): Model identifier.
-            exp (str): Experiment identifier.
-
-        Returns:
-            OutputSaver: An instance of the OutputSaver class.
+            freq (list): The frequency of the data to be computed. Default is ['monthly', 'annual'].
+            std (bool): Whether to compute the standard deviation. Default is False.
+            units (str): The units of the data. Default is 'degC'.
+            exclude_incomplete (bool): Whether to exclude incomplete timespans. Default is True.
         """
-        return OutputSaver(diagnostic=self.diagnostic, catalog=catalog, model=model, exp=exp,
-                           loglevel=self.loglevel, default_path=self.outdir, rebuild=self.rebuild,
-                           filename_keys=self.filename_keys)
+        t2m = self.reader.fldmean(self.t2m)
+        if units:
+            t2m = convert_data_units(data=t2m, var=var, units=units, loglevel=self.loglevel)
 
-    def _save_frequency_data(self, output_saver, frequency, data_ts, data_toa, **common_save_args):
-        """Helper function to save data for a specific frequency.
+        if 'monthly' in freq:
+            self.t2m_monthly = self.reader.timmean(t2m, freq='MS', exclude_incomplete=exclude_incomplete)
+        if 'annual' in freq:
+            self.t2m_annual = self.reader.timmean(t2m, freq='YS', exclude_incomplete=exclude_incomplete)
+            if std:
+                self.t2m_std = self.t2m_annual.std()
+
+    def compute_net_toa(self, freq: list = ['monthly', 'annual'], std: bool = False,
+                        exclude_incomplete=True):
+        """
+        Compute the net TOA radiation data.
 
         Args:
-            output_saver (OutputSaver): OutputSaver instance.
-            frequency (str): Frequency of the data (e.g., 'monthly', 'annual').
-            data_ts (xarray.DataArray): 2m temperature data.
-            data_toa (xarray.DataArray): Net radiation at TOA data.
-            common_save_args (dict): Common arguments for saving the data.
+            freq (list): The frequency of the data to be computed. Default is ['monthly', 'annual'].
+            std (bool): Whether to compute the standard deviation. Default is False.
+            exclude_incomplete (bool): Whether to exclude incomplete timespans. Default is True.
         """
-        output_saver.save_netcdf(data_ts, frequency=frequency, mode='w', **common_save_args)
-        output_saver.save_netcdf(data_toa, frequency=frequency, mode='a', **common_save_args)
+        net_toa = self.reader.fldmean(self.net_toa)
 
-    def _catalogs(self, catalogs=None):
+        if 'monthly' in freq:
+            self.net_toa_monthly = self.reader.timmean(net_toa, freq='MS', exclude_incomplete=exclude_incomplete)
+        if 'annual' in freq:
+            self.net_toa_annual = self.reader.timmean(net_toa, freq='YS', exclude_incomplete=exclude_incomplete)
+            if std:
+                self.net_toa_std = self.net_toa_annual.std()
+
+    def save_netcdf(self, freq: list = ['monthly', 'annual'], std: bool = False,
+                    t2m: bool = True, net_toa: bool = True,
+                    outputdir: str = './', rebuild: bool = True):
         """
-        Fill in the missing catalogs. If catalogs is None, creates a list of None
-        with the same length as models, exps and sources.
+        Save the computed data to a netcdf file.
 
         Args:
-            catalogs (list): List of catalogs to search for the data.
+            freq (list): The frequency of the data to be saved. Default is ['monthly', 'annual'].
+            std (bool): Whether to save the standard deviation. Default is False.
+            t2m (bool): Whether to save the 2m temperature data. Default is True.
+            net_toa (bool): Whether to save the net TOA radiation data. Default is True.
+            outputdir (str): The output directory to save the netcdf file. Default is './'.
+            rebuild (bool): Whether to rebuild the netcdf file. Default is True.
         """
-        if catalogs is None:
-            self.catalogs = [None] * len(self.models)
-        else:
-            self.catalogs = catalogs
+        diagnostic = 'gregory'
 
-    def cleanup(self):
-        """Clean up"""
-        self.logger.debug("Cleaning up")
-        gc.collect()
-        self.logger.debug("Cleaned up")
+        if t2m:
+            if std:
+                diagnostic_product = '2t.annual.std'
+                super().save_netcdf(data=self.t2m_std, diagnostic=diagnostic,
+                                    diagnostic_product=diagnostic_product,
+                                    default_path=outputdir, rebuild=rebuild)
+            if 'monthly' in freq:
+                diagnostic_product = '2t.monthly'
+                super().save_netcdf(data=self.t2m_monthly, diagnostic=diagnostic,
+                                    diagnostic_product=diagnostic_product,
+                                    default_path=outputdir, rebuild=rebuild)
+            if 'annual' in freq:
+                diagnostic_product = '2t.annual'
+                super().save_netcdf(data=self.t2m_annual, diagnostic=diagnostic,
+                                    diagnostic_product=diagnostic_product,
+                                    default_path=outputdir, rebuild=rebuild)
+        if net_toa:
+            if std:
+                diagnostic_product = 'net_toa.annual.std'
+                super().save_netcdf(data=self.net_toa_std, diagnostic=diagnostic,
+                                    diagnostic_product=diagnostic_product,
+                                    default_path=outputdir, rebuild=rebuild)
+            if 'monthly' in freq:
+                diagnostic_product = 'net_toa.monthly'
+                super().save_netcdf(data=self.net_toa_monthly, diagnostic=diagnostic,
+                                    diagnostic_product=diagnostic_product,
+                                    default_path=outputdir, rebuild=rebuild)
+            if 'annual' in freq:
+                diagnostic_product = 'net_toa.annual'
+                super().save_netcdf(data=self.net_toa_annual, diagnostic=diagnostic,
+                                    diagnostic_product=diagnostic_product,
+                                    default_path=outputdir, rebuild=rebuild)

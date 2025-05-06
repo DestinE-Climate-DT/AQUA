@@ -1,11 +1,26 @@
+# Template according to #1613
 # The first model in this block can be overridden
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
-models:
+datasets:
   - catalog: null
     model: null
     exp: null
     source: 'lra-r100-monthly'
+    regrid: null
+  # Possible second/third/fourth datasets here, no present by default
+  # - catalog: 'obs'
+  #   model: 'ERA5'
+  #   exp: 'era5'
+  #   source: 'monthly'
+  #   regrid: r100
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: null
 
 output:
   outputdir: "./"
@@ -14,59 +29,47 @@ output:
   save_png: true
   dpi: 300
 
-# This is the list of variables that will be plotted as timeseries
-timeseries: ['2t', 'ie', 'msl',
-             'tcc', 'lcc', 'mcc', 'hcc',
-             'slhtf', #Mean surface latent heat flux
-             'ishf', #Mean surface sensible heat flux
-             'sdswrf', #Mean surface downward short-wave radiation flux
-             'sdlwrf', #Mean surface downward long-wave radiation flux
-             'snswrf', #Mean surface net short-wave radiation flux
-             'snlwrf', #Mean surface net long-wave radiation flux
-             'tnlwrf', #Mean top net long-wave radiation flux
-             'tnswrf' #Mean top net short-wave radiation flux
-             ]
-timeseries_formulae: ['tnlwrf+tnswrf', '86400*tprate']
-
-gregory:
-  ts: '2t'
-  toa: ['tnlwrf', 'tnswrf']
-  monthly: True
-  annual: True
-
-timeseries_plot_params:
-# These are options that specify how the data is plotted
-# Default values are used if the variable that is being
-# plotted is not specified here.
-# If you need specific options for a variable, you can
-# add it here.
-  default:
-    plot_ref: True
-    monthly: True
-    annual: True
-    # List of regions to plot.
-    # The regions are defined in config/diagnostics/timeseries/interface/regions.yaml
-    # and installed with the aqua install command.
-    # Global timeseries are always plotted.
-    # regions: ['nh', 'sh', 'tropics', 'europe']
-    regrid: null
-    std_startdate: '1990-01-01'
-    std_enddate: '2020-12-31'
-  tnlwrf+tnswrf:
-    plot_ref: True
-    monthly: True
-    annual: True
-    regrid: null
-    longname: "Net top radiation" # This is to override title and ylabel
-    std_startdate: '1990-01-01'
-    std_enddate: '2020-12-31'
-  86400*tprate:
-    plot_ref: True
-    monthly: True
-    annual: True
-    regrid: null
-    longname: "Precipitation" # This is to override title and ylabel
-    regions: ['tropics', 'europe']
-    units: "mm/day" # This is to override units
-    std_startdate: '1990-01-01'
-    std_enddate: '2020-12-31'
+diagnostics:
+  timeseries:
+    run: true
+    variables: ['2t', 'ie', 'msl', 'tprate',
+                'tcc', 'lcc', 'mcc', 'hcc',
+                'slhtf', #Mean surface latent heat flux
+                'ishf', #Mean surface sensible heat flux
+                'sdswrf', #Mean surface downward short-wave radiation flux
+                'sdlwrf', #Mean surface downward long-wave radiation flux
+                'snswrf', #Mean surface net short-wave radiation flux
+                'snlwrf', #Mean surface net long-wave radiation flux
+                'tnlwrf', #Mean top net long-wave radiation flux
+                'tnswrf' #Mean top net short-wave radiation flux
+                ]
+    formulae: ['tnlwrf+tnswrf']
+    params:
+      default:
+        hourly: False
+        daily: False
+        monthly: True
+        annual: True
+        std_startdate: '19900101'
+        std_enddate: '20201231'
+      tnlwrf+tnswrf:
+        standard_name: "net_top_radiation"
+        long_name: "Net top radiation"
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
+        regions: ['tropics', 'europe']
+  
+  gregory:
+    run: true
+    t2m: '2t'
+    net_toa_name: 'tnlwrf+tnswrf'
+    monthly: true
+    annual: true
+    std: true
+    std_startdate: '19900101'
+    std_enddate: '20201231'
+    # Gregory needs 2 datasets and do not care about the references block above
+    t2m_ref: {'catalog': 'obs', 'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}
+    net_toa_ref: {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}

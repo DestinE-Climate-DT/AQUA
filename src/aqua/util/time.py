@@ -3,6 +3,7 @@ Module including time utilities for AQUA
 """
 
 import math
+import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
@@ -21,6 +22,7 @@ def frequency_string_to_pandas(freq):
         'daily': 'D',
         'weekly': 'W',
         'monthly': 'MS', #this implies start of the month
+        'annual': 'YS', #this implies start of the year
         'yearly': 'YS', #this implies start of the year
         'hour': 'h',
         'day': 'D',
@@ -161,24 +163,29 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     return boolean_mask
 
 
-def time_to_string(time=None):
+def time_to_string(time=None, format='%Y-%m-%d'):
     """Convert a time object to a string in the format YYYY-MM-DD
 
     Args:
-        time: a time object, either a string or a datetime64 object
+        time: a time object, either a string, a datetime64 object or a pandas timestamp
+        format: the format of the output string (YYYY-MM-DD by default, YYYYMMDD tested)
 
     Returns:
-        A string in the format YYYY-MM-DD
+        A string in the format defined by the format argument
 
     Raises:
-        ValueError if time is None
+        ValueError if time is None or if time is not a supported type
     """
     if time is None:
         raise ValueError('time_to_string() requires a time argument')
+    elif isinstance(time, str):
+        # if time is a string, we assume it is already in the right format
+        return time
+    elif isinstance(time, pd.Timestamp):
+        # if time is a pandas timestamp, we convert it to a string
+        return time.strftime(format)
+    elif isinstance(time, np.datetime64):
+        # if time is a numpy datetime64 object, we convert it to a string
+        return pd.to_datetime(time).strftime(format)
     else:
-        try:
-            time_str = time.astype('datetime64[s]').astype('O')
-            time_str = time_str.strftime('%Y-%m-%d')
-        except AttributeError:
-            time_str = time
-        return time_str
+        raise ValueError('time_to_string() requires a time argument of type str, pd.Timestamp or np.datetime64')

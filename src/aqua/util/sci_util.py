@@ -70,11 +70,7 @@ def area_selection(data=None, lat=None, lon=None,
         else:
             lon_condition = (data.lon > lon[0]) & (data.lon < lon[1])
 
-    data = data.where(lat_condition & lon_condition)
-
-    if drop:
-        data = data.dropna(dim='lon', how='all')
-        data = data.dropna(dim='lat', how='all')
+    data = data.where(lat_condition & lon_condition, drop=drop)
 
     data = log_history(data, f"Area selection: lat={lat}, lon={lon}")
 

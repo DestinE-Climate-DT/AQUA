@@ -1,7 +1,7 @@
 experiments:
 
 diagnostics:
-    Gregory Plot: [global_time_series_gregory, timeseries.gregory_plot]
+    Gregory Plot: [global_time_series_gregory, timeseries.gregory]
     Time series: [global_time_series_timeseries, global_time_series_IFS, timeseries.timeseries]
     Seasonal cycle: [global_time_series_seasonalcycle, timeseries.seasonalcycle]
     Performance indices: [PI4, global_mean_]

@@ -24,10 +24,6 @@ The exact list of diagnostics to run and technical details of the analysis
 (such as the number of workers/thread/memory to use for the dask cluster) 
 are specified in the configuration file ``config.aqua-analysis.yaml`` in the same folder.
 
-.. warning::
-
-    A bash script called ``aqua-analysis.sh`` is also available in the same folder but it is deprecated and will be removed in future releases.
-
 Additional options
 ------------------
 

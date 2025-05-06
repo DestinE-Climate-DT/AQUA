@@ -1,66 +1,54 @@
 import os
 import pytest
 import xarray as xr
-from aqua.diagnostics.timeseries import SeasonalCycle
+from aqua.diagnostics.timeseries import SeasonalCycles, PlotSeasonalCycles
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
 loglevel = 'DEBUG'
 
-catalogs = ['ci']
-models = ['IFS']
-exps = ['test-tco79']
-sources = ['teleconnections']
-var = 'msl'
-lon_limits = [-100, 100]
-lat_limits = [-30, 30]
-plot_ref_kw = {'catalog': 'ci', 'model': 'IFS', 'exp': 'test-tco79', 'source': 'teleconnections'}
-
 
 @pytest.mark.diagnostics
-def test_class_seasonalcycle():
-    """
-    Test that the timeseries class works
-    """
+class TestSeasonalCycles:
+    """Test the SeasonalCycles class."""
 
-    sc = SeasonalCycle(var=var, models=models, exps=exps, sources=sources, catalogs=catalogs,
-                       loglevel=loglevel, plot_ref_kw=plot_ref_kw,
-                       lon_limits=lon_limits, lat_limits=lat_limits)
+    def setup_method(self):
+        """Initialize variables before each test."""
+        self.catalog = 'ci'
+        self.model = 'ERA5'
+        self.exp = 'era5-hpz3'
+        self.source = 'monthly'
+        self.var = 'tcc'
+        self.region = 'tropics'
+        self.regrid = 'r100'
+        self.std_startdate = '1990-01-01'
+        self.std_enddate = '1991-12-31'
 
-    assert sc.var == var
+    def test_no_region(self, tmp_path):
+        sc = SeasonalCycles(catalog=self.catalog, model=self.model, exp=self.exp,
+                            source=self.source, regrid=self.regrid,
+                            std_startdate=self.std_startdate, std_enddate=self.std_enddate,
+                            loglevel=loglevel)
+        
+        assert sc.lon_limits is None
+        assert sc.lat_limits is None
 
-    sc.retrieve_data()
+        sc.run(var=self.var, outputdir=tmp_path, std=True)
 
-    assert sc.data_annual == []
-    assert sc.data_mon is not None
+        assert isinstance(sc.data, xr.DataArray)
+        assert sc.monthly.values[0] == pytest.approx(63.22174285385192, rel=approx_rel)
 
-    sc.retrieve_ref()
+        file = os.path.join(tmp_path, 'netcdf', 'seasonalcycles.tcc.monthly.ci.ERA5.era5-hpz3.nc')
+        assert os.path.exists(file)
 
-    assert sc.ref_ann is None
-    assert sc.ref_mon is not None
+        assert sc.std_monthly.values[0] == pytest.approx(0.23421051986458963, rel=approx_rel)
 
-    sc.seasonal_cycle()
+        file = os.path.join(tmp_path, 'netcdf', 'seasonalcycles.tcc.monthly.std.ci.ERA5.era5-hpz3.nc')
+        assert os.path.exists(file)
 
-    assert sc.cycle is not None
+        plt = PlotSeasonalCycles(monthly_data = sc.monthly, ref_monthly_data = sc.monthly,
+                                 std_monthly_data = sc.std_monthly, loglevel=loglevel)
+        plt.run(var=self.var, outputdir=tmp_path)
 
-    sc.plot()
-
-    # We want to assert the plot is created
-    pdf_file = './pdf/timeseries.seasonalcycle.ci.IFS.test-tco79.msl.IFS.test-tco79.lat_limits__lat-30_30.lon_limits__lon-100_100.pdf' # noqa
-    png_file = './png/timeseries.seasonalcycle.ci.IFS.test-tco79.msl.IFS.test-tco79.lat_limits__lat-30_30.lon_limits__lon-100_100.png'
-
-    assert os.path.exists(pdf_file) is True
-    assert os.path.exists(png_file) is True
-
-    sc.save_netcdf()
-
-    # We want to assert the netcdf file is created
-    assert os.path.exists('./netcdf/timeseries.seasonalcycle.ci.IFS.test-tco79.msl.frequency_monthly.lat_limits__lat-30_30.lon_limits__lon-100_100.nc') is True
-
-    # TODO: Data and reference are the same so the difference should be zero.
-
-    sc.cleanup()
-
-    # data.cycle have been deleted
-    with pytest.raises(AttributeError):
-        assert sc.cycle is None
+        file = os.path.join(tmp_path, 'png', 'timeseries.seasonalcycle.ci.ERA5.era5-hpz3.tcc.png')
+        assert os.path.exists(file)

@@ -15,7 +15,7 @@ permissions:
 defaults:
   run:
     # NOTE: We must take care with the shell value here. We have steps
-    #       with mutiline YAML strings. 
+    #       with mutiline YAML strings.
     #       These get converted into shell scripts.
     #       If execute as ``bash -l fail_first_command.sh``
     #       then it would fail the first command but run the second
@@ -29,9 +29,9 @@ jobs:
   aqua_test:
     # NOTE: this option can be uncommented to run the job only when
     #       a pull request contains a label with the name "Run Tests" or "Ready to Merge" or if run by Dependabot.
-    if: > 
-      contains(github.event.pull_request.labels.*.name, 'run tests') || 
-      contains(github.event.pull_request.labels.*.name, 'ready to merge') || 
+    if: >
+      contains(github.event.pull_request.labels.*.name, 'run tests') ||
+      contains(github.event.pull_request.labels.*.name, 'ready to merge') ||
       github.actor == 'dependabot[bot]' ||
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule'
@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
-          path: Climate-DT-catalog 
+          path: Climate-DT-catalog
       - name: Clone GitLab data-portfolio repository
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio
@@ -96,7 +96,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/environment.yml 
+          environment-file: AQUA/environment.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -160,6 +160,7 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
+          network_filter: "AQUA/"
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}

@@ -30,21 +30,22 @@ It is installed automatically when installing the AQUA environment.
 ## Data requirements
 
 The diagnostic requires the variables that the user wants to analyse.
-For the Gregory-like plot, the following variables are required:
+For the Gregory-like plot, the following variables (or alternatives to be converted) are required:
 
-- ``2t`` (2 metre temperature, GRIB paramid 167)
-- ``mtnlwrf`` (Mean top net long-wave radiation flux, GRIB paramid 235040)
-- ``mtnswrf`` (Mean top net short-wave radiation flux, GRIB paramid 235039)
+- ``2t`` (2 metre temperature)
+- ``tnlwrf`` (Top net long-wave radiation flux)
+- ``tnswrf`` (Top net short-wave radiation flux)
 
 ## Examples
 
 The **AQUA/notebook/diagnostics/timeseries** folder contains the following notebooks:
 
 - **timeseries.ipynb**:
-  This notebook provides a brief overview of the time series plotting as well
-  as a Gregory-like analysis of radiation imbalance to diagnose model drift.
+  This notebook provides a brief overview of the time series plotting.
 - **seasonalcycles.ipynb**:
   This notebook provides a brief overview of the seasonal cycle plotting.
+- **gregory.ipynb**:
+  This notebook provides a brief overview of the Gregory-like analysis of radiation imbalance to diagnose model drift.
 
 ## Contributing
 

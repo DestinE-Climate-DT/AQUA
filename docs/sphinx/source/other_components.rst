@@ -237,9 +237,6 @@ in a Jupyter Notebook, you can start a dask cluster to parallelize your computat
 
 The above code will start a dask cluster with 40 workers and one thread per worker.
 
-AQUA also provides a simple way to move the computation done by dask to a compute node on your HPC system.
-The description of this feature is provided in the section :ref:`slurm`.
-
 .. _data-provenance:
 
 Data provenance

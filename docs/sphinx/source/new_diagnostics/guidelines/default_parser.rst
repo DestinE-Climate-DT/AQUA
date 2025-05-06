@@ -3,7 +3,7 @@
 Default parser
 ==============
 
-All the state of the art diagnostics (See :ref:`diagnostics` for a description) needs to have a
+All the state of the art diagnostics (See :ref:`stateoftheart_diagnostics` for a description) needs to have a
 command line interface (CLI) to be able to run them together with the other diagnostics in the AQUA framework.
 
 In order to facilitate the usage of different diagnostics, a set of common arguments that the CLI should be able

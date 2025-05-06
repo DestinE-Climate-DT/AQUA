@@ -261,7 +261,13 @@ class TestAquaConsole():
         # run the LRA and verify that at least one file exist
         run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild'])
         path = os.path.join(os.path.join(mydir, 'lra_test'),
-                            "ci/IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_202002.nc")
+                            "ci/IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_mean_202002.nc")
+        assert os.path.isfile(path)
+
+        # run the LRA with a different stat and verify that at least one file exist
+        run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild', '--stat', 'min'])
+        path = os.path.join(os.path.join(mydir, 'lra_test'),
+                            "ci/IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_min_202002.nc")
         assert os.path.isfile(path)
         
         # remove aqua

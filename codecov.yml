@@ -15,5 +15,5 @@ comment:
   layout: "diff, flags"
   require_changes: true
 
-#fixes:
-#  - "/__w/AQUA/AQUA/AQUA/src/::src/"
+fixes:
+  - "AQUA/::"

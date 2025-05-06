@@ -52,6 +52,8 @@ def lra_parser(parser=None):
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
+    parser.add_argument('--stat', type=str,
+                        help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std']. Default is 'mean'")
     # parser.add_argument('-r', '--realization', type=str,
     #                    help="realization to be processed. Use with coherence with --var")
 
@@ -109,6 +111,7 @@ def lra_execute(args):
     definitive = get_arg(args, 'definitive', False)
     monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
+    stat = get_arg(args, 'stat', 'mean')
     rebuild = get_arg(args, 'rebuild', False)
     only_catalog = get_arg(args, 'only_catalog', False)
     if only_catalog:
@@ -120,14 +123,14 @@ def lra_execute(args):
     lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-            region=region, level=level,
+            region=region, stat=stat, level=level,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 
 def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
-            region=None, level=None,
+            region=None, stat='mean', level=None,
             definitive=False, overwrite=False,
             rebuild=False, monitoring=False,
             default_workers=1, do_zarr=False, verify_zarr=False,
@@ -148,6 +151,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
         tmpdir: temporary directory
         loglevel: log level
         region: region to be processed
+        stat: statistic to be computed
         level: level to be processed (if not, all levels will be processed)
         definitive: bool flag to create definitive files
         overwrite: bool flag to overwrite existing files
@@ -199,7 +203,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                                            frequency=frequency, fix=fix,
                                            outdir=outdir, tmpdir=tmpdir,
                                            nproc=workers, loglevel=loglevel,
-                                           region=region, level=level,
+                                           region=region, stat=stat, level=level,
                                            definitive=definitive, overwrite=overwrite,
                                            rebuild=rebuild,
                                            performance_reporting=monitoring,

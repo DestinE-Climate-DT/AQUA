@@ -1,638 +1,174 @@
-import gc  # Garbage collector
-import os
-
+"""Timeseries class for retrieve and netcdf saving of a single experiment"""
 import xarray as xr
-from aqua import Reader
-from aqua.logger import log_configure
-from aqua.exceptions import NoObservationError, NoDataError
-from aqua.util import ConfigPath, OutputSaver
-from aqua.util import eval_formula, time_to_string, load_yaml
-from aqua.graphics import plot_timeseries
-
-from .reference_data import get_reference_timeseries
-from .util import loop_seasonalcycle
+import pandas as pd
+from aqua.util import to_list, frequency_string_to_pandas
+from .util import loop_seasonalcycle, center_timestamp
+from .base import BaseMixin
 
 xr.set_options(keep_attrs=True)
 
 
-class Timeseries():
-    """
-    Plot a time series of the global mean value of a given variable.
-    By default monthly and annual time series are plotted,
-    the annual mean is plotted as dashed line and reference data is included,
-    ERA5 by default, with the option to plot the standard deviation as uncertainty quantification.
-    A model, exp, source string or list of strings can be passed.
-    If a list is passed, the time series will be plotted for each combination
-    of model, exp and source.
-    """
-    def __init__(self, var=None, formula=False,
-                 catalogs=None,
-                 models=None, exps=None, sources=None,
-                 monthly=True, annual=True,
-                 regrid=None, plot_ref=True,
-                 plot_ref_kw={'catalog': 'obs',
-                              'model': 'ERA5',
-                              'exp': 'era5',
-                              'source': 'monthly'},
-                 startdate=None, enddate=None,
-                 monthly_std=True, annual_std=True,
-                 std_startdate=None, std_enddate=None,
-                 plot_kw={'ylim': {}}, longname=None,
-                 units=None, extend=True,
-                 region=None,
-                 lon_limits=None, lat_limits=None,
-                 save=True,
-                 outdir='./',
-                 loglevel='WARNING',
-                 rebuild=None, filename_keys=None,
-                 save_pdf=True, save_png=True, dpi=300):
+class Timeseries(BaseMixin):
+    """Timeseries class for retrieve and netcdf saving of a single experiment"""
+
+    def __init__(self, catalog: str = None, model: str = None,
+                 exp: str = None, source: str = None,
+                 regrid: str = None,
+                 startdate: str = None, enddate: str = None,
+                 std_startdate: str = None, std_enddate: str = None,
+                 region: str = None, lon_limits: list = None, lat_limits: list = None,
+                 loglevel: str = 'WARNING'):
         """
-        Args:
-            var (str): Variable name.
-            formula (bool): (Optional) If True, try to derive the variable from other variables.
-                            Default is False.
-            catalogs (list or str): Catalog IDs.
-            models (list or str): Model IDs.
-            exps (list or str): Experiment IDs.
-            sources (list or str): Source IDs.
-            regrid (str): Optional regrid resolution. Default is None.
-            plot_ref (bool): Include reference data. Default is True.
-            plot_ref_kw (dict): Keyword arguments passed to `get_reference_timeseries`.
-            startdate (str): Start date. Default is None.
-            enddate (str): End date. Default is None.
-            annual (bool): Plot annual mean. Default is True.
-            monthly_std (bool): Plot monthly standard deviation. Default is True.
-            annual_std (bool): Plot annual standard deviation. Default is True.
-            std_startdate (str): Start date for standard deviation. Default is "1991-01-01".
-            std_enddate (str): End date for standard deviation. Default is "2020-12-31".
-            plot_kw (dict): Additional keyword arguments passed to the plotting function.
-            longname (str): Long name of the variable. Default is None and logname attribute is used.
-            units (str): Units of the variable. Default is None and units attribute is used.
-            extend (bool): Extend the reference range. Default is True.
-            lon_limits (list): Longitude limits of the area to evaluate. Default is None.
-            lat_limits (list): Latitude limits of the area to evaluate. Default is None.
-            save (bool): Save the figure. Default is True.
-            outdir (str): Output directory. Default is "./".
-            loglevel (str): Log level. Default is "WARNING".
-            rebuild (bool, optional): If True, overwrite the existing files. If False, do not overwrite. Default is True.
-            filename_keys (list, optional): List of keys to keep in the filename.
-                                            Default is None, which includes all keys (see OutputNamer class).
-            save_pdf (bool): If True, save the figure as a PDF. Default is True.
-            save_png (bool): If True, save the figure as a PNG. Default is True.
-            dpi (int, optional): Dots per inch (DPI) for saving figures. Default is 300.
-        """
-        self.loglevel = loglevel
-        self.logger = log_configure(log_level=self.loglevel, log_name='Timeseries')
-
-        self.var = var
-        self.formula = formula
-
-        self.models = models
-        self.exps = exps
-        self.sources = sources
-        self._catalogs(catalogs=catalogs)  # It defines self.catalogs
-
-        if self.models is None or self.exps is None or self.sources is None:
-            raise NoDataError("No models, exps or sources provided")
-
-        if isinstance(self.catalogs, str):
-            self.catalogs = [self.catalogs]
-        if isinstance(self.models, str):
-            self.models = [self.models]
-        if isinstance(self.exps, str):
-            self.exps = [self.exps]
-        if isinstance(self.sources, str):
-            self.sources = [self.sources]
-
-        self.monthly = monthly
-        self.annual = annual
-        self.regrid = regrid
-
-        self.plot_ref = plot_ref
-        self.ref_mon = None
-        self.ref_mon_std = None
-        self.ref_ann = None
-        self.ref_ann_std = None
-        self.plot_ref_kw = self._plot_ref_kw(plot_ref_kw)
-        self.monthly_std = monthly_std if monthly else False
-        self.annual_std = annual_std if annual else False
-        self.std_startdate = std_startdate
-        self.std_enddate = std_enddate
-        self.extend = extend
-        self.extending_ref_range = False
-
-        self.startdate = startdate
-        self.enddate = enddate
-
-        self.plot_kw = plot_kw
-        self.longname = longname
-        self.units = units
-        self.lon_limits = lon_limits
-        self.lat_limits = lat_limits
-        self.region = region
-        if self.region is not None:
-            region_file = ConfigPath().get_config_dir()
-            region_file = os.path.join(region_file, 'diagnostics',
-                                       'timeseries', 'interface', 'regions.yaml')
-            if os.path.exists(region_file):
-                region_file = load_yaml(region_file)
-                if self.region in region_file['regions']:
-                    self.lon_limits = region_file['regions'][self.region].get('lon_limits', None)
-                    self.lat_limits = region_file['regions'][self.region].get('lat_limits', None)
-                    self.region_longname = region_file['regions'][self.region].get('longname', None)
-                    self.logger.info(f"Region {self.region_longname} found, selecting lon: {self.lon_limits}, lat: {self.lat_limits}") # noqa
-                else:
-                    self.logger.error(f"Available regions: {list(region_file['regions'].keys())}")
-                    raise KeyError(f"Region {self.region} not found in {region_file}")
-            else:
-                raise FileNotFoundError(f"Region file not found: {region_file}")
-
-        self.save = save
-        if self.save is False:
-            self.logger.info("Figures will not be saved")
-        self.outdir = outdir
-
-        self.diagnostic_product = 'timeseries'
-        self.diagnostic = 'timeseries'
-        self.rebuild = rebuild
-        self.filename_keys = filename_keys
-        self.save_pdf = save_pdf
-        self.save_png = save_png
-        self.dpi = dpi
-
-    def run(self):
-        """Retrieve ref, retrieve data and plot"""
-        self.retrieve_data()
-        self.retrieve_ref(extend=self.extend)
-        self.plot()
-        if self.save:
-            self.save_netcdf()
-        self.cleanup()
-
-    def retrieve_ref(self, extend=True):
-        """Retrieve reference data
-        If the reference data don't cover the same range as the model data,
-        a seasonal cycle or a band of the reference data is added to the plot.
+        Initialize the Timeseries class.
 
         Args:
-            extend (bool): Extend the reference range. Default is True.
+            catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
+            model (str): The model to be used.
+            exp (str): The experiment to be used.
+            source (str): The source to be used.
+            regrid (str): The target grid to be used for regridding. If None, no regridding will be done.
+            startdate (str): The start date of the data to be retrieved.
+                             If None, all available data will be retrieved.
+            enddate (str): The end date of the data to be retrieved.
+                           If None, all available data will be retrieved.
+            std_startdate (str): The start date of the standard period.
+            std_enddate (str): The end date of the standard period.
+            region (str): The region to select. This will define the lon and lat limits.
+            lon_limits (list): The longitude limits to be used. Overriden by region.
+            lat_limits (list): The latitude limits to be used. Overriden by region.
+            loglevel (str): The log level to be used. Default is 'WARNING'.
         """
-        if self.plot_ref:
-            self.logger.debug('Retrieving reference data')
-            try:
-                self.ref_mon, self.ref_mon_std, self.ref_ann, self.ref_ann_std =\
-                    get_reference_timeseries(var=self.var,
-                                             formula=self.formula,
-                                             **self.plot_ref_kw,  # catalog,model,exp,source
-                                             startdate=self.startdate,
-                                             enddate=self.enddate,
-                                             std_startdate=self.std_startdate,
-                                             std_enddate=self.std_enddate,
-                                             regrid=self.regrid,
-                                             monthly=self.monthly,
-                                             annual=self.annual,
-                                             monthly_std=self.monthly_std,
-                                             annual_std=self.annual_std,
-                                             loglevel=self.loglevel,
-                                             lon_limits=self.lon_limits,
-                                             lat_limits=self.lat_limits)
-                if extend:  # We introduce the possibility to avoid this for seasonal cycle
-                    self.check_ref_range()
-                if self.longname is not None:
-                    if self.ref_mon is not None:
-                        self.ref_mon.attrs['long_name'] = self.longname
-                    if self.ref_ann is not None:
-                        self.ref_ann.attrs['long_name'] = self.longname
-                if self.units is not None:
-                    if self.ref_mon is not None:
-                        self.ref_mon.attrs['units'] = self.units
-                    if self.ref_ann is not None:
-                        self.ref_ann.attrs['units'] = self.units
-            except NoObservationError:
-                self.plot_ref = False
-                self.logger.warning('Reference data not found, skipping reference data')
-        else:
-            self.logger.debug('Reference data not requested')
+        super().__init__(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
+                         startdate=startdate, enddate=enddate,
+                         std_startdate=std_startdate, std_enddate=std_enddate,
+                         region=region, lon_limits=lon_limits,
+                         lat_limits=lat_limits, loglevel=loglevel)
 
-    def retrieve_data(self):
+    def run(self, var: str, formula: bool = False, long_name: str = None,
+            units: str = None, standard_name: str = None, std: bool = False,
+            freq: list = ['monthly', 'annual'], extend: bool = True,
+            exclude_incomplete: bool = True, center_time: bool = True,
+            box_brd: bool = True, outputdir: str = './', rebuild: bool = True):
         """
-        Retrieve data from the list and store them in a list
-        of xarray.DataArray
+        Run all the steps necessary for the computation of the Timeseries.
+        Save the results to netcdf files.
+        Can evaluate different frequencies.
+
+        Args:
+            var (str): The variable to be retrieved.
+            formula (bool): If True, the variable is a formula.
+            long_name (str): The long name of the variable, if different from the variable name.
+            units (str): The units of the variable, if different from the original units.
+            standard_name (str): The standard name of the variable, if different from the variable name.
+            std (bool): If True, compute the standard deviation. Default is False.
+            freq (list): The frequencies to be used for the computation. Available options are 'hourly', 'daily',
+                         'monthly' and 'annual'. Default is ['monthly', 'annual'].
+            extend (bool): If True, extend the data if needed.
+            exclude_incomplete (bool): If True, exclude incomplete periods.
+            center_time (bool): If True, the time will be centered.
+            box_brd (bool): choose if coordinates are comprised or not in area selection.
+            outputdir (str): The directory to save the data.
+            rebuild (bool): If True, rebuild the data from the original files.
         """
-        self.logger.debug('Retrieving data')
-        self.data_mon = []
-        self.data_annual = []
+        self.logger.info('Running Timeseries for %s', var)
+        self.retrieve(var=var, formula=formula, long_name=long_name, units=units, standard_name=standard_name)
+        freq = to_list(freq)
 
-        if self.startdate is None:
-            startdate = None
-        if self.enddate is None:
-            enddate = None
+        for f in freq:
+            self.logger.info('Computing %s mean', f)
+            self.compute(freq=f, extend=extend, exclude_incomplete=exclude_incomplete,
+                         center_time=center_time, box_brd=box_brd)
+            if std:
+                self.compute_std(freq=f, exclude_incomplete=exclude_incomplete, center_time=center_time,
+                                 box_brd=box_brd)
+            self.save_netcdf(diagnostic='timeseries', freq=f, outputdir=outputdir, rebuild=rebuild) 
 
-        for i, model in enumerate(self.models):
-            self.logger.info(f'Retrieving data for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}')
-            try:
-                reader = Reader(catalog=self.catalogs[i], model=model,
-                                exp=self.exps[i], source=self.sources[i],
-                                startdate=self.startdate, enddate=self.enddate,
-                                regrid=self.regrid, loglevel=self.loglevel)
-                if self.formula:
-                    data = reader.retrieve()
-                    self.logger.debug(f"Evaluating formula for {self.var}")
-                    data = eval_formula(self.var, data)
-                    if data is None:
-                        self.logger.error(f"Formula evaluation failed for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}") # noqa
-                else:
-                    data = reader.retrieve(var=self.var)
-                    data = data[self.var]
-            except Exception as e:
-                self.logger.debug(f"Error while retrieving: {e}")
-                self.logger.warning(f"No data found for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}")
-
-            if self.startdate is None:
-                if startdate is None:
-                    startdate = data.time[0].values
-                else:
-                    startdate = min(startdate, data.time[0].values)
-            if self.enddate is None:
-                if enddate is None:
-                    enddate = data.time[-1].values
-                else:
-                    enddate = max(enddate, data.time[-1].values)
-
-            if self.regrid is not None:
-                self.logger.info(f"Regridding data to {self.regrid}")
-                data = reader.regrid(data)
-
-            if self.monthly:
-                if 'monthly' in self.sources[i] or 'mon' in self.sources[i]:
-                    self.logger.debug(f"No monthly resample needed for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}") # noqa
-                    data_mon = data
-                else:
-                    data_mon = reader.timmean(data, freq='MS', exclude_incomplete=True)
-                data_mon = reader.fldmean(data_mon, lon_limits=self.lon_limits, lat_limits=self.lat_limits)
-                self.logger.info("Monthly data retrieved")
-                if data_mon is not None:
-                    if self.longname is not None:
-                        data_mon.attrs['long_name'] = self.longname
-                        self.logger.debug(f"Long name updated to: {self.longname}")
-                    if self.units is not None:
-                        data_mon.attrs['units'] = self.units
-                        self.logger.debug(f"Units updated to: {self.units}")
-                    self.data_mon.append(data_mon)
-                else:
-                    self.logger.warning(f"No monthly data found for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}") # noqa
-
-            if self.annual:
-                data_ann = reader.timmean(data, freq='YS',
-                                          exclude_incomplete=True,
-                                          center_time=True)
-                data_ann = reader.fldmean(data_ann, lon_limits=self.lon_limits, lat_limits=self.lat_limits)
-                self.logger.info("Annual data retrieved")
-                if data_ann is not None:
-                    if self.longname is not None:
-                        data_ann.attrs['long_name'] = self.longname
-                        self.logger.debug(f"Long name updated to: {self.longname}")
-                    if self.units is not None:
-                        data_ann.attrs['units'] = self.units
-                        self.logger.debug(f"Units updated to: {self.units}")
-                    self.data_annual.append(data_ann)
-                else:
-                    self.logger.warning(f"No annual data found for {self.catalogs[i]} {model} {self.exps[i]} {self.sources[i]}") # noqa
-
-            # Clean up
-            del reader
-            del data
-            gc.collect()
-
-        if self.startdate is None:
-            startdate = time_to_string(startdate)
-            self.startdate = startdate
-            self.logger.debug(f"Start date: {self.startdate}")
-        if self.enddate is None:
-            enddate = time_to_string(enddate)
-            self.enddate = enddate
-            self.logger.debug(f"End date: {self.enddate}")
-
-        if self.data_mon == [] and self.data_annual == []:
-            raise NoDataError("No data found")
-
-    def plot(self):
+    def compute(self, freq: str, extend: bool = True, exclude_incomplete: bool = True,
+                center_time: bool = True, box_brd: bool = True):
         """
-        Call an external function using the data to plot
+        Compute the mean of the data. Support for hourly, daily, monthly and annual means.
+
+        Args:
+            freq (str): The frequency to be used for the resampling.
+            exclude_incomplete (bool): If True, exclude incomplete periods.
+            center_time (bool): If True, the time will be centered.
+            box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
+                                Default is True
         """
-        self.logger.info("Plotting the timeseries")
+        if freq is None:
+            self.logger.error('Frequency not provided, cannot compute mean')
+            return
 
-        data_labels = []
-        for i, model in enumerate(self.models):
-            data_labels.append(f'{model} {self.exps[i]}')
+        freq = frequency_string_to_pandas(freq)
+        str_freq = self._str_freq(freq)
 
-        if self.plot_ref:
-            try:
-                ref_label = self.plot_ref_kw['model']
-            except KeyError:
-                ref_label = 'Reference'
-        else:
-            ref_label = None
+        self.logger.info('Computing %s mean', str_freq)
+        data = self.data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 
-        try:
-            if self.monthly:
-                title = self.data_mon[0].attrs['long_name'] + ' (' + self.data_mon[0].attrs['units'] + ') timeseries'
-            elif self.annual:
-                title = self.data_annual[0].attrs['long_name'] + ' (' + self.data_annual[0].attrs['units'] + ') timeseries'
-            else:
-                title = self.var + ' timeseries'
-        except KeyError:
-            title = f'{self.var} timeseries'
+        # Field and time average
+        data = self.reader.fldmean(data, box_brd=box_brd, lon_limits=self.lon_limits, lat_limits=self.lat_limits)
+        data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete, center_time=center_time)
+
+        if extend:
+            data = self._extend_data(data=data, freq=str_freq, center_time=center_time)
 
         if self.region is not None:
-            title += f' for {self.region_longname}'
-        elif self.lon_limits is not None or self.lat_limits is not None:
-            title += ' for region'
-            if self.lon_limits is not None:
-                title += f' lon: {self.lon_limits}'
-            if self.lat_limits is not None:
-                title += f' lat: {self.lat_limits}'
+            data.attrs['region'] = self.region
 
-        fig, _ = plot_timeseries(monthly_data=self.data_mon,
-                                 annual_data=self.data_annual,
-                                 ref_monthly_data=self.ref_mon,
-                                 ref_annual_data=self.ref_ann,
-                                 std_monthly_data=self.ref_mon_std,
-                                 std_annual_data=self.ref_ann_std,
-                                 ref_label=ref_label,
-                                 data_labels=data_labels,
-                                 return_fig=True,
-                                 title=title)
+        if str_freq == 'hourly':
+            self.hourly = data
+        elif str_freq == 'daily':
+            self.daily = data
+        elif str_freq == 'monthly':
+            self.monthly = data
+        elif str_freq == 'annual':
+            self.annual = data
 
-        if self.save:
-            self.save_image(fig, ref_label)
-
-    def save_image(self, fig, ref_label):
+    def _extend_data(self, data: xr.DataArray,
+                     freq: str = None, center_time: bool = True):
         """
-        Save the figure to image files (PDF/PNG).
+        Extend the data with a loop if needed.
+        This works only for monthly and annual frequencies.
+
         Args:
-            fig (matplotlib.figure.Figure): Figure to save.
-            ref_label (str): Label for the reference data.
+            data (xr.DataArray): The data to be extended.
+            freq (str): The frequency of the data.
+            center_time (bool): If True, the time will be centered.
         """
-        output_saver = self._get_output_saver(catalog=self.catalogs[0], model=self.models[0], exp=self.exps[0])
+        if freq == 'monthly' or freq == 'annual':
+            class_startdate = pd.Timestamp(self.startdate)
+            class_enddate = pd.Timestamp(self.enddate)
+            start_date = pd.Timestamp(self.data.time[0].values)
+            end_date = pd.Timestamp(self.data.time[-1].values)
 
-        # Get common save arguments
-        common_save_args = self._get_common_save_args()
+            # if the center_time is True, we need to center the time of the start_date and end_date
+            # to be able to compare them with the class_startdate and class_enddate
+            if center_time:
+                start_date = center_timestamp(time=start_date, freq=freq)
+                end_date = center_timestamp(time=end_date, freq=freq)
+                class_startdate = center_timestamp(time=class_startdate, freq=freq)
+                class_enddate = center_timestamp(time=class_enddate, freq=freq)
 
-        description = self._construct_description(ref_label)
-        self.logger.debug(f"Description: {description}")
-
-        metadata = {"Description": description}
-
-        if self.save_pdf:
-            output_saver.save_pdf(fig, metadata=metadata, **common_save_args)
-        if self.save_png:
-            output_saver.save_png(fig, metadata=metadata, **common_save_args)
-
-    def save_netcdf(self):
-        """
-        Save the data to a netcdf file.
-        Every model-exp-source combination is saved in a separate file.
-        Reference data is saved in a separate file.
-        Std data is saved in a separate file.
-        """
-        for i, model in enumerate(self.models):
-            output_saver = self._get_output_saver(catalog=self.catalogs[i], model=model, exp=self.exps[i])
-            common_save_args = self._get_common_save_args()
-            common_save_args.pop('dpi', None)
-
-            if self.monthly:
-                output_saver.save_netcdf(self.data_mon[i], frequency='monthly', **common_save_args)
-            if self.annual:
-                output_saver.save_netcdf(self.data_annual[i], frequency='annual', **common_save_args)
-
-        if self.plot_ref:
-            output_saver_ref = self._get_output_saver(catalog=self.plot_ref_kw['catalog'],
-                                                      model=self.plot_ref_kw['model'], exp=self.plot_ref_kw['exp'])
-            common_save_args = self._get_common_save_args()
-            common_save_args.pop('dpi', None)
-
-            # Save reference data
-            if self.monthly:
-                output_saver_ref.save_netcdf(self.ref_mon, frequency='monthly', **common_save_args)
-            if self.annual:
-                output_saver_ref.save_netcdf(self.ref_ann, frequency='annual', **common_save_args)
-
-            # Save standard deviation data
-            common_save_args.update({'stat': 'std'})
-            if self.monthly_std:
-                output_saver_ref.save_netcdf(self.ref_mon_std, frequency='monthly', **common_save_args)
-            if self.annual_std:
-                output_saver_ref.save_netcdf(self.ref_ann_std, frequency='annual', **common_save_args)
-
-    # Helper functions
-    def _get_output_saver(self, catalog=None, model=None, exp=None):
-        """
-        Create and return an OutputSaver instance.
-        Args:
-            catalog (str): Catalog to use.
-            model (str): Model identifier.
-            exp (str): Experiment identifier.
-        Returns:
-            OutputSaver: An instance of the OutputSaver class.
-        """
-        return OutputSaver(diagnostic=self.diagnostic, catalog=catalog, model=model, exp=exp,
-                           loglevel=self.loglevel, default_path=self.outdir, rebuild=self.rebuild,
-                           filename_keys=self.filename_keys)
-
-    def _get_common_save_args(self):
-        """
-        Create and return a dictionary of common arguments for saving files.
-        Returns:
-            dict: Common arguments for saving files.
-        """
-        common_save_args = {'diagnostic_product': self.diagnostic_product, 'var': self.var, 'dpi': self.dpi}
-        if self.lon_limits is not None:
-            lon_limits = f'_lon{self.lon_limits[0]}_{self.lon_limits[1]}'
-            common_save_args.update({'lon_limits': lon_limits})
-        if self.lat_limits is not None:
-            lat_limits = f'_lat{self.lat_limits[0]}_{self.lat_limits[1]}'
-            common_save_args.update({'lat_limits': lat_limits})
-        return common_save_args
-
-    def _construct_description(self, ref_label):
-        """
-        Construct the description for the metadata.
-        Args:
-            ref_label (str): Label for the reference data.
-        Returns:
-            str: A description string.
-        """
-        description = "Time series of the global mean of"
-        if self.monthly:
-            description += f" {self.data_annual[0].attrs['long_name']}"
-        elif self.annual:
-            description += f" {self.data_annual[0].attrs['long_name']}"
-        else:
-            description += f" {self.var}"
-        description += f" from {time_to_string(self.startdate)} to {time_to_string(self.enddate)}"
-        for i, model in enumerate(self.models):
-            description += f" for {model} {self.exps[i]}"
-        if self.plot_ref:
-            description += f" with {ref_label} as reference,"
-            if self.std_startdate is not None and self.std_enddate is not None:
-                description += f" std evaluated from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}." # noqa
+            # Extend the data if needed
+            if class_startdate < start_date:
+                self.logger.info('Extending back the start date from %s to %s', start_date, class_startdate)
+                loop = loop_seasonalcycle(data=data, startdate=class_startdate, enddate=start_date,
+                                          freq=freq, center_time=center_time, loglevel=self.loglevel)
+                data = xr.concat([loop, data], dim='time')
+                data = data.sortby('time')
             else:
-                description += " std evaluated from the full time range."
-        if self.extending_ref_range:
-            description += " The reference range has been extended with a seasonal cycle or a band to match the model data."
-        if self.lon_limits is not None or self.lat_limits is not None:
-            description += " The data have been averaged over a region defined by"
-            if self.lon_limits is not None:
-                description += f" longitude limits {self.lon_limits}"
-            if self.lat_limits is not None:
-                description += f" latitude limits {self.lat_limits}"
-            description += "."
-        return description
+                self.logger.debug(f'No extension needed for the start date: {start_date} <= {class_startdate}')
 
-    def check_ref_range(self):
-        """
-        If the reference data don't cover the same range as the model data,
-        a seasonal cycle or a band of the reference data is added to the plot.
-        """
-        self.logger.debug("Checking reference range")
-
-        if self.monthly:
-            exp_startdate, exp_enddate = self._extend_ref_range(freq='monthly')
-            self.logger.info(f"Monthly reference std time range for expansion evaluation: {exp_startdate} to {exp_enddate}")
-
-            startdate, enddate = self._extend_ref_range(freq='monthly', range_eval=True)
-            self.logger.info(f"Monthly reference data time available {startdate} to {enddate}")
-
-            if startdate > self.startdate or enddate < self.enddate:
-                self.logger.info("Extending reference range with a seasonal cycle")
-                self.extending_ref_range = True
-
-                # TODO: startdate has to be rounded to the first of the month
-                if startdate > self.startdate:
-                    self.logger.debug("Adding a seasonal cycle to the start of the reference data")
-                    ref_mon_loop = loop_seasonalcycle(data=self.ref_mon,
-                                                      startdate=self.startdate,
-                                                      enddate=startdate,
-                                                      freq='MS')
-                    self.ref_mon = xr.concat([ref_mon_loop, self.ref_mon], dim='time')
-
-                if enddate < self.enddate:
-                    self.logger.debug("Adding a seasonal cycle to the end of the reference data")
-                    ref_mon_loop = loop_seasonalcycle(data=self.ref_mon,
-                                                      startdate=enddate,
-                                                      enddate=self.enddate,
-                                                      freq='MS', loglevel=self.loglevel)
-                    self.ref_mon = xr.concat([self.ref_mon, ref_mon_loop], dim='time')
-                    self.ref_mon = self.ref_mon.sortby('time')
-
-            self.ref_mon = self.ref_mon.sel(time=slice(self.startdate, self.enddate))
-
-        if self.annual:
-            exp_startdate, exp_enddate = self._extend_ref_range(freq='annual')
-            self.logger.info(f"Annual reference std time range for expansion evaluation: {exp_startdate} to {exp_enddate}")
-
-            startdate, enddate = self._extend_ref_range(freq='annual', range_eval=True)
-            self.logger.info(f"Annual reference data time available {startdate} to {enddate}")
-
-            if startdate > self.startdate or enddate < self.enddate:
-                self.logger.info("Extending reference range with a band of the reference data")
-                self.extending_ref_range = True
-
-                # TODO: startdate has to be rounded to the center of the year (month=7)
-                if startdate > self.startdate:
-                    self.logger.debug("Adding a band to the start of the reference data")
-                    ref_ann_loop = loop_seasonalcycle(data=self.ref_ann,
-                                                      startdate=self.startdate,
-                                                      enddate=startdate,
-                                                      freq='YS')
-                    self.ref_ann = xr.concat([ref_ann_loop, self.ref_ann], dim='time')
-
-                if enddate < self.enddate:
-                    self.logger.debug("Adding a band to the end of the reference data")
-                    ref_ann_loop = loop_seasonalcycle(data=self.ref_ann,
-                                                      startdate=enddate,
-                                                      enddate=self.enddate,
-                                                      freq='YS', loglevel=self.loglevel)
-                    self.ref_ann = xr.concat([self.ref_ann, ref_ann_loop], dim='time')
-                    self.ref_ann = self.ref_ann.sortby('time')
-
-            self.ref_ann = self.ref_ann.sel(time=slice(self.startdate, self.enddate))
-
-    def _extend_ref_range(self, freq='monthly', range_eval=False):
-        """Evaluate range for statistics to extend the reference range
-
-        Args:
-            freq (str): Frequency of the data. Default is 'monthly'.
-            range_eval (bool): Evaluate the range also if std is provided. Default is False.
-
-        Returns:
-            startdate and enddate (str): Start and end date of the reference range.
-        """
-        startdate = self.std_startdate
-        enddate = self.std_enddate
-
-        if startdate is None or enddate is None or range_eval:
-            self.logger.debug("No std reference range provided, using data retrieved range")
-            if freq == 'monthly':
-                startdate = self.ref_mon.time[0].values
-                startdate = time_to_string(startdate)
-                enddate = self.ref_mon.time[-1].values
-                enddate = time_to_string(enddate)
-            elif freq == 'annual':
-                if self.annual:
-                    startdate = self.ref_ann.time[0].values
-                    startdate = time_to_string(startdate)
-                    enddate = self.ref_ann.time[-1].values
-                    enddate = time_to_string(enddate)
+            if class_enddate > end_date:
+                self.logger.info('Extending the end date from %s to %s', end_date, class_enddate)
+                loop = loop_seasonalcycle(data=data, startdate=end_date, enddate=class_enddate,
+                                          freq=freq, center_time=center_time, loglevel=self.loglevel)
+                data = xr.concat([data, loop], dim='time')
+                data = data.sortby('time')
             else:
-                raise ValueError(f"Unknown frequency: {freq}")
+                self.logger.debug(f'No extension needed for the end date: {class_enddate} >= {end_date}')
 
-        return startdate, enddate
-
-    def _catalogs(self, catalogs=None):
-        """
-        Fill in the missing catalogs. If catalogs is None, creates a list of None
-        with the same length as models, exps and sources.
-        """
-        if catalogs is None:
-            self.catalogs = [None] * len(self.models)
+            return data
         else:
-            self.catalogs = catalogs
-
-    def _plot_ref_kw(self, plot_ref_kw):
-        """
-        Fill in the missing keys in plot_ref_kw.
-        Raise an error if model, exp or source are missing.
-        Find the catalog if not provided.
-
-        Args:
-            plot_ref_kw (dict): Dictionary with keys model, exp, source and (optional) catalog.
-
-        Returns:
-            plot_ref_kw (dict): Dictionary with keys model, exp, source, catalog.
-        """
-        if 'model' not in plot_ref_kw or 'exp' not in plot_ref_kw or 'source' not in plot_ref_kw:
-            raise ValueError("Missing model, exp or source in plot_ref_kw")
-        if 'catalog' not in plot_ref_kw:
-            cat, _ = ConfigPath().browse_catalogs(model=plot_ref_kw['model'],
-                                                  exp=plot_ref_kw['exp'],
-                                                  source=plot_ref_kw['source'])
-            plot_ref_kw['catalog'] = cat[0]
-        return plot_ref_kw
-
-    def cleanup(self):
-        """Clean up"""
-        self.logger.debug("Cleaning up")
-        if self.monthly:
-            del self.data_mon
-            if self.plot_ref:
-                del self.ref_mon
-                del self.ref_mon_std
-        if self.annual:
-            del self.data_annual
-            if self.plot_ref:
-                del self.ref_ann
-                del self.ref_ann_std
-        gc.collect()
-        self.logger.debug("Cleaned up")
+            self.logger.warning(f"The frequency {freq} does not support extension")
+            return data

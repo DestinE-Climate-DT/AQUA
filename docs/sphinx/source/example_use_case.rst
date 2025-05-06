@@ -12,7 +12,7 @@ We suppose that AQUA is installed in our favourite machine and we have added a c
     The following example use the ``climate-dt-phase1`` catalog, available on Lumi HPC.
 
 We will explore here a little example using the AQUA framework.
-No diagnostic is involved here, this can be found in the :ref:`diagnostics` section.
+No diagnostic is involved here, this can be found in the :ref:`stateoftheart_diagnostics` section.
 
 We will walk you through an example using AQUA to interpolate atmospherically
 temperature data to 1°x1° grid, plot a timestep of it and

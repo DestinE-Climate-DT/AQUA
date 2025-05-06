@@ -1,6 +1,4 @@
-"""
-    Functions to plot monthly and annual data, as well as reference data.
-"""
+"""Functions to plot monthly and annual data, as well as reference data."""
 import xarray as xr
 
 
@@ -28,7 +26,7 @@ def plot_monthly_data(ax, monthly_data, data_labels, logger, lw=1.5):
                 label = None
             mon_data.plot(ax=ax, label=label, lw=lw)
         except Exception as e:
-            logger.debug(f"Error plotting monthly data: {e}")
+            logger.error(f"Error plotting monthly data: {e}")
 
 
 def plot_annual_data(ax, annual_data, data_labels, logger, lw=1.5):
@@ -52,7 +50,7 @@ def plot_annual_data(ax, annual_data, data_labels, logger, lw=1.5):
                 label = None
             ann_data.plot(ax=ax, label=label, color='#1898e0', linestyle='--', lw=lw)
         except Exception as e:
-            logger.debug(f"Error plotting annual data: {e}")
+            logger.error(f"Error plotting annual data: {e}")
 
 
 def plot_ref_monthly_data(ax, ref_monthly_data, std_monthly_data, ref_label, logger, lw=0.8):
@@ -81,7 +79,7 @@ def plot_ref_monthly_data(ax, ref_monthly_data, std_monthly_data, ref_label, log
                             facecolor='grey', alpha=0.25)
             ax.set(xlim=(ref_monthly_data.time[0], ref_monthly_data.time[-1]))
     except Exception as e:
-        logger.debug(f"Error plotting monthly std data: {e}")
+        logger.error(f"Error plotting monthly std data: {e}")
 
 
 def plot_ref_annual_data(ax, ref_annual_data, std_annual_data, ref_label, logger, lw=0.8):
@@ -109,4 +107,4 @@ def plot_ref_annual_data(ax, ref_annual_data, std_annual_data, ref_label, logger
                             ref_annual_data + 2.*std_annual_data,
                             facecolor='black', alpha=0.2)
     except Exception as e:
-        logger.debug(f"Error plotting annual std data: {e}")
+        logger.error(f"Error plotting annual std data: {e}")
