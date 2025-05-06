@@ -96,7 +96,7 @@ AQUA diagnostics complete list:
 - Global bias: Handling plev and using scientific notation in contour plots (#1649)
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1696)
 - Diagnostic core: A common parser and fuctions to open/close the dask cluster are provided (#1703)
-
+- Ensemble: config file structure and tests (#1630)
 ## [v0.13.1]
 
 Main changes are:
