@@ -33,7 +33,7 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - Diagnostic core: refactor of the documentation folder structure (#1891)
-- Timeseries: complete refactor of the timeseries diagnostic according to the Diagnostic, PlotDiagnostic schema (#1712)
+- Timeseries: complete refactor of the timeseries diagnostic according to the Diagnostic, PlotDiagnostic schema (#1712, #1896)
 
 ## [v0.14.0]
 
