@@ -255,13 +255,37 @@ class GSVSource(base.DataSource):
             bridge_start_date (str): Start date of the bridge data.
             bridge_end_date (str): End date of the bridge data.
         """
+        # Getting info from the FDB info file
+        fdb_info = self._read_fdb_info()
+        
+        # Data dates
+        self._setup_data_dates(data_start_date, data_end_date, fdb_info)
+        
+        # Bridge dates
+        self._setup_bridge_dates(bridge_start_date, bridge_end_date, fdb_info)
+        self._adjust_bridge_bounds()
 
-        # access info from fdb_info_file
+    def _read_fdb_info(self):
+        """
+        Read FDB information from file if available
+        
+        Returns:
+            dict or None: FDB information if available, None otherwise
+        """
         if self.fdb_info_file:
             self.logger.debug('Reading FDB info from file %s', self.fdb_info_file)
-            fdb_info = self.get_fdb_definitions_from_file(self.fdb_info_file)
+            return self.get_fdb_definitions_from_file(self.fdb_info_file)
+        return None
 
-        # data block: if fdb_info is complete, set the data start/enddates from the file itself
+    def _setup_data_dates(self, data_start_date, data_end_date, fdb_info):
+        """
+        Setup data start and end dates
+        
+        Args:
+            data_start_date (str): Start date of the available data.
+            data_end_date (str): End date of the available data.
+            fdb_info (dict or None): FDB information if available
+        """
         if self.fdb_info_file and fdb_info:
             self.data_start_date = fdb_info['data']['data_start_date']
             self.data_end_date = fdb_info['data']['data_end_date']
@@ -276,32 +300,68 @@ class GSVSource(base.DataSource):
                 self.data_start_date = data_start_date
                 self.data_end_date = data_end_date
 
-        # bridge block: if fdb_info is complete, set the bridge start/enddates from the file itself
-        if self.fdb_info_file and fdb_info['bridge']:
-            self.bridge_start_date = fdb_info['bridge']['bridge_start_date']
-            self.bridge_end_date = fdb_info['bridge']['bridge_end_date']
-            self._request['expver'] = fdb_info['bridge']['expver']
+    def _setup_bridge_dates(self, bridge_start_date, bridge_end_date, fdb_info):
+        """
+        Setup bridge start and end dates
+        
+        Args:
+            bridge_start_date (str): Start date of the bridge data.
+            bridge_end_date (str): End date of the bridge data.
+            fdb_info (dict or None): FDB information if available
+        """
+        if self.fdb_info_file and fdb_info and fdb_info.get('bridge'):
+            self._setup_bridge_dates_from_file(fdb_info)
         else:
             if bridge_start_date == 'stac' or bridge_end_date == 'stac':
-                # if the dates are set to 'stac', we need to get them from the STAC API
-                self.logger.debug('Reading FDB info from bridge STAC API')
-                self.bridge_start_date, self.bridge_end_date = self.get_dates_from_stac_api(self._request, BRIDGE_API_URL)
-                self.bridge_end_date = self.bridge_end_date+'T2300'
-                self.bridge_start_date = self.bridge_start_date+'T0000'
-                self.logger.debug('STAC API bridge start data: %s, bridge end date: %s', self.bridge_start_date, self.bridge_end_date)
+                self._setup_bridge_dates_from_stac()
             else:
-                # deprecated method that guess from text file and fall back
-                self.bridge_start_date = read_bridge_date(bridge_start_date)
-                self.bridge_end_date = read_bridge_date(bridge_end_date)
+                self._setup_bridge_dates_from_input(bridge_start_date, bridge_end_date)
 
-                # set bridge bounds if not specified
-                if self.bridge_start_date == 'complete' or self.bridge_end_date == 'complete':
-                    self.bridge_start_date = self.data_start_date
-                    self.bridge_end_date = self.data_end_date
-                if not self.bridge_start_date and self.bridge_end_date:
-                    self.bridge_start_date = self.data_start_date
-                if not self.bridge_end_date and self.bridge_start_date:
-                    self.bridge_end_date = self.data_end_date
+    def _setup_bridge_dates_from_file(self, fdb_info):
+        """
+        Setup bridge dates from FDB info file
+        
+        Args:
+            fdb_info (dict): FDB information from file
+        """
+        self.bridge_start_date = fdb_info['bridge']['bridge_start_date']
+        self.bridge_end_date = fdb_info['bridge']['bridge_end_date']
+        self._request['expver'] = fdb_info['bridge']['expver']
+
+    def _setup_bridge_dates_from_stac(self):
+        """
+        Setup bridge dates from STAC API
+        """
+        self.logger.debug('Reading FDB info from bridge STAC API')
+        self.bridge_start_date, self.bridge_end_date = self.get_dates_from_stac_api(self._request, BRIDGE_API_URL)
+        self.bridge_end_date = self.bridge_end_date + 'T2300'
+        self.bridge_start_date = self.bridge_start_date + 'T0000'
+        self.logger.debug('STAC API bridge start data: %s, bridge end date: %s', 
+                        self.bridge_start_date, self.bridge_end_date)
+
+    def _setup_bridge_dates_from_input(self, bridge_start_date, bridge_end_date):
+        """
+        Setup bridge dates from input parameters
+        
+        Args:
+            bridge_start_date (str): Start date of the bridge data.
+            bridge_end_date (str): End date of the bridge data.
+        """
+        # deprecated method that guess from text file and fall back
+        self.bridge_start_date = read_bridge_date(bridge_start_date)
+        self.bridge_end_date = read_bridge_date(bridge_end_date)
+
+    def _adjust_bridge_bounds(self):
+        """
+        Adjust bridge bounds if not specified or set to 'complete'
+        """
+        if self.bridge_start_date == 'complete' or self.bridge_end_date == 'complete':
+            self.bridge_start_date = self.data_start_date
+            self.bridge_end_date = self.data_end_date
+        if not self.bridge_start_date and self.bridge_end_date:
+            self.bridge_start_date = self.data_start_date
+        if not self.bridge_end_date and self.bridge_start_date:
+            self.bridge_end_date = self.data_end_date
 
     def _define_retrieve_dates(self, startdate, enddate):
         """
