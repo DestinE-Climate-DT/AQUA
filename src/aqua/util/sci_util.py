@@ -1,5 +1,6 @@
 """Module for scientific utility functions."""
 import xarray as xr
+from .graphics import healpix_resample
 from aqua.logger import log_configure, log_history
 
 # set default options for xarray
@@ -34,8 +35,23 @@ def area_selection(data=None, lat=None, lon=None,
             KeyError:   if 'lon' or 'lat' are not in the coordinates
             ValueError: if lat and lon are both None
     """
+    logger = log_configure(log_level=kwargs.get('loglevel', 'WARNING'),
+                           log_name='Area selection')
+    
     if data is None:
         raise ValueError('data cannot be None')
+    
+    
+    # Check if the data is in HEALPix format
+    npix = data.size  # Number of cells in the data
+    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+
+    if nside is not None:
+        logger.warning(f"Input data is in HEALPix format with nside={nside}.")
+        data = healpix_resample(data)
+        logger.debug("Resampling HEALPix data to lon/lat format.")
+    else:
+        logger.debug("Input data is not in HEALPix format.")
 
     # adding safety check since this works only with lon/lat
     if "lon" not in data.coords or "lat" not in data.coords:
