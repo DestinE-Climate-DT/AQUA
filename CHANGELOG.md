@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+- Fix for make_content failing to accept expected argument [#1898]
+
 ## [v0.13.5]
 
 Hotfixes:
