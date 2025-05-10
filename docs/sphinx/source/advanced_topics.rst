@@ -198,6 +198,26 @@ levels to use for each chunk.
 
 .. _lev-selection-regrid:
 
+Polytope access to Destination Earth data
+-----------------------------------------
+
+It is poossible to access ClimateDT data availble on the 'Databridge' for the DestinE ClimateDT also remotely, from other machines,
+using the 'polytope' access. to this end you will need to specify ``engine="polytope"`` when instantiating the `Reader` or adding
+the argument ``engine="polytope"`` as an additional argument in the intake data source.
+
+.. code-block:: python
+
+    reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="polytope")
+    data = reader.retrieve(var='2t')
+
+This allows accessing ClimateDT data on the Databridge also remotely from other machines.
+
+In order for this to work you will need to store an access token in the file ``~/.polytopeapirc`` in your home directory.
+Please follow the instructions in the `Polytope documentation <https://github.com/destination-earth-digital-twins/polytope-examples>`_ to 
+set up appropriate credential and create this file. 
+As a preliminary step, you will need to be registered on the `Destine Service Platform  <https://auth.destine.eu/>`_ 
+and have requested "upgraded access" to the data.
+
 Level selection and regridding
 ------------------------------
 

@@ -75,7 +75,7 @@ class Reader(FixerMixin):
             preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
             convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
                                         (Only one supported so far)
-            **kwargs: Arbitrary keyword arguments to be passed as parameters to the catalog entry.
+            **kwargs: Arbitrary keyword arguments to be passed as additional parameters to the catalog entry.
                       'zoom', meant for HEALPix grid, is a predefined one which will allow for multiple gridname definitions.
 
         Returns:
@@ -139,8 +139,9 @@ class Reader(FixerMixin):
         machine_paths, intake_vars = configurer.get_machine_info()
 
         # load the catalog
-        self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source](**kwargs)
+        aqua.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
+        self.esmcat = self.expcat[self.source](**kwargs) 
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):

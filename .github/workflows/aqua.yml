@@ -145,10 +145,26 @@ jobs:
         run: |
           # Initialize the AQUA catalog in the $HOME/.aqua folder
           aqua -vv install github
+          # Add the climatedt-phase1 catalog (for polytope testing)
+          aqua -vv add climatedt-phase1
           # Add the ci/cd catalog
           aqua -vv add ci
           # Double check the catalogs
           aqua -vv list
+          # add default paths to the config
+          cat >> $HOME/.aqua/config-aqua.yaml <<EOF
+          paths:
+              grids: ./AQUA_tests/grids
+              weights: ./AQUA_tests/weights
+              areas: ./AQUA_tests/weights
+          EOF
+          # Set up polytope secrets
+          cat >$HOME/.polytopeapirc << EOF
+          {
+            "user_email": "${{ secrets.POLYTOPE_MAIL }}",
+            "user_key": "${{ secrets.POLYTOPE_KEY }}"
+          }
+          EOF
       - name: Run tests
         run: |
           # Produce the XML report
