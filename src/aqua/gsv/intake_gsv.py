@@ -2,6 +2,7 @@
 import os
 import fnmatch
 import datetime
+import requests
 import eccodes
 import xarray as xr
 import numpy as np
@@ -25,6 +26,9 @@ except KeyError:
     gsv_available = False
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
 
+# the LUMI BRIDGE STAC API
+BRIDGE_API_URL = "https://climate-catalogue.lumi.apps.dte.destination-earth.eu/api/stac"
+
 
 class GSVSource(base.DataSource):
     container = 'xarray'
@@ -40,7 +44,7 @@ class GSVSource(base.DataSource):
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 switch_eccodes=False, loglevel='WARNING', **kwargs):
+                 switch_eccodes=False, loglevel='debug', **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -251,19 +255,42 @@ class GSVSource(base.DataSource):
             bridge_start_date (str): Start date of the bridge data.
             bridge_end_date (str): End date of the bridge data.
         """
+        # Getting info from the FDB info file
+        fdb_info = self._read_fdb_info()
+        
+        # Data dates
+        self._setup_data_dates(data_start_date, data_end_date, fdb_info)
+        
+        # Bridge dates
+        self._setup_bridge_dates(bridge_start_date, bridge_end_date, fdb_info)
+        self._adjust_bridge_bounds()
 
-        # access info from fdb_info_file
+    def _read_fdb_info(self):
+        """
+        Read FDB information from file if available
+        
+        Returns:
+            dict or None: FDB information if available, None otherwise
+        """
         if self.fdb_info_file:
             self.logger.debug('Reading FDB info from file %s', self.fdb_info_file)
-            fdb_info = self.get_fdb_definitions_from_file(self.fdb_info_file)
+            return self.get_fdb_definitions_from_file(self.fdb_info_file)
+        return None
 
-        # data block: if fdb_info is complete, set the data start/enddates from the file itself
+    def _setup_data_dates(self, data_start_date, data_end_date, fdb_info):
+        """
+        Setup data start and end dates
+        
+        Args:
+            data_start_date (str): Start date of the available data.
+            data_end_date (str): End date of the available data.
+            fdb_info (dict or None): FDB information if available
+        """
         if self.fdb_info_file and fdb_info:
             self.data_start_date = fdb_info['data']['data_start_date']
             self.data_end_date = fdb_info['data']['data_end_date']
             self.hpc_expver = fdb_info['data']['expver']
         else:
-            # automatic guessing
             if data_start_date == 'auto' or data_end_date == 'auto':
                 self.logger.debug('Autoguessing of the FDB start and end date enabled.')
                 if self.timestyle == 'yearmonth':
@@ -273,24 +300,68 @@ class GSVSource(base.DataSource):
                 self.data_start_date = data_start_date
                 self.data_end_date = data_end_date
 
-        # bridge block: if fdb_info is complete, set the bridge start/enddates from the file itself
-        if self.fdb_info_file and fdb_info['bridge']:
-            self.bridge_start_date = fdb_info['bridge']['bridge_start_date']
-            self.bridge_end_date = fdb_info['bridge']['bridge_end_date']
-            self._request['expver'] = fdb_info['bridge']['expver']
+    def _setup_bridge_dates(self, bridge_start_date, bridge_end_date, fdb_info):
+        """
+        Setup bridge start and end dates
+        
+        Args:
+            bridge_start_date (str): Start date of the bridge data.
+            bridge_end_date (str): End date of the bridge data.
+            fdb_info (dict or None): FDB information if available
+        """
+        if self.fdb_info_file and fdb_info and fdb_info.get('bridge'):
+            self._setup_bridge_dates_from_file(fdb_info)
         else:
-            # deprecated method that guess from text file and fall back
-            self.bridge_start_date = read_bridge_date(bridge_start_date)
-            self.bridge_end_date = read_bridge_date(bridge_end_date)
+            if bridge_start_date == 'stac' or bridge_end_date == 'stac':
+                self._setup_bridge_dates_from_stac()
+            else:
+                self._setup_bridge_dates_from_input(bridge_start_date, bridge_end_date)
 
-            # set bridge bounds if not specified
-            if self.bridge_start_date == 'complete' or self.bridge_end_date == 'complete':
-                self.bridge_start_date = self.data_start_date
-                self.bridge_end_date = self.data_end_date
-            if not self.bridge_start_date and self.bridge_end_date:
-                self.bridge_start_date = self.data_start_date
-            if not self.bridge_end_date and self.bridge_start_date:
-                self.bridge_end_date = self.data_end_date
+    def _setup_bridge_dates_from_file(self, fdb_info):
+        """
+        Setup bridge dates from FDB info file
+        
+        Args:
+            fdb_info (dict): FDB information from file
+        """
+        self.bridge_start_date = fdb_info['bridge']['bridge_start_date']
+        self.bridge_end_date = fdb_info['bridge']['bridge_end_date']
+        self._request['expver'] = fdb_info['bridge']['expver']
+
+    def _setup_bridge_dates_from_stac(self):
+        """
+        Setup bridge dates from STAC API
+        """
+        self.logger.debug('Reading FDB info from bridge STAC API')
+        self.bridge_start_date, self.bridge_end_date = self.get_dates_from_stac_api(self._request, BRIDGE_API_URL)
+        self.bridge_end_date = self.bridge_end_date + 'T2300'
+        self.bridge_start_date = self.bridge_start_date + 'T0000'
+        self.logger.debug('STAC API bridge start data: %s, bridge end date: %s', 
+                        self.bridge_start_date, self.bridge_end_date)
+
+    def _setup_bridge_dates_from_input(self, bridge_start_date, bridge_end_date):
+        """
+        Setup bridge dates from input parameters
+        
+        Args:
+            bridge_start_date (str): Start date of the bridge data.
+            bridge_end_date (str): End date of the bridge data.
+        """
+        # deprecated method that guess from text file and fall back
+        self.bridge_start_date = read_bridge_date(bridge_start_date)
+        self.bridge_end_date = read_bridge_date(bridge_end_date)
+
+    def _adjust_bridge_bounds(self):
+        """
+        Adjust bridge bounds if not specified or set to 'complete'
+        """
+        if self.bridge_start_date == 'complete' or self.bridge_end_date == 'complete':
+            self.bridge_start_date = self.data_start_date
+            self.bridge_end_date = self.data_end_date
+        if not self.bridge_start_date and self.bridge_end_date:
+            self.bridge_start_date = self.data_start_date
+        if not self.bridge_end_date and self.bridge_start_date:
+            self.bridge_end_date = self.data_end_date
 
     def _define_retrieve_dates(self, startdate, enddate):
         """
@@ -764,6 +835,41 @@ class GSVSource(base.DataSource):
             self.logger.info('Automatic FDB date range: %s - %s', start_date, end_date)
 
         return start_date, end_date
+    
+    @staticmethod
+    def get_dates_from_stac_api(params, base_url=BRIDGE_API_URL):
+        """
+        Function to get from the STAC data bridge the available
+        dates of a dataset on the bridge
+        
+        Args:
+            params (dict): Dictionary of parameters to interrogate the STAC API.
+                        In principle, the same as the usual FDB request
+            base_url (str): URL for the STAC API
+
+        Returns:
+            tuple: A tuple containing the start and end dates of the dataset
+        """
+
+        # Define the base URL for the STAC API
+        params['root'] = 'root'
+        params['param'] = to_list(params['param'])[0]
+        for p in ['date', 'time', 'step', 'year', 'month']:
+            if p in params:
+                del params[p]
+        response = requests.get(base_url, params=params)
+        stac_json = response.json()
+        check = stac_json['links'][0]['title']
+        if check != 'date':
+            raise ValueError(f"The first link in the response is not a date link, but {check}")
+
+        # specific extraction of the dates
+        dates = next(link['generalized_datacube:dimension']['values']
+                    for link in stac_json['links']
+                    if 'generalized_datacube:dimension' in link)
+        sorted_dates = sorted(dates)
+        
+        return sorted_dates[0], sorted_dates[-1]
 
 
 # This function is repeated here in order not to create a cross dependency between GSVSource and AQUA
