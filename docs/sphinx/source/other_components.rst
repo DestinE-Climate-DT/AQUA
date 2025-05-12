@@ -60,8 +60,10 @@ Some options includes:
 Spatial Averaging
 -----------------
 
-When we instantiate the ``Reader`` object, grid areas for the source files are computed if not already available. 
-After this, we can use them for spatial averaging using the ``fldmean()`` method, obtaining time series of global (field) averages.
+The ``FldStat()`` class and its method ``fldstat()`` are used to do spatial operations and similary as for ``TimStat()`` does for time.
+Statistical operations can be area-weighted if the class is initialiased with an xarray dataset containing the areas of the corresponding grid.
+The class is nested into the ``Reader()``, which computes/load the areas of the corresponding source at the initialization.
+Thus when calling for example ``reader.fldmean()`` method area-weighted spatial averaging will be performed.
 For example, if we run the following commands:
 
 .. code-block:: python
@@ -83,6 +85,9 @@ It is also possible to apply a regional section to the domain before performing 
     It can work also on unstructured grids, but information on coordinates must be available.
     If the dataset does not include these coordinates, this can be achieved with the fixer
     described in the :ref:`fixer` section.
+
+.. note::
+    So far only the `mean` statistics is available, but other statistics are planned to be implemented in the future.
 
 .. _time-selection:
 

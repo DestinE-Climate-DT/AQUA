@@ -11,6 +11,7 @@ Removed:
 - `aqua.slurm` has been removed.
 
 AQUA core complete list:
+- `FldStat()` as independent module for area-weighted operations (#1835)
 - Additional stats for LRA and other refinements (#1886) 
 - New OutputSaver class (#1837)
 - Introduce a `Timstat()` module independent from the `Reader()` (#1832)
