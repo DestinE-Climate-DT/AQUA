@@ -11,6 +11,7 @@ Removed:
 - `aqua.slurm` has been removed.
 
 AQUA core complete list:
+- Polytope support (#1893)
 - Additional stats for LRA and other refinements (#1886) 
 - New OutputSaver class (#1837)
 - Introduce a `Timstat()` module independent from the `Reader()` (#1832)
@@ -32,8 +33,9 @@ AQUA core complete list:
 - Refactor of the `retrieve_plain()` function with contextmanager and smmregrid GridInspector (#1768)
 
 AQUA diagnostics complete list:
+- Diagnostic core: refinement of OutputSaver metadata and name handling (#1901)
 - Diagnostic core: refactor of the documentation folder structure (#1891)
-- Timeseries: complete refactor of the timeseries diagnostic according to the Diagnostic, PlotDiagnostic schema (#1712)
+- Timeseries: complete refactor of the timeseries diagnostic according to the Diagnostic, PlotDiagnostic schema (#1712, #1896)
 
 ## [v0.14.0]
 

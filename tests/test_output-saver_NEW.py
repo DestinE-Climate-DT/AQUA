@@ -23,18 +23,20 @@ def test_generate_name(output_saver):
     assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical'
 
     # Test with generic multimodel keyword
-    extra_keys = {'var' : 'tprate'}
+    extra_keys = {'var': 'tprate'}
     filename = output_saver.generate_name(diagnostic_product='mean', model='multimodel', extra_keys=extra_keys)
     assert filename == 'dummy.mean.multimodel.tprate'
 
-    #Test with multiple references
+    # Test with multiple references
     extra_keys = {'var': 'tprate', 'region' : 'indian_ocean'}
-    filename = output_saver.generate_name(diagnostic_product='mean', model='IFS-NEMO', model_ref=['ERA5', 'CERES'], extra_keys=extra_keys)
+    filename = output_saver.generate_name(diagnostic_product='mean', model='IFS-NEMO',
+                                          model_ref=['ERA5', 'CERES'], extra_keys=extra_keys)
     assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.multiref.tprate.indian_ocean'
 
     # Test with multiple models
-    extra_keys = {'var': 'tprate', 'region' : 'indian_ocean'}
-    filename = output_saver.generate_name(diagnostic_product='mean', model=['IFS-NEMO','ICON'], model_ref='ERA5', extra_keys=extra_keys)
+    extra_keys = {'var': 'tprate', 'region': 'indian_ocean'}
+    filename = output_saver.generate_name(diagnostic_product='mean', model=['IFS-NEMO', 'ICON'],
+                                          model_ref='ERA5', extra_keys=extra_keys)
     assert filename == 'dummy.mean.multimodel.ERA5.tprate.indian_ocean'
 
 
@@ -44,9 +46,10 @@ def test_save_netcdf(output_saver):
     # Create a simple xarray dataset
     data = xr.Dataset({'data': (('x', 'y'), [[1, 2], [3, 4]])})
 
-    # Test saving netCDF file 
+    # Test saving netCDF file
     path = output_saver.save_netcdf(dataset=data, diagnostic_product='mean')
     assert os.path.exists(path)
+
 
 @pytest.mark.aqua
 def test_save_png(output_saver, tmpdir):
@@ -54,14 +57,15 @@ def test_save_png(output_saver, tmpdir):
 
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])
-    
+
     # Save the PNG file
-    extra_keys = {'var' : 'tprate'}
-    path = output_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys)
-    
+    extra_keys = {'var': 'tprate'}
+    path = output_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=300)
+
     # Check if the file was created
     path = './png/dummy.mean.lumi-phase2.IFS-NEMO.historical.tprate.png'
     assert os.path.exists(path)
+
 
 @pytest.mark.aqua
 def test_save_pdf(output_saver, tmpdir):
@@ -69,12 +73,11 @@ def test_save_pdf(output_saver, tmpdir):
     # Create a simple figure
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])
-    
+
     # Save the PDF file
-    extra_keys = {'var' : 'tprate'}
+    extra_keys = {'var': 'tprate'}
     output_saver.save_pdf(fig=fig, diagnostic_product='mean', extra_keys=extra_keys)
-    
+
     # Check if the file was created
     path = './pdf/dummy.mean.lumi-phase2.IFS-NEMO.historical.tprate.pdf'
     assert os.path.exists(path)
-    

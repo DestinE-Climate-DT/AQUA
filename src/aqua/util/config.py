@@ -196,6 +196,8 @@ class ConfigPath():
         if 'paths' in self.config_dict:
             for path in ['areas', 'weights', 'grids']:
                 if path in self.config_dict['paths']:
+                    if 'paths' not in machine_paths:
+                        machine_paths['paths'] = {}
                     machine_paths['paths'][path] = self.config_dict['paths'][path]
         else:
             self.logger.warning('No paths found in the main configuration file %s', self.base_available)

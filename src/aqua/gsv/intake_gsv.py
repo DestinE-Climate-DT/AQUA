@@ -39,12 +39,13 @@ class GSVSource(base.DataSource):
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
     dask_access = False  # Flag if dask has been requested
+    first_run = True  # Flag to check if this is the first run of the class
 
     def __init__(self, request, data_start_date, data_end_date, bridge_start_date=None, bridge_end_date=None, 
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 switch_eccodes=False, loglevel='debug', **kwargs):
+                 switch_eccodes=False, loglevel='WARNING', engine='fdb', **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -72,11 +73,13 @@ class GSVSource(base.DataSource):
             metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
             switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'. 
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
+        self.engine = engine
         self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
         self.logger.debug("Init of the GSV source class")
 
@@ -100,11 +103,16 @@ class GSVSource(base.DataSource):
             self.fdb_info_file = metadata.get('fdb_info_file', None)
 
             # safety check for paths
-            for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
-                         'fdbpath_bridge', 'eccodes_path']:
-                attr_path = getattr(self, attr)
-                if attr_path and not os.path.exists(attr_path):
-                    raise FileNotFoundError(f'{attr} path {attr_path} does not exist!')
+
+            # skip the first time:
+            # this is needed because intake calls initialization twice, first without custom arguments and then with
+            # If we pass engine='polytope' on a remote machine the path check would fail but intake initializes the class a first time actually with the wrong engine
+            if self.engine and self.engine == 'fdb' and not GSVSource.first_run:
+                for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
+                            'fdbpath_bridge', 'eccodes_path']:
+                    attr_path = getattr(self, attr)
+                    if attr_path and not os.path.exists(attr_path):
+                        raise FileNotFoundError(f'{attr} path {attr_path} does not exist!')
 
         else:
             self.fdbpath = None
@@ -114,6 +122,8 @@ class GSVSource(base.DataSource):
             self.fdb_info_file = None
             self.eccodes_path = None
             self.levels = None
+
+        GSVSource.first_run = False
 
         # set the timestyle
         self.timestyle = timestyle
@@ -405,7 +415,8 @@ class GSVSource(base.DataSource):
             '_var': self._var,
             'timeshift': self.timeshift,
             'gsv_log_level': self.gsv_log_level,
-            'logger': self.logger
+            'logger': self.logger,
+            'engine': self.engine
         }
 
     def __setstate__(self, state):
@@ -435,6 +446,7 @@ class GSVSource(base.DataSource):
         self._request = state['_request']
         self.gsv_log_level = state['gsv_log_level']
         self.logger = state['logger']
+        self.engine = state['engine']
 
     def _get_schema(self):
         """
@@ -604,8 +616,8 @@ class GSVSource(base.DataSource):
         # See https://github.com/DestinE-Climate-DT/AQUA/issues/1715
         # Notice also that for some mysterious reason this works only if the result is stored in self (even if then it is not used)
         if self.chk_type[i]:
-            self.gsv = GSVRetriever(logging_level=self.gsv_log_level)
-        gsv = GSVRetriever(logging_level=self.gsv_log_level)
+            self.gsv = GSVRetriever(engine=self.engine, logging_level=self.gsv_log_level)
+        gsv = GSVRetriever(engine=self.engine, logging_level=self.gsv_log_level)
 
         self.logger.debug('Request %s', request)
         dataset = gsv.request_data(request, use_stream_iterator=fstream_iterator,

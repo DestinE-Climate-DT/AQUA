@@ -63,7 +63,7 @@ class Reader(FixerMixin):
             rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
             loglevel (str, optional): Level of logging according to logging module.
                                       Defaults to log_level_default of loglevel().
-            nproc (int,optional): Number of processes to use for weights generation. Defaults to 4.
+            nproc (int, optional): Number of processes to use for weights generation. Defaults to 4.
             aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
                                          Defaults to None (using default from catalog, recommended).
             chunks (str or dict, optional): chunking to be used for GSV access.
@@ -75,8 +75,12 @@ class Reader(FixerMixin):
             preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
             convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
                                         (Only one supported so far)
-            **kwargs: Arbitrary keyword arguments to be passed as parameters to the catalog entry.
-                      'zoom', meant for HEALPix grid, is a predefined one which will allow for multiple gridname definitions.
+
+        Keyword Args:
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'. 
+            zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
+            realization (int, optional): The ensemble realization number, included in the output filename.
+            **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
 
         Returns:
             Reader: A `Reader` class object.
@@ -139,8 +143,9 @@ class Reader(FixerMixin):
         machine_paths, intake_vars = configurer.get_machine_info()
 
         # load the catalog
-        self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source](**kwargs)
+        aqua.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
+        self.esmcat = self.expcat[self.source](**kwargs) 
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
