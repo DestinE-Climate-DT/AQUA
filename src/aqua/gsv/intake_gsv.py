@@ -8,12 +8,12 @@ import xarray as xr
 import numpy as np
 import dask
 from ruamel.yaml import YAML
+from intake.source import base
 from aqua.util.eccodes import get_eccodes_attr
 from aqua.util import to_list
-from intake.source import base
+from aqua.logger import log_configure, _check_loglevel
 from .timeutil import check_dates, shift_time_dataset, floor_datetime, read_bridge_date, todatetime
 from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
-from aqua.logger import log_configure, _check_loglevel
 
 # Test if FDB5 binary library is available
 try:
@@ -151,6 +151,11 @@ class GSVSource(base.DataSource):
         self.hpc_expver = hpc_expver
 
         # set all the start/end dates for data and bridge
+        self.data_start_date = None
+        self.data_end_date = None
+        self.bridge_start_date = None
+        self.bridge_end_date = None
+
         self._define_start_end_dates(data_start_date, data_end_date, bridge_start_date, bridge_end_date)
         # set all the start/end dates for the retrieval
         self._define_retrieve_dates(startdate, enddate)
