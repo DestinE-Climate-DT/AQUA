@@ -11,6 +11,7 @@ Removed:
 - `aqua.slurm` has been removed.
 
 AQUA core complete list:
+- Enabling support for DestinE STAC API to detect `bridge_start_date`and `bridge_end_date` (#1895)
 - Polytope support (#1893)
 - Additional stats for LRA and other refinements (#1886) 
 - New OutputSaver class (#1837)
