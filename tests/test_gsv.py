@@ -213,6 +213,16 @@ class TestGsv():
         data = reader.retrieve(var='2t')
         assert data.isel(time=1)['2t'].mean().values == pytest.approx(285.8661045)
 
+    def test_reader_stac_polytope(self) -> None:
+        """
+        Reading from a remote databridge using polytope
+        """
+
+        reader = Reader(catalog='climatedt-phase1', model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
+                        loglevel="debug", engine="polytope", areas=False)
+        data = reader.retrieve(var='2t')
+        assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
+
     def test_fdb_from_file(self) -> None:
         """
         Reading fdb dates from a file.
