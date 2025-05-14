@@ -17,6 +17,11 @@ rsync_with_mkdir() {
 
     # Run rsync
     rsync -avz "$local_path/" "$rsync_target/"
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        log_message ERROR "Rsync failed with exit code $exit_code"
+        exit $exit_code
+    fi
 }
 
 push_lumio() {
@@ -29,7 +34,17 @@ push_lumio() {
     else
         log_message INFO "Pushing figures to LUMI-O: $2"
         python $SCRIPT_DIR/push_s3.py $1 content/png/$2
+        exit_code=$?
+        if [ $exit_code -ne 0 ]; then
+            log_message ERROR "Pushing PNGs failed with exit code $exit_code"
+            exit $exit_code
+        fi
         python $SCRIPT_DIR/push_s3.py $1 content/pdf/$2
+        exit_code=$?
+        if [ $exit_code -ne 0 ]; then
+            log_message ERROR "Pushing PDFs failed with exit code $exit_code"
+            exit $exit_code
+        fi
     fi
 }
 
