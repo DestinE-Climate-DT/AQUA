@@ -86,7 +86,7 @@ def test_label():
     label = cbar_get_label(da, loglevel=loglevel)
     # assert label is a string
     assert isinstance(label, str), "Colorbar label should be a string"
-    assert label == '2t [K]', "Colorbar label is incorrect"
+    assert label == "2 metre temperature [K]", "Colorbar label is incorrect"
 
     # Test the function with a custom label
     label = cbar_get_label(da, cbar_label='Temperature', loglevel=loglevel)

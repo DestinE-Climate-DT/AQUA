@@ -15,17 +15,18 @@ from aqua.exceptions import NoDataError, NoRegridError
 from aqua.version import __version__ as aqua_version
 from aqua.regridder import Regridder
 from aqua.timstat import TimStat
+from aqua.fixer import Fixer
 from aqua.data_model import counter_reverse_coordinate
 import aqua.gsv
 
 from .streaming import Streaming
-from .fixer import FixerMixin
+
 from .reader_utils import set_attrs
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
-class Reader(FixerMixin):
+class Reader():
     """General reader for climate data."""
 
     instance = None  # Used to store the latest instance of the class
@@ -33,7 +34,7 @@ class Reader(FixerMixin):
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
                  regrid=None, regrid_method=None,
-                 areas=True, datamodel=None,
+                 areas=True, 
                  streaming=False,
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
@@ -55,8 +56,6 @@ class Reader(FixerMixin):
                                            If not specified anywhere, using "ycon".
             fix (bool, optional): Activate data fixing
             areas (bool, optional): Compute pixel areas if needed. Defaults to True.
-            datamodel (str, optional): Destination data model for coordinates, overrides the one in fixes.yaml.
-                                       Defaults to None.
             streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
             startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
@@ -100,7 +99,6 @@ class Reader(FixerMixin):
         self.regrid_method = regrid_method
         self.nproc = nproc
         self.vert_coord = None
-        self.deltat = 1  # time in seconds to be used for cumulated variables unit convrersion
         self.time_correction = False  # extra flag for correction data with cumulation time on monthly timescale
         self.aggregation = aggregation
         self.chunks = chunks
@@ -171,13 +169,13 @@ class Reader(FixerMixin):
 
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
-            self.fixes = self.find_fixes()  # find fixes for this model/exp/source
-            self.tgt_datamodel = datamodel
-            # Default destination datamodel
-            # (unless specified in instantiating the Reader)
-            if not self.tgt_datamodel:
-                self.tgt_datamodel = self.fixes_dictionary["defaults"].get("dst_datamodel", None)
-
+            self.fixer = Fixer(fixer_name=self.fixer_name,
+                               convention=self.convention,
+                               fixes_dictionary=self.fixes_dictionary,
+                               metadata=self.esmcat.metadata,
+                               loglevel=self.loglevel)
+            
+    
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
         self.tgt_grid_name = regrid
@@ -239,7 +237,7 @@ class Reader(FixerMixin):
             if self.fix:
                 # TODO: this should include the latitudes flipping fix.
                 # TODO: No check is done on the areas coords vs data coords
-                self.src_grid_area = self._fix_area(self.src_grid_area)
+                self.src_grid_area = self.fixer.datamodel.fix_area(self.src_grid_area)
 
         # configure regridder and generate weights
         if regrid:
@@ -255,7 +253,7 @@ class Reader(FixerMixin):
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
             if self.fix:
                 # TODO: this should include the latitudes flipping fix
-                self.tgt_grid_area = self._fix_area(self.tgt_grid_area)
+                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activste time statistics
@@ -289,7 +287,8 @@ class Reader(FixerMixin):
             if isinstance(var, str) or isinstance(var, int):
                 var = str(var).split()  # conversion to list guarantees that a Dataset is produced
             self.logger.info("Retrieving variables: %s", var)
-            loadvar = self.get_fixer_varname(var) if self.fix else var
+            # HACK: to be checked if can be done in a better way
+            loadvar = self.fixer.get_fixer_varname(var) if self.fix else var
         else:
             # If we are retrieving from fdb we have to specify the var
             if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
@@ -339,7 +338,7 @@ class Reader(FixerMixin):
             data = self._select_level(data, level=level)  # select levels (optional)
 
         if self.fix:
-            data = self.fixer(data, var)
+            data = self.fixer.fixer(data, var)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -773,7 +772,7 @@ class Reader(FixerMixin):
         # We're trying to set the if/else by int vs str and then eventually by the fix option
         # We store the fixer_dict once for all for semplicity of the if case.
         if self.fix is True:
-            fixer_dict = self.fixes.get('vars', {})
+            fixer_dict = self.fixer.fixes.get('vars', {})
             if fixer_dict == {}:
                 self.logger.debug("No 'vars' block in the fixer, guessing variable names base on ecCodes")
         if var != fdb_var:
@@ -1020,7 +1019,7 @@ class Reader(FixerMixin):
                 print(f"  Fixer name is {metadata['fixer_name']}")
             else:
                 # TODO: to be removed when all the catalogs are updated
-                print(f"  Fixes: {self.fixes}")
+                print(f"  Fixes: {self.fixer.fixes}")
 
         if self.tgt_grid_name:
             print("Regridding is active:")
