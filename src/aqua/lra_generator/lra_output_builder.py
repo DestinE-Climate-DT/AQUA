@@ -3,11 +3,20 @@ LRA Output Path Builder
 """
 
 import os
+from typing import Optional
 
 class OutputPathBuilder:
-    def __init__(self, catalog, model, exp, var, 
-                 realization='r1', resolution=None, frequency=None,
-                 stat='nostat', region='global', level=None, **kwargs):
+    """
+    Class to build output paths for LRA data files.
+    """
+    
+    
+
+    def __init__(self, catalog: str, model: str, exp: str, var: str,
+             realization: str = 'r1', resolution: Optional[str] = None,
+             frequency: Optional[str] = None, stat: str = 'nostat',
+             region: str = 'global', level: Optional[str] = None,
+             **kwargs):
         """
         Initialize the OutputPathBuilder with the necessary parameters.
         Params:
@@ -36,22 +45,22 @@ class OutputPathBuilder:
         self.level = level
         self.kwargs = kwargs or {}
 
-    def _deduce_resolution(self, original_xarray):
-        # Dummy implementation: replace with real deduction logic
-        return '1deg'
 
-    def _deduce_frequency(self, original_xarray):
-        # Dummy implementation: replace with real deduction logic
-        return 'monthly'
-
-    def set_from_xarray(self, xarray_obj):
+    def set_from_reader(self, reader_obj):
         """Guess resolution and frequency from xarray."""
         if self.resolution is None:
-            self.resolution = self._deduce_resolution(xarray_obj)
+            self.resolution = reader_obj.src_grid_name
         if self.frequency is None:
-            self.frequency = self._deduce_frequency(xarray_obj)
+            self.frequency = "native"
 
-    def create_directory(self):
+    def build_path(self, basedir, year, month=None, day=None):
+        """create the full path to the output file."""
+        folder = self.build_directory()
+        filename = self.build_filename(year, month, day)
+        return os.path.join(basedir, folder, filename)
+
+    def build_directory(self):
+        """create the output directory based on the parameters."""
         parts = [
             self.catalog, self.model, self.exp, self.realization,
             self.resolution, self.frequency, self.stat, self.region
@@ -60,8 +69,9 @@ class OutputPathBuilder:
         #os.makedirs(folder, exist_ok=True)
         return folder
 
-    def create_filename(self, year, month=None, day=None):
-        varname = f"{self.var}_{self.level}" if self.level else self.var
+    def build_filename(self, year, month=None, day=None):
+        """create the filename based on the parameters."""
+        varname = f"{self.var}{self.level}" if self.level else self.var
 
         components = [
             varname,
@@ -79,11 +89,36 @@ class OutputPathBuilder:
         kwargs_str = "_".join(f"{k}{v}" for k, v in self.kwargs.items()) if self.kwargs else ""
         components.append(kwargs_str)
 
-        yyyy = f"{year:04d}" if year else ""
-        mm = f"{month:02d}" if month else ""
-        dd = f"{day:02d}" if day else ""
-        components.append(f"{yyyy}{mm}{dd}")
+        # Combine date parts with their format lengths
+        date_parts = {
+            'year': (year, 4),
+            'month': (month, 2),
+            'day': (day, 2),
+        }
 
-        filename = "_".join(str(c) for c in components if c) + ".nc"
+        # loop to format the dates
+        date_components = ""
+        for _, (value, length) in date_parts.items():
+            date_formatted = self.format_component(value, length)
+            if date_formatted:
+                date_components = date_components + date_formatted
+
+
+        # collapse all the component to create the final file
+        filename = "_".join(str(c) for c in components + [date_components] if c) + ".nc"
     
         return filename
+    
+
+    def format_component(self, value, length):
+        """Format a value as zero-padded string if it's not a wildcard, else return as-is."""
+        if value is None:
+            return ""
+        if self.is_wildcard(value):
+            return value
+        return f"{int(value):0{length}d}"
+    
+    @staticmethod
+    def is_wildcard(s):
+        """Guess if a string includes a wildcard"""
+        return any(char in str(s) for char in ['*', '?', '[', ']'])
