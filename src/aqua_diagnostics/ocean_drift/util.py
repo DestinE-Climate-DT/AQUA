@@ -1,12 +1,8 @@
-import xarray as xr
-import numpy as np
-from aqua.logger import log_configure
-from itertools import product
-from aqua.util import find_vert_coord, load_yaml, add_pdf_metadata
+from aqua.util import load_yaml, ConfigPath
 import os
 
 
-def process_region_config(regions_yaml):
+def process_region_config(regions_yaml: dict) -> dict:
     """
     Processes the region configuration dictionary by normalizing the keys.
 
@@ -25,36 +21,31 @@ def process_region_config(regions_yaml):
         return regions_yaml
 
 
-def predefined_regions(region, loglevel="WARNING"):
+def predefined_regions(region: str) -> tuple:
     """
-    Retrieves the geographical boundaries (latitude and longitude) for a predefined region 
+    Retrieves the geographical boundaries (latitude and longitude) for a predefined region
     from a configuration file.
 
     Args:
-        region (str): The name of the region to retrieve. The name is processed to be 
+        region (str): The name of the region to retrieve. The name is processed to be
             case-insensitive and ignores spaces, underscores, and hyphens.
-        loglevel (str, optional): The logging level to use. Defaults to "WARNING".
 
     Returns:
-        tuple: A tuple containing the southern latitude (lat_s), northern latitude (lat_n), 
+        tuple: A tuple containing the southern latitude (lat_s), northern latitude (lat_n),
             western longitude (lon_w), and eastern longitude (lon_e) of the region.
 
     Raises:
         ValueError: If the specified region is not found in the configuration file.
 
     Notes:
-        - The configuration file is expected to be located at 
-          `../../../../config/diagnostics/ocean3d/regions.yaml` relative to this script.
-        - The configuration file should contain a dictionary with a "regions" key, where 
+        - The configuration file should contain a dictionary with a "regions" key, where
           each region is defined with its boundaries (LatN, LatS, LonE, LonW).
     """
-    logger = log_configure(loglevel, "predefined_regions")
-    
     Configurer = ConfigPath()
     oceandir = os.path.join(Configurer.configdir, 'diagnostics', 'ocean3d')
-    regionfile =  os.path.join(oceandir, 'config', 'regions.yaml')
+    regionfile = os.path.join(oceandir, 'regions.yaml')
     regions_dict = load_yaml(regionfile)
-            
+
     processed_region = region.replace(" ", "").replace("_", "").replace("-", "").lower()
 
     try:
@@ -64,9 +55,7 @@ def predefined_regions(region, loglevel="WARNING"):
         lat_limits = region_boundary.get("lat_limits")
     except KeyError:
         raise ValueError(
-            f"Invalid region name: {region}. Check the region name in config file or update it: {regions_yaml}"
+            f"Invalid region name: {region}. Check the region name in config file or update it: {regionfile}"
         )
 
     return lon_limits, lat_limits
-
-
