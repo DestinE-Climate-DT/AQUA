@@ -105,6 +105,7 @@ class OutputPathBuilder:
 
 
         # collapse all the component to create the final file
+        print(components)
         filename = "_".join(str(c) for c in components + [date_components] if c) + ".nc"
     
         return filename
