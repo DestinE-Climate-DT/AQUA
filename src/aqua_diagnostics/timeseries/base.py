@@ -135,9 +135,9 @@ class BaseMixin(Diagnostic):
 
         data = self.data
         data = self.reader.fldmean(data, box_brd=box_brd,
-                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
+                                   lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
-                                    center_time=center_time)
+                                   center_time=center_time)
         data = data.sel(time=slice(self.std_startdate, self.std_enddate))
         if freq_dict[str_freq]['groupdby'] is not None:
             data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
@@ -237,21 +237,7 @@ class BaseMixin(Diagnostic):
             var (str): The variable to be checked.
             units (str): The units to be checked.
         """
-        final_units = units
-        initial_units = self.data.units
-        data = self.data
-
-        conversion = convert_units(initial_units, final_units)
-
-        factor = conversion.get('factor', 1)
-        offset = conversion.get('offset', 0)
-
-        if factor != 1 or offset != 0:
-            self.logger.debug('Converting %s from %s to %s',
-                              var, initial_units, final_units)
-            data = data * factor + offset
-            data.attrs['units'] = final_units
-            self.data = data
+        self.data = super()._check_data(data=self.data, var=var, units=units)
 
     def _str_freq(self, freq: str):
         """
