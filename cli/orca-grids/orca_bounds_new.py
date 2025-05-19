@@ -83,8 +83,8 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         get_vars = ["glam"+self.stagg,
                     "gphi"+self.stagg,
                     "e1"+self.stagg,
-                    "e2"+self.stagg,
-                    self.stagg+"mask"]
+                    "e2"+self.stagg]
+                    #self.stagg+"mask"]
 
         if self.level:
             get_vars += ['gdept_1d']
@@ -103,14 +103,14 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         ds_mesh = ds_mesh.rename({'glam'+self.stagg: 'lon',
                                   'gphi'+self.stagg: 'lat'}).set_coords(['lat', 'lon'])
 
-        ds_mesh = ds_mesh.rename({self.stagg+'mask': 'mask'})
-        ds_mesh['mask'].attrs = {'standard_name': 'mask',
-                                 'flag_values': '0; 1',
-                                 'flag_meanings': 'dry; wet'}
-        ds_mesh['mask'].encoding = {'_FillValue': None,
-                                    'dtype': 'int32'}
-        if not self.level:
-            ds_mesh['mask'] = ds_mesh['mask'].max(dim='nav_lev')
+        #ds_mesh = ds_mesh.rename({self.stagg+'mask': 'mask'})
+        #ds_mesh['mask'].attrs = {'standard_name': 'mask',
+        #                         'flag_values': '0; 1',
+        #                         'flag_meanings': 'dry; wet'}
+        #ds_mesh['mask'].encoding = {'_FillValue': None,
+        #                            'dtype': 'int32'}
+        #if not self.level:
+        #    ds_mesh['mask'] = ds_mesh['mask'].max(dim='nav_lev')
         
         ds_mesh['cell_area'] = (ds_mesh['e1'+self.stagg] * ds_mesh['e2'+self.stagg])
         ds_mesh['cell_area'].attrs = {'standard_name': 'cell_area',
@@ -134,11 +134,11 @@ class OrcaMesh(metaclass=abc.ABCMeta):
             ds_mesh[self.VDIM+'_'+self.VBNDS_DIM] = self._get_level_bnds(ds_mesh[self.VDIM],
                                                                          self.VBNDS_DIM)
                 
-            ds_mesh['cell_area'] = ds_mesh['cell_area']\
-                .where((ds_mesh['mask'] > 0.5).any(dim=self.VDIM))
-        else:
-            ds_mesh['cell_area'] = ds_mesh['cell_area']\
-                .where(ds_mesh['mask'] > 0.5)
+            #ds_mesh['cell_area'] = ds_mesh['cell_area']\
+            #    .where((ds_mesh['mask'] > 0.5).any(dim=self.VDIM))
+        #else:
+            #ds_mesh['cell_area'] = ds_mesh['cell_area']\
+            #    .where(ds_mesh['mask'] > 0.5)
         
         return ds_mesh
 
@@ -245,12 +245,12 @@ class OrcaMesh(metaclass=abc.ABCMeta):
             ds_out[coord+'_'+self.BNDS_DIM].encoding['coordinates'] = None
             ds_out[coord+'_'+self.BNDS_DIM].encoding['_FillValue'] = None
 
-        ds_out['mask'].encoding['coordinates'] = None
-        ds_out['dummy'] = xr.ones_like(ds_out['mask'], dtype=float)\
-                            .where(ds_out['mask'] > 0.5)
-        ds_out['dummy'].encoding = {'dtype': 'float32',
-                                    '_FillValue': self.FILLVAL}
-        ds_out['dummy'].attrs = {'standard_name': 'dummy_variable'}
+        #ds_out['mask'].encoding['coordinates'] = None
+        #ds_out['dummy'] = xr.ones_like(ds_out['mask'], dtype=float)\
+        #                    .where(ds_out['mask'] > 0.5)
+        #ds_out['dummy'].encoding = {'dtype': 'float32',
+        #                            '_FillValue': self.FILLVAL}
+        #ds_out['dummy'].attrs = {'standard_name': 'dummy_variable'}
             
         return ds_out
     
@@ -262,9 +262,9 @@ class OrcaMesh(metaclass=abc.ABCMeta):
             vvars += [self.VDIM, self.VDIM+'_'+self.VBNDS_DIM]
         vvars += ['lat', 'lat_bnds',
                   'lon', 'lon_bnds',
-                  'cell_area',
-                  'mask',
-                  'dummy']
+                  'cell_area']
+                  #'mask',
+                  #'dummy']
         
         return dset[vvars]        
     
@@ -286,8 +286,8 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         new = original.stack({self.UNSTRUCT_DIM: ('y', 'x')}).drop_vars(['x','y', self.UNSTRUCT_DIM])
         new['lon_' + self.BNDS_DIM] = new['lon_' + self.BNDS_DIM].transpose(self.UNSTRUCT_DIM, self.BNDS_DIM) 
         new['lat_'+ self.BNDS_DIM] = new['lat_' + self.BNDS_DIM].transpose(self.UNSTRUCT_DIM, self.BNDS_DIM)
-        new['dummy'].attrs['grid_type'] = 'unstructured'
-        new['mask'].attrs['grid_type'] = 'unstructured'
+        #new['dummy'].attrs['grid_type'] = 'unstructured'
+        #new['mask'].attrs['grid_type'] = 'unstructured'
         
         return new
  
