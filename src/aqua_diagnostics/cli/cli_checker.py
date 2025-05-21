@@ -61,6 +61,7 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', None)
     exp = get_arg(args, 'exp', None)
     source = get_arg(args, 'source', None)
+    regrid = get_arg(args, 'regrid', None)
     yamldir = get_arg(args, 'yaml', None)
     fread = args.no_read
     frebuild = args.no_rebuild
@@ -72,7 +73,7 @@ if __name__ == '__main__':
 
     try:
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        loglevel=loglevel, rebuild=frebuild)
+                        regrid=regrid, loglevel=loglevel, rebuild=frebuild)
 
         # extract metadata from catalog
         if yamldir:

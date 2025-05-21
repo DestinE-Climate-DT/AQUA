@@ -31,6 +31,7 @@ job:
     model: "IFS-NEMO"
     exp: "historical-1990"
     source: "lra-r100-monthly"
+    regrid: "r100"
 
     script_path_base: "${AQUA}/diagnostics"  # Base directory for the diagnostic scripts
 
