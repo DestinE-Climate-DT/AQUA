@@ -21,3 +21,14 @@ fixer_name:
         vars:
             tcc:
                 src_units: frac
+
+    climatedt-phase2-ICON-esuite:
+        convention: eccodes
+        deltat: 3600
+        vars:
+            tcc:
+                src_units: frac
+            iews:
+                src_units: N m**-2 s
+            inss:
+                src_units: N m**-2 s
