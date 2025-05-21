@@ -202,7 +202,6 @@ def main():
     model = args.model or config.get('job', {}).get('model')
     exp = args.exp or config.get('job', {}).get('exp')
     source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
-    regrid = config.get('job', {}).get('regrid', False)
 
     if not all([model, exp, source]):
         logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
@@ -241,7 +240,7 @@ def main():
         logger.info("Running setup checker")
         checker_script = os.path.join(aqua_path, "src/aqua_diagnostics/cli/cli_checker.py")
         output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        command = f"python {checker_script} --model {model} --exp {exp} --source {source} --regrid {regrid} -l {loglevel} --yaml {output_dir}"
+        command = f"python {checker_script} --model {model} --exp {exp} --source {source} -l {loglevel} --yaml {output_dir}"
         if catalog:
             command += f" --catalog {catalog}"
         logger.debug(f"Command: {command}")
