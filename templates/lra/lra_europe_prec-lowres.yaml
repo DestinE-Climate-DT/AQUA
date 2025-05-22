@@ -11,8 +11,8 @@ target:
     lon: [-30, 40]
 
 paths:
-  outdir: /scratch/project_465000454/nurissom/prec_italy
-  tmpdir: /scratch/project_465000454/nurissom/prec_italy/tmp
+  outdir: /scratch/project_462000911/mnurisso/prec_italy
+  tmpdir: /scratch/project_462000911/mnurisso/lra_tmp
 
 options:
   loglevel: INFO
@@ -21,15 +21,15 @@ options:
 
 data:
   IFS-FESOM:
-    story-2017-historical:
-      hourly-hpz9-atm2d:
-        vars: ['skt', 'msl']
-        workers: 4
+    #    story-2017-historical:
+    #      hourly-hpz9-atm2d:
+    #        vars: ['skt', 'msl']
+    #        workers: 12
     story-2017-control:
       hourly-hpz9-atm2d:
         vars: ['skt', 'msl']
-        workers: 4
+        workers: 8
     story-2017-T2K:
       hourly-hpz9-atm2d:
         vars: ['skt', 'msl']
-        workers: 4
+        workers: 8

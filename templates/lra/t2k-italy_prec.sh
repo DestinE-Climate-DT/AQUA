@@ -3,7 +3,7 @@
 #SBATCH --job-name=2d-t2k_italy
 #SBATCH --output=t2k_italy_%j.out
 #SBATCH --error=t2k_italy_%j.err
-#SBATCH --account=project_465000454
+#SBATCH --account=project_462000911
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --time=24:00:00

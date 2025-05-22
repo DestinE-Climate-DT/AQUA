@@ -3,7 +3,7 @@
 #SBATCH --job-name=3d-HR-italy_prec
 #SBATCH --output=3d-HR-italy_prec_%j.out
 #SBATCH --error=3d-HR-italy_prec_%j.err
-#SBATCH --account=project_465000454
+#SBATCH --account=project_462000911
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=24:00:00
