@@ -202,25 +202,26 @@ class TestGsv():
         assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
-    def test_reader_dask(self) -> None:
+    def test_reader_polytope(self) -> None:
         """
-        Reading in parallel with a dask cluster
+        Reading from a remote databridge using polytope
         """
 
-        cluster = LocalCluster(threads_per_worker=1, n_workers=2)
-        client = Client(cluster)
+        reader = Reader(catalog='climatedt-phase1', model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d",
+                        startdate="20210101T0000", enddate="20210101T2300", loglevel="debug", engine="polytope",
+                        chunks='h')
+        data = reader.retrieve(var='2t')
+        assert data.isel(time=1)['2t'].mean().values == pytest.approx(285.8661045)
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
-        data = reader.retrieve()
-        # Test if the correct dates have been found
-        assert "1990-01-01T00:00" in str(data.time[0].values)
-        assert "1990-01-01T23:00" in str(data.time[-1].values)
-        # Test if the data can actually be read and contain the expected values
-        assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
-        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
+    def test_reader_stac_polytope(self) -> None:
+        """
+        Reading from a remote databridge using polytope
+        """
 
-        client.shutdown()
-        cluster.close()
+        reader = Reader(catalog='climatedt-phase1', model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
+                        loglevel="debug", engine="polytope", areas=False)
+        data = reader.retrieve(var='2t')
+        assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
 
     def test_fdb_from_file(self) -> None:
         """
@@ -245,3 +246,57 @@ class TestGsv():
         
         assert source.data_start_date == '19900101T0000'
         assert source.data_end_date == '19900103T2300'
+    
+    def test_reader_dask(self) -> None:
+        """
+        Reading in parallel with a dask cluster
+        """
+
+        cluster = LocalCluster(threads_per_worker=1, n_workers=2)
+        client = Client(cluster)
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+        data = reader.retrieve()
+        # Test if the correct dates have been found
+        assert "1990-01-01T00:00" in str(data.time[0].values)
+        assert "1990-01-01T23:00" in str(data.time[-1].values)
+        # Test if the data can actually be read and contain the expected values
+        assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
+        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
+
+        client.shutdown()
+        cluster.close()
+
+# Additional tests for the GSVSource class
+
+@pytest.mark.gsv
+def test_fdb_home_bridge_logs(capsys):
+    # Prepare test metadata ensuring we have fdbhome_bridge
+    metadata = {
+        'fdb_home_bridge': FDB_HOME,
+        'fdb_home': FDB_HOME
+    }
+
+    source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
+                        metadata=metadata, loglevel='DEBUG')
+
+    # No assert in the following because we cannot check the stderr logs. This is just for coverage.
+
+    source.chk_type = [1]  # Force chunk type to be bridge
+    source._get_partition(ii=0)
+
+    source.chk_type = [0]
+    source._get_partition(ii=0)
+
+    metadata = {
+        'fdb_path_bridge': FDB_HOME+'/etc/fdb/config.yaml',
+        'fdb_path': FDB_HOME+'/etc/fdb/config.yaml'
+    }
+    source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
+                        metadata=metadata, loglevel='DEBUG')
+    
+    source.chk_type = [1]
+    source._get_partition(ii=0)
+
+    source.chk_type = [0]
+    source._get_partition(ii=0)

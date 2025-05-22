@@ -4,15 +4,13 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package AQUA.
-AQUA is developed and tested with Python 3.12 and it supports Python 3.9 and later.
+AQUA is developed and tested with Python 3.12 and it supports Python 3.9 or later (with the exclusions of 3.13).
 
-We recommend using Mamba, a package manager for conda-forge, for the installation process.
-However, you can also use Conda, the default package manager for Anaconda.
+We recommend using Mamba/Conda package manager for the installation process.
 
 .. note ::
     Soon AQUA will be available on the PyPI repository, so you will be able to install it with pip.
     The installation process will be updated accordingly.
-    Some dependencies are not available in the PyPI repository, so mamba or conda are recommended for the installation process.
 
 Prerequisites
 -------------
@@ -20,11 +18,7 @@ Prerequisites
 Before installing AQUA, ensure that you have the following software installed:
 
 - `Git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_: AQUA is hosted on GitHub, and you will need Git to clone the repository.
-- `Miniforge <https://github.com/conda-forge/miniforge>`_ or `Conda <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_: Miniforge is a package manager for conda-forge, and it is recommended for the installation process. 
-
-.. note ::
-    Currently, AQUA is a private repository, so you need to be registered as a user to access it.
-    If you need access, please contact the AQUA team.
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process. 
 
 .. _installation-conda:
 
@@ -61,11 +55,6 @@ Finally, activate the environment:
 At this point, you should have successfully installed the AQUA package and its dependencies 
 in the newly created aqua environment.
 
-.. warning ::
-    If you are installing AQUA on a Mac, please be aware that the ``tempest-extremes`` package is not available for the Mac platform.
-    You will need to remove the ``tempest-extremes`` package from the environment file before creating the environment.
-    This means that at the current stage, the Tropical Cyclone diagnostics will not be available on Mac.
-
 .. note ::
     Together with the environment file, a ``pyproject.toml`` file is provided in the repository.
     This file contains the required dependencies for the AQUA package and allows you to install the package with the pip package manager.
@@ -91,8 +80,12 @@ Replace ``<environment_name>`` with the name of the existing environment if this
 
 .. _installation-lumi:
 
+
+HPC Installation
+----------------
+
 Installation on LUMI HPC
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 LUMI is currently the main HPC of the DestinE-Climate-DT project, and it is the main platform for the development of AQUA.
 The Lustre filesystem does not support the use of conda environments, so another approach has been developed to install on LUMI,
@@ -138,7 +131,7 @@ If you do not agree, you will need to call ``load_aqua.sh`` manually every time 
 .. _installation-levante:
 
 Installation on Levante HPC at DKRZ
------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can follow the installation process described in the previous section (see :ref:`installation-conda`).
 In order to use the FDB access, you need to load the FDB5 binary library (``libfdb5.so``).
@@ -163,7 +156,7 @@ Also in this case, you can set the environment variable in your ``.bash_profile`
 .. _installation-mn5:
 
 Installation on MareNostrum 5 (MN5) HPC at BSC
---------------------------------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To enable internet-dependent operations like git, pip or conda on MN5, you can configure an SSH tunnel and set up proxy environment variables.
 
@@ -231,7 +224,7 @@ To use the FDB5 binary library on MN5, set the following environment variable:
 .. _installation-hpc2020:
 
 Installation on ECMWF HPC2020
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HPC2020 is moving to a more container-based approach, so the suggested installation process uses a technology similar to the one used on LUMI.
 In fact, using directly conda or mamba on lustre filesystems (``$PERM`` and ``$HPCPERM``) is not recommended 

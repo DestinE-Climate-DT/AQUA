@@ -33,13 +33,11 @@ reference_model_annual:
 outputdir: "./"
 
 # This is the variable that will be plotted as timeseries
-timeseries: 'hcc'
+variable: '2t'
 
 timeseries_plot_params:
-  startdate: 
-  enddate: 
-  #startdate: '1990-01-01'
-  #enddate: '2000-12-31'
+  startdate: '1990-01-01'
+  enddate: '2000-12-31'
   plot_std: True
   plot_ensemble_members: False
   ensemble_label: 'Multi-model'

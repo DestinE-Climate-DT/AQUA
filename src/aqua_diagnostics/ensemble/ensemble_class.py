@@ -62,7 +62,7 @@ class EnsembleTimeseries():
         self.plot_ref = True
         self.figure_size = [10, 5]
         self.outfile = None
-        self.outdir = './'
+        self.outdir = 'Ensemble_Timeseries'
         self.label_size = 7.5
         self.ensemble_label = 'Ensemble'
         self.ref_label = 'ERA5'
@@ -72,6 +72,7 @@ class EnsembleTimeseries():
         self.pdf_save = True
         if self.pdf_save is False:
             self.logger.info("Figure will not be saved")
+        self.netcdf_save = True
 
     def ensemble_mean(self, dataset):
         """
@@ -180,23 +181,19 @@ class EnsembleTimeseries():
         ax.set_title(self.plot_title)
         ax.legend(ncol=self.label_ncol, fontsize=self.label_size, framealpha=0)
         
-        # Save PDF
+        # Save plot as pdf
         if self.pdf_save:
-            self.save_pdf(fig, self.ref_label)
-
-    def save_pdf(self, fig, ref_label):
-        """
-        This method creates the pdf of the output plots and is used inside the plot function
-        """
-        self.logger.info("Saving figure to pdf")
-        outfig = os.path.join(self.outdir, 'pdf')
-        self.logger.debug(f"Saving figure to {outfig}")
-        create_folder(outfig, self.loglevel)
-        if self.outfile is None:
-            self.outfile = f'multimodel_global_time_series_timeseries_{self.var}'
-        self.outfile += '.pdf'
-        self.logger.debug(f"Outfile: {self.outfile}")
-        fig.savefig(os.path.join(outfig, self.outfile),bbox_inches='tight', pad_inches=0.1)
+            self.logger.info("Saving figure to pdf")
+            if self.outfile is None:
+                outfile = f'ensemble_time_series_timeseries_{self.var}'
+            else:
+                outfile = self.outfile
+            pdf_path = os.path.join(self.outdir, 'pdf')
+            self.logger.debug(f"Saving figure to {pdf_path}")
+            create_folder(pdf_path, self.loglevel)
+            outfile += '.pdf'
+            self.logger.debug(f"pdf output: {outfile}")
+            fig.savefig(os.path.join(pdf_path, outfile),bbox_inches='tight', pad_inches=0.1)
 
     def run(self):
         self.compute()
@@ -220,7 +217,7 @@ class EnsembleLatLon():
             loglevel (str): Log level. Default is "WARNING".
         """
         self.loglevel = loglevel
-        self.logger = log_configure(log_level=self.loglevel, log_name='Multi-model Ensemble')
+        self.logger = log_configure(log_level=self.loglevel, log_name='Ensemble')
 
         self.var = var
         self.dataset = dataset
@@ -230,9 +227,9 @@ class EnsembleLatLon():
             self.units = "units"
         self.dim = ensemble_dimension_name
         self.plot_std = True
-        self.figure_size = [5,5]
+        self.figure_size = [15,15]
         self.plot_label = True
-        self.outdir = './'
+        self.outdir = 'Ensemble_LatLon'
         self.outfile = None
         self.pdf_save = True
         self.mean_plot_title = 'Map of '+self.var+' for Ensemble mean'
@@ -281,8 +278,9 @@ class EnsembleLatLon():
 
             fig0 = plt.figure(figsize=(self.figure_size[0], self.figure_size[1]))
             levels = np.linspace(dataset_mean.values.min(), dataset_mean.values.max(), num=21)
+            create_folder(self.outdir, self.loglevel)
             if self.outfile is None:
-                self.outfile = f'multimodel_global_2D_map_{var}'
+                self.outfile = f'global_2D_map_{var}'
             gs = gridspec.GridSpec(1, 1, figure=fig0)
             ax0 = fig0.add_subplot(gs[0, :], projection=projection)
             ax0.coastlines()
@@ -296,7 +294,7 @@ class EnsembleLatLon():
             ax0.set_title(self.mean_plot_title)
             ax0.set_xlabel('Longitude')
             ax0.set_ylabel('Latitude')
-            cbar = fig0.colorbar(im, ax=ax0, shrink=0.55, extend='both')
+            cbar = fig0.colorbar(im, ax=ax0, shrink=0.43, extend='both')
             cbar.set_label(self.cbar_label)
             self.logger.info("Saving ensemble mean map to pdf")
             outfig = os.path.join(self.outdir, 'mean_pdf')
@@ -327,7 +325,7 @@ class EnsembleLatLon():
             ax1.set_title(self.std_plot_title)
             ax1.set_xlabel('Longitude')
             ax1.set_ylabel('Latitude')
-            cbar = fig1.colorbar(im, ax=ax1, shrink=0.55, extend='both')
+            cbar = fig1.colorbar(im, ax=ax1, shrink=0.43, extend='both')
             cbar.set_label(self.cbar_label)
             self.logger.info("Saving ensemble std map to pdf")
             outfig = os.path.join(self.outdir, 'std_pdf')
@@ -361,7 +359,7 @@ class EnsembleZonal():
             loglevel (str): Log level. Default is "WARNING".
         """
         self.loglevel = loglevel
-        self.logger = log_configure(log_level=self.loglevel, log_name='Multi-model Ensemble')
+        self.logger = log_configure(log_level=self.loglevel, log_name='Ensembles')
 
         self.var = var
         self.dataset = dataset
@@ -370,7 +368,7 @@ class EnsembleZonal():
         self.plot_std = True
         self.figure_size = [15, 15]
         self.plot_label = True
-        self.outdir = './'
+        self.outdir = 'Ensemble_Zonal'
         self.outfile = None
         self.pdf_save = True
         self.mean_plot_title = 'Ensemble mean of zonal average of '+self.var
@@ -418,7 +416,7 @@ class EnsembleZonal():
  
             fig0 = plt.figure(figsize=(self.figure_size[0], self.figure_size[1]))
             if self.outfile is None:
-                self.outfile = f'multimodel_zonal_average_{var}'
+                self.outfile = f'zonal_average_{var}'
             ax0 = fig0.add_subplot(111)
             im = ax0.contourf(dataset_mean.lat,dataset_mean.lev,dataset_mean,cmap='RdBu_r', levels=20, extend='both')
             ax0.set_ylim((5500, 0))
@@ -444,7 +442,7 @@ class EnsembleZonal():
  
             fig1 = plt.figure(figsize=(self.figure_size[0], self.figure_size[1]))
             if self.outfile is None:
-                self.outfile = f'multimodel_zonal_average_{var}'
+                self.outfile = f'zonal_average_{var}'
             ax1 = fig1.add_subplot(111)
             #im = self.dataset_std[var].contourf(ax=ax1, cmap=cmap, levels=20, extend='both');
             im = ax1.contourf(dataset_std.lat,dataset_std.lev,dataset_std,cmap='OrRd',extend='both')

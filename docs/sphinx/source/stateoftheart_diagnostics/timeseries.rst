@@ -6,66 +6,53 @@ Timeseries
 Description
 -----------
 
-The diagnostic is composed of three main functionalities that are implemented as three classes:
+The Timeseries diagnostic is a set of tools to compute and plot time series, seasonal cycles and Gregory-like plot of a given variable or formula for a given model or list of models.
+Time series and seasonal cycles can be computed globally or for a specific area.
+The three functionalities are designed to have a class which analyse a single model to produce the netCDF files and another class to produce the plots.
+The diagnostic can compare the model time series with a reference dataset, which is defined in the configuration file.
 
-* **Timeseries**: a class that computes the global mean time series of a given variable or formula for a given model or list of models. Comparison with a reference dataset is also possible.
-* **GregoryPlot**: a class that computes the Gregory-like plot for a given model or list of models. Comparison with a reference dataset is also possible.
-* **SeasonalCycle**: a class that computes the seasonal cycle of a given variable or formula for a given model or list of models. Comparison with a reference dataset is also possible.
+Classes
+-------
 
+There are three classes to compute the netCDF files:
 
-Structure
------------
+* **Timeseries**: a class that computes time series of a given variable or formula for a given model or dataset. 
+  Comparison with a reference dataset is also possible. It supports hourly, daily, monthly and yearly time series and area selection.
+  It can also compute the standard deviation of the time series.
+* **SeasonalCycles**: a class that computes the seasonal cycle of a given variable or formula for a given model or dataset.
+  Comparison with a reference dataset is also possible. It can also compute the standard deviation of the seasonal cycle. It supports area selection.
+* **Gregory**: a class that computes the monthly and annual time series necessary for the Gregory-like plot of net radiation TOA and 2 metre temperature.
+  It can also compute the standard deviation of the time series.
 
-* ``README.md``: a readme file which contains some technical information on how to install the diagnostic and its environment.
-* ``cli_timeseries.py``: the command line interface (CLI) script to run the diagnostic.
-* ``gregory.py``: contains the GregoryPlot class.
-* ``reference_data.py``: contains the code to retrieve the reference data for all the classes.
-* ``seasonalcycle.py``: contains the SeasonalCycle class.
-* ``timeseries.py``: contains the Timeseries class.
-* ``util.py``: contains the utility functions used by the classes.
+There are three other classes to produce the plots:
 
-Input variables
----------------
+* **PlotTimeseries**: a class that ingests xarrays and produces the plots for the time series.
+  Info necessary for titles, legends and captions are deduced from the xarray attributes.
+* **PlotSeasonalCycles**: a class that ingests xarrays and produces the plots for the seasonal cycle.
+  Info necessary for titles, legends and captions are deduced from the xarray attributes.
+* **PlotGregory**: a class that ingests xarrays and produces the Gregory-like plot.
+  Info necessary for titles, legends and captions are deduced from the xarray attributes.
 
-The diagnostic requires the variables that the user wants to analyse.
-A list of the variables that are compared automatically when running the full diagnostic is provided in the configuration files
-available in the ``config/diagnostics/timeseries`` directory.
+.. warning::
 
-For the Gregory-like plot, the following variables are required:
+    Hourly and daily plots are not available yet, while the netCDF files are produced.
 
-* ``2t`` (2 metre temperature, GRIB paramid 167)
-* ``mtnlwrf`` (Mean top net long-wave radiation flux, GRIB paramid 235040)
-* ``mtnswrf`` (Mean top net short-wave radiation flux, GRIB paramid 235039)
+File structure
+--------------
 
-Basic usage
------------
+* The diagnostic is located in the ``src/aqua_diagnostics/timeseries`` directory, which contains both the source code and the command line interface (CLI) script.
+* The configuration files are located in the ``config/diagnostics/timeseries`` directory and contains the default configuration for the diagnostic.
+* Notebooks are available in the ``notebooks/diagnostics/timeseries`` directory and contain examples of how to use the diagnostic.
+* A list of available regions is available in the ``config/diagnostics/timeseries/interface/regions.yaml`` file.
 
-The basic usage of each class is explained with a working example in the notebooks provided in the ``notebooks/diagnostics/timeseries`` directory.
-The basic structure of the analysis is the following:
+Input variables and datasets
+----------------------------
 
-.. code-block:: python
+By default, the diagnostic compare against the ERA5 dataset, with standard deviation calculated over the period 1990-2020.
+The Gregory-like plot uses the CERES dataset for the Net radiation TOA and the ERA5 dataset for the 2 metre temperature.
 
-    from aqua.diagnostic.timeseries import Timeseries
-
-    # Define the models to analyse
-    models = ['IFS-NEMO', 'ICON']
-    exps = ['historical-1990', 'ssp370']
-    sources = ['lra-r100-monthly', 'lra-r100-monthly']
-
-    ts = Timeseries(var='2t', models=models, exps=exps, sources=sources,
-                    startdate='1990-01-01', enddate='1999-12-31',
-                    std_startdate='1990-01-01', std_enddate='1999-12-31',
-                    loglevel='INFO')
-    ts.run()
-
-The same structure can be used for the other classes.
-As can be seen, more than one model can be analysed at the same time.
-The user can also define the start and end date of the analysis and the reference dataset.
-
-.. note::
-
-    A ``catalogs`` argument can be passed to the class to define the catalogs to use for the analysis.
-    If not provided, the ``Reader`` will identify the catalogs to use based on the models, experiments and sources provided.
+The necessary input variables for the diagnostic are all the variables that are needed to compute the time series, seasonal cycle choosen in the configuration file.
+The Gregory-like plot requires the Net radiation TOA and the 2 metre temperature.
 
 CLI usage
 ---------
@@ -75,7 +62,7 @@ The diagnostic can be run from the command line interface (CLI) by running the f
 .. code-block:: bash
 
     cd $AQUA/src/aqua_diagnostics/timeseries
-    python cli_timeseries.py --config_file <path_to_config_file>
+    python cli_timeseries.py --config <path_to_config_file>
 
 Three configuration files are provided and run when executing the aqua-analysis (see :ref:`aqua_analysis`).
 Two configuration files are for atmospheric and oceanic timeseries and gregory plots, and the third one is for the seasonal cycles.
@@ -84,6 +71,7 @@ Additionally the CLI can be run with the following optional arguments:
 
 - ``--config``, ``-c``: Path to the configuration file.
 - ``--nworkers``, ``-n``: Number of workers to use for parallel processing.
+- ``--cluster``: Cluster to use for parallel processing. By default a local cluster is used.
 - ``--loglevel``, ``-l``: Logging level. Default is ``WARNING``.
 - ``--catalog``: Catalog to use for the analysis. It can be defined in the config file.
 - ``--model``: Model to analyse. It can be defined in the config file.
@@ -92,23 +80,36 @@ Additionally the CLI can be run with the following optional arguments:
 - ``--outputdir``: Output directory for the plots.
 
 Config file structure
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 The configuration file is a YAML file that contains the following information:
 
-* ``models``: a list of models to analyse (defined by the catalog, model, exp, source arguments)
+* ``datasets``: a list of models to analyse (defined by the catalog, model, exp, source arguments)
 
 .. code-block:: yaml
 
-    models:
+    datasets:
       - catalog: climatedt-phase1
         model: IFS-NEMO
         exp: historical-1990
         source: lra-r100-monthly
+        regrid: null
       - catalog: climatedt-phase1
         model: ICON
         exp: historical-1990
         source: lra-r100-monthly
+        regrid: null
+
+* ``references``: a list of reference datasets to use for the analysis.
+
+.. code-block:: yaml
+
+    references:
+      - catalog: obs
+        model: ERA5
+        exp: era5
+        source: monthly
+        regrid: null
 
 * ``output``: a block describing the details of the output. Is contains:
 
@@ -117,77 +118,83 @@ The configuration file is a YAML file that contains the following information:
     * ``save_pdf``: a boolean that enables the saving of the plots in pdf format.
     * ``save_png``: a boolean that enables the saving of the plots in png format.
     * ``dpi``: the resolution of the plots.
-* ``timeseries``: a list of variables to compute the global mean time series
-* ``timeseries_formulae``: a list of formulae to compute the global mean time series
-* ``gregory``: a block that contains the variables required for the Gregory plot
-* ``seasonal_cycle``: a list of variables to compute the seasonal cycle
 
-The ``gregory`` block enables the plot and controls the details of the Gregory plot:
+.. code-block:: yaml
 
-* ``ts``: the variable name to compute the 2 metre temperature.
-* ``toa``: the list of variables to compute the Net radiation TOA. It will sum the variables in the list.
-* ``monthly``: a boolean that enables the monthly Gregory plot.
-* ``annual``: a boolean that enables the annual Gregory plot.
-* ``ref``: a boolean that enables the reference dataset for the Gregory plot. At the moment the dataset is ERA5 for 2t and CERES for the Net radiation TOA.
-* ``regrid``: if set to a value compatible with the AQUA Reader, the data will be regridded to the specified resolution.
-* ``ts_std_start``, ``ts_std_end``: the start and end date for the standard deviation calculation of 2t.
-* ``toa_std_start``, ``toa_std_end``: the start and end date for the standard deviation calculation of the Net radiation TOA.
+    output:
+      outputdir: "/path/to/output"
+      rebuild: true
+      save_pdf: true
+      save_png: true
+      dpi: 300
 
-For the other classes, the configuration is done in a block called ``timeseries_plot_params``.
-The block contains a default configuration, that can be used for all the variables, and a specific configuration for each variable.
-If a block with a specific variable name is found, the default configuration is overwritten by the specific one.
+* ``timeseries``: a block, nested in the ``diagnostics`` block, that contains the details required for the time series.
+  The parameters specific to a single variable are merged with the default parameters, giving priority to the specific ones.
 
-.. warning::
-    By default, in `aqua-analysis`, Gregory plots are generated by the `radiation` diagnostic.
+.. code-block:: yaml
+
+    diagnostics:
+      timeseries:
+        run: true # to enable the time series
+        variables: ['2t', 'tprate']
+        formulae: ['tnlwrf+tnswrf']
+        params:
+          default:
+            hourly: false # Frequency to enable
+            daily: false
+            monthly: true
+            annual: true
+            std_startdate: '1990-01-01'
+            std_enddate: '2020-12-31'
+          tnlwrf+tnswrf:
+            standard_name: "net_top_radiation"
+            long_name: "Net top radiation"
+          tprate:
+            units: 'mm/day'
+            standard_name: 'tprate'
+            long_name: 'Total precipitation rate'
+            regions: ['tropics', 'europe'] # regions to plot the time series other than global
 
 
-The ``timeseries_plot_params`` block contains the following parameters:
+* ``seasonalcycle``: a block, nested in the ``diagnostics`` block, that contains the details required for the seasonal cycle.
+  The parameters specific to a single variable are merged with the default parameters, giving priority to the specific ones.
 
-* ``plot_ref``: a boolean that enables the reference dataset for the plot.
-* ``plot_ref_kw``: a dictionary with ``{'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}`` to define the reference dataset.
-* ``monthly``: a boolean that enables the monthly time series plot.
-* ``monthly_std``: a boolean that enables the monthly standard deviation bands.
-* ``annual``: a boolean that enables the annual time series plot.
-* ``regions``: a list of regions to plot the time series. The global mean is always plotted.
-* ``annual_std``: a boolean that enables the annual standard deviation bands.
-* ``regrid``: if set to a value compatible with the AQUA Reader, the data will be regridded to the specified resolution.
-* ``startdate``, ``enddate``: the start and end date for the time series plot.
-* ``std_startdate``, ``std_enddate``: the start and end date for the standard deviation calculation.
-* ``extend``: a boolean that enables the extension of the time series of the reference dataset to match the model time series length. Default is True.
-* ``longname``: the long name of the variable. Used to overwrite formulae names.
-* ``units``: the units of the variable. Used to overwrite formulae units.
+.. code-block:: yaml
 
-Advanced usage
---------------
+    diagnostics:
+      seasonalcycle:
+        run: true # to enable the seasonal cycle
+        variables: ['2t', 'tprate']
+        params:
+          default:
+            std_startdate: '1990-01-01'
+            std_enddate: '2020-12-31'
+          tprate:
+            units: 'mm/day'
+            long_name: 'Total precipitation rate'
 
-Area selection
-^^^^^^^^^^^^^^
+* ``gregory``: a block, nested in the ``diagnostics`` block, that contains the details required for the Gregory-like plot.
 
-The diagnostic can be run for a specific area by defining the longitude and latitude bounds while initialising the class.
-The area selection can be done for the **Timeseries** and **SeasonalCycle** classes.
+.. code-block:: yaml
 
-.. code-block:: python
-
-    ts = Timeseries(var='2t', models=models, exps=exps, sources=sources,
-                    startdate='1990-01-01', enddate='1999-12-31',
-                    std_startdate='1990-01-01', std_enddate='1999-12-31',
-                    lat_limits=[-90, 0], loglevel='INFO')
-    ts.run()
-
-Title, caption and filenames will be updated with the area selection informations.
-
-.. note::
-
-    The area selection is not available for the CLI of the SeasonalCycle yet.
-
-If the CLI is used, a set of regions can be used to define the area selection.
-The regions are defined in the configuration file available under the ``config/diagnostics/timeseries/interface`` directory.
-More regions can be added to the configuration file.
+    diagnostics:
+      gregory:
+        run: true # to enable the Gregory plot
+        t2m: '2t' # variable name for the 2 metre temperature
+        net_toa_name: 'tnlwrf+tnswrf' # formula or variable name for the Net radiation TOA
+        monthly: true
+        annual: true
+        std: true
+        std_startdate: '1990-01-01'
+        std_enddate: '2020-12-31'
+        # Gregory needs 2 datasets and do not care about the references block above
+        t2m_ref: {'catalog': 'obs', 'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}
+        net_toa_ref: {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}
 
 Output
 ------
 
-The diagnostic produces three types of plots (see :ref:`global_timeseries_examples`):
+The diagnostic produces three types of plots (see :ref:`timeseries_examples`):
 
 * A comparison of monthly and/or annual global mean time series of the model and the reference dataset.
 * A comparison of the seasonal cycle of the model and the reference dataset.
@@ -203,9 +210,13 @@ The diagnostic uses the following reference datasets:
 * ERA5 as a default reference dataset for the global mean time series and seasonal cycle.
 * ERA5 for the 2m temperature and CERES for the Net radiation TOA in the Gregory-like plot.
 
+.. note::
+
+    Multiple reference time series and seasonal cycles plot are planned for the future.
+
 Custom reference datasets can be used.
 
-.. _global_timeseries_examples:
+.. _timeseries_examples:
 
 Example Plots
 -------------
@@ -213,24 +224,20 @@ Example Plots
 A plot for each class is shown below.
 All these plots can be produced by running the notebooks in the ``notebooks`` directory on LUMI HPC.
 
-.. figure:: figures/global_time_series_gregory.png
+.. figure:: figures/gregory_doc.png
     :align: center
     :width: 100%
 
-    Gregory plot of IFS-NEMO historical-1990 and ssp370 simulations.
-    The left panel represents the monthly Gregory plot, while on the right the annual Gregory plot is shown.
-    The start and end point of the Gregory plot are indicated by the green and red arrows, respectively.
-    In the annual Gregory plot a band representing the 2 sigma confidence interval is shown in green.
-    This is evaluated with ERA5 data (1980-2010) for the 2m temperature and with CERES data (2000-2020) for the Net radiation TOA.
+    Gregory plot of ICON historical-1990 simulation.
 
-.. figure:: figures/global_time_series_timeseries.png
+.. figure:: figures/timeseries_doc.png
     :align: center
     :width: 100%
 
-    Global mean temperature time series of IFS-NEMO historical-1990 and comparison with ERA5.
+    Global mean temperature time series of ICON historical-1990 and comparison with ERA5.
     Both monthly and annual timeseries are shown. A 2 sigma confidence interval is evaluated for ERA5 data (1990-2020).
 
-.. figure:: figures/global_time_series_seasonalcycle.png
+.. figure:: figures/seasonalcycles_doc.png
     :align: center
     :width: 100%
 
@@ -240,10 +247,11 @@ All these plots can be produced by running the notebooks in the ``notebooks`` di
 Available demo notebooks
 ------------------------
 
-Notebooks are stored in diagnostics/global_time_series/notebooks
+Notebooks are stored in the ``notebooks/diagnostics/timeseries`` directory and contain examples of how to use the diagnostic.
 
 * `timeseries.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/timeseries/timeseries.ipynb>`_
 * `seasonalcycles.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/timeseries/seasonalcycles.ipynb>`_
+* `gregory.ipynb <have://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/timeseries/gregory.ipynb>`_
 
 Detailed API
 ------------

@@ -8,6 +8,7 @@
 
 import argparse
 import os
+import sys
 import boto3
 from botocore.client import Config
 
@@ -18,6 +19,15 @@ def upload_file_to_s3(client, bucket_name, file_path, object_name):
         print(f"File '{file_path}' successfully uploaded to bucket '{bucket_name}' as '{object_name}'.")
     except Exception as e:
         print(f"Error uploading file: {e}")
+        if "AccessDenied" in str(e):
+            print("Access denied. Please check your AWS credentials and permissions.")
+            sys.exit(1)
+        elif "NoSuchBucket" in str(e):
+            print("Bucket does not exist. Please check the bucket name.")
+            sys.exit(2)
+        else:
+            # Any other error
+            sys.exit(3)
 
 def upload_directory_to_s3(client, bucket_name, source, dest):
     """Upload the contents of a directory to an S3 bucket."""
