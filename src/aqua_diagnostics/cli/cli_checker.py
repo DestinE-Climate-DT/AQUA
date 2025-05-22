@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     try:
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        loglevel=loglevel, rebuild=frebuild)
+                        regrid='r100', loglevel=loglevel, rebuild=frebuild)
 
         # extract metadata from catalog
         if yamldir:
