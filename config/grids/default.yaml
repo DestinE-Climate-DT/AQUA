@@ -46,8 +46,4 @@ grids:
   r200: r180x90
   r250s: r144x73
   r250: r144x72
-  # full Gaussian grids
-  F80: F80    # This is for TL159
-  F128: F128  # TL255
-  F160: F160  # TL319
-  F256: F256  # TL511
+  # full Gaussian grids -> these can be now used with a string in the reader's regrid arg

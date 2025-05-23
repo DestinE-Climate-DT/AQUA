@@ -85,12 +85,12 @@ class TestTimeseries:
 
     def test_formula(self):
         ts = Timeseries(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
-                        region=self.region, loglevel=loglevel, startdate='19940101', enddate='19950101',
+                        region=self.region, loglevel=loglevel, startdate='19940101', enddate='19941231',
                         regrid=self.regrid)
 
         ts.retrieve(var='2*tcc', formula=True, standard_name='2tcc', long_name='2*Total Cloud Cover', units='%')
 
         ts.compute(freq='monthly')
         assert ts.monthly.values[0] ==  pytest.approx(117.40372092960037, rel=approx_rel)
-        # The extra month added should be the same as the first one since there is only one year
-        assert ts.monthly.values[-1] == pytest.approx(117.40372092960037, rel=approx_rel)
+        # Differently from the previous version of the test, there is no extension of the data
+        assert ts.monthly.values[-1] == pytest.approx(123.01323353753897, rel=approx_rel)

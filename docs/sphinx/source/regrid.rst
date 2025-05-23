@@ -128,10 +128,9 @@ The list is available in the ``config/grids/default.yaml`` file.
 
 .. note::
     Inside the ``config/grids`` directory, it is possible to define custom grids that can be used in the regridding process.
+    Currently grids supported by CDO, which do not require extra CDO options, are supported and can be used directly as target grids.
     We are planning to be able to support also more complex irregular grids as target grids in the future (e.g. allowing to regrid everything to
     HealPix grids).
-    The current limitation is to use a dictionary like: ``{grid_name: cdo_grid_definition}`` where the grid definition is a string in the CDO convention.
-    No extra options to give to CDO are allowed at the moment, but this will be possible in the future.
 
 Oceanic grid files naming scheme
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

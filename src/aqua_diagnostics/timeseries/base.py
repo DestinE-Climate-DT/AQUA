@@ -7,6 +7,8 @@ from aqua.util import frequency_string_to_pandas, time_to_string
 from aqua.util import load_yaml, eval_formula, convert_units
 from aqua.diagnostics.core import Diagnostic, start_end_dates
 
+xr.set_options(keep_attrs=True)
+
 
 class BaseMixin(Diagnostic):
     """The BaseMixin class is used for the Timeseries and the SeasonalCycles classes."""
@@ -94,6 +96,13 @@ class BaseMixin(Diagnostic):
                 self.logger.error('Error retrieving variable %s', var)
             # Get the xr.DataArray to be aligned with the formula code
             self.data = self.data[var]
+
+        if self.plt_startdate is None:
+            self.plt_startdate = self.data.time.min().values
+            self.logger.debug('Plot start date set to %s', self.plt_startdate)
+        if self.plt_enddate is None:
+            self.plt_enddate = self.data.time.max().values
+            self.logger.debug('Plot end date set to %s', self.plt_enddate)
 
         # Customization of the data, expecially needed for formula
         if units is not None:

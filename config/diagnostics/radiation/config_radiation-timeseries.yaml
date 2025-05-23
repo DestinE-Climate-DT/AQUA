@@ -45,8 +45,3 @@ diagnostics:
       tnlwrf+tnswrf:
         standard_name: "net_top_radiation"
         long_name: "Net top radiation"
-      
-
-# This is the list of variables that will be plotted as timeseries
-timeseries: ['tnlwrf', 'tnswrf']
-timeseries_formulae: ['tnlwrf+tnswrf']

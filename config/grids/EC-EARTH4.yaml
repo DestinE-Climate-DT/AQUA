@@ -1,0 +1,35 @@
+grids:
+  tl255:
+    path: '{{ grids }}/IFS/tl255_grid.nc'
+  tl63:
+    path: '{{ grids }}/IFS/tl63_grid.nc'
+  
+  ORCA2-ece:
+    path:
+        2d: '{{ grids }}/EC-EARTH4/ORCA2_mesh_sfc_grid_T.nc'
+        deptht: '{{ grids }}/EC-EARTH4/ORCA2_mesh_3d_grid_T_level.nc'
+    space_coord: ["x_grid_T", "y_grid_T"]
+    vert_coord: ["deptht"]
+    cellareas: '{{ grids }}/EC-EARTH4/cellarea_ORCA2_T.nc'
+    cellareas_var: areat
+    regrid_method: 'bil'
+
+  eORCA1-ece:
+    path:
+        2d: '{{ grids }}/EC-EARTH4/eORCA1_mesh_sfc_grid_T.nc'
+        deptht: '{{ grids }}/EC-EARTH4/eORCA1_mesh_3d_grid_T_level.nc'
+    space_coord: ["x_grid_T", "y_grid_T"]
+    vert_coord: ["deptht"]
+    cellareas: '{{ grids }}/EC-EARTH4/cellarea_eORCA1_T.nc'
+    cellareas_var: areat
+    regrid_method: 'bil'
+
+  eORCA1-ece-ice:
+    path:
+        2d: '{{ grids }}/EC-EARTH4/eORCA1_mesh_sfc_grid_T.nc'
+        deptht: '{{ grids }}/EC-EARTH4/eORCA1_mesh_3d_grid_T_level.nc'
+    space_coord: ["x", "y"]
+    vert_coord: ["deptht"]
+    cellareas: '{{ grids }}/EC-EARTH4/cellarea_eORCA1_T.nc'
+    cellareas_var: areat
+    regrid_method: 'bil'

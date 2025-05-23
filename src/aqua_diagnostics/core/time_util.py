@@ -31,3 +31,39 @@ def start_end_dates(startdate=None, enddate=None,
     end_retrieve = max(filter(None, [enddate, end_std])) if any([enddate, end_std]) else None
 
     return start_retrieve, end_retrieve
+
+def round_startdate(startdate):
+    """
+    Round the start date to the beginning of the month
+    
+    Args:
+        startdate (str or pandas.Timestamp): start date for the data retrieve
+
+    Returns:
+        pandas.Timestamp: start date rounded to the beginning of the month
+    """
+    startdate = pd.Timestamp(startdate)
+    startdate = startdate.replace(day=1)
+    startdate = startdate.replace(hour=0, minute=0, second=0)
+
+    return startdate
+
+def round_enddate(enddate):
+    """
+    Round the end date to the end of the month
+    
+    Args:
+        enddate (str or pandas.Timestamp): end date for the data retrieve
+
+    Returns:
+        pandas.Timestamp: end date rounded to the end of the month
+    """
+    enddate = pd.Timestamp(enddate)
+    endday_dict = {1: 31, 2: 29 if enddate.year % 4 == 0 else 28,
+                   3: 31, 4: 30, 5: 31, 6: 30,
+                   7: 31, 8: 31, 9: 30, 10: 31,
+                   11: 30, 12: 31}
+
+    enddate = enddate.replace(day=endday_dict[enddate.month])
+    enddate = enddate.replace(hour=23, minute=59, second=59)
+    return enddate
