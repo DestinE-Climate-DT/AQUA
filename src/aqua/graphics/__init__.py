@@ -16,13 +16,16 @@ The following functions are available:
 """
 from .gregory import plot_gregory_monthly, plot_gregory_annual
 from .hovmoller import plot_hovmoller
+from .index_plot import index_plot, indexes_plot
 from .single_map import plot_single_map, plot_single_map_diff
 from .styles import ConfigStyle
 from .timeseries import plot_timeseries, plot_seasonalcycle
 from .multiple_maps import plot_maps, plot_maps_diff
 
+
 __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
            "plot_hovmoller",
+           "index_plot", "indexes_plot",
            "plot_single_map", "plot_single_map_diff",
            "ConfigStyle",
            "plot_timeseries", "plot_seasonalcycle",

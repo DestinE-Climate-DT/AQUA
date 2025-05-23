@@ -150,17 +150,7 @@ diagnostic_config = {
             'target_path': 'diagnostics/teleconnections/config'
         },
         {
-            'config_file': 'teleconnections-netgems3.yaml',
-            'source_path': 'config/diagnostics/teleconnections/interface',
-            'target_path': 'diagnostics/teleconnections/config'
-        },
-        {
-            'config_file': 'cli_config_atm.yaml',
-            'source_path': 'config/diagnostics/teleconnections',
-            'target_path': 'diagnostics/teleconnections'
-        },
-        {
-            'config_file': 'cli_config_oce.yaml',
+            'config_file': 'config_teleconnections.yaml',
             'source_path': 'config/diagnostics/teleconnections',
             'target_path': 'diagnostics/teleconnections'
         },

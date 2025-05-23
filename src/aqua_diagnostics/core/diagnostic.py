@@ -1,7 +1,7 @@
 import xarray as xr
 from aqua import Reader
 from aqua.logger import log_configure
-from aqua.util import OutputSaver
+from aqua.util import OutputSaver, convert_units
 
 
 class Diagnostic():
@@ -130,3 +130,28 @@ class Diagnostic():
             data = reader.regrid(data)
 
         return data, reader, catalog
+
+    def _check_data(self, data: xr.DataArray, var: str, units: str):
+        """
+        Make sure that the data is in the correct units.
+
+        Args:
+            data (xarray DataArray): The data to be checked.
+            var (str): The variable to be checked.
+            units (str): The units to be checked.
+        """
+        final_units = units
+        initial_units = data.units
+
+        conversion = convert_units(initial_units, final_units)
+
+        factor = conversion.get('factor', 1)
+        offset = conversion.get('offset', 0)
+
+        if factor != 1 or offset != 0:
+            self.logger.debug('Converting %s from %s to %s',
+                              var, initial_units, final_units)
+            data = data * factor + offset
+            data.attrs['units'] = final_units
+
+        return data
