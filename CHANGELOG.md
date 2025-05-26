@@ -9,6 +9,7 @@ Unreleased in the current development version:
 
 - Hardcode regrid='r100' in setup_checker [#1945]
 - Fix for make_content failing to accept expected argument [#1898]
+- Update experiments.yaml needed by the dashboard and return error codes (#1951)
 
 ## [v0.13.5]
 
