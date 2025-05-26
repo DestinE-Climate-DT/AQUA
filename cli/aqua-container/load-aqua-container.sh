@@ -148,7 +148,10 @@ function setup_container_path(){
         "MN5")
             AQUA_folder="/gpfs/projects/ehpc01/containers/aqua"
             ;;
-        
+        "nord4")
+            AQUA_folder="/esarchive/scratch/EERIE_AQUA/AQUA/containers"
+            ;;
+                
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
@@ -202,6 +205,11 @@ function setup_envs(){
             GRID_DEFINITION_PATH=""
             ESMFMKFILE="/opt/conda/lib/esmf.mk"
             ;;
+        "nord4")
+            GSV_WEIGHTS_PATH=""
+            GRID_DEFINITION_PATH=""
+            ESMFMKFILE="/opt/conda/lib/esmf.mk"
+            ;;            
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
@@ -254,7 +262,11 @@ function setup_binds(){
                 "/gpfs/projects/ehpc01/"
             )
             ;;
-
+        "nord4")
+            binds=(
+                "/esarchive"
+            )
+            ;;
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
@@ -305,8 +317,8 @@ done
 
 echo "Perfect! Now it's time to ride with AQUA ⛵"
 
-#echo "singularity $cmd --cleanenv $env_args $bind_args $AQUA_container $script"
-singularity $cmd --cleanenv $env_args --no-mount /etc/localtime $bind_args $AQUA_container $script
+echo "singularity $cmd --cleanenv $env_args $bind_args $AQUA_container $script"
+singularity $cmd --cleanenv $env_args $bind_args $AQUA_container $script
 
 ##### To update any python package e.g. gsv interface, opa, aqua ######
 # Do "pip install /path/to/repo/package_name" inside the singularity container.
