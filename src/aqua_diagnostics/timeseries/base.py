@@ -2,10 +2,10 @@ import os
 import xarray as xr
 
 from aqua.logger import log_configure
-from aqua.util import ConfigPath,  OutputSaver
+from aqua.util import ConfigPath 
 from aqua.util import frequency_string_to_pandas, time_to_string
 from aqua.util import load_yaml, eval_formula, convert_units
-from aqua.diagnostics.core import Diagnostic, start_end_dates
+from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver
 
 
 class BaseMixin(Diagnostic):
@@ -412,26 +412,25 @@ class PlotBaseMixin():
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
             diagnostic (str): Diagnostic name to be used in the filename as diagnostic_product.
         """
-        outputsaver = OutputSaver(diagnostic='timeseries',
+        outputsaver = OutputSaver(diagnostic='timeseries', 
                                   catalog=self.catalogs[0],
                                   model=self.models[0],
                                   exp=self.exps[0],
-                                  default_path=outputdir,
+                                  outdir=outputdir,
                                   rebuild=rebuild,
                                   loglevel=self.loglevel)
 
-        metadata = {"Description": description}
-        save_dict = {'metadata': metadata,
-                     'diagnostic_product': diagnostic,
-                     'dpi': dpi}
+        metadata = {"Description": description, "dpi": dpi }
+        extra_keys = {'diagnostic_product': diagnostic}
+
         if var is not None:
-            save_dict.update({'var': var})
+            extra_keys.update({'var': var})
         if region is not None:
-            save_dict.update({'region': region})
+            extra_keys.update({'region': region})
 
         if format == 'png':
-            outputsaver.save_png(fig, **save_dict)
+            outputsaver.save_png(fig, diagnostic_product=diagnostic, extra_keys=extra_keys, metadata=metadata)
         elif format == 'pdf':
-            outputsaver.save_pdf(fig, **save_dict)
+            outputsaver.save_pdf(fig, diagnostic_product=diagnostic, extra_keys=extra_keys, metadata=metadata)
         else:
             raise ValueError(f'Format {format} not supported. Use png or pdf.')

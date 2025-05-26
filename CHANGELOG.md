@@ -8,8 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.16.0):
 
 AQUA core complete list:
+- Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
 
 AQUA diagnostics complete list:
+- Timeseries: Use new OutputSaver in Timeseries diagnostics (#1948)
 
 
 ## [v0.15.0]
