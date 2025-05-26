@@ -8,8 +8,29 @@
 
 import argparse
 import os
+import sys
 import boto3
 from botocore.client import Config
+
+def get_file_from_s3(client, bucket_name, object_name, dest_path):
+    """Try to download a single file from an S3 bucket."""
+    try:
+        client.download_file(bucket_name, object_name, dest_path)
+        print(f"File '{object_name}' successfully downloaded from bucket '{bucket_name}' to '{dest_path}'.")
+    except Exception as e:
+        print(f"Error downloading file: {e}")
+        if "AccessDenied" in str(e):
+            print("Access denied. Please check your AWS credentials and permissions.")
+            sys.exit(1)
+        elif "NoSuchBucket" in str(e):
+            print("Bucket does not exist. Please check the bucket name.")
+            sys.exit(2)
+        elif "NoSuchKey" in str(e):
+            # This does not raise an error, just a warning
+            print("Warning: Object does not exist. Please check the object name.")
+        else:
+            # Any other error
+            sys.exit(3)
 
 def upload_file_to_s3(client, bucket_name, file_path, object_name):
     """Upload a single file to an S3 bucket."""
@@ -18,6 +39,15 @@ def upload_file_to_s3(client, bucket_name, file_path, object_name):
         print(f"File '{file_path}' successfully uploaded to bucket '{bucket_name}' as '{object_name}'.")
     except Exception as e:
         print(f"Error uploading file: {e}")
+        if "AccessDenied" in str(e):
+            print("Access denied. Please check your AWS credentials and permissions.")
+            sys.exit(1)
+        elif "NoSuchBucket" in str(e):
+            print("Bucket does not exist. Please check the bucket name.")
+            sys.exit(2)
+        else:
+            # Any other error
+            sys.exit(3)
 
 def upload_directory_to_s3(client, bucket_name, source, dest):
     """Upload the contents of a directory to an S3 bucket."""
@@ -44,6 +74,7 @@ def main():
     parser.add_argument("-k", "--aws_access_key_id", help="AWS access key ID.")
     parser.add_argument("-s", "--aws_secret_access_key", help="AWS secret access key.")
     parser.add_argument("--endpoint_url", help="Custom endpoint URL for S3.", default="https://lumidata.eu")
+    parser.add_argument("-g", "--get", action="store_true", help="Flag to download a single file from the S3 bucket instead of uploading. Destination is intended as a path on the remote.")
 
     args = parser.parse_args()
 
@@ -54,15 +85,22 @@ def main():
                       endpoint_url=args.endpoint_url,
                       config=config)
 
-    if os.path.isdir(args.source):
-        upload_directory_to_s3(s3, args.bucket_name, args.source, args.destination)
-    else:
+    if args.get:  # Download a single file from the S3 bucket
         if args.destination:
             dest_path = args.destination
         else:
             dest_path = os.path.basename(args.source)
+        get_file_from_s3(s3, args.bucket_name, dest_path, args.source)  # source and destination are flipped in meaning
+    else:
+        if os.path.isdir(args.source):
+            upload_directory_to_s3(s3, args.bucket_name, args.source, args.destination)
+        else:
+            if args.destination:
+                dest_path = args.destination
+            else:
+                dest_path = os.path.basename(args.source)
 
-        upload_file_to_s3(s3, args.bucket_name, args.source, dest_path)
+            upload_file_to_s3(s3, args.bucket_name, args.source, dest_path)
 
 if __name__ == "__main__":
     main()
