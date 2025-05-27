@@ -10,6 +10,7 @@ Unreleased in the current development version:
 ## [v0.13.6]
 
 Hotfixes:
+- AQUA console uses token as in main to access the catalog repository without authentication (#1954)
 - Data Portfolio tag specified in tests in order to keep testing the operational tag (#1954)
 - Cartopy offline maps available due to MN5 missing internet connection (#1954)
 - Hardcode regrid='r100' in setup_checker (#1945)
