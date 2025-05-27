@@ -11,6 +11,12 @@ import os
 import boto3
 from botocore.client import Config
 
+def get_file_from_s3(client, bucket_name, object_name, dest_path):
+    """Try to download a single file from an S3 bucket."""
+    
+    print(f"Downloading file '{object_name}' from bucket '{bucket_name}' to '{dest_path}'.")
+    client.download_file(bucket_name, object_name, dest_path)
+
 def upload_file_to_s3(client, bucket_name, file_path, object_name):
     """Upload a single file to an S3 bucket."""
     try:
@@ -44,6 +50,7 @@ def main():
     parser.add_argument("-k", "--aws_access_key_id", help="AWS access key ID.")
     parser.add_argument("-s", "--aws_secret_access_key", help="AWS secret access key.")
     parser.add_argument("--endpoint_url", help="Custom endpoint URL for S3.", default="https://lumidata.eu")
+    parser.add_argument("-g", "--get", action="store_true", help="Flag to download a single file from the S3 bucket instead of uploading. Destination is intended as a path on the remote.")
 
     args = parser.parse_args()
 
@@ -54,15 +61,22 @@ def main():
                       endpoint_url=args.endpoint_url,
                       config=config)
 
-    if os.path.isdir(args.source):
-        upload_directory_to_s3(s3, args.bucket_name, args.source, args.destination)
-    else:
+    if args.get:  # Download a single file from the S3 bucket
         if args.destination:
             dest_path = args.destination
         else:
             dest_path = os.path.basename(args.source)
+        get_file_from_s3(s3, args.bucket_name, dest_path, args.source)  # source and destination are flipped in meaning
+    else:
+        if os.path.isdir(args.source):
+            upload_directory_to_s3(s3, args.bucket_name, args.source, args.destination)
+        else:
+            if args.destination:
+                dest_path = args.destination
+            else:
+                dest_path = os.path.basename(args.source)
 
-        upload_file_to_s3(s3, args.bucket_name, args.source, dest_path)
+            upload_file_to_s3(s3, args.bucket_name, args.source, dest_path)
 
 if __name__ == "__main__":
     main()

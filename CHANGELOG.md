@@ -7,8 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
-- Hardcode regrid='r100' in setup_checker [#1945]
-- Fix for make_content failing to accept expected argument [#1898]
+- Hardcode regrid='r100' in setup_checker (#1945)
+- Fix for make_content failing to accept expected argument (#1898)
+- Update experiments.yaml needed by the dashboard (#1951)
 
 ## [v0.13.5]
 
