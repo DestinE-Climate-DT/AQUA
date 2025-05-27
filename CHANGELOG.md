@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+## [v0.13.6]
+
+Hotfixes:
 - Hardcode regrid='r100' in setup_checker (#1945)
 - Fix for make_content failing to accept expected argument (#1898)
 - Update experiments.yaml needed by the dashboard (#1951)
@@ -847,7 +850,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.5...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.6...HEAD
+[v0.13.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.5...v0.13.6
 [v0.13.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.4...v0.13.5
 [v0.13.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.3...v0.13.4
 [v0.13.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.2...v0.13.3
