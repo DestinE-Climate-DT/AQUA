@@ -10,6 +10,7 @@ Unreleased in the current development version:
 ## [v0.13.6]
 
 Hotfixes:
+- Cartopy offline maps available due to MN5 missing internet connection (#1954)
 - Hardcode regrid='r100' in setup_checker (#1945)
 - Fix for make_content failing to accept expected argument (#1898)
 - Update experiments.yaml needed by the dashboard (#1951)
