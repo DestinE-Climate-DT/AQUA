@@ -39,6 +39,8 @@ jobs:
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
+      # github token
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
