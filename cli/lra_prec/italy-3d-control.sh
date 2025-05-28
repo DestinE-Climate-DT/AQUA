@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=small
-#SBATCH --job-name=3d-italy-histo
-#SBATCH --output=3d_italy_histo_%j.out
-#SBATCH --error=3d_italy_histo_%j.err
+#SBATCH --job-name=3d-italy-control
+#SBATCH --output=3d_italy_control_%j.out
+#SBATCH --error=3d_italy_control_%j.err
 #SBATCH --account=project_462000911
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=12
@@ -14,7 +14,7 @@ var=w
 levels=(70000) #50000)
 catalog=climatedt-phase1
 model=IFS-FESOM
-exp=story-2017-historical
+exp=story-2017-control
 source=hourly-hpz9-atm3d
 freq=daily
 regrid=r005

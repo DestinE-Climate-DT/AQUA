@@ -10,7 +10,8 @@
 #SBATCH --mem=64G 
 set -e
 
-vars=(skt msl)
+#vars=(msl skt)
+vars=(msl)
 catalog=climatedt-phase1
 model=IFS-FESOM
 exp=story-2017-control
