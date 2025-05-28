@@ -17,6 +17,7 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- `aqua install` copy or link also the `config/diagnostics` folder (#1958)
 - Refactor of `Fixer()`, now independent from the `Reader()` and supported by classes `FixerDataModel` and `FixerOperator` (#1929) 
 - Update and push to lumi-o the a file listing experiments needed by the dashboard (#1950)
 - Integration of HEALPix data with `plot_single_map()` (#1897)
