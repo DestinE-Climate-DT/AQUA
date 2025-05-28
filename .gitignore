@@ -41,3 +41,18 @@ coverage/
 
 # diagnostic specific
 diagnostics/ecmean/ECmean4
+
+# These are currently symlinks, when they will be added in the correct place, they must be removed from the .gitignore
+config/diagnostics/ocean3d/cli/config.drift.yaml
+config/diagnostics/ocean3d/cli/config.yaml
+config/diagnostics/ocean3d/cli/config.circulation.yaml
+config/diagnostics/seaice/config/regions_definition.yaml
+config/diagnostics/seaice/cli/config_Volume.yaml
+config/diagnostics/seaice/cli/config_Thickness.yaml
+config/diagnostics/seaice/cli/config_Extent.yaml
+config/diagnostics/seaice/cli/config_Concentration.yaml
+config/diagnostics/tropical_rainfall/config/config-tropical-rainfall.yml
+config/diagnostics/tropical_rainfall/cli/cli_config_trop_rainfall.yml
+config/diagnostics/tropical_cyclones/cli/config_tcs_cli.yaml
+config/diagnostics/ssh/config/config.yaml
+config/diagnostics/ssh/cli/config.yaml
