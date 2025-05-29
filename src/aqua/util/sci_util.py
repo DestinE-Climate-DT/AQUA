@@ -34,6 +34,7 @@ def area_selection(data=None, lat=None, lon=None,
             KeyError:   if 'lon' or 'lat' are not in the coordinates
             ValueError: if lat and lon are both None
     """
+    
     if data is None:
         raise ValueError('data cannot be None')
 

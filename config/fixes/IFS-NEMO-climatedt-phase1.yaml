@@ -12,7 +12,6 @@ fixer_name:
   
   ifs-nemo-reduced-output-monthly-v2:
     parent: ifs-destine-v1
-    data_model: ifs
     deltat: monthly
     convention: eccodes
     vars:

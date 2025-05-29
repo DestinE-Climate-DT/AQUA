@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+#set -ex
 
 # CLI tool to push analysis results to aqua-web
 
@@ -24,27 +24,50 @@ rsync_with_mkdir() {
     fi
 }
 
+get_file() {
+    # get_file <bucket> <remote_file> <local_file> <rsync>
+    # This assumes that we are inside the aqua-web repository
+    # We do not exit if an error occurs because indeed the remote file may not exist
+
+    if [[ -n "$4" ]]; then
+        log_message INFO "Getting file $2 from rsync target $4 writing to $3"
+        rsync -avz $4/$2 $3
+    else
+        log_message INFO "Getting file $2 from bucket $1 on LUMI-O"
+        python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2
+    fi
+}
+
+push_s3() {
+    # push_s3 <bucket> <file>
+    log_message INFO "Pushing file $2 to bucket $1 on LUMI-O"
+    python $SCRIPT_DIR/push_s3.py $1 $2 -d $2
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        log_message ERROR "Pushing $2 to bucket $1 failed with exit code $exit_code"
+        exit $exit_code
+    fi
+}
+
 push_lumio() {
+    # push_lumio <bucket> <experiment> <rsync>
+    # This function pushes the figures to the specified S3 bucket and updates the experiments.yaml file.
     # This assumes that we are inside the aqua-web repository
     if [[ -n "$3" ]]; then
         log_message INFO "Rsyncing figures to $rsync: $2"
+        if [ -f "content/experiments.yaml" ]; then
+            rsync -avz content/experiments.yaml $3/content/experiments.yaml
+        fi
         rsync_with_mkdir content/png/$2/ $3/content/png/$2/
         rsync_with_mkdir content/pdf/$2/ $3/content/pdf/$2/
         return
     else
-        log_message INFO "Pushing figures to LUMI-O: $2"
-        python $SCRIPT_DIR/push_s3.py $1 content/png/$2
-        exit_code=$?
-        if [ $exit_code -ne 0 ]; then
-            log_message ERROR "Pushing PNGs failed with exit code $exit_code"
-            exit $exit_code
+        log_message INFO "Pushing figures to bucket $1 on LUMI-O, experiment: $2"
+        if [ -f "content/experiments.yaml" ]; then
+            push_s3 $1 content/experiments.yaml
         fi
-        python $SCRIPT_DIR/push_s3.py $1 content/pdf/$2
-        exit_code=$?
-        if [ $exit_code -ne 0 ]; then
-            log_message ERROR "Pushing PDFs failed with exit code $exit_code"
-            exit $exit_code
-        fi
+        push_s3 $1 content/png/$2
+        push_s3 $1 content/pdf/$2
     fi
 }
 
@@ -118,7 +141,7 @@ print_help() {
     echo "  -s, --rsync URL        remote rsync target (takes priority over s3 bucket if specified)"
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ "$#" -lt 2 ]; then
     print_help
     exit 0
 fi
@@ -182,6 +205,11 @@ localrepo=0
 if [[ $repository == local:* ]]; then
     repository=${repository#local:}
     localrepo=1
+fi
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+    print_help
+    exit 0
 fi
 
 indir=$1
@@ -249,16 +277,18 @@ if [ -f "$exps" ]; then
         log_message INFO "Collect figures for $catalog/$model/$experiment and converting to png"
         collect_figures "$1" "$catalog/$model/$experiment"
         convert_pdf_to_png "$catalog/$model/$experiment"
-        make_contents "$catalog/$model/$experiment" "$config" # create catalog.yaml and catalog.json
-        push_lumio $bucket "$catalog/$model/$experiment" "$rsync"
+        get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
+        make_contents "$catalog/$model/$experiment" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
+        push_lumio $bucket "$catalog/$model/$experiment" "$rsync"  # push figures including experiments.yaml
         echo "$catalog/$model/$experiment" >> updated.txt
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"
     collect_figures "$indir" "$exps"
     convert_pdf_to_png "$exps"
-    make_contents "$exps" "$config" # create catalog.yaml and catalog.json
-    push_lumio $bucket "$exps" "$rsync"
+    get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
+    make_contents "$exps" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
+    push_lumio $bucket "$exps" "$rsync"  # push figures to LUMI-O including experiments.yaml
     echo "$exps" >> updated.txt
 fi
 

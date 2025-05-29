@@ -1,7 +1,6 @@
 fixer_name:
     ERA5-destine-v1:
         convention: eccodes
-        data_model: cf
         vars:
             ie:
                 source: E
@@ -203,7 +202,6 @@ fixer_name:
     # GPM
     GPM-default:
         convention: eccodes 
-        data_model: cf
         vars:
             # Automatic conversion to destination grib units
             tprate:
@@ -212,7 +210,6 @@ fixer_name:
     # MSWEP
     MSWEP-default:
         convention: eccodes 
-        data_model: cf
         vars:
             tprate:
                 source: precipitation

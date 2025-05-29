@@ -6,6 +6,8 @@ import cartopy.util as cutil
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 import numpy as np
+import healpy as hp
+from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
 from aqua.logger import log_configure
@@ -327,3 +329,159 @@ def set_ticks(data: xr.DataArray,
     ax.yaxis.set_major_formatter(lat_formatter)
 
     return fig, ax
+
+"""
+Following functions are taken and adjusted from the easygems package,
+on this repository:
+
+https://github.com/mpimet/easygems/blob/main/easygems/healpix/__init__.py
+"""
+def get_nside(data):
+    """
+    Get the nside of a HEALPix map.
+
+    Args:
+        data (numpy.ndarray or xarray.DataArray): HEALPix map.
+    
+    Returns:
+        int: nside of the HEALPix map.
+    
+    Raises:
+        ValueError: If the input data is not a valid HEALPix map.
+    """
+    # Check if the input is a numpy array or xarray DataArray
+    if not isinstance(data, (np.ndarray, xr.DataArray)): 
+        raise ValueError("Input data must be a numpy array or xarray DataArray")
+
+    if data.size == 0:  # Check for empty data
+        raise ValueError("Invalid HEALPix map: data array is empty")
+    
+    npix = data.size
+    if not hp.isnpixok(npix):
+        raise ValueError(f"Invalid HEALPix map: npix={npix}")
+    return hp.npix2nside(npix)
+    
+def get_npix(data):
+    """
+    Get the number of pixels in a HEALPix map based on the map data.
+
+    Args:
+        data (numpy.ndarray or xarray.DataArray): HEALPix map data.
+
+    Returns:
+        int: Number of pixels in the HEALPix map.
+    """
+    return hp.nside2npix(get_nside(data))
+    
+def healpix_resample(
+        var,
+        xlims=None,
+        ylims=None,
+        nx=None,
+        ny=None,
+        src_crs=None,
+        method="nearest",
+        nest=True,
+        nside_out=None,
+        loglevel="WARNING",
+        ):
+    """
+    Resample a HEALPix map to a lat/lon grid.
+
+    Args:
+        var (xarray.DataArray): Input HEALPix map.
+        xlims (tuple, optional): Longitude limits for the output grid.
+        ylims (tuple, optional): Latitude limits for the output grid.
+        nx (int, optional): Number of points in the x direction.
+        ny (int, optional): Number of points in the y direction.
+        src_crs (cartopy.crs.Projection, optional): Source coordinate reference system.
+        method (str, optional): Resampling method ('nearest' or 'linear').
+        nest (bool, optional): Whether to use nested HEALPix scheme.
+        nside_out (int, optional): Output HEALPix nside.
+        loglevel (str, optional): Log level.
+
+    Returns:
+        xarray.DataArray: Resampled data on a lat/lon grid.
+    """
+
+    logger = log_configure(loglevel, "healpix resample")
+
+    nside = get_nside(var)
+    if nside_out is None:
+        nside_out = nside
+
+    resolution_deg = 58.6 / nside_out
+    if xlims is None:
+        xlims = (-180, 180)
+    if ylims is None:
+        ylims = (-90, 90)
+
+    if nx is None:
+        nx = int((xlims[1] - xlims[0]) / resolution_deg)
+    if ny is None:
+        ny = int((ylims[1] - ylims[0]) / resolution_deg)
+
+    if src_crs is None:
+        src_crs = ccrs.Geodetic()
+
+    # Compute grid centers
+    dx = (xlims[1] - xlims[0]) / nx
+    dy = (ylims[1] - ylims[0]) / ny
+    xvals = np.linspace(xlims[0] + dx / 2, xlims[1] - dx / 2, nx)
+    yvals = np.linspace(ylims[0] + dy / 2, ylims[1] - dy / 2, ny)
+    xvals2, yvals2 = np.meshgrid(xvals, yvals)
+
+    # Transform to lat/lon
+    latlon = ccrs.PlateCarree().transform_points(
+        src_crs, xvals2, yvals2, np.zeros_like(xvals2)
+    )
+    valid = np.all(np.isfinite(latlon), axis=-1)
+    points = latlon[valid].T
+
+    res = np.full(latlon.shape[:-1], np.nan, dtype=var.dtype)
+
+    logger.debug("Resampling HEALPix map to lat/lon grid with %d x %d points", nx, ny)
+    if method == "nearest":
+        pix = hp.ang2pix(
+            get_nside(var),
+            theta=points[0],
+            phi=points[1],
+            nest=nest,
+            lonlat=True,
+        )
+        if var.size < get_npix(var):
+            if not isinstance(var, xr.DataArray):
+                raise ValueError(
+                    "Sparse HEALPix grids are only supported as xr.DataArray"
+                )
+            res[valid] = var.sel(cell=pix, method="nearest").where(
+                lambda x: x.cell == pix
+            )
+        else:
+            res[valid] = var[pix]
+
+    elif method == "linear":
+        lons, lats = hp.pix2ang(
+            nside=get_nside(var),
+            ipix=np.arange(len(var)),
+            nest=nest,
+            lonlat=True,
+        )
+        lons = (lons + 180) % 360 - 180
+
+        valid_src = ((lons > points[0].min()) & (lons < points[0].max())) | (
+            (lats > points[1].min()) & (lats < points[1].max())
+        )
+
+        res[valid] = griddata(
+            points=np.asarray([lons[valid_src], lats[valid_src]]).T,
+            values=var[valid_src],
+            xi=(points[0], points[1]),
+            method="linear",
+            fill_value=np.nan,
+            rescale=True,
+        )
+
+    result = xr.DataArray(res, coords=[("lat", yvals), ("lon", xvals)])
+    result.attrs = getattr(var, "attrs", {}).copy()
+    return result

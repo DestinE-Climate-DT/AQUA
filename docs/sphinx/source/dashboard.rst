@@ -186,6 +186,12 @@ Options
 
     Optional destination path.
 
+.. option:: -g, --get
+
+    Flag to download a single file from the S3 bucket instead of uploading.
+    When this option is used, the ``-d`` flag is meant as the path on the destination 
+    bucket and the source is the name of the local file to write to.
+    
 .. option:: -k <aws_access_key_id>, --aws_access_key_id <aws_access_key_id>
 
     AWS access key ID.

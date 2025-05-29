@@ -12,12 +12,13 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+import healpy as hp
 from aqua.logger import log_configure
 from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
+from aqua.util import healpix_resample
 from aqua.util import cbar_get_label, set_map_title
 from aqua.util import coord_names, set_ticks, ticks_round
 from .styles import ConfigStyle
-
 
 def plot_single_map(data: xr.DataArray,
                     contour=True, sym=False,
@@ -70,6 +71,15 @@ def plot_single_map(data: xr.DataArray,
     """
     logger = log_configure(loglevel, 'plot_single_map')
     ConfigStyle(style=style, loglevel=loglevel)
+
+
+    # Check if the data is in HEALPix format
+    npix = data.size  # Number of cells in the data
+    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+
+    if nside is not None:
+        logger.info(f"Input data is in HEALPix format with nside={nside}.")
+        data = healpix_resample(data)
 
     # We load in memory the data, to speed up the plotting, Dask is slow with matplotlib
     logger.debug("Loading data in memory")
@@ -232,6 +242,26 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         ValueError: If data or data_ref is not a DataArray.
     """
     logger = log_configure(loglevel, 'plot_single_map_diff')
+
+
+    # Check if the data is in HEALPix format
+    npix = data.size  # Number of cells in the data
+    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+
+    if nside is not None:
+        logger.info(f"Input data is in HEALPix format with nside={nside}.")
+        data = healpix_resample(data)
+        logger.debug("resampling HEALPix data")
+
+
+    # Check if the data is in HEALPix format
+    npix_ref = data_ref.size  # Number of cells in the data
+    nside_ref = hp.npix2nside(npix_ref) if hp.isnpixok(npix_ref) else None
+
+    if nside_ref is not None:
+        logger.info(f"Reference data is in HEALPix format with nside={nside_ref}.")
+        data_ref = healpix_resample(data_ref)
+        logger.debug("resampling HEALPix data_ref")
 
     if isinstance(data_ref, xr.DataArray) is False or isinstance(data, xr.DataArray) is False:
         raise ValueError("Both data and data_ref must be an xarray.DataArray")

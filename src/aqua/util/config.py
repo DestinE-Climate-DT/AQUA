@@ -200,7 +200,7 @@ class ConfigPath():
                         machine_paths['paths'] = {}
                     machine_paths['paths'][path] = self.config_dict['paths'][path]
         else:
-            self.logger.warning('No paths found in the main configuration file %s', self.base_available)
+            self.logger.debug('No paths found in the main configuration file %s', self.base_available)
         if machine_paths == {}:
             raise KeyError(f'Cannot find machine paths for {self.machine}, regridding and areas feature will not work')
 
