@@ -464,8 +464,17 @@ class Reader():
 
         out = self.regridder.regrid(data)
 
+        # some regridding output (F gaussian grids) does not have the datamodel applied
+        if self.fix:
+            self.logger.info('Applying data model to regridded data')
+            out = self.fixer.datamodel.apply_datamodel(out)
+
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"AQUA_regridded": 1})
+
+        # this should be into the regridder, but for structural reasons the regridder when is called 
+        # the regrid method does not know what is the target grid name (depends only on weights)
+        out = log_history(out, f"Regridded from {self.src_grid_name} to {self.tgt_grid_name}")
         return out
 
     def _check_if_regridded(self, data):
