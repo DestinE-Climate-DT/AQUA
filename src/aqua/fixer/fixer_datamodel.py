@@ -36,6 +36,7 @@ class FixerDataModel:
         
         datamodel = self.fixes.get("data_model", DEFAULT_DATAMODEL)
         if datamodel:
+            self.logger.debug("Applying data model: %s", datamodel)
             data = CoordTransformer(data, loglevel=self.loglevel).transform_coords(name=datamodel)
 
         # Extra coordinate handling
