@@ -31,7 +31,7 @@ if __name__ == '__main__':
                     var=varname, resolution=regrid, stat='mean', drop=True,
                     frequency=frequency, fix=True, nproc=4, level=level_dict,
                     outdir="/scratch/project_462000911/mnurisso/prec_italy_new_selection", tmpdir="/scratch/project_462000911/mnurisso/lra_tmp",
-                    loglevel="DEBUG", definitive=True, compact="cdo",
+                    loglevel="DEBUG", definitive=True, compact=None,
                     region={'name': 'Italy', 'lon': (6, 19.5), 'lat': (35, 50)})
     print("---CHECK------")
     lra.check_integrity(varname)
