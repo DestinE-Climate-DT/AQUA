@@ -17,6 +17,7 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- `cartopy_offlinedata` is added on container and path is set in cli call, to support MN5 no internet for coastlines download (#1960)
 - plot_single_map() can now handle high nlevels with a decreased cbar ticks density (#1940)
 - plot_single_map() now can avoid coastlines to support paleoclimate maps (#1940)
 - Fixes to support EC-EARTH4 conversion to GRIB2 (#1940)
