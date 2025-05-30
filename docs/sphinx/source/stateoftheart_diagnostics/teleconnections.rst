@@ -1,177 +1,170 @@
 .. _teleconnections:
 
-Teleconnections diagnostic
-==========================
-
-This package provides a diagnostic for teleconnection evaluation and comparison with ERA5 reanalysis.
-This is done with the computation of the teleceonnection indices and of the regression and correlation
-between the teleconnection index and the variable used to compute the teleconnection index.
+Teleconnections
+===============
 
 Description
 -----------
 
-The diagnostic is based on the computation of the regression or correlation between the time series
-of the teleconnection index and the time series of the variable used to compute the teleconnection index.
-Teleconnections available:
+The teleconnections diagnostic is a set of tool to compute the most relevant teleconnections.
+NAO (North Atlantic Oscillation), ENSO (El Niño Southern Oscillation) and MJO (Madden-Julian Oscillation) are the teleconnections currently implemented.
+The diagnostic is build to evaluate the teleconnections indices and to compute regression and correlation maps with respect to the teleconnection index.
 
-- NAO
-- ENSO
-- MJO
+.. note::
+    MJO is currently missing a command line interface and it is not operational yet.
 
-See :ref:`teleconnections_notebooks` for detailed examples of the usage of the diagnostic.
-More diagnostics or functionalities will be added in the future.
+Classes
+-------
 
-Structure
+There are three classes to compute the netCDF files:
+
+- **NAO**: a class that computes the NAO index based on the mean sea level pressure (msl) variable with the station based
+  method, and computes the regression and correlation maps with respect to the NAO index.
+- **ENSO**: a class that computes the ENSO index based on the sea surface temperature (tos) variable with the Nino3.4 region
+  and computes the regression and correlation maps with respect to the ENSO index.
+- **MJO**: a class that allows to compute the MJO Hovmoeller plots based on the top net thermal radiation flux (tnlwrf) variable.
+
+There are three other classes to produce the plots:
+
+- **PlotNAO**: a class that ingests xarrays and produces the NAO index time series and the regression and correlation maps.
+- **PlotENSO**: a class that ingests xarrays and produces the ENSO index time series and the regression and correlation maps.
+- **PlotMJO**: a class that ingests xarrays and produces the MJO Hovmoeller plots.
+
+File structure
+--------------
+
+- The diagnostic is located in the ``src/aqua_diagnostics/teleconnections`` directory, which contains the source code and the command line interface (CLI) script.
+- The configuration files are located in the ``config/diagnostics/teleconnections`` directory and contain the default configuration for the diagnostic.
+- Notebooks are available in the ``notebooks/diagnostics/teleconnections`` directory and contain examples of how to use the diagnostic.
+- Interface files to specify custom regions or other variable names for the index evaluation are available in the ``config/diagnostics/teleconnections/interface`` directory.
+
+.. note::
+    A command line to evaluate with the bootstrap method the concordance maps of regression and correlation is available in the ``cli_bootstrap.py`` file.
+    This is not included in any automatic run of the diagnostic because it is a time-consuming process.
+
+Input variables and datasets
+----------------------------
+
+By default, the diagnostics compare against the ERA5 dataset, with the index evaluated over the entire available period (1940 to present).
+
+The necessary variables for the default evaluation are:
+- **NAO**: Sea level pressure (msl).
+- **ENSO**: Sea surface temperature (tos).
+- **MJO**: Top net thermal radiation flux (tnlwrf).
+
+Other variables can be used for the regression and correlation maps.
+
+CLI usage
 ---------
 
-The teleconnections diagnostic is a package with a class structure.
-The core of the diagnostic is in the ``tc_class.py`` file, containing the ``Teleconnections`` class.
-
-All the source code is available in the ``src/aqua_diagnostics/teleconnections`` folder.
-The source code is organized in the following way:
-
-- ``tc_class.py`` contains the class that is used to run the diagnostic.
-- ``index.py`` contains functions for the direct evaluation of teleconnection indices.
-- ``tc_statistics.py`` contains functions for the regression and correlation analysis.
-- ``bootstrap.py`` contains functions for the bootstrap evaluation for concordance maps of regression and correlation.
-- ``mjo.py`` contains functions for the evaluation of the MJO teleconnections. This is still under development.
-- ``plots`` folder contains functions for the visualization of time series and maps for teleconnection diagnostic. Part of the graphical functions are part of the AQUA framework.
-- ``tools`` folder contains generic functions that may be useful to the whole diagnostic.
-- ``cdo_testing.py`` contains function evaluating teleconnections with cdo bindings, in order to test the python libraries.
-
-Configuration files are available in the ``config/diagnostics/teleconnections`` folder.
-Different interfaces can be used to run the diagnostic, in the context of the Destination Earth Climate DT project the interface file 
-is ``teleconnections_destine.yaml`` and it is used as default.
-An argument ``interface`` is available in the ``Teleconnections`` class to change the interface.
-It can be also customized to add new teleconnections or to change the default parameters of the diagnostic.
-
-Notebooks are available in the ``notebooks/diagnostics/teleconnections`` folder, with detailed examples of the usage of the diagnostic.
-They are organized in the following way:
-
-- `NAO.ipynb` contains an example of the usage of the diagnostic for the NAO index with ERA5 reanalysis.
-- `ENSO.ipynb` contains an example of the usage of the diagnostic for the ENSO index with ERA5 reanalysis.
-- `concordance_map.ipynb` contains an example of bootstrap evaluation for concordance maps of regression and correlation.
-- `MJO.ipynb` contains an example of the usage of the diagnostic for the MJO Hovmoeller plots.
-
-A command line interface is available as ``cli_teleconnectios.py`` file in the source folder.
-
-Tests are available in the ``AQUA/tests/teleconnections`` folder.
-They make use of the ``pytest`` library and of the functions available in the ``cdo_testing.py`` library file.
-
-Basic teleconnections diagnostic usage
---------------------------------------
-
-The basic usage of the teleconnections diagnostic is to create an instance of the ``Teleconnections`` class and run the diagnostic.
-This can be simply done with the following code:
-
-.. code-block:: python
-
-    from aqua.diagnostics import Teleconnection
-
-    tc = Teleconnection(catalog='climatedt-phase1', model='ICON', exp='ssp370', source='lra-r100-monthly', telecname='NAO')
-    tc.run()
-
-This will run the diagnostic for the NAO teleconnection with the ICON model, ssp370 experiment and lra-r100-monthly source.
-netCDF and pdf files will be saved in the default output directory, regression and correlation maps will be saved as images and computed with the same variable of the index evaluation.
-
-Command line interface
-----------------------
-
-A command line interface is available.
-``cli_teleconnections.py`` is used to run the diagnostic from the command line.
-It can analyze multiple models, exps, sources and reference datasets at the same time.
-It provides a configuration file (one for the atmospheric NAO and one for the oceanic ENSO teleconnections)
-to customize the details of the diagnostic.
-
-Basic usage
-^^^^^^^^^^^
-
-Basic usage of the CLI is:
+The diagnostic can be run from the command line interface (CLI) by running the following command:
 
 .. code-block:: bash
 
-    python cli_teleconnections.py
+    cd $AQUA/src/aqua_diagnostics/teleconnections
+    python cli_teleconnections.py --config <path_to_config_file>
 
-This will run the diagnostic with the default configuration file and the default model, experiment and source.
-It will not not compare the models with the reference dataset.
+Three configuration files are provided and run when executing the aqua-analysis (see :ref:`aqua_analysis`).
+Two configuration files are for atmospheric and oceanic teleconnections.
 
-.. note::
+Additionally the CLI can be run with the following optional arguments:
 
-    The CLI is available only for ENSO and NAO teleconnections at the moment.
+- ``--config``, ``-c``: Path to the configuration file.
+- ``--nworkers``, ``-n``: Number of workers to use for parallel processing.
+- ``--cluster``: Cluster to use for parallel processing. By default a local cluster is used.
+- ``--loglevel``, ``-l``: Logging level. Default is ``WARNING``.
+- ``--catalog``: Catalog to use for the analysis. It can be defined in the config file.
+- ``--model``: Model to analyse. It can be defined in the config file.
+- ``--exp``: Experiment to analyse. It can be defined in the config file.
+- ``--source``: Source to analyse. It can be defined in the config file.
+- ``--outputdir``: Output directory for the plots.
 
-CLI options
-^^^^^^^^^^^
-
-The CLI accepts the following arguments:
-
-- ``--catalog``: the catalog to analyze.
-- ``--model``: the model to analyze.
-- ``--exp``: the experiment to analyze.
-- ``--source``: the source to analyze.
-- ``-c`` or ``--config``: path to the configuration file.
-- ``--cluster``: run the diagnostic on a dask cluster already existing (used by aqua-analysis).
-- ``-d`` or ``--dry``: dry run, no files are written.
-- ``--interface``: path to the interface file.
-- ``-l`` or ``--loglevel``: log level for the logger. Default is WARNING.
-- ``-n`` or ``--nworkers``: number of dask workers for parallel computation.
-- ``--outputdir``: path to the output folder.
-- ``--ref``: activate the reference run.
-- ``--regrid``: Target grid for regridding.
-
-Configuration file structure
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Config file structure
+---------------------
 
 The configuration file is a YAML file that contains the following information:
 
-* ``teleconnections``: a block that contains the list of teleconnections to analyze. If not present, by default every teleconnection is skipped.
-* ``interface``: the interface file to use. Default is  ``teleconnections_destine.yaml``.
-* ``models``: a list of models to analyse. Here extra reader keyword can be added (e.g. ``regrid: 'r100'``, ``freq: 'M'``). By default we assume that data are monthly and regridded to 1x1 deg resolution.
-* ``reference``: a block that contains the reference dataset to compare the models with. If not present, ERA5 is used as default.
-* ``outputdir``: the directory where the output files will be saved
-* ``configdir``: the directory where the configuration files are saved, if not present the default directory inside AQUA is used.
-* ``NAO`` or ``ENSO``: a block that contains the parameters for the NAO or ENSO teleconnection analysis. By default NAO is evaluated for DJF and JJA, while ENSO for the full year, both with a 3 months rolling window over the original data.
+* ``datasets``: a list of models to analyse (defined by the catalog, model, exp, source arguments)
 
-Bootstrap CLI
-^^^^^^^^^^^^^
+.. code-block:: yaml
 
-A command line interface for bootstrap evaluation is available.
-``cli_bootstrap.py`` is used to run the bootstrap evaluation for concordance maps of regression and correlation from the command line.
-This is not included in any automatic run of the diagnostic because it is a time-consuming process.
-The CLI accepts the same arguments and configuration files as the basic CLI.
-It produces only the netCDF files needed to plot the concordance maps, that needs to be generated in a second moment in a notebook.
-You can see the example notebook `concordance_map.ipynb` for more details.
+    datasets:
+      - catalog: climatedt-phase1
+        model: IFS-NEMO
+        exp: historical-1990
+        source: lra-r100-monthly
+        regrid: null
+      - catalog: climatedt-phase1
+        model: ICON
+        exp: historical-1990
+        source: lra-r100-monthly
+        regrid: null
 
-Input variables
----------------
+* ``references``: a list of reference datasets to use for the analysis.
 
-The diagnostic requires the following input variables with the DestinE naming convention:
+.. code-block:: yaml
 
-- ``msl``: (Mean sea level pressure, paramid 151) for NAO
-- ``avg_tos``: (Time-mean sea surface temperature, paramid 263101) for ENSO
-- ``mtntrf``: (Mean top net thermal radiation flux, paramid 172179) for MJO
+    references:
+      - catalog: obs
+        model: ERA5
+        exp: era5
+        source: monthly
+        regrid: null
 
-The diagnostic can be run on any dataset that provides these variables.
+* ``output``: a block describing the details of the output. Is contains:
 
-It is possible to evaluate regression maps and correlation maps with a teleconnection index and a different variable.
-In this case, an additional variable is needed as input.
-It is also possible to use different variables if variables are missing
-(e.g. for the ENSO index, the skin temperature can be used as input and have an estimate even if ``avg_tos`` is missing).
+    * ``outputdir``: the output directory for the plots.
+    * ``rebuild``: a boolean that enables the rebuilding of the plots.
+    * ``save_pdf``: a boolean that enables the saving of the plots in pdf format.
+    * ``save_png``: a boolean that enables the saving of the plots in png format.
+    * ``dpi``: the resolution of the plots.
+
+.. code-block:: yaml
+
+    output:
+      outputdir: "/path/to/output"
+      rebuild: true
+      save_pdf: true
+      save_png: true
+      dpi: 300
+
+* ``teleconnections``: a block, nested in the ``diagnostics`` block, that contains the details required for the teleconnections.
+    It allows to specify which teleconnections to run, the months window for the rolling mean, the seasons to consider, and the color bar range for the plots.
+    It contains the following blocks:
+    
+        * ``NAO``: a block, nested in the ``teleconnections`` block, that contains the details required for the NAO teleconnection.
+        * ``ENSO``: a block, nested in the ``teleconnections`` block, that contains the details required for the ENSO teleconnection.
+
+.. code-block:: yaml
+
+    diagnostics:
+        teleconnections:
+            NAO:
+                run: true
+                months_window: 3
+                seasons: ['DJF']
+                cbar_range: [-5, 5]
+            ENSO:
+                run: true
+                months_window: 3
+                seasons: ['annual']
+                cbar_range: [-2, 2]
 
 Output
 ------
 
-The diagnostic produces the following output:
+The diagnostic produces the following outputs:
 
 - `NAO`: North Atlantic Oscillation index, regression and correlation maps.
 - `ENSO`: El Niño Southern Oscillation index, regression and correlation maps.
-- `MJO`: Madden-Julian Oscillation Hovmoeller plots of the Mean top net thermal radiation flux variable. A more detailed analysis is still under development.
+- `MJO`: Madden-Julian Oscillation Hovmoeller plots of the Mean top net thermal radiation flux variable.
 
 All these outputs can be stored both as images (pdf format) and as netCDF files.
 If a reference dataset is provided, the automatic maps consist of contour lines for the model regression map 
 and filled contour map for the difference between the model and the reference regression map.
 
-Example plot
-------------
+Example Plots
+-------------
 
 .. figure:: figures/teleconnections.png
    :width: 100%
@@ -186,8 +179,15 @@ Available demo notebooks
 
 - `NAO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/NAO.ipynb>`_
 - `ENSO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/ENSO.ipynb>`_
-- `concordance_map <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/concordance_map.ipynb>`_
+- `statistical_validation <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/statistical_validation.ipynb>`_
 - `MJO <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/teleconnections/MJO.ipynb>`_
+
+Authors and contributors
+------------------------
+
+This diagnostic is maintained by Matteo Nurisso (`@mnurisso <https://github.com/mnurisso>`_, `m.nurisso@isac.cnr.it <mailto:m.nurisso@isac.cnr.it>`_).
+Contributions are welcome, please open an issue or a pull request.
+If you have any doubt or suggestion, please contact the AQUA team or the maintainers.
 
 Detailed API
 ------------

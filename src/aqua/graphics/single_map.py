@@ -225,6 +225,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          vmin_contour: float = None, vmax_contour: float = None,
                          sym_contour: bool = False, sym: bool = True,
                          cyclic_lon: bool = True, return_fig: bool = False,
+                         fig: plt.Figure = None, ax: plt.Axes = None,
                          title: str = None, loglevel: str = 'WARNING', **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
@@ -244,6 +245,8 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         title (str, optional):     Title of the figure. Defaults to None.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
         return_fig (bool, optional): If True, return the figure and axes. Defaults to False.
+        fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
+        ax (plt.Axes, optional):    Axes to plot on. By default a new axes is created.
         loglevel (str, optional):  Log level. Defaults to 'WARNING'.
         **kwargs:                  Keyword arguments for plot_single_map.
                                    Check the docstring of plot_single_map.
@@ -290,6 +293,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
     else:
         fig, ax = plot_single_map(diff_map, cyclic_lon=cyclic_lon,
                                   proj=proj, extent=extent,
+                                  fig=fig, ax=ax,
                                   sym=sym, vmin=vmin_fill, vmax=vmax_fill,
                                   loglevel=loglevel, return_fig=True, **kwargs)
 

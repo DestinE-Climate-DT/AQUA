@@ -28,6 +28,8 @@ AQUA core complete list:
 - Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
 
 AQUA diagnostics complete list:
+- Timeseries: regions are now in the `definitions` folder (not `interface` anymore) (#1884)
+- Teleconnections: complete refactor according to the Diagnostic, PlotDiagnostic schema (#1884)
 - Radiations: timeseries correctly working for exps with enddate before 2000 (#1940)
 - Diagnostic core: new `round_startdate` and `round_enddate` functions for time management (#1940)
 - Timeseries: fix in the new cli wich was ignoring the regrid option and had bad time handling (#1940)
@@ -45,8 +47,7 @@ Removed:
 - `aqua.slurm` has been removed.
 
 Workflow modifications:
-- `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes.
-As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
+- `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes. As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
 
 AQUA core complete list:
 - Add FDB_HOME to debug logs (#1914)

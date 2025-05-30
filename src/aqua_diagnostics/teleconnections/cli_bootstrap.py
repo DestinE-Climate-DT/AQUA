@@ -20,8 +20,11 @@ from aqua.util import load_yaml, get_arg, create_folder
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
 from aqua.diagnostics.teleconnections.bootstrap import bootstrap_teleconnections, build_confidence_mask
-from aqua.diagnostics.teleconnections.tc_class import Teleconnection
-from aqua.diagnostics.teleconnections.tools import set_filename
+# from aqua.diagnostics.teleconnections.tc_class import Teleconnection
+# from aqua.diagnostics.teleconnections.tools import set_filename
+
+## IMPORTANT: This is legacy code, the bootstrap CLI needs to be updated
+##            if you want to use it with the new teleconnections classes.
 
 xr.set_options(keep_attrs=True)
 
@@ -68,319 +71,321 @@ if __name__ == '__main__':
 
     logger.info(f'Running AQUA v{aquaversion} Teleconnections bootstrap diagnostic')
 
-    # change the current directory to the one of the CLI so that relative path works
-    # before doing this we need to get the directory from wich the script is running
-    execdir = os.getcwd()
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    if os.getcwd() != dname:
-        os.chdir(dname)
-        logger.info(f'Moving from current directory to {dname} to run!')
+    logger.critical('This is a legacy CLI, please contact the developers to update it.')
 
-    # Dask distributed cluster
-    nworkers = get_arg(args, 'nworkers', None)
-    cluster = get_arg(args, 'cluster', None)
-    private_cluster = False
-    if nworkers or cluster:
-        if not cluster:
-            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
-            logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
-            private_cluster = True
-        else:
-            logger.info(f"Connecting to cluster {cluster}.")
-        client = Client(cluster)
-    else:
-        client = None
+    # # change the current directory to the one of the CLI so that relative path works
+    # # before doing this we need to get the directory from wich the script is running
+    # execdir = os.getcwd()
+    # abspath = os.path.abspath(__file__)
+    # dname = os.path.dirname(abspath)
+    # if os.getcwd() != dname:
+    #     os.chdir(dname)
+    #     logger.info(f'Moving from current directory to {dname} to run!')
 
-    # Read configuration file
-    file = get_arg(args, 'config', 'cli_config_atm.yaml')
-    logger.info('Reading configuration yaml file: {}'.format(file))
-    config = load_yaml(file)
+    # # Dask distributed cluster
+    # nworkers = get_arg(args, 'nworkers', None)
+    # cluster = get_arg(args, 'cluster', None)
+    # private_cluster = False
+    # if nworkers or cluster:
+    #     if not cluster:
+    #         cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
+    #         logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
+    #         private_cluster = True
+    #     else:
+    #         logger.info(f"Connecting to cluster {cluster}.")
+    #     client = Client(cluster)
+    # else:
+    #     client = None
 
-    # if dry we're not saving any file, debug mode
-    dry = get_arg(args, 'dry', False)
-    if dry:
-        logger.warning('Dry run, no files will be written')
-        savefig = False
-        savefile = False
-    else:
-        logger.debug('Saving files')
-        savefig = True
-        savefile = True
+    # # Read configuration file
+    # file = get_arg(args, 'config', 'cli_config_atm.yaml')
+    # logger.info('Reading configuration yaml file: {}'.format(file))
+    # config = load_yaml(file)
 
-    try:
-        outputdir = get_arg(args, 'outputdir', config['outputdir'])
-        # if the outputdir is relative we need to make it absolute
-        if not os.path.isabs(outputdir):
-            outputdir = os.path.join(execdir, outputdir)
-        outputnetcdf = os.path.join(outputdir, 'netcdf')
-        outputpdf = os.path.join(outputdir, 'pdf')
-        create_folder(outputnetcdf, loglevel=loglevel)
-        create_folder(outputpdf, loglevel=loglevel)
-    except KeyError:
-        outputdir = None
-        outputnetcdf = None
-        outputpdf = None
-        logger.error('Output directory not defined')
+    # # if dry we're not saving any file, debug mode
+    # dry = get_arg(args, 'dry', False)
+    # if dry:
+    #     logger.warning('Dry run, no files will be written')
+    #     savefig = False
+    #     savefile = False
+    # else:
+    #     logger.debug('Saving files')
+    #     savefig = True
+    #     savefile = True
 
-    configdir = config['configdir']
-    logger.debug('configdir: %s', configdir)
+    # try:
+    #     outputdir = get_arg(args, 'outputdir', config['outputdir'])
+    #     # if the outputdir is relative we need to make it absolute
+    #     if not os.path.isabs(outputdir):
+    #         outputdir = os.path.join(execdir, outputdir)
+    #     outputnetcdf = os.path.join(outputdir, 'netcdf')
+    #     outputpdf = os.path.join(outputdir, 'pdf')
+    #     create_folder(outputnetcdf, loglevel=loglevel)
+    #     create_folder(outputpdf, loglevel=loglevel)
+    # except KeyError:
+    #     outputdir = None
+    #     outputnetcdf = None
+    #     outputpdf = None
+    #     logger.error('Output directory not defined')
 
-    interface = get_arg(args, 'interface', config['interface'])
-    logger.debug('Interface name: %s', interface)
+    # configdir = config['configdir']
+    # logger.debug('configdir: %s', configdir)
 
-    # Turning on/off the teleconnections
-    # the try/except is used to avoid KeyError if the teleconnection is not
-    # defined in the yaml file, since we have oceanic and atmospheric
-    # configuration files
-    NAO = config['teleconnections'].get('NAO', False)
-    ENSO = config['teleconnections'].get('ENSO', False)
+    # interface = get_arg(args, 'interface', config['interface'])
+    # logger.debug('Interface name: %s', interface)
 
-    teleclist = []
-    if NAO:
-        teleclist.append('NAO')
-        logger.error('NAO bootstrap is not yet implemented, exiting')
-        sys.exit(1)
-    if ENSO:
-        teleclist.append('ENSO')
+    # # Turning on/off the teleconnections
+    # # the try/except is used to avoid KeyError if the teleconnection is not
+    # # defined in the yaml file, since we have oceanic and atmospheric
+    # # configuration files
+    # NAO = config['teleconnections'].get('NAO', False)
+    # ENSO = config['teleconnections'].get('ENSO', False)
 
-    logger.debug('Teleconnections to be evaluated: %s', teleclist)
+    # teleclist = []
+    # if NAO:
+    #     teleclist.append('NAO')
+    #     logger.error('NAO bootstrap is not yet implemented, exiting')
+    #     sys.exit(1)
+    # if ENSO:
+    #     teleclist.append('ENSO')
 
-    # if exclusive we're running only the first model/exp/source combination
-    # if model/exp/source are provided as arguments, we're overriding the
-    # first model/exp/source combination
-    models = config['models']
+    # logger.debug('Teleconnections to be evaluated: %s', teleclist)
 
-    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
-    models[0]['model'] = get_arg(args, 'model', models[0]['model'])
-    models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
-    models[0]['source'] = get_arg(args, 'source', models[0]['source'])
+    # # if exclusive we're running only the first model/exp/source combination
+    # # if model/exp/source are provided as arguments, we're overriding the
+    # # first model/exp/source combination
+    # models = config['models']
 
-    for telec in teleclist:
-        logger.info('Running %s teleconnection', telec)
-        # Getting generic configs
-        months_window = config[telec].get('months_window', 3)
-        full_year = config[telec].get('full_year', True)
-        seasons = config[telec].get('seasons', None)
+    # models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
+    # models[0]['model'] = get_arg(args, 'model', models[0]['model'])
+    # models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
+    # models[0]['source'] = get_arg(args, 'source', models[0]['source'])
 
-        ref_config = config['reference'][0]
-        catalog_ref = ref_config.get('catalog', 'obs')
-        model_ref = ref_config.get('model', 'ERA5')
-        exp_ref = ref_config.get('exp', 'era5')
-        source_ref = ref_config.get('source', 'monthly')
-        regrid = ref_config.get('regrid', None)
-        freq = ref_config.get('freq', None)
-        logger.debug("setup: %s %s %s %s %s",
-                     model_ref, exp_ref, source_ref, regrid, freq)
+    # for telec in teleclist:
+    #     logger.info('Running %s teleconnection', telec)
+    #     # Getting generic configs
+    #     months_window = config[telec].get('months_window', 3)
+    #     full_year = config[telec].get('full_year', True)
+    #     seasons = config[telec].get('seasons', None)
 
-        try:
-            tc_ref = Teleconnection(telecname=telec,
-                                    configdir=configdir,
-                                    catalog=catalog_ref,
-                                    model=model_ref, exp=exp_ref, source=source_ref,
-                                    regrid=regrid, freq=freq,
-                                    months_window=months_window,
-                                    outputdir=outputnetcdf,
-                                    outputfig=outputpdf,
-                                    savefig=savefig, savefile=savefile,
-                                    interface=interface,
-                                    loglevel=loglevel)
-            tc_ref.retrieve()
-        except NoDataError:
-            logger.error('No data available for %s teleconnection', telec)
-            continue
-        except ValueError as e:
-            logger.error('Error retrieving data for %s teleconnection: %s',
-                         telec, e)
-            continue
-        except Exception as e:
-            logger.error('Unexpected error retrieving data for %s teleconnection: %s',
-                         telec, e)
+    #     ref_config = config['reference'][0]
+    #     catalog_ref = ref_config.get('catalog', 'obs')
+    #     model_ref = ref_config.get('model', 'ERA5')
+    #     exp_ref = ref_config.get('exp', 'era5')
+    #     source_ref = ref_config.get('source', 'monthly')
+    #     regrid = ref_config.get('regrid', None)
+    #     freq = ref_config.get('freq', None)
+    #     logger.debug("setup: %s %s %s %s %s",
+    #                  model_ref, exp_ref, source_ref, regrid, freq)
 
-        try:
-            tc_ref.evaluate_index()
-            ref_index = tc_ref.index
-        except NotEnoughDataError:
-            logger.error('Not enough data available for %s teleconnection', telec)
-            continue
-        except Exception as e:
-            logger.error('Error evaluating index for %s teleconnection: %s', telec, e)
-            continue
+    #     try:
+    #         tc_ref = Teleconnection(telecname=telec,
+    #                                 configdir=configdir,
+    #                                 catalog=catalog_ref,
+    #                                 model=model_ref, exp=exp_ref, source=source_ref,
+    #                                 regrid=regrid, freq=freq,
+    #                                 months_window=months_window,
+    #                                 outputdir=outputnetcdf,
+    #                                 outputfig=outputpdf,
+    #                                 savefig=savefig, savefile=savefile,
+    #                                 interface=interface,
+    #                                 loglevel=loglevel)
+    #         tc_ref.retrieve()
+    #     except NoDataError:
+    #         logger.error('No data available for %s teleconnection', telec)
+    #         continue
+    #     except ValueError as e:
+    #         logger.error('Error retrieving data for %s teleconnection: %s',
+    #                      telec, e)
+    #         continue
+    #     except Exception as e:
+    #         logger.error('Unexpected error retrieving data for %s teleconnection: %s',
+    #                      telec, e)
 
-        # We now evaluate the regression and correlation
-        # They are not saved, we just need them for comparison plots
-        # so we save them as variables
-        if full_year:
-            try:
-                ref_reg_full = tc_ref.evaluate_regression()
-                ref_cor_full = tc_ref.evaluate_correlation()
-            except NotEnoughDataError:
-                logger.error('Not enough data available for %s teleconnection', telec)
-                continue
-        else:
-            ref_reg_full = None
-            ref_cor_full = None
+    #     try:
+    #         tc_ref.evaluate_index()
+    #         ref_index = tc_ref.index
+    #     except NotEnoughDataError:
+    #         logger.error('Not enough data available for %s teleconnection', telec)
+    #         continue
+    #     except Exception as e:
+    #         logger.error('Error evaluating index for %s teleconnection: %s', telec, e)
+    #         continue
 
-        if seasons:
-            logger.error("Seasons are not yet implemented for the bootstrap technique")
-            ref_reg_season = None
-            ref_cor_season = None
-            continue
-            # ref_reg_season = []
-            # ref_cor_season = []
-            # for i, season in enumerate(seasons):
-            #     try:
-            #         logger.info('Evaluating %s regression and correlation for %s season',
-            #                     telec, season)
-            #         reg = tc_ref.evaluate_regression(season=season)
-            #         ref_reg_season.append(reg)
-            #         cor = tc_ref.evaluate_correlation(season=season)
-            #         ref_cor_season.append(cor)
-            #     except NotEnoughDataError:
-            #         logger.error('Not enough data available for %s teleconnection',
-            #                     telec)
-            #         continue
-        else:
-            ref_reg_season = None
-            ref_cor_season = None
+    #     # We now evaluate the regression and correlation
+    #     # They are not saved, we just need them for comparison plots
+    #     # so we save them as variables
+    #     if full_year:
+    #         try:
+    #             ref_reg_full = tc_ref.evaluate_regression()
+    #             ref_cor_full = tc_ref.evaluate_correlation()
+    #         except NotEnoughDataError:
+    #             logger.error('Not enough data available for %s teleconnection', telec)
+    #             continue
+    #     else:
+    #         ref_reg_full = None
+    #         ref_cor_full = None
 
-        ref_data = tc_ref.data
+    #     if seasons:
+    #         logger.error("Seasons are not yet implemented for the bootstrap technique")
+    #         ref_reg_season = None
+    #         ref_cor_season = None
+    #         continue
+    #         # ref_reg_season = []
+    #         # ref_cor_season = []
+    #         # for i, season in enumerate(seasons):
+    #         #     try:
+    #         #         logger.info('Evaluating %s regression and correlation for %s season',
+    #         #                     telec, season)
+    #         #         reg = tc_ref.evaluate_regression(season=season)
+    #         #         ref_reg_season.append(reg)
+    #         #         cor = tc_ref.evaluate_correlation(season=season)
+    #         #         ref_cor_season.append(cor)
+    #         #     except NotEnoughDataError:
+    #         #         logger.error('Not enough data available for %s teleconnection',
+    #         #                     telec)
+    #         #         continue
+    #     else:
+    #         ref_reg_season = None
+    #         ref_cor_season = None
 
-        del tc_ref
-        gc.collect()
+    #     ref_data = tc_ref.data
 
-        # Model evaluation
-        logger.debug('Models to be evaluated: %s', models)
-        for mod in models:
-            catalog = mod['catalog']
-            model = mod['model']
-            exp = mod['exp']
-            source = mod['source']
-            regrid = mod.get('regrid', None)
-            freq = mod.get('freq', None)
-            reference = mod.get('reference', False)
-            startdate = mod.get('startdate', None)
-            enddate = mod.get('enddate', None)
+    #     del tc_ref
+    #     gc.collect()
 
-            logger.debug("setup: %s %s %s %s %s",
-                         model, exp, source, regrid, freq)
+    #     # Model evaluation
+    #     logger.debug('Models to be evaluated: %s', models)
+    #     for mod in models:
+    #         catalog = mod['catalog']
+    #         model = mod['model']
+    #         exp = mod['exp']
+    #         source = mod['source']
+    #         regrid = mod.get('regrid', None)
+    #         freq = mod.get('freq', None)
+    #         reference = mod.get('reference', False)
+    #         startdate = mod.get('startdate', None)
+    #         enddate = mod.get('enddate', None)
 
-            try:
-                tc = Teleconnection(telecname=telec,
-                                    configdir=configdir,
-                                    catalog=catalog,
-                                    model=model, exp=exp, source=source,
-                                    regrid=regrid, freq=freq,
-                                    months_window=months_window,
-                                    outputdir=outputnetcdf,
-                                    outputfig=outputpdf,
-                                    savefig=savefig, savefile=savefile,
-                                    startdate=startdate, enddate=enddate,
-                                    interface=interface,
-                                    loglevel=loglevel)
-                tc.retrieve()
-            except NoDataError:
-                logger.error('No data available for %s teleconnection', telec)
-                continue
-            except ValueError as e:
-                logger.error('Error retrieving data for %s teleconnection: %s',
-                             telec, e)
-                continue
-            except Exception as e:
-                logger.error('Unexpected error retrieving data for %s teleconnection: %s',
-                             telec, e)
+    #         logger.debug("setup: %s %s %s %s %s",
+    #                      model, exp, source, regrid, freq)
 
-            try:
-                tc.evaluate_index()
-            except NotEnoughDataError:
-                logger.error('Not enough data available for %s teleconnection', telec)
-                continue
-            except Exception as e:
-                logger.error('Error evaluating index for %s teleconnection: %s', telec, e)
-                continue
+    #         try:
+    #             tc = Teleconnection(telecname=telec,
+    #                                 configdir=configdir,
+    #                                 catalog=catalog,
+    #                                 model=model, exp=exp, source=source,
+    #                                 regrid=regrid, freq=freq,
+    #                                 months_window=months_window,
+    #                                 outputdir=outputnetcdf,
+    #                                 outputfig=outputpdf,
+    #                                 savefig=savefig, savefile=savefile,
+    #                                 startdate=startdate, enddate=enddate,
+    #                                 interface=interface,
+    #                                 loglevel=loglevel)
+    #             tc.retrieve()
+    #         except NoDataError:
+    #             logger.error('No data available for %s teleconnection', telec)
+    #             continue
+    #         except ValueError as e:
+    #             logger.error('Error retrieving data for %s teleconnection: %s',
+    #                          telec, e)
+    #             continue
+    #         except Exception as e:
+    #             logger.error('Unexpected error retrieving data for %s teleconnection: %s',
+    #                          telec, e)
 
-            if full_year:
-                try:
-                    reg_full = tc.evaluate_regression()
-                    cor_full = tc.evaluate_correlation()
-                except NotEnoughDataError:
-                    logger.error('Not enough data available for %s teleconnection',
-                                 telec)
-                    continue
-            else:
-                reg_full = None
-                cor_full = None
+    #         try:
+    #             tc.evaluate_index()
+    #         except NotEnoughDataError:
+    #             logger.error('Not enough data available for %s teleconnection', telec)
+    #             continue
+    #         except Exception as e:
+    #             logger.error('Error evaluating index for %s teleconnection: %s', telec, e)
+    #             continue
 
-            if seasons:
-                logger.error("Seasons are not yet implemented for the bootstrap technique")
-                reg_season = None  # = []
-                cor_season = None  # = []
-                continue
-                # for i, season in enumerate(seasons):
-                #     try:
-                #         logger.info('Evaluating %s regression and correlation for %s season',
-                #                     telec, season)
-                #         reg = tc.evaluate_regression(season=season)
-                #         reg_season.append(reg)
-                #         cor = tc.evaluate_correlation(season=season)
-                #         cor_season.append(cor)
-                #     except NotEnoughDataError:
-                #         logger.error('Not enough data available for %s teleconnection',
-                #                      telec)
-                #         continue
-            else:
-                reg_season = None
-                cor_season = None
+    #         if full_year:
+    #             try:
+    #                 reg_full = tc.evaluate_regression()
+    #                 cor_full = tc.evaluate_correlation()
+    #             except NotEnoughDataError:
+    #                 logger.error('Not enough data available for %s teleconnection',
+    #                              telec)
+    #                 continue
+    #         else:
+    #             reg_full = None
+    #             cor_full = None
 
-            # Evaluate bootstrap
-            # You can use **eval_kwargs for the season argument in a future development
-            logger.info('Evaluating bootstrap for %s teleconnection', telec)
-            l, u = bootstrap_teleconnections(map=reg_full, index=tc.index,
-                                             index_ref=ref_index,
-                                             data_ref=ref_data, statistic='reg',
-                                             n_bootstraps=1000,
-                                             loglevel=loglevel)
+    #         if seasons:
+    #             logger.error("Seasons are not yet implemented for the bootstrap technique")
+    #             reg_season = None  # = []
+    #             cor_season = None  # = []
+    #             continue
+    #             # for i, season in enumerate(seasons):
+    #             #     try:
+    #             #         logger.info('Evaluating %s regression and correlation for %s season',
+    #             #                     telec, season)
+    #             #         reg = tc.evaluate_regression(season=season)
+    #             #         reg_season.append(reg)
+    #             #         cor = tc.evaluate_correlation(season=season)
+    #             #         cor_season.append(cor)
+    #             #     except NotEnoughDataError:
+    #             #         logger.error('Not enough data available for %s teleconnection',
+    #             #                      telec)
+    #             #         continue
+    #         else:
+    #             reg_season = None
+    #             cor_season = None
 
-            if not dry:
-                logger.info('Saving bootstrap results')
-                filename = set_filename(tc.filename, fig_type='bootstrap')
-                l_filename = filename + '_lower.nc'
-                u_filename = filename + '_upper.nc'
-                l_path = os.path.join(outputnetcdf, l_filename)
-                u_path = os.path.join(outputnetcdf, u_filename)
-                l.name = 'tos'
-                u.name = 'tos'
-                l.to_netcdf(l_path)
-                u.to_netcdf(u_path)
+    #         # Evaluate bootstrap
+    #         # You can use **eval_kwargs for the season argument in a future development
+    #         logger.info('Evaluating bootstrap for %s teleconnection', telec)
+    #         l, u = bootstrap_teleconnections(map=reg_full, index=tc.index,
+    #                                          index_ref=ref_index,
+    #                                          data_ref=ref_data, statistic='reg',
+    #                                          n_bootstraps=1000,
+    #                                          loglevel=loglevel)
 
-            confidence_mask = build_confidence_mask(reg_full, l, u)
+    #         if not dry:
+    #             logger.info('Saving bootstrap results')
+    #             filename = set_filename(tc.filename, fig_type='bootstrap')
+    #             l_filename = filename + '_lower.nc'
+    #             u_filename = filename + '_upper.nc'
+    #             l_path = os.path.join(outputnetcdf, l_filename)
+    #             u_path = os.path.join(outputnetcdf, u_filename)
+    #             l.name = 'tos'
+    #             u.name = 'tos'
+    #             l.to_netcdf(l_path)
+    #             u.to_netcdf(u_path)
 
-            if not dry:
-                logger.info('Saving confidence mask')
-                filename = set_filename(filename=tc.filename, fig_type='confidence_mask')
-                mask_filename = filename + '.nc'
-                mask_path = os.path.join(outputnetcdf, mask_filename)
-                confidence_mask.name = 'tos'
-                confidence_mask.to_netcdf(mask_path)
+    #         confidence_mask = build_confidence_mask(reg_full, l, u)
 
-            # Plotting
-            if not dry:
-                logger.info('Plotting concordance map')
-                fig, ax = plot_single_map(reg_full, transform_first=True,
-                                          return_fig=True, sym=True,
-                                          title=f'{telec} {model} {exp} {source} Concordance')
-                confidence_mask.where(confidence_mask == 1).plot.contour(levels=[0, 1], colors='none', hatches=['.', ''],
-                                                                         add_colorbar=False, ax=ax)
-                fig.tight_layout()
-                filename = set_filename(tc.filename, fig_type='concordance')
-                fig.savefig(os.path.join(outputpdf, filename + '.pdf'))
+    #         if not dry:
+    #             logger.info('Saving confidence mask')
+    #             filename = set_filename(filename=tc.filename, fig_type='confidence_mask')
+    #             mask_filename = filename + '.nc'
+    #             mask_path = os.path.join(outputnetcdf, mask_filename)
+    #             confidence_mask.name = 'tos'
+    #             confidence_mask.to_netcdf(mask_path)
 
-    if client:
-        client.close()
-        logger.debug("Dask client closed.")
+    #         # Plotting
+    #         if not dry:
+    #             logger.info('Plotting concordance map')
+    #             fig, ax = plot_single_map(reg_full, transform_first=True,
+    #                                       return_fig=True, sym=True,
+    #                                       title=f'{telec} {model} {exp} {source} Concordance')
+    #             confidence_mask.where(confidence_mask == 1).plot.contour(levels=[0, 1], colors='none', hatches=['.', ''],
+    #                                                                      add_colorbar=False, ax=ax)
+    #             fig.tight_layout()
+    #             filename = set_filename(tc.filename, fig_type='concordance')
+    #             fig.savefig(os.path.join(outputpdf, filename + '.pdf'))
 
-    if private_cluster:
-        cluster.close()
-        logger.debug("Dask cluster closed.")
+    # if client:
+    #     client.close()
+    #     logger.debug("Dask client closed.")
+
+    # if private_cluster:
+    #     cluster.close()
+    #     logger.debug("Dask cluster closed.")
 
     logger.info('Teleconnections diagnostic finished.')
