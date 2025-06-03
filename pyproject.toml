@@ -58,7 +58,7 @@ dependencies = [
     "pyYAML",
     "ruamel.yaml",
     "smmregrid==0.1.0",
-    "sparse=0.15.5",
+    "sparse==0.15.5",
     "xarray==2025.1.2",
     "kerchunk",
     "h5py@git+https://github.com/h5py/h5py.git@3.12.1", #specific github pin to avoid installation of binaries
