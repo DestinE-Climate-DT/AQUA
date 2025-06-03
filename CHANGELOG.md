@@ -10,6 +10,7 @@ Unreleased in the current development version:
 ## [v0.13.7]
 
 - Pinning specific version of dask/xarray/numpy (#1974)
+- Fix for time axis in container timeseries plots (#1973)
 
 ## [v0.13.6]
 
