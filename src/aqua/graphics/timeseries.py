@@ -65,6 +65,11 @@ def plot_timeseries(monthly_data=None,
                 mon_data.plot(ax=ax, label=label, color=color)
             except Exception as e:
                 logger.debug(f"Error plotting monthly data: {e}")
+        # Set the x-axis limits to the min and max of the time dimension
+        time_min = min([data.time.min() for data in monthly_data])
+        time_max = max([data.time.max() for data in monthly_data])
+        logger.debug(f"Setting x-axis limits: {time_min} to {time_max}")
+        ax.set_xlim(time_min, time_max)
 
     if annual_data is not None:
         for i in range(len(annual_data)):
