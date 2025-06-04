@@ -303,7 +303,7 @@ done
 echo "Perfect! Now it's time to ride with AQUA ⛵"
 
 #echo "singularity $cmd --cleanenv $env_args $bind_args $AQUA_container $script"
-singularity $cmd --cleanenv $env_args $bind_args $AQUA_container $script
+singularity $cmd --cleanenv $env_args --no-mount /etc/localtime $bind_args $AQUA_container $script
 
 ##### To update any python package e.g. gsv interface, opa, aqua ######
 # Do "pip install /path/to/repo/package_name" inside the singularity container.
