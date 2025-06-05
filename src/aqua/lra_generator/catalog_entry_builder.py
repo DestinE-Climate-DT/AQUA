@@ -111,6 +111,7 @@ class CatalogEntryBuilder():
         block['parameters'][name] = {}
         block['parameters'][name]['description'] = f"Parameter {name} for the LRA"
         block['parameters'][name]['default'] = value
+        block['parameters'][name]['type'] = 'str'
 
         return block
     
