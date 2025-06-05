@@ -23,6 +23,7 @@ from aqua.util import create_zarr_reference
 from aqua.util import area_selection
 from aqua.lra_generator.lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
 from aqua.lra_generator.catalog_entry_builder import CatalogEntryBuilder
+from aqua.lra_generator.output_path_builder import OutputPathBuilder
 
 
 class LRAgenerator():
@@ -166,8 +167,10 @@ class LRAgenerator():
                 raise KeyError('Please specify name in region.')
             if self.region['lon'] is None and self.region['lat'] is None:
                 raise KeyError(f'Please specify at least one between lat and lon for {region['name']}.')
+            self.region_name = self.region['name']
         else:
             self.region = None
+            self.region_name = None
 
         self.drop = drop
 
@@ -218,14 +221,21 @@ class LRAgenerator():
         # Create LRA folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
+        
+        self.outbuilder = OutputPathBuilder(catalog=self.catalog, model=self.model, exp=self.exp, var=self.var,
+                                            resolution=self.resolution, frequency=self.frequency,
+                                            region=self.region_name, stat=self.stat, **self.kwargs)
+ 
 
-        self.outdir = os.path.join(outdir, self.catalog, self.model, self.exp, self.resolution)
-
-        if self.frequency:
-            self.outdir = os.path.join(self.outdir, self.frequency)
+        self.basedir = outdir
+        self.outdir = os.path.join(self.basedir, self.outbuilder.build_directory())
 
         create_folder(self.outdir, loglevel=self.loglevel)
         create_folder(self.tmpdir, loglevel=self.loglevel)
+
+        self.catbuilder = CatalogEntryBuilder(var=self.var, catalog=self.catalog, model=self.model, exp=self.exp,
+                                         resolution=self.resolution, frequency=self.frequency,
+                                         region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs)
 
         # Initialize variables used by methods
         self.data = None
@@ -300,14 +310,11 @@ class LRAgenerator():
         Create an entry in the catalog for the LRA
         """
 
-        catbuilder = CatalogEntryBuilder(var=self.var, catalog=self.catalog, model=self.model, exp=self.exp,
-                                         resolution=self.resolution, frequency=self.frequency,
-                                         region=self.region, stat=self.stat, loglevel=self.loglevel, **self.kwargs)
-        block = catbuilder.create_entry_details(basedir=self.outdir)
-        urlpath = replace_intake_vars(catalog=self.catalog, path=catbuilder.get_urlpath(block))
+        block = self.catbuilder.create_entry_details(basedir=self.basedir)
+        urlpath = replace_intake_vars(catalog=self.catalog, path=self.catbuilder.get_urlpath(block))
         self.logger.info('New urlpath with intake variables is %s', urlpath)
         block['args']['urlpath'] = urlpath
-        entry_name = catbuilder.create_entry_name()        
+        entry_name = self.catbuilder.create_entry_name()        
 
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
@@ -335,10 +342,7 @@ class LRAgenerator():
             verify: open the LRA source and verify it can be read by the reader
         """
 
-        if self.region:
-            entry_name = f'lra-{self.resolution}-{self.frequency}-{self.region["name"]}-zarr'
-        else:
-            entry_name = f'lra-{self.resolution}-{self.frequency}-zarr'
+        entry_name = self.catbuilder.create_entry_name() + '-zarr'
         full_dict, partial_dict = list_lra_files_complete(self.outdir)
         # full_dict, partial_dict = list_lra_files_vars(self.outdir)
         self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
@@ -494,23 +498,13 @@ class LRAgenerator():
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
 
-        filestring = f"{var}_{self.exp}"
-        if 'realization' in self.kwargs:
-            filestring = filestring + f"_r{self.kwargs['realization']}"
-        filestring = filestring + f"_{self.resolution}_{self.frequency}_{self.stat}"
-        if self.region:
-            filestring = filestring + f"_{self.region['name']}"
-        filestring = filestring + "_*.nc"
+        filename = self.outbuilder.build_filename(year=year, month=month)
 
         if tmp:
-            filename = os.path.join(self.tmpdir, filestring)
+            filename = os.path.join(self.tmpdir, filename)
         else:
-            filename = os.path.join(self.outdir, filestring)
+            filename = os.path.join(self.outdir, filename)
 
-        if (year is not None) and (month is None):
-            filename = filename.replace("*", str(year))
-        if (year is not None) and (month is not None):
-            filename = filename.replace("*", str(year) + str(month).zfill(2))
 
         return filename
 
@@ -548,66 +542,6 @@ class LRAgenerator():
             self.logger.debug('Removing regridding attribute...')
             del data.attrs["AQUA_regridded"]
         return data
-
-    # def _write_var_generator(self, var):
-    #     """
-    #     Write a variable to file using the GSV generator
-    #     """
-
-    #     # supplementary retrieve tu use the generator
-    #     self.data = self.reader.retrieve(var=var, startdate=self.last_record)
-    #     self.logger.info('Looping on generator data...')
-    #     t_beg = time()
-    #     for data in self.data:
-
-    #         temp_data = data[var]
-    #         self.logger.info('Generator returned data from %s to %s', temp_data.time[0].values, temp_data.time[-1].values)
-
-    #         if self.frequency:
-    #             temp_data = self.reader.timmean(temp_data)
-    #         temp_data = self.reader.regrid(temp_data)
-
-    #         temp_data = self._remove_regridded(temp_data)
-
-    #         year = temp_data.time.dt.year.values[0]
-    #         month = temp_data.time.dt.month.values[0]
-
-    #         yearfile = self.get_filename(var, year = year)
-    #         filecheck = file_is_complete(yearfile, loglevel=self.loglevel)
-    #         if filecheck:
-    #             if not self.overwrite:
-    #                 self.logger.info('Yearly file %s already exists, skipping...', yearfile)
-    #                 continue
-    #             else:
-    #                 self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
-
-    #         self.logger.info('Processing year %s month %s...', str(year), str(month))
-    #         outfile = self.get_filename(var, year = year, month = month)
-
-    #         # checking if file is there and is complete
-    #         filecheck = file_is_complete(outfile, loglevel=self.loglevel)
-    #         if filecheck:
-    #             if not self.overwrite:
-    #                 self.logger.info('Monthly file %s already exists, skipping...', outfile)
-    #                 continue
-    #             else:
-    #                 self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
-
-    #         # real writing
-    #         if self.definitive:
-    #             self.write_chunk(temp_data, outfile)
-
-    #             # check everything is correct
-    #             filecheck = file_is_complete(outfile, loglevel=self.loglevel)
-    #             # we can later add a retry
-    #             if not filecheck:
-    #                 self.logger.error('Something has gone wrong in %s!', outfile)
-
-    #         if self.definitive and month == 12:
-    #             self._concat_var_year(var, year)
-
-    #         self.logger.info('Processing this chunk took {:.4f} seconds'.format(time() - t_beg))
-    #         t_beg = time()
 
     def _write_var_catalog(self, var):
         """

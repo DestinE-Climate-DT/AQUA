@@ -67,8 +67,16 @@ class OutputPathBuilder:
         #os.makedirs(folder, exist_ok=True)
         return folder
 
-    def build_filename(self, year, month=None, day=None):
+    def build_filename(self, var=None, year=None, month=None, day=None):
         """create the filename based on the parameters."""
+
+        # Set default values if not provided
+        if var is None:
+            var = self.var
+        if year is None:
+            year = "*"
+
+        # specific case for potential levels
         varname = f"{self.var}{self.level}" if self.level else self.var
 
         components = [

@@ -37,7 +37,7 @@ class CatalogEntryBuilder():
         Create an entry name for the LRA
         """
 
-        entry_name = f'aqua-{self.resolution}-{self.frequency}-{self.stat}'
+        entry_name = f'lra-{self.resolution}-{self.frequency}'
         self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
 
         return entry_name
@@ -83,7 +83,7 @@ class CatalogEntryBuilder():
         }
         block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
         block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
-        block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'mean')
+        block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'stat')
     
 
         return block_cat
@@ -106,12 +106,17 @@ class CatalogEntryBuilder():
         # this loop is a bit tricky but is made to ensure that the right value is replaced
         for character in ['_', '/']:
             block['args']['urlpath'] = block['args']['urlpath'].replace(character + value + character, character + "{{" + name + "}}" + character)
-        if not 'parameters' in block:
+        if 'parameters' not in block:
             block['parameters'] = {}
-        block['parameters'][name] = {}
-        block['parameters'][name]['description'] = f"Parameter {name} for the LRA"
-        block['parameters'][name]['default'] = value
-        block['parameters'][name]['type'] = 'str'
+        if name not in block['parameters']:
+            block['parameters'][name] = {}
+            block['parameters'][name]['description'] = f"Parameter {name} for the LRA"
+            block['parameters'][name]['default'] = value
+            block['parameters'][name]['type'] = 'str'
+            block['parameters'][name]['allowed'] = [value]
+        else:
+            if value not in block['parameters'][name]['allowed']:
+                block['parameters'][name]['allowed'].append(value)
 
         return block
     

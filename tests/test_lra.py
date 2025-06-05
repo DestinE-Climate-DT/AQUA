@@ -6,8 +6,8 @@ import pandas as pd
 from aqua import LRAgenerator, Reader
 
 LOGLEVEL = "DEBUG"
-LRAPATH = 'ci/IFS/test-tco79/r100/monthly'
-LRAPATH_DAILY = 'ci/IFS/test-tco79/r100/daily'
+LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean'
+LRAPATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
 
 
 @pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "lra_test"}])
@@ -49,7 +49,7 @@ class TestLRA:
         test.data = test.data.sel(time="2020-01")
         test.generate_lra()
 
-        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_mean_202001.nc")
+        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_202001.nc")
         test.check_integrity(varname=args["var"])
         assert os.path.isfile(file_path)
 
@@ -74,8 +74,8 @@ class TestLRA:
         test.data = test.data.sel(time="2020-01-20")
         test.generate_lra()
 
-        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH_DAILY, "2t_test-tco79_r100_daily_mean_europe_202001.nc")
-        assert os.path.isfile(file_path)
+        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH_DAILY, "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc")
+        assert os.path.isfile(file_path), "File not found: {}".format(file_path)
 
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
         assert xfield.lat.min() > 35
@@ -133,8 +133,8 @@ class TestLRA:
         test.retrieve()
         test.generate_lra()
 
-        missing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_mean_202008.nc")
-        existing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_test-tco79_r100_monthly_mean_202002.nc")
+        missing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_202008.nc")
+        existing_file = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_202002.nc")
 
         assert not os.path.exists(missing_file)
         assert os.path.exists(existing_file)
