@@ -4,13 +4,13 @@ LRA class for glob
 
 import os
 from time import time
+import subprocess
 import glob
 import shutil
 import dask
 import xarray as xr
 import numpy as np
 import pandas as pd
-import subprocess
 from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
 from dask.distributed.diagnostics import MemorySampler

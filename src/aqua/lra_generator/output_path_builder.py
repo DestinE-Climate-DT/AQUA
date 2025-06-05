@@ -9,8 +9,6 @@ class OutputPathBuilder:
     """
     Class to build output paths for LRA data files.
     """
-    
-    
 
     def __init__(self, catalog: str, model: str, exp: str, var: str,
              realization: str = 'r1', resolution: Optional[str] = None,

@@ -2,7 +2,7 @@
 
 from aqua.logger import log_configure
 #from .lra_util import replace_intake_vars
-from .lra_output_builder import OutputPathBuilder
+from .output_path_builder import OutputPathBuilder
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for the LRA"""
@@ -42,7 +42,7 @@ class CatalogEntryBuilder():
         entry_name = f'aqua-{self.resolution}-{self.frequency}-{self.stat}'
         self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
 
-        return entry_name   
+        return entry_name
 
     def create_entry_details(self, urlpath):
         """
