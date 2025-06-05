@@ -37,7 +37,7 @@ if [ $# -eq 0 ]; then
 fi
 
 if [[ $model == "all" ]] ; then
-	models=("EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
+	models=("EC-EARTH4" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
 else
 	models=( $model ) 	
 fi
@@ -62,6 +62,11 @@ do
     log_message INFO "Downloading grid for $model"
 
     # Hardcoded path to the grids on the Swift server
+
+    # EC-EARTH4 link
+    if [ "$model" == "EC-EARTH4" ]; then
+        path="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/grids/EC-EARTH4.tar.gz?temp_url_sig=6ae4fb1a9e2c0c487de3b1f148a81f93019984be&temp_url_expires=2027-04-20T09:10:05Z"
+    fi
 
     # EN4 link
     if [ "$model" == "EN4" ]; then

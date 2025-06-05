@@ -2,10 +2,12 @@ import os
 import xarray as xr
 
 from aqua.logger import log_configure
-from aqua.util import ConfigPath,  OutputSaver
+from aqua.util import ConfigPath
 from aqua.util import frequency_string_to_pandas, time_to_string
-from aqua.util import load_yaml, eval_formula, convert_units
-from aqua.diagnostics.core import Diagnostic, start_end_dates
+from aqua.util import load_yaml, eval_formula
+from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver
+
+xr.set_options(keep_attrs=True)
 
 
 class BaseMixin(Diagnostic):
@@ -56,7 +58,8 @@ class BaseMixin(Diagnostic):
         self.logger.debug(f"Std start date: {self.std_startdate}, Std end date: {self.std_enddate}")
 
         # Set the region based on the region name or the lon and lat limits
-        self._set_region(region=region, lon_limits=lon_limits, lat_limits=lat_limits)
+        self.region, self.lon_limits, self.lat_limits = self._set_region(region=region, diagnostic='timeseries',
+                                                                         lon_limits=lon_limits, lat_limits=lat_limits)
 
         # Initialize the possible results
         self.hourly = None
@@ -94,6 +97,13 @@ class BaseMixin(Diagnostic):
                 self.logger.error('Error retrieving variable %s', var)
             # Get the xr.DataArray to be aligned with the formula code
             self.data = self.data[var]
+
+        if self.plt_startdate is None:
+            self.plt_startdate = self.data.time.min().values
+            self.logger.debug('Plot start date set to %s', self.plt_startdate)
+        if self.plt_enddate is None:
+            self.plt_enddate = self.data.time.max().values
+            self.logger.debug('Plot end date set to %s', self.plt_enddate)
 
         # Customization of the data, expecially needed for formula
         if units is not None:
@@ -135,9 +145,9 @@ class BaseMixin(Diagnostic):
 
         data = self.data
         data = self.reader.fldmean(data, box_brd=box_brd,
-                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
+                                   lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
-                                    center_time=center_time)
+                                   center_time=center_time)
         data = data.sel(time=slice(self.std_startdate, self.std_enddate))
         if freq_dict[str_freq]['groupdby'] is not None:
             data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
@@ -197,38 +207,6 @@ class BaseMixin(Diagnostic):
             super().save_netcdf(data=data_std, diagnostic=diagnostic, diagnostic_product=diagnostic_product,
                                 default_path=outputdir, rebuild=rebuild)
 
-    def _set_region(self, region: str = None, lon_limits: list = None, lat_limits: list = None):
-        """
-        Set the region to be used.
-
-        Args:
-            region (str): The region to select. This will define the lon and lat limits.
-            lon_limits (list): The longitude limits to be used. Overridden by region.
-            lat_limits (list): The latitude limits to be used. Overridden by region.
-        """
-        if region is not None:
-            region_file = ConfigPath().get_config_dir()
-            region_file = os.path.join(region_file, 'diagnostics',
-                                       'timeseries', 'interface', 'regions.yaml')
-            if os.path.exists(region_file):
-                regions = load_yaml(region_file)
-                if region in regions['regions']:
-                    self.lon_limits = regions['regions'][region].get('lon_limits', None)
-                    self.lat_limits = regions['regions'][region].get('lat_limits', None)
-                    self.region = regions['regions'][region].get('logname', region)
-                    self.logger.info(f'Region {self.region} found, using lon: {self.lon_limits}, lat: {self.lat_limits}')
-                else:
-                    self.logger.error('Region %s not found', region)
-                    raise ValueError(f'Region {region} not found')
-            else:
-                self.logger.error('Region file not found')
-                raise FileNotFoundError('Region file not found')
-        else:
-            self.lon_limits = lon_limits
-            self.lat_limits = lat_limits
-            self.region = None
-            self.logger.debug('No region provided, using lon_limits: %s, lat_limits: %s', lon_limits, lat_limits)
-
     def _check_data(self, var: str, units: str):
         """
         Make sure that the data is in the correct units.
@@ -237,21 +215,7 @@ class BaseMixin(Diagnostic):
             var (str): The variable to be checked.
             units (str): The units to be checked.
         """
-        final_units = units
-        initial_units = self.data.units
-        data = self.data
-
-        conversion = convert_units(initial_units, final_units)
-
-        factor = conversion.get('factor', 1)
-        offset = conversion.get('offset', 0)
-
-        if factor != 1 or offset != 0:
-            self.logger.debug('Converting %s from %s to %s',
-                              var, initial_units, final_units)
-            data = data * factor + offset
-            data.attrs['units'] = final_units
-            self.data = data
+        self.data = super()._check_data(data=self.data, var=var, units=units)
 
     def _str_freq(self, freq: str):
         """
@@ -412,26 +376,25 @@ class PlotBaseMixin():
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
             diagnostic (str): Diagnostic name to be used in the filename as diagnostic_product.
         """
-        outputsaver = OutputSaver(diagnostic='timeseries',
+        outputsaver = OutputSaver(diagnostic='timeseries', 
                                   catalog=self.catalogs[0],
                                   model=self.models[0],
                                   exp=self.exps[0],
-                                  default_path=outputdir,
+                                  outdir=outputdir,
                                   rebuild=rebuild,
                                   loglevel=self.loglevel)
 
-        metadata = {"Description": description}
-        save_dict = {'metadata': metadata,
-                     'diagnostic_product': diagnostic,
-                     'dpi': dpi}
+        metadata = {"Description": description, "dpi": dpi }
+        extra_keys = {'diagnostic_product': diagnostic}
+
         if var is not None:
-            save_dict.update({'var': var})
+            extra_keys.update({'var': var})
         if region is not None:
-            save_dict.update({'region': region})
+            extra_keys.update({'region': region})
 
         if format == 'png':
-            outputsaver.save_png(fig, **save_dict)
+            outputsaver.save_png(fig, diagnostic_product=diagnostic, extra_keys=extra_keys, metadata=metadata)
         elif format == 'pdf':
-            outputsaver.save_pdf(fig, **save_dict)
+            outputsaver.save_pdf(fig, diagnostic_product=diagnostic, extra_keys=extra_keys, metadata=metadata)
         else:
             raise ValueError(f'Format {format} not supported. Use png or pdf.')

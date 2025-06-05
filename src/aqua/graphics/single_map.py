@@ -12,16 +12,18 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+import healpy as hp
 from aqua.logger import log_configure
 from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
+from aqua.util import healpix_resample
 from aqua.util import cbar_get_label, set_map_title
 from aqua.util import coord_names, set_ticks, ticks_round
 from .styles import ConfigStyle
 
-
 def plot_single_map(data: xr.DataArray,
                     contour=True, sym=False,
-                    proj: ccrs.Projection = ccrs.Robinson(), extent=None,
+                    proj: ccrs.Projection = ccrs.Robinson(),
+                    extent=None, coastlines=True,
                     style=None, figsize=(11, 8.5), nlevels=11,
                     vmin=None, vmax=None, cmap='RdBu_r',
                     cbar: bool = True, cbar_label=None,
@@ -38,6 +40,7 @@ def plot_single_map(data: xr.DataArray,
         sym (bool, optional):        If True, set the colorbar to be symmetrical. Defaults to False.
         proj (cartopy.crs.Projection, optional): Projection to use. Defaults to PlateCarree.
         extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
+        coastlines (bool, optional): If True, add coastlines. Defaults to True.
         style (str, optional):       Style to use. Defaults to None (aqua style).
         figsize (tuple, optional):   Figure size. Defaults to (11, 8.5).
         nlevels (int, optional):     Number of levels for the contour map. Defaults to 11.
@@ -70,6 +73,15 @@ def plot_single_map(data: xr.DataArray,
     """
     logger = log_configure(loglevel, 'plot_single_map')
     ConfigStyle(style=style, loglevel=loglevel)
+
+
+    # Check if the data is in HEALPix format
+    npix = data.size  # Number of cells in the data
+    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+
+    if nside is not None:
+        logger.info(f"Input data is in HEALPix format with nside={nside}.")
+        data = healpix_resample(data)
 
     # We load in memory the data, to speed up the plotting, Dask is slow with matplotlib
     logger.debug("Loading data in memory")
@@ -132,8 +144,9 @@ def plot_single_map(data: xr.DataArray,
                                   vmin=vmin, vmax=vmax,
                                   add_colorbar=False)
 
-    logger.debug("Adding coastlines")
-    ax.coastlines()
+    if coastlines:
+        logger.debug("Adding coastlines")
+        ax.coastlines()
 
     # TODO: To reimplement, we need a meshgrid for this
     # if gridlines:
@@ -167,13 +180,23 @@ def plot_single_map(data: xr.DataArray,
 
         cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', label=cbar_label)
 
-        # Make tick of colorbar simmetric if sym=True
+        # Make tick of colorbar symmetric if sym=True
         cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
         if sym:
             logger.debug("Setting colorbar ticks to be symmetrical")
             cbar_ticks = np.linspace(-vmax, vmax, nlevels + 1)
         else:
             cbar_ticks = np.linspace(vmin, vmax, nlevels + 1)
+
+        # If too many ticks, select a subset for readability
+        max_ticks = 15
+        if len(cbar_ticks) > max_ticks:
+            step = max(1, int(np.ceil(len(cbar_ticks) / max_ticks)))
+            cbar_ticks = cbar_ticks[::step]
+            # Ensure last tick is included
+            if cbar_ticks[-1] != (vmax if not sym else vmax):
+                cbar_ticks = np.append(cbar_ticks, vmax if not sym else vmax)
+
         if cbar_ticks_rounding is not None:
             logger.debug("Setting colorbar ticks rounding to %s", cbar_ticks_rounding)
             cbar_ticks = ticks_round(cbar_ticks, cbar_ticks_rounding)
@@ -202,6 +225,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          vmin_contour: float = None, vmax_contour: float = None,
                          sym_contour: bool = False, sym: bool = True,
                          cyclic_lon: bool = True, return_fig: bool = False,
+                         fig: plt.Figure = None, ax: plt.Axes = None,
                          title: str = None, loglevel: str = 'WARNING', **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
@@ -221,17 +245,40 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         title (str, optional):     Title of the figure. Defaults to None.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
         return_fig (bool, optional): If True, return the figure and axes. Defaults to False.
+        fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
+        ax (plt.Axes, optional):    Axes to plot on. By default a new axes is created.
         loglevel (str, optional):  Log level. Defaults to 'WARNING'.
         **kwargs:                  Keyword arguments for plot_single_map.
                                    Check the docstring of plot_single_map.
 
     Keyword Args:
         contour (bool, optional):  Plot the difference as contour. False to plot a pcolormesh
+        coastlines (bool, optional): If True, add coastlines. Defaults to True.
 
     Raise:
         ValueError: If data or data_ref is not a DataArray.
     """
     logger = log_configure(loglevel, 'plot_single_map_diff')
+
+
+    # Check if the data is in HEALPix format
+    npix = data.size  # Number of cells in the data
+    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+
+    if nside is not None:
+        logger.info(f"Input data is in HEALPix format with nside={nside}.")
+        data = healpix_resample(data)
+        logger.debug("resampling HEALPix data")
+
+
+    # Check if the data is in HEALPix format
+    npix_ref = data_ref.size  # Number of cells in the data
+    nside_ref = hp.npix2nside(npix_ref) if hp.isnpixok(npix_ref) else None
+
+    if nside_ref is not None:
+        logger.info(f"Reference data is in HEALPix format with nside={nside_ref}.")
+        data_ref = healpix_resample(data_ref)
+        logger.debug("resampling HEALPix data_ref")
 
     if isinstance(data_ref, xr.DataArray) is False or isinstance(data, xr.DataArray) is False:
         raise ValueError("Both data and data_ref must be an xarray.DataArray")
@@ -246,6 +293,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
     else:
         fig, ax = plot_single_map(diff_map, cyclic_lon=cyclic_lon,
                                   proj=proj, extent=extent,
+                                  fig=fig, ax=ax,
                                   sym=sym, vmin=vmin_fill, vmax=vmax_fill,
                                   loglevel=loglevel, return_fig=True, **kwargs)
 

@@ -84,12 +84,16 @@ class OutputSaver:
             exp_value = self.exp
 
         # handle multiref case
-        if isinstance(self.model_ref, list):
+        if isinstance(self.model_ref, list) and len(self.model_ref) > 0:
             model_ref_value = "multiref" if len(self.model_ref) > 1 else self.model_ref[0]
             if isinstance(self.catalog_ref, list):
                 catalog_ref_value = None if len(self.catalog_ref) > 1 else self.catalog_ref[0]
             if isinstance(self.exp_ref, list):
                 exp_ref_value = None if len(self.exp_ref) > 1 else self.exp_ref[0]
+        elif isinstance(self.model_ref, list) and len(self.model_ref) == 0:
+            model_ref_value = None
+            catalog_ref_value = None
+            exp_ref_value = None
         else:
             model_ref_value = self.model_ref
             catalog_ref_value = self.catalog_ref

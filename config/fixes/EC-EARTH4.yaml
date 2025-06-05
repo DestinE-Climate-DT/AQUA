@@ -1,0 +1,105 @@
+fixer_name:
+  # IFS fixes
+  ec-earth4-ifs:
+    convention: eccodes
+    coords:
+      time:
+        source: time_counter
+      plev:
+        source: pressure_levels
+    delete: 
+      - time_centered
+      - time_centered_bounds
+      - time_counter_bounds
+      - bounds_lon
+      - bounds_lat
+      - rlut
+      - rsut
+      - hfls
+      - hfss
+      - evspsbl
+    vars:
+      # these are standard CMOR variables but they require a sign change
+      tnswrf:
+        derived: rsdt-rsut
+        grib: 260671
+      tnlwrf:
+        derived: -rlut
+        grib: 260672
+      slhtf: # Surface latent heat net flux
+        derived: -hfls # cmor
+        grib: 260002
+      ishf: # Surface sensible heat net flux
+        derived: -hfss # cmor
+        grib: 231
+      ie: # Evaporation or moisture flux
+        derived: -evspsbl
+        grib: 232
+      # these are not standard CMOR variables
+      snlwrf: # Surface net long-wave radiation flux
+        source: rlns
+        grib: 260099
+      snswrf: # Surface net short-wave radiation flux
+        source: rsns
+        grib: 260089
+      tnlwrfcs: # Top net long-wave radiation flux clear sky
+        source: rlntcs
+        grib: 260675
+      # tnswrf: # Top net short-wave radiation flux
+      #  source: rsnt
+      #  grib: 260671
+      tnswrfcs: # Top net short-wave radiation flux clear sky
+        source: rsntcs
+        grib: 260674
+      tciw: # Total column vertically-integrated cloud ice water
+        source: iwp
+        grib: 79
+      hcc: # High cloud cover
+        source: clh
+        grib: 3075
+      lcc: # Low cloud cover
+        source: cll
+        grib: 3073
+      mcc: # Medium cloud cover
+        source: clm
+        grib: 3074
+
+  # NEMO fixes
+  ec-earth4-nemo-ice:
+    coords:
+      time:
+        source: time_counter
+      lat:
+        source: nav_lat
+      lon:
+        source: nav_lon
+    delete:
+      - time_centered
+    vars:
+      sivol: 
+        source: sivolu
+      sithick: 
+        source: sithic
+
+  ec-earth4-nemo:
+    dims:
+      time:
+        source: time_counter
+      level:
+        source: deptht
+      x:
+        source: x_grid_T
+      y:
+        source: y_grid_T
+    vars: # placeholder (see issue #1127)
+      dummy:
+        source: not-existing
+    coords:
+      time:
+        source: time_counter
+      level:
+        source: deptht
+      lat:
+        source: nav_lat_grid_T
+      lon:
+        source: nav_lon_grid_T

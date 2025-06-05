@@ -108,6 +108,8 @@ def plot_maps(maps: list,
     else:
         cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
+    cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
+
     # Add a super title
     if title:
         logger.debug('Setting super title to %s', title)
@@ -229,6 +231,8 @@ def plot_maps_diff(maps: list,
         cbar.set_ticks(np.linspace(-vmax_fill, vmax_fill, nlevels + 1))
     else:
         cbar.set_ticks(np.linspace(vmin_fill, vmax_fill, nlevels + 1))
+
+    cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
 
     # Add a super title
     if title:

@@ -12,7 +12,7 @@ diagnostics:
     Seasonal bias: [Seasonal_Bias_Plot, atmglobalmean.seasonal_bias]
     Vertical biases: [Vertical_biases, atmglobalmean.vertical_bias]
     Tropical Rainfall: trop_rainfall
-    Teleconnections: teleconnections
+    Teleconnections: [teleconnections, nao., enso.]
     Ocean time series:
         - monthly_time_series_
         - Ocean_time_series

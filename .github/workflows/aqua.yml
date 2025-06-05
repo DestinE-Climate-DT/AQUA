@@ -121,7 +121,6 @@ jobs:
         run: |
           cd AQUA
           ./download_data_for_tests.sh
-          ./tests/teleconnections/download_data_for_tests.sh
       - name: Set up FDB
         run: |
           export

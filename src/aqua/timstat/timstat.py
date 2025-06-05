@@ -86,7 +86,7 @@ class TimStat():
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
         else:
-            raise KeyError(f'{stat} is not a statistic supported by AQUA')
+            raise KeyError(f'{stat} is not a statistic supported by AQUA TimStat()')
 
         if exclude_incomplete:
             self.logger.info('Checking if incomplete chunks has been produced...')
@@ -117,7 +117,7 @@ class TimStat():
             out = xr.merge([out, time_bnds])
             if np.any(np.isnat(out.time_bnds)):
                 raise ValueError('Resampling cannot produce output for all time_bnds step!')
-            log_history(out, f"time_bnds added by by AQUA time {stat}")
+            log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
     

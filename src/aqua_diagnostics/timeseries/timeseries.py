@@ -2,7 +2,8 @@
 import xarray as xr
 import pandas as pd
 from aqua.util import to_list, frequency_string_to_pandas
-from .util import loop_seasonalcycle, center_timestamp
+from aqua.diagnostics.core import round_startdate, round_enddate
+from .util import loop_seasonalcycle
 from .base import BaseMixin
 
 xr.set_options(keep_attrs=True)
@@ -75,16 +76,15 @@ class Timeseries(BaseMixin):
         freq = to_list(freq)
 
         for f in freq:
-            self.logger.info('Computing %s mean', f)
             self.compute(freq=f, extend=extend, exclude_incomplete=exclude_incomplete,
-                         center_time=center_time, box_brd=box_brd)
+                        center_time=center_time, box_brd=box_brd, var=var)
             if std:
                 self.compute_std(freq=f, exclude_incomplete=exclude_incomplete, center_time=center_time,
                                  box_brd=box_brd)
             self.save_netcdf(diagnostic='timeseries', freq=f, outputdir=outputdir, rebuild=rebuild) 
 
     def compute(self, freq: str, extend: bool = True, exclude_incomplete: bool = True,
-                center_time: bool = True, box_brd: bool = True):
+                center_time: bool = True, box_brd: bool = True, var: str = None):
         """
         Compute the mean of the data. Support for hourly, daily, monthly and annual means.
 
@@ -94,6 +94,7 @@ class Timeseries(BaseMixin):
             center_time (bool): If True, the time will be centered.
             box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
                                 Default is True
+            var (str): The variable to be used if not in metadata.
         """
         if freq is None:
             self.logger.error('Frequency not provided, cannot compute mean')
@@ -104,16 +105,25 @@ class Timeseries(BaseMixin):
 
         self.logger.info('Computing %s mean', str_freq)
         data = self.data.sel(time=slice(self.plt_startdate, self.plt_enddate))
+        if len(data.time) == 0:
+            self.logger.warning('No data available for the selected period %s - %s, using the standard period %s - %s',
+                                self.plt_startdate, self.plt_enddate, self.std_startdate, self.std_enddate)
+            data = self.data.sel(time=slice(self.std_startdate, self.std_enddate))
 
         # Field and time average
         data = self.reader.fldmean(data, box_brd=box_brd, lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete, center_time=center_time)
 
         if extend:
-            data = self._extend_data(data=data, freq=str_freq, center_time=center_time)
+            extended_data = self._extend_data(data=data, freq=str_freq, center_time=center_time)
+            extended_data.attrs = data.attrs.copy()
+            data = extended_data
 
         if self.region is not None:
             data.attrs['region'] = self.region
+
+        # Due to the possible usage of the standard period, the time may need to be reselected correctly
+        data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 
         if str_freq == 'hourly':
             self.hourly = data
@@ -136,18 +146,10 @@ class Timeseries(BaseMixin):
             center_time (bool): If True, the time will be centered.
         """
         if freq == 'monthly' or freq == 'annual':
-            class_startdate = pd.Timestamp(self.startdate)
-            class_enddate = pd.Timestamp(self.enddate)
-            start_date = pd.Timestamp(self.data.time[0].values)
-            end_date = pd.Timestamp(self.data.time[-1].values)
-
-            # if the center_time is True, we need to center the time of the start_date and end_date
-            # to be able to compare them with the class_startdate and class_enddate
-            if center_time:
-                start_date = center_timestamp(time=start_date, freq=freq)
-                end_date = center_timestamp(time=end_date, freq=freq)
-                class_startdate = center_timestamp(time=class_startdate, freq=freq)
-                class_enddate = center_timestamp(time=class_enddate, freq=freq)
+            class_startdate = round_startdate(pd.Timestamp(self.plt_startdate))
+            class_enddate = round_enddate(pd.Timestamp(self.plt_enddate))
+            start_date = round_startdate(pd.Timestamp(data.time[0].values) if data is not None else None)
+            end_date = round_enddate(pd.Timestamp(data.time[-1].values) if data is not None else None)
 
             # Extend the data if needed
             if class_startdate < start_date:

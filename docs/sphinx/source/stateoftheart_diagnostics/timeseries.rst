@@ -253,6 +253,13 @@ Notebooks are stored in the ``notebooks/diagnostics/timeseries`` directory and c
 * `seasonalcycles.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/timeseries/seasonalcycles.ipynb>`_
 * `gregory.ipynb <have://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/timeseries/gregory.ipynb>`_
 
+Authors and contributors
+------------------------
+
+This diagnostic is maintained by Matteo Nurisso (`@mnurisso <https://github.com/mnurisso>`_, `m.nurisso@isac.cnr.it <mailto:m.nurisso@isac.cnr.it>`_).
+Contributions are welcome, please open an issue or a pull request.
+If you have any doubt or suggestion, please contact the AQUA team or the maintainers.
+
 Detailed API
 ------------
 

@@ -1,7 +1,9 @@
+import os
 import xarray as xr
 from aqua import Reader
 from aqua.logger import log_configure
-from aqua.util import OutputSaver
+from aqua.util import OutputSaver, ConfigPath
+from aqua.util import load_yaml, convert_units
 
 
 class Diagnostic():
@@ -130,3 +132,66 @@ class Diagnostic():
             data = reader.regrid(data)
 
         return data, reader, catalog
+
+    def _check_data(self, data: xr.DataArray, var: str, units: str):
+        """
+        Make sure that the data is in the correct units.
+
+        Args:
+            data (xarray DataArray): The data to be checked.
+            var (str): The variable to be checked.
+            units (str): The units to be checked.
+        """
+        final_units = units
+        initial_units = data.units
+
+        conversion = convert_units(initial_units, final_units)
+
+        factor = conversion.get('factor', 1)
+        offset = conversion.get('offset', 0)
+
+        if factor != 1 or offset != 0:
+            self.logger.debug('Converting %s from %s to %s',
+                              var, initial_units, final_units)
+            data = data * factor + offset
+            data.attrs['units'] = final_units
+
+        return data
+
+    def _set_region(self, diagnostic: str, region: str = None, lon_limits: list = None, lat_limits: list = None):
+        """
+        Set the region to be used.
+
+        Args:
+            diagnostic (str): The diagnostic name. Used for creating file paths.
+            region (str): The region to select. This will define the lon and lat limits.
+            lon_limits (list): The longitude limits to be used. Overridden by region.
+            lat_limits (list): The latitude limits to be used. Overridden by region.
+
+        Returns:
+            region (str): The region name to be used.
+            lon_limits (list): The longitude limits to be used.
+            lat_limits (list): The latitude limits to be used.
+        """
+        if region is not None:
+            region_file = ConfigPath().get_config_dir()
+            region_file = os.path.join(region_file, 'diagnostics',
+                                       diagnostic, 'definitions', 'regions.yaml')
+            if os.path.exists(region_file):
+                regions = load_yaml(region_file)
+                if region in regions['regions']:
+                    lon_limits = regions['regions'][region].get('lon_limits', None)
+                    lat_limits = regions['regions'][region].get('lat_limits', None)
+                    region = regions['regions'][region].get('longname', region)
+                    self.logger.info(f'Region {region} found, using lon: {lon_limits}, lat: {lat_limits}')
+                else:
+                    self.logger.error('Region %s not found', region)
+                    raise ValueError(f'Region {region} not found')
+            else:
+                self.logger.error('Region file not found')
+                raise FileNotFoundError('Region file not found')
+        else:
+            region = None
+            self.logger.info('No region provided, using lon_limits: %s, lat_limits: %s', lon_limits, lat_limits)
+
+        return region, lon_limits, lat_limits

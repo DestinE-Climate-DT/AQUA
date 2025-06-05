@@ -5,14 +5,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.14.1):
+Unreleased in the current development version (target v0.16.0):
+
+Removed:
+- Removed source or experiment specific fixes; only the `fixer_name` is now supported.
+
+Workflow modifications:
+- `push_analysis.sh` now updates and pushes to LUMI-O the file `experiments.yaml`, which is used by the 
+  dashboard to know which experiments to list. The file is downloaded from the object store, updated and 
+  pushed back. Additionally it exit with different error codes if the bucket is missing or the S3 credential
+  are not correct.
+
+AQUA core complete list:
+- `Trender()` class to include both `trend()` and `detrend()` method (#1980)
+- `cartopy_offlinedata` is added on container and path is set in cli call, to support MN5 no internet for coastlines download (#1960)
+- plot_single_map() can now handle high nlevels with a decreased cbar ticks density (#1940)
+- plot_single_map() now can avoid coastlines to support paleoclimate maps (#1940)
+- Fixes to support EC-EARTH4 conversion to GRIB2 (#1940)
+- Added support for TL63, TL255, eORCA1, ORCA2 grids for EC-EARTH4 model (#1940)
+- `FldStat()` as independent module for area-weighted operations (#1835)
+- Refactor of `Fixer()`, now independent from the `Reader()` and supported by classes `FixerDataModel` and `FixerOperator` (#1929) 
+- Update and push to lumi-o the a file listing experiments needed by the dashboard (#1950)
+- Integration of HEALPix data with `plot_single_map()` (#1897)
+- Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
+
+AQUA diagnostics complete list:
+- GlobalBiases: major refactor (#1803)
+- Ocean Drift: using the `_set_region` method from the `Diagnostic` class (#1981)
+- Diagnostic core: new `_set_region` method in `Diagnostic` class to find region name, lon and lat limits (#1979)
+- Timeseries: regions are now in the `definitions` folder (not `interface` anymore) (#1884)
+- Teleconnections: complete refactor according to the Diagnostic, PlotDiagnostic schema (#1884)
+- Radiations: timeseries correctly working for exps with enddate before 2000 (#1940)
+- Diagnostic core: new `round_startdate` and `round_enddate` functions for time management (#1940)
+- Timeseries: fix in the new cli wich was ignoring the regrid option and had bad time handling (#1940)
+- Timeseries: Use new OutputSaver in Timeseries diagnostics (#1948)
+
+## [v0.15.0]
+
+Main changes are:
+- Polytope support 
+- Plotting routines support cartopy projections and matplotlib styles
+- Major refactor of AQUA core functionalities: Regridder, Datamodel, OutputSaver, Timstat  
+- Major refactor of Timeseries, SeasonalCycle, GregoryPlot diagnostics
 
 Removed:
 - `aqua.slurm` has been removed.
 
 Workflow modifications:
-- `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes.
-As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
+- `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes. As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
 
 AQUA core complete list:
 - Add FDB_HOME to debug logs (#1914)
@@ -24,7 +64,7 @@ AQUA core complete list:
 - Introduce a `Timstat()` module independent from the `Reader()` (#1832)
 - Adapt Catalog Generator to Data-Portfolio v1.3.0 (#1848)
 - Introduction of a internal AQUA data model able to guess coordinates and convert toward required target data convention definition (#1862, #1877, #1883)
-- Custom `paths` in the `confi-aqua.yaml` can now be defined and will take priority over the catalog paths (#1809)
+- Custom `paths` in the `config-aqua.yaml` can now be defined and will take priority over the catalog paths (#1809)
 - Remove deprecated `aqua.slurm` module (#1860)
 - Refactor of `plot_maps()` and `plot_maps_diff()` functions with projection support and use their single map version internally (#1865)
 - Refactor of `plot_single_map()` and `plot_single_map_diff()` functions with projection support (#1854)
@@ -909,7 +949,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...HEAD
+[v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0
 [v0.14.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.14.0
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
 [v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0

@@ -1,6 +1,5 @@
 fixer_name:
     icon-destine-v1:
-        data_model: ifs
         deltat: 3600
         convention: eccodes
 

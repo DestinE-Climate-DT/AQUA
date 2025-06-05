@@ -28,7 +28,8 @@ A function called ``plot_single_map()`` is provided with many options to customi
 The function takes as input an xarray.DataArray, with a single timestep to be selected
 before calling the function. The function will then plot the map of the variable and,
 if no other option is provided, will adapt colorbar, title and labels to the attributes
-of the input DataArray.
+of the input DataArray. Not only longitude-latitude grids are supported, but also HEALPix
+data, which are automatically resampled to a regular lon-lat grid before plotting.
 
 The function is built on top of the ``cartopy`` and ``matplotlib`` libraries,
 and it is possible to customize the plot with many options, including a different projection.
@@ -61,6 +62,8 @@ The function takes as input two xarray.DataArray, with a single timestep.
 
 The function will plot as colormap or contour filled map the difference between the two input DataArray (the first one minus the second one).
 Additionally a contour line map is plotted with the first input DataArray, to show the original data.
+Again, not only longitude-latitude grids are supported, but also HEALPix data,
+which are automatically resampled to a regular lon-lat grid.
 
 .. figure:: figures/single_map_diff_example.png
     :align: center

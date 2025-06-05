@@ -96,19 +96,12 @@ diagnostics:
   teleconnections_atm:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 8
-    # Command line extra arguments for teleconnections:
-    # --dry, -d (dry run, if set it will run without producing plots)
-    # --ref (if set it will analyze also the reference data, it is set
-    #        by default)
-    # --interface (custom interface file)
-    config: "${AQUA_CONFIG}/diagnostics/teleconnections/cli_config_atm.yaml"
-    extra: "--ref"
+    config: "${AQUA_CONFIG}/diagnostics/teleconnections/config_teleconnections_atm.yaml"
     outname: teleconnections
   teleconnections_oce:
     script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
     nworkers: 4
-    config: "${AQUA_CONFIG}/diagnostics/teleconnections/cli_config_oce.yaml"
-    extra: "--ref"
+    config: "${AQUA_CONFIG}/diagnostics/teleconnections/config_teleconnections_oce.yaml"
     outname: teleconnections
   tropical_rainfall:
     nworkers: 16

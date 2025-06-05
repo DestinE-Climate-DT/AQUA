@@ -19,7 +19,7 @@ body:
       - Lumi
       - MN5
       - CI
-      - Atos
+      - HPC2020
       - Others
     validations:
       required: true
@@ -49,16 +49,15 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v0.15.0
       - v0.14.0
+      - v0.13.6
       - v0.13.5
       - v0.13.4
       - v0.13.3
       - v0.13.2
       - v0.13.1
       - v0.13.0
-      - v0.13-beta
-      - v0.13-alpha
-      - v0.12.3
       - older (specify)
     validations:
       required: true
