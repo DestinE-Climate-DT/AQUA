@@ -53,7 +53,8 @@ class PlotSeasonalCycles(PlotBaseMixin):
         description = self.set_description(region=region)
         title = self.set_title(region=region, var=var, units=units)
         fig, _ = self.plot_seasonalcycles(data_labels=data_label, ref_label=ref_label, title=title)
-        self.save_plot(fig, var=var, description=description, region=region, rebuild=rebuild,
+        region_short = region.replace(' ', '').lower() if region is not None else None
+        self.save_plot(fig, var=var, description=description, region=region_short, rebuild=rebuild,
                        outputdir=outputdir, dpi=dpi, format=format)
         self.logger.info('PlotSeasonalCycles completed successfully')
 
