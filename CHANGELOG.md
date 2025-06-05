@@ -31,6 +31,7 @@ AQUA core complete list:
 - Update and push to lumi-o the a file listing experiments needed by the dashboard (#1950)
 - Integration of HEALPix data with `plot_single_map()` (#1897)
 - Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
+- Upgrade to `smmregrid=0.1.1`, which fixes coastal erosion in conservative regridding (#1963)
 
 AQUA diagnostics complete list:
 - GlobalBiases: major refactor (#1803)

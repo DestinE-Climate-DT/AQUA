@@ -53,7 +53,7 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid==0.1.0",
+    "smmregrid==0.1.1",
     "sparse",
     "xarray>=2025.01.2", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
     "kerchunk",
