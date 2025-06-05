@@ -12,7 +12,7 @@ class OutputPathBuilder:
 
     def __init__(self, catalog: str, model: str, exp: str, var: str,
              realization: str = 'r1', resolution: Optional[str] = None,
-             frequency: Optional[str] = None, stat: str = 'nostat',
+             frequency: Optional[str] = None, stat: str = 'mean',
              region: str = 'global', level: Optional[str] = None,
              **kwargs):
         """
@@ -103,7 +103,6 @@ class OutputPathBuilder:
 
 
         # collapse all the component to create the final file
-        print(components)
         filename = "_".join(str(c) for c in components + [date_components] if c) + ".nc"
     
         return filename

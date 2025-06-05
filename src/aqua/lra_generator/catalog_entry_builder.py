@@ -1,17 +1,15 @@
 """Class to create a catalog entry for the LRA"""
 
 from aqua.logger import log_configure
-#from .lra_util import replace_intake_vars
 from .output_path_builder import OutputPathBuilder
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for the LRA"""
 
-    def __init__(self, basedir, catalog, model, exp, var, realization='r1',
-                 resolution=None, frequency=None, stat=None,
-                 region=None, level=None, loglevel='WARNING', **kwargs):
+    def __init__(self, catalog, model, exp, var, realization='r1',
+                 resolution=None, frequency=None, stat="mean",
+                 region="global", level=None, loglevel='WARNING', **kwargs):
         
-        self.basedir = basedir
         self.catalog = catalog
         self.model = model
         self.exp = exp
@@ -44,12 +42,12 @@ class CatalogEntryBuilder():
 
         return entry_name
 
-    def create_entry_details(self, urlpath):
+    def create_entry_details(self, basedir=None):
         """
         Create an entry in the catalog for the LRA
         """
 
-        urlpath = self.ouput_path_builder.build_path(self.basedir, year="*")
+        urlpath = self.ouput_path_builder.build_path(basedir, year="*")
 
         self.logger.info('Fully expanded urlpath %s', urlpath)
         #urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -85,6 +83,7 @@ class CatalogEntryBuilder():
         }
         block_cat = self.replace_urlpath(block_cat, self.realization, 'realization')
         block_cat = self.replace_urlpath(block_cat, self.region, 'region')
+        block_cat = self.replace_urlpath(block_cat, self.stat, 'mean')
     
 
         return block_cat
@@ -94,9 +93,19 @@ class CatalogEntryBuilder():
     @staticmethod
     def replace_urlpath(block, value, name):
         """
-        Replace the urlpath in the catalog entry with the given name
+        Replace the urlpath in the catalog entry with the given jinja parameter and 
+        add the parameter to the parameters block
+
+        Args:
+            block (dict): The catalog entry block to modify
+            value (str): The value to replace in the urlpath
+            name (str): The name of the parameter to add to the parameters block
         """
-        block['args']['urlpath'] = block['args']['urlpath'].replace(value, "{{" + name + "}}")
+        if not value:
+            return block
+        # this loop is a bit tricky but is made to ensure that the right value is replaced
+        for character in ['_', '/']:
+            block['args']['urlpath'] = block['args']['urlpath'].replace(character + value + character, character + "{{" + name + "}}" + character)
         if not 'parameters' in block:
             block['parameters'] = {}
         block['parameters'][name] = {}
