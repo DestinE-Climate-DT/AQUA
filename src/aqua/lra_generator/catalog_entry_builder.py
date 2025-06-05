@@ -81,9 +81,9 @@ class CatalogEntryBuilder():
                 'source_grid_name': 'lon-lat',
             }
         }
-        block_cat = self.replace_urlpath(block_cat, self.realization, 'realization')
-        block_cat = self.replace_urlpath(block_cat, self.region, 'region')
-        block_cat = self.replace_urlpath(block_cat, self.stat, 'mean')
+        block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
+        block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
+        block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'mean')
     
 
         return block_cat
@@ -91,7 +91,7 @@ class CatalogEntryBuilder():
             #cat_file['sources'][entry_name] = block_cat
 
     @staticmethod
-    def replace_urlpath(block, value, name):
+    def replace_urlpath_jinja(block, value, name):
         """
         Replace the urlpath in the catalog entry with the given jinja parameter and 
         add the parameter to the parameters block
@@ -113,5 +113,12 @@ class CatalogEntryBuilder():
         block['parameters'][name]['default'] = value
 
         return block
-
+    
+    @staticmethod
+    def get_urlpath(block):
+        """
+        Get the urlpath for the catalog entry
+        """
+        return block['args']['urlpath']
+    
 

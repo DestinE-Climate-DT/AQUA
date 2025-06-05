@@ -22,6 +22,7 @@ from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
 from aqua.util import area_selection
 from aqua.lra_generator.lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
+from aqua.lra_generator.catalog_entry_builder import CatalogEntryBuilder
 
 
 class LRAgenerator():
@@ -299,26 +300,14 @@ class LRAgenerator():
         Create an entry in the catalog for the LRA
         """
 
-        entry_name = f'lra-{self.resolution}-{self.frequency}'
-        if self.region:
-            entry_name = f'{entry_name}-{self.region["name"]}'
-        self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
-
-        # modify filename if realization is there
-        if 'realization' in self.kwargs:
-            if self.region:
-                urlpath = os.path.join(self.outdir, f"*{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_{self.region['name']}_*.nc")
-            else:
-                urlpath = os.path.join(self.outdir, f"*{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc")
-        else:
-            if self.region:
-                urlpath = os.path.join(self.outdir, f"*{self.exp}_{self.resolution}_{self.frequency}_{self.region['name']}_*.nc")
-            else:
-                urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
-
-        self.logger.info('Fully expanded urlpath %s', urlpath)
-        urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
+        catbuilder = CatalogEntryBuilder(var=self.var, catalog=self.catalog, model=self.model, exp=self.exp,
+                                         resolution=self.resolution, frequency=self.frequency,
+                                         region=self.region, stat=self.stat, loglevel=self.loglevel, **self.kwargs)
+        block = catbuilder.create_entry_details(basedir=self.outdir)
+        urlpath = replace_intake_vars(catalog=self.catalog, path=catbuilder.get_urlpath(block))
         self.logger.info('New urlpath with intake variables is %s', urlpath)
+        block['args']['urlpath'] = urlpath
+        entry_name = catbuilder.create_entry_name()        
 
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
@@ -332,24 +321,8 @@ class LRAgenerator():
             cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
 
         else: 
-            # if the entry is not there, define the block to be uploaded into the catalog
-            block_cat = {
-                'driver': 'netcdf',
-                'description': f'LRA data {self.frequency} at {self.resolution}',
-                'args': {
-                    'urlpath': urlpath,
-                    'chunks': {},
-                    'xarray_kwargs': {
-                        'decode_times': True,
-                        'combine': 'by_coords'
-                    },
-                },
-                'metadata': {
-                    'source_grid_name': 'lon-lat',
-                }
-            }
 
-            cat_file['sources'][entry_name] = block_cat
+            cat_file['sources'][entry_name] = block
 
         # dump the update file
         dump_yaml(outfile=catalogfile, cfg=cat_file)
