@@ -4,6 +4,7 @@ from aqua import Reader
 from aqua.logger import log_configure
 from aqua.util import OutputSaver, ConfigPath
 from aqua.util import load_yaml, convert_units
+from aqua.util import area_selection
 
 
 class Diagnostic():
@@ -194,4 +195,35 @@ class Diagnostic():
             region = None
             self.logger.info('No region provided, using lon_limits: %s, lat_limits: %s', lon_limits, lat_limits)
 
+        return region, lon_limits, lat_limits
+
+    def select_region(self, region: str = None, diagnostic: str = None, drop: bool = True):
+        """
+        Selects a geographic region from the dataset and updates self.data accordingly.
+
+        If a region name is provided, the method filters the data using the region's
+        predefined latitude and longitude bounds. The selected region name is stored
+        in the dataset attributes.
+
+        Args:
+            region (str, optional): Name of the region to select. If None, no filtering is applied.
+            diagnostic (str, optional): Diagnostic category used to determine region bounds.
+            drop (bool, optional): Whether to drop coordinates outside the selected region. Default is True.
+
+        Returns:
+            tuple: (region, lon_limits, lat_limits)
+        """
+        if region is not None and diagnostic is not None:
+            region, lon_limits, lat_limits = self._set_region(region=region, diagnostic=diagnostic)
+            self.logger.info(f"Applying area selection for region: {region}")
+            self.data = area_selection(
+                data=self.data, lat=lat_limits, lon=lon_limits, drop=drop, loglevel=self.loglevel
+            )
+            self.data.attrs['AQUA_region'] = region
+            self.logger.info(f"Modified longname of the region: {region}")
+        else:
+            region, lon_limits, lat_limits = None, None, None
+            self.logger.warning(
+                "Since region name is not specified, processing whole region in the dataset"
+            )
         return region, lon_limits, lat_limits

@@ -197,7 +197,8 @@ class BaseMixin(Diagnostic):
 
         diagnostic_product = getattr(data, 'standard_name', None)
         diagnostic_product += f'.{str_freq}'
-        diagnostic_product += f'.{self.region}' if self.region is not None else ''
+        region = self.region.replace(' ', '').lower() if self.region is not None else None
+        diagnostic_product += f'.{region}' if region is not None else ''
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
         super().save_netcdf(data=data, diagnostic=diagnostic, diagnostic_product=diagnostic_product,
                             default_path=outputdir, rebuild=rebuild)
@@ -390,6 +391,7 @@ class PlotBaseMixin():
         if var is not None:
             extra_keys.update({'var': var})
         if region is not None:
+            region = region.replace(' ', '').lower() if region is not None else None
             extra_keys.update({'region': region})
 
         if format == 'png':

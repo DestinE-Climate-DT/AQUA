@@ -157,10 +157,17 @@ class TestTimeseries:
         """Test the plot_timeseries function"""
         t1_yearly = self.reader.timmean(self.t1, freq='YS', center_time=True)
         t2_yearly = self.reader.timmean(self.t2, freq='YS', center_time=True)
+        std_mon = self.t1.groupby('time.month').std('time')
+        std_annual = t1_yearly.std(dim='time')
 
         data_labels = ['t1', 't2']
 
         fig, ax = plot_timeseries(monthly_data=[self.t1, self.t2], annual_data=[t1_yearly, t2_yearly],
+                                  ref_monthly_data=self.t1,
+                                  ref_annual_data=t1_yearly,
+                                  std_monthly_data=std_mon,
+                                  std_annual_data=std_annual,
+                                  ref_label=data_labels[0],
                                   title='Temperature at two locations',
                                   data_labels=data_labels)
 
@@ -176,8 +183,10 @@ class TestTimeseries:
         """Test the plot_seasonalcycle function"""
         t1_seasonal = self.t1.groupby('time.month').mean('time')
         t2_seasonal = self.t2.groupby('time.month').mean('time')
+        std_data = self.t1.groupby('time.month').std('time')
 
         fig, ax = plot_seasonalcycle(data=t1_seasonal, ref_data=t2_seasonal,
+                                     std_data=std_data,
                                      title='Seasonal cycle of temperature at two locations',
                                      data_labels='t1',
                                      ref_label='t2',
@@ -190,6 +199,34 @@ class TestTimeseries:
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_seasonalcycle.png')
+
+    def test_plot_ensemble(self, tmp_path):
+        """Test the plot_timeseries function with ensemble data"""
+        t1_yearly = self.reader.timmean(self.t1, freq='YS', center_time=True)
+        t2_yearly = self.reader.timmean(self.t2, freq='YS', center_time=True)
+
+        # Create ensemble mean and standard deviation (fake data for testing)
+        ens_mon_mean = (t1_yearly + t2_yearly) / 2
+        ens_mon_std = ens_mon_mean.groupby('time.month').std(dim='time')
+        ens_annual_mean = self.reader.timmean(ens_mon_mean, freq='YS', center_time=True)
+        ens_annual_std = ens_annual_mean.std(dim='time')
+
+        fig, ax = plot_timeseries(monthly_data=[self.t1, self.t2],
+                                  annual_data=[t1_yearly, t2_yearly],
+                                  ens_monthly_data=ens_mon_mean,
+                                  std_ens_monthly_data=ens_mon_std,
+                                  ens_annual_data=ens_annual_mean,
+                                  std_ens_annual_data=ens_annual_std,
+                                  ens_label='Ensemble mean',
+                                  title='Ensemble mean temperature at two locations')
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_ensemble.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_ensemble.png')
 
 
 @pytest.mark.graphics

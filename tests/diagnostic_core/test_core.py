@@ -43,3 +43,17 @@ def test_class_diagnostic(tmp_path):
                      rebuild=True)
 
     assert outdir.joinpath('netcdf/test.save.ci.ERA5.era5-hpz3.nc').exists()
+    
+    #test select_region
+    region, diagnostic = None, None #testing when region is None
+    region, lon_limits, lat_limits = diag.select_region(region=region, diagnostic=diagnostic)
+    assert region == None
+    assert lon_limits == None
+    assert lat_limits == None
+    
+    region = 'io'
+    diagnostic = "ocean3d"
+    region, lon_limits, lat_limits = diag.select_region(region=region, diagnostic=diagnostic)
+    assert region == "Indian Ocean"
+    assert lon_limits == [30, 110]
+    assert lat_limits == [-30, 30]
