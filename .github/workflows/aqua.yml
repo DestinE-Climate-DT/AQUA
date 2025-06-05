@@ -157,7 +157,6 @@ jobs:
           # Set up polytope secrets
           cat >$HOME/.polytopeapirc << EOF
           {
-            "user_email": "${{ secrets.POLYTOPE_MAIL }}",
             "user_key": "${{ secrets.POLYTOPE_KEY }}"
           }
           EOF
