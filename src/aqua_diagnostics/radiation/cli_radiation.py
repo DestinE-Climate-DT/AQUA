@@ -33,6 +33,8 @@ def parse_arguments(args):
                         required=False, help="experiment name")
     parser.add_argument("--source", type=str,
                         required=False, help="source name")
+    parser.add_argument("--regrid", type=str,
+                        required=False, help="target regrid resolution")
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
     parser.add_argument("--cluster", type=str,
@@ -76,6 +78,7 @@ if __name__ == '__main__':
     models[0]['model'] = get_arg(args, 'model', models[0]['model'])
     models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
     models[0]['source'] = get_arg(args, 'source', models[0]['source'])
+    regrid = get_arg(args, 'regrid', models[0].get('regrid', None))
 
     logger.debug("Analyzing models:")
     catalog_list, models_list, exp_list, startdate_list, enddate_list, datasets = [], [], [], [], [], []
@@ -84,7 +87,7 @@ if __name__ == '__main__':
     for model in models:
         try:
             reader = Reader(catalog=model['catalog'], model=model['model'], exp=model['exp'], source=model['source'],
-                            startdate=model['startdate'], enddate=model['enddate'])
+                            startdate=model['startdate'], enddate=model['enddate'], regrid=regrid, loglevel=loglevel)
             dataset = reader.retrieve()
         except Exception as e:
             logger.error(f"No model data found: {e}")

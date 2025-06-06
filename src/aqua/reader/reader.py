@@ -385,7 +385,7 @@ class Reader():
                          'AQUA_source': self.source, 'AQUA_catalog': self.catalog,
                          'AQUA_version': aqua_version}
         data = set_attrs(data, info_metadata)
-
+        
         return data
 
     def _add_index(self, data):

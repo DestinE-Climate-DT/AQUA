@@ -10,7 +10,7 @@ channels:
 dependencies:
   - python>=3.10,<3.13
   - cdo>=2.2.0
-  - eccodes==2.40.0
+  - eccodes==2.41.0
   - pandas      
   - pip
   - hdf5 #explicit to avoid issues with pypi

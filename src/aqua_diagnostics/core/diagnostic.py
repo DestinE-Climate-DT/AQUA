@@ -126,6 +126,10 @@ class Diagnostic():
 
         data = reader.retrieve(var=var)
 
+        # If the data is empty, raise an error
+        if not data:
+            raise ValueError(f"No data found for {model} {exp} {source} with variable {var}")
+
         if catalog is None:
             catalog = reader.catalog
 

@@ -34,6 +34,8 @@ def parse_arguments(args):
                         help='exp to be analysed')
     parser.add_argument('-s', '--source', type=str,
                         help='source to be analysed')
+    parser.add_argument('--regrid', type=str,
+                        help='regrid method to be used [default: r100]', default='r100')
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
     parser.add_argument('-o', '--outputdir', type=str,
@@ -44,9 +46,21 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 
-def reader_data(model, exp, source, catalog=None, keep_vars=None):
+def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None):
     """
     Simple function to retrieve and do some operation on reader data
+
+    Args:
+        model (str): model name
+        exp (str): experiment name
+        source (str): source of the data
+        catalog (str, optional): catalog to be used, defaults to None
+        regrid (str, optional): regrid method, defaults to 'r100'
+        keep_vars (list, optional): list of variables to keep, defaults to None
+    
+    Returns:
+        xarray.Dataset: dataset with the data retrieved and regridded
+        None: if model is False or if there is an error retrieving the data
     """
     # if False/None return empty array
     if model is False:
@@ -111,17 +125,18 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', configfile['dataset']['model'])
     catalog = get_arg(args, 'catalog', configfile['dataset']['catalog'])
     outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
+    regrid = get_arg(args, 'regrid', configfile['dataset']['regrid'])
     interface = get_arg(args, 'interface', interface)
     logger.debug('Definitive interface file %s', interface)
 
     # load the data
     logger.info('Loading atmospheric data %s', model)
     data_atm = reader_data(model=model, exp=exp, source=source, 
-                           catalog=catalog, keep_vars=atm_vars)
+                           catalog=catalog, keep_vars=atm_vars, regrid=regrid)
     
     logger.info('Loading oceanic data from %s', model)
     data_oce = reader_data(model=model, exp=exp, source=source, 
-                            catalog=catalog, keep_vars=oce_vars)
+                            catalog=catalog, keep_vars=oce_vars, regrid=regrid)
 
     # create a single dataset
     if data_oce is None:

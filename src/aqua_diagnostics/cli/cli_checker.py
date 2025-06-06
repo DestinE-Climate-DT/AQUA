@@ -63,7 +63,10 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', None)
     exp = get_arg(args, 'exp', None)
     source = get_arg(args, 'source', None)
-    regrid = get_arg(args, 'regrid', None)
+    # For some diagnostics the regrid is required, so we set a default
+    # which is 1 degree for the regrid. The user can override it
+    # with the --regrid argument.
+    regrid = get_arg(args, 'regrid', 'r100')
     yamldir = get_arg(args, 'yaml', None)
     fread = args.no_read
     frebuild = args.no_rebuild
