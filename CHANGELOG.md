@@ -17,9 +17,10 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- Fix HPC2020 (ECMWF) installation (#1994)
 - `plot_timeseries` can handle multiple references and ensemble mean and std (#1988)
 - Support for CDO 2.5.0, modified test files accordingly (v6) (#1987)
-- Remove DOCKER secrets and prepare ground for dependabot action e.g introduce AQUA_GITHUB_PAT (#1983)
+- Remove DOCKER secrets and prepare ground for dependabot action e.g introduce AQUA_GITHUB_PAT (#1983,#1995)
 - `Trender()` class to include both `trend()` and `detrend()` method (#1980)
 - `cartopy_offlinedata` is added on container and path is set in cli call, to support MN5 no internet for coastlines download (#1960)
 - plot_single_map() can now handle high nlevels with a decreased cbar ticks density (#1940)
