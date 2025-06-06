@@ -135,7 +135,7 @@ def list_lra_files_complete(path):
 def move_tmp_files(tmp_directory, output_directory):
     """
     Move temporary NetCDF files from the tmp directory to the output directory,
-    changing their name by removing "_tmp" suffix. 
+    changing their name by removing "_tmp" suffix.
     """
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)

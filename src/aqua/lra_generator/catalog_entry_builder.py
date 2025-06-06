@@ -1,0 +1,133 @@
+"""Class to create a catalog entry for the LRA"""
+
+from aqua.logger import log_configure
+from .output_path_builder import OutputPathBuilder
+from .lra_util import replace_intake_vars
+
+
+class CatalogEntryBuilder():
+    """Class to create a catalog entry for the LRA"""
+
+    def __init__(self, catalog, model, exp, resolution,
+                 realization=None, frequency=None, stat=None,
+                 region=None, level=None, loglevel='WARNING', **kwargs):
+        
+        """
+        Initialize the CatalogEntryBuilder with the necessary parameters.
+
+        Args:
+            catalog (str): Name of the catalog.
+            model (str): Name of the model.
+            exp (str): Name of the experiment.
+            resolution (str): Resolution of the data.
+            realization (str, optional): Realization name. Defaults to 'r1'.
+            frequency (str, optional): Frequency of the data. Defaults to 'native'.
+            stat (str, optional): Statistic type. Defaults to 'nostat'.
+            region (str, optional): Region. Defaults to 'global'.
+            level (str, optional): Level. Defaults to None.
+            loglevel (str, optional): Logging level. Defaults to 'WARNING'.
+            **kwargs: Additional keyword arguments for flexibility.
+        """
+
+        self.catalog = catalog
+        self.model = model
+        self.exp = exp
+        self.resolution = resolution
+        
+        self.realization = realization if realization is not None else 'r1'
+        self.frequency = frequency if frequency is not None else 'native'
+        self.stat = stat if stat is not None else 'nostat'
+        self.region = region if region is not None else 'global'
+
+        self.level = level
+        self.kwargs = kwargs
+        self.opt = OutputPathBuilder(catalog=catalog, model=model, exp=exp,
+                                                    realization=realization, resolution=self.resolution,
+                                                    frequency=self.frequency, stat=self.stat, region=self.region,
+                                                    level=self.level, **self.kwargs)
+        self.logger = log_configure(log_level=loglevel, log_name='CatalogEntryBuilder')
+        self.loglevel = loglevel
+
+    def create_entry_name(self):
+        """
+        Create an entry name for the LRA
+        """
+
+        entry_name = f'lra-{self.resolution}-{self.frequency}'
+        self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
+
+        return entry_name
+
+    def create_entry_details(self, basedir=None, driver='netcdf', source_grid_name='lon-lat'):
+        """
+        Create an entry in the catalog for the LRA
+        """
+
+        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*")
+        self.logger.info('Fully expanded urlpath %s', urlpath)
+
+        urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
+        self.logger.info('New urlpath with intake variables is %s', urlpath)
+
+        # if the entry is not there, define the block to be uploaded into the catalog
+        block_cat = {
+            'driver': driver,
+            'description': f'AQUA {driver} LRA data {self.frequency} at {self.resolution}',
+            'args': {
+                'urlpath': urlpath,
+                'chunks': {},
+            },
+            'metadata': {
+                'source_grid_name': source_grid_name,
+            }
+        }
+        if driver == 'netcdf':
+            block_cat['args']['xarray_kwargs'] = {
+                    'decode_times': True,
+                    'combine': 'by_coords'
+                }
+            block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
+            block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
+            block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'stat')
+
+        return block_cat
+
+        # cat_file['sources'][entry_name] = block_cat
+
+    @staticmethod
+    def replace_urlpath_jinja(block, value, name):
+        """
+        Replace the urlpath in the catalog entry with the given jinja parameter and
+        add the parameter to the parameters block
+
+        Args:
+            block (dict): The catalog entry block to modify
+            value (str): The value to replace in the urlpath
+            name (str): The name of the parameter to add to the parameters block
+        """
+        if not value:
+            return block
+        # this loop is a bit tricky but is made to ensure that the right value is replaced
+        for character in ['_', '/']:
+            block['args']['urlpath'] = block['args']['urlpath'].replace(
+                character + value + character, character + "{{" + name + "}}" + character)
+        if 'parameters' not in block:
+            block['parameters'] = {}
+        if name not in block['parameters']:
+            block['parameters'][name] = {}
+            block['parameters'][name]['description'] = f"Parameter {name} for the LRA"
+            block['parameters'][name]['default'] = value
+            block['parameters'][name]['type'] = 'str'
+            block['parameters'][name]['allowed'] = [value]
+        else:
+            if value not in block['parameters'][name]['allowed']:
+                block['parameters'][name]['allowed'].append(value)
+
+        return block
+
+    @staticmethod
+    def get_urlpath(block):
+        """
+        Get the urlpath for the catalog entry
+        """
+        return block['args']['urlpath']
