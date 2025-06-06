@@ -31,12 +31,11 @@ Some extra options are available:
     Otherwise, the time coordinate will be the first timestamp of the time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
 
-
-Trend and Detrend
+Detrend
 -----------------
 
 For some analysis, computing or removing a linear (or polynominial) trend can be helpful to highlight the internal variability.
-The ``trend`` and ``detrend`` method can be used as a high-level wrapper of xarray polyfit functionalities to achieve this goal.
+The ``detrend`` method can be used as a high-level wrapper of xarray polyfit functionalities to achieve this goal.
 
 .. code-block:: python
 
@@ -47,12 +46,6 @@ The ``trend`` and ``detrend`` method can be used as a high-level wrapper of xarr
 In this way, linear trend is removed from each grid point of the original dataset along the time dimension. 
 Other dimension can be targeted too, although with limited physical meaning. 
 Of course, it can be used in collaboration with temporal and spatial averaging. Higher order polynominial fits are available too.
-
-Similary, multidmensional trends can be computed with the ``trend()`` method, which will return a new dataset with the trend values.
-
-... code-block:: python
-
-    trend = reader.trend(data['2t'], dim='time')
 
 Some options includes:
 
