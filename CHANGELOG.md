@@ -11,12 +11,14 @@ Removed:
 - Removed source or experiment specific fixes; only the `fixer_name` is now supported.
 
 Workflow modifications:
+- Due to a bug in Singularity, `--no-mount /etc/localtime` has to be implemented into the AQUA container call 
 - `push_analysis.sh` now updates and pushes to LUMI-O the file `experiments.yaml`, which is used by the 
   dashboard to know which experiments to list. The file is downloaded from the object store, updated and 
   pushed back. Additionally it exit with different error codes if the bucket is missing or the S3 credential
   are not correct.
 
 AQUA core complete list:
+- `--no-mount /etc/localtime` option added to the `load_aqua_container.sh` script for all HPC (#1975)
 - plot_single_map() can now handle high nlevels with a decreased cbar ticks density (#1940)
 - plot_single_map() now can avoid coastlines to support paleoclimate maps (#1940)
 - Fixes to support EC-EARTH4 conversion to GRIB2 (#1940)
