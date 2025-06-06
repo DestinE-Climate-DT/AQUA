@@ -40,20 +40,17 @@ jobs:
       GRID_DEFINITION_PATH: /tmp
       # This is needed for the FDB tests.
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
-      # github token
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # github token: this is a personal access token (PAT) with read access to the repository.
+      # It is used to download the AQUA catalog and is available also to dependabot.
+      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }} 
 
-      # This is needed to avoid FDB errors with ClimateDT specific keys.
-      # METKIT_RAW_PARAM: 1
+
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
       image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.15.11-eccodes2.40.0-aqua:aqua-base-container
-      credentials:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
       options: --user root
     permissions:
       contents: read
@@ -121,7 +118,6 @@ jobs:
         run: |
           cd AQUA
           ./download_data_for_tests.sh
-          ./tests/teleconnections/download_data_for_tests.sh
       - name: Set up FDB
         run: |
           export
@@ -161,17 +157,18 @@ jobs:
           # Set up polytope secrets
           cat >$HOME/.polytopeapirc << EOF
           {
-            "user_email": "${{ secrets.POLYTOPE_MAIL }}",
             "user_key": "${{ secrets.POLYTOPE_KEY }}"
           }
           EOF
       - name: Run tests
+        if: ${{ github.actor != 'dependabot[bot]' }}
         run: |
           # Produce the XML report
           cd AQUA
           # produce a xml report and a junit report to be used by codecov. Please notice other options are set in pyproject.toml
           pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or catgen or diagnostics"
       - name: Display coverage.xml contents
+        if: ${{ github.actor != 'dependabot[bot]' }}
         run: cat AQUA/coverage.xml
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
@@ -179,7 +176,7 @@ jobs:
           network_filter: "AQUA/"
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ github.actor != 'dependabot[bot]' && !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

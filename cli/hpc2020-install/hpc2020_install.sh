@@ -59,7 +59,7 @@ install_aqua() {
   echo "conda install -y -c conda-forge imagemagick" >> $SCRIPTDIR/update.sh
 
   # install AQUA framework and diagnostics
-  conda-containerize new --mamba --post-install $SCRIPTDIR/update.sh --prefix "${INSTALLATION_PATH}" $SCRIPTDIR/environment_hpc2020.yml
+  conda-containerize new --post-install $SCRIPTDIR/update.sh --prefix "${INSTALLATION_PATH}" $SCRIPTDIR/environment_hpc2020.yml
 
   rm $SCRIPTDIR/environment_hpc2020.yml $SCRIPTDIR/environment_hpc2020.yml.bak $SCRIPTDIR/update.sh 
   log_message INFO "AQUA framework and diagnostics have been installed."

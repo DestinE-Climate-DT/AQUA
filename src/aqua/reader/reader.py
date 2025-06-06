@@ -21,6 +21,7 @@ from aqua.data_model import counter_reverse_coordinate
 import aqua.gsv
 
 from .streaming import Streaming
+from .trender import Trender
 
 from .reader_utils import set_attrs
 
@@ -201,6 +202,8 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
+            
+        self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
                              rebuild=False, reader_kwargs=None):
@@ -467,6 +470,40 @@ class Reader():
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"AQUA_regridded": 1})
         return out
+    
+    def trend(self, data, dim='time', degree=1, skipna=False):
+        """
+        Estimate the trend of an xarray object using polynomial fitting.
+
+        Args:
+            data (DataArray or Dataset): The input data.
+            dim (str): Dimension to apply trend along. Defaults to 'time'.
+            degree (int): Degree of the polynomial. Defaults to 1.
+            skipna (bool): Whether to skip NaNs. Defaults to False.
+
+        Returns:
+            DataArray or Dataset: The trend component.
+        """
+        final = self.trender.trend(data, dim=dim, degree=degree, skipna=skipna)
+        final.aqua.set_default(self)
+        return final
+
+    def detrend(self, data, dim='time', degree=1, skipna=False):    
+        """
+        Remove the trend from an xarray object using polynomial fitting.
+
+        Args:
+            data (DataArray or Dataset): The input data.
+            dim (str): Dimension to apply detrend along. Defaults to 'time'.
+            degree (int): Degree of the polynomial. Defaults to 1.
+            skipna (bool): Whether to skip NaNs. Defaults to False.
+
+        Returns:
+            DataArray or Dataset: The detrended data.
+        """
+        final = self.trender.detrend(data, dim=dim, degree=degree, skipna=skipna)
+        final.aqua.set_default(self)
+        return final
 
     def _check_if_regridded(self, data):
         """
@@ -616,54 +653,6 @@ class Reader():
 
         return final
 
-    def detrend(self, data, dim="time", degree=1, skipna=True):
-        """
-        A basic detrending routine based on polyfit and polyval xarray functions
-        within AQUA. Given an xarray object, will provide the detrended timeseries,
-        by default working along time coordinate
-        If it is a Dataset, only variables with the required
-        coordinate will be detrended.
-
-        Args:
-            data (DataArray, Dataset): your dataset
-            dim (str): The dimension along which apply detrending
-            degree (str, optional): The degree of the polinominal fit. Default is 1, i.e. linear detrend
-            skinpna (bool, optional): skip or not the NaN
-
-        Return
-            A detrended DataArray or a Dataset
-        """
-
-        if isinstance(data, xr.DataArray):
-            final = self._detrend(data=data, dim=dim, degree=degree, skipna=skipna)
-
-        elif isinstance(data, xr.Dataset):
-            selected_vars = [da for da in data.data_vars if dim in data[da].coords]
-            final = data[selected_vars].map(self._detrend, keep_attrs=True,
-                                            dim=dim, degree=degree, skipna=skipna)
-        else:
-            raise ValueError('This is not an xarray object!')
-
-        final = log_history(final, f"Detrended with polynominal of order {degree} along {dim} dimension")
-
-        # This links the dataset accessor to this instance of the Reader class
-        final.aqua.set_default(self)
-
-        return final
-
-    def _detrend(self, data, dim="time", degree=1, skipna=True):
-        """
-        Detrend a DataArray along a single dimension.
-        Taken from https://ncar.github.io/esds/posts/2022/dask-debug-detrend/
-        According to the post, current implementation is not the most efficient one.
-        """
-
-        # calculate polynomial coefficients
-        p = data.polyfit(dim=dim, deg=degree, skipna=skipna)
-        # evaluate trend
-        fit = xr.polyval(data[dim], p.polyfit_coefficients)
-        # remove the trend
-        return data - fit
 
     def reader_esm(self, esmcat, var):
         """Reads intake-esm entry. Returns a dataset."""

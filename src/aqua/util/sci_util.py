@@ -215,7 +215,7 @@ def _lon_360_to_180(lon: float):
         lon = - 360 + lon
     return lon
 
-def select_season(xr_data: xr.DataArray or xr.Dataset, season: str):
+def select_season(xr_data, season: str):
     """
     Select a season from a xarray.DataArray or xarray.Dataset.
     Available seasons are:
@@ -254,6 +254,11 @@ def select_season(xr_data: xr.DataArray or xr.Dataset, season: str):
 
     if season in triplet_months:
         selected_months = triplet_months[season]
-        return xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
+        selected =  xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
+        # Add AQUA_season attribute
+        selected.attrs['AQUA_season'] = season
+        return selected
+    elif season == 'annual':
+        return xr_data
     else:
-        raise ValueError("Invalid season abbreviation. Please use one of the provided abbreviations.")
+        raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(triplet_months.keys())}, or 'annual' to perform no season selection.")

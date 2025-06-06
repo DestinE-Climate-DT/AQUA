@@ -12,7 +12,7 @@ data = reader.retrieve()
 data = reader.regrid(data)
 
 
-@pytest.mark.diagnostics
+#@pytest.mark.diagnostics
 def test_global_bias():
     """
     Test for global bias computation.
@@ -24,7 +24,7 @@ def test_global_bias():
     assert np.allclose(np.nanmean(bias.values), 0, atol=approx_rel)
 
 
-@pytest.mark.diagnostics
+#@pytest.mark.diagnostics
 def test_seasonal_bias():
     """
     Test for seasonal bias computation.
@@ -36,7 +36,7 @@ def test_seasonal_bias():
         assert np.allclose(np.nanmean(bias[season].values), 0, atol=approx_rel)
 
 
-@pytest.mark.diagnostics
+#@pytest.mark.diagnostics
 def test_plev():
     """
     Test for 3D variable bias computation (e.g., specific humidity at 850 hPa).
@@ -49,7 +49,7 @@ def test_plev():
     assert getattr(bias, "plev", None) == 85000
 
 
-@pytest.mark.diagnostics
+# @pytest.mark.diagnostics
 def test_vertical_bias():
     """
     Test for vertical bias computation.

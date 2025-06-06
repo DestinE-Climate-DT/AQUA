@@ -1,250 +1,128 @@
-# Imports for CLI diagnostic
-import sys
-import os
 import argparse
-from dask.distributed import Client, LocalCluster
+import sys
 import pandas as pd
 
-from aqua.util import load_yaml, get_arg, OutputSaver, ConfigPath, to_list
-from aqua import Reader
-from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.logger import log_configure
-from aqua.diagnostics import GlobalBiases
+from aqua.util import get_arg
+from aqua.version import __version__ as aqua_version
+from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
+from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
+
+from aqua.util import load_yaml, get_arg, OutputSaver, ConfigPath, to_list
+from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
+from aqua.diagnostics import GlobalBiases, PlotGlobalBiases
 
 def parse_arguments(args):
-    """Parse command line arguments for Global Biases CLI."""
-    parser = argparse.ArgumentParser(description='Global Biases CLI')
-    parser.add_argument('-c', '--config', type=str, required=False, help='YAML configuration file')
-    parser.add_argument('-n', '--nworkers', type=int, help='Number of Dask distributed workers')
-    parser.add_argument("--loglevel", "-l", type=str, help="Logging level")
+    """Parse command-line arguments for GlobalBiases diagnostic.
 
-    # Arguments to override configuration file settings
-    parser.add_argument("--catalog", type=str, required=False, help="Catalog name")
-    parser.add_argument('--model', type=str, help='Model name')
-    parser.add_argument('--exp', type=str, help='Experiment name')
-    parser.add_argument('--source', type=str, help='Source name')
-    parser.add_argument('--outputdir', type=str, help='Output directory')
-    parser.add_argument("--cluster", type=str, required=False, help="dask cluster address")
-    parser.add_argument("--regrid", type=str, required=False, help="Regrid the source data to a specified grid")
-
+    Args:
+        args (list): list of command-line arguments to parse.
+    """
+    parser = argparse.ArgumentParser(description='GlobalBiases CLI')
+    parser = template_parse_arguments(parser)
     return parser.parse_args(args)
 
+if __name__ == '__main__':
 
-def main():
     args = parse_arguments(sys.argv[1:])
-    loglevel = get_arg(args, "loglevel", "WARNING")
-    logger = log_configure(loglevel, 'CLI Global Biases')
-    logger.info("Starting Global Biases diagnostic")
 
-    # Dask distributed cluster
-    nworkers = get_arg(args, 'nworkers', None)
+    loglevel = get_arg(args, 'loglevel', 'WARNING')
+    logger = log_configure(log_level=loglevel, log_name='GlobalBiases CLI')
+    logger.info(f"Running GlobalBiases diagnostic with AQUA version {aqua_version}")
+
     cluster = get_arg(args, 'cluster', None)
-    private_cluster = False
-    if nworkers or cluster:
-        if not cluster:
-            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
-            logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
-            private_cluster = True
-        else:
-            logger.info(f"Connecting to cluster {cluster}.")
-        client = Client(cluster)
-    else:
-        client = None
+    nworkers = get_arg(args, 'nworkers', None)
 
-    # Load configuration file
-    configdir = ConfigPath(loglevel=loglevel).configdir
-    default_config = os.path.join(configdir, "diagnostics", "global_biases",
-                                  "config_global_biases.yaml")
-    file = get_arg(args, "config", default_config)
-    logger.info(f"Reading configuration file {file}")
-    config = load_yaml(file)
+    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
 
-    catalog_data = get_arg(args, 'catalog', config['data']['catalog'])
-    model_data = get_arg(args, 'model', config['data']['model'])
-    exp_data = get_arg(args, 'exp', config['data']['exp'])
-    source_data = get_arg(args, 'source', config['data']['source'])
-    startdate_data = config['diagnostic_attributes'].get('startdate_data')
-    enddate_data = config['diagnostic_attributes'].get('enddate_data')
+    # Load the configuration file and then merge it with the command-line arguments
+    config_dict = load_diagnostic_config(diagnostic='globalbiases', args=args,
+                                         default_config='config_global_biases.yaml',
+                                         loglevel=loglevel)
+    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
 
-    catalog_obs = config['obs']['catalog']
-    model_obs = config['obs']['model']
-    exp_obs = config['obs']['exp']
-    source_obs = config['obs']['source']
-    startdate_obs = config['diagnostic_attributes'].get('startdate_obs')
-    enddate_obs = config['diagnostic_attributes'].get('enddate_obs')
+    regrid = get_arg(args, 'regrid', None) 
 
-    outputdir = get_arg(args, "outputdir", config['output'].get("outputdir"))
-    rebuild = config['output'].get("rebuild")
-    filename_keys = config['output'].get("filename_keys")
-    save_netcdf = config['output'].get("save_netcdf")
-    save_pdf = config['output'].get("save_pdf")
-    save_png = config['output'].get("save_png")
-    dpi = config['output'].get("dpi")
+    # Output options
+    outputdir = config_dict['output'].get('outputdir', './')
+    rebuild = config_dict['output'].get('rebuild', True)
+    save_netcdf = config_dict['output'].get('save_netcdf', True)
+    save_pdf = config_dict['output'].get('save_pdf', True)
+    save_png = config_dict['output'].get('save_png', True)
+    dpi = config_dict['output'].get('dpi', 300) 
 
-    variables = config['diagnostic_attributes'].get('variables', [])
-    plev = config['diagnostic_attributes'].get('plev')
-    seasons_bool = config['diagnostic_attributes'].get('seasons', False)
-    seasons_stat = config['diagnostic_attributes'].get('seasons_stat', 'mean')
-    vertical = config['diagnostic_attributes'].get('vertical', False)
-    regrid = get_arg(args, 'regrid', config['diagnostic_attributes'].get('regrid'))
+    # Global Biases diagnostic
+    if 'globalbiases' in config_dict['diagnostics']:
+        if config_dict['diagnostics']['globalbiases']['run']:
+            logger.info("GlobalBiases diagnostic is enabled.")
 
-    logger.debug(f"Data read from Catalog: {catalog_data}; Model: {model_data}; Exp: {exp_data}; Source: {source_data}; Regrid: {regrid}")
-    logger.debug(f"Observations read from Catalog: {catalog_obs}; Model: {model_obs}; Exp: {exp_obs}; Source: {source_obs}; Regrid: {regrid}")
+            if len(config_dict['datasets']) > 1:
+                logger.warning(
+                    "Only the first entry in 'datasets' will be used.\n"
+                    "Multiple datasets are not supported by this diagnostic."
+                )
+            if len(config_dict['references']) > 1:
+                logger.warning(
+                    "Only the first entry in 'references' will be used.\n"
+                    "Multiple references are not supported by this diagnostic."
+                )
+            dataset = config_dict['datasets'][0]
+            reference = config_dict['references'][0]
+            dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
+                            'exp': dataset['exp'], 'source': dataset['source'],
+                            'regrid': dataset.get('regrid', regrid)}
+            reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
+                            'exp': reference['exp'], 'source': reference['source'],
+                            'regrid': reference.get('regrid', regrid)}
+            
+            variables = config_dict['diagnostics']['globalbiases'].get('variables', [])
+            plev = config_dict['diagnostics']['globalbiases']['params'].get('plev')
+            seasons = config_dict['diagnostics']['globalbiases']['params'].get('seasons', False)
+            seasons_stat = config_dict['diagnostics']['globalbiases']['params'].get('seasons_stat', 'mean')
+            vertical = config_dict['diagnostics']['globalbiases']['params'].get('vertical', False)
 
-    # Retrieve data and handle potential errors
-    try:
-        reader = Reader(catalog=catalog_data, model=model_data, exp=exp_data, source=source_data,
-                        startdate=startdate_data, enddate=enddate_data, regrid=regrid, loglevel=loglevel)
-        data = reader.retrieve() 
-        if regrid:
-            data = reader.regrid(data)
-        else:
-            logger.warning(
-            "No regridding applied. Data is in native grid, "
-            "this could lead to errors in the bias calculation if the data is not in the same grid as the reference data."
-            )
-        # Calculate 'tnr' if applicable
-        if 'tnr' in variables:
-            data['tnr'] = data['tnlwrf'] + data['tnswrf']
+            startdate_data = config_dict['diagnostics']['globalbiases']['params'].get('startdate_data', None)
+            enddate_data = config_dict['diagnostics']['globalbiases']['params'].get('enddate_data', None)
+            startdate_ref = config_dict['diagnostics']['globalbiases']['params'].get('startdate_ref', None)
+            enddate_ref = config_dict['diagnostics']['globalbiases']['params'].get('enddate_ref', None)
 
-    except Exception as e:
-        logger.error(f"No model data found: {e}")
-        sys.exit("Global biases diagnostic terminated.")
+            biases_dataset = GlobalBiases(**dataset_args, startdate=startdate_data, enddate=enddate_data, loglevel=loglevel)
+            biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref, loglevel=loglevel)
 
-    try:
-        reader_obs = Reader(catalog=catalog_obs, model=model_obs, exp=exp_obs, source=source_obs,
-                            startdate=startdate_obs, enddate=enddate_obs, regrid=regrid, loglevel=loglevel)
-        data_obs = reader_obs.retrieve()
-        if regrid:
-            data_obs = reader_obs.regrid(data_obs)
-        else:
-            logger.warning(
-            "No regridding applied. Data is in native grid, "
-            "this could lead to errors in the bias calculation if the data is not in the same grid as the reference data."
-            )
 
-        # Calculate 'tnr' for observations if applicable
-        if 'tnr' in variables:
-            data_obs['tnr'] = data_obs['tnlwrf'] + data_obs['tnswrf']
+            for var in variables:
+                logger.info(f"Running Global Biases diagnostic for variable: {var}")
+                plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['2d_maps'].get(var, {})
+                vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
+                units = 'mm/day' if var in ['tprate', 'mtpr'] else None
 
-    except Exception as e:
-        logger.error(f"No observation data found: {e}")
+                biases_dataset.retrieve(var=var, units=units)
+                biases_reference.retrieve(var=var, units=units)
 
-    # Update date attributes with data if not set in config
-    startdate_data = startdate_data or pd.to_datetime(data.time[0].values).strftime('%Y-%m-%d')
-    enddate_data = enddate_data or pd.to_datetime(data.time[-1].values).strftime('%Y-%m-%d')
-    startdate_obs = startdate_obs or pd.to_datetime(data_obs.time[0].values).strftime('%Y-%m-%d')
-    enddate_obs = enddate_obs or pd.to_datetime(data_obs.time[-1].values).strftime('%Y-%m-%d')
+                biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
+                biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
 
-    output_saver = OutputSaver(diagnostic='global_biases', catalog=reader.catalog, model=model_data, exp=exp_data, loglevel=loglevel,
-                               default_path=outputdir, rebuild=rebuild, filename_keys=filename_keys)
+                if 'plev' in biases_dataset.data.get(var, {}).dims and plev:
+                    plev_list = to_list(plev)
+                else: 
+                    plev_list = [None] 
 
-    # Loop over variables for diagnostics
-    for var_name in variables:
-        logger.info(f"Running Global Biases diagnostic for variable: {var_name}")
-        var_attributes = config["biases_plot_params"]['bias_maps'].get(var_name, {})
-        vmin, vmax = var_attributes.get('vmin'), var_attributes.get('vmax')
+                for plev in plev_list:
 
-        if 'plev' in data[var_name].dims and plev:
-            plev_list = to_list(plev)
-        else:
-            plev_list = [None] 
+                    plot_biases = PlotGlobalBiases(save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                   
+                    plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
+                                          var=var, plev=plev, vmin=vmin, vmax=vmax) 
+                    if seasons:
+                        plot_biases.plot_seasonal_bias(data=biases_dataset.seasonal_climatology, 
+                                                       data_ref=biases_reference.seasonal_climatology,
+                                                       var=var, plev=plev, vmin=vmin, vmax=vmax)
 
-        try:
-            for plev_value in plev_list:
-                global_biases = GlobalBiases(data=data, data_ref=data_obs, var_name=var_name, plev=plev_value, loglevel=loglevel,
-                                            model=model_data, exp=exp_data, startdate_data=startdate_data,
-                                            enddate_data=enddate_data, model_obs=model_obs,
-                                            startdate_obs=startdate_obs, enddate_obs=enddate_obs)
+                if vertical and 'plev' in biases_dataset.data.get(var, {}).dims:
+                    plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['vertical_maps'].get(var, {})
+                    vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
+                    plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, var=var)
 
-                # Define common save arguments
-                common_save_args = {'var': var_name, 'dpi': dpi,
-                                    'catalog_2': reader_obs.catalog, 'model_2': model_obs, 'exp_2': exp_obs,
-                                    'time_start': startdate_data, 'time_end': enddate_data}
-
-                # Total bias plot
-                result = global_biases.plot_bias(vmin=vmin, vmax=vmax)
-                if result:
-                    fig, ax, netcdf = result
-                    description = (
-                            f"Spatial map of the total bias of the variable {var_name} from {startdate_data} to {enddate_data} "
-                            f"for the {model_data} model, experiment {exp_data} from the {reader.catalog} catalog, with {model_obs} "
-                            f"(eperiment {exp_obs}, catalog {reader_obs.catalog}) used as reference data. "
-                        )
-                    metadata = {"Description": description}
-                    
-                    if plev_value:
-                        if 'plev' not in output_saver.filename_keys:
-                            output_saver.filename_keys.append('plev')
-                        common_save_args['plev'] = 'plev'+str(plev_value)
-
-                    if save_netcdf:
-                        output_saver.save_netcdf(dataset=netcdf, diagnostic_product='total_bias_map', metadata=metadata, **common_save_args)
-                    if save_pdf:
-                        output_saver.save_pdf(fig=fig, diagnostic_product='total_bias_map', metadata=metadata, **common_save_args)
-                    if save_png:
-                        output_saver.save_png(fig=fig, diagnostic_product='total_bias_map', metadata=metadata, **common_save_args)
-                else:
-                    logger.warning(f"Total bias plot not generated for {var_name}.")
-
-                # Seasonal bias plot
-                if seasons_bool:
-                    result = global_biases.plot_seasonal_bias(vmin=vmin, vmax=vmax)
-                    if result:
-                        fig, netcdf = result
-                        description = (
-                            f"Seasonal bias map of the variable {var_name} for the {model_data} model, experiment {exp_data} "
-                            f"from the {reader.catalog} catalog, using {model_obs} (experiment {exp_obs}, catalog {reader_obs.catalog}) as reference data. "
-                            f"The bias is computed for each season over the period from {startdate_data} to {enddate_data}, "
-                            f"providing insights into seasonal discrepancies between the model and the reference. "
-                        )
-                        metadata = {"Description": description}
-                        if save_netcdf:
-                            output_saver.save_netcdf(dataset=netcdf, diagnostic_product='seasonal_bias_map', metadata=metadata, **common_save_args)
-                        if save_pdf:
-                            output_saver.save_pdf(fig=fig, diagnostic_product='seasonal_bias_map', metadata=metadata, **common_save_args)
-                        if save_png:
-                            output_saver.save_png(fig=fig, diagnostic_product='seasonal_bias_map', metadata=metadata, **common_save_args)
-                    else:
-                        logger.warning(f"Seasonal bias plot not generated for {var_name}.")
-
-            # Vertical bias plot
-            if vertical and 'plev' in data[var_name].dims:
-                var_attributes_vert = config["biases_plot_params"]['vertical_plev'].get(var_name, {})
-                vmin, vmax = var_attributes_vert.get('vmin'), var_attributes_vert.get('vmax')
-
-                result = global_biases.plot_vertical_bias(data=data, data_ref=data_obs, var_name=var_name, vmin=vmin, vmax=vmax)
-                if result:
-                    fig, ax, netcdf = result
-                    description = (
-                        f"Vertical bias plot of the variable {var_name} across pressure levels, from {startdate_data} to {enddate_data} "
-                        f"for the {model_data} model, experiment {exp_data} from the {reader.catalog} catalog, with {model_obs} "
-                        f"(experiment {exp_obs}, catalog {reader_obs.catalog}) used as reference data. "                   
-                        )
-                    metadata = {"Description": description}
-
-                    if 'plev' in common_save_args:
-                        common_save_args.pop('plev', None)
-
-                    if save_netcdf:
-                        output_saver.save_netcdf(dataset=netcdf, diagnostic_product='vertical_bias', metadata=metadata, **common_save_args)
-                    if save_pdf:
-                        output_saver.save_pdf(fig=fig, diagnostic_product='vertical_bias', metadata=metadata, **common_save_args)
-                    if save_png:
-                        output_saver.save_png(fig=fig, diagnostic_product='vertical_bias', metadata=metadata, **common_save_args)
-                else:
-                    logger.warning(f"Vertical bias plot not generated for {var_name}.")
-        except Exception as e:
-            logger.error(f"Error processing {var_name}: {e}")
-    if client:
-        client.close()
-        logger.debug("Dask client closed.")
-
-    if private_cluster:
-        cluster.close()
-        logger.debug("Dask cluster closed.")
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
     logger.info("Global Biases diagnostic completed.")
-
-if __name__ == '__main__':
-    main()
