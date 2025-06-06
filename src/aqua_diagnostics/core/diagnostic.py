@@ -2,9 +2,10 @@ import os
 import xarray as xr
 from aqua import Reader
 from aqua.logger import log_configure
-from aqua.util import OutputSaver, ConfigPath
+from aqua.util import ConfigPath
 from aqua.util import load_yaml, convert_units
 from aqua.util import area_selection
+from .output_saver import OutputSaver
 
 
 class Diagnostic():
@@ -72,7 +73,7 @@ class Diagnostic():
             self.logger.debug(f'End date: {self.enddate}')
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
-                    default_path: str = '.', rebuild: bool = True, **kwargs):
+                    outdir: str = '.', rebuild: bool = True, **kwargs):
         """
         Save the data to a netcdf file.
 
@@ -80,7 +81,7 @@ class Diagnostic():
             data (xarray Dataset or DataArray): The data to be saved.
             diagnostic (str): The diagnostic name.
             diagnostic_product (str): The diagnostic product.
-            default_path (str): The default path to save the data. Default is '.'.
+            outdir(str): The path to save the data. Default is '.'.
             rebuild (bool): If True, the netcdf file will be rebuilt. Default is True.
 
         Keyword Args:
@@ -89,11 +90,11 @@ class Diagnostic():
         if isinstance(data, xr.Dataset) is False and isinstance(data, xr.DataArray) is False:
             self.logger.error('Data to save as netcdf must be an xarray Dataset or DataArray')
 
-        outputsaver = OutputSaver(diagnostic=diagnostic, diagnostic_product=diagnostic_product,
-                                  default_path=default_path, rebuild=rebuild, catalog=self.catalog,
-                                  model=self.model, exp=self.exp, loglevel=self.logger.level)
+        outputsaver = OutputSaver(diagnostic=diagnostic, 
+                                  catalog=self.catalog, model=self.model, exp=self.exp, 
+                                  outdir=outdir, rebuild=rebuild, loglevel=self.logger.level)
 
-        outputsaver.save_netcdf(dataset=data, **kwargs)
+        outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, **kwargs)
 
     @staticmethod
     def _retrieve(model: str, exp: str, source: str, var: str = None, catalog: str = None,
