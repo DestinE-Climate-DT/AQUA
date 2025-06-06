@@ -294,7 +294,8 @@ class LRAgenerator():
         else:  # Only one variable
             self._write_var(self.var)
 
-        self.logger.info('Move tmp files to output directory')
+        self.logger.info('Move tmp files from %s to output directory %s', self.tmpdir, self.outdir)
+        # Move temporary files to output directory
         move_tmp_files(self.tmpdir, self.outdir)
 
         # Cleaning
@@ -613,6 +614,7 @@ class LRAgenerator():
                     # we can later add a retry
                     if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', tmpfile)
+                    self.logger.info('Moving temporary file %s to %s', tmpfile, outfile)
                     move_tmp_files(self.tmpdir, self.outdir)
                 del month_data
             del year_data

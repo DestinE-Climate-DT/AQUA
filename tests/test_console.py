@@ -260,6 +260,7 @@ class TestAquaConsole():
 
         # run the LRA and verify that at least one file exist
         run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild'])
+        print(f"files in the folder are: {os.listdir(os.path.join(mydir, 'lra_testci/IFS/test-tco79/r1/r200/monthly/mean/global'))}")
         path = os.path.join(os.path.join(mydir, 'lra_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/mean/global/2t_ci_test-tco79_r1_r200_monthly_mean_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
