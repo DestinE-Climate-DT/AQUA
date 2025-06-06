@@ -17,6 +17,8 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- Refactor LRA of output and catalog entry creatro with `OutputPathBuilder` and `CatalogEntryBuilder` classes (#1932)
+- LRA cli can support realization (#1932)
 - Fix HPC2020 (ECMWF) installation (#1994)
 - `plot_timeseries` can handle multiple references and ensemble mean and std (#1988)
 - Support for CDO 2.5.0, modified test files accordingly (v6) (#1987)
