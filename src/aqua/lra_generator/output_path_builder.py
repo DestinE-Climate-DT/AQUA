@@ -12,8 +12,8 @@ class OutputPathBuilder:
 
     def __init__(self, catalog: str, model: str, exp: str, var: str,
              realization: str = 'r1', resolution: Optional[str] = None,
-             frequency: Optional[str] = None, stat: str = None,
-             region: str = None, level: Optional[str] = None,
+             frequency: Optional[str] = None, stat: Optional[str] = None,
+             region: Optional[str] = None, level: Optional[str] = None,
              **kwargs):
         """
         Initialize the OutputPathBuilder with the necessary parameters.
@@ -42,7 +42,7 @@ class OutputPathBuilder:
         self.realization = realization
 
         if frequency is None:
-            self.frequency = "native"
+            frequency = "native"
         self.frequency = frequency
 
         if stat is None:
@@ -52,7 +52,7 @@ class OutputPathBuilder:
         if region is None:
             region = "global"
         self.region = region
-        
+
         self.level = level
         self.kwargs = kwargs or {}
 
@@ -61,8 +61,6 @@ class OutputPathBuilder:
         """Guess resolution and frequency from xarray."""
         if self.resolution is None:
             self.resolution = reader_obj.src_grid_name
-        if self.frequency is None:
-            self.frequency = "native"
 
     def build_path(self, basedir, year, month=None, day=None):
         """create the full path to the output file."""

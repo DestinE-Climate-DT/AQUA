@@ -7,7 +7,7 @@ from aqua import LRAgenerator, Reader
 from aqua.lra_generator.output_path_builder import OutputPathBuilder
 
 LOGLEVEL = "DEBUG"
-LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean'
+LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
 LRAPATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
 
 
@@ -23,13 +23,13 @@ class TestOutputPathBuilder:
 
     expected = [
         None,
-        'ci/IFS/test-tco79/r1/daily/nostat/europe/2t_ci_IFS_test-tco79_r1_daily_nostat_europe_202001.nc',
+        'ci/IFS/test-tco79/r1/native/nostat/europe/2t_ci_IFS_test-tco79_r1_native_nostat_europe_202001.nc',
         None,
     ]
 
     @pytest.mark.parametrize("resolution, frequency, realization, region, stat, expected", [
         ('r100', 'monthly', 'r1', 'global', 'mean', expected[0]),
-        (None, 'daily', None, 'europe', None, expected[1]),
+        (None, None, None, 'europe', None, expected[1]),
         ('r200', 'daily', 'r2', 'global', 'nostat', expected[2]),
     ])
     def test_build_path(self, lra_arguments, resolution, frequency, realization, region, stat, expected):
