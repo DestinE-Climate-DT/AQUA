@@ -4,6 +4,7 @@ import shutil
 import xarray as xr
 import pandas as pd
 from aqua import LRAgenerator, Reader
+from aqua.lra_generator.output_path_builder import OutputPathBuilder
 
 LOGLEVEL = "DEBUG"
 LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean'
@@ -15,6 +16,36 @@ def lra_arguments(request):
     """Provides LRA generator arguments as a dictionary."""
     return request.param
 
+
+@pytest.mark.aqua
+class TestOutputPathBuilder:
+    """Class containing tests for OutputPathBuilder."""
+
+    expected = [
+        None,
+        '/Users/paolo/Desktop/AQUA/lra_test/ci/IFS/test-tco79/r1/daily/nostat/europe/2t_ci_IFS_test-tco79_r1_daily_nostat_europe_202001.nc',
+        None,
+    ]
+
+    @pytest.mark.parametrize("resolution, frequency, realization, region, stat, expected", [
+        ('r100', 'monthly', 'r1', 'global', 'mean', expected[0]),
+        (None, 'daily', None, 'europe', None, expected[1]),
+        ('r200', 'daily', 'r2', 'global', 'nostat', expected[2]),
+    ])
+    def test_build_path(self, lra_arguments, resolution, frequency, realization, region, stat, expected):
+        """Test building output path."""
+        args = lra_arguments
+        builder = OutputPathBuilder(
+            catalog='ci', model=args["model"], exp=args["exp"],
+            var=args["var"], resolution=resolution,
+            frequency=frequency, realization=realization, stat=stat, region=region)
+        path = builder.build_path(os.path.join(os.getcwd(), args['outdir']), 2020, month=1)
+        lrapath = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
+        if not expected:
+            expected = os.path.join(os.getcwd(), args["outdir"], lrapath,
+                                         f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
+    
+        assert path == expected
 
 @pytest.mark.aqua
 class TestLRA:

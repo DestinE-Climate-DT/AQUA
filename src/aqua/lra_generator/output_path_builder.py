@@ -12,8 +12,8 @@ class OutputPathBuilder:
 
     def __init__(self, catalog: str, model: str, exp: str, var: str,
              realization: str = 'r1', resolution: Optional[str] = None,
-             frequency: Optional[str] = None, stat: str = 'mean',
-             region: str = 'global', level: Optional[str] = None,
+             frequency: Optional[str] = None, stat: str = None,
+             region: str = None, level: Optional[str] = None,
              **kwargs):
         """
         Initialize the OutputPathBuilder with the necessary parameters.
@@ -35,11 +35,24 @@ class OutputPathBuilder:
         self.model = model
         self.exp = exp
         self.var = var
-        self.realization = realization
         self.resolution = resolution
+
+        if realization is None:
+            realization = 'r1'
+        self.realization = realization
+
+        if frequency is None:
+            self.frequency = "native"
         self.frequency = frequency
+
+        if stat is None:
+            stat = "nostat"
         self.stat = stat
+
+        if region is None:
+            region = "global"
         self.region = region
+        
         self.level = level
         self.kwargs = kwargs or {}
 
@@ -67,12 +80,10 @@ class OutputPathBuilder:
         #os.makedirs(folder, exist_ok=True)
         return folder
 
-    def build_filename(self, var=None, year=None, month=None, day=None):
+    def build_filename(self, year=None, month=None, day=None):
         """create the filename based on the parameters."""
 
         # Set default values if not provided
-        if var is None:
-            var = self.var
         if year is None:
             year = "*"
 
