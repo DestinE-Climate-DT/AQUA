@@ -5,16 +5,17 @@ LRA Output Path Builder
 import os
 from typing import Optional
 
+
 class OutputPathBuilder:
     """
     Class to build output paths for LRA data files.
     """
 
     def __init__(self, catalog: str, model: str, exp: str, var: str,
-             realization: str = 'r1', resolution: Optional[str] = None,
-             frequency: Optional[str] = None, stat: Optional[str] = None,
-             region: Optional[str] = None, level: Optional[str] = None,
-             **kwargs):
+                 realization: str = 'r1', resolution: Optional[str] = None,
+                 frequency: Optional[str] = None, stat: Optional[str] = None,
+                 region: Optional[str] = None, level: Optional[str] = None,
+                 **kwargs):
         """
         Initialize the OutputPathBuilder with the necessary parameters.
         Params:
@@ -56,7 +57,6 @@ class OutputPathBuilder:
         self.level = level
         self.kwargs = kwargs or {}
 
-
     def set_from_reader(self, reader_obj):
         """Guess resolution and frequency from xarray."""
         if self.resolution is None:
@@ -75,7 +75,7 @@ class OutputPathBuilder:
             self.resolution, self.frequency, self.stat, self.region
         ]
         folder = os.path.join(*[p for p in parts if p])
-        #os.makedirs(folder, exist_ok=True)
+        # os.makedirs(folder, exist_ok=True)
         return folder
 
     def build_filename(self, year=None, month=None, day=None):
@@ -118,12 +118,10 @@ class OutputPathBuilder:
             if date_formatted:
                 date_components = date_components + date_formatted
 
-
         # collapse all the component to create the final file
         filename = "_".join(str(c) for c in components + [date_components] if c) + ".nc"
-    
+
         return filename
-    
 
     def format_component(self, value, length):
         """Format a value as zero-padded string if it's not a wildcard, else return as-is."""
@@ -132,7 +130,7 @@ class OutputPathBuilder:
         if self.is_wildcard(value):
             return value
         return f"{int(value):0{length}d}"
-    
+
     @staticmethod
     def is_wildcard(s):
         """Guess if a string includes a wildcard"""

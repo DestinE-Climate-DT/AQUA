@@ -3,13 +3,14 @@
 from aqua.logger import log_configure
 from .output_path_builder import OutputPathBuilder
 
+
 class CatalogEntryBuilder():
     """Class to create a catalog entry for the LRA"""
 
     def __init__(self, catalog, model, exp, var, realization='r1',
                  resolution=None, frequency=None, stat="mean",
                  region="global", level=None, loglevel='WARNING', **kwargs):
-        
+
         self.catalog = catalog
         self.model = model
         self.exp = exp
@@ -50,22 +51,22 @@ class CatalogEntryBuilder():
         urlpath = self.ouput_path_builder.build_path(basedir, year="*")
 
         self.logger.info('Fully expanded urlpath %s', urlpath)
-        #urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
+        # urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
         self.logger.info('New urlpath with intake variables is %s', urlpath)
 
         # find the catalog of my experiment and load it
-        #catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
+        # catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
         #                        'catalog', self.model, self.exp + '.yaml')
-        #cat_file = load_yaml(catalogfile)
+        # cat_file = load_yaml(catalogfile)
 
         # if the entry already exists, update the urlpath if requested and return
-        #if entry_name in cat_file['sources']:
+        # if entry_name in cat_file['sources']:
         #    self.logger.info('Catalog entry for %s %s %s already exists', self.model, self.exp, entry_name)
         #    self.logger.info('Updating the urlpath to %s', urlpath)
         #    cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
 
-        #else: 
-            # if the entry is not there, define the block to be uploaded into the catalog
+        # else:
+        # if the entry is not there, define the block to be uploaded into the catalog
         block_cat = {
             'driver': 'netcdf',
             'description': f'AQUA LRA data {self.frequency} at {self.resolution}',
@@ -84,16 +85,15 @@ class CatalogEntryBuilder():
         block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
         block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
         block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'stat')
-    
 
         return block_cat
 
-            #cat_file['sources'][entry_name] = block_cat
+        # cat_file['sources'][entry_name] = block_cat
 
     @staticmethod
     def replace_urlpath_jinja(block, value, name):
         """
-        Replace the urlpath in the catalog entry with the given jinja parameter and 
+        Replace the urlpath in the catalog entry with the given jinja parameter and
         add the parameter to the parameters block
 
         Args:
@@ -105,7 +105,8 @@ class CatalogEntryBuilder():
             return block
         # this loop is a bit tricky but is made to ensure that the right value is replaced
         for character in ['_', '/']:
-            block['args']['urlpath'] = block['args']['urlpath'].replace(character + value + character, character + "{{" + name + "}}" + character)
+            block['args']['urlpath'] = block['args']['urlpath'].replace(
+                character + value + character, character + "{{" + name + "}}" + character)
         if 'parameters' not in block:
             block['parameters'] = {}
         if name not in block['parameters']:
@@ -119,12 +120,10 @@ class CatalogEntryBuilder():
                 block['parameters'][name]['allowed'].append(value)
 
         return block
-    
+
     @staticmethod
     def get_urlpath(block):
         """
         Get the urlpath for the catalog entry
         """
         return block['args']['urlpath']
-    
-

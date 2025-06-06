@@ -55,18 +55,19 @@ class LRAgenerator():
         Initialize the LRA_Generator class
 
         Args:
-            catalog (string):        The catalog you want to reader. If None, guessed by the reader. 
+            catalog (string):        The catalog you want to reader. If None, guessed by the reader.
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
             var (str, list):         Variable(s) to be processed and archived
                                      in LRA.
-            resolution (string):     The target resolution for the LRA
+            resolution (string):     The target resolution for the LRA. If None,
+                                        no regridding is performed.
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
-            outdir (string):         Where the LRA is
+            outdir (string):         Where the LRA is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
@@ -74,8 +75,8 @@ class LRAgenerator():
                                      are found
             nproc (int, opt):        Number of processors to use. default is 1
             loglevel (string, opt):  Logging level
-            region (dict, opt):      Region to be processed, default is None, 
-                                     meaning the full globe. 
+            region (dict, opt):      Region to be processed, default is None,
+                                     meaning 'global'.
                                      Requires 'name' (str), 'lon' (list) and 'lat' (list)
             drop (bool, opt):        Drop the missing values in the region selection.
             overwrite (bool, opt):   True to overwrite existing files in LRA,
@@ -86,15 +87,13 @@ class LRAgenerator():
             performance_reporting (bool, opt): True to save an html report of the
                                                dask usage, default is False.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
-                                            when averaging, default is false. 
+                                            when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
             stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min'.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
-                                     please notice that realization will change the file name 
-                                     produced by the LRA
         """
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
@@ -181,7 +180,7 @@ class LRAgenerator():
         self.compact = compact
         if self.compact not in ['xarray', 'cdo', None]:
             raise KeyError('Please specify a valid compact method: xarray, cdo or None.')
-        
+
         self.cdo_options = cdo_options
         if not isinstance(self.cdo_options, list):
             raise TypeError('cdo_options must be a list.')
@@ -221,11 +220,10 @@ class LRAgenerator():
         # Create LRA folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
-        
+
         self.outbuilder = OutputPathBuilder(catalog=self.catalog, model=self.model, exp=self.exp, var=self.var,
                                             resolution=self.resolution, frequency=self.frequency,
                                             region=self.region_name, stat=self.stat, **self.kwargs)
- 
 
         self.basedir = outdir
         self.outdir = os.path.join(self.basedir, self.outbuilder.build_directory())
@@ -233,9 +231,10 @@ class LRAgenerator():
         create_folder(self.outdir, loglevel=self.loglevel)
         create_folder(self.tmpdir, loglevel=self.loglevel)
 
-        self.catbuilder = CatalogEntryBuilder(var=self.var, catalog=self.catalog, model=self.model, exp=self.exp,
-                                         resolution=self.resolution, frequency=self.frequency,
-                                         region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs)
+        # similar to call to CatalogEntryBuilder, but with var="*" to use wildcard in definition
+        self.catbuilder = CatalogEntryBuilder(var="*", catalog=self.catalog, model=self.model, exp=self.exp,
+                                              resolution=self.resolution, frequency=self.frequency,
+                                              region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs)
 
         # Initialize variables used by methods
         self.data = None
@@ -265,7 +264,7 @@ class LRAgenerator():
         else:
             self.logger.info('I am going to produce LRA at %s resolution...',
                              self.resolution)
-        
+
         if self.region:
             self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...',
                              self.region['name'], self.region['lon'], self.region['lat'])
@@ -314,7 +313,7 @@ class LRAgenerator():
         urlpath = replace_intake_vars(catalog=self.catalog, path=self.catbuilder.get_urlpath(block))
         self.logger.info('New urlpath with intake variables is %s', urlpath)
         block['args']['urlpath'] = urlpath
-        entry_name = self.catbuilder.create_entry_name()        
+        entry_name = self.catbuilder.create_entry_name()
 
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
@@ -327,8 +326,7 @@ class LRAgenerator():
             self.logger.info('Updating the urlpath to %s', urlpath)
             cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
 
-        else: 
-
+        else:
             cat_file['sources'][entry_name] = block
 
         # dump the update file
@@ -461,7 +459,7 @@ class LRAgenerator():
         from the same year
         """
 
-        infiles = self.get_filename(var, year, month = '??')
+        infiles = self.get_filename(var, year, month='??')
         if len(glob.glob(infiles)) == 12:
 
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
@@ -482,13 +480,13 @@ class LRAgenerator():
                 ]
                 self.logger.debug("Using CDO command: %s", command)
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
-            else:   
+            else:
                 # these XarrayDatasets are made of a single variable
                 self.logger.debug("Using xarray to concatenate files")
                 xfield = xr.open_mfdataset(infiles)
                 name = list(xfield.data_vars)[0]
-                xfield.to_netcdf(outfile, 
-                                encoding={'time': self.time_encoding, name: self.var_encoding})
+                xfield.to_netcdf(outfile,
+                                 encoding={'time': self.time_encoding, name: self.var_encoding})
 
             # clean of monthly files
             for infile in glob.glob(infiles):
@@ -504,7 +502,6 @@ class LRAgenerator():
             filename = os.path.join(self.tmpdir, filename)
         else:
             filename = os.path.join(self.outdir, filename)
-
 
         return filename
 
@@ -563,7 +560,7 @@ class LRAgenerator():
         temp_data = self._remove_regridded(temp_data)
 
         if self.region:
-            temp_data = area_selection(temp_data, lon = self.region['lon'], lat = self.region['lat'], drop=self.drop)
+            temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
 
         # Splitting data into yearly files
         years = sorted(set(temp_data.time.dt.year.values))
@@ -629,7 +626,8 @@ class LRAgenerator():
 
         # update data attributes for history
         if self.frequency:
-            log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} through LRA generator')                
+            log_history(
+                data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} through LRA generator')
         else:
             log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator')
 
@@ -662,8 +660,8 @@ class LRAgenerator():
                     progress(w_job)
                     del w_job
                 array_data = np.array(vars(ms)['samples']['chunk'])
-                avg_mem = np.mean(array_data[:, 1])/1e9
-                max_mem = np.max(array_data[:, 1])/1e9
+                avg_mem = np.mean(array_data[:, 1]) / 1e9
+                max_mem = np.max(array_data[:, 1]) / 1e9
                 self.logger.info('Avg memory used: %.2f GiB, Peak memory used: %.2f GiB', avg_mem, max_mem)
 
         else:
