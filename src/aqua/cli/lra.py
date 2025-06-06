@@ -168,8 +168,8 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
             # if you do require the entire catalog generator
             sources = to_list(get_arg(args, 'source', config['data'][model][exp]))
             for source in sources:
-                # get info on potential realizations
-                realizations = get_arg(args, 'realization', config['data'][model][exp][source]['realizations'])
+                # get info on potential realizations from the configuration file or from the args of command line
+                realizations = get_arg(args, 'realization', config['data'][model][exp][source].get('realizations'))
                 loop_realizations = to_list(realizations) if realizations is not None else [1]
 
                 # get info on varlist and workers
