@@ -21,9 +21,21 @@ from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
 from aqua.util import area_selection
-from aqua.lra_generator.lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
-from aqua.lra_generator.catalog_entry_builder import CatalogEntryBuilder
-from aqua.lra_generator.output_path_builder import OutputPathBuilder
+from .lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
+from .catalog_entry_builder import CatalogEntryBuilder
+
+
+TIME_ENCODING =  {
+            'units': 'days since 1850-01-01 00:00:00',
+            'calendar': 'standard',
+            'dtype': 'float64'}
+
+VAR_ENCODING = {
+            'dtype': 'float64',
+            'zlib': True,
+            'complevel': 1,
+            '_FillValue': np.nan
+        }
 
 
 class LRAgenerator():
@@ -95,88 +107,49 @@ class LRAgenerator():
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
+
+        # Check mandatory parameters
+        self.catalog = self._require_param(catalog, "catalog")
+        self.model = self._require_param(model, "model")
+        self.exp = self._require_param(exp, "experiment")
+        self.source = self._require_param(source, "source")
+        self.var = self._require_param(var, "variable string or list.")
+        self.resolution = self._require_param(resolution, "resolution")
+
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
         self.loglevel = loglevel
 
+        # save parameters
+        self.frequency = frequency
         self.overwrite = overwrite
-        if self.overwrite:
-            self.logger.warning('File will be overwritten if already existing.')
-
         self.exclude_incomplete = exclude_incomplete
-        if self.exclude_incomplete:
-            self.logger.info('Exclude incomplete for time averaging activated!')
-
         self.definitive = definitive
-        if not self.definitive:
-            self.logger.warning('IMPORTANT: no file will be created, this is a dry run')
-
         self.nproc = int(nproc)
+        self.rebuild = rebuild
+        self.kwargs = kwargs
+        self.fix = fix
+
+        # configure statistics
+        self.stat = stat
+        if self.stat not in ['mean', 'std', 'max', 'min']:
+            raise KeyError('Please specify a valid statistic: mean, std, max or min.')
+
+        # configure regional selection
+        self._configure_region(region, drop)
+        
+        # print some info about the settings
+        self._issue_info_warning()
+
+        # define the tmpdir
         if tmpdir is None:
             self.logger.warning('No tmpdir specifield, will use outdir')
             self.tmpdir = os.path.join(outdir, 'tmp')
         else:
             self.tmpdir = tmpdir
+        self.tmpdir = os.path.join(self.tmpdir, f'LRA_{generate_random_string(10)}')
 
-        if self.dask:
-            self.logger.info('Running dask.distributed with %s workers', self.nproc)
-
-        self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
-                                   generate_random_string(10))
-
-        self.rebuild = rebuild
-        if self.rebuild:
-            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
-
-        # safechecks
-        if catalog is not None:
-            self.catalog = catalog
-        else:
-            raise KeyError('Please specify catalog.')
-
-        if model is not None:
-            self.model = model
-        else:
-            raise KeyError('Please specify model.')
-
-        if exp is not None:
-            self.exp = exp
-        else:
-            raise KeyError('Please specify experiment.')
-
-        if source is not None:
-            self.source = source
-        else:
-            raise KeyError('Please specify source.')
-
-        if var is not None:
-            self.var = var
-        else:
-            raise KeyError('Please specify variable string or list.')
-
-        if resolution is not None:
-            self.resolution = resolution
-        else:
-            raise KeyError('Please specify resolution.')
-        self.logger.info('Variable(s) to be processed: %s', self.var)
-
-        if region is not None:
-            self.region = region
-            if self.region['name'] is None:
-                raise KeyError('Please specify name in region.')
-            if self.region['lon'] is None and self.region['lat'] is None:
-                raise KeyError(f'Please specify at least one between lat and lon for {region['name']}.')
-            self.region_name = self.region['name']
-        else:
-            self.region = None
-            self.region_name = None
-
-        self.drop = drop
-
-        self.stat = stat
-        if self.stat not in ['mean', 'std', 'max', 'min']:
-            raise KeyError('Please specify a valid statistic: mean, std, max or min.')
-
+        # set up compacting method for concatenation
         self.compact = compact
         if self.compact not in ['xarray', 'cdo', None]:
             raise KeyError('Please specify a valid compact method: xarray, cdo or None.')
@@ -185,45 +158,27 @@ class LRAgenerator():
         if not isinstance(self.cdo_options, list):
             raise TypeError('cdo_options must be a list.')
 
-        self.kwargs = kwargs
-
-        Configurer = ConfigPath(configdir=configdir)
-        self.configdir = Configurer.configdir
-
-        self.frequency = frequency
-        if not self.frequency:
-            self.logger.info('Frequency not specified, no time averaging will be performed.')
+        # configure the configdir
+        self.configdir = ConfigPath(configdir=configdir).configdir
 
         # option for encoding, defined once for all
-        self.time_encoding = {
-            'units': 'days since 1850-01-01 00:00:00',
-            'calendar': 'standard',
-            'dtype': 'float64'}
-
-        self.var_encoding = {
-            'dtype': 'float64',
-            'zlib': True,
-            'complevel': 1,
-            '_FillValue': np.nan
-        }
+        self.time_encoding = TIME_ENCODING
+        self.var_encoding = VAR_ENCODING
 
         # add the performance report
         self.performance_reporting = performance_reporting
 
-        self.fix = fix
-        self.logger.info('Fixing data: %s', self.fix)
-
-        # for data reading from FDB
-        self.last_record = None
-        self.check = False
-
         # Create LRA folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
-
-        self.outbuilder = OutputPathBuilder(catalog=self.catalog, model=self.model, exp=self.exp, var=self.var,
-                                            resolution=self.resolution, frequency=self.frequency,
-                                            region=self.region_name, stat=self.stat, **self.kwargs)
+        
+        self.catbuilder = CatalogEntryBuilder(
+            catalog=self.catalog, model=self.model, 
+            exp=self.exp,resolution=self.resolution, frequency=self.frequency,
+            region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs
+        )
+        # Create output path builder from the catalog entry builder
+        self.outbuilder = self.catbuilder.opt
 
         self.basedir = outdir
         self.outdir = os.path.join(self.basedir, self.outbuilder.build_directory())
@@ -231,16 +186,68 @@ class LRAgenerator():
         create_folder(self.outdir, loglevel=self.loglevel)
         create_folder(self.tmpdir, loglevel=self.loglevel)
 
-        # similar to call to CatalogEntryBuilder, but with var="*" to use wildcard in definition
-        self.catbuilder = CatalogEntryBuilder(var="*", catalog=self.catalog, model=self.model, exp=self.exp,
-                                              resolution=self.resolution, frequency=self.frequency,
-                                              region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs)
-
         # Initialize variables used by methods
         self.data = None
         self.cluster = None
         self.client = None
         self.reader = None
+        
+        # for data reading from FDB
+        self.last_record = None
+        self.check = False
+
+    @staticmethod
+    def _require_param(param, name, msg=None):
+        if param is not None:
+            return param
+        raise KeyError(msg or f"Please specify {name}.")
+    
+    def _issue_info_warning(self):
+        """
+        Print information about the LRA generator settings
+        """
+
+        if not self.frequency:
+            self.logger.info('Frequency not specified, no time averaging will be performed.')
+
+        if self.overwrite:
+            self.logger.warning('File will be overwritten if already existing.')
+
+        if self.exclude_incomplete:
+            self.logger.info('Exclude incomplete for time averaging activated!')
+
+        if not self.definitive:
+            self.logger.warning('IMPORTANT: no file will be created, this is a dry run')
+
+        if self.dask:
+            self.logger.info('Running dask.distributed with %s workers', self.nproc)
+
+        if self.rebuild:
+            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
+
+        self.logger.info('Variable(s) to be processed: %s', self.var)
+        self.logger.info('Fixing data: %s', self.fix)
+        self.logger.info('Resolution: %s', self.resolution)
+        self.logger.info('Statistic to be computed: %s', self.stat) 
+        self.logger.info('Frequency: %s', self.frequency)
+        self.logger.info('Domain selection: %s', self.region_name)
+
+    def _configure_region(self, region, drop):
+        """ Configure the region for regional selection, and the drop option"""
+
+        if region is not None:
+            self.region = region
+            if self.region['name'] is None:
+                raise KeyError('Please specify name in region.')
+            if self.region['lon'] is None and self.region['lat'] is None:
+                raise KeyError(f'Please specify at least one between lat and lon for {region['name']}.')
+            self.region_name = self.region['name']
+            self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...', 
+                                self.region['name'], self.region['lon'], self.region['lat'])
+        else:
+            self.region = None
+            self.region_name = None
+        self.drop = drop
 
     def retrieve(self):
         """
@@ -258,17 +265,7 @@ class LRAgenerator():
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
-        if self.frequency:
-            self.logger.info('I am going to produce LRA at %s resolution and %s frequency...',
-                             self.resolution, self.frequency)
-        else:
-            self.logger.info('I am going to produce LRA at %s resolution...',
-                             self.resolution)
-
-        if self.region:
-            self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...',
-                             self.region['name'], self.region['lon'], self.region['lat'])
-
+    
         if self.catalog is None:
             self.logger.info('Assuming catalog from the reader so that is %s', self.reader.catalog)
             self.catalog = self.reader.catalog
@@ -341,9 +338,8 @@ class LRAgenerator():
             verify: open the LRA source and verify it can be read by the reader
         """
 
-        entry_name = self.catbuilder.create_entry_name() + '-zarr'
         full_dict, partial_dict = list_lra_files_complete(self.outdir)
-        # full_dict, partial_dict = list_lra_files_vars(self.outdir)
+        entry_name = self.catbuilder.create_entry_name() + '-zarr'
         self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
 
         # extra zarr only directory
@@ -367,7 +363,7 @@ class LRAgenerator():
                 jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
                 if jsonfile is not None:
                     urlpath = urlpath + [f'reference::{jsonfile}']
-
+        
         if not urlpath:
             raise FileNotFoundError('No files found to create zarr reference')
 
@@ -375,35 +371,22 @@ class LRAgenerator():
         for index, value in enumerate(urlpath):
             urlpath[index] = replace_intake_vars(catalog=self.catalog, path=value)
 
-        # load, add the block and close
+        block = self.catbuilder.create_entry_details(basedir=self.basedir, driver='zarr')
+
+        # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # if entry exists
+        # if the entry already exists, update the urlpath if requested and return
         if entry_name in cat_file['sources']:
-
-            self.logger.info('Catalog entry for %s %s %s exists, updating the urlpath only...',
-                             self.model, self.exp, entry_name)
+            self.logger.info('Catalog entry for %s %s %s already exists', self.model, self.exp, entry_name)
+            self.logger.info('Updating the urlpath to %s', urlpath)
             cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
 
         else:
             self.logger.info('Creating zarr catalog entry %s %s %s', self.model, self.exp, entry_name)
-
-            # define the block to be uploaded into the catalog
-            block_cat = {
-                'driver': 'zarr',
-                'description': f'LRA data {self.frequency} at {self.resolution} reference on zarr',
-                'args': {
-                    'consolidated': False,
-                    'combine': 'by_coords',
-                    'urlpath': urlpath
-                },
-                'metadata': {
-                    'source_grid_name': 'lon-lat',
-                }
-            }
-            cat_file['sources'][entry_name] = block_cat
+            cat_file['sources'][entry_name] = block
 
         dump_yaml(outfile=catalogfile, cfg=cat_file)
 
@@ -497,7 +480,7 @@ class LRAgenerator():
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
 
-        filename = self.outbuilder.build_filename(year=year, month=month)
+        filename = self.outbuilder.build_filename(var=var, year=year, month=month)
 
         if tmp:
             filename = os.path.join(self.tmpdir, filename)

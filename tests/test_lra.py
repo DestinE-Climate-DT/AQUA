@@ -37,9 +37,11 @@ class TestOutputPathBuilder:
         args = lra_arguments
         builder = OutputPathBuilder(
             catalog='ci', model=args["model"], exp=args["exp"],
-            var=args["var"], resolution=resolution,
+            resolution=resolution,
             frequency=frequency, realization=realization, stat=stat, region=region)
-        path = builder.build_path(os.path.join(os.getcwd(), args['outdir']), 2020, month=1)
+        path = builder.build_path(
+            os.path.join(os.getcwd(), args['outdir']),
+            var=args['var'], year=2020, month=1)
         
         if not expected:
             lrapath = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'

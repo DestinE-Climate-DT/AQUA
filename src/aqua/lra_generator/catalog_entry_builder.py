@@ -2,36 +2,51 @@
 
 from aqua.logger import log_configure
 from .output_path_builder import OutputPathBuilder
+from .lra_util import replace_intake_vars
 
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for the LRA"""
 
-    def __init__(self, catalog, model, exp, var, realization='r1',
-                 resolution=None, frequency=None, stat="mean",
-                 region="global", level=None, loglevel='WARNING', **kwargs):
+    def __init__(self, catalog, model, exp, resolution,
+                 realization=None, frequency=None, stat=None,
+                 region=None, level=None, loglevel='WARNING', **kwargs):
+        
+        """
+        Initialize the CatalogEntryBuilder with the necessary parameters.
+
+        Args:
+            catalog (str): Name of the catalog.
+            model (str): Name of the model.
+            exp (str): Name of the experiment.
+            resolution (str): Resolution of the data.
+            realization (str, optional): Realization name. Defaults to 'r1'.
+            frequency (str, optional): Frequency of the data. Defaults to 'native'.
+            stat (str, optional): Statistic type. Defaults to 'nostat'.
+            region (str, optional): Region. Defaults to 'global'.
+            level (str, optional): Level. Defaults to None.
+            loglevel (str, optional): Logging level. Defaults to 'WARNING'.
+            **kwargs: Additional keyword arguments for flexibility.
+        """
 
         self.catalog = catalog
         self.model = model
         self.exp = exp
-        self.var = var
-        self.realization = realization
         self.resolution = resolution
-        self.frequency = frequency
-        self.stat = stat
-        self.region = region
+        
+        self.realization = realization if realization is not None else 'r1'
+        self.frequency = frequency if frequency is not None else 'native'
+        self.stat = stat if stat is not None else 'nostat'
+        self.region = region if region is not None else 'global'
+
         self.level = level
         self.kwargs = kwargs
-        self.ouput_path_builder = OutputPathBuilder(catalog=catalog, model=model, exp=exp, var=var,
+        self.opt = OutputPathBuilder(catalog=catalog, model=model, exp=exp,
                                                     realization=realization, resolution=self.resolution,
                                                     frequency=self.frequency, stat=self.stat, region=self.region,
                                                     level=self.level, **self.kwargs)
         self.logger = log_configure(log_level=loglevel, log_name='CatalogEntryBuilder')
         self.loglevel = loglevel
-
-    def set_from_reader(self, reader_obj):
-        """Guess resolution and frequency from AQUA reader."""
-        self.ouput_path_builder.set_from_reader(reader_obj)
 
     def create_entry_name(self):
         """
@@ -43,33 +58,21 @@ class CatalogEntryBuilder():
 
         return entry_name
 
-    def create_entry_details(self, basedir=None):
+    def create_entry_details(self, basedir=None, driver='netcdf'):
         """
         Create an entry in the catalog for the LRA
         """
 
-        urlpath = self.ouput_path_builder.build_path(basedir, year="*")
-
+        urlpath = self.opt.build_path(basedir, var="*", year="*")
         self.logger.info('Fully expanded urlpath %s', urlpath)
-        # urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
+
+        urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
         self.logger.info('New urlpath with intake variables is %s', urlpath)
 
-        # find the catalog of my experiment and load it
-        # catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
-        #                        'catalog', self.model, self.exp + '.yaml')
-        # cat_file = load_yaml(catalogfile)
-
-        # if the entry already exists, update the urlpath if requested and return
-        # if entry_name in cat_file['sources']:
-        #    self.logger.info('Catalog entry for %s %s %s already exists', self.model, self.exp, entry_name)
-        #    self.logger.info('Updating the urlpath to %s', urlpath)
-        #    cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
-
-        # else:
         # if the entry is not there, define the block to be uploaded into the catalog
         block_cat = {
-            'driver': 'netcdf',
-            'description': f'AQUA LRA data {self.frequency} at {self.resolution}',
+            'driver': driver,
+            'description': f'AQUA {driver} LRA data {self.frequency} at {self.resolution}',
             'args': {
                 'urlpath': urlpath,
                 'chunks': {},

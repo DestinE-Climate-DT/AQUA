@@ -11,8 +11,9 @@ class OutputPathBuilder:
     Class to build output paths for LRA data files.
     """
 
-    def __init__(self, catalog: str, model: str, exp: str, var: str,
-                 realization: str = 'r1', resolution: Optional[str] = None,
+    def __init__(self, catalog: str, model: str, exp: str,
+                 resolution: Optional[str] = None,
+                 realization: Optional[str] = None,
                  frequency: Optional[str] = None, stat: Optional[str] = None,
                  region: Optional[str] = None, level: Optional[str] = None,
                  **kwargs):
@@ -22,7 +23,6 @@ class OutputPathBuilder:
             catalog (str): Catalog name.
             model (str): Model name.
             exp (str): Experiment name.
-            var (str): Variable name.
             realization (str): Realization name. Default is 'r1'.
             resolution (str): Resolution. Default is None.
             frequency (str): Frequency. Default is None.
@@ -35,37 +35,20 @@ class OutputPathBuilder:
         self.catalog = catalog
         self.model = model
         self.exp = exp
-        self.var = var
         self.resolution = resolution
 
-        if realization is None:
-            realization = 'r1'
-        self.realization = realization
-
-        if frequency is None:
-            frequency = "native"
-        self.frequency = frequency
-
-        if stat is None:
-            stat = "nostat"
-        self.stat = stat
-
-        if region is None:
-            region = "global"
-        self.region = region
+        self.realization = realization if realization is not None else 'r1'
+        self.frequency = frequency if frequency is not None else 'native'
+        self.stat = stat if stat is not None else 'nostat'
+        self.region = region if region is not None else 'global'
 
         self.level = level
         self.kwargs = kwargs or {}
 
-    def set_from_reader(self, reader_obj):
-        """Guess resolution and frequency from xarray."""
-        if self.resolution is None:
-            self.resolution = reader_obj.src_grid_name
-
-    def build_path(self, basedir, year, month=None, day=None):
+    def build_path(self, basedir, var, year=None, month=None, day=None):
         """create the full path to the output file."""
         folder = self.build_directory()
-        filename = self.build_filename(year, month, day)
+        filename = self.build_filename(var, year, month, day)
         return os.path.join(basedir, folder, filename)
 
     def build_directory(self):
@@ -78,15 +61,15 @@ class OutputPathBuilder:
         # os.makedirs(folder, exist_ok=True)
         return folder
 
-    def build_filename(self, year=None, month=None, day=None):
+    def build_filename(self, var=None, year=None, month=None, day=None):
         """create the filename based on the parameters."""
 
-        # Set default values if not provided
-        if year is None:
-            year = "*"
+        # Use the provided variable or default to wildcard '*'
+        var = "*" if var is None else var
+        year = "*" if year is None else year
 
         # specific case for potential levels
-        varname = f"{self.var}{self.level}" if self.level else self.var
+        varname = f"{var}{self.level}" if self.level else var
 
         components = [
             varname,
