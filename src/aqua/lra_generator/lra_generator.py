@@ -159,7 +159,12 @@ class LRAgenerator():
             raise TypeError('cdo_options must be a list.')
 
         # configure the configdir
-        self.configdir = ConfigPath(configdir=configdir).configdir
+        configpath = ConfigPath(configdir=configdir)
+        self.configdir = configpath.configdir
+
+        # get default grids
+        _, grids_path = configpath.get_reader_filenames()
+        self.default_grids = load_yaml(os.path.join(grids_path, 'default.yaml'))
 
         # option for encoding, defined once for all
         self.time_encoding = TIME_ENCODING
@@ -173,7 +178,7 @@ class LRAgenerator():
             raise KeyError('Please specify outdir.')
         
         self.catbuilder = CatalogEntryBuilder(
-            catalog=self.catalog, model=self.model, 
+            catalog=self.catalog, model=self.model,
             exp=self.exp,resolution=self.resolution, frequency=self.frequency,
             region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs
         )
@@ -302,16 +307,32 @@ class LRAgenerator():
 
         self.logger.info('Finished generating LRA data.')
 
+    def _define_source_grid_name(self):
+        """"
+        Define the source grid name based on the resolution
+        """
+        if self.resolution in self.default_grids:
+            sgn = 'lon-lat'
+        if self.resolution == 'native':
+            sgn = self.reader.source_grid_name
+        else:
+            sgn = self.resolution
+        return sgn
+
     def create_catalog_entry(self):
         """
         Create an entry in the catalog for the LRA
         """
 
-        block = self.catbuilder.create_entry_details(basedir=self.basedir)
+        entry_name = self.catbuilder.create_entry_name()
+
+        # design lon lat case
+        sgn = self._define_source_grid_name()
+        block = self.catbuilder.create_entry_details(basedir=self.basedir, source_grid_name=sgn)
         urlpath = replace_intake_vars(catalog=self.catalog, path=self.catbuilder.get_urlpath(block))
         self.logger.info('New urlpath with intake variables is %s', urlpath)
         block['args']['urlpath'] = urlpath
-        entry_name = self.catbuilder.create_entry_name()
+        
 
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
@@ -366,12 +387,15 @@ class LRAgenerator():
         
         if not urlpath:
             raise FileNotFoundError('No files found to create zarr reference')
+        
 
         # apply intake replacement: works on string need to loop on the list
         for index, value in enumerate(urlpath):
             urlpath[index] = replace_intake_vars(catalog=self.catalog, path=value)
 
-        block = self.catbuilder.create_entry_details(basedir=self.basedir, driver='zarr')
+        sgn = self._define_source_grid_name()    
+        block = self.catbuilder.create_entry_details(basedir=self.basedir, driver='zarr', source_grid_name=sgn)
+        block['args']['urlpath'] = urlpath
 
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,

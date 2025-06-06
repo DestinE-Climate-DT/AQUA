@@ -58,12 +58,12 @@ class CatalogEntryBuilder():
 
         return entry_name
 
-    def create_entry_details(self, basedir=None, driver='netcdf'):
+    def create_entry_details(self, basedir=None, driver='netcdf', source_grid_name='lon-lat'):
         """
         Create an entry in the catalog for the LRA
         """
 
-        urlpath = self.opt.build_path(basedir, var="*", year="*")
+        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*")
         self.logger.info('Fully expanded urlpath %s', urlpath)
 
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -76,18 +76,19 @@ class CatalogEntryBuilder():
             'args': {
                 'urlpath': urlpath,
                 'chunks': {},
-                'xarray_kwargs': {
-                    'decode_times': True,
-                    'combine': 'by_coords'
-                },
             },
             'metadata': {
-                'source_grid_name': 'lon-lat',
+                'source_grid_name': source_grid_name,
             }
         }
-        block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
-        block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
-        block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'stat')
+        if driver == 'netcdf':
+            block_cat['args']['xarray_kwargs'] = {
+                    'decode_times': True,
+                    'combine': 'by_coords'
+                }
+            block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
+            block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
+            block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'stat')
 
         return block_cat
 
