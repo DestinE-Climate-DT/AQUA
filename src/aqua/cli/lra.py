@@ -49,13 +49,13 @@ def lra_parser(parser = None):
                         help='experiment to be processed. Use with coherence with --source and --model')
     parser.add_argument('-s', '--source', type=str,
                         help='source to be processed. Use with coherence with --exp and --var')
+    parser.add_argument('-r', '--realization', type=str,
+                        help='realization to be processed. Use with coherence with --model, --exp and --source')
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
     parser.add_argument('--stat', type=str,
                         help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std']. Default is 'mean'")
-    #parser.add_argument('-r', '--realization', type=str,
-    #                    help="realization to be processed. Use with coherence with --var")
 
     #return parser.parse_args(arguments)
     return parser
@@ -169,7 +169,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
             sources = to_list(get_arg(args, 'source', config['data'][model][exp]))
             for source in sources:
                 # get info on potential realizations
-                realizations = config['data'][model][exp][source].get('realizations')
+                realizations = get_arg(args, 'realization', config['data'][model][exp][source]['realizations'])
                 loop_realizations = to_list(realizations) if realizations is not None else [1]
 
                 # get info on varlist and workers
