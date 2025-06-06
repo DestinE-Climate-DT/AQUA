@@ -122,10 +122,6 @@ class Hovmoller(Diagnostic):
             data = data - data.isel({dim: 0})
         else:
             raise ValueError("Invalid anomaly_ref: use 't0', 'tmean', or None")
-        data.attrs["AQUA_anomaly_ref"] = anomaly_ref
-        data.attrs["AQUA_cmap"] = "coolwarm"
-        type_str = f"anom_{anomaly_ref}"
-        data.attrs["AQUA_type"] = type_str
         return data
 
     def _get_standardise(self, data, dim="time"):
@@ -144,8 +140,6 @@ class Hovmoller(Diagnostic):
         data.attrs["units"] = "Stand. Units"
         data.attrs["AQUA_standardise"] = f"Standardised with {dim}"
         type_str = f"Std_{data.attrs.get('AQUA_type', 'full')}"
-        data.attrs["AQUA_type"] = type_str
-        data = data.expand_dims(dim={"type": [type_str]})
         return data
 
     def _get_std_anomaly(
@@ -209,14 +203,15 @@ class Hovmoller(Diagnostic):
             self.logger.debug(f"Computing mean over dimension: {dim_mean}")
             self.data = self.data.mean(dim=dim_mean)
 
-        for standardise, anomaly_ref in product([False, True], anomaly_ref):
-            self.logger.info(
-                f"Processing data with standardise={standardise}, anomaly_ref={anomaly_ref}"
-            )
-            processed_data = self._get_std_anomaly(
-                self.data, anomaly_ref, standardise, dim="time"
-            )
-            self.processed_data_list.append(processed_data)
+        for standardise, anomaly_ref in product([False, True], anomaly_ref):  #TODO Fix Standardise to skip Std Full data
+            if not (standardise is True and anomaly_ref is None):
+                self.logger.info(
+                    f"Processing data with standardise={standardise}, anomaly_ref={anomaly_ref}"
+                )
+                processed_data = self._get_std_anomaly(
+                    self.data, anomaly_ref, standardise, dim="time"
+                )
+                self.processed_data_list.append(processed_data)
 
     def save_netcdf(
         self,
