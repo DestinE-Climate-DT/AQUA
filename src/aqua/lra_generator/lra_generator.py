@@ -615,6 +615,7 @@ class LRAgenerator():
                     if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', tmpfile)
                     self.logger.info('Moving temporary file %s to %s', tmpfile, outfile)
+
                     move_tmp_files(self.tmpdir, self.outdir)
                 del month_data
             del year_data
