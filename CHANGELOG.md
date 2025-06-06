@@ -22,7 +22,7 @@ AQUA core complete list:
 - `--no-mount /etc/localtime` option added to the `load_aqua_container.sh` script for all HPC (#1975)
 - Upgrade to eccodes==2.41.0 (#1890)
 - Fix HPC2020 (ECMWF) installation (#1994)
-- `plot_timeseries` can handle multiple references and ensemble mean and std (#1988)
+- `plot_timeseries` can handle multiple references and ensemble mean and std (#1988, #1999)
 - Support for CDO 2.5.0, modified test files accordingly (v6) (#1987)
 - Remove DOCKER secrets and prepare ground for dependabot action e.g introduce AQUA_GITHUB_PAT (#1983,#1995)
 - `Trender()` class to include both `trend()` and `detrend()` method (#1980)

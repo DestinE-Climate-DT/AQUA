@@ -9,7 +9,8 @@ def plot_timeseries_data(ax: plt.Axes,
                          data_labels: str | list[str] = None,
                          lw: float = 1.5,
                          realization: bool = False,
-                         kind: str = 'monthly'):
+                         kind: str = 'monthly',
+                         colors: list[str] = None) -> list[plt.Line2D]:
     """
     Plot time series data (monthly or annual) on the given axis.
 
@@ -26,6 +27,7 @@ def plot_timeseries_data(ax: plt.Axes,
 
     linestyle = '-' if kind == 'monthly' else '--'
     suffix = f' {kind}' if kind in ['monthly', 'annual'] else ''
+    lines = []
 
     for i in range(len(data)):
         da = data[i]
@@ -41,13 +43,23 @@ def plot_timeseries_data(ax: plt.Axes,
             'linestyle': linestyle
         }
 
+        if colors and i < len(colors):
+            plot_kwargs['color'] = colors[i]
+
         if realization:
             plot_kwargs.update({
                 'color': 'grey',
                 'alpha': 0.5
             })
 
-        da.plot(**plot_kwargs)
+        line = da.plot(**plot_kwargs)
+        # xarray returns a list for multiple lines, but just a Line2D for 1D plots
+        if isinstance(line, list):
+            lines.extend(line)
+        else:
+            lines.append(line)
+
+    return lines
 
 def plot_timeseries_ref_data(ax: plt.Axes,
                              ref_data: xr.DataArray | list[xr.DataArray],
