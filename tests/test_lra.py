@@ -23,7 +23,7 @@ class TestOutputPathBuilder:
 
     expected = [
         None,
-        '/Users/paolo/Desktop/AQUA/lra_test/ci/IFS/test-tco79/r1/daily/nostat/europe/2t_ci_IFS_test-tco79_r1_daily_nostat_europe_202001.nc',
+        'ci/IFS/test-tco79/r1/daily/nostat/europe/2t_ci_IFS_test-tco79_r1_daily_nostat_europe_202001.nc',
         None,
     ]
 
@@ -40,10 +40,13 @@ class TestOutputPathBuilder:
             var=args["var"], resolution=resolution,
             frequency=frequency, realization=realization, stat=stat, region=region)
         path = builder.build_path(os.path.join(os.getcwd(), args['outdir']), 2020, month=1)
-        lrapath = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
+        
         if not expected:
+            lrapath = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
             expected = os.path.join(os.getcwd(), args["outdir"], lrapath,
                                          f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
+        else:
+            expected = os.path.join(os.getcwd(), args["outdir"], expected)
     
         assert path == expected
 
