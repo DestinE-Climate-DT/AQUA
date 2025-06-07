@@ -14,8 +14,8 @@ from aqua.util import get_arg
 from aqua.version import __version__ as aqua_version
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
-from aqua.diagnostics.teleconnections import NAO, ENSO
-from aqua.diagnostics.teleconnections import PlotNAO, PlotENSO
+from aqua.diagnostics.teleconnections import NAO, ENSO, QBO
+from aqua.diagnostics.teleconnections import PlotNAO, PlotENSO, PlotQBO
 
 
 def parse_arguments(args):
@@ -311,6 +311,45 @@ if __name__ == '__main__':
                                                metadata={'description': regression_description}, dpi=dpi)
                             plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
                                                metadata={'description': correlation_description}, dpi=dpi)
+                            
+        if 'QBO' in config_dict['diagnostics']['teleconnections']:
+            if config_dict['diagnostics']['teleconnections']['QBO']['run']:
+                logger.info('Running QBO teleconnections diagnostic')
+
+                qbo = [None] * len(config_dict['datasets'])
+                qbo_config = config_dict['diagnostics']['teleconnections']['QBO']
+                init_args = {'loglevel': loglevel}
+
+                for i, dataset in enumerate(config_dict['datasets']):
+                    logger.info(f'Running dataset: {dataset}')
+                    dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
+                                    'exp': dataset['exp'], 'source': dataset['source'],
+                                    'regrid': dataset.get('regrid', regrid)}
+                    qbo[i] = QBO(**dataset_args, **init_args)
+                    qbo[i].retrieve()
+                    qbo[i].compute_hovmoller()
+                    qbo[i].save_netcdf(qbo[i].data_hovmoller, diagnostic='qbo', diagnostic_product='hovmoller',
+                                       default_path=outputdir, rebuild=rebuild)
+                    
+                # No references for QBO, so we skip that part
+
+                    # Plot QBO Hovmoller, still inside the loop to handle each dataset
+                    if save_pdf or save_png:
+                        logger.info('Plotting QBO')
+                        plot_args = {'data': [qbo[i].data_hovmoller for i in range(len(qbo))],
+                                     'outputdir': outputdir, 'rebuild': rebuild,
+                                     'loglevel': loglevel}
+                        plot_qbo = PlotQBO(**plot_args)
+                        fig_hovmoller = plot_qbo.plot_hovmoller()
+                        hovmoller_description = plot_qbo.set_description()
+
+                        if save_pdf:
+                            plot_qbo.save_plot(fig_hovmoller, diagnostic_product='hovmoller', format='pdf',
+                                               metadata={'description': hovmoller_description})
+                        if save_png:
+                            plot_qbo.save_plot(fig_hovmoller, diagnostic_product='hovmoller', format='png',
+                                               metadata={'description': hovmoller_description}, dpi=dpi)
+
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
