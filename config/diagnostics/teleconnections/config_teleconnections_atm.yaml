@@ -39,3 +39,5 @@ diagnostics:
       months_window: 3
       seasons: ['annual']
       cbar_range: [-2, 2]
+    QBO:
+      run: true
