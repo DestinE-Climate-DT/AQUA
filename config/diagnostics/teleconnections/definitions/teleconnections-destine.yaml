@@ -32,3 +32,14 @@ MJO: # http://www.bom.gov.au/climate/mjo
   lonW: null
   lonE: null
   flip_sign: true # To obtain standard OLR variable
+
+QBO:
+  telec_type: 'hovmoller'
+  field: u
+  latN: 2
+  latS: -2
+  lonW: null
+  lonE: null
+  # Values in hPa
+  Pamin: 10
+  Pamax: 100
