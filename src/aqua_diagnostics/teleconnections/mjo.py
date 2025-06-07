@@ -1,7 +1,7 @@
 import xarray as xr
 from aqua.graphics import plot_hovmoller
 from aqua.logger import log_configure
-from aqua.util import area_selection, to_list
+from aqua.util import area_selection
 from aqua.diagnostics.core import OutputSaver
 from .base import BaseMixin
 
