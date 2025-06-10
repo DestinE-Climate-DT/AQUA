@@ -61,7 +61,8 @@ class AquaConsole():
             },
             'grids': {
                 'add': self.grids_add,
-                'remove': self.remove_file
+                'remove': self.remove_file,
+                'set': self.grids_set
             },
             'lra': self.lra,
             'catgen': self.catgen
@@ -371,6 +372,47 @@ class AquaConsole():
         compatible = self._check_file(kind='grids', file=args.file)
         if compatible:
             self._file_add(kind='grids', file=args.file, link=args.editable)
+
+    def grids_set(self, args):
+        """
+        Set the grids (and concurrently the weights and areas) paths in the config-aqua.yaml
+        This will override the grids paths defined in the individual catalogs
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()
+        grids_path = args.path + '/grids'
+        areas_path = args.path + '/areas'
+        weights_path = args.path + '/weights'
+
+        self.logger.info('Setting grids path to %s, weights path to %s and areas path to %s',
+                         grids_path, weights_path, areas_path)
+        
+        # Check if the paths exist and if not create them
+        for path in [grids_path, areas_path, weights_path]:
+            if not os.path.exists(path):
+                self.logger.info('Creating path %s', path)
+                os.makedirs(path, exist_ok=True)
+
+        cfg = load_yaml(os.path.join(self.configpath, self.configfile))
+        path_dict = {
+            'paths': {
+                'grids': grids_path,
+                'areas': areas_path,
+                'weights': weights_path
+            }
+        }
+
+        # If the paths already exist, we just update them
+        if 'paths' in cfg:
+            self.logger.info('Updating existing paths in %s', self.configfile)
+            cfg['paths'].update(path_dict['paths'])
+        else:
+            self.logger.info('Adding new paths to %s', self.configfile)
+            cfg['paths'] = path_dict['paths']
+
+        dump_yaml(self.configfile, cfg)
 
     def _file_add(self, kind, file, link=False):
         """Add a personalized file to the fixes/grids folder
