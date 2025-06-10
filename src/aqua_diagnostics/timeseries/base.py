@@ -1,10 +1,8 @@
 import os
 import xarray as xr
-
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
-from aqua.util import frequency_string_to_pandas, time_to_string
-from aqua.util import load_yaml, eval_formula
+from aqua.util import frequency_string_to_pandas, time_to_string, eval_formula
 from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver
 
 xr.set_options(keep_attrs=True)
@@ -12,7 +10,8 @@ xr.set_options(keep_attrs=True)
 
 class BaseMixin(Diagnostic):
     """The BaseMixin class is used for the Timeseries and the SeasonalCycles classes."""
-    def __init__(self, catalog: str = None, model: str = None,
+    def __init__(self, diagnostic_name: str = 'timeseries',
+                 catalog: str = None, model: str = None,
                  exp: str = None, source: str = None,
                  regrid: str = None,
                  startdate: str = None, enddate: str = None,
@@ -23,6 +22,8 @@ class BaseMixin(Diagnostic):
         Initialize the Base class.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Default is 'timeseries'.
+                                   This will be used to configure the logger and the output files.
             catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
             model (str): The model to be used.
             exp (str): The experiment to be used.
@@ -41,8 +42,10 @@ class BaseMixin(Diagnostic):
         """
         super().__init__(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
                          loglevel=loglevel)
-
-        self.logger = log_configure(log_level=loglevel, log_name='BaseTimeseries')
+        
+        # Log name is the diagnostic name with the first letter capitalized
+        self.logger = log_configure(log_level=loglevel, log_name=diagnostic_name.capitalize())
+        self.diagnostic_name = diagnostic_name
 
         # We want to make sure we retrieve the required amount of data with a single Reader instance
         self.startdate, self.enddate = start_end_dates(startdate=startdate, enddate=enddate,
@@ -60,6 +63,7 @@ class BaseMixin(Diagnostic):
         # Set the region based on the region name or the lon and lat limits
         self.region, self.lon_limits, self.lat_limits = self._set_region(region=region, diagnostic='timeseries',
                                                                          lon_limits=lon_limits, lat_limits=lat_limits)
+        self.logger.debug(f"Region: {self.region}, Lon limits: {self.lon_limits}, Lat limits: {self.lat_limits}")
 
         # Initialize the possible results
         self.hourly = None
@@ -90,11 +94,13 @@ class BaseMixin(Diagnostic):
             self.logger.debug("Evaluating formula %s", var)
             self.data = eval_formula(mystring=var, xdataset=self.data)
             if self.data is None:
-                self.logger.error('Error evaluating formula %s', var)
+                raise ValueError(f'Error evaluating formula {var}. '
+                                 'Check the variable names and the formula syntax.')
         else:
             super().retrieve(var=var)
             if self.data is None:
-                self.logger.error('Error retrieving variable %s', var)
+                raise ValueError(f'Variable {var} not found in the data. '
+                                 'Check the variable name and the data source.')
             # Get the xr.DataArray to be aligned with the formula code
             self.data = self.data[var]
 
@@ -169,13 +175,13 @@ class BaseMixin(Diagnostic):
         elif str_freq == 'annual':
             self.std_annual = data
 
-    def save_netcdf(self, diagnostic: str, freq: str,
+    def save_netcdf(self, diagnostic_product: str, freq: str,
                     outputdir: str = './', rebuild: bool = True):
         """
         Save the data to a netcdf file.
 
         Args:
-            diagnostic (str): The diagnostic to be saved.
+            diagnostic_product (str): The product name to be used in the filename (e.g., 'timeseries or 'seasonalcycles').
             freq (str): The frequency of the data.
             outputdir (str): The directory to save the data.
             rebuild (bool): If True, rebuild the data from the original files.
@@ -195,17 +201,17 @@ class BaseMixin(Diagnostic):
             data = self.annual if self.annual is not None else self.logger.error('No annual data available')
             data_std = self.std_annual if self.std_annual is not None else None
 
-        diagnostic_product = getattr(data, 'standard_name', None)
+        diagnostic_product +=f'.{getattr(data, 'standard_name', None)}'
         diagnostic_product += f'.{str_freq}'
         region = self.region.replace(' ', '').lower() if self.region is not None else None
         diagnostic_product += f'.{region}' if region is not None else ''
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
-        super().save_netcdf(data=data, diagnostic=diagnostic, diagnostic_product=diagnostic_product,
+        super().save_netcdf(data=data, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                             default_path=outputdir, rebuild=rebuild)
         if data_std is not None:
             diagnostic_product = f'{diagnostic_product}.std'
             self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
-            super().save_netcdf(data=data_std, diagnostic=diagnostic, diagnostic_product=diagnostic_product,
+            super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                                 default_path=outputdir, rebuild=rebuild)
 
     def _check_data(self, var: str, units: str):
@@ -242,15 +248,20 @@ class BaseMixin(Diagnostic):
 
 class PlotBaseMixin():
     """PlotBaseMixin class is used for the PlotTimeseries and the PlotSeasonalcycles classes."""
-    def __init__(self, loglevel: str = 'WARNING'):
+    def __init__(self, diagnostic_name: str = 'timeseries', loglevel: str = 'WARNING'):
         """
         Initialize the PlotBaseMixin class.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Default is 'timeseries'.
+                                   This will be used to configure the logger and the output files.
             loglevel (str): The log level to be used. Default is 'WARNING'.
         """
         # Data info initalized as empty
         self.loglevel = loglevel
+        self.diagnostic_name = diagnostic_name
+        log_name = 'Plot' + diagnostic_name.capitalize()
+        self.logger = log_configure(log_level=loglevel, log_name=log_name)
         self.catalogs = None
         self.models = None
         self.exps = None
@@ -377,7 +388,7 @@ class PlotBaseMixin():
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
             diagnostic (str): Diagnostic name to be used in the filename as diagnostic_product.
         """
-        outputsaver = OutputSaver(diagnostic='timeseries', 
+        outputsaver = OutputSaver(diagnostic=self.diagnostic_name,
                                   catalog=self.catalogs[0],
                                   model=self.models[0],
                                   exp=self.exps[0],

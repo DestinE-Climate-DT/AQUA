@@ -12,7 +12,8 @@ xr.set_options(keep_attrs=True)
 class Timeseries(BaseMixin):
     """Timeseries class for retrieve and netcdf saving of a single experiment"""
 
-    def __init__(self, catalog: str = None, model: str = None,
+    def __init__(self, diagnostic_name: str = 'timeseries',
+                 catalog: str = None, model: str = None,
                  exp: str = None, source: str = None,
                  regrid: str = None,
                  startdate: str = None, enddate: str = None,
@@ -23,6 +24,7 @@ class Timeseries(BaseMixin):
         Initialize the Timeseries class.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Used for logger and filenames. Default is 'timeseries'.
             catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
             model (str): The model to be used.
             exp (str): The experiment to be used.
@@ -39,7 +41,8 @@ class Timeseries(BaseMixin):
             lat_limits (list): The latitude limits to be used. Overriden by region.
             loglevel (str): The log level to be used. Default is 'WARNING'.
         """
-        super().__init__(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
+        super().__init__(diagnostic_name=diagnostic_name,
+                         catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
                          startdate=startdate, enddate=enddate,
                          std_startdate=std_startdate, std_enddate=std_enddate,
                          region=region, lon_limits=lon_limits,
@@ -81,7 +84,7 @@ class Timeseries(BaseMixin):
             if std:
                 self.compute_std(freq=f, exclude_incomplete=exclude_incomplete, center_time=center_time,
                                  box_brd=box_brd)
-            self.save_netcdf(diagnostic='timeseries', freq=f, outputdir=outputdir, rebuild=rebuild) 
+            self.save_netcdf(diagnostic_product='timeseries', freq=f, outputdir=outputdir, rebuild=rebuild) 
 
     def compute(self, freq: str, extend: bool = True, exclude_incomplete: bool = True,
                 center_time: bool = True, box_brd: bool = True, var: str = None):

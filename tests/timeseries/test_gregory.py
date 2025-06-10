@@ -20,10 +20,12 @@ class TestGregory:
         self.regrid = 'r100'
         self.std_startdate = '1990-01-01'
         self.std_enddate = '1991-12-31'
+        self.diagnostic_name = 'radiation'
 
     def test_gregory(self, tmp_path):
         """Test the Gregory class."""
-        gp = Gregory(catalog=self.catalog,
+        gp = Gregory(diagnostic_name=self.diagnostic_name,
+                     catalog=self.catalog,
                      model=self.model,
                      exp=self.exp,
                      source=self.source,
@@ -43,10 +45,12 @@ class TestGregory:
         assert gp.t2m_std.values == pytest.approx(0.0277312, rel=approx_rel)
         assert gp.net_toa_std.values == pytest.approx(0.52176817, rel=approx_rel)
 
-        file = os.path.join(tmp_path, 'netcdf', 'gregory.2t.annual.ci.ERA5.era5-hpz3.nc')
+        filename = f'{self.diagnostic_name}.gregory.2t.annual.{self.catalog}.{self.model}.{self.exp}.nc'
+        file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
-        plt = PlotGregory(t2m_monthly_data = gp.t2m_monthly,
+        plt = PlotGregory(diagnostic_name=self.diagnostic_name,
+                          t2m_monthly_data = gp.t2m_monthly,
                           net_toa_monthly_data = gp.net_toa_monthly,
                           t2m_annual_data = gp.t2m_annual,
                           net_toa_annual_data = gp.net_toa_annual,
@@ -65,6 +69,7 @@ class TestGregory:
         description = plt.set_description()
         plt.save_plot(fig, description=description, outputdir=tmp_path, diagnostic='gregory')
 
-        file = os.path.join(tmp_path, 'png', 'timeseries.gregory.ci.ERA5.era5-hpz3.png')
+        filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.png'
+        file = os.path.join(tmp_path, 'png', filename)
         assert os.path.exists(file)
 

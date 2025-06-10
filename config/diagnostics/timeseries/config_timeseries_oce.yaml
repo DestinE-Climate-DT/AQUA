@@ -32,6 +32,7 @@ output:
 diagnostics:
   timeseries:
     run: true
+    diagnostic_name: 'ocean'
     variables: ['tos', 'siconc']
     params:
       default:
@@ -46,6 +47,7 @@ diagnostics:
   
   seasonalcycles:
     run: true
+    diagnostic_name: 'ocean'
     variables: ['tos', 'siconc']
     params:
       default:

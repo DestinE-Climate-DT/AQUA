@@ -1,12 +1,12 @@
 import xarray as xr
 from aqua.graphics import plot_seasonalcycle
-from aqua.logger import log_configure
 from aqua.util import to_list
 from .base import PlotBaseMixin
 
 
 class PlotSeasonalCycles(PlotBaseMixin):
-    def __init__(self, monthly_data=None, ref_monthly_data=None,
+    def __init__(self, diagnostic_name: str = 'seasonalcycles',
+                 monthly_data=None, ref_monthly_data=None,
                  std_monthly_data=None, loglevel: str = 'WARNING'):
         """
         Initialize the PlotSeasonalCycles class.
@@ -14,13 +14,13 @@ class PlotSeasonalCycles(PlotBaseMixin):
         by the SeasonalCycles class.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Used for logger and filenames. Default is 'seasonalcycles'.
             monthly_data (list): List of monthly data arrays.
             ref_monthly_data (xr.DataArray): Reference monthly data array.
             std_monthly_data (xr.DataArray): Standard deviation monthly data array.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
-        super().__init__(loglevel=loglevel)
-        self.logger = log_configure(self.loglevel, 'PlotSeasonalCycles')
+        super().__init__(loglevel=loglevel, diagnostic_name=diagnostic_name)
 
         # TODO: support ref list
         self.monthly_data = to_list(monthly_data)
