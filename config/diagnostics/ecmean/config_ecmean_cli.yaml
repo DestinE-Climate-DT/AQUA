@@ -3,6 +3,7 @@ dataset:
   model: ERA5
   exp: era5-hpz3
   source: monthly
+  regrid: 'r100'
   atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
     'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
     'u', 'v', 't', 'q']

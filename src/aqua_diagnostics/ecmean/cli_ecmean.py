@@ -69,7 +69,7 @@ def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None)
     # Try to read the data, if dataset is not available return None
     try:
         reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
-                        regrid='r100')
+                        regrid=regrid)
         data = reader.retrieve()
         data = reader.regrid(data)
      
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', configfile['dataset']['model'])
     catalog = get_arg(args, 'catalog', configfile['dataset']['catalog'])
     outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
-    regrid = get_arg(args, 'regrid', configfile['dataset']['regrid'])
+    regrid = get_arg(args, 'regrid', configfile['dataset'].get('regrid', 'r100'))
     interface = get_arg(args, 'interface', interface)
     logger.debug('Definitive interface file %s', interface)
 
