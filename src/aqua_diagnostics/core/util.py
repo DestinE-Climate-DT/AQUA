@@ -9,7 +9,6 @@ from aqua.logger import log_configure, log_history
 from aqua.util import load_yaml, get_arg, convert_units
 from aqua.util import ConfigPath
 
-
 def template_parse_arguments(parser: argparse.ArgumentParser):
     """
     Add the default arguments to the parser.
@@ -194,3 +193,4 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
         data_fixed = data_to_fix
 
     return data_fixed
+

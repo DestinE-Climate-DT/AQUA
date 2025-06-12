@@ -2,11 +2,13 @@
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
 #
-models:
-  - model: 'IFS-NEMO'
+datasets:
+  - catalog: Null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
-  - model: 'IFS-FESOM'
+  - catalog: Null
+    model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
 
@@ -16,15 +18,21 @@ outputdir: "./"
 
 variable: '2t'
 
-atmglobalmean_plot_params:
+# This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
+cluster:
+  nworkers: 8
+  threads_per_worker: 1
+  memory_limit: 30e9
+
+plot_options:
   figure_size: [15,15]
   plot_label: True
   plot_std: True
   unit:
-  pdf_save: True
   mean_plot_title: 'Map of 2t for Ensemble Multi-Model mean' 
   std_plot_title: 'Map of 2t for Ensemble Multi-Model standard deviation'
   cbar_label: '2 meter temperature in K'
+  dpi: 300
   
 
 

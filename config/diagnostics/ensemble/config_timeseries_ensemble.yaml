@@ -3,47 +3,52 @@
 # --model, --exp, --source, --outputdir, --catalog
 
 # This yaml file will only have either annual or monthly
-models_monthly:
-  - model: 'IFS-NEMO'
+datasets:
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-monthly'
-  - model: 'IFS-FESOM'
+  - catalog: null  
+    model: 'IFS-FESOM'
     exp: 'historical-1990'
-    source: 'aqua-timeseries-monthly'
-
-models_annual:
-  - model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'aqua-timeseries-annual'
-  - model: 'IFS-FESOM'
+    source: 'aqua-timeseries-monthly' 
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-annual'
+  - catalog: null
+    model: 'IFS-FESOM'
+    exp: 'historical-1990'
+    source: 'aqua-timeseries-annual'
 
-reference_model_monthly:  
-  - model: 'ERA5'
+# Reference
+reference:
+  - catalog: null  
+    model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-monthly'
-
-reference_model_annual:  
-  - model: 'ERA5'
+  - catalog: null  
+    model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-annual'
-
 
 outputdir: "./"
 
 # This is the variable that will be plotted as timeseries
 variable: '2t'
 
-timeseries_plot_params:
-  startdate: '1990-01-01'
-  enddate: '2000-12-31'
-  plot_std: True
-  plot_ensemble_members: False
+startdate: '1990-01-01'
+enddate: '2000-12-31'
+
+# This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
+cluster:
+  nworkers: 8
+  threads_per_worker: 1
+  memory_limit: 30e9
+
+plot_options:
+  plot_ensemble_members: True
   ensemble_label: 'Multi-model'
+  plot_title: 'Ensemble statistics for 2-meter temperature [K]'
   ref_label: 'ERA5'
   figure_size: [10,5]
-  label_ncol: 3
-  label_size: 7
-  pdf_save: True
-  units: 

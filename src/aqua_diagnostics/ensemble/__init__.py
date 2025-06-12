@@ -1,5 +1,7 @@
 # """Ensemble Module"""
 
-from .ensemble_class import EnsembleTimeseries, EnsembleLatLon, EnsembleZonal
+from .ensembleTimeseries import EnsembleTimeseries  
+from .ensembleLatLon import EnsembleLatLon
+from .ensembleZonal import EnsembleZonal
 
 __all__ = ["EnsembleTimeseries","EnsembleLatLon","EnsembleZonal"]

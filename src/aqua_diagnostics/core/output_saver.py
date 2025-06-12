@@ -225,3 +225,4 @@ class OutputSaver:
         # Merge with provided metadata
         metadata = update_metadata(base_metadata, metadata)
         return metadata
+

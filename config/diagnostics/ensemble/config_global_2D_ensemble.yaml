@@ -1,23 +1,22 @@
 # The first model in this block can be overridden
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
-# as an example two Zonal mean
+#
 datasets:
-  - catalog: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
-    source: 'aqua-zonalmean'
-  - catalog: null
-    model: 'IFS-NEMO'
+    source: 'aqua-atmglobalmean'
+  - catalog: 'nextgems4'
+    model: 'IFS-FESOM'
     exp: 'historical-1990'
-    source: 'aqua-zonalmean'
+    source: 'aqua-atmglobalmean'
 
 outputdir: "./"
 
 # This is the variable that will be plotted from aqua-analysis output
 
-region: 'arctic'
-variable: 'so'
+variable: '2t'
 
 # This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
 cluster:
@@ -26,13 +25,13 @@ cluster:
   memory_limit: 30e9
 
 plot_options:
-  figure_size: [10,10]
+  figure_size: [15,15]
   plot_label: True
   plot_std: True
   unit:
-  mean_plot_title: 'Mean of Ensemble of Zonal-average of avg_so' 
-  std_plot_title:  'Standard deviation of Ensemble of Zonal-average of avg_so' 
-  cbar_label: 'Time-mean sea water practical salinity g kg**-1/year'
+  mean_plot_title: 'Map of 2t for Ensemble Multi-Model mean' 
+  std_plot_title: 'Map of 2t for Ensemble Multi-Model standard deviation'
+  cbar_label: '2 meter temperature in K'
   dpi: 300
   
 

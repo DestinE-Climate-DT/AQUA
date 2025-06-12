@@ -133,4 +133,4 @@ jobs:
       - name: Run tests
         run: |
           # Produce the HTML report. Defaults to writing in htmlcov/index.html.
-          pytest -m "aqua or slow or gsv or graphics or catgen or diagnostics"
+          pytest -m "aqua or slow or gsv or graphics or catgen or diagnostics or ensemble"
