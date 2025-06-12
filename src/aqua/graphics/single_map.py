@@ -18,6 +18,7 @@ from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
 from aqua.util import healpix_resample
 from aqua.util import cbar_get_label, set_map_title
 from aqua.util import coord_names, set_ticks, ticks_round
+from aqua.exceptions import NoDataError
 from .styles import ConfigStyle
 
 def plot_single_map(data: xr.DataArray,
@@ -114,6 +115,10 @@ def plot_single_map(data: xr.DataArray,
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
         levels = np.linspace(vmin, vmax, nlevels + 1)
+
+    if np.allclose(data, 0):
+        logger.error("The map is zero! You are trying to plot an empty dataset")
+        contour = False  # Disable contour if map is zero
 
     # Plot the data
     if contour:

@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.16.0):
+Unreleased in the current development version (target v0.16.0): 
 
 Removed:
 - Removed source or experiment specific fixes; only the `fixer_name` is now supported.
