@@ -58,7 +58,7 @@ class CatalogEntryBuilder():
 
         return entry_name
 
-    def create_entry_details(self, basedir=None, driver='netcdf', source_grid_name='lon-lat'):
+    def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name='lon-lat'):
         """
         Create an entry in the catalog for the LRA
         """
@@ -69,28 +69,33 @@ class CatalogEntryBuilder():
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
         self.logger.info('New urlpath with intake variables is %s', urlpath)
 
-        # if the entry is not there, define the block to be uploaded into the catalog
-        block_cat = {
-            'driver': driver,
-            'description': f'AQUA {driver} LRA data {self.frequency} at {self.resolution}',
-            'args': {
-                'urlpath': urlpath,
-                'chunks': {},
-            },
-            'metadata': {
-                'source_grid_name': source_grid_name,
+        if catblock is None:
+            # if the entry is not there, define the block to be uploaded into the catalog
+            catblock = {
+                'driver': driver,
+                'description': f'AQUA {driver} LRA data {self.frequency} at {self.resolution}',
+                'args': {
+                    'urlpath': urlpath,
+                    'chunks': {},
+                },
+                'metadata': {
+                    'source_grid_name': source_grid_name,
+                }
             }
-        }
+        else:
+            # if the entry is there, we just update the urlpath
+            catblock['args']['urlpath'] = urlpath
+        
         if driver == 'netcdf':
-            block_cat['args']['xarray_kwargs'] = {
+            catblock['args']['xarray_kwargs'] = {
                     'decode_times': True,
                     'combine': 'by_coords'
                 }
-            block_cat = self.replace_urlpath_jinja(block_cat, self.realization, 'realization')
-            block_cat = self.replace_urlpath_jinja(block_cat, self.region, 'region')
-            block_cat = self.replace_urlpath_jinja(block_cat, self.stat, 'stat')
+            catblock = self.replace_urlpath_jinja(catblock, self.realization, 'realization')
+            catblock = self.replace_urlpath_jinja(catblock, self.region, 'region')
+            catblock = self.replace_urlpath_jinja(catblock, self.stat, 'stat')
 
-        return block_cat
+        return catblock
 
         # cat_file['sources'][entry_name] = block_cat
 

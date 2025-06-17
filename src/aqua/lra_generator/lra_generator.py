@@ -324,29 +324,25 @@ class LRAgenerator():
         Create an entry in the catalog for the LRA
         """
 
-        entry_name = self.catbuilder.create_entry_name()
-
-        # design lon lat case
-        sgn = self._define_source_grid_name()
-        block = self.catbuilder.create_entry_details(basedir=self.basedir, source_grid_name=sgn)
-        urlpath = replace_intake_vars(catalog=self.catalog, path=self.catbuilder.get_urlpath(block))
-        self.logger.info('New urlpath with intake variables is %s', urlpath)
-        block['args']['urlpath'] = urlpath
-        
-
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # if the entry already exists, update the urlpath if requested and return
-        if entry_name in cat_file['sources']:
-            self.logger.info('Catalog entry for %s %s %s already exists', self.model, self.exp, entry_name)
-            self.logger.info('Updating the urlpath to %s', urlpath)
-            cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
+        # define the entry name
+        entry_name = self.catbuilder.create_entry_name()
+        sgn = self._define_source_grid_name()
 
+        if entry_name in cat_file['sources']:
+            catblock = cat_file['sources'][entry_name]
         else:
-            cat_file['sources'][entry_name] = block
+            catblock = None
+
+        block = self.catbuilder.create_entry_details(
+            basedir=self.basedir, catblock=catblock, source_grid_name=sgn
+        )
+
+        cat_file['sources'][entry_name] = block
 
         # dump the update file
         dump_yaml(outfile=catalogfile, cfg=cat_file)
@@ -360,8 +356,6 @@ class LRAgenerator():
         """
 
         full_dict, partial_dict = list_lra_files_complete(self.outdir)
-        entry_name = self.catbuilder.create_entry_name() + '-zarr'
-        self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
 
         # extra zarr only directory
         zarrdir = os.path.join(self.outdir, 'zarr')
@@ -393,24 +387,27 @@ class LRAgenerator():
         for index, value in enumerate(urlpath):
             urlpath[index] = replace_intake_vars(catalog=self.catalog, path=value)
 
-        sgn = self._define_source_grid_name()    
-        block = self.catbuilder.create_entry_details(basedir=self.basedir, driver='zarr', source_grid_name=sgn)
-        block['args']['urlpath'] = urlpath
-
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # if the entry already exists, update the urlpath if requested and return
-        if entry_name in cat_file['sources']:
-            self.logger.info('Catalog entry for %s %s %s already exists', self.model, self.exp, entry_name)
-            self.logger.info('Updating the urlpath to %s', urlpath)
-            cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
+        # define the entry name
+        entry_name = self.catbuilder.create_entry_name() + '-zarr'
+        self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
+        sgn = self._define_source_grid_name()
 
+
+        if entry_name in cat_file['sources']:
+            catblock = cat_file['sources'][entry_name]
         else:
-            self.logger.info('Creating zarr catalog entry %s %s %s', self.model, self.exp, entry_name)
-            cat_file['sources'][entry_name] = block
+            catblock = None
+
+        block = self.catbuilder.create_entry_details(
+            basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
+        )
+        block['args']['urlpath'] = urlpath
+        cat_file['sources'][entry_name] = block      
 
         dump_yaml(outfile=catalogfile, cfg=cat_file)
 

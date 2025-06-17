@@ -5,6 +5,7 @@ import xarray as xr
 import pandas as pd
 from aqua import LRAgenerator, Reader
 from aqua.lra_generator.output_path_builder import OutputPathBuilder
+from aqua.lra_generator.catalog_entry_builder import CatalogEntryBuilder   
 
 LOGLEVEL = "DEBUG"
 LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
@@ -51,6 +52,39 @@ class TestOutputPathBuilder:
             expected = os.path.join(os.getcwd(), args["outdir"], expected)
     
         assert path == expected
+
+@pytest.mark.aqua
+class TestCatalogEntryBuilder:
+    """Class containing tests for CatalogEntryBuilder."""
+
+    @pytest.mark.parametrize("resolution, frequency, realization, region, stat", [
+        ('r100', 'monthly', 'r1', 'global', 'mean'),
+        ('r200', 'daily', 'r1', 'global', 'mean'),
+      ])
+    def test_create_entry_name(self, lra_arguments, resolution, frequency, realization, region, stat):
+        """Test creation of entry name."""
+        args = lra_arguments
+        builder = CatalogEntryBuilder(
+            catalog='ci', model=args["model"], exp=args["exp"],
+            resolution=resolution, frequency=frequency, realization=realization,
+            stat=stat, region=region, loglevel=LOGLEVEL
+        )
+        entry_name = builder.create_entry_name()
+        block = builder.create_entry_details(basedir=args["outdir"], source_grid_name='lon-lat')
+        assert entry_name == f'lra-{resolution}-{frequency}'
+        assert block['driver'] == 'netcdf'
+        assert block['parameters'].keys() == {'realization', 'stat', 'region'}
+
+        builder2 = CatalogEntryBuilder(
+            catalog='ci', model=args["model"], exp=args["exp"],
+            resolution=resolution, frequency=frequency, realization='r2',
+            stat=stat, region=region, loglevel=LOGLEVEL
+        )
+        newblock = builder2.create_entry_details(basedir=args["outdir"], catblock=block, source_grid_name='lon-lat')
+        assert newblock['args']['urlpath'] == block['args']['urlpath']
+        assert newblock['parameters']['realization']['allowed'] == ['r1','r2']
+
+
 
 @pytest.mark.aqua
 class TestLRA:
