@@ -11,7 +11,9 @@ from ecmean import __version__ as eceversion
 from aqua.diagnostics import PerformanceIndices, GlobalMean
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
-from aqua.util import load_yaml, get_arg, ConfigPath, OutputSaver
+from aqua.diagnostics.core import OutputSaver
+
+from aqua.util import load_yaml, get_arg, ConfigPath
 from aqua import Reader
 from aqua import __version__ as aquaversion
 from aqua.logger import log_configure
@@ -98,6 +100,7 @@ if __name__ == '__main__':
 
     # define the output properties
     outputdir = output_config.get('outputdir')
+    rebuild = output_config.get('rebuild')
 
     # merge config args works only with a predefined set of options, need to extend it
     numproc = get_arg(args, 'nprocs', ecmean_config.get('nprocs', 1))
@@ -124,6 +127,11 @@ if __name__ == '__main__':
         regrid = get_arg(args, 'regrid', dataset.get('regrid'))
 
         logger.info('Model %s, exp %s, source %s', model, exp, source)
+
+        #setup the output saver
+        outputsaver = OutputSaver(diagnostic='ecmean',
+                          catalog=catalog, model=model, exp=exp,
+                          outdir=outputdir, rebuild=rebuild, loglevel=loglevel)
 
         for diagnostic in ['global_mean', 'performance_indices']:
 
@@ -169,6 +177,7 @@ if __name__ == '__main__':
             if len(data.time) < 12:
                 raise NotEnoughDataError("Not enough data, exiting...")
        
+            filename = outputsaver.generate_name(diagnostic_product=diagnostic)
             if diagnostic == 'performance_indices':
                 logger.info('Launching ECmean performance indices...')
                 pi = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
@@ -176,8 +185,15 @@ if __name__ == '__main__':
                                     outputdir=outputdir, xdataset=data)
                 pi.prepare()
                 pi.run()
-                pi.store()
-                pi.plot()
+                pi.store(yamlfile=f'{filename}.yml')
+                if output_config.get('save_pdf', True):
+                    logger.info('Saving PDF performance indices plot...')
+                    pi.plot(mapfile=f'{filename}.pdf')
+                # there is a weird bug when trying to plot the png
+                #if output_config.get('save_png', True):
+                #    logger.info('Saving PNG performance indices plot...')
+                #    pi.plot(mapfile=f'{filename}.png')
+
             if diagnostic == 'global_mean':
                 logger.info('Launching ECmean global mean...')
                 gm = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
@@ -185,7 +201,12 @@ if __name__ == '__main__':
                                     outputdir=outputdir, xdataset=data)
                 gm.prepare()
                 gm.run()
-                gm.store()
-                gm.plot()
+                gm.store(yamlfile=f'{filename}.yml')
+                if output_config.get('save_pdf', True):
+                    logger.info('Saving PDF global mean plot...')
+                    gm.plot(mapfile=f'{filename}.pdf')
+                if output_config.get('save_png', True):
+                    logger.info('Saving PNG global mean plot...')
+                    gm.plot(mapfile=f'{filename}.png')
 
             logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')

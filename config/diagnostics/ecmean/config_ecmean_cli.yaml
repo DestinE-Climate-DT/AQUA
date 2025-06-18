@@ -1,5 +1,5 @@
 datasets:
-  - catalog: null #optional, not necessary
+  - catalog: ci #necessary
     model: ERA5
     exp: era5-hpz3
     source: monthly
