@@ -8,16 +8,18 @@ import argparse
 import os
 import xarray as xr
 from ecmean import __version__ as eceversion
+
+from aqua import Reader
+from aqua import __version__ as aquaversion
+from aqua.util import load_yaml, get_arg, ConfigPath
+from aqua.util import add_pdf_metadata, add_png_metadata
+from aqua.logger import log_configure
+from aqua.exceptions import NoDataError, NotEnoughDataError
+
 from aqua.diagnostics import PerformanceIndices, GlobalMean
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 from aqua.diagnostics.core import OutputSaver
-
-from aqua.util import load_yaml, get_arg, ConfigPath
-from aqua import Reader
-from aqua import __version__ as aquaversion
-from aqua.logger import log_configure
-from aqua.exceptions import NoDataError, NotEnoughDataError
 
 
 def parse_arguments(args):
@@ -63,7 +65,7 @@ def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None)
     # Try to read the data, if dataset is not available return None
     try:
         reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
-                        regrid='r100')
+                        regrid=regrid)
         data = reader.retrieve()
         data = reader.regrid(data)
      
@@ -100,7 +102,9 @@ if __name__ == '__main__':
 
     # define the output properties
     outputdir = output_config.get('outputdir')
-    rebuild = output_config.get('rebuild')
+    rebuild = output_config.get('rebuild', True)
+    save_pdf = output_config.get('save_pdf', False)
+    save_png = output_config.get('save_png', False)
 
     # merge config args works only with a predefined set of options, need to extend it
     numproc = get_arg(args, 'nprocs', ecmean_config.get('nprocs', 1))
@@ -131,7 +135,7 @@ if __name__ == '__main__':
         #setup the output saver
         outputsaver = OutputSaver(diagnostic='ecmean',
                           catalog=catalog, model=model, exp=exp,
-                          outdir=outputdir, rebuild=rebuild, loglevel=loglevel)
+                          outdir=outputdir, loglevel=loglevel)
 
         for diagnostic in ['global_mean', 'performance_indices']:
 
@@ -177,7 +181,9 @@ if __name__ == '__main__':
             if len(data.time) < 12:
                 raise NotEnoughDataError("Not enough data, exiting...")
        
-            filename = outputsaver.generate_name(diagnostic_product=diagnostic)
+            # store the data in the output saver
+            filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'pdf', 'png'] }
+            metadata = outputsaver.create_metadata(diagnostic_product=diagnostic)
             if diagnostic == 'performance_indices':
                 logger.info('Launching ECmean performance indices...')
                 pi = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
@@ -185,10 +191,12 @@ if __name__ == '__main__':
                                     outputdir=outputdir, xdataset=data)
                 pi.prepare()
                 pi.run()
-                pi.store(yamlfile=f'{filename}.yml')
-                if output_config.get('save_pdf', True):
+                pi.store(yamlfile=filename_dict['yml'])
+                if save_pdf and rebuild:
                     logger.info('Saving PDF performance indices plot...')
-                    pi.plot(mapfile=f'{filename}.pdf')
+                    pi.plot(mapfile=filename_dict['pdf'])
+                    add_pdf_metadata(filename_dict['pdf'], metadata, loglevel=loglevel)
+
                 # there is a weird bug when trying to plot the png
                 #if output_config.get('save_png', True):
                 #    logger.info('Saving PNG performance indices plot...')
@@ -201,12 +209,14 @@ if __name__ == '__main__':
                                     outputdir=outputdir, xdataset=data)
                 gm.prepare()
                 gm.run()
-                gm.store(yamlfile=f'{filename}.yml')
-                if output_config.get('save_pdf', True):
+                gm.store(yamlfile=filename_dict['yml'])
+                if save_pdf and rebuild:
                     logger.info('Saving PDF global mean plot...')
-                    gm.plot(mapfile=f'{filename}.pdf')
-                if output_config.get('save_png', True):
+                    gm.plot(mapfile=filename_dict['pdf'])
+                    add_pdf_metadata(filename_dict['pdf'], metadata, loglevel=loglevel)
+                if save_png and rebuild:
                     logger.info('Saving PNG global mean plot...')
-                    gm.plot(mapfile=f'{filename}.png')
+                    gm.plot(mapfile=filename_dict['png'])
+                    add_png_metadata(filename_dict['png'], metadata, loglevel=loglevel)
 
             logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')

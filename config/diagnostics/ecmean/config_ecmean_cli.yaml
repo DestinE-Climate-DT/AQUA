@@ -6,7 +6,7 @@ datasets:
     regrid: r100
 
 output:
-  outputdir: './'
+  outputdir: 'output'
   rebuild: true
   save_pdf: true
   save_png: true

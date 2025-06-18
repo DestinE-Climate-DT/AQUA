@@ -14,7 +14,7 @@ class OutputSaver:
     def __init__(self, diagnostic: str,
                  catalog: str = None, model: str = None, exp: str = None,
                  catalog_ref: str = None, model_ref: str = None, exp_ref: str = None,
-                 outdir: str = '.', rebuild: bool = True, loglevel: str = 'WARNING'):
+                 outdir: str = '.', loglevel: str = 'WARNING'):
         """
         Initialize the OutputSaver with diagnostic parameters and output directory.
         All the catalog, model, and experiment can be both a string or a list of strings.
@@ -43,7 +43,7 @@ class OutputSaver:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='OutputSaver')
 
-    def generate_name(self, diagnostic_product: str, 
+    def generate_name(self, diagnostic_product: str,
                       catalog: str = None, model: str = None, exp: str = None,
                       catalog_ref: str = None, model_ref: str = None, exp_ref: str = None,
                       extra_keys: dict = None) -> str:
@@ -118,7 +118,7 @@ class OutputSaver:
         # Join all parts
         filename = '.'.join(parts)
 
-        self.logger.debug(f"Generated filename: {filename}")
+        self.logger.debug("Generated filename: %s", filename)
         return filename
 
     def save_netcdf(self, dataset: xr.Dataset, diagnostic_product: str, rebuild: bool = True, extra_keys: dict = None):
@@ -138,14 +138,40 @@ class OutputSaver:
         filepath = os.path.join(folder, filename)
 
         if not rebuild and os.path.exists(filepath):
-            self.logger.info(f"File already exists and rebuild=False, skipping: {filepath}")
+            self.logger.info("File already exists and rebuild=False, skipping: %s", filepath)
             return filepath
         dataset.to_netcdf(filepath)
 
-        self.logger.info(f"Saved NetCDF: {filepath}")
+        self.logger.info("Saved NetCDF: %s", filepath)
         return filepath
+    
+    def generate_folder(self, extension: str = 'pdf'):
+        """
+        Generate a folder for saving output files based on the specified format.
 
-    def save_pdf(self, fig: plt.Figure, diagnostic_product: str, rebuild: bool =True, extra_keys: dict = None,  metadata: dict = None):
+        Args:
+            extension (str): The extension of the output files (e.g., 'pdf', 'png', 'netcdf').
+        
+        Returns:
+            str: The path to the generated folder.
+        """
+        folder = os.path.join(self.outdir, extension)
+        create_folder(folder=str(folder), loglevel=self.loglevel)
+        return folder
+    
+    def generate_path(self, extension: str, diagnostic_product: str,
+                      extra_keys: dict = None) -> str:
+        """
+        Generate a full file path for saving output files based on the provided parameters.
+        Simplified wrapper around `generate_name` and `generate_folder` to include the output directory.
+        """
+        filename = self.generate_name(diagnostic_product=diagnostic_product,
+                                       extra_keys=extra_keys)
+        folder = self.generate_folder(extension=extension) 
+        return os.path.join(folder, filename + '.' + extension)
+
+    def save_pdf(self, fig: plt.Figure, diagnostic_product: str, rebuild: bool = True,
+                 extra_keys: dict = None,  metadata: dict = None):
         """
         Save a Matplotlib figure as a PDF file with a generated filename.
 
@@ -162,7 +188,7 @@ class OutputSaver:
         create_folder(folder=str(folder), loglevel=self.loglevel)
         filepath = os.path.join(folder, filename)
         if not rebuild and os.path.exists(filepath):
-            self.logger.info(f"File already exists and rebuild=False, skipping: {filepath}")
+            self.logger.info("File already exists and rebuild=False, skipping: %s", filepath)
             return filepath
 
         fig.savefig(filepath, format='pdf', bbox_inches='tight')
@@ -170,10 +196,11 @@ class OutputSaver:
         metadata = self.create_metadata(diagnostic_product=diagnostic_product, extra_keys=extra_keys, metadata=metadata)
         add_pdf_metadata(filepath, metadata, loglevel=self.loglevel)
 
-        self.logger.info(f"Saved PDF: {filepath}")
+        self.logger.info("Saved PDF: %s", filepath)
         return filepath
 
-    def save_png(self, fig: plt.Figure, diagnostic_product: str, rebuild: bool = True, extra_keys: dict = None,  metadata: dict = None,
+    def save_png(self, fig: plt.Figure, diagnostic_product: str, rebuild: bool = True,
+                 extra_keys: dict = None,  metadata: dict = None,
                  dpi: int = 300):
         """
         Save a Matplotlib figure as a PNG file with a generated filename.
@@ -194,7 +221,7 @@ class OutputSaver:
         filepath = os.path.join(folder, filename)
         
         if not rebuild and os.path.exists(filepath):
-            self.logger.info(f"File already exists and rebuild=False, skipping: {filepath}")
+            self.logger.info("File already exists and rebuild=False, skipping: %s", filepath)
             return filepath
 
         fig.savefig(filepath, format='png', dpi=dpi, bbox_inches='tight')
@@ -202,7 +229,7 @@ class OutputSaver:
         metadata = self.create_metadata(diagnostic_product=diagnostic_product, extra_keys=extra_keys, metadata=metadata)
         add_png_metadata(filepath, metadata, loglevel=self.loglevel)
 
-        self.logger.info(f"Saved PNG: {filepath}")
+        self.logger.info("Saved PNG: %s", filepath)
         return filepath
 
     def create_metadata(self, diagnostic_product: str, extra_keys: dict = None, metadata: dict = None) -> dict:
@@ -231,7 +258,8 @@ class OutputSaver:
         # Process extra keys safely
         if extra_keys:
             # Filter out None values
-            filtered_keys = {k: v for k, v in extra_keys.items() if v is not None}
+            # Commented out since this is not used! 
+            # filtered_keys = {k: v for k, v in extra_keys.items() if v is not None}
 
             processed_extra_keys = {
                 key: ",".join(map(str, value)) if isinstance(value, list) else str(value)
