@@ -22,9 +22,9 @@ from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 from aqua.diagnostics.core import OutputSaver
 
 
-def parse_arguments(args):
+def parse_arguments(arguments):
     """
-    Parse command line arguments
+    Parse command line arguments, extending the AQUA core parser
     """
 
     # load AQUA core diagnostic default parser
@@ -34,15 +34,21 @@ def parse_arguments(args):
     # Extend the parser with specific arguments for ECmean
     # processors here is controlled by multhprocess, so it is not standard dask workers
     # interface file is the one to match names of variables in the dataset
+    # source_oce is the source of the oceanic data, to be used when oceanic data is in a different source than atmospheric data
     parser.add_argument('--nprocs',  type=int,
                         help='number of multiprocessing processes to use', default=1)
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
+    parser.add_argument('--source_oce', type=str, 
+                        help='source of the oceanic data, to be used when oceanic data is in a different source than atmospheric data',
+                        default=None)
 
-    return parser.parse_args(args)
+    return parser.parse_args(arguments)
 
 
-def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None):
+def reader_data(model, exp, source, 
+                catalog=None, regrid='r100',
+                keep_vars=None, loglevel='WARNING'):
     """
     Simple function to retrieve and do some operation on reader data
 
@@ -53,11 +59,14 @@ def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None)
         catalog (str, optional): catalog to be used, defaults to None
         regrid (str, optional): regrid method, defaults to 'r100'
         keep_vars (list, optional): list of variables to keep, defaults to None
+        loglevel (str, optional): logging level, defaults to 'WARNING'
     
     Returns:
         xarray.Dataset: dataset with the data retrieved and regridded
         None: if model is False or if there is an error retrieving the data
     """
+    reader_logger = log_configure(log_level=loglevel, log_name='ECmean.Reader')
+
     # if False/None return empty array
     if model is False:
         return None
@@ -66,17 +75,18 @@ def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None)
     try:
         reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
                         regrid=regrid)
-        data = reader.retrieve()
-        data = reader.regrid(data)
+        xfield = reader.retrieve()
+        if regrid is not None:
+            xfield = reader.regrid(xfield)
      
     except Exception as err:
-        logger.error('Error while reading model %s: %s', model, err)
+        reader_logger.error('Error while reading model %s: %s', model, err)
         return None
 
     # return only vars that are available: slower but avoid reader failures
     if keep_vars is None:
-        return data
-    return data[[value for value in keep_vars if value in data.data_vars]]
+        return xfield
+    return xfield[[value for value in keep_vars if value in xfield.data_vars]]
 
 
 if __name__ == '__main__':
@@ -127,10 +137,11 @@ if __name__ == '__main__':
         catalog = get_arg(args, 'catalog', dataset.get('catalog'))
         model = get_arg(args, 'model', dataset.get('model'))
         exp = get_arg(args, 'exp', dataset.get('exp'))
-        source = get_arg(args, 'source', dataset.get('source', 'lra-r100-monthly'))
+        source_atm = get_arg(args, 'source', dataset.get('source', 'lra-r100-monthly'))
+        source_oce = get_arg(args, 'source_oce', dataset.get('source_oce', source_atm))
         regrid = get_arg(args, 'regrid', dataset.get('regrid'))
 
-        logger.info('Model %s, exp %s, source %s', model, exp, source)
+        logger.info('Model %s, exp %s, source %s', model, exp, source_atm)
 
         #setup the output saver
         outputsaver = OutputSaver(diagnostic='ecmean',
@@ -147,11 +158,11 @@ if __name__ == '__main__':
 
             # load the data
             logger.info('Loading atmospheric data %s', model)
-            data_atm = reader_data(model=model, exp=exp, source=source,
+            data_atm = reader_data(model=model, exp=exp, source=source_atm,
                                 catalog=catalog, keep_vars=atm_vars, regrid=regrid)
-            
+
             logger.info('Loading oceanic data from %s', model)
-            data_oce = reader_data(model=model, exp=exp, source=source, 
+            data_oce = reader_data(model=model, exp=exp, source=source_oce,
                                     catalog=catalog, keep_vars=oce_vars, regrid=regrid)
 
             # create a single dataset
@@ -181,9 +192,11 @@ if __name__ == '__main__':
             if len(data.time) < 12:
                 raise NotEnoughDataError("Not enough data, exiting...")
        
-            # store the data in the output saver
+            # store the data in the output saver and create the metadata
             filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'pdf', 'png'] }
             metadata = outputsaver.create_metadata(diagnostic_product=diagnostic)
+            
+            # performance indices
             if diagnostic == 'performance_indices':
                 logger.info('Launching ECmean performance indices...')
                 pi = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
@@ -197,11 +210,12 @@ if __name__ == '__main__':
                     pi.plot(mapfile=filename_dict['pdf'])
                     add_pdf_metadata(filename_dict['pdf'], metadata, loglevel=loglevel)
 
-                # there is a weird bug when trying to plot the png
-                #if output_config.get('save_png', True):
+                # there is a weird bug in ECmean when trying to plot the png
+                #if save_png and rebuild:
                 #    logger.info('Saving PNG performance indices plot...')
-                #    pi.plot(mapfile=f'{filename}.png')
+                #    pi.plot(mapfile=filename_dict['png'])
 
+            # global mean
             if diagnostic == 'global_mean':
                 logger.info('Launching ECmean global mean...')
                 gm = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
