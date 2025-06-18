@@ -14,7 +14,7 @@ class OutputSaver:
     def __init__(self, diagnostic: str,
                  catalog: str = None, model: str = None, exp: str = None,
                  catalog_ref: str = None, model_ref: str = None, exp_ref: str = None,
-                 outdir: str = '.', loglevel: str = 'WARNING'):
+                 outdir: str = '.', rebuild: bool = True, loglevel: str = 'WARNING'):
         """
         Initialize the OutputSaver with diagnostic parameters and output directory.
         All the catalog, model, and experiment can be both a string or a list of strings.
