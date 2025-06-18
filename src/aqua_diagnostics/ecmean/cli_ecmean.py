@@ -88,6 +88,59 @@ def reader_data(model, exp, source,
         return xfield
     return xfield[[value for value in keep_vars if value in xfield.data_vars]]
 
+def data_check(data_atm, data_oce, logger=None):
+    """
+    Check if the data is available and has enough time steps
+
+    Args:
+        data_atm (xarray.Dataset): atmospheric data
+        data_oce (xarray.Dataset): oceanic data
+    """
+
+    # create a single dataset
+    if data_oce is None:
+        data = data_atm
+        logger.warning('No oceanic data, only atmospheric data will be used')
+    elif data_atm is None:
+        data = data_oce
+        logger.warning('No atmospheric data, only oceanic data will be used')
+    else:
+        data = xr.merge([data_atm, data_oce])
+        logger.debug('Merging atmospheric and oceanic data')
+
+    # Quit if no data is available
+    if data is None:
+        raise NoDataError('No data available, exiting...')
+    
+    return data
+
+def time_check(data, year1, year2, logger=None):
+    """
+    Check if the data has enough time steps
+
+    Args:
+        data (xarray.Dataset): dataset to check
+        year1 (int): first year of the time period
+        year2 (int): last year of the time period
+
+    Raises:
+        NotEnoughDataError: if the data does not have enough time steps
+    """
+    
+    # guessing years from the dataset
+    if year1 is None:
+        year1 = int(data.time[0].values.astype('datetime64[Y]').astype(str))
+        logger.info('Guessing starting year %s', year1)
+    if year2 is None:
+        year2 = int(data.time[-1].values.astype('datetime64[Y]').astype(str))
+        logger.info('Guessing ending year %s', year2)
+
+    # run the performance indices if you have at least 12 month of data
+    if len(data.time) < 12:
+        raise NotEnoughDataError("Not enough data, exiting...")
+    
+    return year1, year2
+
 
 if __name__ == '__main__':
 
@@ -165,33 +218,10 @@ if __name__ == '__main__':
             data_oce = reader_data(model=model, exp=exp, source=source_oce,
                                     catalog=catalog, keep_vars=oce_vars, regrid=regrid)
 
-            # create a single dataset
-            if data_oce is None:
-                data = data_atm
-                logger.warning('No oceanic data, only atmospheric data will be used')
-            elif data_atm is None:
-                data = data_oce
-                logger.warning('No atmospheric data, only oceanic data will be used')
-            else:
-                data = xr.merge([data_atm, data_oce])
-                logger.debug('Merging atmospheric and oceanic data')
+            # check the data
+            data = data_check(data_atm, data_oce, logger=logger)
+            year1, year2 = time_check(data, year1, year2, logger=logger)
 
-            # Quit if no data is available
-            if data is None:
-                raise NoDataError('No data available, exiting...')
-
-            # guessing years from the dataset
-            if year1 is None:
-                year1 = int(data.time[0].values.astype('datetime64[Y]').astype(str))
-                logger.info('Guessing starting year %s', year1)
-            if year2 is None:
-                year2 = int(data.time[-1].values.astype('datetime64[Y]').astype(str))
-                logger.info('Guessing ending year %s', year2)
-
-            # run the performance indices if you have at least 12 month of data
-            if len(data.time) < 12:
-                raise NotEnoughDataError("Not enough data, exiting...")
-       
             # store the data in the output saver and create the metadata
             filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'pdf', 'png'] }
             metadata = outputsaver.create_metadata(diagnostic_product=diagnostic)
