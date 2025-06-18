@@ -9,6 +9,8 @@ import os
 import xarray as xr
 from ecmean import __version__ as eceversion
 from aqua.diagnostics import PerformanceIndices, GlobalMean
+from aqua.diagnostics.core import template_parse_arguments
+from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 from aqua.util import load_yaml, get_arg, ConfigPath, OutputSaver
 from aqua import Reader
 from aqua import __version__ as aquaversion
@@ -21,27 +23,17 @@ def parse_arguments(args):
     Parse command line arguments
     """
 
+    # load AQUA core diagnostic default parser
     parser = argparse.ArgumentParser(description='ECmean Performance Indices  CLI')
-    parser.add_argument('-c', '--config', type=str,
-                        help='ecmean yaml configuration file', default='config_ecmean_cli.yaml')
-    parser.add_argument('-n', '--nworkers',  type=int,
-                        help='number of dask distributed processes')
-    parser.add_argument('--catalog', type=str,
-                        help='catalog to be analysed')    
-    parser.add_argument('-m', '--model', type=str,
-                        help='model to be analysed')
-    parser.add_argument('-e', '--exp', type=str,
-                        help='exp to be analysed')
-    parser.add_argument('-s', '--source', type=str,
-                        help='source to be analysed')
-    parser.add_argument('--regrid', type=str,
-                        help='regrid method to be used [default: r100]', default='r100')
+    parser = template_parse_arguments(parser)
+    
+    # Extend the parser with specific arguments for ECmean
+    # processors here is controlled by multhprocess, so it is not standard dask workers
+    # interface file is the one to match names of variables in the dataset
+    parser.add_argument('--nprocs',  type=int,
+                        help='number of multiprocessing processes to use', default=1)
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
-    parser.add_argument('-o', '--outputdir', type=str,
-                        help='source to be analysed')
-    parser.add_argument('-l', '--loglevel', type=str,
-                        help='log level [default: WARNING]', default='warning')
 
     return parser.parse_args(args)
 
@@ -89,15 +81,11 @@ if __name__ == '__main__':
     loglevel = get_arg(args, 'loglevel', 'WARNING')
     logger = log_configure(log_level=loglevel, log_name='ECmean')
 
-    # change the current directory to the one of the CLI so that relative path works
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    if os.getcwd() != dname:
-        os.chdir(dname)
-        logger.info('Moving from current directory to %s to run!', dname)
+    configfile = load_diagnostic_config(diagnostic='ecmean', args=args,
+                           default_config='config_ecmean_cli.yaml', loglevel=loglevel)
+    configfile = merge_config_args(configfile, args)
 
-    file = get_arg(args, 'config', 'config_ecmean_cli.yaml')
-    configfile = load_yaml(file)
+    
     logger.info(
         'Running AQUA v%s Performance Indices diagnostic with ECmean4 v%s',
         aquaversion,
@@ -108,14 +96,16 @@ if __name__ == '__main__':
     ecmean_config = configfile['diagnostics']['ecmean']
     output_config = configfile['output']
 
-    outputdir = get_arg(args, 'outputdir', output_config.get('outputdir'))
-    numproc = get_arg(args, 'nworkers', ecmean_config.get('numproc'))
+    # define the output properties
+    outputdir = output_config.get('outputdir')
+
+    # merge config args works only with a predefined set of options, need to extend it
+    numproc = get_arg(args, 'nprocs', ecmean_config.get('nprocs', 1))
+    interface_file = get_arg(args, 'interface', ecmean_config.get('interface_file'))
 
     # define the interface file
-    Configurer = ConfigPath()
-    ecmeandir = os.path.join(Configurer.configdir, 'diagnostics', 'ecmean')
-    interface = get_arg(args, 'interface', ecmean_config.get('interface_file'))
-    interface = os.path.join(ecmeandir, interface)
+    ecmeandir = os.path.join(ConfigPath().configdir, 'diagnostics', 'ecmean')
+    interface = os.path.join(ecmeandir, interface_file)
     logger.debug('Default interface file: %s', interface)
 
     # define the ecmean configuration file

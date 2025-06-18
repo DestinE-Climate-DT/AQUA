@@ -14,7 +14,7 @@ output:
 
 diagnostics:
   ecmean: 
-    numproc: 1
+    nprocs: 1
     interface_file: 'interface_AQUA_climatedt.yaml'
     config_file: 'ecmean_config_climatedt.yaml'
 
