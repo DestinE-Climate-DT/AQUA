@@ -18,6 +18,7 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- Derivation of metadata from eccodes is done with a builtin python method instead of definiton file inspection (#2009)
 - `h5py` installed from pypi. Hard pin to version 3.12.1 removed in favor of a lower limit to the version (#2002)
 - `aqua-analysis` can accept a `--regrid` argument in order to activate the regrid on each diagnostics supporting it (#1947)
 - `--no-mount /etc/localtime` option added to the `load_aqua_container.sh` script for all HPC (#1975)
@@ -39,6 +40,8 @@ AQUA core complete list:
 - Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
 
 AQUA diagnostics complete list:
+- Ecmean, GlobalBiases, Teleconnections: regrid functionality correctly working in cli (#2006)
+- Diagnostic core: updated docs for `OutputSaver` (#2010)
 - Diagnostic core: save_netcdf() is now based on the new OutputSaver (#1965)
 - Diagnostic core: raise an error if retrieve() returns an empty dataset (#1997)
 - GlobalBiases: major refactor (#1803)

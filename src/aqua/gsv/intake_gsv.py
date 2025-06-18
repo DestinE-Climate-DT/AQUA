@@ -876,10 +876,30 @@ class GSVSource(base.DataSource):
         params['root'] = 'root'
         params['param'] = to_list(params['param'])[0]
         for p in ['date', 'time', 'step', 'year', 'month']:
-            if p in params:
-                del params[p]
-        response = requests.get(base_url, params=params)
-        stac_json = response.json()
+            params.pop(p, None)  # remove date/time/step/year/month if present
+
+        # network problems can happen, so we need to handle them
+        try:
+            response = requests.get(base_url, params=params, timeout=10)
+        except requests.Timeout as e:
+            raise TimeoutError("STAC API request timed out after 10 seconds.") from e
+        except requests.RequestException as e:
+            raise ConnectionError("STAC API request failed") from e
+        
+        # Check the response status code
+        if response.status_code == 400:
+            raise ValueError(f"Bad request to STAC API: {response.text}")
+        if response.status_code == 503:
+            raise ValueError(f"Service unavailable: {response.text}")
+        if response.status_code != 200:
+            raise ValueError(f"Unexpected response from STAC API: {response.status_code} - {response.text}")
+
+        # parse the JSON response
+        try:
+            stac_json = response.json()
+        except ValueError as exc:
+            raise ValueError("Failed to parse STAC API response as JSON") from exc
+    
         check = stac_json['links'][0]['title']
         if check != 'date':
             raise ValueError(f"The first link in the response is not a date link, but {check}")

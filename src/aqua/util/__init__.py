@@ -1,7 +1,7 @@
 """Utilities module"""
 
 from .config import ConfigPath
-from .eccodes import read_eccodes_def, get_eccodes_attr
+from .eccodes import get_eccodes_attr
 from .units import normalize_units, convert_units
 from .graphics import add_cyclic_lon, plot_box, minmax_maps
 from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
@@ -20,7 +20,7 @@ from .zarr import create_zarr_reference
 from .output_saver import OutputSaver
 
 __all__ = ['ConfigPath',
-           'read_eccodes_def', 'get_eccodes_attr',
+           'get_eccodes_attr',
            'normalize_units', 'convert_units',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
            'evaluate_colorbar_limits', 'cbar_get_label', 'set_map_title',

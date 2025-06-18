@@ -7,10 +7,10 @@ datasets:
     regrid: null
 
 references:
-  - catalog: null
-    model: null
-    exp: null
-    source: null
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
     regrid: null
 
 setup:

@@ -70,10 +70,10 @@ if __name__ == '__main__':
             reference = config_dict['references'][0]
             dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
                             'exp': dataset['exp'], 'source': dataset['source'],
-                            'regrid': dataset.get('regrid', regrid)}
+                            'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
             reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                             'exp': reference['exp'], 'source': reference['source'],
-                            'regrid': reference.get('regrid', regrid)}
+                            'regrid': regrid if regrid is not None else reference.get('regrid', None)}
             
             variables = config_dict['diagnostics']['globalbiases'].get('variables', [])
             plev = config_dict['diagnostics']['globalbiases']['params'].get('plev')

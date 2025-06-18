@@ -49,6 +49,7 @@ if __name__ == '__main__':
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
 
     regrid = get_arg(args, 'regrid', None)
+    logger.debug(f'Regrid CLI option: {regrid}')
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -75,10 +76,11 @@ if __name__ == '__main__':
                 init_args = {'loglevel': loglevel}
 
                 for i, dataset in enumerate(config_dict['datasets']):
-                    logger.info(f'Running dataset: {dataset}')
                     dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
                                     'exp': dataset['exp'], 'source': dataset['source'],
-                                    'regrid': dataset.get('regrid', regrid)}
+                                    'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
+                    logger.info(f'Running dataset: {dataset_args}')
+
                     nao[i] = NAO(**dataset_args, **init_args)
                     nao[i].retrieve()
                     nao[i].compute_index(months_window=nao_config.get('months_window', 3),
@@ -105,10 +107,10 @@ if __name__ == '__main__':
                 nao_ref_correlations = {season: [None] * len(config_dict['references']) for season in seasons}
 
                 for i, reference in enumerate(config_dict['references']):
-                    logger.info(f'Running reference: {reference}')
                     reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                       'exp': reference['exp'], 'source': reference['source'],
-                                      'regrid': reference.get('regrid', regrid)}
+                                      'regrid': regrid if regrid is not None else reference.get('regrid', None)}
+                    logger.info(f'Running reference: {reference_args}')
                     nao_ref[i] = NAO(**reference_args, **init_args)
                     nao_ref[i].retrieve()
                     nao_ref[i].compute_index(months_window=nao_config.get('months_window', 3),
@@ -202,11 +204,11 @@ if __name__ == '__main__':
                 init_args = {'loglevel': loglevel}
 
                 for i, dataset in enumerate(config_dict['datasets']):
-                    logger.info(f'Running dataset: {dataset}')
-
                     dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
                                     'exp': dataset['exp'], 'source': dataset['source'],
-                                    'regrid': dataset.get('regrid', regrid)}
+                                    'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
+                    logger.info(f'Running dataset: {dataset_args}')
+
                     enso[i] = ENSO(**dataset_args, **init_args)
                     enso[i].retrieve()
                     enso[i].compute_index(months_window=enso_config.get('months_window', 3),
@@ -232,10 +234,11 @@ if __name__ == '__main__':
                 enso_ref_correlations = {season: [None] * len(config_dict['references']) for season in seasons}
 
                 for i, reference in enumerate(config_dict['references']):
-                    logger.info(f'Running reference: {reference}')
                     reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                       'exp': reference['exp'], 'source': reference['source'],
-                                      'regrid': reference.get('regrid', regrid)}
+                                      'regrid': regrid if regrid is not None else reference.get('regrid', None)}
+                    logger.info(f'Running reference: {reference_args}')
+
                     enso_ref[i] = ENSO(**reference_args, **init_args)
                     enso_ref[i].retrieve()
                     enso_ref[i].compute_index(months_window=enso_config.get('months_window', 3),

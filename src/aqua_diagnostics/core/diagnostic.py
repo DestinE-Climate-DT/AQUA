@@ -64,7 +64,8 @@ class Diagnostic():
                                                               var=var, catalog=self.catalog, startdate=self.startdate,
                                                               enddate=self.enddate, regrid=self.regrid,
                                                               loglevel=self.logger.level)
-
+        if self.regrid is not None:
+            self.logger.info(f'Regridded data to {self.regrid} grid')
         if self.startdate is None:
             self.startdate = self.data.time.values[0]
             self.logger.debug(f'Start date: {self.startdate}')
