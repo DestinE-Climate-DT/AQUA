@@ -20,6 +20,7 @@ diagnostics:
 
     global_mean:
       run: true
+      diagnostic_name: 'global_mean'
       atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
         'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
         'u', 'v', 't', 'q']
@@ -29,6 +30,7 @@ diagnostics:
 
     performance_indices:
       run: true
+      diagnostic_name: 'performance_indices'
       atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
         'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
         'u', 'v', 't', 'q']

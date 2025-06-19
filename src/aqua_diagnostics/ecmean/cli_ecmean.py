@@ -11,14 +11,14 @@ from ecmean import __version__ as eceversion
 
 from aqua import Reader
 from aqua import __version__ as aquaversion
-from aqua.util import load_yaml, get_arg, ConfigPath
+from aqua.util import get_arg
 from aqua.util import add_pdf_metadata, add_png_metadata
 from aqua.logger import log_configure
 from aqua.exceptions import NoDataError, NotEnoughDataError
 
 from aqua.diagnostics import PerformanceIndices, GlobalMean
 from aqua.diagnostics.core import template_parse_arguments
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
+from aqua.diagnostics.core import load_diagnostic_config, merge_config_args, get_diagnostic_configpath
 from aqua.diagnostics.core import OutputSaver
 
 
@@ -46,7 +46,7 @@ def parse_arguments(arguments):
     return parser.parse_args(arguments)
 
 
-def reader_data(model, exp, source, 
+def reader_data(model, exp, source,
                 catalog=None, regrid='r100',
                 keep_vars=None, loglevel='WARNING'):
     """
@@ -99,17 +99,17 @@ def data_check(data_atm, data_oce, logger=None):
 
     # create a single dataset
     if data_oce is None:
-        data = data_atm
+        mydata = data_atm
         logger.warning('No oceanic data, only atmospheric data will be used')
     elif data_atm is None:
-        data = data_oce
+        mydata = data_oce
         logger.warning('No atmospheric data, only oceanic data will be used')
     else:
-        data = xr.merge([data_atm, data_oce])
+        mydata = xr.merge([data_atm, data_oce])
         logger.debug('Merging atmospheric and oceanic data')
 
     # Quit if no data is available
-    if data is None:
+    if mydata is None:
         raise NoDataError('No data available, exiting...')
     
     return data
@@ -138,7 +138,7 @@ def time_check(data, year1, year2, logger=None):
     # run the performance indices if you have at least 12 month of data
     if len(data.time) < 12:
         raise NotEnoughDataError("Not enough data, exiting...")
-    
+
     return year1, year2
 
 
@@ -148,11 +148,14 @@ if __name__ == '__main__':
     loglevel = get_arg(args, 'loglevel', 'WARNING')
     logger = log_configure(log_level=loglevel, log_name='ECmean')
 
-    configfile = load_diagnostic_config(diagnostic='ecmean', args=args,
-                           default_config='config_ecmean_cli.yaml', loglevel=loglevel)
+    # load the configuration files and override with command line arguments
+    configfile = load_diagnostic_config(
+        diagnostic='ecmean',
+        config=args.config,
+        default_config='config_ecmean_cli.yaml',
+        loglevel=loglevel)
     configfile = merge_config_args(configfile, args)
 
-    
     logger.info(
         'Running AQUA v%s Performance Indices diagnostic with ECmean4 v%s',
         aquaversion,
@@ -174,14 +177,19 @@ if __name__ == '__main__':
     interface_file = get_arg(args, 'interface', ecmean_config.get('interface_file'))
 
     # define the interface file
-    ecmeandir = os.path.join(ConfigPath().configdir, 'diagnostics', 'ecmean')
+    ecmeandir = get_diagnostic_configpath('ecmean', loglevel=loglevel)
     interface = os.path.join(ecmeandir, interface_file)
     logger.debug('Default interface file: %s', interface)
 
-    # define the ecmean configuration file
-    config = os.path.join(ecmeandir, ecmean_config.get('config_file'))
-    config = load_yaml(config)
-    config['dirs']['exp'] = ecmeandir
+    # define the ecmean configuration file, using the default as a trick
+    config = load_diagnostic_config(
+        diagnostic='ecmean',
+        config=None,
+        default_config=ecmean_config.get('config_file'),
+        loglevel=loglevel
+    )
+    # this is required to access the predefined areas and masks
+    config['dirs']['exp'] = ecmeandir 
     logger.debug('Default config file: %s', config)
     logger.debug('Definitive interface file %s', interface)
 

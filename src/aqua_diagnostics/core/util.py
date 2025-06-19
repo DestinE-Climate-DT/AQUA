@@ -96,6 +96,20 @@ def close_cluster(client, cluster, private_cluster, loglevel: str = 'WARNING'):
         cluster.close()
         logger.debug("Dask cluster closed.")
 
+def get_diagnostic_configpath(diagnostic: str, loglevel='WARNING') -> str:
+    """
+    Get the path to the diagnostic configuration directory.
+
+    Args:
+        diagnostic (str): diagnostic name
+        loglevel (str): logging level. Default is 'WARNING'.
+
+    Returns:
+        str: path to the diagnostic configuration directory
+    """
+    configdir = ConfigPath(loglevel=loglevel).configdir
+    return os.path.join(configdir, "diagnostics", diagnostic)
+
 
 def load_diagnostic_config(diagnostic: str, config: str = None,
                            default_config: str = "config.yaml",
@@ -115,8 +129,11 @@ def load_diagnostic_config(diagnostic: str, config: str = None,
     if config:
         filename = config
     else:
-        configdir = ConfigPath(loglevel=loglevel).configdir
-        filename = os.path.join(configdir, "diagnostics", diagnostic, default_config)
+        filename = os.path.join(
+            get_diagnostic_configpath(diagnostic, loglevel), 
+            default_config
+        )
+    print(f"Using configuration file: {filename}")
 
     return load_yaml(filename)
 
