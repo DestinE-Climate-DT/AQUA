@@ -89,7 +89,7 @@ def parse_arguments():
 def file_subparser(main_parser, name):
     """Compact subparsers for file handling - fixes and grids"""
 
-    # subparsers for fixes
+    # subparsers for fixe and grids
     parser = main_parser.add_parser(name, help=f'{name} related commands')
     subparsers = parser.add_subparsers(dest='nested_command')
 
@@ -99,5 +99,11 @@ def file_subparser(main_parser, name):
                                   help=f"Add a {name} file in editable mode from the original path")
     parser_remove = subparsers.add_parser('remove', help=f'Remove a {name} file')
     parser_remove.add_argument('file', help=f'The {name} file to remove')
+
+    # We have for the grids the possibility to set a default path to overwrite the individual catalog one
+    # This will create a block in the config-aqua.yaml file for grids, areas and weights.
+    if name == 'grids':
+        parser_list = subparsers.add_parser('set', help=f'Set a {name} path as the default in config-aqua.yaml')
+        parser_list.add_argument('path', help=f'The {name} path to set as default')
 
     return parser

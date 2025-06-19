@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.16.0):
+Unreleased in the current development version (target v0.16.0): 
 
 Removed:
 - Removed source or experiment specific fixes; only the `fixer_name` is now supported.
@@ -18,6 +18,7 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- Added the `aqua grids set` command to set the paths block in the `aqua-config.yaml` file, overwriting the default values (#2003)
 - Derivation of metadata from eccodes is done with a builtin python method instead of definiton file inspection (#2009)
 - `h5py` installed from pypi. Hard pin to version 3.12.1 removed in favor of a lower limit to the version (#2002)
 - `aqua-analysis` can accept a `--regrid` argument in order to activate the regrid on each diagnostics supporting it (#1947)
@@ -40,11 +41,12 @@ AQUA core complete list:
 - Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
 
 AQUA diagnostics complete list:
+- Diagnostic core: a `diagnostic_name` is now available in the configuration file to override the default name (#2000)
 - Ecmean, GlobalBiases, Teleconnections: regrid functionality correctly working in cli (#2006)
 - Diagnostic core: updated docs for `OutputSaver` (#2010)
 - Diagnostic core: save_netcdf() is now based on the new OutputSaver (#1965)
 - Diagnostic core: raise an error if retrieve() returns an empty dataset (#1997)
-- GlobalBiases: major refactor (#1803)
+- GlobalBiases: major refactor (#1803, #1993)
 - Ocean Drift: using the `_set_region` method from the `Diagnostic` class (#1981)
 - Diagnostic core: new `_set_region` method in `Diagnostic` class to find region name, lon and lat limits (#1979)
 - Timeseries: regions are now in the `definitions` folder (not `interface` anymore) (#1884)
@@ -52,7 +54,7 @@ AQUA diagnostics complete list:
 - Radiations: timeseries correctly working for exps with enddate before 2000 (#1940)
 - Diagnostic core: new `round_startdate` and `round_enddate` functions for time management (#1940)
 - Timeseries: fix in the new cli wich was ignoring the regrid option and had bad time handling (#1940)
-- Timeseries: Use new OutputSaver in Timeseries diagnostics (#1948)
+- Timeseries: Use new OutputSaver in Timeseries diagnostics (#1948, #2000)
 - Diagnostic core: new `select_region` to crop a region based on `_set_region` and `area_selection` method (#1984)
 
 ## [v0.15.0]

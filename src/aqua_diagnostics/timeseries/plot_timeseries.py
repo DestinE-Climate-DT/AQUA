@@ -1,13 +1,13 @@
 import xarray as xr
 from aqua.graphics import plot_timeseries
-from aqua.logger import log_configure
 from aqua.util import to_list
 from .base import PlotBaseMixin
 
 
 class PlotTimeseries(PlotBaseMixin):
     """Class to plot time series data."""
-    def __init__(self, hourly_data=None, daily_data=None,
+    def __init__(self, diagnostic_name: str = 'timeseries',
+                 hourly_data=None, daily_data=None,
                  monthly_data=None, annual_data=None,
                  ref_hourly_data=None, ref_daily_data=None,
                  ref_monthly_data=None, ref_annual_data=None,
@@ -26,6 +26,7 @@ class PlotTimeseries(PlotBaseMixin):
         Additionally, only one reference data array is supported for each frequency.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Used for logger and filenames. Default is 'timeseries'.
             hourly_data (list): List of hourly data arrays.
             daily_data (list): List of daily data arrays.
             monthly_data (list): List of monthly data arrays.
@@ -40,8 +41,7 @@ class PlotTimeseries(PlotBaseMixin):
             std_annual_data (xr.DataArray): Standard deviation annual data array.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
-        super().__init__(loglevel=loglevel)
-        self.logger = log_configure(self.loglevel, 'PlotTimeseries')
+        super().__init__(loglevel=loglevel, diagnostic_name=diagnostic_name)
 
         # TODO: support hourly and daily data
         for data in [hourly_data, daily_data, ref_hourly_data, ref_daily_data,
@@ -207,7 +207,7 @@ class PlotTimeseries(PlotBaseMixin):
         """
         super().save_plot(fig=fig, var=var, description=description,
                           region=region, rebuild=rebuild,
-                          outputdir=outputdir, dpi=dpi, format=format, diagnostic='timeseries')
+                          outputdir=outputdir, dpi=dpi, format=format, diagnostic_product='timeseries')
 
     def _check_data_length(self):
         """

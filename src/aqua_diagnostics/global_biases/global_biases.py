@@ -15,7 +15,7 @@ class GlobalBiases(Diagnostic):
     Diagnostic class for computing global and seasonal climatologies of a given variable.
 
     This class handles data retrieval, pressure level selection, unit conversion, 
-    and computation of mean climatologies (annual or seasonal).
+    and computation of mean climatologies (total or seasonal).
 
     Inherits from `Diagnostic`.
 
@@ -36,7 +36,7 @@ class GlobalBiases(Diagnostic):
     def __init__(self, catalog=None, model=None, exp=None, source=None,
                  regrid=None, startdate=None, enddate=None,
                  var=None, plev=None,
-                 save_netcdf=False, outputdir='./', loglevel='WARNING'):
+                 save_netcdf=True, outputdir='./', loglevel='WARNING'):
 
         super().__init__(catalog=catalog, model=model, exp=exp, source=source,
                          regrid=regrid, startdate=startdate, enddate=enddate,
@@ -71,24 +71,26 @@ class GlobalBiases(Diagnostic):
         super().retrieve(var=self.var)
 
         if self.data is None:
-            self.logger.error(f"Variable {self.var} not found in dataset {self.model}, {self.exp}, {self.source}")
-            raise NoDataError("Variable not found in dataset")
-
-        if self.var not in self.data:
-            raise KeyError(f"Variable '{self.var}' not found in dataset variables: {list(self.data.data_vars)}")
+            self.logger.error(f"Data could not be retrieved for {self.model}, {self.exp}, {self.source}")
+            raise NoDataError("No data retrieved.")
 
         self.startdate = self.startdate or pd.to_datetime(self.data.time[0].values).strftime('%Y-%m-%d')
         self.enddate = self.enddate or pd.to_datetime(self.data.time[-1].values).strftime('%Y-%m-%d')
 
-        if units:
-            self.logger.info(f'Adjusting units for variable {self.var} to {units}.')
-            self.data = convert_data_units(self.data, self.var, units, loglevel=self.loglevel)
+        if self.var:
+            if self.var not in self.data:
+                raise KeyError(f"Variable '{self.var}' not found in dataset variables: {list(self.data.data_vars)}")
+            if units:
+                self.logger.info(f'Adjusting units for variable {self.var} to {units}.')
+                self.data = convert_data_units(self.data, self.var, units, loglevel=self.loglevel)
+            if self.plev is not None:
+                self.logger.info(f'Selecting pressure level {self.plev} for variable {self.var}.')
+                self.data = handle_pressure_level(self.data, self.var, self.plev, loglevel=self.loglevel)
+            elif 'plev' in self.data[self.var].dims:
+                self.logger.warning(f"Variable {self.var} has multiple pressure levels but none was selected.")
+        else:
+            self.logger.info("All variables were retrieved. No variable-specific operations applied.")
 
-        if self.plev is not None:
-            self.logger.info(f'Selecting pressure level {self.plev} for variable {self.var}.')
-            self.data = handle_pressure_level(self.data, self.plev, self.var, loglevel=self.loglevel)
-        elif 'plev' in self.data[self.var].dims:
-            self.logger.warning(f"Variable {self.var} has multiple pressure levels but none was selected.")
 
     def compute_climatology(self,
                             data: xr.Dataset = None,
@@ -98,7 +100,7 @@ class GlobalBiases(Diagnostic):
                             seasonal: bool = False,
                             seasons_stat: str = 'mean') -> None:
         """
-        Compute annual and optionally seasonal climatology for a variable.
+        Compute total and optionally seasonal climatology for a variable.
 
         Args:
             data (xarray.Dataset, optional): Input dataset. If None, uses self.data.
@@ -132,12 +134,13 @@ class GlobalBiases(Diagnostic):
         })
 
         if save_netcdf:
+            extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
             super().save_netcdf(
                 data=self.climatology,
-                diagnostic='global_biases',
+                diagnostic='globalbiases',
                 diagnostic_product='climatology',
-                default_path=self.outputdir,
-                var=var
+                outdir=self.outputdir,
+                extra_keys=extra_keys
             )
 
         if seasonal:
@@ -165,11 +168,12 @@ class GlobalBiases(Diagnostic):
             })
 
             if save_netcdf:
+                extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
                 super().save_netcdf(
                     data=self.seasonal_climatology,
-                    diagnostic='global_biases',
+                    diagnostic='globalbiases',
                     diagnostic_product='seasonal_climatology',
-                    default_path=self.outputdir,
-                    var=var
+                    outdir=self.outputdir,
+                    extra_keys=extra_keys
                 )
                 self.logger.info(f'Seasonal climatology saved to {self.outputdir}.')

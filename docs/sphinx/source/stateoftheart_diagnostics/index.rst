@@ -19,7 +19,7 @@ Currently implemented diagnostics are:
 .. toctree::
    :maxdepth: 1
 
-   atm_global_mean
+   global_biases
    ecmean
    timeseries
    ocean3d

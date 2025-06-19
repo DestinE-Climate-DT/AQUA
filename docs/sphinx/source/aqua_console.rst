@@ -264,7 +264,7 @@ This is useful if a new external fix is created and needs to be added to the lis
 aqua grids {add,remove} <grid-file>
 -----------------------------------
 
-This submcommand is able to add or remove a grids YAML file to the list of available installed grids.
+This subcommand is able to add or remove a grids YAML file to the list of available installed grids.
 It will copy the grids file to the destination folder, or create a symbolic link if the editable mode is used.
 This is useful if new external grids are created and need to be added to the list of available grids.
 
@@ -276,6 +276,22 @@ This is useful if new external grids are created and need to be added to the lis
 .. option:: -e, --editable
 
     It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
+
+aqua grids set <path>
+---------------------
+
+This subcommand sets in the configuration file the path to the grids, areas and weights folders.
+
+.. option:: <path>
+
+    The path to the grids, areas and weights folders.
+    This is a mandatory field.
+    The code will create the subfolders ``grids``, ``areas`` and ``weights`` in the specified path.
+
+.. note::
+    By default, if is not needed to set the path to the grids, areas and weights folders.
+    AQUA will determine the path automatically based on the machine in the configuration file.
+    This command is useful in new machines or if you don't have access to the default folders.
 
 .. _aqua-lra:
 

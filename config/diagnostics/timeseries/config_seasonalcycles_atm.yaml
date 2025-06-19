@@ -32,6 +32,7 @@ output:
 diagnostics:
   seasonalcycles:
     run: true
+    diagnostic_name: 'atmosphere'
     variables: ['2t', 'tprate', 'ie', 'msl',
                  'tcc', 'lcc', 'mcc', 'hcc',
                  'slhtf', #Mean surface latent heat flux

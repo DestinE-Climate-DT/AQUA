@@ -21,9 +21,11 @@ class TestTimeseries:
         self.var = 'tcc'
         self.region = 'tropics'
         self.regrid = 'r100'
+        self.diagnostic_name = 'atmosphere'
 
     def test_no_region(self):
-        ts = Timeseries(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
+        ts = Timeseries(diagnostic_name=self.diagnostic_name, 
+                        catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                         region=None, loglevel=loglevel, regrid=self.regrid)
 
         assert ts.lon_limits is None
@@ -31,11 +33,13 @@ class TestTimeseries:
 
     def test_wrong_region(self):
         with pytest.raises(ValueError):
-            Timeseries(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
+            Timeseries(diagnostic_name=self.diagnostic_name, 
+                       catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                        region='topolinia', loglevel=loglevel, regrid=self.regrid)
 
     def test_monthly_annual_with_region(self, tmp_path):
-        ts = Timeseries(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
+        ts = Timeseries(diagnostic_name=self.diagnostic_name,
+                        catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                         region=self.region, loglevel=loglevel, startdate='19900101', enddate='19911231',
                         regrid=self.regrid)
         
@@ -47,31 +51,37 @@ class TestTimeseries:
         assert isinstance(ts.data, xr.DataArray)
         assert ts.monthly.values[0] == pytest.approx(60.145472982004186, rel=approx_rel)
 
-        file = os.path.join(tmp_path, 'netcdf', 'timeseries.timeseries.ci.ERA5.era5-hpz3.tcc.monthly.tropics.nc')
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.var}.monthly.{self.region}.nc'
+        file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
         assert ts.annual.values[0] == pytest.approx(60.31101797654943, rel=approx_rel)
         
         assert ts.std_annual.values == pytest.approx(0.009666691494246038, rel=approx_rel)
 
-        file = os.path.join(tmp_path, 'netcdf', 'timeseries.timeseries.ci.ERA5.era5-hpz3.tcc.annual.tropics.nc')
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.var}.annual.{self.region}.nc'
+        file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
-        file = os.path.join(tmp_path, 'netcdf', 'timeseries.timeseries.ci.ERA5.era5-hpz3.tcc.annual.tropics.nc')
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.var}.monthly.{self.region}.std.nc'
+        file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
-        
-        plt = PlotTimeseries(monthly_data = ts.monthly, annual_data = ts.annual,
+
+        plt = PlotTimeseries(diagnostic_name=self.diagnostic_name,
+                             monthly_data = ts.monthly, annual_data = ts.annual,
                              ref_monthly_data = ts.monthly, ref_annual_data = ts.annual,
                              std_monthly_data = ts.std_monthly, std_annual_data = ts.std_annual,
                              loglevel=loglevel)
         
         plt.run(var=self.var, outputdir=tmp_path)
 
-        file = os.path.join(tmp_path, 'png', 'timeseries.timeseries.ci.ERA5.era5-hpz3.ERA5.era5-hpz3.tcc.png')
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.catalog}.{self.model}.{self.exp}.{self.var}.png'
+        file = os.path.join(tmp_path, 'png', filename)
         assert os.path.exists(file)
 
     def test_hourly_daily_with_region(self):
-        ts = Timeseries(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
+        ts = Timeseries(diagnostic_name=self.diagnostic_name,
+                        catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                         region=self.region, loglevel=loglevel, startdate='19900101', enddate='19900102',
                         regrid=self.regrid)
 
@@ -84,7 +94,8 @@ class TestTimeseries:
         assert ts.daily.values[0] == pytest.approx(60.145472982004186, rel=approx_rel)
 
     def test_formula(self):
-        ts = Timeseries(catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
+        ts = Timeseries(diagnostic_name=self.diagnostic_name,
+                        catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                         region=self.region, loglevel=loglevel, startdate='19940101', enddate='19941231',
                         regrid=self.regrid)
 
