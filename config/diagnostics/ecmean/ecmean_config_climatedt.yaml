@@ -10,25 +10,24 @@ dirs:
   tab: null
   fig: null
 
-global:
-  atm_vars: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,
-            pr_oce, pme_oce, pr_land, pme_land,
-            rsnt, rlnt, net_toa, rsns, rlns, hfss, hfls]
-  oce_vars: [tos, sos]
-  ice_vars: [siconc]
-  tab_vars: []
+global_mean:
+  variables:
+    atm: [tas, psl, pr, evspsbl, pme, clt, cll, clm, clh,
+              pr_oce, pme_oce, pr_land, pme_land,
+              rsnt, rlnt, net_toa, rsns, rlns, hfss, hfls]
+    oce: [tos, sos]
+    ice: [siconc]
+    tab: []
   regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
   seasons: ['ALL', 'DJF', 'JJA']
+  reference: EC23
 
-PI:
-  2d_vars:
-    field: [net_sfc, tas, pr, psl, tauu, tauv]
-  3d_vars:
-    field: [ta, ua, va, hus]
-  oce_vars:
-    field: [tos, sos]
-  ice_vars:
-    field: [siconc]
+performance_indices:
+  variables:
+    atm2d: [net_sfc, tas, psl, pr, tauu, tauv]
+    atm3d: [ta, ua, va, hus]
+    oce: [tos, sos]
+    ice: [siconc]
   regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
   seasons: ['ALL', 'DJF', 'JJA']
-  resolution: r360x180
+  climatology: EC23
