@@ -30,16 +30,17 @@ def parse_arguments(arguments):
     # load AQUA core diagnostic default parser
     parser = argparse.ArgumentParser(description='ECmean Performance Indices  CLI')
     parser = template_parse_arguments(parser)
-    
+
     # Extend the parser with specific arguments for ECmean
     # processors here is controlled by multhprocess, so it is not standard dask workers
     # interface file is the one to match names of variables in the dataset
-    # source_oce is the source of the oceanic data, to be used when oceanic data is in a different source than atmospheric data
+    # source_oce is the source of the oceanic data, 
+    # to be used when oceanic data is in a different source than atmospheric data
     parser.add_argument('--nprocs',  type=int,
                         help='number of multiprocessing processes to use', default=1)
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
-    parser.add_argument('--source_oce', type=str, 
+    parser.add_argument('--source_oce', type=str,
                         help='source of the oceanic data, to be used when oceanic data is in a different source than atmospheric data',
                         default=None)
 
@@ -112,9 +113,9 @@ def data_check(data_atm, data_oce, logger=None):
     if mydata is None:
         raise NoDataError('No data available, exiting...')
     
-    return data
+    return mydata
 
-def time_check(data, year1, year2, logger=None):
+def time_check(mydata, y1, y2, logger=None):
     """
     Check if the data has enough time steps
 
@@ -126,20 +127,20 @@ def time_check(data, year1, year2, logger=None):
     Raises:
         NotEnoughDataError: if the data does not have enough time steps
     """
-    
+
     # guessing years from the dataset
-    if year1 is None:
-        year1 = int(data.time[0].values.astype('datetime64[Y]').astype(str))
-        logger.info('Guessing starting year %s', year1)
-    if year2 is None:
-        year2 = int(data.time[-1].values.astype('datetime64[Y]').astype(str))
-        logger.info('Guessing ending year %s', year2)
+    if y1 is None:
+        y1 = int(mydata.time[0].values.astype('datetime64[Y]').astype(str))
+        logger.info('Guessing starting year %s', y1)
+    if y2 is None:
+        y2 = int(mydata.time[-1].values.astype('datetime64[Y]').astype(str))
+        logger.info('Guessing ending year %s', y2)
 
     # run the performance indices if you have at least 12 month of data
-    if len(data.time) < 12:
+    if len(mydata.time) < 12:
         raise NotEnoughDataError("Not enough data, exiting...")
 
-    return year1, year2
+    return y1, y2
 
 
 if __name__ == '__main__':
@@ -231,44 +232,39 @@ if __name__ == '__main__':
             year1, year2 = time_check(data, year1, year2, logger=logger)
 
             # store the data in the output saver and create the metadata
-            filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'pdf', 'png'] }
+            filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'txt'] }
             metadata = outputsaver.create_metadata(diagnostic_product=diagnostic)
             
             # performance indices
             if diagnostic == 'performance_indices':
                 logger.info('Launching ECmean performance indices...')
-                pi = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
+                ecmean = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
                                     interface=interface, loglevel=loglevel,
                                     outputdir=outputdir, xdataset=data)
-                pi.prepare()
-                pi.run()
-                pi.store(yamlfile=filename_dict['yml'])
-                if save_pdf and rebuild:
-                    logger.info('Saving PDF performance indices plot...')
-                    pi.plot(mapfile=filename_dict['pdf'])
-                    add_pdf_metadata(filename_dict['pdf'], metadata, loglevel=loglevel)
-
-                # there is a weird bug in ECmean when trying to plot the png
-                #if save_png and rebuild:
-                #    logger.info('Saving PNG performance indices plot...')
-                #    pi.plot(mapfile=filename_dict['png'])
-
-            # global mean
-            if diagnostic == 'global_mean':
+            elif diagnostic == 'global_mean':
                 logger.info('Launching ECmean global mean...')
-                gm = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
+                ecmean = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
                                     interface=interface, loglevel=loglevel,
                                     outputdir=outputdir, xdataset=data)
-                gm.prepare()
-                gm.run()
-                gm.store(yamlfile=filename_dict['yml'])
-                if save_pdf and rebuild:
-                    logger.info('Saving PDF global mean plot...')
-                    gm.plot(mapfile=filename_dict['pdf'])
-                    add_pdf_metadata(filename_dict['pdf'], metadata, loglevel=loglevel)
-                if save_png and rebuild:
-                    logger.info('Saving PNG global mean plot...')
-                    gm.plot(mapfile=filename_dict['png'])
-                    add_png_metadata(filename_dict['png'], metadata, loglevel=loglevel)
+            else:
+                logger.error('Unknown diagnostic %s, exiting...', diagnostic)
+                sys.exit()
+            
+            ecmean.prepare()
+            ecmean.run()
+            if diagnostic == 'performance_indices':
+                ecmean.store(yamlfile=filename_dict['yml'])
+            elif diagnostic == 'global_mean':
+                ecmean.store(yamlfile=filename_dict['yml'], tablefile=filename_dict['txt'])
+            ecmean_fig = ecmean.plot(diagname=diagnostic, returnfig=True, storefig=False)
+            if save_pdf:
+                logger.info('Saving PDF %s plot...', diagnostic)
+                outputsaver.save_pdf(fig=ecmean_fig, diagnostic_product=diagnostic,
+                                        metadata=metadata, rebuild=rebuild)
+
+            if save_png:
+                logger.info('Saving PNG %s plot...', diagnostic)
+                outputsaver.save_png(fig=ecmean_fig, diagnostic_product=diagnostic,
+                                        metadata=metadata, rebuild=rebuild)
 
             logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')
