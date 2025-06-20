@@ -61,7 +61,8 @@ dependencies = [
     "fastparquet",
     "pyfdb==0.1.1",
     "gsv-interface==2.9.0",
-    "ECmean4>=0.1.12",
+    #"ECmean4>=0.1.12",
+    "ECmean4 @ git+https://github.com/oloapinivad/ECmean4.git@release-update",
     "zarr"
 ]
 

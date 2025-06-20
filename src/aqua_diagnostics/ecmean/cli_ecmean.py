@@ -12,7 +12,6 @@ from ecmean import __version__ as eceversion
 from aqua import Reader
 from aqua import __version__ as aquaversion
 from aqua.util import get_arg
-from aqua.util import add_pdf_metadata, add_png_metadata
 from aqua.logger import log_configure
 from aqua.exceptions import NoDataError, NotEnoughDataError
 
