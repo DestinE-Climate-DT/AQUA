@@ -27,7 +27,7 @@ except KeyError:
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
 
 #BRIDGE_API_URL = "https://climate-catalogue.lumi.apps.dte.destination-earth.eu/api/stac"
-BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/stac/climate-dt"  # LUMI QUBED STAC API
+BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v1/stac/climate-dt"  # LUMI QUBED STAC API
 
 
 class GSVSource(base.DataSource):
@@ -880,7 +880,7 @@ class GSVSource(base.DataSource):
 
         # new stac API requires lowercased keys
         params = {k: v.lower() if isinstance(v, str) else v for k, v in params.items()}
- 
+
         # network problems can happen, so we need to handle them
         try:
             response = requests.get(base_url, params=params, timeout=10)
@@ -888,7 +888,7 @@ class GSVSource(base.DataSource):
             raise TimeoutError("STAC API request timed out after 10 seconds.") from e
         except requests.RequestException as e:
             raise ConnectionError("STAC API request failed") from e
-        
+
         # Check the response status code
         if response.status_code == 400:
             raise ValueError(f"Bad request to STAC API: {response.text}")
