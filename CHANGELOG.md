@@ -18,6 +18,7 @@ Workflow modifications:
   are not correct.
 
 AQUA core complete list:
+- Update to the new STAC API for Lumi (#2017)
 - Added the `aqua grids set` command to set the paths block in the `aqua-config.yaml` file, overwriting the default values (#2003)
 - Derivation of metadata from eccodes is done with a builtin python method instead of definiton file inspection (#2009)
 - `h5py` installed from pypi. Hard pin to version 3.12.1 removed in favor of a lower limit to the version (#2002)
