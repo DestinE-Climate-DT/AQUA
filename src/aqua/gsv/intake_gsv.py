@@ -26,8 +26,8 @@ except KeyError:
     gsv_available = False
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
 
-# the LUMI BRIDGE STAC API
-BRIDGE_API_URL = "https://climate-catalogue.lumi.apps.dte.destination-earth.eu/api/stac"
+#BRIDGE_API_URL = "https://climate-catalogue.lumi.apps.dte.destination-earth.eu/api/stac"
+BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v1/stac/climate-dt"  # LUMI QUBED STAC API
 
 
 class GSVSource(base.DataSource):
@@ -878,6 +878,9 @@ class GSVSource(base.DataSource):
         for p in ['date', 'time', 'step', 'year', 'month']:
             params.pop(p, None)  # remove date/time/step/year/month if present
 
+        # new stac API requires lowercased keys
+        params = {k: v.lower() if isinstance(v, str) else v for k, v in params.items()}
+
         # network problems can happen, so we need to handle them
         try:
             response = requests.get(base_url, params=params, timeout=10)
@@ -885,7 +888,7 @@ class GSVSource(base.DataSource):
             raise TimeoutError("STAC API request timed out after 10 seconds.") from e
         except requests.RequestException as e:
             raise ConnectionError("STAC API request failed") from e
-        
+
         # Check the response status code
         if response.status_code == 400:
             raise ValueError(f"Bad request to STAC API: {response.text}")
@@ -904,10 +907,8 @@ class GSVSource(base.DataSource):
         if check != 'date':
             raise ValueError(f"The first link in the response is not a date link, but {check}")
 
-        # specific extraction of the dates
-        dates = next(link['generalized_datacube:dimension']['values']
-                    for link in stac_json['links']
-                    if 'generalized_datacube:dimension' in link)
+        # specific extraction of the dates: new format following the qube STAC API
+        dates = stac_json['links'][0].get('variables').get('date').get('enum')
         sorted_dates = sorted(dates)
         
         return sorted_dates[0], sorted_dates[-1]
