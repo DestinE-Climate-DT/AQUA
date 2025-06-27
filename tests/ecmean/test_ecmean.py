@@ -44,8 +44,8 @@ def test_performance_indices(common_setup):
     pi.run()
     pi.store()
     pi.plot()
-    yamlfile = f'{setup["outputdir"]}/YAML/PI4_EC23_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.yml'
-    pdffile = f'{setup["outputdir"]}/PDF/PI4_EC23_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.pdf'
+    yamlfile = f'{setup["outputdir"]}/yml/PI4_EC23_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.yml'
+    pdffile = f'{setup["outputdir"]}/pdf/PI4_EC23_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.pdf'
     assert os.path.exists(yamlfile)
     assert os.path.exists(pdffile)
 
@@ -62,7 +62,7 @@ def test_global_mean(common_setup):
     gm.run()
     gm.store()
     gm.plot()
-    yamlfile = f'{setup["outputdir"]}/YAML/global_mean_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.yml'
-    pdffile = f'{setup["outputdir"]}/PDF/global_mean_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.pdf'
+    yamlfile = f'{setup["outputdir"]}/yml/global_mean_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.yml'
+    pdffile = f'{setup["outputdir"]}/pdf/global_mean_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.pdf'
     assert os.path.exists(yamlfile)
     assert os.path.exists(pdffile)
