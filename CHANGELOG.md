@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.17.0): 
 
 AQUA core complete list:
-- Development base container updated to stack 7.0.2.8 (#2022)
+- Development base container updated to stack 7.0.2.8 (#2022, #2024)
 - `Trender()` class provide also coefficients and normalize them (#1991)
 
 AQUA diagnostics complete list:
