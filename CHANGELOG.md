@@ -12,6 +12,7 @@ AQUA core complete list:
 - `Trender()` class provide also coefficients and normalize them (#1991)
 
 AQUA diagnostics complete list:
+- Timeseries: fix the missing variable name in some netcdf output (#2023)
 - Diagnostic core: new `_select_region` method in `Diagnostic`, wrapped by `select_region` to select a region also on custom datasets (#2020)
 
 ## [v0.16.0]
