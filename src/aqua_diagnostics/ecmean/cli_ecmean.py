@@ -33,7 +33,7 @@ def parse_arguments(arguments):
     # Extend the parser with specific arguments for ECmean
     # processors here is controlled by multhprocess, so it is not standard dask workers
     # interface file is the one to match names of variables in the dataset
-    # source_oce is the source of the oceanic data, 
+    # source_oce is the source of the oceanic data,
     # to be used when oceanic data is in a different source than atmospheric data
     parser.add_argument('--nprocs',  type=int,
                         help='number of multiprocessing processes to use', default=1)
