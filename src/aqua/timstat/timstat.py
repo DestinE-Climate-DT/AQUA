@@ -149,4 +149,74 @@ class TimStat():
                               pd.to_datetime(avg_data['time']) + offset)
         
         return avg_data
-    
+
+    def compute_seasonal_means(self, data):
+        """
+        Calculate seasonal means from input data.
+        
+        Args:
+            data (xr.DataArray or xr.Dataset): Input data with a 'time' dimension.
+            
+        Returns:
+            list: A list containing seasonal means for DJF, MAM, JJA, SON.
+        """
+        
+        if 'time' not in data.dims:
+            raise ValueError('Time dimension not found in the input data. Cannot compute seasonal means')
+        
+        self.logger.info('Computing seasonal means...')
+        
+        # Define seasons with their corresponding months (1-indexed as per datetime convention)
+        seasons = {
+            "DJF": [12, 1, 2],  # December, January, February
+            "MAM": [3, 4, 5],   # March, April, May
+            "JJA": [6, 7, 8],   # June, July, August
+            "SON": [9, 10, 11]   # September, October, November
+        }
+        
+        season_means = []
+        for season_name, months in seasons.items():
+            self.logger.debug('Computing %s mean for months %s', season_name, months)
+            season_data = data.sel(time=data.time.dt.month.isin(months))
+            season_mean = season_data.mean(dim='time')
+            season_mean = log_history(season_mean, f"{season_name} seasonal mean computed by AQUA TimStat")
+            season_means.append(season_mean)
+        
+        return season_means
+
+    def compute_annual_mean(self, data):
+        """
+        Calculate annual mean from input data.
+        
+        Args:
+            data (xr.DataArray or xr.Dataset): Input data with a 'time' dimension.
+            
+        Returns:
+            xr.DataArray or xr.Dataset: Annual mean data.
+        """
+        
+        if 'time' not in data.dims:
+            raise ValueError('Time dimension not found in the input data. Cannot compute annual mean')
+        
+        self.logger.info('Computing annual mean...')
+        annual_mean = data.mean(dim='time')
+        annual_mean = log_history(annual_mean, "Annual mean computed by AQUA TimStat")
+        
+        return annual_mean
+
+    def seasonal_and_annual_means(self, data):
+        """
+        Calculate seasonal and annual means from input data.
+        
+        Args:
+            data (xr.DataArray or xr.Dataset): Input data with a 'time' dimension.
+            
+        Returns:
+            list: A list containing seasonal means for DJF, MAM, JJA, SON and an annual mean.
+        """
+        
+        seasonal_means = self.compute_seasonal_means(data)
+        annual_mean = self.compute_annual_mean(data)
+        
+        return seasonal_means + [annual_mean]
+
