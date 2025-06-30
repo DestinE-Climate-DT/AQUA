@@ -12,6 +12,8 @@ AQUA core complete list:
 - `Trender()` class provide also coefficients and normalize them (#1991)
 
 AQUA diagnostics complete list:
+- ECmean diagnostics refactored to use `OutputSaver` and new common configuration file (#2012)
+- ECmean minimum dependency is 0.1.14 (#2012)
 - Diagnostic core: new `_select_region` method in `Diagnostic`, wrapped by `select_region` to select a region also on custom datasets (#2020)
 
 ## [v0.16.0]
