@@ -16,13 +16,13 @@ from aqua.logger import log_configure
 from aqua.exceptions import NoEcCodesShortNameError
 
 # some eccodes shortnames are not unique: we need a manual mapping
-NOT_UNIQUE_SHORTNAMES = {
-    'tcc': [228164, 164]
-}
+#NOT_UNIQUE_SHORTNAMES = {
+#    'tcc': [228164, 164]
+#}
 
 
 @functools.cache
-def _get_attrs_from_shortname(sn, grib_version="GRIB2"):
+def _get_attrs_from_shortname(sn, grib_version="GRIB2", table=0):
     """Get the attributes of a parameter by its short name.
     Args:
         sn (str): The short name to look up.
@@ -33,14 +33,19 @@ def _get_attrs_from_shortname(sn, grib_version="GRIB2"):
     """
 
     gid = codes_grib_new_from_samples(grib_version)
-    if sn in NOT_UNIQUE_SHORTNAMES:
-        # If the short name is special, we need to handle it differently
-        # by using the first paramId in the list of not unique ones
-        pid = NOT_UNIQUE_SHORTNAMES[sn][0]
-        codes_set(gid, "paramId", pid)
-    else:
-        codes_set(gid, "shortName", sn)
-        pid = codes_get(gid, "paramId", ktype=str)
+    #if sn in NOT_UNIQUE_SHORTNAMES:
+    #    # If the short name is special, we need to handle it differently
+    #    # by using the first paramId in the list of not unique ones
+    #    pid = NOT_UNIQUE_SHORTNAMES[sn][0]
+    #    codes_set(gid, "paramId", pid)
+    #else:
+    #    codes_set(gid, "shortName", sn)
+    #    pid = codes_get(gid, "paramId", ktype=str)
+
+    # setting cetre to 0 bring the WMO table on top of everything
+    codes_set(gid, "centre", table)
+    codes_set(gid, "shortName", sn)
+    pid = codes_get(gid, "paramId", ktype=str)
     nm = codes_get(gid, "name")
     un = codes_get(gid, "units")
     #cf = codes_get(gid, "cfName")
@@ -94,22 +99,31 @@ def get_eccodes_attr(sn, loglevel='WARNING'):
         sn = _get_shortname_from_paramid(sn[3:])
 
     #warning at wrapper level to avoid duplication of logger
-    if sn in NOT_UNIQUE_SHORTNAMES:
-        logger.warning('Short name %s is not unique, using the first paramId in the list: %s',
-                       sn, NOT_UNIQUE_SHORTNAMES[sn][0])
+    #if sn in NOT_UNIQUE_SHORTNAMES:
+    #    logger.warning('Short name %s is not unique, using the first paramId in the list: %s',
+    #                   sn, NOT_UNIQUE_SHORTNAMES[sn][0])
 
-    # Try to get attributes from GRIB2 first
-    try:
-        logger.debug('Retrieving attributes for short name: %s', sn)
-        return _get_attrs_from_shortname(sn, grib_version="GRIB2")
-    except CodesInternalError as e2:
-        # If GRIB2 fails, try GRIB1
+    # Try to get attributes from 4 tables: WMO+GRIB2, ECMF+GRIB2, WMO+GRIB1, ECMF+GRIB1
+    strategies = [
+        {"grib_version": "GRIB2", "table": 0},
+        {"grib_version": "GRIB2", "table": "ecmf"},
+        {"grib_version": "GRIB1", "table": 0},
+        {"grib_version": "GRIB1", "table": "ecmf"},
+    ]
+
+    for _, strategy in enumerate(strategies):
         try:
-            logger.warning('Error retrieving attributes for short name %s: %s', sn, e2)
-            logger.warning('Trying with GRIB1')
-            return _get_attrs_from_shortname(sn, grib_version="GRIB1")
-        except CodesInternalError as e1:
-            raise NoEcCodesShortNameError(f"Cannot find any grib codes for ShortName {sn}") from e1
+            logger.debug("Trying short name %s with GRIB version %s and table %s",
+             sn, strategy["grib_version"], strategy["table"])
+            return _get_attrs_from_shortname(sn, **strategy)
+        except CodesInternalError as e:
+            if strategy["grib_version"] == "GRIB1":
+                logger.warning("No GRIB2 codes found, trying GRIB1 for shortName %s", sn)
+            logger.debug("Failed guessing for shortName %s, grib_version %s and table %s: %s",
+                         strategy["grib_version"], strategy["table"], sn, e)
+
+    raise NoEcCodesShortNameError(f"Cannot find any grib codes for ShortName {sn}")
+
 
 def get_eccodes_shortname(pid):
     """

@@ -49,6 +49,7 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v0.16.0
       - v0.15.0
       - v0.14.0
       - v0.13.6

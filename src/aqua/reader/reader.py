@@ -471,22 +471,22 @@ class Reader():
         out = set_attrs(out, {"AQUA_regridded": 1})
         return out
     
-    def trend(self, data, dim='time', degree=1, skipna=False):
-        """
-        Estimate the trend of an xarray object using polynomial fitting.
+    # def trend(self, data, dim='time', degree=1, skipna=False):
+    #     """
+    #     Estimate the trend of an xarray object using polynomial fitting.
 
-        Args:
-            data (DataArray or Dataset): The input data.
-            dim (str): Dimension to apply trend along. Defaults to 'time'.
-            degree (int): Degree of the polynomial. Defaults to 1.
-            skipna (bool): Whether to skip NaNs. Defaults to False.
+    #     Args:
+    #         data (DataArray or Dataset): The input data.
+    #         dim (str): Dimension to apply trend along. Defaults to 'time'.
+    #         degree (int): Degree of the polynomial. Defaults to 1.
+    #         skipna (bool): Whether to skip NaNs. Defaults to False.
 
-        Returns:
-            DataArray or Dataset: The trend component.
-        """
-        final = self.trender.trend(data, dim=dim, degree=degree, skipna=skipna)
-        final.aqua.set_default(self)
-        return final
+    #     Returns:
+    #         DataArray or Dataset: The trend component.
+    #     """
+    #     final = self.trender.trend(data, dim=dim, degree=degree, skipna=skipna)
+    #     final.aqua.set_default(self)
+    #     return final
 
     def detrend(self, data, dim='time', degree=1, skipna=False):    
         """

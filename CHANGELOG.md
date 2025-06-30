@@ -5,7 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.16.0): 
+Unreleased in the current development version (target v0.17.0): 
+
+AQUA core complete list:
+- Development base container updated to stack 7.0.2.8 (#2022, #2025)
+- `Trender()` class provide also coefficients and normalize them (#1991)
+
+AQUA diagnostics complete list:
+- Diagnostic core: new `_select_region` method in `Diagnostic`, wrapped by `select_region` to select a region also on custom datasets (#2020)
+
+## [v0.16.0]
 
 Removed:
 - Removed source or experiment specific fixes; only the `fixer_name` is now supported.
@@ -20,7 +29,7 @@ Workflow modifications:
 AQUA core complete list:
 - Update to the new STAC API for Lumi (#2017)
 - Added the `aqua grids set` command to set the paths block in the `aqua-config.yaml` file, overwriting the default values (#2003)
-- Derivation of metadata from eccodes is done with a builtin python method instead of definiton file inspection (#2009)
+- Derivation of metadata from eccodes is done with a builtin python method instead of definiton file inspection (#2009, #2014)
 - `h5py` installed from pypi. Hard pin to version 3.12.1 removed in favor of a lower limit to the version (#2002)
 - `aqua-analysis` can accept a `--regrid` argument in order to activate the regrid on each diagnostics supporting it (#1947)
 - `--no-mount /etc/localtime` option added to the `load_aqua_container.sh` script for all HPC (#1975)
@@ -28,7 +37,7 @@ AQUA core complete list:
 - Fix HPC2020 (ECMWF) installation (#1994)
 - `plot_timeseries` can handle multiple references and ensemble mean and std (#1988, #1999)
 - Support for CDO 2.5.0, modified test files accordingly (v6) (#1987)
-- Remove DOCKER secrets and prepare ground for dependabot action e.g introduce AQUA_GITHUB_PAT (#1983,#1995)
+- Remove DOCKER secrets and prepare ground for dependabot action e.g introduce AQUA_GITHUB_PAT (#1983)
 - `Trender()` class to include both `trend()` and `detrend()` method (#1980)
 - `cartopy_offlinedata` is added on container and path is set in cli call, to support MN5 no internet for coastlines download (#1960)
 - plot_single_map() can now handle high nlevels with a decreased cbar ticks density (#1940)
@@ -967,7 +976,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.16.0...HEAD
+[v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
 [v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0
 [v0.14.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.14.0
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
