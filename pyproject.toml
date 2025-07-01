@@ -61,7 +61,7 @@ dependencies = [
     "fastparquet",
     "pyfdb==0.1.1",
     "gsv-interface==2.9.0",
-    "ECmean4>=0.1.12,<0.1.14",
+    "ECmean4>=0.1.12,<0.1.15",
     "zarr"
 ]
 
