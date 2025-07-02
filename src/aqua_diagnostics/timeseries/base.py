@@ -201,8 +201,11 @@ class BaseMixin(Diagnostic):
             data = self.annual if self.annual is not None else self.logger.error('No annual data available')
             data_std = self.std_annual if self.std_annual is not None else None
 
-        extra_keys = {'var': getattr(data, 'standard_name', None),
-                      'freq': str_freq}
+        var = getattr(data, 'standard_name', None)
+        extra_keys = {'var': var, 'freq': str_freq}
+        
+        if data.name is None:
+            data.name = var
 
         region = self.region.replace(' ', '').lower() if self.region is not None else None
         extra_keys.update({'region': region})

@@ -12,8 +12,10 @@ AQUA core complete list:
 - `Trender()` class provide also coefficients and normalize them (#1991)
 
 AQUA diagnostics complete list:
-- ECmean diagnostics refactored to use `OutputSaver` and new common configuration file (#2012)
-- ECmean minimum dependency is 0.1.14 (#2012)
+- ECmean: diagnostics refactored to use `OutputSaver` and new common configuration file (#2012)
+- ECmean: minimum dependency is 0.1.14 (#2012)
+- Timeseries: `center_time` option to center the time axis is exposed in the CLI (#2028)
+- Timeseries: fix the missing variable name in some netcdf output (#2023)
 - Diagnostic core: new `_select_region` method in `Diagnostic`, wrapped by `select_region` to select a region also on custom datasets (#2020)
 
 ## [v0.16.0]

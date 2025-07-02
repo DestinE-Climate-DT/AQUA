@@ -66,6 +66,8 @@ if __name__ == '__main__':
         if config_dict['diagnostics']['timeseries']['run']:
             logger.info("Timeseries diagnostic is enabled.")
 
+            center_time = config_dict['diagnostics']['timeseries'].get('center_time', True)
+
             for var in config_dict['diagnostics']['timeseries'].get('variables', []):
                 var_config, regions = load_var_config(config_dict, var)
                 logger.info(f"Running Timeseries diagnostic for variable {var} with config {var_config} in regions {[region if region else 'global' for region in regions]}") # noqa
@@ -76,7 +78,8 @@ if __name__ == '__main__':
                         init_args = {'region': region, 'loglevel': loglevel}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
-                                    'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild}
+                                    'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
+                                    'center_time': center_time}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])

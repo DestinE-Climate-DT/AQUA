@@ -45,6 +45,7 @@ diagnostics:
                 'tnswrf' #Mean top net short-wave radiation flux
                 ]
     formulae: ['tnlwrf+tnswrf']
+    center_time: true
     params:
       default:
         hourly: False
