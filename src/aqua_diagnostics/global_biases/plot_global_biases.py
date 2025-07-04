@@ -1,6 +1,7 @@
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
@@ -75,7 +76,7 @@ class PlotGlobalBiases:
             raise ValueError(f'Format {format} not supported. Use png or pdf.')
 
 
-    def plot_climatology(self, data, var, plev=None, vmin=None, vmax=None):
+    def plot_climatology(self, data, var, plev=None, proj=ccrs.Robinson(), vmin=None, vmax=None):
         """
         Plots the climatology map for a given variable and time range.
 
@@ -83,6 +84,7 @@ class PlotGlobalBiases:
             data (xarray.Dataset): Climatology dataset to plot.
             var (str): Variable name.
             plev (float, optional): Pressure level to plot (if applicable).
+            proj (cartopy.crs.Projection, optional): Cartopy projection for the map.
             vmin (float, optional): Minimum color scale value.
             vmax (float, optional): Maximum color scale value.
 
@@ -102,6 +104,7 @@ class PlotGlobalBiases:
             data[var],
             return_fig=True,
             title=title,
+            proj=proj,
             vmin=vmin,
             vmax=vmax,
             loglevel=self.loglevel
@@ -124,7 +127,7 @@ class PlotGlobalBiases:
                               description=description, var=var, plev=plev)
 
 
-    def plot_bias(self, data, data_ref, var, plev=None, vmin=None, vmax=None):
+    def plot_bias(self, data, data_ref, var, plev=None, proj=ccrs.Robinson(), vmin=None, vmax=None):
         """
         Plots the bias map between two datasets.
 
@@ -133,6 +136,7 @@ class PlotGlobalBiases:
             data_ref (xarray.Dataset): Reference dataset.
             var (str): Variable name.
             plev (float, optional): Pressure level.
+            proj (cartopy.crs.Projection, optional): Cartopy projection for the map.
             vmin (float, optional): Minimum colorbar value.
             vmax (float, optional): Maximum colorbar value.
         """
@@ -154,6 +158,7 @@ class PlotGlobalBiases:
             contour=True, 
             title=title,
             sym=sym,
+            proj=proj,
             vmin_fill=vmin, 
             vmax_fill=vmax,
             loglevel=self.loglevel
@@ -176,7 +181,7 @@ class PlotGlobalBiases:
                               description=description, var=var, plev=plev)
 
 
-    def plot_seasonal_bias(self, data, data_ref, var, plev=None, vmin=None, vmax=None):
+    def plot_seasonal_bias(self, data, data_ref, var, plev=None, proj=ccrs.Robinson(), vmin=None, vmax=None):
         """
         Plots seasonal biases for each season (DJF, MAM, JJA, SON).
 
@@ -185,6 +190,7 @@ class PlotGlobalBiases:
             data_ref (xarray.Dataset): Reference dataset.
             var (str): Variable name.
             plev (float, optional): Pressure level.
+            proj (cartopy.crs.Projection, optional): Cartopy projection for the map.
             vmin (float, optional): Minimum colorbar value.
             vmax (float, optional): Maximum colorbar value.
 
@@ -205,6 +211,7 @@ class PlotGlobalBiases:
             'titles': season_list,
             'contour': True,
             'sym': sym,
+            'proj': proj,
             'loglevel': self.loglevel
         }
 
