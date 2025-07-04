@@ -25,17 +25,17 @@ from .lra_util import move_tmp_files, list_lra_files_complete, replace_intake_va
 from .catalog_entry_builder import CatalogEntryBuilder
 
 
-TIME_ENCODING =  {
-            'units': 'days since 1850-01-01 00:00:00',
-            'calendar': 'standard',
-            'dtype': 'float64'}
+TIME_ENCODING = {
+    'units': 'days since 1850-01-01 00:00:00',
+    'calendar': 'standard',
+    'dtype': 'float64'}
 
 VAR_ENCODING = {
-            'dtype': 'float64',
-            'zlib': True,
-            'complevel': 1,
-            '_FillValue': np.nan
-        }
+    'dtype': 'float64',
+    'zlib': True,
+    'complevel': 1,
+    '_FillValue': np.nan
+}
 
 
 class LRAgenerator():
@@ -138,7 +138,7 @@ class LRAgenerator():
 
         # configure regional selection
         self._configure_region(region, drop)
-        
+
         # print some info about the settings
         self._issue_info_warning()
 
@@ -177,10 +177,10 @@ class LRAgenerator():
         # Create LRA folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
-        
+
         self.catbuilder = CatalogEntryBuilder(
             catalog=self.catalog, model=self.model,
-            exp=self.exp,resolution=self.resolution, frequency=self.frequency,
+            exp=self.exp, resolution=self.resolution, frequency=self.frequency,
             region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs
         )
         # Create output path builder from the catalog entry builder
@@ -197,7 +197,7 @@ class LRAgenerator():
         self.cluster = None
         self.client = None
         self.reader = None
-        
+
         # for data reading from FDB
         self.last_record = None
         self.check = False
@@ -207,7 +207,7 @@ class LRAgenerator():
         if param is not None:
             return param
         raise KeyError(msg or f"Please specify {name}.")
-    
+
     def _issue_info_warning(self):
         """
         Print information about the LRA generator settings
@@ -236,7 +236,7 @@ class LRAgenerator():
         self.logger.info('Variable(s) to be processed: %s', self.var)
         self.logger.info('Fixing data: %s', self.fix)
         self.logger.info('Resolution: %s', self.resolution)
-        self.logger.info('Statistic to be computed: %s', self.stat) 
+        self.logger.info('Statistic to be computed: %s', self.stat)
         self.logger.info('Domain selection: %s', self.region_name)
 
     def _configure_region(self, region, drop):
@@ -249,8 +249,8 @@ class LRAgenerator():
             if self.region['lon'] is None and self.region['lat'] is None:
                 raise KeyError(f'Please specify at least one between lat and lon for {region['name']}.')
             self.region_name = self.region['name']
-            self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...', 
-                                self.region['name'], self.region['lon'], self.region['lat'])
+            self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...',
+                             self.region['name'], self.region['lon'], self.region['lat'])
         else:
             self.region = None
             self.region_name = None
@@ -272,7 +272,7 @@ class LRAgenerator():
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
-    
+
         if self.catalog is None:
             self.logger.info('Assuming catalog from the reader so that is %s', self.reader.catalog)
             self.catalog = self.reader.catalog
@@ -322,7 +322,6 @@ class LRAgenerator():
                 self.logger.warning('No source grid name defined in the reader, using resolution as source grid name')
                 return False
         return self.resolution
-
 
     def create_catalog_entry(self):
         """
@@ -383,10 +382,9 @@ class LRAgenerator():
                 jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
                 if jsonfile is not None:
                     urlpath = urlpath + [f'reference::{jsonfile}']
-        
+
         if not urlpath:
             raise FileNotFoundError('No files found to create zarr reference')
-        
 
         # apply intake replacement: works on string need to loop on the list
         for index, value in enumerate(urlpath):
@@ -402,7 +400,6 @@ class LRAgenerator():
         self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
         sgn = self._define_source_grid_name()
 
-
         if entry_name in cat_file['sources']:
             catblock = cat_file['sources'][entry_name]
         else:
@@ -412,7 +409,7 @@ class LRAgenerator():
             basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
         )
         block['args']['urlpath'] = urlpath
-        cat_file['sources'][entry_name] = block      
+        cat_file['sources'][entry_name] = block
 
         dump_yaml(outfile=catalogfile, cfg=cat_file)
 

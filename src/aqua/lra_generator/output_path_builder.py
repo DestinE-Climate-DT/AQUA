@@ -50,13 +50,16 @@ class OutputPathBuilder:
 
     def build_path(self, basedir, var, year=None, month=None, day=None):
         """Ceate the full path to the output file.
-        
+
         Args:
             basedir (str): Base directory for the output files.
             var (str): Variable name to include in the filename. Can be a wildcard.
-            year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
-            month (int, optional): Month to include in the filename. Defaults to None. Can be a wildcard.
-            day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
+            year (int, optional): Year to include in the filename. Defaults to None.
+                                  Can be a wildcard.
+            month (int, optional): Month to include in the filename. Defaults to None.
+                                   Can be a wildcard.
+            day (int, optional): Day to include in the filename. Defaults to None.
+                                 Can be a wildcard.
         Returns:
             str: The full path to the output file.
         """
@@ -67,7 +70,7 @@ class OutputPathBuilder:
     def build_directory(self):
         """
         Create the output directory based on the class parameters.
-        
+
         Returns:
             str: The directory path for the output files.
         """
@@ -83,7 +86,7 @@ class OutputPathBuilder:
         Create the filename based on the class parameters.
         Variable and year are set as wildcards by default if not provided.
         Date format is forced to be zero-padded (e.g., 2023, 01, 01).
-        
+
         Args:
             var (str, optional): Variable name to include in the filename. Defaults to None. Can be a wildcard.
             year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
@@ -91,7 +94,7 @@ class OutputPathBuilder:
             day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
 
         Returns:
-            str: The filename for the output file.    
+            str: The filename for the output file.
         """
 
         # Use the provided variable or default to wildcard '*'
@@ -137,7 +140,14 @@ class OutputPathBuilder:
         return filename
 
     def format_component(self, value, length):
-        """Format a value as zero-padded string if it's not a wildcard, else return as-is."""
+        """
+        Format a value as zero-padded string if it's not a wildcard, else return as-is.
+
+        Args:
+            value (int or str): The value to format. Can be an integer or a wildcard
+            length (int): The length to zero-pad the value to, if applicable.
+        """
+
         if value is None:
             return ""
         if self.is_wildcard(value):
