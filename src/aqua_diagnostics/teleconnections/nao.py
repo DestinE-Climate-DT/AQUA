@@ -41,10 +41,16 @@ class NAO(BaseMixin):
 
         self.var = self.definition.get('field')
 
-    def retrieve(self):
-        """Retrieve the data for the NAO index."""
+    def retrieve(self, reader_kwargs: dict = {}) -> None:
+        """
+        Retrieve the data for the NAO index.
+        
+        Args:
+            reader_kwargs (dict): Additional keyword arguments for the Reader.
+                                  Default is an empty dictionary.
+        """
         # Assign self.data, self.reader, self.catalog
-        super().retrieve(var=self.var)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         self.reader.timmean(self.data, freq='MS')
     

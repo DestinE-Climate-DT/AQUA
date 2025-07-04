@@ -49,12 +49,13 @@ class Diagnostic():
         # Data to be retrieved
         self.data = None
 
-    def retrieve(self, var: str = None):
+    def retrieve(self, var: str = None, reader_kwargs: dict = {}):
         """
         Retrieve the data from the model.
 
         Args:
             var (str): The variable to be retrieved. If None, all variables will be retrieved.
+            reader_kwargs (dict): Additional keyword arguments to be passed to the Reader.
 
         Attributes:
             self.data: The data retrieved from the model. If return_data is True, the data will be returned.
@@ -63,7 +64,7 @@ class Diagnostic():
         self.data, self.reader, self.catalog = self._retrieve(model=self.model, exp=self.exp, source=self.source,
                                                               var=var, catalog=self.catalog, startdate=self.startdate,
                                                               enddate=self.enddate, regrid=self.regrid,
-                                                              loglevel=self.logger.level)
+                                                              loglevel=self.logger.level, reader_kwargs=reader_kwargs)
         if self.regrid is not None:
             self.logger.info(f'Regridded data to {self.regrid} grid')
         if self.startdate is None:
@@ -100,7 +101,7 @@ class Diagnostic():
     @staticmethod
     def _retrieve(model: str, exp: str, source: str, var: str = None, catalog: str = None,
                   startdate: str = None, enddate: str = None, regrid: str = None,
-                  loglevel: str = 'WARNING'):
+                  reader_kwargs: dict = {}, loglevel: str = 'WARNING'):
         """
         Static method to retrieve data and return everything instead of updating class
         attributes. Used internally by the retrieve method
@@ -116,6 +117,7 @@ class Diagnostic():
             enddate (str): The end date of the data to be retrieved.
                            If None, all available data will be retrieved.
             regrid (str): The target grid to be used for regridding. If None, no regridding will be done.
+            reader_kwargs (dict): Additional keyword arguments to be passed to the Reader.
             loglevel (str): The log level to be used. Default is 'WARNING'.
 
         Returns:
@@ -124,7 +126,8 @@ class Diagnostic():
             catalog (str): The catalog used to retrieve the data.
         """
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        regrid=regrid, startdate=startdate, enddate=enddate, loglevel=loglevel)
+                        regrid=regrid, startdate=startdate, enddate=enddate,
+                        loglevel=loglevel, **reader_kwargs)
 
         data = reader.retrieve(var=var)
 

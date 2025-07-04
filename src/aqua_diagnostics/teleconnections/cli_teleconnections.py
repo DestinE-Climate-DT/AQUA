@@ -50,6 +50,12 @@ if __name__ == '__main__':
 
     regrid = get_arg(args, 'regrid', None)
     logger.debug(f'Regrid CLI option: {regrid}')
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        logger.info(f"Realization option is set to {realization}")
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = {}
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -82,7 +88,7 @@ if __name__ == '__main__':
                     logger.info(f'Running dataset: {dataset_args}')
 
                     nao[i] = NAO(**dataset_args, **init_args)
-                    nao[i].retrieve()
+                    nao[i].retrieve(reader_kwargs=reader_kwargs)
                     nao[i].compute_index(months_window=nao_config.get('months_window', 3),
                                          rebuild=rebuild)
 
@@ -210,7 +216,7 @@ if __name__ == '__main__':
                     logger.info(f'Running dataset: {dataset_args}')
 
                     enso[i] = ENSO(**dataset_args, **init_args)
-                    enso[i].retrieve()
+                    enso[i].retrieve(reader_kwargs=reader_kwargs)
                     enso[i].compute_index(months_window=enso_config.get('months_window', 3),
                                           rebuild=rebuild)
                     enso[i].save_netcdf(enso[i].index, diagnostic='enso', diagnostic_product='index',

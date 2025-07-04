@@ -22,6 +22,9 @@ def parse_arguments(args):
                         required=False)
     parser.add_argument('--regrid', type=str, help='regrid value',
                         required=False)
+    # TODO: not used yet
+    parser.add_argument('--realization', type=str, default=None,
+                        help='realization name (default: None)')
     parser.add_argument('--freq', type=str, help='frequency',
                         required=False)
     parser.add_argument('--outputdir', type=str, help='output directory',

@@ -42,7 +42,14 @@ if __name__ == '__main__':
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
 
     regrid = get_arg(args, 'regrid', None)
-    logger.info(f"Regrid option is set to {regrid}")
+    if regrid:
+        logger.info(f"Regrid option is set to {regrid}")
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        logger.info(f"Realization option is set to {realization}")
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = {}
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -94,14 +101,13 @@ if __name__ == '__main__':
             biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref,
                                             outputdir=outputdir, loglevel=loglevel)
 
-
             for var in variables:
                 logger.info(f"Running Global Biases diagnostic for variable: {var}")
                 plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['2d_maps'].get(var, {})
                 vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
                 units = 'mm/day' if var in ['tprate', 'mtpr'] else None
 
-                biases_dataset.retrieve(var=var, units=units)
+                biases_dataset.retrieve(var=var, units=units, reader_kwargs=reader_kwargs)
                 biases_reference.retrieve(var=var, units=units)
 
                 biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)

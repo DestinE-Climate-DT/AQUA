@@ -50,7 +50,8 @@ class GlobalBiases(Diagnostic):
         self.startdate = startdate
         self.enddate = enddate
 
-    def retrieve(self, var: str = None, plev: float = None, units: str = None) -> None:
+    def retrieve(self, var: str = None, plev: float = None, units: str = None,
+                 reader_kwargs: dict = {}) -> None:
         """
         Retrieve and preprocess dataset, selecting pressure level and/or converting units if needed.
 
@@ -58,6 +59,7 @@ class GlobalBiases(Diagnostic):
             var (str, optional): Variable to retrieve. If None, uses self.var.
             plev (float, optional): Pressure level to extract.
             units (str, optional): Target units (e.g., 'mm/day').
+            reader_kwargs (dict, optional): Additional keyword arguments for the Reader.
 
         Raises:
             NoDataError: If variable not found in dataset.
@@ -68,7 +70,7 @@ class GlobalBiases(Diagnostic):
         if plev is not None:
             self.plev = plev
 
-        super().retrieve(var=self.var)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         if self.data is None:
             self.logger.error(f"Data could not be retrieved for {self.model}, {self.exp}, {self.source}")

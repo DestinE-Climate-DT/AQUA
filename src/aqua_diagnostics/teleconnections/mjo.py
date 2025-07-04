@@ -48,9 +48,16 @@ class MJO(BaseMixin):
         if hasattr(self, 'index'):
             del self.index
 
-    def retrieve(self):
+    def retrieve(self, reader_kwargs: dict = {}) -> None:
+        """
+        Retrieve the data for the MJO Hovmoller plot.
+
+        Args:
+            reader_kwargs (dict): Additional keyword arguments for the Reader.
+                                  Default is an empty dictionary.
+        """
         # Assign self.data, self.reader, self.catalog
-        super().retrieve(var=self.var)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
         self.data = self.data[self.var]
 
         self.reader.timmean(self.data, freq='D')

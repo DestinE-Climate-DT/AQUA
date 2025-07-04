@@ -308,6 +308,9 @@ def parse_arguments(args):
     parser.add_argument('--exp', type=str, help='Experiment name')
     parser.add_argument('--source', type=str, help='Source name')
     parser.add_argument('--regrid', type=str, help='Regrid target grid')
+    #TODO: not used yet
+    parser.add_argument('--realization', type=str, default=None,
+                        help='Realization name (default: None)')
     parser.add_argument('--outputdir', type=str,
                         help='Output directory')
     parser.add_argument("--cluster", type=str,

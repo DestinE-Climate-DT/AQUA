@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.17.0): 
 
 AQUA core complete list:
+- `aqua-analysis.py` now supports a `--realization` option to enable the analysis of a specific realization (#2041)
 - Refactor LRA of output and catalog entry creatro with `OutputPathBuilder` and `CatalogEntryBuilder` classes (#1932)
 - LRA cli support realization, stat and frequency (#1932)
 - Update to the new STACv2 API for Lumi (#2039)
@@ -17,6 +18,7 @@ AQUA core complete list:
 - `Trender()` class provide also coefficients and normalize them (#1991)
 
 AQUA diagnostics complete list:
+- Timeseries, Global Biases, Teleconnections: `--realization` option to select a specific realization in the CLI (#2041)
 - Global Biases: pressure levels plot works correctly with the CLI (#2027)
 - Timeseries: `diagnostic_name` option to override the default name in the CLI (#2027)
 - Global Biases: output directory is now correctly set in the cli (#2027)
