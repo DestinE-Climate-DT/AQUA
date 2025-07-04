@@ -75,7 +75,7 @@ class PlotGlobalBiases:
             raise ValueError(f'Format {format} not supported. Use png or pdf.')
 
 
-    def plot_climatology(self, data, var, plev=None, vmin=None, vmax=None):
+    def plot_climatology(self, data, var, plev=None, vmin=None, vmax=None, cbar_label=None):
         """
         Plots the climatology map for a given variable and time range.
 
@@ -85,6 +85,7 @@ class PlotGlobalBiases:
             plev (float, optional): Pressure level to plot (if applicable).
             vmin (float, optional): Minimum color scale value.
             vmax (float, optional): Maximum color scale value.
+            cbar_label (str, optional): Label for the colorbar.
 
         Returns:
             tuple: Matplotlib figure and axis objects.
@@ -104,7 +105,8 @@ class PlotGlobalBiases:
             title=title,
             vmin=vmin,
             vmax=vmax,
-            loglevel=self.loglevel
+            loglevel=self.loglevel,
+            cbar_label=cbar_label
         )
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
@@ -124,7 +126,7 @@ class PlotGlobalBiases:
                               description=description, var=var, plev=plev)
 
 
-    def plot_bias(self, data, data_ref, var, plev=None, vmin=None, vmax=None):
+    def plot_bias(self, data, data_ref, var, plev=None, vmin=None, vmax=None, cbar_label=None):
         """
         Plots the bias map between two datasets.
 
@@ -135,6 +137,7 @@ class PlotGlobalBiases:
             plev (float, optional): Pressure level.
             vmin (float, optional): Minimum colorbar value.
             vmax (float, optional): Maximum colorbar value.
+            cbar_label (str, optional): Label for the colorbar.
         """
         self.logger.info('Plotting global biases.')
 
@@ -156,6 +159,7 @@ class PlotGlobalBiases:
             sym=sym,
             vmin_fill=vmin, 
             vmax_fill=vmax,
+            cbar_label=cbar_label,
             loglevel=self.loglevel
         )
         ax.set_xlabel("Longitude")
@@ -176,7 +180,7 @@ class PlotGlobalBiases:
                               description=description, var=var, plev=plev)
 
 
-    def plot_seasonal_bias(self, data, data_ref, var, plev=None, vmin=None, vmax=None):
+    def plot_seasonal_bias(self, data, data_ref, var, plev=None, vmin=None, vmax=None, cbar_label=None):
         """
         Plots seasonal biases for each season (DJF, MAM, JJA, SON).
 
@@ -187,6 +191,7 @@ class PlotGlobalBiases:
             plev (float, optional): Pressure level.
             vmin (float, optional): Minimum colorbar value.
             vmax (float, optional): Maximum colorbar value.
+            cbar_label (str, optional): Label for the colorbar.
 
         Returns:
             matplotlib.figure.Figure: The resulting figure.
@@ -205,6 +210,7 @@ class PlotGlobalBiases:
             'titles': season_list,
             'contour': True,
             'sym': sym,
+            'cbar_label': cbar_label,
             'loglevel': self.loglevel
         }
 

@@ -180,7 +180,7 @@ def plot_single_map(data: xr.DataArray,
         # Add a colorbar axis at the bottom of the graph
         cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
 
-        cbar_label = cbar_get_label(data, cbar_label=kwargs.get('cbar_label', None), loglevel=loglevel)
+        cbar_label = cbar_get_label(data, cbar_label=cbar_label, loglevel=loglevel)
         logger.debug("Setting colorbar label to %s", cbar_label)
 
         cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', label=cbar_label)

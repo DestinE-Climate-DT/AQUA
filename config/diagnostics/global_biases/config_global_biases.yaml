@@ -30,14 +30,20 @@ diagnostics:
     diagnostic_name: 'global_biases'
     variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
     params:
-      plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
-      seasons: true
-      seasons_stat: 'mean' # May become a list
-      vertical: true     # Vertical profile if variable 3d
-      startdate_data: null
-      enddate_data: null
-      startdate_ref: "1990-01-01"
-      enddate_ref: "2020-12-31"
+      default:
+        plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: true     # Vertical profile if variable 3d
+        startdate_data: null
+        enddate_data: null
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2020-12-31"
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
+
     plot_params:
       limits:
         2d_maps:

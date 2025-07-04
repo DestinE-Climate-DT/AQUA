@@ -113,6 +113,18 @@ fixer_name:
                     valid_min: 0
                     valid_max: 1400
                     positive: down
+            tnlwrfcs: #clear sky
+                derived: 0.-toa_lw_clr_c_mon
+                attributes:
+                    valid_min: -500
+                    valid_max: 0
+                    positive: down
+            tnswrfcs: #clear sky
+                derived: solar_mon-toa_sw_clr_c_mon
+                attributes:
+                    valid_min: 0
+                    valid_max: 1400
+                    positive: down
 
     ceres-syn-destine-v1:
         convention: eccodes 
