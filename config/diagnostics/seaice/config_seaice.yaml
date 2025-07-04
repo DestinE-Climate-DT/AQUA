@@ -1,0 +1,169 @@
+# Template according to #1613
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+
+# Datasets holds the models, adding more than one "-"
+# will create a list of dict
+# =======  Dataset Configuration  =======
+datasets:
+  - &dts1
+    catalog: null              # mandatory as null
+    model: 'IFS-NEMO'          # mandatory
+    exp: 'historical-1990'     # mandatory
+    source: 'lra-r100-monthly' # mandatory
+    regrid: null # if the diagnostic supports it
+
+# =======  Reference Datasets  =======
+references:
+  # ---- Extent in NH ----
+  - &ref_nh_ext
+    catalog: 'obs'       # mandatory
+    model: 'OSI-SAF'     # mandatory
+    exp: 'osi-450'       # mandatory
+    source: 'nh-monthly' # mandatory
+    regrid: 'r100'
+
+  # ---- Extent in SH ----
+  - &ref_sh_ext
+    catalog: 'obs'       # mandatory
+    model: 'OSI-SAF'     # mandatory
+    exp: 'osi-450'       # mandatory
+    source: 'sh-monthly' # mandatory
+    regrid: 'r100' 
+
+  # ---- Volume in NH ----
+  - &ref_nh_vol
+    catalog: 'obs'
+    model: 'PSC'
+    exp: 'PIOMAS'
+    source: 'monthly'
+    regrid: 'r100'
+
+  # ---- Volume in SH ----
+  - &ref_sh_vol
+    catalog: 'obs'
+    model: 'PSC'
+    exp: 'GIOMAS'
+    source: 'monthly'
+    regrid: 'r100'
+
+# =======  Setup Configuration  =======
+setup:
+  loglevel: 'WARNING'
+
+# =======  Output Configuration  =======
+output:
+  outputdir: "/project/project_465000454/tovazzie/src/AQUA/" # mandatory
+  rebuild: true
+  save_netcdf: false # mandatory
+  save_pdf: false    # mandatory
+  save_png: false    # mandatory
+  dpi: 300
+
+# =======  Config for timeseries Sea Ice  =======
+# ===============================================
+# These are options that specify how the data is plotted
+# If you need specific options, you can add it here.
+seaice_timeseries:
+  run: true
+  # List of methods to plot.
+  methods: ["extent", "volume"]
+  # List of regions to plot. The default regions are defined in config/diagnostics/seaice
+  regions: ['Arctic','Antarctic']
+  startdate: '1991-01-01'
+  enddate: '2000-01-01'
+  calc_ref_std: true
+  ref_std_freq: 'monthly' # set to 'monthly' 'annual'
+
+  # ====  Update Datasets and reference entries  ====
+  datasets:
+  - <<: *dts1  # Copy all values from dts1
+    time: "monthly"  # can be a list ['monthly', 'annual']
+    varname:
+      extent: 'siconc'
+      volume: 'sithick'
+
+  references:
+  # -- OSI-SAF for "extent" in NH --
+  - <<: *ref_nh_ext
+    domain: "nh"
+    time: "monthly"
+    # might be useful to add a key that allow to use a certain dataset only for a specific method
+    use_for_method: "extent"
+    varname: "siconc"
+
+  # -- OSI-SAF for "extent" in SH --
+  - <<: *ref_sh_ext
+    domain: "sh"
+    time: "monthly"
+    use_for_method: "extent"
+    varname: "siconc"
+
+  # -- PSC for "volume" in NH --
+  - <<: *ref_nh_vol
+    domain: "nh"
+    time: "monthly"
+    use_for_method: "volume"
+    varname: "sivol"
+
+  # -- PSC for "volume" in SH --
+  - <<: *ref_sh_vol
+    domain: "sh"
+    time: "monthly"
+    use_for_method: "volume"
+    varname: "sivol"
+
+# =======  Config for seasonal cycle Sea Ice  =======
+# ===================================================
+# These are options that specify how the data is plotted
+# If you need specific options, you can add it here.
+seaice_seasonal_cycle:
+  run: true
+  # List of methods to plot.
+  methods: ["extent", "volume"]
+  # List of regions to plot. The default regions are defined in config/diagnostics/seaice
+  regions: ['Arctic','Antarctic']
+  startdate: '1991-01-01'
+  enddate: '2000-01-01'
+  calc_ref_std: true
+  ref_std_freq: 'monthly' # set to 'monthly' 'annual'
+
+  # ====  Update Datasets and reference entries  ====
+  datasets:
+  - <<: *dts1  # Copy all values from dts1
+    time: "monthly"  # can be a list ['monthly', 'annual']
+    varname:
+      extent: 'siconc'
+      volume: 'sithick'
+
+  references:
+  # -- OSI-SAF for "extent" in NH --
+  - <<: *ref_nh_ext
+    domain: "nh"
+    time: "monthly"
+    # might be useful to add a key that allow to use a 
+    # certain dataset only for a specific method
+    use_for_method: "extent"
+    varname: "siconc"
+    
+  # -- OSI-SAF for "extent" in SH --
+  - <<: *ref_sh_ext
+    domain: "sh"
+    time: "monthly"
+    use_for_method: "extent"
+    varname: "siconc"
+
+  # -- PSC for "volume" in NH --
+  - <<: *ref_nh_vol
+    domain: "nh"
+    time: "monthly"
+    use_for_method: "volume"
+    varname: "sivol"
+
+  # -- PSC for "volume" in SH --
+  - <<: *ref_sh_vol
+    domain: "sh"
+    time: "monthly"
+    use_for_method: "volume"
+    varname: "sivol"
