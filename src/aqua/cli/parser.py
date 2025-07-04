@@ -34,7 +34,7 @@ def parse_arguments():
     catalog_remove_parser = subparsers.add_parser("remove", description='Remove a catalog in the current AQUA installation')
     set_parser = subparsers.add_parser("set", description="Set an installed catalog as the predefined in config-aqua.yaml")
     list_parser = subparsers.add_parser("list", description="List the currently installed AQUA catalogs")
-    subparsers.add_parser("avail", description='List the ClimateDT available catalogs on GitHub')
+    avail_parser = subparsers.add_parser("avail", description='List the ClimateDT available catalogs on GitHub')
 
     # subparser for other AQUA commands as they are importing the parser from their code
     lra_subparser = subparsers.add_parser("lra", description="Low Resolution Archive generator")
@@ -62,6 +62,11 @@ def parse_arguments():
                                     help="Catalog to be installed")
     catalog_add_parser.add_argument('-e', '--editable', type=str,
                                     help='Install a catalog in editable mode from the original source: provide the Path')
+    catalog_add_parser.add_argument('-r', '--repository', type=str,
+                                    help='Install a catalog from a specific repository: provide the user/repo string')
+    
+    avail_parser.add_argument('-r', '--repository', type=str,
+                              help='Explore a specific repository: provide the user/repo string')
 
     catalog_remove_parser.add_argument("catalog", metavar="CATALOG_NAME",
                                        help="Catalog to be removed")

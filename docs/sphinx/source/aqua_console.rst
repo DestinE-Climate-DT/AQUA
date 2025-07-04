@@ -135,8 +135,14 @@ This structure ensures that all configuration files are neatly organized and eas
 aqua avail
 ----------
 
-This simple command will print all the available catalogs on the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
-You don't need to have access to the repository to see the available catalogs.
+This simple command will print all the available catalogs on a repository.
+By default this will be the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
+
+.. option:: -r, --repository <user/repo>
+
+    It is possible to specify a different repository to explore.
+    The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
+    If this option is not specified, the default repository will be used.
 
 .. _aqua-add:
 
@@ -154,8 +160,8 @@ and it is possible to install extra catalogs not present in the AQUA release.
 
 Multiple catalogs can be installed with multiple calls to ``aqua add``.
 By default the catalog will be downloaded from the external Climate-DT catalog repository,
-if a matching catalog is found. As shown below, it is possible to specify a local path
-and install the catalog from there.
+if a matching catalog is found. It is possible to specify a different repository.
+As shown below, it is also possible to specify a local path and install the catalog from there.
 
 .. option:: catalog
 
@@ -168,6 +174,12 @@ and install the catalog from there.
     It installs the catalog based on the path given.
     It will create a symbolic link to the catalog folder.
     This is very recommended for developers. Please read the :ref:`dev-notes` section.
+
+.. option:: --repository, -r <user/repo>
+
+    It is possible to specify a different repository to explore.
+    The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
+    If this option is not specified, the default repository will be used.
 
 .. note::
 

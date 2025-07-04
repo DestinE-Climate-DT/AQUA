@@ -99,6 +99,11 @@ The configuration file is divided in three main sections:
 - ``cluster``: contains the details of the dask cluster to use.
 - ``diagnostics``: contains the list of diagnostics to run.
 
+.. note::
+
+    The configuration file allows for the definition of a custom folder path where the individual diagnostics configuration files are stored.
+    This is done by setting an environment variable ``AQUA_CONFIG``.
+
 Job
 ^^^
 

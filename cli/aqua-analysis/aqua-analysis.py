@@ -243,7 +243,7 @@ def main():
 
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA"] = aqua_path
-    os.environ["AQUA_CONFIG"] = aqua_configdir
+    os.environ["AQUA_CONFIG"] = aqua_configdir if 'AQUA_CONFIG' not in os.environ else os.environ["AQUA_CONFIG"]
     create_folder(output_dir)
 
     run_checker = config.get('job', {}).get('run_checker', False)

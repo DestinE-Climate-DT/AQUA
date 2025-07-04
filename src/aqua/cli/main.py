@@ -69,7 +69,7 @@ class AquaConsole():
         }
 
     def execute(self):
-        """parse AQUA class and run the required command"""
+        """Parse AQUA class and run the required command"""
 
         parser_dict = parse_arguments()
         parser = parser_dict['main']
@@ -450,7 +450,7 @@ class AquaConsole():
         if args.editable is not None:
             self._add_catalog_editable(args.catalog, args.editable)
         else:
-            self._add_catalog_github(args.catalog)
+            self._add_catalog_github(args.catalog, args.repository)
 
         # verify that the new catalog is compatible with AQUA, loading it with catalog()
         try:
@@ -481,7 +481,26 @@ class AquaConsole():
 
         self._set_catalog(catalog)
 
-    def _github_explore(self):
+    def _github_explore(self, repository=None):
+        """
+        Explore the remote GitHub repository
+        
+        Args:
+            repository (str): the repository to explore, if None it uses the default
+                              DestinE-Climate-DT/Climate-DT-catalog
+
+        Returns:
+            fsspec.filesystem: the filesystem object for the GitHub repository
+        """
+        if repository is None:
+            org = 'DestinE-Climate-DT'
+            repo = 'Climate-DT-catalog'
+        else:
+            try:
+                org, repo = repository.split('/')
+            except ValueError:
+                self.logger.error('Repository should be in the format user/repo, got %s', repository)
+                sys.exit(1)
         try:
             # Detect if running in GitHub Actions
             is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
@@ -497,11 +516,11 @@ class AquaConsole():
 
             fs = fsspec.filesystem(
                 "github",
-                org="DestinE-Climate-DT",
-                repo="Climate-DT-catalog",
+                org=org,
+                repo=repo,
                 **auth_kwargs  # Apply authentication if available
             )
-            self.logger.info('Accessed remote repository https://github.com/DestinE-Climate-DT/Climate-DT-catalog')
+            self.logger.info('Accessed remote repository https://github.com/%s/%s', org, repo)
         except HTTPError:
             self.logger.error('Permission issues in accessing Climate-DT catalog, please contact AQUA maintainers')
             sys.exit(1)
@@ -509,25 +528,36 @@ class AquaConsole():
         return fs
 
     def avail(self, args):
-
-        """Return the catalog available on the Github website"""
-
-        fs = self._github_explore()
+        """
+        Return the catalog available on the Github website
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        fs = self._github_explore(repository=args.repository)
         available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
         print('Available ClimateDT catalogs at are:')
         print(available_catalog)
 
 
-    def _add_catalog_github(self, catalog):
-        """Add a catalog from the remote Github Climate-DT repository"""
-
+    def _add_catalog_github(self, catalog, repository=None):
+        """
+        Add a catalog from a remote Github repository.
+        Default repository is the Climate-DT repository
+        DestinE-Climate-DT/Climate-DT-catalog
+          
+        Args:
+            catalog (str): the catalog to be added
+            repository (str): the repository from which to fetch the catalog, if None it uses the default
+        """
         # recursive copy
         cdir = f'{self.configpath}/{CATPATH}/{catalog}'
         if not os.path.exists(cdir):
-            fs = self._github_explore()
+            fs = self._github_explore(repository)
             available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
             if catalog not in available_catalog:
-                self.logger.error('Cannot find on Climate-DT-catalog the requested catalog %s, available are %s',
+                self.logger.error('Cannot find on %s the requested catalog %s, available are %s',
+                                  repository if repository else 'DestinE-Climate-DT/Climate-DT-catalog',
                                   catalog, available_catalog)
                 sys.exit(1)
 

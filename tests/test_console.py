@@ -231,7 +231,7 @@ class TestAquaConsole():
 
         # aqua install
         run_aqua(['install', machine])
-        run_aqua(['add', 'ci'])
+        run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
         # create fake config file
         lratest = os.path.join(mydir, 'faketrip.yaml')
@@ -489,7 +489,7 @@ class TestAquaConsole():
         assert 'IFS.yaml' in out
         assert 'HealPix.yaml' in out
 
-        run_aqua(['avail'])
+        run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
         out, _ = capfd.readouterr()
 
         assert 'climatedt-phase1' in out

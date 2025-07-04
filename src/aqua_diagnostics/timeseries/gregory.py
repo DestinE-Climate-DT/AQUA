@@ -113,6 +113,7 @@ class Gregory(Diagnostic):
             units (str): The units of the data. Default is 'degC'.
             exclude_incomplete (bool): Whether to exclude incomplete timespans. Default is True.
         """
+        self.logger.info(f'Computing the {var} data.')
         t2m = self.reader.fldmean(self.t2m)
         if units:
             t2m = convert_data_units(data=t2m, var=var, units=units, loglevel=self.loglevel)
@@ -134,6 +135,7 @@ class Gregory(Diagnostic):
             std (bool): Whether to compute the standard deviation. Default is False.
             exclude_incomplete (bool): Whether to exclude incomplete timespans. Default is True.
         """
+        self.logger.info('Computing the net TOA radiation data.')
         net_toa = self.reader.fldmean(self.net_toa)
 
         if 'monthly' in freq:
