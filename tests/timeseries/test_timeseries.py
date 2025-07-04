@@ -75,7 +75,7 @@ class TestTimeseries:
         
         plt.run(var=self.var, outputdir=tmp_path)
 
-        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.catalog}.{self.model}.{self.exp}.{self.var}.png'
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.catalog}.{self.model}.{self.exp}.{self.var}.{self.region}.png'
         file = os.path.join(tmp_path, 'png', filename)
         assert os.path.exists(file)
 

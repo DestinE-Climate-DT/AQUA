@@ -32,7 +32,7 @@ class PlotSeasonalCycles(PlotBaseMixin):
         # Filling them
         self.get_data_info()
 
-    def run(self, var: str, units: str = None, region: str = None, outputdir: str = './',
+    def run(self, var: str, units: str = None, outputdir: str = './',
             rebuild: bool = True, dpi: int = 300, format: str = 'png'):
         """
         Run the PlotTimeseries class.
@@ -40,7 +40,6 @@ class PlotSeasonalCycles(PlotBaseMixin):
         Args:
             var (str): Variable name to be used in the title and description.
             units (str): Units of the variable to be used in the title.
-            region (str): Region to be used in the title and description.
             outputdir (str): Output directory to save the plot.
             rebuild (bool): If True, rebuild the plot even if it already exists.
             dpi (int): Dots per inch for the plot.
@@ -50,11 +49,10 @@ class PlotSeasonalCycles(PlotBaseMixin):
         self.logger.info('Running PlotSeasonalCycles')
         data_label = self.set_data_labels()
         ref_label = self.set_ref_label()
-        description = self.set_description(region=region)
-        title = self.set_title(region=region, var=var, units=units)
+        description = self.set_description()
+        title = self.set_title(var=var, units=units)
         fig, _ = self.plot_seasonalcycles(data_labels=data_label, ref_label=ref_label, title=title)
-        region_short = region.replace(' ', '').lower() if region is not None else None
-        self.save_plot(fig, var=var, description=description, region=region_short, rebuild=rebuild,
+        self.save_plot(fig, var=var, description=description, rebuild=rebuild,
                        outputdir=outputdir, dpi=dpi, format=format)
         self.logger.info('PlotSeasonalCycles completed successfully')
 
@@ -75,48 +73,51 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.catalogs = [d.AQUA_catalog for d in self.monthly_data]
             self.models = [d.AQUA_model for d in self.monthly_data]
             self.exps = [d.AQUA_exp for d in self.monthly_data]
+            self.region = self.monthly_data[0].AQUA_region if hasattr(self.monthly_data[0], 'AQUA_region') else None
+        self.logger.debug(f'Catalogs: {self.catalogs}')
+        self.logger.debug(f'Models: {self.models}')
+        self.logger.debug(f'Experiments: {self.exps}')
+        self.logger.debug(f'Region: {self.region}')
 
         if self.ref_monthly_data is not None:
             # Make a list from the data array attributes
             self.ref_catalogs = self.ref_monthly_data.AQUA_catalog
             self.ref_models = self.ref_monthly_data.AQUA_model
             self.ref_exps = self.ref_monthly_data.AQUA_exp
+            self.logger.debug(f'Reference: {self.ref_catalogs} {self.ref_models} {self.ref_exps}')
 
         if self.std_monthly_data is not None:
             for std in self.std_monthly_data:
                 self.std_startdate = std.std_startdate if std.std_startdate is not None else None
                 self.std_enddate = std.std_enddate if std.std_enddate is not None else None
+                self.logger.debug(f'Standard deviation dates: {self.std_startdate} - {self.std_enddate}')
                 break
 
-    def set_title(self, region: str = None, var: str = None, units: str = None):
+    def set_title(self, var: str = None, units: str = None):
         """
         Set the title for the plot.
 
         Args:
-            region (str): Region to be used in the title.
             var (str): Variable name to be used in the title.
             units (str): Units of the variable to be used in the title.
 
         Returns:
             title (str): Title for the plot.
         """
-        title = super().set_title(region=region, var=var, units=units, diagnostic='Seasonal cycle')
+        title = super().set_title(region=self.region, var=var, units=units, diagnostic='Seasonal cycle')
         return title
 
-    def set_description(self, region: str = None):
+    def set_description(self):
         """
         Set the caption for the plot.
         The caption is extracted from the data arrays attributes and the
         reference data arrays attributes.
         The caption is stored as 'Description' in the metadata dictionary.
 
-        Args:
-            region (str): Region to be used in the caption.
-
         Returns:
             description (str): Caption for the plot.
         """
-        description = super().set_description(region=region, diagnostic='Seasonal cycle')
+        description = super().set_description(region=self.region, diagnostic='Seasonal cycle')
         return description
 
     def plot_seasonalcycles(self, data_labels=None, ref_label=None, title=None):
@@ -142,7 +143,7 @@ class PlotSeasonalCycles(PlotBaseMixin):
 
         return fig, ax
 
-    def save_plot(self, fig, var: str, description: str = None, region: str = None, rebuild: bool = True,
+    def save_plot(self, fig, var: str, description: str = None, rebuild: bool = True,
                   outputdir: str = './', dpi: int = 300, format: str = 'png'):
         """
         Save the plot to a file.
@@ -151,12 +152,11 @@ class PlotSeasonalCycles(PlotBaseMixin):
             fig (matplotlib.figure.Figure): Figure object.
             var (str): Variable name to be used in the title and description.
             description (str): Description of the plot.
-            region (str): Region to be used in the title and description.
             rebuild (bool): If True, rebuild the plot even if it already exists.
             outputdir (str): Output directory to save the plot.
             dpi (int): Dots per inch for the plot.
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
         """
         super().save_plot(fig, var=var, description=description,
-                          region=region, rebuild=rebuild,
+                          region=self.region, rebuild=rebuild,
                           outputdir=outputdir, dpi=dpi, format=format, diagnostic_product='seasonalcycles')

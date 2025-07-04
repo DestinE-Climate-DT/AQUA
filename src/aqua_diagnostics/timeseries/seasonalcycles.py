@@ -94,6 +94,9 @@ class SeasonalCycles(BaseMixin):
                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq='MS', exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
+        
+        if self.region is not None:
+            data.attrs['AQUA_region'] = self.region
 
         data = data.groupby('time.month').mean('time')
 
