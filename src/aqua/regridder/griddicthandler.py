@@ -1,6 +1,6 @@
 """Basic grid dictionary handling."""
 
-from smmregrid.util import is_cdo_grid
+from smmregrid import CdoGrid
 from aqua.logger import log_configure
 from .regridder_util import check_existing_file
 
@@ -86,7 +86,7 @@ class GridDictHandler:
             raise TypeError(f"Grid name '{grid_name}' is not a valid type. str or dict expected.")
 
         # if a grid name is a valid CDO grid name, return it in the format of a dictionary
-        if isinstance(grid_name, str) and is_cdo_grid(grid_name):
+        if isinstance(grid_name, str) and CdoGrid(grid_name).grid_kind :
             self.logger.debug("Grid name %s is a valid CDO grid name.", grid_name)
             return {"path": {self.default_dimension: grid_name}}
 
@@ -101,10 +101,10 @@ class GridDictHandler:
 
         # grid dict is a string: this is the case of a CDO grid name
         if isinstance(grid_dict, str):
-            if is_cdo_grid(grid_dict):
+            if CdoGrid(grid_dict).grid_kind:
                 self.logger.debug("Grid definition %s is a valid CDO grid name.", grid_dict)
                 return {"path": {self.default_dimension: grid_dict}}
-            raise ValueError(f"Grid name '{grid_dict}' is not a valid CDO grid name.")
+            raise ValueError(f"Grid name '{grid_dict}' is a string but not a valid CDO grid name.")
         # if the grid dict is a dictionary, return it
         return grid_dict
 
@@ -131,7 +131,7 @@ class GridDictHandler:
 
         # case path is a string: check if it is a valid CDO grid name or a file path
         if isinstance(path, str):
-            if is_cdo_grid(path):
+            if CdoGrid(path).grid_kind:
                 self.logger.debug("Grid path %s is a valid CDO grid name.", path)
                 return {self.default_dimension: path}
             if check_existing_file(path):
@@ -143,7 +143,7 @@ class GridDictHandler:
         # (could extend to CDO names?)
         if isinstance(path, dict):
             for _, value in path.items():
-                if not (is_cdo_grid(value) or check_existing_file(value)):
+                if not (CdoGrid(value).grid_kind or check_existing_file(value)):
                     raise ValueError(f"Grid path '{value}' is not a valid CDO grid name nor a file path.")
             self.logger.debug("Grid path %s is a valid dictionary of file paths.", path)
             return path
