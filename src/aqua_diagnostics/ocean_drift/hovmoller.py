@@ -236,17 +236,13 @@ class Hovmoller(Diagnostic):
             outputdir (str): Directory to save the output files. Defaults to '.'.
             rebuild (bool, optional): Whether to rebuild the netCDF file. Defaults to True.
         """
-        save_kwargs = {}
-
-        if region is not None:
-            save_kwargs["region"] = region
 
         for processed_data in self.processed_data_list:
             super().save_netcdf(
                 data=processed_data,
                 diagnostic=diagnostic,
                 diagnostic_product=f"{diagnostic_product}_{processed_data.attrs["AQUA_ocean_drift_type"]}",
-                default_path=outputdir,
+                outdir=outputdir,
                 rebuild=rebuild,
-                **save_kwargs,
+                extra_keys={"region": region}
             )

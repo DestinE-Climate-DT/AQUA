@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import xarray as xr
-from aqua.logger import log_configure
+from aqua.logger import log_configure, log_history
 from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata
 
 
@@ -28,7 +28,6 @@ class OutputSaver:
             model_ref (str, optional): Reference model name.
             exp_ref (str, optional): Reference experiment name.
             outdir (str, optional): Output directory. Defaults to current directory.
-            rebuild (bool, optional): Whether to rebuild the output directory. Defaults to True.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         """
 
@@ -40,7 +39,6 @@ class OutputSaver:
         self.model_ref = model_ref
         self.exp_ref = exp_ref
         self.outdir = outdir
-        self.rebuild = rebuild
 
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='OutputSaver')
@@ -50,8 +48,7 @@ class OutputSaver:
                       catalog_ref: str = None, model_ref: str = None, exp_ref: str = None,
                       extra_keys: dict = None) -> str:
         """
-        Generate a filename based on provided parameters and additional user-defined keywords,
-        including precise time intervals.
+        Generate a filename based on provided parameters and additional user-defined keywords
 
         Args:
             diagnostic_product (str, optional): Product of the diagnostic analysis.
@@ -123,32 +120,50 @@ class OutputSaver:
         self.logger.debug(f"Generated filename: {filename}")
         return filename
 
-    def save_netcdf(self, dataset: xr.Dataset, diagnostic_product: str, extra_keys: dict = None):
+    def save_netcdf(self, dataset: xr.Dataset, diagnostic_product: str, rebuild: bool = True, extra_keys: dict = None, metadata: dict = None):
         """
         Save an xarray Dataset as a NetCDF file with a generated filename.
 
         Args:
             dataset (xr.Dataset): The xarray Dataset to save.
             diagnostic_product (str): Product of the diagnostic analysis.
+            rebuild (bool, optional): Whether to rebuild the output file if it already exists. Defaults to True.
             extra_keys (dict, optional): Dictionary of additional keys to include in the filename.
+            metadata (dict, optional): Additional metadata to include in the NetCDF file.
         """
         filename = self.generate_name(diagnostic_product=diagnostic_product, extra_keys=extra_keys) + '.nc'
 
         folder = os.path.join(self.outdir, 'netcdf')
         create_folder(folder=str(folder), loglevel=self.loglevel)
         filepath = os.path.join(folder, filename)
+
+        if not rebuild and os.path.exists(filepath):
+            self.logger.info(f"File already exists and rebuild=False, skipping: {filepath}")
+            return filepath
+
+        metadata = self.create_metadata(diagnostic_product=diagnostic_product, extra_keys=extra_keys, metadata=metadata)
+       
+        # If metadata contains a history attribute, log the history
+        if 'history' in metadata:
+            log_history(data=dataset, msg=metadata['history'])
+            # Remove the history attribute from the metadata dictionary
+            metadata.pop('history')
+
+        dataset.attrs.update(metadata)
+        
         dataset.to_netcdf(filepath)
 
         self.logger.info(f"Saved NetCDF: {filepath}")
         return filepath
 
-    def save_pdf(self, fig: plt.Figure, diagnostic_product: str, extra_keys: dict = None,  metadata: dict = None):
+    def save_pdf(self, fig: plt.Figure, diagnostic_product: str, rebuild: bool =True, extra_keys: dict = None,  metadata: dict = None):
         """
         Save a Matplotlib figure as a PDF file with a generated filename.
 
         Args:
             fig (plt.Figure): The Matplotlib figure to save.
             diagnostic_product (str): Product of the diagnostic analysis.
+            rebuild (bool, optional): Whether to rebuild the output file if it already exists. Defaults to True.
             extra_keys (dict, optional): Dictionary of additional keys to include in the filename.
             metadata (dict, optional): Additional metadata to include in the PDF file.
         """
@@ -157,6 +172,10 @@ class OutputSaver:
         folder = os.path.join(self.outdir, 'pdf')
         create_folder(folder=str(folder), loglevel=self.loglevel)
         filepath = os.path.join(folder, filename)
+        if not rebuild and os.path.exists(filepath):
+            self.logger.info(f"File already exists and rebuild=False, skipping: {filepath}")
+            return filepath
+
         fig.savefig(filepath, format='pdf', bbox_inches='tight')
 
         metadata = self.create_metadata(diagnostic_product=diagnostic_product, extra_keys=extra_keys, metadata=metadata)
@@ -165,7 +184,7 @@ class OutputSaver:
         self.logger.info(f"Saved PDF: {filepath}")
         return filepath
 
-    def save_png(self, fig: plt.Figure, diagnostic_product: str, extra_keys: dict = None,  metadata: dict = None,
+    def save_png(self, fig: plt.Figure, diagnostic_product: str, rebuild: bool = True, extra_keys: dict = None,  metadata: dict = None,
                  dpi: int = 300):
         """
         Save a Matplotlib figure as a PNG file with a generated filename.
@@ -173,6 +192,7 @@ class OutputSaver:
         Args:
             fig (plt.Figure): The Matplotlib figure to save.
             diagnostic_product (str): Product of the diagnostic analysis.
+            rebuild (bool, optional): Whether to rebuild the output file if it already exists. Defaults to True.
             extra_keys (dict, optional): Dictionary of additional keys to include in the filename.
             metadata (dict, optional): Additional metadata to include in the PNG file.
             dpi (int, optional): Dots per inch for the PNG file.
@@ -183,6 +203,11 @@ class OutputSaver:
         folder = os.path.join(self.outdir, 'png')
         create_folder(folder=str(folder), loglevel=self.loglevel)
         filepath = os.path.join(folder, filename)
+        
+        if not rebuild and os.path.exists(filepath):
+            self.logger.info(f"File already exists and rebuild=False, skipping: {filepath}")
+            return filepath
+
         fig.savefig(filepath, format='png', dpi=dpi, bbox_inches='tight')
 
         metadata = self.create_metadata(diagnostic_product=diagnostic_product, extra_keys=extra_keys, metadata=metadata)
@@ -216,6 +241,9 @@ class OutputSaver:
 
         # Process extra keys safely
         if extra_keys:
+            # Filter out None values
+            filtered_keys = {k: v for k, v in extra_keys.items() if v is not None}
+
             processed_extra_keys = {
                 key: ",".join(map(str, value)) if isinstance(value, list) else str(value)
                 for key, value in extra_keys.items()

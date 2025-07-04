@@ -32,7 +32,9 @@ output:
 diagnostics:
   timeseries:
     run: true
+    diagnostic_name: 'ocean'
     variables: ['tos', 'siconc']
+    center_time: true
     params:
       default:
         hourly: False
@@ -46,6 +48,7 @@ diagnostics:
   
   seasonalcycles:
     run: true
+    diagnostic_name: 'ocean'
     variables: ['tos', 'siconc']
     params:
       default:

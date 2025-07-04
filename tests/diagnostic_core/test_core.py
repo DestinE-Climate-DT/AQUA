@@ -39,7 +39,7 @@ def test_class_diagnostic(tmp_path):
 
     diag.save_netcdf(data=data_sel, diagnostic='test',
                      diagnostic_product='save',
-                     default_path=outdir,
+                     outdir=outdir,
                      rebuild=True)
 
     assert outdir.joinpath('netcdf/test.save.ci.ERA5.era5-hpz3.nc').exists()

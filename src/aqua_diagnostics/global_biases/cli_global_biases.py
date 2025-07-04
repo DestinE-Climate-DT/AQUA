@@ -36,12 +36,13 @@ if __name__ == '__main__':
     client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
 
     # Load the configuration file and then merge it with the command-line arguments
-    config_dict = load_diagnostic_config(diagnostic='globalbiases', args=args,
+    config_dict = load_diagnostic_config(diagnostic='globalbiases', config=args.config,
                                          default_config='config_global_biases.yaml',
                                          loglevel=loglevel)
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
 
-    regrid = get_arg(args, 'regrid', None) 
+    regrid = get_arg(args, 'regrid', None)
+    logger.info(f"Regrid option is set to {regrid}")
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -70,10 +71,10 @@ if __name__ == '__main__':
             reference = config_dict['references'][0]
             dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
                             'exp': dataset['exp'], 'source': dataset['source'],
-                            'regrid': dataset.get('regrid', regrid)}
+                            'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
             reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                             'exp': reference['exp'], 'source': reference['source'],
-                            'regrid': reference.get('regrid', regrid)}
+                            'regrid': regrid if regrid is not None else reference.get('regrid', None)}
             
             variables = config_dict['diagnostics']['globalbiases'].get('variables', [])
             plev = config_dict['diagnostics']['globalbiases']['params'].get('plev')
@@ -86,8 +87,12 @@ if __name__ == '__main__':
             startdate_ref = config_dict['diagnostics']['globalbiases']['params'].get('startdate_ref', None)
             enddate_ref = config_dict['diagnostics']['globalbiases']['params'].get('enddate_ref', None)
 
-            biases_dataset = GlobalBiases(**dataset_args, startdate=startdate_data, enddate=enddate_data, loglevel=loglevel)
-            biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref, loglevel=loglevel)
+            logger.debug("Selected levels for vertical plots: %s", plev)
+
+            biases_dataset = GlobalBiases(**dataset_args, startdate=startdate_data, enddate=enddate_data,
+                                          outputdir=outputdir, loglevel=loglevel)
+            biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref,
+                                            outputdir=outputdir, loglevel=loglevel)
 
 
             for var in variables:
@@ -104,21 +109,24 @@ if __name__ == '__main__':
 
                 if 'plev' in biases_dataset.data.get(var, {}).dims and plev:
                     plev_list = to_list(plev)
+                    logger.debug(f"Pressure levels for variable {var}: {plev_list}")
                 else: 
                     plev_list = [None] 
 
-                for plev in plev_list:
+                for p in plev_list:
+                    logger.info(f"Processing variable: {var} at pressure level: {p}" if p else f"Processing variable: {var} at surface level")
 
                     plot_biases = PlotGlobalBiases(save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
                    
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
-                                          var=var, plev=plev, vmin=vmin, vmax=vmax) 
+                                          var=var, plev=p, vmin=vmin, vmax=vmax) 
                     if seasons:
                         plot_biases.plot_seasonal_bias(data=biases_dataset.seasonal_climatology, 
                                                        data_ref=biases_reference.seasonal_climatology,
-                                                       var=var, plev=plev, vmin=vmin, vmax=vmax)
+                                                       var=var, plev=p, vmin=vmin, vmax=vmax)
 
                 if vertical and 'plev' in biases_dataset.data.get(var, {}).dims:
+                    logger.debug(f"Plotting vertical bias for variable: {var}")
                     plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['vertical_maps'].get(var, {})
                     vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
                     plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, var=var)

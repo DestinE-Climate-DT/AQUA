@@ -231,7 +231,7 @@ class TestAquaConsole():
 
         # aqua install
         run_aqua(['install', machine])
-        run_aqua(['add', 'ci'])
+        run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
         # create fake config file
         lratest = os.path.join(mydir, 'faketrip.yaml')
@@ -360,6 +360,28 @@ class TestAquaConsole():
             run_aqua(['-v', 'fixes', 'remove', 'ciccio.yaml'])
             assert excinfo.value.code == 1
 
+        # set the grids path in the config-aqua.yaml
+        run_aqua(['-v', 'grids', 'set', os.path.join(mydir, 'pippo')])
+        assert os.path.exists(os.path.join(mydir, 'pippo', 'grids'))
+        assert os.path.exists(os.path.join(mydir, 'pippo', 'areas'))
+        assert os.path.exists(os.path.join(mydir, 'pippo', 'weights'))
+        config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert config_file['paths'] == {
+            'grids': os.path.join(mydir, 'pippo', 'grids'),
+            'areas': os.path.join(mydir, 'pippo', 'areas'),
+            'weights': os.path.join(mydir, 'pippo', 'weights')
+        }
+        
+        # set the grids path in the config-aqua.yaml with the block already existing
+        run_aqua(['-v', 'grids', 'set', os.path.join(mydir, 'pluto')])
+        assert os.path.exists(os.path.join(mydir, 'pluto', 'grids'))
+        config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert config_file['paths'] == {
+            'grids': os.path.join(mydir, 'pluto', 'grids'),
+            'areas': os.path.join(mydir, 'pluto', 'areas'),
+            'weights': os.path.join(mydir, 'pluto', 'weights')
+        }
+
         # uninstall everything
         run_aqua_console_with_input(['uninstall'], 'yes')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
@@ -467,7 +489,7 @@ class TestAquaConsole():
         assert 'IFS.yaml' in out
         assert 'HealPix.yaml' in out
 
-        run_aqua(['avail'])
+        run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
         out, _ = capfd.readouterr()
 
         assert 'climatedt-phase1' in out

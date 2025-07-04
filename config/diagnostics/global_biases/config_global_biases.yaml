@@ -7,10 +7,10 @@ datasets:
     regrid: null
 
 references:
-  - catalog: null
-    model: null
-    exp: null
-    source: null
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
     regrid: null
 
 setup:
@@ -27,6 +27,7 @@ output:
 diagnostics:
   globalbiases:
     run: true
+    diagnostic_name: 'global_biases'
     variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
     params:
       plev: [85000, 20000] # Level plot for 2D bias map if variable 3d

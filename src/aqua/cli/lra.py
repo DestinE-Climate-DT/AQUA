@@ -49,13 +49,17 @@ def lra_parser(parser = None):
                         help='experiment to be processed. Use with coherence with --source and --model')
     parser.add_argument('-s', '--source', type=str,
                         help='source to be processed. Use with coherence with --exp and --var')
-    parser.add_argument('-r', '--realization', type=str,
-                        help='realization to be processed. Use with coherence with --model, --exp and --source')
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
+    parser.add_argument('--realization', type=str,
+                        help='realization to be processed. Use with coherence with --model, --exp and --source')
     parser.add_argument('--stat', type=str,
-                        help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std']. Default is 'mean'")
+                        help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std'].")
+    parser.add_argument('--frequency', type=str,
+                        help="Frequency of the LRA. Can be anything in the AQUA frequency.")
+    parser.add_argument('--resolution', type=str,
+                        help="Resolution of the LRA. Can be anything in the AQUA resolution.")
 
     #return parser.parse_args(arguments)
     return parser
@@ -87,19 +91,17 @@ def lra_execute(args):
         if not item in config:
             raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
 
-    # mandatory arguments
-    resolution = config['target']['resolution']
-    frequency = config['target']['frequency']
-
-    # optional arguments
+    # main arguments
+    resolution = config['target'].get('resolution')
+    frequency = config['target'].get('frequency')
     region = config['target'].get('region', None)
     catalog = config['target'].get('catalog', None)
+    stat = config['target'].get('stat', 'mean')
     
     # assig paths
     paths = config['paths']
     outdir = paths['outdir']
     tmpdir = paths['tmpdir']
-
 
     # options
     loglevel = config['options'].get('loglevel', 'WARNING')
@@ -107,17 +109,21 @@ def lra_execute(args):
     verify_zarr = config['options'].get('verify_zarr', False)
 
     # command line override
+    stat = get_arg(args, 'stat', stat)
+    frequency = get_arg(args, 'frequency', frequency)
+    resolution = get_arg(args, 'resolution', resolution)
+    loglevel = get_arg(args, 'loglevel', loglevel)
+
     definitive = get_arg(args, 'definitive', False)
     monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
-    stat = get_arg(args, 'stat', 'mean')
     rebuild = get_arg(args, 'rebuild', False)
     only_catalog = get_arg(args, 'only_catalog', False)
     if only_catalog:
         print('--only-catalog selected, doing a lot of noise but in the end producing only catalog update!')
     fix = get_arg(args, 'fix', True)
     default_workers = get_arg(args, 'workers', 1)
-    loglevel = get_arg(args, 'loglevel', loglevel)
+    
 
     lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix,

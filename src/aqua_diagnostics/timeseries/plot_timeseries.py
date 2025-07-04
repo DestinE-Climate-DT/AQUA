@@ -1,13 +1,13 @@
 import xarray as xr
 from aqua.graphics import plot_timeseries
-from aqua.logger import log_configure
 from aqua.util import to_list
 from .base import PlotBaseMixin
 
 
 class PlotTimeseries(PlotBaseMixin):
     """Class to plot time series data."""
-    def __init__(self, hourly_data=None, daily_data=None,
+    def __init__(self, diagnostic_name: str = 'timeseries',
+                 hourly_data=None, daily_data=None,
                  monthly_data=None, annual_data=None,
                  ref_hourly_data=None, ref_daily_data=None,
                  ref_monthly_data=None, ref_annual_data=None,
@@ -26,6 +26,7 @@ class PlotTimeseries(PlotBaseMixin):
         Additionally, only one reference data array is supported for each frequency.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Used for logger and filenames. Default is 'timeseries'.
             hourly_data (list): List of hourly data arrays.
             daily_data (list): List of daily data arrays.
             monthly_data (list): List of monthly data arrays.
@@ -40,8 +41,7 @@ class PlotTimeseries(PlotBaseMixin):
             std_annual_data (xr.DataArray): Standard deviation annual data array.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
-        super().__init__(loglevel=loglevel)
-        self.logger = log_configure(self.loglevel, 'PlotTimeseries')
+        super().__init__(loglevel=loglevel, diagnostic_name=diagnostic_name)
 
         # TODO: support hourly and daily data
         for data in [hourly_data, daily_data, ref_hourly_data, ref_daily_data,
@@ -51,19 +51,19 @@ class PlotTimeseries(PlotBaseMixin):
 
         # self.hourly_data = to_list(hourly_data)
         # self.daily_data = to_list(daily_data)
-        self.monthly_data = to_list(monthly_data)
-        self.annual_data = to_list(annual_data)
+        self.monthly_data = to_list(monthly_data) if monthly_data is not None else None
+        self.annual_data = to_list(annual_data) if annual_data is not None else None
 
         # TODO: support ref list
         # self.ref_hourly_data = to_list(ref_hourly_data)
         # self.ref_daily_data = to_list(ref_daily_data)
-        self.ref_monthly_data = ref_monthly_data if isinstance(ref_monthly_data, xr.DataArray) else ref_monthly_data[0]
-        self.ref_annual_data = ref_annual_data if isinstance(ref_annual_data, xr.DataArray) else ref_annual_data[0]
+        self.ref_monthly_data = to_list(ref_monthly_data)[0] if ref_monthly_data is not None else None
+        self.ref_annual_data = to_list(ref_annual_data)[0] if ref_annual_data is not None else None
 
         # self.std_hourly_data = to_list(std_hourly_data)
         # self.std_daily_data = to_list(std_daily_data)
-        self.std_monthly_data = std_monthly_data if isinstance(std_monthly_data, xr.DataArray) else std_monthly_data[0]
-        self.std_annual_data = std_annual_data if isinstance(std_annual_data, xr.DataArray) else std_annual_data[0]
+        self.std_monthly_data = to_list(std_monthly_data)[0] if std_monthly_data is not None else None
+        self.std_annual_data = to_list(std_annual_data)[0] if std_annual_data is not None else None
 
         self.len_data, self.len_ref = self._check_data_length()
 
@@ -207,7 +207,7 @@ class PlotTimeseries(PlotBaseMixin):
         """
         super().save_plot(fig=fig, var=var, description=description,
                           region=region, rebuild=rebuild,
-                          outputdir=outputdir, dpi=dpi, format=format, diagnostic='timeseries')
+                          outputdir=outputdir, dpi=dpi, format=format, diagnostic_product='timeseries')
 
     def _check_data_length(self):
         """

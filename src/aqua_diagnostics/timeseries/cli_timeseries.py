@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     # Load the configuration file and then merge it with the command-line arguments,
     # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='timeseries', args=args,
+    config_dict = load_diagnostic_config(diagnostic='timeseries', config=args.config,
                                          default_config='config_timeseries_atm.yaml',
                                          loglevel=loglevel)
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
@@ -66,6 +66,9 @@ if __name__ == '__main__':
         if config_dict['diagnostics']['timeseries']['run']:
             logger.info("Timeseries diagnostic is enabled.")
 
+            diagnostic_name = config_dict['diagnostics']['timeseries'].get('diagnostic_name', 'timeseries')
+            center_time = config_dict['diagnostics']['timeseries'].get('center_time', True)
+
             for var in config_dict['diagnostics']['timeseries'].get('variables', []):
                 var_config, regions = load_var_config(config_dict, var)
                 logger.info(f"Running Timeseries diagnostic for variable {var} with config {var_config} in regions {[region if region else 'global' for region in regions]}") # noqa
@@ -73,10 +76,11 @@ if __name__ == '__main__':
                     try:
                         logger.info(f"Running Timeseries diagnostic in region {region if region else 'global'}")
 
-                        init_args = {'region': region, 'loglevel': loglevel}
+                        init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
-                                    'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild}
+                                    'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
+                                    'center_time': center_time}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -141,14 +145,18 @@ if __name__ == '__main__':
                 var_config, regions = load_var_config(config_dict, var)
                 logger.info(f"Running Timeseries diagnostic for variable {var} with config {var_config}")
 
+                diagnostic_name = config_dict['diagnostics']['timeseries'].get('diagnostic_name', 'timeseries')
+                center_time = config_dict['diagnostics']['timeseries'].get('center_time', True)
+
                 for region in regions:
                     try:
                         logger.info(f"Running Timeseries diagnostic in region {region if region else 'global'}")
 
-                        init_args = {'region': region, 'loglevel': loglevel}
+                        init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
-                                    'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild}
+                                    'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
+                                    'center_time': center_time}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -187,6 +195,7 @@ if __name__ == '__main__':
                                         'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
                                         'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
                                         'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                                        'diagnostic_name': diagnostic_name,
                                         'loglevel': loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
                             data_label = plot_ts.set_data_labels()
@@ -209,6 +218,8 @@ if __name__ == '__main__':
         if config_dict['diagnostics']['seasonalcycles']['run']:
             logger.info("SeasonalCycles diagnostic is enabled.")
 
+            diagnostic_name = config_dict['diagnostics']['seasonalcycles'].get('diagnostic_name', 'seasonalcycles')
+
             for var in config_dict['diagnostics']['seasonalcycles'].get('variables', []):
                 try:
                     var_config, regions = load_var_config(config_dict, var, diagnostic='seasonalcycles')
@@ -217,7 +228,7 @@ if __name__ == '__main__':
                     for region in regions:
                         logger.info(f"Running SeasonalCycles diagnostic in region {region if region else 'global'}")
 
-                        init_args = {'region': region, 'loglevel': loglevel}
+                        init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
                                     'outputdir': outputdir, 'rebuild': rebuild}
@@ -257,7 +268,7 @@ if __name__ == '__main__':
                             plot_args = {'monthly_data': [sc[i].monthly for i in range(len(sc))],
                                         'ref_monthly_data': [sc_ref[i].monthly for i in range(len(sc_ref))],
                                         'std_monthly_data': [sc_ref[i].std_monthly for i in range(len(sc_ref))],
-                                        'loglevel': loglevel}
+                                        'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                             plot_sc = PlotSeasonalCycles(**plot_args)
                             data_label = plot_sc.set_data_labels()
                             ref_label = plot_sc.set_ref_label()
@@ -277,8 +288,11 @@ if __name__ == '__main__':
     if 'gregory' in config_dict['diagnostics']:
         if config_dict['diagnostics']['gregory']['run']:
             logger.info("Gregory diagnostic is enabled.")
-            try:
 
+            diagnostic_name = config_dict['diagnostics']['gregory'].get('diagnostic_name', 'gregory')
+
+            try:
+                init_args = {'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                 freq = []
                 if config_dict['diagnostics']['gregory'].get('monthly', False):
                     freq.append('monthly')
@@ -298,7 +312,7 @@ if __name__ == '__main__':
                                     'exp': dataset['exp'], 'source': dataset['source'],
                                     'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
 
-                    greg[i] = Gregory(loglevel=loglevel, **dataset_args)
+                    greg[i] = Gregory(**init_args, **dataset_args)
                     greg[i].run(**run_args, **model_args)
 
                 if config_dict['diagnostics']['gregory']['std']:
@@ -307,7 +321,7 @@ if __name__ == '__main__':
                                     'regrid': regrid,
                                     'startdate': config_dict['diagnostics']['gregory'].get('std_startdate'),
                                     'enddate': config_dict['diagnostics']['gregory'].get('std_enddate')}
-                    greg_ref_t2m = Gregory(loglevel=loglevel, **dataset_args)
+                    greg_ref_t2m = Gregory(**init_args, **dataset_args)
                     greg_ref_t2m.run(**run_args, t2m=True, net_toa=False, std=True)
 
                     # net_toa:
@@ -315,7 +329,7 @@ if __name__ == '__main__':
                                     'regrid': regrid,
                                     'startdate': config_dict['diagnostics']['gregory'].get('std_startdate'),
                                     'enddate': config_dict['diagnostics']['gregory'].get('std_enddate')}
-                    greg_ref_toa = Gregory(loglevel=loglevel, **dataset_args)
+                    greg_ref_toa = Gregory(**init_args, **dataset_args)
                     greg_ref_toa.run(**run_args, t2m=False, net_toa=True, std=True)
                 
                 # Plot the gregory
@@ -331,6 +345,7 @@ if __name__ == '__main__':
                                 'net_toa_annual_ref': greg_ref_toa.net_toa_annual,
                                 't2m_annual_std': greg_ref_t2m.t2m_std,
                                 'net_toa_annual_std': greg_ref_toa.net_toa_std,
+                                'diagnostic_name': diagnostic_name,
                                 'loglevel': loglevel}
                     
                     plot_greg = PlotGregory(**plot_args)
@@ -342,10 +357,10 @@ if __name__ == '__main__':
 
                     if save_pdf:
                         plot_greg.save_plot(fig, description=description, outputdir=outputdir,
-                                            dpi=dpi, rebuild=rebuild, format='pdf', diagnostic='gregory')
+                                            dpi=dpi, rebuild=rebuild, format='pdf', diagnostic_product='gregory')
                     if save_png:
                         plot_greg.save_plot(fig, description=description, outputdir=outputdir,
-                                            dpi=dpi, rebuild=rebuild, format='png', diagnostic='gregory')
+                                            dpi=dpi, rebuild=rebuild, format='png', diagnostic_product='gregory')
             except Exception as e:
                 logger.error(f"Error running Gregory diagnostic: {e}")
 

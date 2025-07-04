@@ -73,14 +73,19 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
         realization = True
 
     if monthly_data is not None:
-        plot_timeseries_data(ax=ax, data=monthly_data, kind='monthly',
-                             data_labels=data_labels, realization=realization,
-                             lw=2.5 if not realization else 0.8)
+        lines = plot_timeseries_data(ax=ax, data=monthly_data, kind='monthly',
+                                     data_labels=data_labels, realization=realization,
+                                     lw=2.5 if not realization else 0.8)
+        # Extract the color used for each monthly line
+        used_colors = [line.get_color() for line in lines]
+    else:
+        used_colors = None
 
     if annual_data is not None:
         plot_timeseries_data(ax=ax, data=annual_data, kind='annual',
                              data_labels=data_labels, realization=realization,
-                             lw=2.5 if not realization else 0.8)
+                             lw=2.5 if not realization else 0.8,
+                             colors=used_colors)
 
     if ref_monthly_data is not None:
         plot_timeseries_ref_data(ax=ax, ref_data=ref_monthly_data,

@@ -57,11 +57,11 @@ dependencies = [
     "sparse",
     "xarray>=2025.01.2", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
     "kerchunk",
-    "h5py@git+https://github.com/h5py/h5py.git@3.12.1", #specific github pin to avoid installation of binaries
+    "h5py>=3.12.1", #specific github pin to avoid installation of binaries
     "fastparquet",
     "pyfdb==0.1.1",
     "gsv-interface==2.9.0",
-    "ECmean4>=0.1.12",
+    "ECmean4>=0.1.12,<0.1.14",
     "zarr"
 ]
 

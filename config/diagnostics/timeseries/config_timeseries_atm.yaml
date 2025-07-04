@@ -32,6 +32,7 @@ output:
 diagnostics:
   timeseries:
     run: true
+    diagnostic_name: 'atmosphere'
     variables: ['2t', 'ie', 'msl', 'tprate',
                 'tcc', 'lcc', 'mcc', 'hcc',
                 'slhtf', #Mean surface latent heat flux
@@ -44,6 +45,7 @@ diagnostics:
                 'tnswrf' #Mean top net short-wave radiation flux
                 ]
     formulae: ['tnlwrf+tnswrf']
+    center_time: true
     params:
       default:
         hourly: False
@@ -62,7 +64,8 @@ diagnostics:
         regions: ['tropics', 'europe']
   
   gregory:
-    run: true
+    run: false # Run by the Radiation by default
+    diagnostic_name: 'timeseries'
     t2m: '2t'
     net_toa_name: 'tnlwrf+tnswrf'
     monthly: true

@@ -1,12 +1,12 @@
 import xarray as xr
 from aqua.graphics import plot_seasonalcycle
-from aqua.logger import log_configure
 from aqua.util import to_list
 from .base import PlotBaseMixin
 
 
 class PlotSeasonalCycles(PlotBaseMixin):
-    def __init__(self, monthly_data=None, ref_monthly_data=None,
+    def __init__(self, diagnostic_name: str = 'seasonalcycles',
+                 monthly_data=None, ref_monthly_data=None,
                  std_monthly_data=None, loglevel: str = 'WARNING'):
         """
         Initialize the PlotSeasonalCycles class.
@@ -14,13 +14,13 @@ class PlotSeasonalCycles(PlotBaseMixin):
         by the SeasonalCycles class.
 
         Args:
+            diagnostic_name (str): The name of the diagnostic. Used for logger and filenames. Default is 'seasonalcycles'.
             monthly_data (list): List of monthly data arrays.
             ref_monthly_data (xr.DataArray): Reference monthly data array.
             std_monthly_data (xr.DataArray): Standard deviation monthly data array.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
-        super().__init__(loglevel=loglevel)
-        self.logger = log_configure(self.loglevel, 'PlotSeasonalCycles')
+        super().__init__(loglevel=loglevel, diagnostic_name=diagnostic_name)
 
         # TODO: support ref list
         self.monthly_data = to_list(monthly_data)
@@ -78,9 +78,9 @@ class PlotSeasonalCycles(PlotBaseMixin):
 
         if self.ref_monthly_data is not None:
             # Make a list from the data array attributes
-            self.ref_catalogs = [d.AQUA_catalog for d in self.ref_monthly_data]
-            self.ref_models = [d.AQUA_model for d in self.ref_monthly_data]
-            self.ref_exps = [d.AQUA_exp for d in self.ref_monthly_data]
+            self.ref_catalogs = self.ref_monthly_data.AQUA_catalog
+            self.ref_models = self.ref_monthly_data.AQUA_model
+            self.ref_exps = self.ref_monthly_data.AQUA_exp
 
         if self.std_monthly_data is not None:
             for std in self.std_monthly_data:
@@ -159,4 +159,4 @@ class PlotSeasonalCycles(PlotBaseMixin):
         """
         super().save_plot(fig, var=var, description=description,
                           region=region, rebuild=rebuild,
-                          outputdir=outputdir, dpi=dpi, format=format, diagnostic='seasonalcycle')
+                          outputdir=outputdir, dpi=dpi, format=format, diagnostic_product='seasonalcycles')

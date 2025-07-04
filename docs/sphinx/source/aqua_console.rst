@@ -135,8 +135,14 @@ This structure ensures that all configuration files are neatly organized and eas
 aqua avail
 ----------
 
-This simple command will print all the available catalogs on the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
-You don't need to have access to the repository to see the available catalogs.
+This simple command will print all the available catalogs on a repository.
+By default this will be the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
+
+.. option:: -r, --repository <user/repo>
+
+    It is possible to specify a different repository to explore.
+    The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
+    If this option is not specified, the default repository will be used.
 
 .. _aqua-add:
 
@@ -154,8 +160,8 @@ and it is possible to install extra catalogs not present in the AQUA release.
 
 Multiple catalogs can be installed with multiple calls to ``aqua add``.
 By default the catalog will be downloaded from the external Climate-DT catalog repository,
-if a matching catalog is found. As shown below, it is possible to specify a local path
-and install the catalog from there.
+if a matching catalog is found. It is possible to specify a different repository.
+As shown below, it is also possible to specify a local path and install the catalog from there.
 
 .. option:: catalog
 
@@ -168,6 +174,12 @@ and install the catalog from there.
     It installs the catalog based on the path given.
     It will create a symbolic link to the catalog folder.
     This is very recommended for developers. Please read the :ref:`dev-notes` section.
+
+.. option:: --repository, -r <user/repo>
+
+    It is possible to specify a different repository to explore.
+    The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
+    If this option is not specified, the default repository will be used.
 
 .. note::
 
@@ -264,7 +276,7 @@ This is useful if a new external fix is created and needs to be added to the lis
 aqua grids {add,remove} <grid-file>
 -----------------------------------
 
-This submcommand is able to add or remove a grids YAML file to the list of available installed grids.
+This subcommand is able to add or remove a grids YAML file to the list of available installed grids.
 It will copy the grids file to the destination folder, or create a symbolic link if the editable mode is used.
 This is useful if new external grids are created and need to be added to the list of available grids.
 
@@ -276,6 +288,22 @@ This is useful if new external grids are created and need to be added to the lis
 .. option:: -e, --editable
 
     It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
+
+aqua grids set <path>
+---------------------
+
+This subcommand sets in the configuration file the path to the grids, areas and weights folders.
+
+.. option:: <path>
+
+    The path to the grids, areas and weights folders.
+    This is a mandatory field.
+    The code will create the subfolders ``grids``, ``areas`` and ``weights`` in the specified path.
+
+.. note::
+    By default, if is not needed to set the path to the grids, areas and weights folders.
+    AQUA will determine the path automatically based on the machine in the configuration file.
+    This command is useful in new machines or if you don't have access to the default folders.
 
 .. _aqua-lra:
 

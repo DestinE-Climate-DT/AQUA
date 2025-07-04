@@ -14,6 +14,7 @@ class TestSeasonalCycles:
 
     def setup_method(self):
         """Initialize variables before each test."""
+        self.diagnostic_name = 'atmosphere'
         self.catalog = 'ci'
         self.model = 'ERA5'
         self.exp = 'era5-hpz3'
@@ -25,7 +26,8 @@ class TestSeasonalCycles:
         self.std_enddate = '1991-12-31'
 
     def test_no_region(self, tmp_path):
-        sc = SeasonalCycles(catalog=self.catalog, model=self.model, exp=self.exp,
+        sc = SeasonalCycles(diagnostic_name=self.diagnostic_name,
+                            catalog=self.catalog, model=self.model, exp=self.exp,
                             source=self.source, regrid=self.regrid,
                             std_startdate=self.std_startdate, std_enddate=self.std_enddate,
                             loglevel=loglevel)
@@ -38,17 +40,21 @@ class TestSeasonalCycles:
         assert isinstance(sc.data, xr.DataArray)
         assert sc.monthly.values[0] == pytest.approx(63.22174285385192, rel=approx_rel)
 
-        file = os.path.join(tmp_path, 'netcdf', 'seasonalcycles.tcc.monthly.ci.ERA5.era5-hpz3.nc')
+        filename = f'{self.diagnostic_name}.seasonalcycles.{self.catalog}.{self.model}.{self.exp}.{self.var}.monthly.nc'
+        file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
         assert sc.std_monthly.values[0] == pytest.approx(0.23421051986458963, rel=approx_rel)
 
-        file = os.path.join(tmp_path, 'netcdf', 'seasonalcycles.tcc.monthly.std.ci.ERA5.era5-hpz3.nc')
+        filename = f'{self.diagnostic_name}.seasonalcycles.{self.catalog}.{self.model}.{self.exp}.{self.var}.monthly.std.nc'
+        file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
-        plt = PlotSeasonalCycles(monthly_data = sc.monthly, ref_monthly_data = sc.monthly,
+        plt = PlotSeasonalCycles(diagnostic_name=self.diagnostic_name,
+                                 monthly_data = sc.monthly, ref_monthly_data = sc.monthly,
                                  std_monthly_data = sc.std_monthly, loglevel=loglevel)
         plt.run(var=self.var, outputdir=tmp_path)
 
-        file = os.path.join(tmp_path, 'png', 'timeseries.seasonalcycle.ci.ERA5.era5-hpz3.tcc.png')
+        filename = f'{self.diagnostic_name}.seasonalcycles.{self.catalog}.{self.model}.{self.exp}.{self.catalog}.{self.model}.{self.exp}.{self.var}.png'
+        file = os.path.join(tmp_path, 'png', filename)
         assert os.path.exists(file)

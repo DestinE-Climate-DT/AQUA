@@ -4,38 +4,28 @@ Automatic Standardized File Naming
 Class Overview
 --------------
 
-.. warning::
-    A refactor of the ``OutputSaver`` class is currently in progress. The class will be moved in the `aqua.diagnostics.core` package.
-
 The ``OutputSaver`` class is designed to manage output file naming conventions for scientific data.
-It supports generating filenames for various types of file (e.g., NetCDF, PDF, PNG) with metadata integration to enhance data management and traceability.
-The class ensures consistent and descriptive filenames, facilitating better data management and reproducibility.
+It supports generating filenames for various file types (e.g., NetCDF, PDF, PNG) with metadata integration to enhance data management and traceability.
+The class ensures consistent and descriptive filenames, facilitating better data organization and reproducibility.
 
 Attributes
 ----------
 
 - **diagnostic** (*str*): Name of the diagnostic.
-- **model** (*str*): Model used in the diagnostic.
-- **exp** (*str*): Experiment identifier.
-- **diagnostic_product** (*str, optional*): Product of the diagnostic analysis.
-- **catalog** (*str, optional*): Catalog where to search for the triplet. By default, the `catalog` is the catalog name at the top of the list in `.aqua/config-aqua.yaml`. For more information on how to set the default catalog, read the section :ref:`aqua-set`.
-- **loglevel** (*str, optional*): Log level for the class's logger. Default is 'WARNING'.
-- **default_path** (*str, optional*): Default path where files will be saved. Default is '.'.
-- **rebuild** (*bool, optional*): Flag indicating whether to rebuild existing files. If set to True, existing files with the same name will be overwritten. Default is True.
+- **catalog** (*str*): Catalog name (e.g., ``lumi-phase2``).
+- **model** (*str*): Model name (e.g., ``IFS-NEMO``).
+- **exp** (*str*): Experiment name (e.g., ``historical``).
+- **catalog_ref** (*str*, optional): Reference catalog name.
+- **model_ref** (*str*, optional): Reference model name.
+- **exp_ref** (*str*, optional): Reference experiment name.
+- **outdir** (*str*, optional): Output directory where files will be saved. Defaults to the current directory.
+- **rebuild** (*bool*, optional): Flag indicating whether to rebuild existing files. If set to ``True``, existing files with the same name will be overwritten. Defaults to ``True``.
+- **loglevel** (*str*, optional): Logging level for the class's logger. Defaults to ``WARNING``.
 
 .. note::
-    The ``OutputSaver`` class automatically includes the current date and time when saving files as metadata ``date_saved``.
+    The ``OutputSaver`` class automatically includes the current date and time when saving files as metadata.
     This ensures each file has a timestamp indicating when it was generated.
-
-Default Catalog Setup
----------------------
-
-The ``OutputSaver`` class includes a `catalog` attribute to specify the catalog used for generating filenames.
-By default, the `catalog` is the catalog name at the top of the list in `.aqua/config-aqua.yaml`. For more information on how to set the default catalog, read the section :ref:`aqua-set`.
-
-This setup ensures that if multiple `model`, `exp` are found in multiple catalogs, the first one found in the selected default catalog will be used.
-
-If a different catalog is needed, it can be specified during the initialization of the ``OutputSaver`` class. For example, to use a different catalog, you can pass it as an argument during initialization.
+    The version of the AQUA package is also included in the metadata for traceability.
 
 Example Usage
 -------------
@@ -47,41 +37,45 @@ The following example demonstrates how to initialize the ``OutputSaver`` class:
 
 .. code-block:: python
 
-    from aqua.util import OutputSaver
+    from aqua.diagnostics.core import OutputSaver
 
     # Initializing with the system-defined default catalog
-    names = OutputSaver(diagnostic='tropical_rainfall', model='MSWEP', exp='past',
-                        loglevel='DEBUG', default_path='.')
+    outputsaver = OutputSaver(diagnostic='dummy', 
+                              catalog='climatedt-phase1', model='IFS-NEMO', exp='historical-1990', 
+                              catalog_ref='obs', model_ref='ERA5', exp_ref='era5',
+                              outdir='.', rebuild=True, loglevel='DEBUG')
 
-    # Initializing with a specified catalog 'lumi-phase2'
-    names_with_catalog = OutputSaver(diagnostic='tropical_rainfall', model='MSWEP', exp='past',
-                                     catalog='lumi-phase2', loglevel='DEBUG', default_path='.')
+Generating a Filename
+^^^^^^^^^^^^^^^^^^^^^
 
-Generating a Filename for a NetCDF File
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This example shows how to generate a filename for a NetCDF file with the 'mean' diagnostic product for the previously initialized class.
-This and the following methods return the generated filename as a string, to be used with the incorporated methods or with other functions.
+This example shows how to generate a filename with the 'mean' diagnostic product for the previously initialized class.
 
 .. code-block:: python
 
-    netcdf_filename = names.generate_name(diagnostic_product='mean', suffix='nc')
-    # Output: 'tropical_rainfall.mean.MSWEP.past.<default_catalog>.nc'
+    filename = outputsaver.generate_name(diagnostic_product='mean')
+    # Output: 'dummy.mean.climatedt-phase1.IFS-NEMO.historical-1990.obs.ERA5.era5'
 
-    netcdf_filename_with_catalog = names_with_catalog.generate_name(diagnostic_product='mean', suffix='nc')
-    # Output: 'tropical_rainfall.mean.MSWEP.past.lumi-phase2.nc'
+.. note::
+    The generated filename includes the diagnostic name, diagnostic product, catalog, model, and experiment.
+    If the reference dataset is specified in the ``OutputSaver`` constructor, it will also be included in the filename.
+    Alternatively, the catalog-model-experiment triplets for the main and reference datasets 
+    can be specified directly in the ``generate_name`` method.
 
-Generating a Filename with Flexible Date Inputs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Generating a Filename with Extra Keys
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example demonstrates generating a filename with flexible date inputs and the 'ym' time precision, including a second dataset with a different catalog:
+The user can also specify extra parameters that will be added to the filename, such as ``variable``, ``region``, ``period``, ``pressure level``, etc.
+Extra keys are not mandatory, but if specified, they will be appended to the filename.
+They are entirely flexible and can include any relevant information the user wishes to capture.
 
 .. code-block:: python
 
-    filename = names.generate_name(var='mtpr', model_2='ERA5', exp_2='era5',
-                                   time_start='1990-01-01', time_end='1990-02-28',
-                                   time_precision='ym', area='indian_ocean', catalog_2='lumi-phase3')
-    # Output: 'tropical_rainfall.<diagnostic_product>.mtpr.MSWEP.past.<default_catalog>.ERA5.era5.lumi-phase3.indian_ocean.199001-199002.nc'
+    extra_keys = {'variable': '2t', 'region': 'global', 'period': '1990-2000'}
+
+    filename = outputsaver.generate_name(diagnostic_product='mean', 
+                                         extra_keys=extra_keys)
+
+    # Output: 'dummy.mean.climatedt-phase1.IFS-NEMO.historical-1990.obs.ERA5.era5.2t.global.1990-2000'
 
 Saving a NetCDF File with Metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -102,19 +96,16 @@ Here is an example of saving a NetCDF file with metadata. The metadata includes 
         'description': 'Demonstrating netCDF Metadata Addition'
     }
 
-    # Save the NetCDF to the specified path with the metadata
-    saved_file_path = names.save_netcdf(dataset, path='.', diagnostic_product='histogram',
-                                        metadata=metadata)
+    outputsaver.save_netcdf(dataset, 'test', extra_keys=extra_keys, metadata=metadata)
 
 .. note::
-
     If the ``history`` metadata field is provided, the ``OutputSaver`` class will append
     the current message to the existing history.
 
-Saving a PDF Plot with Metadata
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Saving a PDF or PNG Plot with Metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example demonstrates saving a PDF plot with metadata. The metadata includes the title, author, subject, and keywords of the PDF.
+This example demonstrates saving a PDF and PNG plot with metadata. The metadata includes the title, author, subject, and keywords of the file.
 
 .. code-block:: python
 
@@ -132,13 +123,13 @@ This example demonstrates saving a PDF plot with metadata. The metadata includes
         '/Keywords': 'PDF, OutputSaver, Metadata'
     }
 
-    # Save the PDF with metadata
-    pdf_path = names.save_pdf(fig, diagnostic_product='histogram', metadata=metadata, dpi=300)
+    # Save the PDF and PNG with metadata
+    outputsaver.save_pdf(fig, 'test', extra_keys=extra_keys, metadata=metadata)
+    outputsaver.save_png(fig, 'test', extra_keys=extra_keys, metadata=metadata, dpi=300)
 
 .. note::
-
-    We suggest at the moment to use the metadata ``/Caption`` field to store the plot description.
-    This is used at the moment by the AQUA dashboard to generate the plot description.
+    We suggest using the metadata field ``/Caption`` to store the plot description.
+    This is currently used by the AQUA dashboard to generate plot descriptions.
 
 Opening a PDF File and Displaying Metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,4 +140,24 @@ To open a PDF file and display its metadata:
 
     from aqua.util import open_image
 
-    open_image("/path/to/my/file/tropical_rainfall.histogram.IFS-NEMO.historical-1990.pdf")
+    open_image("/path/to/my/file/dummy.mean.climatedt-phase1.IFS-NEMO.historical-1990.obs.ERA5.era5.pdf")
+
+Generating a Filename for Multimodel or Multireference Comparisons
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In some diagnostics, multimodel or multireference comparisons may be required.
+In this case, the user can specify a list of catalog-model-experiment triplets for the main and/or the reference dataset.
+To avoid overly long filenames, the keyword ``multimodel`` or ``multiref`` will be used to indicate that the dataset is a list.
+Complete information about the datasets is preserved in the output file's metadata.
+
+.. code-block:: python
+
+    outputsaver = OutputSaver(diagnostic='dummy',
+                              catalog=['climatedt-phase1', 'climatedt-phase1'],
+                              model=['IFS-NEMO', 'ICON'],
+                              exp=['historical-1990', 'historical-1990'],
+                              catalog_ref='obs', model_ref='ERA5', exp_ref='era5',
+                              outdir='.', loglevel='DEBUG')
+
+    filename = outputsaver.generate_name(diagnostic_product='test')
+    # Output: 'dummy.test.multimodel.obs.ERA5.era5'

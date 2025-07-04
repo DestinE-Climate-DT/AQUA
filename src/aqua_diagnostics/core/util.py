@@ -30,7 +30,7 @@ def template_parse_arguments(parser: argparse.ArgumentParser):
                         required=False, help="experiment name")
     parser.add_argument("--source", type=str,
                         required=False, help="source name")
-    parser.add_argument("--config", "-c", type=str,
+    parser.add_argument("--config", "-c", type=str, default=None,
                         help='yaml configuration file')
     parser.add_argument("--nworkers", "-n", type=int,
                         required=False, help="number of workers")
@@ -97,7 +97,7 @@ def close_cluster(client, cluster, private_cluster, loglevel: str = 'WARNING'):
         logger.debug("Dask cluster closed.")
 
 
-def load_diagnostic_config(diagnostic: str, args: argparse.Namespace,
+def load_diagnostic_config(diagnostic: str, config: str = None,
                            default_config: str = "config.yaml",
                            loglevel: str = 'WARNING'):
     """
@@ -105,15 +105,15 @@ def load_diagnostic_config(diagnostic: str, args: argparse.Namespace,
 
     Args:
         diagnostic (str): diagnostic name
-        args (argparse.Namespace): arguments of the CLI. "config" argument can modify the default configuration file.
+        config (str): config argument can modify the default configuration file.
         default_config (str): default name configuration file (yaml format)
         loglevel (str): logging level. Default is 'WARNING'.
 
     Returns:
         dict: configuration dictionary
     """
-    if args.config:
-        filename = args.config
+    if config:
+        filename = config
     else:
         configdir = ConfigPath(loglevel=loglevel).configdir
         filename = os.path.join(configdir, "diagnostics", diagnostic, default_config)

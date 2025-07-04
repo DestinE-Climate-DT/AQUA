@@ -40,7 +40,7 @@ def test_ENSO(tmp_path):
     assert enso.index[4].values == pytest.approx(-0.29945775, rel=approx_rel)
 
     enso.save_netcdf(enso.index, diagnostic='enso', diagnostic_product='index',
-                     default_path=tmp_path)
+                     outdir=tmp_path)
     netcdf_path = os.path.join(tmp_path, 'netcdf')
     filename = 'enso.index.ci.ERA5.era5-hpz3.nc'
     assert (os.path.exists(os.path.join(netcdf_path, filename))) is True

@@ -31,12 +31,11 @@ Some extra options are available:
     Otherwise, the time coordinate will be the first timestamp of the time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
 
-
-Trend and Detrend
------------------
+Detrend
+-------
 
 For some analysis, computing or removing a linear (or polynominial) trend can be helpful to highlight the internal variability.
-The ``trend`` and ``detrend`` method can be used as a high-level wrapper of xarray polyfit functionalities to achieve this goal.
+The ``detrend`` method can be used as a high-level wrapper of xarray polyfit functionalities to achieve this goal.
 
 .. code-block:: python
 
@@ -48,12 +47,6 @@ In this way, linear trend is removed from each grid point of the original datase
 Other dimension can be targeted too, although with limited physical meaning. 
 Of course, it can be used in collaboration with temporal and spatial averaging. Higher order polynominial fits are available too.
 
-Similary, multidmensional trends can be computed with the ``trend()`` method, which will return a new dataset with the trend values.
-
-... code-block:: python
-
-    trend = reader.trend(data['2t'], dim='time')
-
 Some options includes:
 
 - ``degree``: this will define with an integer the order of the polynominial fit. Default is 1, i.e. linear detrending.
@@ -62,6 +55,9 @@ Some options includes:
 .. warning::
     Trend and detrend might lead to incorrect results if there is not an equal amount of time elements (e.g. same amount of months or days) in the dataset.
 
+It is also possible to evaluate the coefficients of the fit by calling the ``trender.coeffs()`` method.
+This will call the ``coeffs()`` method of the ``Trender()`` class, which is used internally by the ``detrend()`` method.
+A ``dataarray`` with the coefficients will be returned, with the same dimensions as the original data.
 
 Spatial Averaging
 -----------------

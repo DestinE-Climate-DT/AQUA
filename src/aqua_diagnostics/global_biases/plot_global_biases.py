@@ -169,10 +169,10 @@ class PlotGlobalBiases:
         )
 
         if self.save_pdf:
-            self._save_figure(fig=fig, format='pdf', data=data, data_ref=data_ref, diagnostic_product='bias_map', 
+            self._save_figure(fig=fig, format='pdf', data=data, data_ref=data_ref, diagnostic_product='bias', 
                               description=description, var=var, plev=plev)
         if self.save_png:
-            self._save_figure(fig=fig, format='png', data=data, data_ref=data_ref, diagnostic_product='bias_map',
+            self._save_figure(fig=fig, format='png', data=data, data_ref=data_ref, diagnostic_product='bias',
                               description=description, var=var, plev=plev)
 
 
@@ -224,10 +224,10 @@ class PlotGlobalBiases:
         )
 
         if self.save_pdf:
-            self._save_figure(fig=fig, format='pdf', data=data, data_ref=data_ref, diagnostic_product='seasonal_bias_map', 
+            self._save_figure(fig=fig, format='pdf', data=data, data_ref=data_ref, diagnostic_product='seasonal_bias', 
                               description=description, var=var, plev=plev)
         if self.save_png:
-            self._save_figure(fig=fig, format='png', data=data, data_ref=data_ref, diagnostic_product='seasonal_bias_map',
+            self._save_figure(fig=fig, format='png', data=data, data_ref=data_ref, diagnostic_product='seasonal_bias',
                               description=description, var=var, plev=plev)
 
 
@@ -253,8 +253,9 @@ class PlotGlobalBiases:
             plev_min = bias['plev'].min().item()
         if plev_max is None:
             plev_max = bias['plev'].max().item()
-        # Slice pressure levels in decreasing order (assuming pressure decreases with height)
-        bias = bias.sel(plev=slice(plev_max, plev_min))
+        # Slice pressure levels 
+        mask = (bias['plev'] >= plev_min) & (bias['plev'] <= plev_max)
+        bias = bias.sel(plev=bias['plev'].where(mask, drop=True))
 
         # Ensure reasonable number of levels
         nlevels = max(2, int(nlevels))
