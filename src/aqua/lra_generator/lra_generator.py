@@ -97,7 +97,8 @@ class LRAgenerator():
                                      False to just explore the reader
                                      operations, default is False
             performance_reporting (bool, opt): True to save an html report of the
-                                               dask usage, default is False.
+                                               dask usage, default is False. This will run a single month
+                                               to collect the performance data.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
@@ -214,6 +215,8 @@ class LRAgenerator():
 
         if not self.frequency:
             self.logger.info('Frequency not specified, no time averaging will be performed.')
+        else:
+            self.logger.info('Frequency: %s', self.frequency)
 
         if self.overwrite:
             self.logger.warning('File will be overwritten if already existing.')
@@ -234,7 +237,6 @@ class LRAgenerator():
         self.logger.info('Fixing data: %s', self.fix)
         self.logger.info('Resolution: %s', self.resolution)
         self.logger.info('Statistic to be computed: %s', self.stat) 
-        self.logger.info('Frequency: %s', self.frequency)
         self.logger.info('Domain selection: %s', self.region_name)
 
     def _configure_region(self, region, drop):
@@ -312,12 +314,15 @@ class LRAgenerator():
         Define the source grid name based on the resolution
         """
         if self.resolution in self.default_grids:
-            sgn = 'lon-lat'
+            return 'lon-lat'
         if self.resolution == 'native':
-            sgn = self.reader.source_grid_name
-        else:
-            sgn = self.resolution
-        return sgn
+            try:
+                return self.reader.source_grid_name
+            except AttributeError:
+                self.logger.warning('No source grid name defined in the reader, using resolution as source grid name')
+                return False
+        return self.resolution
+
 
     def create_catalog_entry(self):
         """

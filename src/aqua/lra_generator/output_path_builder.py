@@ -37,6 +37,9 @@ class OutputPathBuilder:
         self.exp = exp
         self.resolution = resolution
 
+        # Ensure realization is formatted correctly
+        if realization and realization.isdigit():
+            realization = f'r{realization}'
         self.realization = realization if realization is not None else 'r1'
         self.frequency = frequency if frequency is not None else 'native'
         self.stat = stat if stat is not None else 'nostat'
@@ -46,23 +49,50 @@ class OutputPathBuilder:
         self.kwargs = kwargs or {}
 
     def build_path(self, basedir, var, year=None, month=None, day=None):
-        """create the full path to the output file."""
+        """Ceate the full path to the output file.
+        
+        Args:
+            basedir (str): Base directory for the output files.
+            var (str): Variable name to include in the filename. Can be a wildcard.
+            year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
+            month (int, optional): Month to include in the filename. Defaults to None. Can be a wildcard.
+            day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
+        Returns:
+            str: The full path to the output file.
+        """
         folder = self.build_directory()
         filename = self.build_filename(var, year, month, day)
         return os.path.join(basedir, folder, filename)
 
     def build_directory(self):
-        """create the output directory based on the parameters."""
+        """
+        Create the output directory based on the class parameters.
+        
+        Returns:
+            str: The directory path for the output files.
+        """
         parts = [
             self.catalog, self.model, self.exp, self.realization,
             self.resolution, self.frequency, self.stat, self.region
         ]
         folder = os.path.join(*[p for p in parts if p])
-        # os.makedirs(folder, exist_ok=True)
         return folder
 
     def build_filename(self, var=None, year=None, month=None, day=None):
-        """create the filename based on the parameters."""
+        """
+        Create the filename based on the class parameters.
+        Variable and year are set as wildcards by default if not provided.
+        Date format is forced to be zero-padded (e.g., 2023, 01, 01).
+        
+        Args:
+            var (str, optional): Variable name to include in the filename. Defaults to None. Can be a wildcard.
+            year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
+            month (int, optional): Month to include in the filename. Defaults to None. Can be a wildcard.
+            day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
+
+        Returns:
+            str: The filename for the output file.    
+        """
 
         # Use the provided variable or default to wildcard '*'
         var = "*" if var is None else var
