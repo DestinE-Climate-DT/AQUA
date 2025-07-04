@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.17.0): 
 
 AQUA core complete list:
+- `EvaluateFormula` class to replace the `eval_formula` function with extra provenance features (#2042)
 - Refactor LRA of output and catalog entry creatro with `OutputPathBuilder` and `CatalogEntryBuilder` classes (#1932)
 - LRA cli support realization, stat and frequency (#1932)
 - Update to the new STACv2 API for Lumi (#2039)

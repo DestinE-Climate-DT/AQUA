@@ -1,8 +1,9 @@
 import os
 import xarray as xr
+from aqua.fixer import EvaluateFormula
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
-from aqua.util import frequency_string_to_pandas, time_to_string, eval_formula
+from aqua.util import frequency_string_to_pandas, time_to_string
 from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver
 
 xr.set_options(keep_attrs=True)
@@ -91,8 +92,9 @@ class BaseMixin(Diagnostic):
         # of all the variables
         if formula:
             super().retrieve()
-            self.logger.debug("Evaluating formula %s", var)
-            self.data = eval_formula(mystring=var, xdataset=self.data)
+            self.data = EvaluateFormula(data=self.data, formula=var, long_name=long_name,
+                                        short_name=standard_name, units=units,
+                                        loglevel=self.loglevel).evaluate()
             if self.data is None:
                 raise ValueError(f'Error evaluating formula {var}. '
                                  'Check the variable names and the formula syntax.')
