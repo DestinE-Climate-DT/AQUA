@@ -3,6 +3,7 @@
 import pytest
 import numpy as np
 from aqua import Reader
+from aqua.fixer import EvaluateFormula
 
 LOGLEVEL = 'DEBUG'
 
@@ -145,3 +146,29 @@ def test_fixer_deltat():
     assert reader1.fixer.deltat == 3600
     assert reader2.fixer.deltat == 3600
 
+
+@pytest.fixture
+def reader():
+    return Reader(model="ERA5", exp='era5-hpz3', source='monthly', loglevel=LOGLEVEL)
+
+@pytest.fixture
+def data(reader):
+    return reader.retrieve()
+
+@pytest.mark.aqua
+class TestEvaluateFormula:
+    def test_evaluate_formula(self, data):
+        formula = "2t -273.15"
+        convert = EvaluateFormula(
+            data=data, formula=formula,
+            units='Celsius',
+            short_name="2t_celsius",
+            long_name='2t converted to Celsius').evaluate()
+
+        assert convert.attrs['short_name'] == '2t_celsius'
+        assert convert.attrs['long_name'] == '2t converted to Celsius'
+        assert convert.attrs['units'] == 'Celsius'
+
+        original_values = (data['2t'].isel(time=0) - 273.15).mean()
+        expected_values = convert.isel(time=0).mean()
+        assert np.allclose(original_values.values, expected_values.values)

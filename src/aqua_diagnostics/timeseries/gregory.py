@@ -1,6 +1,6 @@
 """Gregory module."""
 import xarray as xr
-from aqua.util import eval_formula
+from aqua.fixer import EvaluateFormula
 from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic, convert_data_units
 
@@ -100,7 +100,8 @@ class Gregory(Diagnostic):
         if t2m:
             self.t2m = data[t2m_name]
         if net_toa:
-            self.net_toa = eval_formula(mystring=net_toa_name, xdataset=data)
+            self.net_toa = EvaluateFormula(data=data, formula=net_toa_name,
+                                           short_name='net_toa', loglevel=self.loglevel).evaluate()
 
     def compute_t2m(self, freq: list = ['monthly', 'annual'], std: bool = False,
                     var: str = '2t', units: str = 'degC', exclude_incomplete=True):

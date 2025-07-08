@@ -152,66 +152,6 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
         yaml.dump(cfg, file)
 
 
-def eval_formula(mystring, xdataset):
-    """Evaluate the cmd string provided by the yaml file
-    producing a parsing for the derived variables"""
-
-    # Tokenize the original string
-    token = [i for i in re.split('([^\\w.]+)', mystring) if i]
-    if len(token) > 1:
-        # Special case, start with -
-        if token[0] == '-':
-            out = -xdataset[token[1]]
-        else:
-            # Use order of operations
-            out = _operation(token, xdataset)
-    else:
-        out = xdataset[token[0]]
-    return out
-
-
-def _operation(token, xdataset):
-    """Parsing of the CDO-based commands using operator package
-    and an ad-hoc dictionary. Could be improved, working with four basic
-    operations only."""
-
-    # define math operators: order is important, since defines
-    # which operation is done at first!
-    ops = {
-        '/': operator.truediv,
-        "*": operator.mul,
-        "-": operator.sub,
-        "+": operator.add
-    }
-
-    # use a dictionary to store xarray field and call them easily
-    dct = {}
-    for k in token:
-        if k not in ops:
-            try:
-                dct[k] = float(k)
-            except ValueError:
-                dct[k] = xdataset[k]
-
-    # apply operators to all occurrences, from top priority
-    # so far this is not parsing parenthesis
-    code = 0
-    for p in ops:
-        while p in token:
-            code += 1
-            # print(token)
-            x = token.index(p)
-            name = 'op' + str(code)
-            # replacer = ops.get(p)(dct[token[x - 1]], dct[token[x + 1]])
-            # Using apply_ufunc in order not to
-            replacer = xr.apply_ufunc(ops.get(p), dct[token[x - 1]], dct[token[x + 1]],
-                                      keep_attrs=True, dask='parallelized')
-            dct[name] = replacer
-            token[x - 1] = name
-            del token[x:x + 2]
-    return replacer
-
-
 def _load_merge(folder_path=None, filenames=None,
                 definitions=None, merged_dict=None,
                 loglevel='WARNING'):

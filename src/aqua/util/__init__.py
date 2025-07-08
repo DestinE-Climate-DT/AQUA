@@ -13,7 +13,7 @@ from .util import file_is_complete, find_vert_coord
 from .util import files_exist
 from .util import extract_literal_and_numeric, add_pdf_metadata, add_png_metadata
 from .util import open_image, username, update_metadata
-from .yaml import load_yaml, dump_yaml, load_multi_yaml, eval_formula
+from .yaml import load_yaml, dump_yaml, load_multi_yaml
 from .time import check_chunk_completeness, frequency_string_to_pandas
 from .time import time_to_string
 from .zarr import create_zarr_reference
@@ -32,7 +32,7 @@ __all__ = ['ConfigPath',
            'extract_literal_and_numeric', 'add_pdf_metadata', 'add_png_metadata',
            'get_nside', 'get_npix', 'healpix_resample',
            'open_image', 'username', 'update_metadata',
-           'load_yaml', 'dump_yaml', 'load_multi_yaml', 'eval_formula',
+           'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas',
            'time_to_string',
            'create_zarr_reference', 'OutputSaver']
