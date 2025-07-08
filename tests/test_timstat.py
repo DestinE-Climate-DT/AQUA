@@ -16,12 +16,17 @@ def data(reader):
 @pytest.mark.aqua
 class TestTimmean():
 
+
+
     def test_timsum(self, reader, data):
         """Timmean test for sum operation"""
         summed = reader.timsum(data['2t'].isel(lon=0, lat=0), freq='3h')
         assert summed.shape == (1576,)
         assert summed[0] == data['2t'].isel(lon=0, lat=0, time=slice(0, 3)).sum()
         assert np.all(np.unique(summed.time.dt.hour) == np.arange(0, 24, 3))
+
+        with pytest.raises(KeyError, match=r'hypertangent is not a statistic supported by AQUA'):
+            reader.timstat(data['2t'], stat='hypertangent', freq='monthly', exclude_incomplete=True)
 
     @pytest.mark.parametrize('var', ['ttr'])
     def test_timmean_monthly(self, reader, data, var):
