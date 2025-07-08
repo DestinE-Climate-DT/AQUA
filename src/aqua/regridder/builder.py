@@ -102,6 +102,7 @@ class GridBuilder():
         self.cdo.setgrid(metadata['cdogrid'], input=filename_tmp, output=filename, options="-f nc4 -z zip")
         self.logger.info('Removing temporary file %s', filename_tmp)
         os.remove(filename_tmp)
+
     
     def prepare_healpix(self, data, vert_coord=None):
         """
