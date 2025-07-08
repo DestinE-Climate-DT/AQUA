@@ -12,11 +12,16 @@ class TimStat():
     Time statistic AQUA module
     """
 
+
     def __init__(self, loglevel='WARNING'):
         self.loglevel = loglevel
         self.orig_freq = None
         self.logger = log_configure(loglevel, 'TimStat')
 
+    @property
+    def AVAILABLE_STATS(self):
+        """Return the list of available statistics."""
+        return ['mean', 'std', 'max', 'min', 'sum']
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
@@ -39,7 +44,7 @@ class TimStat():
             xarray.Dataset: Output data the required statistic computed at the desired frequency.
         """
 
-        if stat not in ['mean', 'std', 'max', 'min']:
+        if stat not in self.AVAILABLE_STATS:
             raise KeyError(f'{stat} is not a statistic supported by AQUA')
 
         resample_freq = frequency_string_to_pandas(freq)
@@ -80,7 +85,7 @@ class TimStat():
             resample_data = data
 
         # compact call, equivalent of "out = resample_data.mean()""
-        if stat in ['mean', 'std', 'max', 'min']:
+        if stat in self.AVAILABLE_STATS:
             self.logger.info(f'Resampling to %s frequency and computing {stat}...', str(resample_freq))
             # use the kwargs to feed the time dimension to define the method and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}

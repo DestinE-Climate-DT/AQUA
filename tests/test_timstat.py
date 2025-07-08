@@ -16,6 +16,13 @@ def data(reader):
 @pytest.mark.aqua
 class TestTimmean():
 
+    def test_timsum(self, reader, data):
+        """Timmean test for sum operation"""
+        summed = reader.timsum(data['2t'].isel(lon=0, lat=0), freq='3h')
+        assert summed.shape == (1576,)
+        assert summed[0] == data['2t'].isel(lon=0, lat=0, time=slice(0, 3)).sum()
+        assert np.all(np.unique(summed.time.dt.hour) == np.arange(0, 24, 3))
+
     @pytest.mark.parametrize('var', ['ttr'])
     def test_timmean_monthly(self, reader, data, var):
         """Timmean test for monthly aggregation"""
@@ -112,6 +119,7 @@ class TestTimmean():
             reader.timmean(data, freq='invalid')
 
     def test_timstd_error(self, reader):
+        """Test for timstd method with a single time step"""
         data = reader.retrieve(var='2t')
         single = data.sel(time=data.time[0])
         with pytest.raises(ValueError, match=r'Time dimension not found in the input data. Cannot compute timstd statistic'):

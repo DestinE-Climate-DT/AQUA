@@ -1001,6 +1001,9 @@ class Reader():
     
     def timstd(self, data, **kwargs):
        return self.timstat(data, stat='std', **kwargs)
+    
+    def timsum(self, data, **kwargs):
+       return self.timstat(data, stat='sum', **kwargs)
 
 def units_extra_definition():
     """Add units to the pint registry"""
