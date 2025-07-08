@@ -9,7 +9,7 @@ Time Statistics
 Input data may not be available at the desired time frequency. It is possible to perform time statistics, including
 time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``Timstat()`` class and its method ``timstat()```
 which allow for several statistical operations. The class is nested into the reader, and its method are exposed so that is sufficient
-to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()`` and ``timstd()``, as in the case below. 
+to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()`` and ``timstd()``, as in the case below. 
 
 .. code-block:: python
 
