@@ -9,7 +9,7 @@ from smmregrid import GridInspector
 from aqua import Reader
 from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath
+from aqua.util import ConfigPath, load_yaml, dump_yaml, to_list
 
 class GridBuilder():
     """
@@ -19,7 +19,7 @@ class GridBuilder():
 
     def __init__(
             self, model, exp, source,
-            outdir='.', original_resolution=None, loglevel='warning'
+            outdir='.', model_name=None, original_resolution=None, loglevel='warning'
         ):
         """
         Initialize the GridBuilder with a reader instance.
@@ -29,6 +29,7 @@ class GridBuilder():
             exp (str): The experiment name.
             source (str): The source of the data.
             outdir (str): The output directory for the grid files.
+            model_name (str, optional): The name of the model, if different from the model argument.
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
             loglevel (str): The logging level for the logger. Defaults to 'warning'.
         """
@@ -36,13 +37,22 @@ class GridBuilder():
         self.exp = exp
         self.source = source
         self.outdir = outdir
+
+        # If model_name is not provided, use the model name in lowercase
+        self.model_name = model_name.lower() if model_name else model
+        self.original_resolution = original_resolution
+        
+        # loglevel
         self.logger = log_configure(log_level=loglevel, log_name='GridBuilder')
         self.loglevel = loglevel
+
+        # TODO: we need to find a nicer way to handle vertical coordinates
         self.reasonable_vert_coords = ['depth_full', 'depth_half', 'level']
-        self.original_resolution = original_resolution
+       
         self.cdo = Cdo()
         self.configpath = ConfigPath().get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
+        self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
 
 
     def retrieve(self):
@@ -102,7 +112,7 @@ class GridBuilder():
         log_history(data, msg=f'Gridfile generated with GridBuilder from {self.model}_{self.exp}_{self.source}')
 
         # store the data in a temporary netcdf file
-        filename_tmp = f"{self.model}_{self.exp}_{self.source}.nc"
+        filename_tmp = f"{self.model_name}_{self.exp}_{self.source}.nc"
         self.logger.info("Saving tmp data in %s", filename_tmp)
         data.to_netcdf(filename_tmp)
 
@@ -153,20 +163,49 @@ class GridBuilder():
             self.logger.error("Error generating weights, something is wrong with the obtianed file: %s", e)
             raise
 
+        # create the grid entry in the grid file
+        self.create_grid_entry(gridtype, basepath, vert_coord=vert_coord, rebuild=rebuild)
+
+    def create_grid_entry(self, gridtype, basepath, vert_coord=None, rebuild=False):
+        """
+        Create a grid entry in the grid file for the given gridtype.
+
+        Args:
+            gridtype (GridInspector): The grid type object containing grid information.
+            basepath (str): The base path for the grid file.
+            vert_coord (str, optional): The vertical coordinate if applicable.
+            rebuild (bool): Whether to rebuild the grid entry if it already exists. Defaults to False
+        """
+
         grid_entry_name = self.create_grid_entry_name(os.path.basename(basepath), vert_coord)
-        grid_block = self.create_grid_entry(gridtype, basepath, vert_coord)
+        grid_block = self._create_grid_entry_block(gridtype, basepath, vert_coord)
 
         self.logger.info("Grid entry name: %s", grid_entry_name)
         self.logger.info("Grid block: %s", grid_block)
 
+        # if file do not exist, create it
+        if not os.path.exists(self.gridfile):
+            self.logger.info("Grid file %s does not exist, creating it", self.gridfile)
+            final_block = {'grids': {grid_entry_name: grid_block}}
+        # else, add the grid entry to the existing file
+        else:
+            self.logger.info("Grid file %s exists, adding the grid entry %s", self.gridfile, grid_entry_name)
+            final_block = load_yaml(self.gridfile)
+            if grid_entry_name in final_block.get('grids', {}) and not rebuild:
+                self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, self.gridfile)
+                return
+            final_block['grids'][grid_entry_name] = grid_block
+        dump_yaml(self.gridfile, final_block)
+            
+        
     @staticmethod
-    def create_grid_entry(gridtype, basepath, vert_coord=None):
+    def _create_grid_entry_block(gridtype, basepath, vert_coord=None):
         """ Create a grid entry for the gridtype."""
         
         grid_block = {
             'cdo_options': '--force',
             'path': f"{basepath}.nc",
-            'space_coord:': gridtype.horizontal_dims,
+            'space_coord': gridtype.horizontal_dims,
         }
         if vert_coord:
             grid_block['vert_coord'] = vert_coord
@@ -247,7 +286,7 @@ class GridBuilder():
         elif masked == "land":
             raise NotImplementedError("Land masking is not implemented yet!")
         elif masked == "oce":
-            basename = f"{self.model}_{self.original_resolution}_{metadata['aquagrid']}_oce"
+            basename = f"{self.model_name}_{self.original_resolution}_{metadata['aquagrid']}_oce"
             if vert_coord:
                 basename += f"_{vert_coord}"
 

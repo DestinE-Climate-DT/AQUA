@@ -25,7 +25,8 @@ def builder_parser(parser=None):
                         help='Output directory for the grid file [default: current directory]')
     parser.add_argument('--original', type=str, default=None,
                         help='Original resolution of the grid [default: None]')
-
+    parser.add_argument('--modelname', type=str, default=None,
+                        help='alternative name for the model for grid naming [default: None]')
 
     return parser
 
@@ -38,7 +39,8 @@ def builder_execute(args):
     grid_builder = GridBuilder(
         model=args.model, exp=args.exp,
         source=args.source, loglevel=args.loglevel,
-        outdir=args.outdir, original_resolution=args.original
+        outdir=args.outdir, original_resolution=args.original,
+        model_name=args.modelname
     )
 
     # Build the grid
