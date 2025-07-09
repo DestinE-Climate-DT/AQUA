@@ -2,7 +2,7 @@
 import os
 import re
 from glob import glob
-import numpy as np
+from typing import Optional, Dict, Any
 import xarray as xr
 from cdo import Cdo
 from smmregrid import GridInspector
@@ -11,6 +11,7 @@ from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, load_yaml, dump_yaml
 from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder
+
 
 class GridBuilder():
     """
@@ -23,10 +24,15 @@ class GridBuilder():
     }
 
     def __init__(
-            self, model, exp, source,
-            outdir='.', model_name=None, 
-            original_resolution=None, loglevel='warning'
-        ):
+            self,
+            model: str,
+            exp: str,
+            source: str,
+            outdir: str = '.',
+            model_name: Optional[str] = None,
+            original_resolution: Optional[str] = None,
+            loglevel: str = 'warning'
+        ) -> None:
         """
         Initialize the GridBuilder with a reader instance.
 
@@ -86,15 +92,15 @@ class GridBuilder():
         for gridtype in gridtypes:
             self._build_gridtype(data, gridtype, rebuild=rebuild, version=version)
             
-    def _build_gridtype(self, data, gridtype, rebuild=False, version=None):
+    def _build_gridtype(
+        self,
+        data: Any,
+        gridtype: Any,
+        rebuild: bool = False,
+        version: Optional[int] = None
+    ) -> None:
         """
         Build the grid data based on the detected grid type.
-
-        Args:
-            data (xarray.Dataset): The dataset containing grid data.
-            gridtype (str): The detected gridtype from GridInspector.
-            rebuild (bool): Whether to rebuild the grid file if it already exists. Defaults to False.
-            version (int, optional): The version number to append to the grid file name. Defaults to None.
         """
         self.logger.info("Detected grid type: %s", gridtype)
         kind = detect_grid(data)
@@ -104,15 +110,28 @@ class GridBuilder():
         data = self._data_reduction(data, gridtype)
 
         # vertical coordinate detection
-        vert_coord = list(set(self.reasonable_vert_coords) & set(gridtype.other_dims))
-        vert_coord = vert_coord[0] if vert_coord else None
+        vert_coord_candidates = list(set(self.reasonable_vert_coords) & set(gridtype.other_dims))
+        vert_coord = vert_coord_candidates[0] if vert_coord_candidates else None
         # add vertical information to help CDO
         if vert_coord:
             self.logger.info("Detected vertical coordinate: %s", vert_coord)
             data[vert_coord].attrs['axis'] = 'Z'
 
         # horizonal only data to check mask and metadata
-        data2d = data.isel({vert_coord: 0}) if vert_coord else data
+        if vert_coord:
+            data2d_sel = data.isel({vert_coord: 0})
+            if isinstance(data2d_sel, xr.DataArray):
+                data2d = data2d_sel.to_dataset()
+            else:
+                data2d = data2d_sel
+        else:
+            data2d = data
+
+        # Ensure data2d is always an xr.Dataset
+        if isinstance(data2d, xr.DataArray):
+            data2d = data2d.to_dataset()
+        elif not isinstance(data2d, xr.Dataset):
+            raise TypeError("data2d must be an xarray.Dataset or DataArray convertible to Dataset")
         
         # add history attribute
         log_history(data, msg=f'Gridfile generated with GridBuilder from {self.model}_{self.exp}_{self.source}')
@@ -206,7 +225,11 @@ class GridBuilder():
             
         
     @staticmethod
-    def _create_grid_entry_block(gridtype, basepath, vert_coord=None):
+    def _create_grid_entry_block(
+        gridtype: Any,
+        basepath: str,
+        vert_coord: Optional[str] = None
+    ) -> Dict[str, Any]:
         """ Create a grid entry for the gridtype."""
         
         grid_block = {
@@ -220,7 +243,10 @@ class GridBuilder():
         return grid_block
 
     @staticmethod         
-    def create_grid_entry_name(name, vert_coord):
+    def create_grid_entry_name(
+        name: str,
+        vert_coord: Optional[str]
+    ) -> str:
         """ Create a grid entry name based on the grid type and vertical coordinate."""
 
         if vert_coord is not None:
@@ -229,7 +255,11 @@ class GridBuilder():
         return name.replace('_oce_', '_').replace('_', '-')
 
     @staticmethod
-    def _data_reduction(data, gridtype, vert_coord=None):
+    def _data_reduction(
+        data: xr.Dataset,
+        gridtype: Any,
+        vert_coord: Optional[str] = None
+    ) -> xr.Dataset:
         """
         Reduce the data to a single variable and time step.
 
@@ -255,10 +285,10 @@ class GridBuilder():
         return data
     
 
-    def _detect_mask_type(self, data):
+    def _detect_mask_type(self, data: xr.Dataset) -> Optional[str]:
         """ Detect the type of mask based on the data and grid kind. """
 
-        nan_count = data['mask'].isnull().sum().values/data['mask'].size
+        nan_count = float(data['mask'].isnull().sum().values) / data['mask'].size
         self.logger.info("NaN count: %s", nan_count)
         if nan_count == 0:
             return None
