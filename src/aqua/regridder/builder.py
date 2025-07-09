@@ -9,17 +9,23 @@ from smmregrid import GridInspector
 from aqua import Reader
 from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, load_yaml, dump_yaml, to_list
+from aqua.util import ConfigPath, load_yaml, dump_yaml
+from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder
 
 class GridBuilder():
     """
     Class to build automatically grids from data sources.
     Currently supports HEALPix grids and can be extended for other grid types.
     """
+    GRIDTYPE_REGISTRY = {
+        'Healpix': HealpixGridTypeBuilder,
+        # Add more grid types here as needed
+    }
 
     def __init__(
             self, model, exp, source,
-            outdir='.', model_name=None, original_resolution=None, loglevel='warning'
+            outdir='.', model_name=None, 
+            original_resolution=None, loglevel='warning'
         ):
         """
         Initialize the GridBuilder with a reader instance.
@@ -106,7 +112,7 @@ class GridBuilder():
             data[vert_coord].attrs['axis'] = 'Z'
 
         # horizonal only data to check mask and metadata
-        data2d = data.isel({vert_coord: 0}) if vert_coord else None
+        data2d = data.isel({vert_coord: 0}) if vert_coord else data
         
         # add history attribute
         log_history(data, msg=f'Gridfile generated with GridBuilder from {self.model}_{self.exp}_{self.source}')
@@ -119,11 +125,12 @@ class GridBuilder():
         # detect the mask type
         masked = self._detect_mask_type(data2d)
 
-        if kind == 'Healpix':
-            basename, metadata = self.prepare_healpix(data2d, masked, vert_coord)
-        else:
+        builder_cls = self.GRIDTYPE_REGISTRY.get(kind)
+        if not builder_cls:
             raise NotImplementedError(f"Grid type {kind} is not implemented yet")
-                
+        builder = builder_cls(data2d, masked, vert_coord, self.model_name, self.original_resolution, self.loglevel)
+        basename, metadata = builder.prepare()
+
         basepath = os.path.join(self.outdir, basename)
 
         # verify the existence of files and handle versioning
@@ -212,7 +219,7 @@ class GridBuilder():
             grid_block['path'] = {vert_coord: f"{basepath}.nc"}
         return grid_block
 
-    @staticmethod          
+    @staticmethod         
     def create_grid_entry_name(name, vert_coord):
         """ Create a grid entry name based on the grid type and vertical coordinate."""
 
@@ -263,51 +270,4 @@ class GridBuilder():
         raise ValueError(f"Unexpected nan count {nan_count}")
     
 
-    def prepare_healpix(self, data, masked=None, vert_coord=None):
-        """
-        Create a HEALPix grid from the data.
 
-        Args:
-            data (xarray.Dataset): The dataset containing grid data.
-            masked (str, optional): The type of mask applied to the data. Can be 'land', 'oce', or None.
-            vert_coord (str, optional): The vertical coordinate if applicable.
-
-        Returns:
-            str: The basename for the HEALPix grid file.
-            dict: Metadata for the HEALPix grid.
-        """
-        # Implement the logic to create a HEALPix grid
-        # This is a placeholder implementation
-        self.logger.info("Creating HEALPix grid from data of size %s", data['mask'].size)
-        metadata = self._get_healpix_metadata(data)
-
-        if masked is None:
-            basename = f"{metadata['aquagrid']}_atm"
-        elif masked == "land":
-            raise NotImplementedError("Land masking is not implemented yet!")
-        elif masked == "oce":
-            basename = f"{self.model_name}_{self.original_resolution}_{metadata['aquagrid']}_oce"
-            if vert_coord:
-                basename += f"_{vert_coord}"
-
-        # Construct the filename for the output grid
-        self.logger.info("Basename %s", basename)
-        self.logger.debug("Metadata: %s", metadata)
-        return basename, metadata
-    
-    def _get_healpix_metadata(self, data):
-        """"
-        Get metadata for the HEALPix grid based on the data size.
-        Args: 
-            data (xarray.Dataset): The dataset containing grid data.
-        Returns:
-            dict: Metadata for the HEALPix grid, including nside, zoom, cdogrid, and aquagrid.
-        """
-        nside = np.sqrt(data['mask'].size / 12)
-        zoom = int(np.log2(nside))
-        return {
-            'nside': nside,
-            'zoom': zoom,
-            'cdogrid': f"hp{int(nside)}_nested",
-            'aquagrid': f"hpz{int(zoom)}_nested"
-        }
