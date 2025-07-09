@@ -17,6 +17,10 @@ def builder_parser(parser=None):
                         help='Data source (e.g. "reanalysis", "forecast")')
     parser.add_argument('-l', '--loglevel', type=str, default='WARNING',
                         help='Log level [default: WARNING]')
+    parser.add_argument('--rebuild', action='store_true',
+                        help='Rebuild the grid even if it already exists')
+    parser.add_argument('--version', type=int, default=None,
+                        help='Version number for the grid file [default: None]')
 
 
     return parser
@@ -33,5 +37,5 @@ def builder_execute(args):
     )
 
     # Build the grid
-    grid_builder.build()
+    grid_builder.build(args.rebuild, args.version)
     
