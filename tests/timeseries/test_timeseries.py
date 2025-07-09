@@ -51,7 +51,7 @@ class TestTimeseries:
         assert isinstance(ts.data, xr.DataArray)
         assert ts.monthly.values[0] == pytest.approx(60.145472982004186, rel=approx_rel)
 
-        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.var}.monthly.{self.region}.nc'
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.r1.{self.var}.monthly.{self.region}.nc'
         file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
@@ -59,11 +59,11 @@ class TestTimeseries:
         
         assert ts.std_annual.values == pytest.approx(0.009666691494246038, rel=approx_rel)
 
-        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.var}.annual.{self.region}.nc'
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.r1.{self.var}.annual.{self.region}.nc'
         file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
-        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.var}.monthly.{self.region}.std.nc'
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.r1.{self.var}.monthly.{self.region}.std.nc'
         file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
@@ -75,7 +75,7 @@ class TestTimeseries:
         
         plt.run(var=self.var, outputdir=tmp_path)
 
-        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.{self.catalog}.{self.model}.{self.exp}.{self.var}.{self.region}.png'
+        filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.r1.{self.catalog}.{self.model}.{self.exp}.{self.var}.{self.region}.png'
         file = os.path.join(tmp_path, 'png', filename)
         assert os.path.exists(file)
 

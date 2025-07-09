@@ -33,7 +33,7 @@ def test_NAO(tmp_path):
     nao.save_netcdf(nao.index, diagnostic='nao', diagnostic_product='index',
                     outdir=tmp_path)
     netcdf_path = os.path.join(tmp_path, 'netcdf')
-    filename = 'nao.index.ci.IFS.test-tco79.nc'
+    filename = 'nao.index.ci.IFS.test-tco79.r1.nc'
     assert (os.path.exists(os.path.join(netcdf_path, filename))) is True
 
     # Regression and correlation computation
@@ -52,7 +52,7 @@ def test_NAO(tmp_path):
     assert description == 'NAO index for IFS test-tco79 using reference data from IFS test-tco79.'
     assert isinstance(fig, matplotlib.figure.Figure), "Figure should be a matplotlib Figure"
     plot_ref.save_plot(fig, diagnostic_product='index', metadata={'description': description})
-    assert (os.path.exists(os.path.join(tmp_path, 'png', 'nao.index.ci.IFS.test-tco79.ci.IFS.test-tco79.png'))) is True
+    assert (os.path.exists(os.path.join(tmp_path, 'png', 'nao.index.ci.IFS.test-tco79.r1.ci.IFS.test-tco79.png'))) is True
 
     # Regression plotting
     reg_DJF.load()
@@ -60,8 +60,8 @@ def test_NAO(tmp_path):
     assert isinstance(fig_reg, matplotlib.figure.Figure), "Figure should be a matplotlib Figure"
     description = plot_ref.set_map_description(maps=reg_DJF, ref_maps=reg_DJF, statistic='regression')
     assert description == 'NAO regression map (Mean sea level pressure) IFS test-tco79 (DJF) compared to IFS test-tco79. The contour lines are the model regression map and the filled contour map is the defference between the model and the reference regression map.' # noqa: E501
-    plot_ref.save_plot(fig_reg, diagnostic_product=f'regression_DJF', metadata={'description': description}, format='pdf')
-    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'nao.regression_DJF.ci.IFS.test-tco79.ci.IFS.test-tco79.pdf'))) is True
+    plot_ref.save_plot(fig_reg, diagnostic_product='regression_DJF', metadata={'description': description}, format='pdf')
+    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'nao.regression_DJF.ci.IFS.test-tco79.r1.ci.IFS.test-tco79.pdf'))) is True
 
     # Correlation plotting
     plot_single = PlotNAO(loglevel=loglevel, indexes=nao.index, outputdir=tmp_path)
@@ -70,8 +70,8 @@ def test_NAO(tmp_path):
     assert isinstance(fig_cor, matplotlib.figure.Figure), "Figure should be a matplotlib Figure"
     description = plot_single.set_map_description(maps=cor, statistic='correlation')
     assert description == 'NAO correlation map (Correlation of Mean sea level pressure with index evaluated with Mean sea level pressure) IFS test-tco79.'
-    plot_single.save_plot(fig_cor, diagnostic_product=f'correlation', metadata={'description': description}, format='pdf')
-    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'nao.correlation.ci.IFS.test-tco79.pdf'))) is True
+    plot_single.save_plot(fig_cor, diagnostic_product='correlation', metadata={'description': description}, format='pdf')
+    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'nao.correlation.ci.IFS.test-tco79.r1.pdf'))) is True
 
     # Not implemented maps
     fig_not_implemented = plot_ref.plot_maps(maps=[reg_DJF, reg_DJF], ref_maps=reg_DJF, statistic='not_implemented')

@@ -45,7 +45,7 @@ class TestGregory:
         assert gp.t2m_std.values == pytest.approx(0.0277312, rel=approx_rel)
         assert gp.net_toa_std.values == pytest.approx(0.52176817, rel=approx_rel)
 
-        filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.2t.annual.nc'
+        filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.r1.2t.annual.nc'
         file = os.path.join(tmp_path, 'netcdf', filename)
         assert os.path.exists(file)
 
@@ -69,7 +69,7 @@ class TestGregory:
         description = plt.set_description()
         plt.save_plot(fig, outputdir=tmp_path, diagnostic_product='gregory')
 
-        filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.multiref.png'
+        filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.r1.multiref.png'
         file = os.path.join(tmp_path, 'png', filename)
         assert os.path.exists(file)
 

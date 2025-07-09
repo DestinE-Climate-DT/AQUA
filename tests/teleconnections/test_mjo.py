@@ -31,6 +31,6 @@ def test_MJO(tmp_path):
     fig = plot.plot_hovmoller()
     assert isinstance(fig, matplotlib.figure.Figure), "Figure should be a matplotlib Figure"
     plot.save_plot(fig, diagnostic_product='hovmoller', metadata={'description': 'MJO Hovmoller plot'})
-    assert (os.path.exists(os.path.join(tmp_path, 'png', 'mjo.hovmoller.ci.ERA5.era5-hpz3.png'))) is True
+    assert (os.path.exists(os.path.join(tmp_path, 'png', 'mjo.hovmoller.ci.ERA5.era5-hpz3.r1.png'))) is True
     plot.save_plot(fig, diagnostic_product='hovmoller', format='pdf', metadata={'description': 'MJO Hovmoller plot'})
-    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'mjo.hovmoller.ci.ERA5.era5-hpz3.pdf'))) is True
+    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'mjo.hovmoller.ci.ERA5.era5-hpz3.r1.pdf'))) is True
