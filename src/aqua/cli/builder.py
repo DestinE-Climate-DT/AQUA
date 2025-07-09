@@ -21,6 +21,10 @@ def builder_parser(parser=None):
                         help='Rebuild the grid even if it already exists')
     parser.add_argument('--version', type=int, default=None,
                         help='Version number for the grid file [default: None]')
+    parser.add_argument('--outdir', type=str, default='.',
+                        help='Output directory for the grid file [default: current directory]')
+    parser.add_argument('--original', type=str, default=None,
+                        help='Original resolution of the grid [default: None]')
 
 
     return parser
@@ -32,8 +36,9 @@ def builder_execute(args):
 
     # Create GridBuilder instance
     grid_builder = GridBuilder(
-        model=args.model, exp=args.exp, 
-        source=args.source, loglevel=args.loglevel
+        model=args.model, exp=args.exp,
+        source=args.source, loglevel=args.loglevel,
+        outdir=args.outdir, original_resolution=args.original
     )
 
     # Build the grid
