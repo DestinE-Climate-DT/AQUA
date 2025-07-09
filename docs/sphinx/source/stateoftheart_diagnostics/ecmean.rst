@@ -136,6 +136,6 @@ Example Plot(s)
 Available demo notebooks
 ------------------------
 
-Notebooks are stored in ``diagnostics/ecmean/notebook``.
+Notebooks are stored in ``notebooks/diagnostics/ecmean``.
 
-* `ecmean-test.ipynb <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/ecmean/notebook/ecmean-test.ipynb>`_
+* `ecmean-destine.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ecmean/ecmean-destine.ipynb>`_
