@@ -1,6 +1,7 @@
 import os
+import xarray as xr
 from metpy.units import units
-from aqua.logger import log_configure
+from aqua.logger import log_configure, log_history
 from .config import ConfigPath
 from .yaml import load_yaml
 
@@ -37,6 +38,7 @@ def normalize_units(src, loglevel='WARNING'):
 def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
     """
     Converts source to destination units using metpy.
+    Returns a dictionary with conversion factors and offsets.
 
     Arguments:
         src (str): Source units.
@@ -97,3 +99,42 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
         conversion['factor'] = factor.magnitude
 
     return conversion
+
+
+def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
+    """
+    Converts in-place the units of a variable in an xarray Dataset or DataArray.
+
+    Args:
+        data (xarray Dataset or DataArray): The data to be checked.
+        var (str): The variable to be checked.
+        units (str): The units to be checked.
+    """
+    logger = log_configure(log_name='check_data', log_level=loglevel)
+
+    data_to_fix = data[var] if isinstance(data, xr.Dataset) else data
+    final_units = units
+    initial_units = data_to_fix.units
+
+    conversion = convert_units(initial_units, final_units)
+
+    factor = conversion.get('factor', 1)
+    offset = conversion.get('offset', 0)
+
+    if factor != 1 or offset != 0:
+        logger.debug('Converting %s from %s to %s',
+                     var, initial_units, final_units)
+        data_to_fix = data_to_fix * factor + offset
+        data_to_fix.attrs['units'] = final_units
+        log_history(data_to_fix, f"Converting units of {var}: from {initial_units} to {final_units}")
+    else:
+        logger.debug('Units of %s are already in %s', var, final_units)
+        return data
+
+    if isinstance(data, xr.Dataset):
+        data_fixed = data.copy()
+        data_fixed[var] = data_to_fix
+    else:
+        data_fixed = data_to_fix
+
+    return data_fixed

@@ -1,8 +1,9 @@
 import pandas as pd
 import xarray as xr
 from aqua.logger import log_configure
-from aqua.diagnostics.core import Diagnostic, convert_data_units
-from aqua.util import select_season
+from aqua.util import select_season, convert_data_units
+from aqua.diagnostics.core import Diagnostic
+from aqua.fixer import EvaluateFormula
 from aqua.exceptions import NoDataError
 from .util import handle_pressure_level
 
@@ -50,47 +51,83 @@ class GlobalBiases(Diagnostic):
         self.startdate = startdate
         self.enddate = enddate
 
-    def retrieve(self, var: str = None, plev: float = None, units: str = None) -> None:
+
+    def _check_data(self, var: str, units: str):
+        """
+        Make sure that the data is in the correct units.
+
+        Args:
+            var (str): The variable to be checked.
+            units (str): The units to be checked.
+        """
+        self.data[self.var] = super()._check_data(data=self.data[self.var], var=var, units=units)
+
+
+    def retrieve(self, var: str = None, formula: bool = False,
+                 long_name: str = None, short_name: str = None,
+                 plev: float = None, units: str = None) -> None:
         """
         Retrieve and preprocess dataset, selecting pressure level and/or converting units if needed.
 
         Args:
             var (str, optional): Variable to retrieve. If None, uses self.var.
+            formula (bool): If True, the variable is a formula.
+            long_name (str): The long name of the variable, if different from the variable name.
+            short_name (str): The short name of the variable, if different from the variable name.
             plev (float, optional): Pressure level to extract.
-            units (str, optional): Target units (e.g., 'mm/day').
-
+            units (str): The units of the variable, if different from the original units.
         Raises:
             NoDataError: If variable not found in dataset.
             KeyError: If the variable is missing from the data.
         """
         if var is not None:
-            self.var = var
-        if plev is not None:
-            self.plev = plev
-
-        super().retrieve(var=self.var)
+            self.var = var   
+        if formula:
+            super().retrieve()
+            self.logger.info("Evaluating formula: %s", self.var)
+            formula_values = EvaluateFormula(data=self.data, formula=self.var, long_name=long_name,
+                                             short_name=short_name, units=units,
+                                             loglevel=self.loglevel).evaluate()
+            if formula_values is None:
+                raise ValueError(f'Error evaluating formula {var}. '
+                                 'Check the variable names and the formula syntax.')
+            self.data[self.var] = formula_values
+        else:
+            super().retrieve(var=self.var)
 
         if self.data is None:
-            self.logger.error(f"Data could not be retrieved for {self.model}, {self.exp}, {self.source}")
+            self.logger.error("Data could not be retrieved for %s, %s, %s", self.model, self.exp, self.source)
             raise NoDataError("No data retrieved.")
 
+        # Customize metadata and attributes
+        if units is not None:
+            self._check_data(var=self.var, units=units)
+
+        if short_name is not None:
+            self.data = self.data.rename_vars({self.var: short_name})
+            self.var = short_name
+        else:
+            self.data.attrs['short_name'] = self.var
+
+        # Infer date range if not already set
         self.startdate = self.startdate or pd.to_datetime(self.data.time[0].values).strftime('%Y-%m-%d')
         self.enddate = self.enddate or pd.to_datetime(self.data.time[-1].values).strftime('%Y-%m-%d')
 
+        if plev is not None:
+            self.plev = plev
+
+        # Final validation and pressure level handling
         if self.var:
-            if self.var not in self.data:
-                raise KeyError(f"Variable '{self.var}' not found in dataset variables: {list(self.data.data_vars)}")
-            if units:
-                self.logger.info(f'Adjusting units for variable {self.var} to {units}.')
-                self.data = convert_data_units(self.data, self.var, units, loglevel=self.loglevel)
+            if self.var not in self.data.data_vars:
+                raise KeyError(f"Variable '{self.var}' not found in dataset. Available variables: {list(self.data.data_vars)}")
+
             if self.plev is not None:
-                self.logger.info(f'Selecting pressure level {self.plev} for variable {self.var}.')
+                self.logger.info("Selecting pressure level %s for variable '%s'.", self.plev, self.var)
                 self.data = handle_pressure_level(self.data, self.var, self.plev, loglevel=self.loglevel)
             elif 'plev' in self.data[self.var].dims:
-                self.logger.warning(f"Variable {self.var} has multiple pressure levels but none was selected.")
+                self.logger.warning("Variable '%s' has multiple pressure levels, but none was specified.", self.var)
         else:
-            self.logger.info("All variables were retrieved. No variable-specific operations applied.")
-
+            self.logger.info("All variables retrieved; no variable-specific operations applied.")
 
     def compute_climatology(self,
                             data: xr.Dataset = None,

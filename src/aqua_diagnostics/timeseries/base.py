@@ -1,8 +1,9 @@
 import os
 import xarray as xr
+from aqua.fixer import EvaluateFormula
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
-from aqua.util import frequency_string_to_pandas, time_to_string, eval_formula
+from aqua.util import frequency_string_to_pandas, time_to_string
 from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver
 
 xr.set_options(keep_attrs=True)
@@ -91,8 +92,9 @@ class BaseMixin(Diagnostic):
         # of all the variables
         if formula:
             super().retrieve()
-            self.logger.debug("Evaluating formula %s", var)
-            self.data = eval_formula(mystring=var, xdataset=self.data)
+            self.data = EvaluateFormula(data=self.data, formula=var, long_name=long_name,
+                                        short_name=standard_name, units=units,
+                                        loglevel=self.loglevel).evaluate()
             if self.data is None:
                 raise ValueError(f'Error evaluating formula {var}. '
                                  'Check the variable names and the formula syntax.')
@@ -160,6 +162,9 @@ class BaseMixin(Diagnostic):
         else:  # For annual data, we compute the std over all years
             data = data.std('time')
 
+        if self.region is not None:
+            data.attrs['AQUA_region'] = self.region
+
         # Store start and end dates for the standard deviation.
         # pd.Timestamp cannot be used as attribute, so we convert to a string
         data.attrs['std_startdate'] = time_to_string(self.std_startdate)
@@ -207,8 +212,9 @@ class BaseMixin(Diagnostic):
         if data.name is None:
             data.name = var
 
-        region = self.region.replace(' ', '').lower() if self.region is not None else None
-        extra_keys.update({'region': region})
+        if self.region is not None:
+            region = self.region.replace(' ', '').lower()
+            extra_keys.update({'region': region})
 
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
 
@@ -276,6 +282,7 @@ class PlotBaseMixin():
         self.ref_exps = None
         self.std_startdate = None
         self.std_enddate = None
+        self.region = None
 
     def set_data_labels(self):
         """
@@ -414,7 +421,7 @@ class PlotBaseMixin():
         if var is not None:
             extra_keys.update({'var': var})
         if region is not None:
-            region = region.replace(' ', '').lower() if region is not None else None
+            region = region.replace(' ', '').lower()
             extra_keys.update({'region': region})
 
         if format == 'png':

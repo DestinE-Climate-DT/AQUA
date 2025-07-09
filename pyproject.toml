@@ -53,15 +53,16 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid==0.1.0",
+    "smmregrid==0.1.2",
+    #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
     "sparse",
     "xarray>=2025.01.2", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
     "kerchunk",
     "h5py>=3.12.1", #specific github pin to avoid installation of binaries
     "fastparquet",
-    "pyfdb==0.1.1",
-    "gsv-interface==2.9.0",
     "ECmean4>=0.1.14",
+    "pyfdb==0.1.2",
+    "gsv-interface==2.11.0",
     "zarr"
 ]
 

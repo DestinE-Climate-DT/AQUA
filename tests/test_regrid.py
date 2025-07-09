@@ -14,7 +14,7 @@ approx_rel = 1e-4
         ("ICON", "test-r2b0", "short", "2t", 0),
         ("ICON", "test-healpix", "short", "2t", 0),
         ("FESOM", "test-pi", "original_2d", "tos", 0.33925926),
-        ("NEMO", "test-eORCA1", "long-2d", "tos", 0.28716)
+        ("NEMO", "test-eORCA1", "long-2d", "tos", 0.3379)
     ]
 )
 def reader_arguments(request):
@@ -73,7 +73,7 @@ class TestRegridder():
             gdh.normalize_grid_dict("ciao")
         with pytest.raises(TypeError, match="Grid name '20' is not a valid type."):
             gdh.normalize_grid_dict(20)
-        with pytest.raises(ValueError, match="Grid name 'tragic' is not a valid CDO grid name."):
+        with pytest.raises(ValueError, match="Grid name 'tragic' is a string but not a valid CDO grid name."):
             gdh.normalize_grid_dict("tragic")
 
         # test on grid path
@@ -204,13 +204,13 @@ class TestRegridder():
         rgd = reader.regrid(data)
 
         subdata = rgd.avg_so.isel(level=0)
-        ratio1 = subdata.isnull().sum()/subdata.size  # land fraction
+        ratio1 = subdata.isnull().sum().values/subdata.size  # land fraction
         subdata = rgd.avg_so.isel(level=6)
-        ratio2 = subdata.isnull().sum()/subdata.size  # land fraction
+        ratio2 = subdata.isnull().sum().values/subdata.size  # land fraction
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
-        assert 0.27 <= ratio1 <= 0.30
-        assert 0.44 <= ratio2 <= 0.46
+        assert 0.32 <= ratio1 <= 0.36
+        assert 0.44 <= ratio2 <= 0.47
 
     def test_levels_and_regrid(self):
         """

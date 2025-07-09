@@ -107,6 +107,18 @@ Options:
 
     Statistic to be computed (default: 'mean')
 
+.. option:: --frequency
+
+    Frequency of the LRA (default: as the original data)
+
+.. option:: --resolution
+
+    Resolution of the LRA (default: as the original data)
+
+.. option:: --realization
+
+    Which realization (e.g. ensemble member) to use for the LRA (default: 'r1')
+
 Please note that these options override the ones available in the configuration file. 
 
 A basic example usage can thus be: 

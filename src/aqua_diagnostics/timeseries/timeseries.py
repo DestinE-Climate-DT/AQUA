@@ -123,7 +123,7 @@ class Timeseries(BaseMixin):
             data = extended_data
 
         if self.region is not None:
-            data.attrs['region'] = self.region
+            data.attrs['AQUA_region'] = self.region
 
         # Due to the possible usage of the standard period, the time may need to be reselected correctly
         data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))

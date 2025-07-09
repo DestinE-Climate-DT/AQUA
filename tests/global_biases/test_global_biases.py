@@ -80,3 +80,14 @@ class TestGlobalBiases:
         gb_local.retrieve(var='tprate', units='mm/day')
         gb_local.compute_climatology(var='tprate')
         assert gb_local.climatology['tprate'].attrs.get('units') == 'mm/day'
+
+    def test_formula(self):
+        var = 'tnlwrf+tnswrf'
+        long_name = 'Top net radiation'
+        short_name = 'tnr'
+        gb = GlobalBiases(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly')
+        gb.retrieve(formula=True, var=var, long_name=long_name, short_name=short_name)
+        gb.compute_climatology()
+        assert short_name in gb.climatology.data_vars
+        assert gb.data[short_name].attrs.get('long_name') == long_name
+        assert gb.data[short_name].attrs.get('short_name') == short_name

@@ -1,4 +1,3 @@
-# Currently, the diagnostic supports comparing one dataset against one reference dataset at a time.
 datasets:
   - catalog: null
     model: null
@@ -11,7 +10,7 @@ references:
     model: 'CERES'
     exp: 'ebaf-toa41'
     source: 'monthly'
-    regrid: null
+    regrid: 'r100'
   
 setup:
   loglevel: 'WARNING'
@@ -27,20 +26,37 @@ output:
 diagnostics:
   globalbiases:
     run: true
-    diagnostic_name: 'radiation_biases'
-    variables: ['tnlwrf', 'tnswrf', 'tnr']
+    diagnostic_name: 'radiation'
+    variables: ['tnlwrf', 'tnswrf']
+    formulae: ['tnlwrf+tnswrf', 'tnlwrf-tnlwrfcs', 'tnswrf-tnswrfcs', 'tnlwrf+tnswrf-tnlwrfcs-tnswrfcs']
     params:
-      plev: null # Level plot for 2D bias map if variable 3d
-      seasons: true
-      seasons_stat: 'mean' # May become a list
-      vertical: false     # Vertical profile if variable 3d
-      startdate_data: null
-      enddate_data: null
-      startdate_obs: "2000-01-01"
-      enddate_obs: "2020-12-31"
+      default:
+        plev: null # Level plot for 2D bias map if variable 3d
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: false     # Vertical profile if variable 3d
+        startdate_data: null
+        enddate_data: null
+        startdate_obs: "2000-01-01"
+        enddate_obs: "2020-12-31"
+      tnlwrf+tnswrf:
+        short_name: "tnr"
+        long_name: "Top net radiation"
+      tnlwrf-tnlwrfcs:
+        short_name: "cre_toa_lw"
+        long_name: "Long wave cloud radiative effect at TOA (All Sky - Clear Sky)"
+      tnswrf-tnswrfcs:
+        short_name: "cre_toa_sw"
+        long_name: "Short wave cloud radiative effect at TOA (All Sky - Clear Sky)"
+      tnlwrf+tnswrf-tnlwrfcs-tnswrfcs:
+        short_name: "cre_toa_net"
+        long_name: "Net cloud radiative effect at TOA (All Sky - Clear Sky)"
     plot_params:
       limits:
         2d_maps:
           tnlwrf: {vmin: -30, vmax: 30}
           tnswrf: {vmin: -30, vmax: 30}
           tnr: {vmin: -30, vmax: 30}
+          cre_toa_net: {vmin: -55, vmax: 55}
+          cre_toa_sw: {vmin: -55, vmax: 55}
+          cre_toa_lw: {vmin: -55, vmax: 55}

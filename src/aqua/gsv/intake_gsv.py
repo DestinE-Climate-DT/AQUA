@@ -27,7 +27,7 @@ except KeyError:
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
 
 #BRIDGE_API_URL = "https://climate-catalogue.lumi.apps.dte.destination-earth.eu/api/stac"
-BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v1/stac/climate-dt"  # LUMI QUBED STAC API
+BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"  # LUMI QUBED STAC API
 
 
 class GSVSource(base.DataSource):

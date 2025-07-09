@@ -77,15 +77,16 @@ if __name__ == '__main__':
                             'regrid': regrid if regrid is not None else reference.get('regrid', None)}
             
             variables = config_dict['diagnostics']['globalbiases'].get('variables', [])
-            plev = config_dict['diagnostics']['globalbiases']['params'].get('plev')
-            seasons = config_dict['diagnostics']['globalbiases']['params'].get('seasons', False)
-            seasons_stat = config_dict['diagnostics']['globalbiases']['params'].get('seasons_stat', 'mean')
-            vertical = config_dict['diagnostics']['globalbiases']['params'].get('vertical', False)
+            formulae = config_dict['diagnostics']['globalbiases'].get('formulae', [])
+            plev = config_dict['diagnostics']['globalbiases']['params']['default'].get('plev')
+            seasons = config_dict['diagnostics']['globalbiases']['params']['default'].get('seasons', False)
+            seasons_stat = config_dict['diagnostics']['globalbiases']['params']['default'].get('seasons_stat', 'mean')
+            vertical = config_dict['diagnostics']['globalbiases']['params']['default'].get('vertical', False)
 
-            startdate_data = config_dict['diagnostics']['globalbiases']['params'].get('startdate_data', None)
-            enddate_data = config_dict['diagnostics']['globalbiases']['params'].get('enddate_data', None)
-            startdate_ref = config_dict['diagnostics']['globalbiases']['params'].get('startdate_ref', None)
-            enddate_ref = config_dict['diagnostics']['globalbiases']['params'].get('enddate_ref', None)
+            startdate_data = config_dict['diagnostics']['globalbiases']['params']['default'].get('startdate_data', None)
+            enddate_data = config_dict['diagnostics']['globalbiases']['params']['default'].get('enddate_data', None)
+            startdate_ref = config_dict['diagnostics']['globalbiases']['params']['default'].get('startdate_ref', None)
+            enddate_ref = config_dict['diagnostics']['globalbiases']['params']['default'].get('enddate_ref', None)
 
             logger.debug("Selected levels for vertical plots: %s", plev)
 
@@ -94,18 +95,27 @@ if __name__ == '__main__':
             biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref,
                                             outputdir=outputdir, loglevel=loglevel)
 
+            all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
 
-            for var in variables:
-                logger.info(f"Running Global Biases diagnostic for variable: {var}")
+            for var, is_formula in all_vars:
+                logger.info(f"Running Global Biases diagnostic for {'formula' if is_formula else 'variable'}: {var}")
                 plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['2d_maps'].get(var, {})
                 vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
                 units = 'mm/day' if var in ['tprate', 'mtpr'] else None
 
-                biases_dataset.retrieve(var=var, units=units)
-                biases_reference.retrieve(var=var, units=units)
+                param_dict = config_dict['diagnostics']['globalbiases'].get('params', {}).get(var, {})
+                units = param_dict.get('units', None)
+                long_name = param_dict.get('long_name', None)
+                short_name = param_dict.get('short_name', None)
+
+                biases_dataset.retrieve(var=var, units=units, formula=is_formula, long_name=long_name, short_name=short_name)
+                biases_reference.retrieve(var=var, units=units, formula=is_formula, long_name=long_name, short_name=short_name)
 
                 biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
                 biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
+
+                if short_name is not None: 
+                    var = short_name
 
                 if 'plev' in biases_dataset.data.get(var, {}).dims and plev:
                     plev_list = to_list(plev)
@@ -117,7 +127,6 @@ if __name__ == '__main__':
                     logger.info(f"Processing variable: {var} at pressure level: {p}" if p else f"Processing variable: {var} at surface level")
 
                     plot_biases = PlotGlobalBiases(save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
-                   
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
                                           var=var, plev=p, vmin=vmin, vmax=vmax) 
                     if seasons:

@@ -9,7 +9,7 @@ Time Statistics
 Input data may not be available at the desired time frequency. It is possible to perform time statistics, including
 time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``Timstat()`` class and its method ``timstat()```
 which allow for several statistical operations. The class is nested into the reader, and its method are exposed so that is sufficient
-to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()`` and ``timstd()``, as in the case below. 
+to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()`` and ``timstd()``, as in the case below. 
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ It is also possible to apply a regional section to the domain before performing 
     tprate = data.tprate
     global_mean = reader.fldmean(tprate, lon_limits=[-50, 50], lat_limits=[-10,20])
 
-.. warning ::
+.. warning::
     In order to apply an area selection the data Xarray must include ``lon`` and ``lat`` as coordinates.
     It can work also on unstructured grids, but information on coordinates must be available.
     If the dataset does not include these coordinates, this can be achieved with the fixer
@@ -90,6 +90,39 @@ It is also possible to apply a regional section to the domain before performing 
 
 .. note::
     So far only the `mean` statistics is available, but other statistics are planned to be implemented in the future.
+
+Histogram
+---------
+
+The ``histogram()`` function is a simple utility to compute histograms of input data, working with a Xarray DataArray in input.
+The syntax is similar to the ``numpy.histogram()`` function, but it returns a DataArray with the histogram.
+If the input DataArray is Dask-based then the computation will be lazy.
+If a Dataset is passed, the first variable will be used.
+Latitudinal weighting is activated by default, so the 'counts' of the histogram will not be integers.
+It is possible to compute a complete PDF (Probability Density Function) by setting the ``density=True`` argument.
+
+.. code-block:: python
+
+    from aqua import histogram, Reader
+
+    reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
+    data = reader.retrieve()
+    hist = histogram(data['t2m'], bins=100, range=(250, 350), units='K')
+  
+This will return a DataArray with the histogram of the ``t2m`` variable, with 100 bins ranging from 250 to 350,
+with area weighting (on by default) after converting the units to 'K' (if needed)
+In the output DataArray the ``center_of_bin`` and ``width`` coordinates contains the center and width of each bin respectively.
+The ``bins`` and ``range`` arguments are recommended, all others totally optional.
+
+Some extra options are available:
+
+- ``weighted=False``: this will switch off computing a weighted histogram, where the weights are the cosines of the latitudes (true by default).
+- ``density=True``: this will compute a PDF (Probability Density Function) instead of a histogram (false by default).
+- ``dask=False``: this will force the computation of the histogram using numpy (true by default).
+- ``check=True``: this will perform a test to verify that the sum of the counts is equal to the number of elements in the input data. 
+                  It will fail if not appropriate bounds are used for the classes. Can be only used if the ``density`` flag is ``False``.
+                  It will force a computation of the histogram and a numpy array will be returned.
+
 
 .. _time-selection:
 
