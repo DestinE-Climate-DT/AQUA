@@ -2,6 +2,7 @@
 import os
 import re
 from glob import glob
+import shutil
 from typing import Optional, Dict, Any
 import xarray as xr
 from cdo import Cdo
@@ -11,6 +12,7 @@ from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, load_yaml, dump_yaml
 from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder, RegularGridTypeBuilder
+from aqua.regridder.gridtypebuilder import UnstructuredGridTypeBuilder
 
 
 class GridBuilder():
@@ -21,6 +23,7 @@ class GridBuilder():
     GRIDTYPE_REGISTRY = {
         'Healpix': HealpixGridTypeBuilder,
         'Regular': RegularGridTypeBuilder,
+        'Unstructured': UnstructuredGridTypeBuilder,
         # Add more grid types here as needed
     }
 
@@ -108,7 +111,7 @@ class GridBuilder():
         self.logger.info("Grid type is: %s", kind)
 
         # data reduction
-        data = self._data_reduction(data, gridtype)
+        data = self._data_reduction(data, gridtype).load()
 
         # vertical coordinate detection
         vert_coord_candidates = list(set(self.reasonable_vert_coords) & set(gridtype.other_dims))
@@ -139,15 +142,17 @@ class GridBuilder():
 
         # store the data in a temporary netcdf file
         filename_tmp = f"{self.model_name}_{self.exp}_{self.source}.nc"
-        self.logger.info("Saving tmp data in %s", filename_tmp)
+        self.logger.debug("Saving tmp data in %s", filename_tmp)
         data.to_netcdf(filename_tmp)
 
         # detect the mask type
         masked = self._detect_mask_type(data2d)
+        self.logger.info("Masked type: %s", masked)
 
         builder_cls = self.GRIDTYPE_REGISTRY.get(kind)
         if not builder_cls:
             raise NotImplementedError(f"Grid type {kind} is not implemented yet")
+        self.logger.debug("Builder class: %s", builder_cls)
         builder = builder_cls(data2d, masked, vert_coord, self.model_name, self.original_resolution, self.loglevel)
         basename, metadata = builder.prepare()
 
@@ -164,8 +169,6 @@ class GridBuilder():
 
         # check if version has been defined and set the filename accordingly
         if version is not None:
-            if not isinstance(version, int):
-                raise ValueError(f"Version must be an integer, got {version}")
             basepath = f"{basepath}_v{version}"
 
         filename = f"{basepath}.nc"
@@ -177,8 +180,12 @@ class GridBuilder():
                 self.logger.error("File %s already exists, skipping", filename)
                 return
         
-        self.logger.info('Calling CDO to set the grid %s to %s', metadata['cdogrid'], filename)
-        self.cdo.setgrid(metadata['cdogrid'], input=filename_tmp, output=filename, options="-f nc4 -z zip")
+        if metadata['cdogrid']:
+            self.logger.info('Calling CDO to set the grid %s to %s', metadata['cdogrid'], filename)
+            self.cdo.setgrid(metadata['cdogrid'], input=filename_tmp, output=filename, options="-f nc4 -z zip")
+        else:
+            self.logger.info('No CDO grid to set, copying %s to %s', filename_tmp, filename)
+            shutil.copy(filename_tmp, filename)
         self.logger.info('Removing temporary file %s', filename_tmp)
         os.remove(filename_tmp)
 
@@ -243,7 +250,7 @@ class GridBuilder():
             grid_block['path'] = {vert_coord: f"{basepath}.nc"}
         return grid_block
 
-    @staticmethod         
+    @staticmethod
     def create_grid_entry_name(
         name: str,
         vert_coord: Optional[str]
@@ -273,15 +280,26 @@ class GridBuilder():
         """
         # extract first var fro GridType, and guess time dimension from there
         var = next(iter(gridtype.variables))
+
+        # this is somehow needed because GridInspector is not able to detect the time dimension
         timedim = gridtype.time_dims[0] if gridtype.time_dims else None
-        data = data[[var]] #double brackets to keep it as a Dataset
-        data = data.rename({var: 'mask'})  # rename to mask for consistency
         if timedim:
-            data = data.isel({timedim: 0})
+            data = data.isel({timedim: 0}, drop=True)
+
+        # keep bounds if present
+        if gridtype.bounds:
+            load_vars = [var] + gridtype.bounds
+        else:
+            load_vars = [var]
+        data = data[load_vars]
+        data = data.rename({var: 'mask'})  # rename to mask for consistency
+
         if vert_coord and f"idx_{vert_coord}" in data.coords:
             data = data.drop_vars(f"idx_{vert_coord}")
+
         # set the mask variable to 1 where data is not null
-        data = xr.where(data['mask'].notnull(), 1, data)
+        data['mask'] = xr.where(data['mask'].isnull(), data['mask'], 1, keep_attrs=True)
+
 
         return data
     
@@ -290,7 +308,7 @@ class GridBuilder():
         """ Detect the type of mask based on the data and grid kind. """
 
         nan_count = float(data['mask'].isnull().sum().values) / data['mask'].size
-        self.logger.info("NaN count: %s", nan_count)
+        self.logger.debug("NaN count: %s", nan_count)
         if nan_count == 0:
             return None
         if 0 < nan_count < 0.5:

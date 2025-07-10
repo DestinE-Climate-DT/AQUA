@@ -96,10 +96,7 @@ class HealpixGridTypeBuilder(BaseGridTypeBuilder):
     ):
         super().__init__(data, masked, vert_coord, original_resolution, model_name)
         self.logger = log_configure(log_level=loglevel, log_name='HEALpixGridTypeBuilder')
-        
-    def prepare(self):
-        """Return (basename, metadata) for this grid type."""
-        self.logger.info("Creating HEALPix grid from data of size %s", self.data['mask'].size)
+
         metadata = self.get_healpix_metadata(self.data)
         basename = self.get_basename(metadata)
 
@@ -123,4 +120,55 @@ class HealpixGridTypeBuilder(BaseGridTypeBuilder):
             'zoom': zoom,
             'cdogrid': f"hp{int(nside)}_nested",
             'aquagrid': f"hpz{int(zoom)}_nested"
+        }
+
+
+class UnstructuredGridTypeBuilder(BaseGridTypeBuilder):
+    """
+    Class to build Unstructured grid files.
+    """
+    def __init__(self, data, masked, vert_coord,
+        model_name=None, original_resolution=None, loglevel='warning'
+        ):
+        super().__init__(data, masked, vert_coord, original_resolution, model_name)
+        self.logger = log_configure(log_level=loglevel, log_name='UnstructuredGridTypeBuilder')
+
+    def has_bounds(self):
+        """
+        Check if the data has bounds.
+        """
+        if 'lon_bounds' in self.data.variables and 'lat_bounds' in self.data.variables:
+            return True
+        if 'lon_bnds' in self.data.variables and 'lat_bnds' in self.data.variables:
+            return True
+        return False
+        
+
+    def prepare(self):
+        """Return (basename, metadata) for this grid type."""
+        self.logger.info("Creating Unstructured grid from data of size %s", self.data['mask'].size)
+
+
+        if not self.has_bounds():
+            self.logger.error("Data has no bounds, cannot create HEALPix grid")
+
+        metadata = self.get_unstructured_metadata(self.data)
+        basename = self.get_basename(metadata)
+
+        self.logger.info("Basename %s", basename)
+        self.logger.debug("Metadata: %s", metadata)
+        return basename, metadata
+
+    def get_unstructured_metadata(self, data):
+        """
+        Get metadata for the Unstructured grid based on the data size.
+        Args: 
+            data (xarray.Dataset): The dataset containing grid data.
+        Returns:
+            dict: Metadata for the Unstructured grid, including nlon, nlat, cdogrid, and aquagrid.
+        """
+        return {
+            'aquagrid': self.model_name,
+            'cdogrid': None,
+            'size': data['mask'].size,
         }
