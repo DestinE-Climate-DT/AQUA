@@ -10,7 +10,7 @@ from aqua import Reader
 from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, load_yaml, dump_yaml
-from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder
+from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder, RegularGridTypeBuilder
 
 
 class GridBuilder():
@@ -20,6 +20,7 @@ class GridBuilder():
     """
     GRIDTYPE_REGISTRY = {
         'Healpix': HealpixGridTypeBuilder,
+        'Regular': RegularGridTypeBuilder,
         # Add more grid types here as needed
     }
 
