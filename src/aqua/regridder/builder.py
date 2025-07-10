@@ -2,7 +2,6 @@
 import os
 import re
 from glob import glob
-import shutil
 from typing import Optional, Dict, Any
 import xarray as xr
 from cdo import Cdo
@@ -116,8 +115,10 @@ class GridBuilder():
         kind = detect_grid(data)
         self.logger.info("Grid type is: %s", kind)
 
-        # data reduction
-        data = self._data_reduction(data, gridtype).load()
+        builder_cls = self.GRIDTYPE_REGISTRY.get(kind)
+        if not builder_cls:
+            raise NotImplementedError(f"Grid type {kind} is not implemented yet")
+        self.logger.debug("Builder class: %s", builder_cls)
 
         # vertical coordinate detection
         vert_coord_candidates = list(set(self.reasonable_vert_coords) & set(gridtype.other_dims))
@@ -127,21 +128,9 @@ class GridBuilder():
             self.logger.info("Detected vertical coordinate: %s", vert_coord)
             data[vert_coord].attrs['axis'] = 'Z'
 
-        # horizonal only data to check mask and metadata
-        if vert_coord:
-            data2d_sel = data.isel({vert_coord: 0})
-            if isinstance(data2d_sel, xr.DataArray):
-                data2d = data2d_sel.to_dataset()
-            else:
-                data2d = data2d_sel
-        else:
-            data2d = data
-
-        # Ensure data2d is always an xr.Dataset
-        if isinstance(data2d, xr.DataArray):
-            data2d = data2d.to_dataset()
-        elif not isinstance(data2d, xr.Dataset):
-            raise TypeError("data2d must be an xarray.Dataset or DataArray convertible to Dataset")
+        # Use the builder's data_reduction method
+        builder = builder_cls(data, None, vert_coord, self.model_name, self.original_resolution, self.loglevel)
+        data3d = builder.data_reduction(data, gridtype, vert_coord).load()
         
         # add history attribute
         log_history(data, msg=f'Gridfile generated with GridBuilder from {self.model}_{self.exp}_{self.source}')
@@ -149,19 +138,17 @@ class GridBuilder():
         # store the data in a temporary netcdf file
         filename_tmp = f"{self.model_name}_{self.exp}_{self.source}.nc"
         self.logger.debug("Saving tmp data in %s", filename_tmp)
-        data.to_netcdf(filename_tmp)
+        data3d.to_netcdf(filename_tmp)
 
-        # detect the mask type
-        masked = self._detect_mask_type(data2d)
+        # select the 2D slice of the data and detect the mask type
+        data2d = builder.select_2d_slice(data3d, vert_coord)
+        masked = builder.detect_mask_type(data2d)
         self.logger.info("Masked type: %s", masked)
 
-        builder_cls = self.GRIDTYPE_REGISTRY.get(kind)
-        if not builder_cls:
-            raise NotImplementedError(f"Grid type {kind} is not implemented yet")
-        self.logger.debug("Builder class: %s", builder_cls)
-        builder = builder_cls(data2d, masked, vert_coord, self.model_name, self.original_resolution, self.loglevel)
+        # get the basename and metadata for the grid file
         basename, metadata = builder.prepare()
 
+        # create the base path for the grid file
         basepath = os.path.join(self.outdir, basename)
 
         # verify the existence of files and handle versioning
@@ -186,12 +173,7 @@ class GridBuilder():
                 self.logger.error("File %s already exists, skipping", filename)
                 return
         
-        if metadata['cdogrid']:
-            self.logger.info('Calling CDO to set the grid %s to %s', metadata['cdogrid'], filename)
-            self.cdo.setgrid(metadata['cdogrid'], input=filename_tmp, output=filename, options="-f nc4 -z zip")
-        else:
-            self.logger.info('No CDO grid to set, copying %s to %s', filename_tmp, filename)
-            shutil.copy(filename_tmp, filename)
+        builder.write_gridfile(filename_tmp, filename, metadata, self.cdo, logger=self.logger)
         self.logger.info('Removing temporary file %s', filename_tmp)
         os.remove(filename_tmp)
 
