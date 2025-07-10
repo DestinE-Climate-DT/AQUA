@@ -12,7 +12,7 @@ from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, load_yaml, dump_yaml
 from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder, RegularGridTypeBuilder
-from aqua.regridder.gridtypebuilder import UnstructuredGridTypeBuilder
+from aqua.regridder.gridtypebuilder import UnstructuredGridTypeBuilder, CurvilinearGridTypeBuilder
 
 
 class GridBuilder():
@@ -24,6 +24,7 @@ class GridBuilder():
         'Healpix': HealpixGridTypeBuilder,
         'Regular': RegularGridTypeBuilder,
         'Unstructured': UnstructuredGridTypeBuilder,
+        'Curvilinear': CurvilinearGridTypeBuilder,
         # Add more grid types here as needed
     }
 
@@ -71,7 +72,7 @@ class GridBuilder():
         self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
 
 
-    def retrieve(self):
+    def retrieve(self, fix=False):
         """
         Retrieve the grid data based on the model, experiment, and source.
 
@@ -79,20 +80,25 @@ class GridBuilder():
             xarray.Dataset: The retrieved grid data.
         """
         reader = Reader(model=self.model, exp=self.exp, source=self.source, loglevel=self.loglevel,
-                        areas=False, fix=False)
+                        areas=False, fix=fix)
         return reader.retrieve()
     
    
-    def build(self, rebuild=False, version=None):
+    def build(self, rebuild=False, fix=False, version=None):
         """
         Retrieve and build the grid data for all gridtypes available.
         
         Args:
             rebuild (bool): Whether to rebuild the grid file if it already exists. Defaults to False.
+            fix (bool): Whether to fix the original source. Might be useful for some models. Defaults to False.
             version (int, optional): The version number to append to the grid file name. Defaults to None.
         """
-        data = self.retrieve()
+        data = self.retrieve(fix=fix)
         gridtypes = GridInspector(data).get_gridtype()
+        if not gridtypes:
+            self.logger.error("No grid type detected, skipping grid build")
+            self.logger.error("You can try to fix the source when calling the Reader() with the --fix flag")
+            return
         for gridtype in gridtypes:
             self._build_gridtype(data, gridtype, rebuild=rebuild, version=version)
             

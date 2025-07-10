@@ -29,6 +29,8 @@ def builder_parser(parser=None):
                         help='Original resolution of the grid [default: None]')
     parser.add_argument('--modelname', type=str,
                         help='alternative name for the model for grid naming [default: None]')
+    parser.add_argument('--fix', action='store_true',
+                        help='Fix the original source [default: False]')
 
     return parser
 
@@ -48,6 +50,7 @@ def builder_execute(args):
     model = get_arg(args, 'model', reader_config.get('model'))
     exp = get_arg(args, 'exp', reader_config.get('exp'))
     source = get_arg(args, 'source', reader_config.get('source'))
+    fix = get_arg(args, 'fix', reader_config.get('fix', False))
     loglevel = get_arg(args, 'loglevel', builder_config.get('loglevel', 'WARNING'))
     outdir = get_arg(args, 'outdir', builder_config.get('outdir', '.'))
     original_resolution = get_arg(args, 'original', builder_config.get('original'))
@@ -72,5 +75,5 @@ def builder_execute(args):
     )
 
     # Build the grid
-    grid_builder.build(rebuild, version)
+    grid_builder.build(rebuild, fix, version)
     
