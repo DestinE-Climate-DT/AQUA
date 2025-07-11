@@ -20,6 +20,7 @@ from aqua.cli.parser import parse_arguments
 from aqua.cli.diagnostic_config import diagnostic_config
 from aqua.cli.lra import lra_execute
 from aqua.cli.catgen import catgen_execute
+from aqua.cli.builder import builder_execute
 
 
 # folder used for reading/storing catalogs
@@ -62,7 +63,8 @@ class AquaConsole():
             'grids': {
                 'add': self.grids_add,
                 'remove': self.remove_file,
-                'set': self.grids_set
+                'set': self.grids_set,
+                'build': self.grids_build
             },
             'lra': self.lra,
             'catgen': self.catgen
@@ -372,6 +374,15 @@ class AquaConsole():
         compatible = self._check_file(kind='grids', file=args.file)
         if compatible:
             self._file_add(kind='grids', file=args.file, link=args.editable)
+    
+    def grids_build(self, args):
+        """Build grids from data sources
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        print('Running AQUA grids builder')
+        builder_execute(args)
 
     def grids_set(self, args):
         """

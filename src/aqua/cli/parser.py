@@ -8,6 +8,7 @@ from aqua import __version__ as version
 from aqua import __path__ as pypath
 from aqua.cli.lra import lra_parser
 from aqua.cli.catgen import catgen_parser
+from aqua.cli.builder import builder_parser
 
 
 def parse_arguments():
@@ -108,7 +109,9 @@ def file_subparser(main_parser, name):
     # We have for the grids the possibility to set a default path to overwrite the individual catalog one
     # This will create a block in the config-aqua.yaml file for grids, areas and weights.
     if name == 'grids':
-        parser_list = subparsers.add_parser('set', help=f'Set a {name} path as the default in config-aqua.yaml')
-        parser_list.add_argument('path', help=f'The {name} path to set as default')
+        parser_set = subparsers.add_parser('set', help=f'Set a {name} path as the default in config-aqua.yaml')
+        parser_set.add_argument('path', help=f'The {name} path to set as default')
+        parser_build = subparsers.add_parser('build', help=f'Build {name} grids from data sources')
+        parser_build = builder_parser(parser_build)
 
     return parser
