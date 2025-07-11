@@ -15,20 +15,19 @@ class BaseGridTypeBuilder:
     logger_name = "BaseGridTypeBuilder"
 
     def __init__(
-        self, data, masked, vert_coord,
+        self, vert_coord,
         original_resolution, model_name, loglevel='warning'
         ):
         """
         Initialize the BaseGridTypeBuilder.
 
-        Args: 
-            data (xarray.Dataset): The dataset containing grid data.
-            masked (str): The type of mask applied to the data.
+        Args:
             vert_coord (str): The vertical coordinate if applicable.
+            original_resolution (str): The original resolution of the data.
+            model_name (str): The name of the model.
             loglevel (str): The logging level for the logger. Defaults to 'warning'.
         """
-        self.data = data
-        self.masked = masked
+        self.masked = None
         self.vert_coord = vert_coord
         self.loglevel = loglevel
         self.original_resolution = original_resolution
@@ -36,15 +35,15 @@ class BaseGridTypeBuilder:
         self.logger = log_configure(log_level=loglevel, log_name=self.logger_name)
         self.cdo = Cdo()
 
-    def prepare(self):
+    def prepare(self, data):
         """
         Shared prepare logic for all grid type builders.
         Calls subclass get_metadata and handles bounds checking if required.
         """
-        if self.requires_bounds and not self.has_bounds():
+        if self.requires_bounds and not self.has_bounds(data):
             raise ValueError(self.bounds_error_message)
         #self.logger.info(f"Creating {self.logger_name} grid from data of size %s", self.data['mask'].size)
-        metadata = self.get_metadata(self.data)
+        metadata = self.get_metadata(data)
         basename = self.get_basename(metadata)
         self.logger.info("Basename %s", basename)
         self.logger.debug("Metadata: %s", metadata)
@@ -65,13 +64,13 @@ class BaseGridTypeBuilder:
                 basename += f"_{self.vert_coord}"
         return basename
     
-    def has_bounds(self):
+    def has_bounds(self, data):
         """
         Check if the data has bounds.
         """
-        if 'lon_bounds' in self.data.variables and 'lat_bounds' in self.data.variables:
+        if 'lon_bounds' in data.variables and 'lat_bounds' in data.variables:
             return True
-        if 'lon_bnds' in self.data.variables and 'lat_bnds' in self.data.variables:
+        if 'lon_bnds' in data.variables and 'lat_bnds' in data.variables:
             return True
         return False
 
@@ -148,7 +147,7 @@ class BaseGridTypeBuilder:
             return "land"
         raise ValueError(f"Unexpected nan count {nan_count}")
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
+    def write_gridfile(self, input_file: str, output_file: str, metadata={}):
         """
         Write the grid file using CDO or by copying, depending on grid type.
         Can be overridden by subclasses for custom behavior.
@@ -158,8 +157,8 @@ class BaseGridTypeBuilder:
             metadata (dict, optional): Metadata dictionary from prepare().
             cdo: CDO instance for grid operations (optional).
         """
-        if not metadata:
-            self.cdo.copy(input_file, output_file, options="-f nc4 -z zip")
+        if not metadata.get('cdogrid'):
+            self.cdo.copy(input=input_file, output=output_file, options="-f nc4 -z zip")
         else:
             raise ValueError("cdogrid is not set in the metadata")
            
@@ -192,7 +191,7 @@ class RegularGridTypeBuilder(BaseGridTypeBuilder):
             'aquagrid': aquagrid
         }
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None, cdo=None):
+    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
         """
         Write the grid file using CDO setgrid for regular grids.
         """
@@ -205,9 +204,8 @@ class HealpixGridTypeBuilder(BaseGridTypeBuilder):
     Class to build HEALPix grid files.
     """
     logger_name = "HEALpixGridTypeBuilder"
-    requires_bounds = True
-    bounds_error_message = "Data has no bounds, cannot create Unstructured grid"
-
+    requires_bounds = False
+    
     def get_metadata(self, data):
         """
         Get metadata for the HEALPix grid based on the data size.

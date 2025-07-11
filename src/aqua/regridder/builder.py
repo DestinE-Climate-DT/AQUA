@@ -129,7 +129,10 @@ class GridBuilder():
             data[vert_coord].attrs['axis'] = 'Z'
 
         # Use the builder's data_reduction method
-        builder = builder_cls(data, None, vert_coord, self.model_name, self.original_resolution, self.loglevel)
+        builder = builder_cls(
+            vert_coord=vert_coord, model_name=self.model_name, 
+            original_resolution=self.original_resolution, loglevel=self.loglevel
+        )
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
         
         # add history attribute
@@ -146,7 +149,7 @@ class GridBuilder():
         self.logger.info("Masked type: %s", masked)
 
         # get the basename and metadata for the grid file
-        basename, metadata = builder.prepare()
+        basename, metadata = builder.prepare(data3d)
 
         # create the base path for the grid file
         basepath = os.path.join(self.outdir, basename)
@@ -173,7 +176,9 @@ class GridBuilder():
                 self.logger.error("File %s already exists, skipping", filename)
                 return
         
-        builder.write_gridfile(filename_tmp, filename, metadata, self.cdo, logger=self.logger)
+        builder.write_gridfile(
+            input_file=filename_tmp, output_file=filename, metadata=metadata
+        )
         self.logger.info('Removing temporary file %s', filename_tmp)
         os.remove(filename_tmp)
 
