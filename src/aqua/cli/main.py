@@ -18,6 +18,7 @@ from aqua.util.util import HiddenPrints, to_list
 
 from aqua.cli.parser import parse_arguments
 from aqua.cli.diagnostic_config import diagnostic_config
+from aqua.cli.analysis import analysis_execute
 from aqua.cli.lra import lra_execute
 from aqua.cli.catgen import catgen_execute
 
@@ -26,7 +27,7 @@ from aqua.cli.catgen import catgen_execute
 CATPATH = 'catalogs'
 
 # directories to be installed in the AQUA config folder
-BASIC_DIRECTORIES = ['fixes', 'data_model', 'grids', 'catgen', 'datachecker', 'styles']
+BASIC_DIRECTORIES = ['analysis', 'catgen', 'datachecker', 'data_model', 'fixes', 'grids', 'styles']
 
 
 class AquaConsole():
@@ -64,6 +65,7 @@ class AquaConsole():
                 'remove': self.remove_file,
                 'set': self.grids_set
             },
+            'analysis': self.analysis,
             'lra': self.lra,
             'catgen': self.catgen
         }
@@ -507,12 +509,14 @@ class AquaConsole():
             token = os.getenv("GITHUB_TOKEN")  # Get GitHub token
 
             # Use authentication only when running inside GitHub Actions
-            if is_github_actions and token:
-                auth_kwargs = {"username": "github-actions", "token": token}
+            username = 'github-actions' if is_github_actions else os.getenv("GITHUB_USER")
+            if token and username:
+                auth_kwargs = {"username": username, "token": token}
                 self.logger.info("Using authenticated access to GitHub API.")
             else:
                 auth_kwargs = {}
-                self.logger.info("Running without authentication. Rate limits may apply.")
+                self.logger.warning("Running without authentication. Rate limits may apply.")
+                self.logger.warning("Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access.")
 
             fs = fsspec.filesystem(
                 "github",
@@ -783,15 +787,36 @@ class AquaConsole():
                 self.logger.error("Existing files in the %s folder are not compatible", kind)
             self.logger.error(e)
             return False
+        
+    def analysis(self, args):
+        """
+        Run the AQUA analysis
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+
+        print('Running the AQUA analysis')
+        analysis_execute(args)
 
     def lra(self, args):
-        """Run the Low Resolution Archive generator"""
+        """
+        Run the Low Resolution Archive generator
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
 
         print('Running the Low Resolution Archive generator')
         lra_execute(args)
 
     def catgen(self, args):
-        """Run the FDB catalog generator"""
+        """
+        Run the FDB catalog generator
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
 
         print("Running the catalog generator")
         catgen_execute(args)       
