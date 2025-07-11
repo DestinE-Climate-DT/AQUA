@@ -254,62 +254,6 @@ class GridBuilder():
             name = name.replace(vert_coord, '3d')  # Replace _hpz10 with -hpz7
     
         return name.replace('_oce_', '_').replace('_', '-')
-
-    @staticmethod
-    def _data_reduction(
-        data: xr.Dataset,
-        gridtype: Any,
-        vert_coord: Optional[str] = None
-    ) -> xr.Dataset:
-        """
-        Reduce the data to a single variable and time step.
-
-        Args:
-            data (xarray.Dataset): The dataset containing grid data.
-            gridtype (GridInspector): The grid object containing GridType info.
-
-        Returns:
-            xarray.DataArray: The reduced data.
-        """
-        # extract first var fro GridType, and guess time dimension from there
-        var = next(iter(gridtype.variables))
-
-        # this is somehow needed because GridInspector is not able to detect the time dimension
-        timedim = gridtype.time_dims[0] if gridtype.time_dims else None
-        if timedim:
-            data = data.isel({timedim: 0}, drop=True)
-
-        # keep bounds if present
-        if gridtype.bounds:
-            load_vars = [var] + gridtype.bounds
-        else:
-            load_vars = [var]
-        data = data[load_vars]
-        data = data.rename({var: 'mask'})  # rename to mask for consistency
-
-        if vert_coord and f"idx_{vert_coord}" in data.coords:
-            data = data.drop_vars(f"idx_{vert_coord}")
-
-        # set the mask variable to 1 where data is not null
-        data['mask'] = xr.where(data['mask'].isnull(), data['mask'], 1, keep_attrs=True)
-
-
-        return data
-    
-
-    def _detect_mask_type(self, data: xr.Dataset) -> Optional[str]:
-        """ Detect the type of mask based on the data and grid kind. """
-
-        nan_count = float(data['mask'].isnull().sum().values) / data['mask'].size
-        self.logger.debug("NaN count: %s", nan_count)
-        if nan_count == 0:
-            return None
-        if 0 < nan_count < 0.5:
-            return "oce"
-        if nan_count >= 0.5:
-            return "land"
-        
-        raise ValueError(f"Unexpected nan count {nan_count}")
     
 
 
