@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -ex
+set -e
 
 # CLI tool to push analysis results to aqua-web
 
