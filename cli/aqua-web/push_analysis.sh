@@ -74,8 +74,19 @@ push_lumio() {
 make_contents() {
     # This assumes that we are inside the aqua-web repository
 
-    log_message INFO "Making content files for $1 with config $2"
-    python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
+    log_message INFO "Making content files for $1 with config $2 and ensemble $3"
+    if [$ensemble -eq 1]; then
+        # If ensemble structure, we need to pass the ensemble flag
+        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --ensemble
+    else
+        # Otherwise, we use the old structure
+        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
+    fi
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        log_message ERROR "Creating content files for $1 failed with exit code $exit_code"
+        exit $exit_code
+    fi
 }
 
 collect_figures() {
@@ -166,7 +177,8 @@ rsync=""
 config="$SCRIPT_DIR/config.grouping.yaml"
 ensemble=0
 
-while [[ $# -gt 2 ]]; do
+# Parse all options first
+while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)
       print_help
@@ -209,8 +221,22 @@ while [[ $# -gt 2 ]]; do
       echo "Unknown option: $1"
       exit 1
       ;;
+    *)
+      # Stop parsing options, the rest are positional arguments
+      break
+      ;;
   esac
 done
+
+# Check for the two required positional arguments
+if [ "$#" -ne 2 ]; then
+    echo "Error: Missing required arguments INDIR and EXPS."
+    print_help
+    exit 1
+fi
+
+indir=$1
+exps=$2
 
 localrepo=0
 if [[ $repository == local:* ]]; then
@@ -223,8 +249,6 @@ if [ -z "$1" ] || [ -z "$2" ]; then
     exit 0
 fi
 
-indir=$1
-exps=$2
 
 if [ ! -f "$SCRIPT_DIR/../util/logger.sh" ]; then
     echo "Warning: $SCRIPT_DIR/../util/logger.sh not found, using dummy logger"
