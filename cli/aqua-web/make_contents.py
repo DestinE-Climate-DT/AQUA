@@ -162,7 +162,10 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                 filename_list.append(fn_line)
                 # Read description for capion from the pdf file
                 pdf_path = f"../pdf/{path}/" + os.path.splitext(fn)[0] + ".pdf"
-                pdf_reader = PdfReader(pdf_path)
+                if os.path.exists(pdf_path):
+                    pdf_reader = PdfReader(pdf_path)
+                else:
+                    continue  # If the PDF does not exist, skip this file
                 metadata = pdf_reader.metadata
                 properties[fn_line] = metadata
 
