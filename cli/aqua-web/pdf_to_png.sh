@@ -3,12 +3,13 @@
 # Simple script to convert pdf to png
 # Usage: ./pdf_to_png.sh [catalog] [model] [experiment] [realization]
 # Realization is optional, if not given a directory structure with only three levels will be assumed.
+set -e
 
 cd content
 mkdir -p png
 cd pdf
 
-d0=${1:-*}. # Default to all directories
+d0=${1:-*} # Default to all directories
 d1=${2:-*}
 d2=${3:-*}
 d3=$4  # ok if empty
