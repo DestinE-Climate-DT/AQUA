@@ -342,13 +342,12 @@ if __name__ == '__main__':
     fresh = get_arg(args, 'fresh', False)
     jobname = get_arg(args, 'jobname', None)
 
+    ensemble = get_arg(args, 'ensemble', False)
     realization = get_arg(args, 'realization', None)
     if realization:
-        ensemble = True
-    else:
-        ensemble = get_arg(args, 'ensemble', False)
-        if ensemble:
-            realization = 'r1'
+        ensemble = True  # Specifying a realization implies ensemble mode
+    elif ensemble and not realization:
+        realization = 'r1' # Default realization for ensemble mode
 
     if ensemble:
         template = get_arg(args, 'template', 'aqua-web.ensemble.job.j2')
