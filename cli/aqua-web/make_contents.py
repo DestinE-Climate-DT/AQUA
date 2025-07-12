@@ -209,13 +209,13 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             file.write(content_json)
 
 
-def main(force=False, experiment=None, configfile="config.yaml", new=False):
+def main(force=False, experiment=None, configfile="config.yaml", ensemble=False):
     """
     Main function to create content.yaml and content.json files for each experiment in the content/png directory.
 
     Args:
         force (bool): Create content.yaml and content.json even if they exist already
-        new (bool): If True, assumes a new structure with 4 levels (catalog/model/experiment/realization).
+        ensemble (bool): If True, assumes a new structure with 4 levels (catalog/model/experiment/realization).
         experiment (str): Specific experiment for which to create content (in format "$catalog/$model/$experiment")
         configfile (str): Alternate confg file path (default "config.yaml" - used by aqua-web)
     """
@@ -243,16 +243,23 @@ def main(force=False, experiment=None, configfile="config.yaml", new=False):
     else:  # run through all subdirs
         if os.path.exists("../experiments.yaml"):  # Let's start fresh
             os.remove("../experiments.yaml")
-        if new:  # If new structure, iterate through 4 levels
-            for catalog in os.listdir("."):
-                for model in os.listdir(f"./{catalog}"):
-                    for exp in os.listdir(f"./{catalog}/{model}"):
-                        for realization in os.listdir(f"./{catalog}/{model}/{exp}"):
+
+        for catalog in os.listdir("."):
+            catalog_path = os.path.join(".", catalog)
+            if not os.path.isdir(catalog_path): continue
+            for model in os.listdir(catalog_path):
+                model_path = os.path.join(catalog_path, model)
+                if not os.path.isdir(model_path): continue
+                for exp in os.listdir(model_path):
+                    exp_path = os.path.join(model_path, exp)
+                    if not os.path.isdir(exp_path): continue
+                    
+                    if ensemble:  # If new structure, iterate through 4 levels
+                        for realization in os.listdir(exp_path):
+                            realization_path = os.path.join(exp_path, realization)
+                            if not os.path.isdir(realization_path): continue
                             make_content(catalog, model, exp, realization, diagnostics, config_experiments, force)
-        else:
-            for catalog in os.listdir("."):
-                for model in os.listdir(f"./{catalog}"):
-                    for exp in os.listdir(f"./{catalog}/{model}"): 
+                    else:
                         make_content(catalog, model, exp, None, diagnostics, config_experiments, force)
                     
 
@@ -263,7 +270,7 @@ def parse_arguments(arguments):
 
     parser = argparse.ArgumentParser(description='Create content.yaml and content.json files for each experiment in the content/png directory.')
 
-    parser.add_argument('-n', '--new', '--ensemble', action="store_true",
+    parser.add_argument('-n', '--ensemble', action="store_true",
                         help='When processing all subdirectories, assume new structure with 4 levels (catalog/model/experiment/realization).')
     parser.add_argument('-f', '--force', action="store_true",
                         help='Create content.yaml and content.json even if they exist already')
@@ -280,5 +287,5 @@ if __name__ == "__main__":
     force = args.force
     experiment = args.experiment
     config = args.config
-    new= args.new
-    main(force=force, experiment=experiment, configfile=config, new=new)
+    ensemble= args.ensemble
+    main(force=force, experiment=experiment, configfile=config, ensemble=ensemble)
