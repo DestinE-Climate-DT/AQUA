@@ -67,7 +67,7 @@ class Submitter():
         # Parse the output to check if the job name is in the list
         return job_name in output
 
-    def submit_sbatch(self, catalog, model, exp, source=None, dependency=None):
+    def submit_sbatch(self, catalog, model, exp, realization, source=None, dependency=None):
         """
         Submit a sbatch script with basic options
 
@@ -75,6 +75,7 @@ class Submitter():
             catalog: catalog for experiment
             model: model to be processed
             exp: experiment to be processed
+            realization: realization to be processed
             source: source to be processed
             dependency: jobid on which dependency of slurm is built
 
@@ -86,6 +87,10 @@ class Submitter():
         with open(self.config, 'r', encoding='utf-8') as file:
             definitions = yaml.load(file)
 
+        if realization:
+            definitions['realization'] = catalog
+        else:
+            realization = definitions.get('realization', 'r1')]
         if catalog:
             definitions['catalog'] = catalog
         else:
@@ -283,6 +288,10 @@ def parse_arguments(arguments):
                         help='catalog for experiment')
     parser.add_argument('-e', '--exp', type=str,
                         help='experiment to be processed')
+    parser.add_argument('--realization', type=str,
+                        help='realization to be processed. Specifying it assumes ensemble usage.')
+    parser.add_argument('--ensemble', action="store_true",
+                        help='process ensemble experiments/new folder structure. If realization not chosen set it to r1 by default')
     parser.add_argument('-s', '--source', type=str,
                         help='source to be processed')
     parser.add_argument('-r', '--serial', action="store_true",
@@ -325,7 +334,6 @@ if __name__ == '__main__':
     serial = get_arg(args, 'serial', False)
     listfile = get_arg(args, 'list', None)
     dependency = get_arg(args, 'max', None)
-    template = get_arg(args, 'template', 'aqua-web.job.j2')
     dryrun = get_arg(args, 'dry', False)
     loglevel = get_arg(args, 'loglevel', 'info')
     push = get_arg(args, 'push', False)
@@ -334,6 +342,19 @@ if __name__ == '__main__':
     fresh = get_arg(args, 'fresh', False)
     jobname = get_arg(args, 'jobname', None)
 
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        ensemble = True
+    else:
+        ensemble = get_arg(args, 'ensemble', False)
+        if ensemble:
+            realization = 'r1'
+
+    if ensemble:
+        template = get_arg(args, 'template', 'aqua-web.ensemble.job.j2')
+    else:
+        template = get_arg(args, 'template', 'aqua-web.job.j2')
+    
     submitter = Submitter(config=config, template=template, dryrun=dryrun,
                           parallel=not serial, wipe=wipe, native=native,
                           fresh=fresh, loglevel=loglevel, jobname=jobname)
@@ -352,7 +373,10 @@ if __name__ == '__main__':
                 if not line or line.startswith('#'):
                     continue
     
-                catalog, model, exp, *source = re.split(r',|\s+|\t+', line.strip())  # split by comma, space, tab
+                if ensemble:
+                    catalog, model, exp, realization, *source = re.split(r',|\s+|\t+', line.strip())
+                else:
+                    catalog, model, exp, *source = re.split(r',|\s+|\t+', line.strip())  # split by comma, space, tab
 
                 if len(source) == 0:
                     source = None
@@ -363,13 +387,13 @@ if __name__ == '__main__':
 
                 count = count + 1
                 
-                jobid = submitter.submit_sbatch(catalog, model, exp, source=source, dependency=parent_job)
+                jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
                 jobid_list.append(jobid)
     
         if push:
             submitter.submit_push(jobid_list, listfile)     
 
     else:
-        jobid = submitter.submit_sbatch(catalog, model, exp, source=source, dependency=parent_job)
+        jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
         if push:
             submitter.submit_push([jobid], f'{model}/{exp}') 

@@ -263,7 +263,7 @@ def parse_arguments(arguments):
 
     parser = argparse.ArgumentParser(description='Create content.yaml and content.json files for each experiment in the content/png directory.')
 
-    parser.add_argument('-n', '--new', action="store_true",
+    parser.add_argument('-n', '--new', '--ensemble', action="store_true",
                         help='When processing all subdirectories, assume new structure with 4 levels (catalog/model/experiment/realization).')
     parser.add_argument('-f', '--force', action="store_true",
                         help='Create content.yaml and content.json even if they exist already')
