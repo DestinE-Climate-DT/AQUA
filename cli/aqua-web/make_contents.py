@@ -242,7 +242,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=False,
     # Configure logging
     logger.setLevel(loglevel.upper())
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s :: %(name)s :: %(levelname)s -> %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
         
