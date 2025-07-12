@@ -88,9 +88,9 @@ class Submitter():
             definitions = yaml.load(file)
 
         if realization:
-            definitions['realization'] = catalog
+            definitions['realization'] = realization
         else:
-            realization = definitions.get('realization', 'r1')]
+            realization = definitions.get('realization', 'r1')
         if catalog:
             definitions['catalog'] = catalog
         else:
