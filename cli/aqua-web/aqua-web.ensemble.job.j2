@@ -1,0 +1,40 @@
+#!/bin/bash
+#SBATCH --job-name={{ job_name }}
+#SBATCH --partition={{ partition }}
+#SBATCH --account={{ account }}
+#SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node={{ ntasks_per_node }}
+#SBATCH --time={{ time }}
+#SBATCH --error={{ logdir_error }}/{{ error }}
+#SBATCH --output={{ logdir_output }}/{{ output }}
+
+model={{ model }}
+exp={{ exp }}
+source={{ source }}
+catalog={{ catalog }}
+realization={{ realization }}
+
+export OUTDIR={{ outdir }}{{ fresh }}
+export AQUA={{ aquadir }}
+
+mkdir -p $OUTDIR
+cd $OUTDIR
+
+unset SINGULARITY_BIND  # Lumi specific fix for singularity
+
+if [[ "{{ nativeaqua }}" == "true" ]]; then
+    if [[ "{{ push }}" == "false" ]]; then
+        python $AQUA/cli/aqua-analysis/aqua-analysis.py -l debug -c $catalog -m $model -e $exp --realization $realization -s $source -d $OUTDIR {{ parallel }}
+    else
+        bash $AQUA/cli/aqua-web/push_analysis.sh -e $OUTDIR {{ explist }}
+    fi
+else
+    bash $AQUA/cli/aqua-container/load-aqua-container.sh {{ machine }} <<EOF
+#!/bin/bash
+if [[ "{{ push }}" == "false" ]]; then
+    python $AQUA/cli/aqua-analysis/aqua-analysis.py -l debug -c $catalog -m $model -e $exp --realization $realization -s $source -d $OUTDIR {{ parallel }}
+else
+    bash $AQUA/cli/aqua-web/push_analysis.sh -e $OUTDIR {{ explist }}
+fi
+EOF
+fi

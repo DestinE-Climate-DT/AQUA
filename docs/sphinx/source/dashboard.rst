@@ -74,7 +74,8 @@ Basic usage
 This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
-or a text file containing a list of experiments in the format "catalog model experiment".
+or a text file containing a list of experiments. For standard runs, the file should be in the format "catalog model experiment".
+For ensemble runs (using the ``-e`` flag), the file must be in the format "catalog model experiment realization".
 It creates ``content.yaml`` files for each experiment, pushes the images to the ``aqua-web`` bucket on LUMI-O and
 updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
 
@@ -96,6 +97,10 @@ Additional options
 .. option:: -d, --no-update
 
     Do not update the aqua-web Github repository.
+
+.. option:: -e, --ensemble
+
+    Use new ensemble structure. This enables processing of experiments with a 4-level structure (``catalog/model/experiment/realization``).
 
 .. option:: -h, --help
 
@@ -274,6 +279,10 @@ Options
 .. option:: -s <source>, --source <source>
 
     Source to be processed.
+
+.. option:: --ensemble
+
+    This is passed to the ``push_analysis.sh`` script.
 
 .. option:: -r, --serial
 
