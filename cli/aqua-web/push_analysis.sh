@@ -75,7 +75,7 @@ make_contents() {
     # This assumes that we are inside the aqua-web repository
 
     log_message INFO "Making content files for $1 with config $2 and ensemble $3"
-    if [$ensemble -eq 1]; then
+    if [ $ensemble -eq 1 ]; then
         # If ensemble structure, we need to pass the ensemble flag
         python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --ensemble
     else
