@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.17.0): 
 
 AQUA core complete list:
+- Tools to push to dashboard support ensemble realizations (#2070)
 - `aqua-analysis.py` now supports a `--realization` option to enable the analysis of a specific realization (#2041)
 - Separate new histogram function in the framework (#2061)
 - Introducing `timsum()` method to compute cumulative sum (#2059)

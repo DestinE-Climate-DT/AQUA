@@ -18,3 +18,4 @@ catalog: climatedt-phase1
 model: IFS-NEMO
 exp: historical
 source: lra-r100-monthly
+realization: r1
