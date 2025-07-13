@@ -282,7 +282,15 @@ Options
 
 .. option:: --ensemble
 
-    This is passed to the ``push_analysis.sh`` script.
+    Specifies the new 4-level ensemble structure (catalog/model/experiment/realization).
+    If specified, the script will expect the experiment list to contain realizations.
+    If a single experiment is specified, and ``--realization`` is not specified,
+    "r1" will be assumed as the realization.
+
+.. option:: --realization <realization>
+
+    Used with the ``ensemble`` flag to specify the realization of the experiment.
+    If specified ``ensemble``is set to ``True`` by default.
 
 .. option:: -r, --serial
 
