@@ -69,6 +69,7 @@ class Hovmoller(Diagnostic):
         var: list = ["thetao", "so"],
         dim_mean=["lat", "lon"],
         anomaly_ref: str = None,
+        reader_kwargs: dict = {},
     ):
         """
         Run the Hovmoller diagram generation workflow.
@@ -84,10 +85,11 @@ class Hovmoller(Diagnostic):
             var (list, optional): List of variables to process. Defaults to ["thetao", "so"].
             dim_mean (list, optional): List of dimensions over which to compute the mean. Defaults to ["lat", "lon"].
             anomaly_ref (str or None, optional): Reference for anomaly calculation. Can be "t0", "tmean", or None.
+            reader_kwargs (dict, optional): Additional keyword arguments for the Reader. Defaults to {}.
         """
         self.logger.info("Running Hovmoller diagram generation")
         # This will populate self.data
-        super().retrieve(var=var)
+        super().retrieve(var=var, reader_kwargs=reader_kwargs)
         self.logger.info("Data retrieved successfully")
         # If a region is specified, apply area selection to self.data
         super().select_region(region=region, diagnostic="ocean3d")

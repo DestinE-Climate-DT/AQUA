@@ -35,6 +35,9 @@ def parse_arguments(args):
                         required=False, help="source name")
     parser.add_argument("--regrid", type=str,
                         required=False, help="target regrid resolution")
+    # TODO: not used yet
+    parser.add_argument('--realization', type=str, default=None,
+                        help='Realization name (default: None)')                 
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
     parser.add_argument("--cluster", type=str,

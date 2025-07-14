@@ -30,6 +30,8 @@ def template_parse_arguments(parser: argparse.ArgumentParser):
                         required=False, help="experiment name")
     parser.add_argument("--source", type=str,
                         required=False, help="source name")
+    parser.add_argument("--realization", type=str, default=None,
+                        help="realization name (default: None)")
     parser.add_argument("--config", "-c", type=str, default=None,
                         help='yaml configuration file')
     parser.add_argument("--nworkers", "-n", type=int,

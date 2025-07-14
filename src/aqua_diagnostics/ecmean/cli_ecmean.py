@@ -37,6 +37,22 @@ def parse_arguments(arguments):
     # to be used when oceanic data is in a different source than atmospheric data
     parser.add_argument('--nprocs',  type=int,
                         help='number of multiprocessing processes to use', default=1)
+    parser.add_argument('-c', '--config', type=str,
+                        help='ecmean yaml configuration file', default='config_ecmean_cli.yaml')
+    parser.add_argument('-n', '--nworkers',  type=int,
+                        help='number of dask distributed processes')
+    parser.add_argument('--catalog', type=str,
+                        help='catalog to be analysed')    
+    parser.add_argument('-m', '--model', type=str,
+                        help='model to be analysed')
+    parser.add_argument('-e', '--exp', type=str,
+                        help='exp to be analysed')
+    parser.add_argument('-s', '--source', type=str,
+                        help='source to be analysed')
+    parser.add_argument('--regrid', type=str,
+                        help='regrid method to be used [default: r100]', default='r100')
+    parser.add_argument('--realization', type=str, default=None,
+                        help='Realization name (default: None)')
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
     parser.add_argument('--source_oce', type=str,
@@ -48,7 +64,8 @@ def parse_arguments(arguments):
 
 def reader_data(model, exp, source,
                 catalog=None, regrid='r100',
-                keep_vars=None, loglevel='WARNING'):
+                keep_vars=None, loglevel='WARNING',
+                reader_kwargs: dict = {}):
     """
     Simple function to retrieve and do some operation on reader data
 
@@ -60,6 +77,7 @@ def reader_data(model, exp, source,
         regrid (str, optional): regrid method, defaults to 'r100'
         keep_vars (list, optional): list of variables to keep, defaults to None
         loglevel (str, optional): logging level, defaults to 'WARNING'
+        reader_kwargs (dict, optional): list of reader_kwargs. Defaults to {}.
     
     Returns:
         xarray.Dataset: dataset with the data retrieved and regridded
@@ -73,12 +91,14 @@ def reader_data(model, exp, source,
 
     # Try to read the data, if dataset is not available return None
     try:
-        reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
-                        regrid=regrid)
+        reader = Reader(
+            model=model, exp=exp, source=source, catalog=catalog, 
+            regrid=regrid, **reader_kwargs
+        )
         xfield = reader.retrieve()
         if regrid is not None:
             xfield = reader.regrid(xfield)
-     
+
     except Exception as err:
         reader_logger.error('Error while reading model %s: %s', model, err)
         return None
@@ -100,13 +120,16 @@ def data_check(data_atm, data_oce, logger=None):
     # create a single dataset
     if data_oce is None:
         mydata = data_atm
-        logger.warning('No oceanic data, only atmospheric data will be used')
+        if logger is not None:
+            logger.warning('No oceanic data, only atmospheric data will be used')
     elif data_atm is None:
         mydata = data_oce
-        logger.warning('No atmospheric data, only oceanic data will be used')
+        if logger is not None:
+            logger.warning('No atmospheric data, only oceanic data will be used')
     else:
         mydata = xr.merge([data_atm, data_oce])
-        logger.debug('Merging atmospheric and oceanic data')
+        if logger is not None:
+            logger.debug('Merging atmospheric and oceanic data')
 
     # Quit if no data is available
     if mydata is None:
@@ -130,10 +153,12 @@ def time_check(mydata, y1, y2, logger=None):
     # guessing years from the dataset
     if y1 is None:
         y1 = int(mydata.time[0].values.astype('datetime64[Y]').astype(str))
-        logger.info('Guessing starting year %s', y1)
+        if logger is not None:
+            logger.info('Guessing starting year %s', y1)
     if y2 is None:
         y2 = int(mydata.time[-1].values.astype('datetime64[Y]').astype(str))
-        logger.info('Guessing ending year %s', y2)
+        if logger is not None:
+            logger.info('Guessing ending year %s', y2)
 
     # run the performance indices if you have at least 12 month of data
     if len(mydata.time) < 12:
@@ -189,7 +214,7 @@ if __name__ == '__main__':
         loglevel=loglevel
     )
     # this is required to access the predefined areas and masks
-    config['dirs']['exp'] = ecmeandir 
+    config['dirs']['exp'] = ecmeandir
     logger.debug('Default config file: %s', config)
     logger.debug('Definitive interface file %s', interface)
 
@@ -202,7 +227,29 @@ if __name__ == '__main__':
         source_oce = get_arg(args, 'source_oce', dataset.get('source_oce', source_atm))
         regrid = get_arg(args, 'regrid', dataset.get('regrid'))
 
+        # activate override from command line
+        outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
+        regrid = get_arg(args, 'regrid', configfile['dataset'].get('regrid', 'r100'))
+        realization = get_arg(args, 'realization', None)
+        if realization:
+            reader_kwargs = {'realization': realization}
+        else:
+            reader_kwargs = {}
+        interface = get_arg(args, 'interface', interface)
+        logger.debug('Definitive interface file %s', interface)
+
+        # load the data
+        logger.info('Loading atmospheric data %s', model)
         logger.info('Model %s, exp %s, source %s', model, exp, source_atm)
+        data_atm = reader_data(model=model, exp=exp, source=source_atm, 
+                            catalog=catalog, keep_vars=atm_vars,
+                            regrid=regrid, reader_kwargs=reader_kwargs)
+        
+        logger.info('Loading oceanic data from %s', model)
+        logger.info('Model %s, exp %s, source %s', model, exp, source_oce)
+        data_oce = reader_data(model=model, exp=exp, source=source_oce, 
+                            catalog=catalog, keep_vars=oce_vars,
+                            regrid=regrid, reader_kwargs=reader_kwargs)
 
         #setup the output saver
         outputsaver = OutputSaver(diagnostic='ecmean',

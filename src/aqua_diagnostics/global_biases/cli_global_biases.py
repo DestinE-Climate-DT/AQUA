@@ -42,7 +42,14 @@ if __name__ == '__main__':
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
 
     regrid = get_arg(args, 'regrid', None)
-    logger.info(f"Regrid option is set to {regrid}")
+    if regrid:
+        logger.info(f"Regrid option is set to {regrid}")
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        logger.info(f"Realization option is set to {realization}")
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = {}
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -101,15 +108,20 @@ if __name__ == '__main__':
                 logger.info(f"Running Global Biases diagnostic for {'formula' if is_formula else 'variable'}: {var}")
                 plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['2d_maps'].get(var, {})
                 vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
-                units = 'mm/day' if var in ['tprate', 'mtpr'] else None
-
                 param_dict = config_dict['diagnostics']['globalbiases'].get('params', {}).get(var, {})
                 units = param_dict.get('units', None)
                 long_name = param_dict.get('long_name', None)
                 short_name = param_dict.get('short_name', None)
 
-                biases_dataset.retrieve(var=var, units=units, formula=is_formula, long_name=long_name, short_name=short_name)
-                biases_reference.retrieve(var=var, units=units, formula=is_formula, long_name=long_name, short_name=short_name)
+                try:
+                    biases_dataset.retrieve(var=var, units=units, formula=is_formula,
+                                            long_name=long_name, short_name=short_name,
+                                            reader_kwargs=reader_kwargs)
+                    biases_reference.retrieve(var=var, units=units, formula=is_formula,
+                                            long_name=long_name, short_name=short_name)
+                except (NoDataError, KeyError, ValueError) as e:
+                    logger.warning(f"Variable '{var}' not found in dataset. Skipping. ({e})")
+                    continue  
 
                 biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
                 biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)

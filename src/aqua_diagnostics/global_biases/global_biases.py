@@ -65,7 +65,8 @@ class GlobalBiases(Diagnostic):
 
     def retrieve(self, var: str = None, formula: bool = False,
                  long_name: str = None, short_name: str = None,
-                 plev: float = None, units: str = None) -> None:
+                 plev: float = None, units: str = None,
+                 reader_kwargs: dict = {}) -> None:
         """
         Retrieve and preprocess dataset, selecting pressure level and/or converting units if needed.
 
@@ -76,6 +77,7 @@ class GlobalBiases(Diagnostic):
             short_name (str): The short name of the variable, if different from the variable name.
             plev (float, optional): Pressure level to extract.
             units (str): The units of the variable, if different from the original units.
+            reader_kwargs (dict, optional): Additional keyword arguments for the Reader.
         Raises:
             NoDataError: If variable not found in dataset.
             KeyError: If the variable is missing from the data.
@@ -93,7 +95,7 @@ class GlobalBiases(Diagnostic):
                                  'Check the variable names and the formula syntax.')
             self.data[self.var] = formula_values
         else:
-            super().retrieve(var=self.var)
+            super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         if self.data is None:
             self.logger.error("Data could not be retrieved for %s, %s, %s", self.model, self.exp, self.source)
