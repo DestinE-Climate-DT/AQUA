@@ -204,7 +204,6 @@ if __name__ == '__main__':
     # define the interface file
     ecmeandir = get_diagnostic_configpath('ecmean', loglevel=loglevel)
     interface = os.path.join(ecmeandir, interface_file)
-    logger.debug('Default interface file: %s', interface)
 
     # define the ecmean configuration file, using the default as a trick
     config = load_diagnostic_config(
@@ -225,31 +224,14 @@ if __name__ == '__main__':
         exp = get_arg(args, 'exp', dataset.get('exp'))
         source_atm = get_arg(args, 'source', dataset.get('source', 'lra-r100-monthly'))
         source_oce = get_arg(args, 'source_oce', dataset.get('source_oce', source_atm))
-        regrid = get_arg(args, 'regrid', dataset.get('regrid'))
+        regrid = get_arg(args, 'regrid', dataset.get('regrid', 'r100'))
 
         # activate override from command line
-        outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
-        regrid = get_arg(args, 'regrid', configfile['dataset'].get('regrid', 'r100'))
         realization = get_arg(args, 'realization', None)
         if realization:
             reader_kwargs = {'realization': realization}
         else:
             reader_kwargs = {}
-        interface = get_arg(args, 'interface', interface)
-        logger.debug('Definitive interface file %s', interface)
-
-        # load the data
-        logger.info('Loading atmospheric data %s', model)
-        logger.info('Model %s, exp %s, source %s', model, exp, source_atm)
-        data_atm = reader_data(model=model, exp=exp, source=source_atm, 
-                            catalog=catalog, keep_vars=atm_vars,
-                            regrid=regrid, reader_kwargs=reader_kwargs)
-        
-        logger.info('Loading oceanic data from %s', model)
-        logger.info('Model %s, exp %s, source %s', model, exp, source_oce)
-        data_oce = reader_data(model=model, exp=exp, source=source_oce, 
-                            catalog=catalog, keep_vars=oce_vars,
-                            regrid=regrid, reader_kwargs=reader_kwargs)
 
         #setup the output saver
         outputsaver = OutputSaver(diagnostic='ecmean',
@@ -267,11 +249,13 @@ if __name__ == '__main__':
             # load the data
             logger.info('Loading atmospheric data %s', model)
             data_atm = reader_data(model=model, exp=exp, source=source_atm,
-                                catalog=catalog, keep_vars=atm_vars, regrid=regrid)
+                                catalog=catalog, keep_vars=atm_vars, regrid=regrid,
+                                reader_kwargs=reader_kwargs)
 
             logger.info('Loading oceanic data from %s', model)
             data_oce = reader_data(model=model, exp=exp, source=source_oce,
-                                    catalog=catalog, keep_vars=oce_vars, regrid=regrid)
+                                    catalog=catalog, keep_vars=oce_vars, regrid=regrid,
+                                    reader_kwargs=reader_kwargs)
 
             # check the data
             data = data_check(data_atm, data_oce, logger=logger)
