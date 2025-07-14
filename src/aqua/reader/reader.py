@@ -937,38 +937,6 @@ class Reader():
             data = data.isel({t: 0 for t in minimal_time})
         return data
 
-    def info(self):
-        """Prints info about the reader"""
-        print(f"Reader for model {self.model}, experiment {self.exp}, source {self.source}")
-
-        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
-            if "expver" in self.esmcat._request.keys():
-                print(f"  This experiment has expID {self.esmcat._request['expver']}")
-
-        metadata = self.esmcat.metadata
-
-        if self.fix:
-            print("Data fixing is active:")
-            if "fixer_name" in metadata.keys():
-                print(f"  Fixer name is {metadata['fixer_name']}")
-            else:
-                # TODO: to be removed when all the catalogs are updated
-                print(f"  Fixes: {self.fixer.fixes}")
-
-        if self.tgt_grid_name:
-            print("Regridding is active:")
-            print(f"  Target grid is {self.tgt_grid_name}")
-
-        print("Metadata:")
-        for k, v in metadata.items():
-            print(f"  {k}: {v}")
-
-        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
-            print("GSV request for this source:")
-            for k, v in self.esmcat._request.items():
-                if k not in ["time", "param", "step", "expver"]:
-                    print("  %s: %s" % (k, v))
-
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
              time_bounds=False, center_time=False):
         """
