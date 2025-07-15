@@ -39,6 +39,12 @@ class BaseGridTypeBuilder:
         """
         Shared prepare logic for all grid type builders.
         Calls subclass get_metadata and handles bounds checking if required.
+
+        Args:
+            data (xarray.Dataset): The dataset containing grid data.
+
+        Returns:
+            tuple: The basename and metadata dictionary for the grid type.
         """
         if self.requires_bounds and not self.has_bounds(data):
             raise ValueError(self.bounds_error_message)
@@ -51,9 +57,15 @@ class BaseGridTypeBuilder:
 
     def get_basename(self, metadata):
         """
-        Get the basename for the grid type.
-        """
+        Get the basename for the grid type based on the metadata.
         
+        Args:
+            metadata (dict): The metadata for the grid type.
+
+        Returns:
+            str: The basename for the grid type.
+        """
+    
         if self.masked is None:
             basename = f"{metadata['aquagrid']}"
         elif self.masked == "land":
@@ -101,7 +113,7 @@ class BaseGridTypeBuilder:
         # load the variables and rename to mask for consistency
         load_vars = [var] + (gridtype.bounds or [])
         data = data[load_vars]
-        data = data.rename({var: 'mask'})  
+        data = data.rename({var: 'mask'})
 
         # drop the remnant vertical coordinate if present
         if vert_coord and f"idx_{vert_coord}" in data.coords:

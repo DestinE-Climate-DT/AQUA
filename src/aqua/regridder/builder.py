@@ -3,15 +3,18 @@ import os
 import re
 from glob import glob
 from typing import Optional, Dict, Any
-import xarray as xr
 from cdo import Cdo
 from smmregrid import GridInspector
 from aqua import Reader
 from aqua.regridder.regridder_util import detect_grid
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, load_yaml, dump_yaml
+from aqua.util import ConfigPath, load_yaml, dump_yaml, to_list
 from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder, RegularGridTypeBuilder
 from aqua.regridder.gridtypebuilder import UnstructuredGridTypeBuilder, CurvilinearGridTypeBuilder
+
+# these are the vertical coordinates that are considered reasonable for the grid build
+# TODO: we probably need to find a better way to handle this
+VERT_COORDS = ['depth_full', 'depth_half', 'level']
 
 
 class GridBuilder():
@@ -35,6 +38,7 @@ class GridBuilder():
             outdir: str = '.',
             model_name: Optional[str] = None,
             original_resolution: Optional[str] = None,
+            vert_coord: Optional[str] = None,
             loglevel: str = 'warning'
         ) -> None:
         """
@@ -47,7 +51,8 @@ class GridBuilder():
             outdir (str): The output directory for the grid files.
             model_name (str, optional): The name of the model, if different from the model argument.
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
-            loglevel (str): The logging level for the logger. Defaults to 'warning'.
+            vert_coord (str, optional): The vertical coordinate to consider for the grid build.
+            loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
         self.model = model
         self.exp = exp
@@ -55,34 +60,36 @@ class GridBuilder():
         self.outdir = outdir
 
         # If model_name is not provided, use the model name in lowercase
-        self.model_name = model_name.lower() if model_name else model
+        self.model_name = model_name.lower() if model_name else model.lower()
         self.original_resolution = original_resolution
-        
+
         # loglevel
         self.logger = log_configure(log_level=loglevel, log_name='GridBuilder')
         self.loglevel = loglevel
 
-        # TODO: we need to find a nicer way to handle vertical coordinates
-        self.reasonable_vert_coords = ['depth_full', 'depth_half', 'level']
-       
+        # vertical coordinates to consider for the grid build for the 3d case.
+        self.reasonable_vert_coords = VERT_COORDS if vert_coord is None else to_list(vert_coord)
+
+        # get useful paths and CDO instance
         self.cdo = Cdo()
         self.configpath = ConfigPath().get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
         self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
 
-
     def retrieve(self, fix=False):
         """
         Retrieve the grid data based on the model, experiment, and source.
 
+        Args:
+            fix (bool, optional): Whether to fix the original source. Defaults to False.
         Returns:
             xarray.Dataset: The retrieved grid data.
         """
-        reader = Reader(model=self.model, exp=self.exp, source=self.source, loglevel=self.loglevel,
-                        areas=False, fix=fix)
+        reader = Reader(
+            model=self.model, exp=self.exp, source=self.source,
+            loglevel=self.loglevel, areas=False, fix=fix)
         return reader.retrieve()
-    
-   
+
     def build(self, rebuild=False, fix=False, version=None):
         """
         Retrieve and build the grid data for all gridtypes available.
@@ -115,26 +122,30 @@ class GridBuilder():
         kind = detect_grid(data)
         self.logger.info("Grid type is: %s", kind)
 
-        builder_cls = self.GRIDTYPE_REGISTRY.get(kind)
-        if not builder_cls:
+        # access the class registry to get the builder class appropriate for the gridtype
+        BuilderClass = self.GRIDTYPE_REGISTRY.get(kind)
+        if not BuilderClass:
             raise NotImplementedError(f"Grid type {kind} is not implemented yet")
-        self.logger.debug("Builder class: %s", builder_cls)
+        self.logger.debug("Builder class: %s", BuilderClass)
 
         # vertical coordinate detection
         vert_coord_candidates = list(set(self.reasonable_vert_coords) & set(gridtype.other_dims))
         vert_coord = vert_coord_candidates[0] if vert_coord_candidates else None
+
         # add vertical information to help CDO
         if vert_coord:
             self.logger.info("Detected vertical coordinate: %s", vert_coord)
             data[vert_coord].attrs['axis'] = 'Z'
 
-        # Use the builder's data_reduction method
-        builder = builder_cls(
-            vert_coord=vert_coord, model_name=self.model_name, 
+        # Initialize the builder
+        builder = BuilderClass(
+            vert_coord=vert_coord, model_name=self.model_name,
             original_resolution=self.original_resolution, loglevel=self.loglevel
         )
+
+        # data reduction. Load the data into memory for convenience.
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
-        
+
         # add history attribute
         log_history(data, msg=f'Gridfile generated with GridBuilder from {self.model}_{self.exp}_{self.source}')
 
@@ -144,6 +155,8 @@ class GridBuilder():
         data3d.to_netcdf(filename_tmp)
 
         # select the 2D slice of the data and detect the mask type
+        # TODO: this will likely not work for 3d unstructured grids.
+        # An alternative might be to check if the NaN are changing along the vertical coordinate.
         data2d = builder.select_2d_slice(data3d, vert_coord)
         masked = builder.detect_mask_type(data2d)
         self.logger.info("Masked type: %s", masked)
@@ -167,6 +180,7 @@ class GridBuilder():
         if version is not None:
             basepath = f"{basepath}_v{version}"
 
+        # check if the file already exists and clean it if needed
         filename = f"{basepath}.nc"
         if os.path.exists(filename):
             if rebuild:
@@ -176,18 +190,22 @@ class GridBuilder():
                 self.logger.error("File %s already exists, skipping", filename)
                 return
         
+        # write the grid file with the class specific method
         builder.write_gridfile(
             input_file=filename_tmp, output_file=filename, metadata=metadata
         )
+
+        # cleanup
         self.logger.info('Removing temporary file %s', filename_tmp)
         os.remove(filename_tmp)
 
         try:
+            # TODO: is there a better way to verify that we can generate the weights?
             self.logger.info("Verifying the creation of the weights from the grid file")
             self.cdo.gencon("r180x90", input=filename, options="-f nc  --force")
             self.logger.info("Weights generated successfully for %s!!! This grid file is approved for AQUA, take a bow!", filename)
         except Exception as e:
-            self.logger.error("Error generating weights, something is wrong with the obtianed file: %s", e)
+            self.logger.error("Error generating weights, something is wrong with the obtained file: %s", e)
             raise
 
         # create the grid entry in the grid file
@@ -198,7 +216,7 @@ class GridBuilder():
         Create a grid entry in the grid file for the given gridtype.
 
         Args:
-            gridtype (GridInspector): The grid type object containing grid information.
+            gridtype (GridType): The smmregrid GridType object containing grid information.
             basepath (str): The base path for the grid file.
             vert_coord (str, optional): The vertical coordinate if applicable.
             rebuild (bool): Whether to rebuild the grid entry if it already exists. Defaults to False
@@ -223,15 +241,24 @@ class GridBuilder():
                 return
             final_block['grids'][grid_entry_name] = grid_block
         dump_yaml(self.gridfile, final_block)
-            
-        
+
+
     @staticmethod
     def _create_grid_entry_block(
         gridtype: Any,
         basepath: str,
         vert_coord: Optional[str] = None
     ) -> Dict[str, Any]:
-        """ Create a grid entry for the gridtype."""
+        """ Create a grid entry for the gridtype.
+
+        Args:
+            gridtype (GridType): The smmregrid GridType object containing grid information.
+            basepath (str): The base path for the grid file.
+            vert_coord (str, optional): The vertical coordinate if applicable.
+
+        Returns:
+            dict: The grid entry block.
+        """
         
         grid_block = {
             'cdo_options': '--force',
@@ -248,7 +275,15 @@ class GridBuilder():
         name: str,
         vert_coord: Optional[str]
     ) -> str:
-        """ Create a grid entry name based on the grid type and vertical coordinate."""
+        """Create a grid entry name based on the grid type and vertical coordinate.
+        
+        Args:
+            name (str): The base name for the grid file.
+            vert_coord (str, optional): The vertical coordinate if applicable.
+
+        Returns:
+            str: The grid entry name.
+        """
 
         if vert_coord is not None:
             name = name.replace(vert_coord, '3d')  # Replace _hpz10 with -hpz7
