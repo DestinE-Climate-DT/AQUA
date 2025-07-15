@@ -36,6 +36,8 @@ def parse_arguments(args):
                         help='source to be analysed')
     parser.add_argument('--regrid', type=str,
                         help='regrid method to be used [default: r100]', default='r100')
+    parser.add_argument('--realization', type=str, default=None,
+                        help='Realization name (default: None)')
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
     parser.add_argument('-o', '--outputdir', type=str,
@@ -46,7 +48,8 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 
-def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None):
+def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None,
+                reader_kwargs: dict = {}):
     """
     Simple function to retrieve and do some operation on reader data
 
@@ -57,6 +60,7 @@ def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None)
         catalog (str, optional): catalog to be used, defaults to None
         regrid (str, optional): regrid method, defaults to 'r100'
         keep_vars (list, optional): list of variables to keep, defaults to None
+        reader_kwargs (dict, optional): list of reader_kwargs. Defaults to {}.
     
     Returns:
         xarray.Dataset: dataset with the data retrieved and regridded
@@ -69,7 +73,7 @@ def reader_data(model, exp, source, catalog=None, regrid='r100', keep_vars=None)
     # Try to read the data, if dataset is not available return None
     try:
         reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
-                        regrid=regrid)
+                        regrid=regrid, **reader_kwargs)
         data = reader.retrieve()
         data = reader.regrid(data)
      
@@ -126,17 +130,24 @@ if __name__ == '__main__':
     catalog = get_arg(args, 'catalog', configfile['dataset']['catalog'])
     outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
     regrid = get_arg(args, 'regrid', configfile['dataset'].get('regrid', 'r100'))
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = {}
     interface = get_arg(args, 'interface', interface)
     logger.debug('Definitive interface file %s', interface)
 
     # load the data
     logger.info('Loading atmospheric data %s', model)
     data_atm = reader_data(model=model, exp=exp, source=source, 
-                           catalog=catalog, keep_vars=atm_vars, regrid=regrid)
+                           catalog=catalog, keep_vars=atm_vars,
+                           regrid=regrid, reader_kwargs=reader_kwargs)
     
     logger.info('Loading oceanic data from %s', model)
     data_oce = reader_data(model=model, exp=exp, source=source, 
-                            catalog=catalog, keep_vars=oce_vars, regrid=regrid)
+                           catalog=catalog, keep_vars=oce_vars,
+                           regrid=regrid, reader_kwargs=reader_kwargs)
 
     # create a single dataset
     if data_oce is None:

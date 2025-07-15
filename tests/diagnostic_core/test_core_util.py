@@ -5,7 +5,7 @@ from unittest.mock import patch
 from aqua import Reader
 from aqua.diagnostics.core import template_parse_arguments, load_diagnostic_config
 from aqua.diagnostics.core import open_cluster, close_cluster, merge_config_args
-from aqua.diagnostics.core import convert_data_units, start_end_dates
+from aqua.diagnostics.core import start_end_dates
 
 loglevel = 'DEBUG'
 
@@ -92,29 +92,6 @@ def test_merge_config_args():
     assert merged_config['datasets'] == [{'catalog': 'test_catalog', 'exp': 'test_exp',
                                           'model': 'test_model', 'source': 'test_source'}]
     assert merged_config['output']['outputdir'] == 'test_outputdir'
-
-
-@pytest.mark.aqua
-def test_convert_data_units():
-    """Test the check_data function"""
-    data = Reader(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly', loglevel=loglevel).retrieve()
-    initial_units = data['tprate'].attrs['units']
-
-    # Dataset test
-    data_test = convert_data_units(data=data, var='tprate', units='mm/day', loglevel=loglevel)
-    assert data_test['tprate'].attrs['units'] == 'mm/day'
-
-    # DataArray test
-    data = data['tprate']
-    data_test = convert_data_units(data=data, var='tprate', units='mm/day', loglevel=loglevel)
-    # We don't test values since this is done in the test_fixer.py
-    assert data_test.attrs['units'] == 'mm/day'
-    assert f"Converting units of tprate: from {initial_units} to mm/day" in data_test.attrs['history']
-
-    # Test with no conversion to be done
-    data_test = convert_data_units(data=data, var='tprate', units=initial_units, loglevel=loglevel)
-    assert data_test.attrs['units'] == initial_units
-    assert f"Converting units of tprate: from {initial_units} to mm/day" not in data_test.attrs['history']
 
 
 @pytest.mark.aqua

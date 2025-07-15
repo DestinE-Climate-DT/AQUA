@@ -56,6 +56,11 @@ so that the script can be used in a batch job or in a workflow. These override c
     The target grid to use for regridding the data.
     If not specified, the default is ``null``, which means no regridding will be applied.
 
+.. option:: --realization <realization>
+
+    The realization to use. If not specified or set to ``None``,
+    no realization argument will be passed to the diagnostics.
+
 .. option:: -d <dir>, --outputdir <dir>
 
     The output directory to use. 

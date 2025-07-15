@@ -2,11 +2,12 @@
 
 from .config import ConfigPath
 from .eccodes import get_eccodes_attr
-from .units import normalize_units, convert_units
+from .units import normalize_units, convert_units, convert_data_units
 from .graphics import add_cyclic_lon, plot_box, minmax_maps
 from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
 from .graphics import coord_names, ticks_round, set_ticks
 from .graphics import get_nside, get_npix, healpix_resample
+from .realizations import format_realization
 from .sci_util import area_selection, check_coordinates, select_season
 from .util import generate_random_string, get_arg, create_folder, to_list
 from .util import file_is_complete, find_vert_coord
@@ -21,7 +22,7 @@ from .output_saver import OutputSaver
 
 __all__ = ['ConfigPath',
            'get_eccodes_attr',
-           'normalize_units', 'convert_units',
+           'normalize_units', 'convert_units', 'convert_data_units',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
            'evaluate_colorbar_limits', 'cbar_get_label', 'set_map_title',
            'coord_names', 'ticks_round', 'set_ticks',
@@ -31,6 +32,7 @@ __all__ = ['ConfigPath',
            'file_is_complete', 'find_vert_coord',
            'extract_literal_and_numeric', 'add_pdf_metadata', 'add_png_metadata',
            'get_nside', 'get_npix', 'healpix_resample',
+           'format_realization',
            'open_image', 'username', 'update_metadata',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas',

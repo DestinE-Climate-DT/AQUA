@@ -8,7 +8,7 @@ import argparse
 import logging
 from dask.distributed import LocalCluster
 from aqua.logger import log_configure
-from aqua.util import load_yaml, create_folder, ConfigPath
+from aqua.util import load_yaml, create_folder, ConfigPath, format_realization
 from aqua import __path__ as pypath
 
 
@@ -72,7 +72,8 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str,
 
 def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = None,
                         config=None, catalog=None, model='default_model', exp='default_exp',
-                        source='default_source', output_dir='./output', loglevel='INFO',
+                        source='default_source', realization=None,
+                        output_dir='./output', loglevel='INFO',
                         logger=None, aqua_path='', cluster=None):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
@@ -85,6 +86,7 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = N
         model (str): Model name.
         exp (str): Experiment name.
         source (str): Source name.
+        realization (str): Realization name. Defaults to None.
         output_dir (str): Directory to save output.
         loglevel (str): Log level for the diagnostic.
         logger: Logger instance for logging messages.
@@ -125,6 +127,9 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = N
     if catalog:
         extra_args += f" --catalog {catalog}"
 
+    if realization:
+        extra_args += f" --realization {realization}"
+
     outname = f"{output_dir}/{diagnostic_config.get('outname', diagnostic)}"
     args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args}"
 
@@ -147,6 +152,7 @@ def get_args():
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
+    parser.add_argument("--realization", type=str, default=None, help="Realization (default: None)")
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
     parser.add_argument("-f", "--config", type=str, default="$AQUA/cli/aqua-analysis/config.aqua-analysis.yaml",
                         help="Configuration file")
@@ -207,6 +213,7 @@ def main():
     model = args.model or config.get('job', {}).get('model')
     exp = args.exp or config.get('job', {}).get('exp')
     source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
+    realization = args.realization if args.realization else config.get('job', {}).get('realization', None)
     # We get regrid option and then we set it to None if it is False
     # This avoids to add the --regrid argument to the command line
     # if it is not needed
@@ -238,13 +245,14 @@ def main():
     logger.debug(f"outputdir: {outputdir}")
     logger.debug(f"max_threads: {max_threads}")
 
-    output_dir = f"{outputdir}/{catalog}/{model}/{exp}"
+    realization_folder = format_realization(realization)
+    output_dir = f"{outputdir}/{catalog}/{model}/{exp}/{realization_folder}"
     output_dir = os.path.expandvars(output_dir)
 
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA"] = aqua_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if 'AQUA_CONFIG' not in os.environ else os.environ["AQUA_CONFIG"]
-    create_folder(output_dir)
+    create_folder(output_dir, loglevel=loglevel)
 
     run_checker = config.get('job', {}).get('run_checker', False)
     if run_checker:
@@ -256,6 +264,8 @@ def main():
             command += f" --regrid {regrid}"
         if catalog:
             command += f" --catalog {catalog}"
+        if realization:
+            command += f" --realization {realization}"
         logger.debug(f"Command: {command}")
         result = run_command(command, log_file=output_log_path, logger=logger)
 
@@ -303,6 +313,7 @@ def main():
                 model=model,
                 exp=exp,
                 source=source,
+                realization=realization,
                 regrid=regrid,
                 output_dir=output_dir,
                 loglevel=loglevel,

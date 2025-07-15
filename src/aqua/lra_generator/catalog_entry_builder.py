@@ -1,6 +1,7 @@
 """Class to create a catalog entry for the LRA"""
 
 from aqua.logger import log_configure
+from aqua.util import format_realization
 from .output_path_builder import OutputPathBuilder
 from .lra_util import replace_intake_vars
 
@@ -33,12 +34,8 @@ class CatalogEntryBuilder():
         self.exp = exp
         self.resolution = resolution
 
-        # Ensure realization is formatted correctly
-        if realization and realization.isdigit():
-            realization = f'r{realization}'
-
         # Set defaults if not provided
-        self.realization = realization if realization is not None else 'r1'
+        self.realization = format_realization(realization) # ensure realization is formatted correctly
         self.frequency = frequency if frequency is not None else 'native'
         self.stat = stat if stat is not None else 'nostat'
         self.region = region if region is not None else 'global'
@@ -46,7 +43,7 @@ class CatalogEntryBuilder():
         self.level = level
         self.kwargs = kwargs
         self.opt = OutputPathBuilder(catalog=catalog, model=model, exp=exp,
-                                     realization=realization, resolution=self.resolution,
+                                     realization=self.realization, resolution=self.resolution,
                                      frequency=self.frequency, stat=self.stat, region=self.region,
                                      level=self.level, **self.kwargs)
         self.logger = log_configure(log_level=loglevel, log_name='CatalogEntryBuilder')

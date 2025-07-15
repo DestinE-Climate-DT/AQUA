@@ -162,6 +162,7 @@ The configuration file is a YAML file that contains the following information:
 
     * ``run``: enable/disable the diagnostic.
     * ``variables``: list of variables to analyse.
+    * ``formulae``: list of formulae to compute new variables from existing ones (e.g., ``tnlwrf+tnswrf``).
     * ``plev``: pressure levels to analyse for 3D variables.
     * ``seasons``: enable seasonal analysis.
     * ``seasons_stat``: statistic to use for seasonal climatology (e.g., "mean").
@@ -174,15 +175,20 @@ The configuration file is a YAML file that contains the following information:
     globalbiases:
         run: true
         variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
+        formulae: ['tnlwrf+tnswrf']
         params:
-            plev: [85000, 20000]
-            seasons: true
-            seasons_stat: 'mean'
-            vertical: true
-            startdate_data: null
-            enddate_data: null
-            startdate_ref: "1990-01-01"
-            enddate_ref: "2020-12-31"
+            default:
+                plev: [85000, 20000]
+                seasons: true
+                seasons_stat: 'mean'
+                vertical: true
+                startdate_data: null
+                enddate_data: null
+                startdate_ref: "1990-01-01"
+                enddate_ref: "2020-12-31"
+            tnlwrf+tnswrf:
+                short_name: "tnr"
+                long_name: "Top net radiation"
 
 * ``plot_params``: defines colorbar limits for each variable.
 

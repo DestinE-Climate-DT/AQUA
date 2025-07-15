@@ -53,6 +53,11 @@ if __name__ == '__main__':
 
     regrid = get_arg(args, 'regrid', None)
     logger.info(f"Regrid option is set to {regrid}")
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = {}
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -80,7 +85,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time}
+                                    'center_time': center_time, 'reader_kwargs': reader_kwargs}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -102,6 +107,7 @@ if __name__ == '__main__':
 
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
+                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             ts_ref = [None] * len(config_dict['references'])
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
@@ -128,8 +134,8 @@ if __name__ == '__main__':
                             plot_ts = PlotTimeseries(**plot_args)
                             data_label = plot_ts.set_data_labels()
                             ref_label = plot_ts.set_ref_label()
-                            description = plot_ts.set_description(region=region)
-                            title = plot_ts.set_title(var=var, region=region, units=var_config.get('units'))
+                            description = plot_ts.set_description()
+                            title = plot_ts.set_title(var=var, units=var_config.get('units'))
                             fig, _ = plot_ts.plot_timeseries(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
@@ -156,7 +162,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time}
+                                    'center_time': center_time, 'reader_kwargs': reader_kwargs}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -175,6 +181,7 @@ if __name__ == '__main__':
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             ts_ref = [None] * len(config_dict['references'])
+                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
@@ -200,8 +207,8 @@ if __name__ == '__main__':
                             plot_ts = PlotTimeseries(**plot_args)
                             data_label = plot_ts.set_data_labels()
                             ref_label = plot_ts.set_ref_label()
-                            description = plot_ts.set_description(region=region)
-                            title = plot_ts.set_title(var=var, region=region, units=var_config.get('units'))
+                            description = plot_ts.set_description()
+                            title = plot_ts.set_title(var=var, units=var_config.get('units'))
                             fig, _ = plot_ts.plot_timeseries(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
@@ -231,7 +238,7 @@ if __name__ == '__main__':
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
-                                    'outputdir': outputdir, 'rebuild': rebuild}
+                                    'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
 
                         # Initialize a list of len from the number of datasets
                         sc = [None] * len(config_dict['datasets'])
@@ -251,6 +258,7 @@ if __name__ == '__main__':
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             sc_ref = [None] * len(config_dict['references'])
+                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
@@ -272,8 +280,8 @@ if __name__ == '__main__':
                             plot_sc = PlotSeasonalCycles(**plot_args)
                             data_label = plot_sc.set_data_labels()
                             ref_label = plot_sc.set_ref_label()
-                            description = plot_sc.set_description(region=region)
-                            title = plot_sc.set_title(var=var, region=region, units=var_config.get('units'))
+                            description = plot_sc.set_description()
+                            title = plot_sc.set_title(var=var, units=var_config.get('units'))
                             fig, _ = plot_sc.plot_seasonalcycles(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
@@ -301,7 +309,7 @@ if __name__ == '__main__':
                 run_args = {'freq': freq, 't2m_name': config_dict['diagnostics']['gregory'].get('t2m_name', '2t'),
                             'net_toa_name': config_dict['diagnostics']['gregory'].get('net_toa_name', 'tnlwrf+tnswrf'),
                             'exclude_incomplete': config_dict['diagnostics']['gregory'].get('exclude_incomplete', True),
-                            'outputdir': outputdir, 'rebuild': rebuild}
+                            'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
 
                 # Initialize a list of len from the number of datasets
                 greg = [None] * len(config_dict['datasets'])
@@ -316,6 +324,7 @@ if __name__ == '__main__':
                     greg[i].run(**run_args, **model_args)
 
                 if config_dict['diagnostics']['gregory']['std']:
+                    run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                     # t2m:
                     dataset_args = {**config_dict['diagnostics']['gregory']['t2m_ref'],
                                     'regrid': regrid,

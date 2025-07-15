@@ -4,6 +4,7 @@ LRA Output Path Builder
 
 import os
 from typing import Optional
+from aqua.util import format_realization
 
 
 class OutputPathBuilder:
@@ -37,10 +38,7 @@ class OutputPathBuilder:
         self.exp = exp
         self.resolution = resolution
 
-        # Ensure realization is formatted correctly
-        if realization and realization.isdigit():
-            realization = f'r{realization}'
-        self.realization = realization if realization is not None else 'r1'
+        self.realization = format_realization(realization)  # ensure realization is formatted correctly
         self.frequency = frequency if frequency is not None else 'native'
         self.stat = stat if stat is not None else 'nostat'
         self.region = region if region is not None else 'global'

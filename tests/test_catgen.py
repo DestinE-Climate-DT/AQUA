@@ -77,7 +77,7 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
 def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     """test for minimal portfolio"""
 
-    ensemble = 5
+    ensemble = 5 
 
     sources = load_and_prepare(tmp_path=tmp_path, model=model,
                                kind='minimal', reso='lowres',

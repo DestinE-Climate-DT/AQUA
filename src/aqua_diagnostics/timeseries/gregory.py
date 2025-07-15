@@ -2,7 +2,8 @@
 import xarray as xr
 from aqua.fixer import EvaluateFormula
 from aqua.logger import log_configure
-from aqua.diagnostics.core import Diagnostic, convert_data_units
+from aqua.util import convert_data_units
+from aqua.diagnostics.core import Diagnostic
 
 xr.set_options(keep_attrs=True)
 
@@ -51,7 +52,7 @@ class Gregory(Diagnostic):
             t2m_name: str = '2t', net_toa_name: str = 'tnlwrf+tnswrf',
             t2m_units: str = 'degC',
             exclude_incomplete: bool = True, outputdir: str = './',
-            rebuild: bool = True):
+            rebuild: bool = True, reader_kwargs: dict = {}):
         """
         Run the Gregory Plot.
 
@@ -66,8 +67,10 @@ class Gregory(Diagnostic):
                 exclude_incomplete (bool): Whether to exclude incomplete timespans. Default is True.
                 outputdir (str): The output directory to save the netcdf file. Default is './'.
                 rebuild (bool): Whether to rebuild the netcdf file. Default is True.
+                reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
         """
-        self.retrieve(t2m=t2m, net_toa=net_toa, t2m_name=t2m_name, net_toa_name=net_toa_name)
+        self.retrieve(t2m=t2m, net_toa=net_toa, t2m_name=t2m_name, net_toa_name=net_toa_name,
+                      reader_kwargs=reader_kwargs)
 
         self.logger.info(f'Computing the Gregory Plot for the {freq} frequency.')
         if t2m:
@@ -82,7 +85,8 @@ class Gregory(Diagnostic):
                          outputdir=outputdir, rebuild=rebuild)
 
     def retrieve(self, t2m: bool = True, net_toa: bool = True,
-                 t2m_name: str = '2t', net_toa_name: str = 'tnlwrf+tnswrf'):
+                 t2m_name: str = '2t', net_toa_name: str = 'tnlwrf+tnswrf',
+                 reader_kwargs: dict = {}):
         """
         Retrieve the necessary data for the Gregory Plot.
 
@@ -91,11 +95,12 @@ class Gregory(Diagnostic):
             net_toa (bool): Whether to retrieve the net TOA radiation data. Default is True.
             t2m_name (str): The name of the 2m temperature data.
             net_toa_name (str): The name of the net TOA radiation data.
+            reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
         """
         data, self.reader, self.catalog = super()._retrieve(catalog=self.catalog, model=self.model,
                                                             exp=self.exp, source=self.source,
                                                             regrid=self.regrid, startdate=self.startdate,
-                                                            enddate=self.enddate)
+                                                            enddate=self.enddate, reader_kwargs=reader_kwargs)
 
         if t2m:
             self.t2m = data[t2m_name]

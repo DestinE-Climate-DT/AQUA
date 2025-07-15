@@ -45,7 +45,8 @@ class SeasonalCycles(BaseMixin):
     def run(self, var: str, formula: bool = False, long_name: str = None,
             units: str = None, standard_name: str = None, std: bool = False,
             exclude_incomplete: bool = True, center_time: bool = True,
-            box_brd: bool = True, outputdir: str = './', rebuild: bool = True):
+            box_brd: bool = True, outputdir: str = './', rebuild: bool = True,
+            reader_kwargs: dict = {}):
         """
         Run all the steps necessary for the computation of the SeasonalCyles.
         Save the results to netcdf files.
@@ -62,9 +63,11 @@ class SeasonalCycles(BaseMixin):
             box_brd (bool): choose if coordinates are comprised or not in area selection.
             outputdir (str): The directory to save the data.
             rebuild (bool): If True, rebuild the data.
+            reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
         """
         self.logger.info("Running SeasonalCycles for %s", var)
-        self.retrieve(var=var, formula=formula, long_name=long_name, units=units, standard_name=standard_name)
+        self.retrieve(var=var, formula=formula, long_name=long_name, units=units,
+                      standard_name=standard_name, reader_kwargs=reader_kwargs)
 
         # Notice that if you compute after, self.monthly will be the seasonal cycle
         # and the compute_std routine will fail

@@ -24,6 +24,12 @@ class TestAccessor():
         avg = data.aqua.fldmean()['2t'].values
         assert avg[1] == pytest.approx(285.75920)
 
+    def test_accessor_histogram(self, reader_instance):
+        """Test histogram as accessor"""
+        data = reader_instance.retrieve()
+        hist = data['2t'].aqua.histogram(bins=200, range=(150, 350), weighted=False)
+        assert sum(hist.values) == data['2t'].size
+
     def test_accessor_two(self, reader_instance, reader_instance2):
         """Test the use of two reader instances"""
  

@@ -247,7 +247,7 @@ class LRAgenerator():
             if self.region['name'] is None:
                 raise KeyError('Please specify name in region.')
             if self.region['lon'] is None and self.region['lat'] is None:
-                raise KeyError(f'Please specify at least one between lat and lon for {region['name']}.')
+                raise KeyError(f"Please specify at least one between lat and lon for {region['name']}.")
             self.region_name = self.region['name']
             self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...',
                              self.region['name'], self.region['lon'], self.region['lat'])
