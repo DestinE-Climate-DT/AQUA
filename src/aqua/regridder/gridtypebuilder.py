@@ -1,5 +1,5 @@
 """This module base class for grid type builders and its extensions."""
-from typing import Optional
+from typing import Optional, Any, Dict
 import numpy as np
 import xarray as xr
 from cdo import Cdo
@@ -173,6 +173,53 @@ class BaseGridTypeBuilder:
             self.cdo.copy(input=input_file, output=output_file, options="-f nc4 -z zip")
         else:
             raise ValueError("cdogrid is not set in the metadata")
+
+    @staticmethod
+    def create_grid_entry_block(
+        gridtype: Any,
+        basepath: str,
+        vert_coord: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """ Create a grid entry for the gridtype.
+
+        Args:
+            gridtype (GridType): The smmregrid GridType object containing grid information.
+            basepath (str): The base path for the grid file.
+            vert_coord (str, optional): The vertical coordinate if applicable.
+
+        Returns:
+            dict: The grid entry block.
+        """
+        
+        grid_block = {
+            'cdo_options': '--force',
+            'path': f"{basepath}.nc",
+            'space_coord': gridtype.horizontal_dims,
+        }
+        if vert_coord:
+            grid_block['vert_coord'] = vert_coord
+            grid_block['path'] = {vert_coord: f"{basepath}.nc"}
+        return grid_block
+
+    @staticmethod
+    def create_grid_entry_name(
+        name: str,
+        vert_coord: Optional[str]
+    ) -> str:
+        """Create a grid entry name based on the grid type and vertical coordinate.
+        
+        Args:
+            name (str): The base name for the grid file.
+            vert_coord (str, optional): The vertical coordinate if applicable.
+
+        Returns:
+            str: The grid entry name.
+        """
+
+        if vert_coord is not None:
+            name = name.replace(vert_coord, '3d')  # Replace _hpz10 with -hpz7
+    
+        return name.replace('_oce_', '_').replace('_', '-')
            
 
 class RegularGridTypeBuilder(BaseGridTypeBuilder):

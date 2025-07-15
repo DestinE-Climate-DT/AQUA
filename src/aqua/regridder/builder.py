@@ -2,7 +2,7 @@
 import os
 import re
 from glob import glob
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from cdo import Cdo
 from smmregrid import GridInspector
 from aqua import Reader
@@ -25,7 +25,7 @@ class GridBuilder():
     GRIDTYPE_REGISTRY = {
         'Healpix': HealpixGridTypeBuilder,
         'Regular': RegularGridTypeBuilder,
-        'Unstructured': UnstructuredGridTypeBuilder,
+        'Unstructuxred': UnstructuredGridTypeBuilder,
         'Curvilinear': CurvilinearGridTypeBuilder,
         # Add more grid types here as needed
     }
@@ -209,21 +209,19 @@ class GridBuilder():
             raise
 
         # create the grid entry in the grid file
-        self.create_grid_entry(gridtype, basepath, vert_coord=vert_coord, rebuild=rebuild)
-
-    def create_grid_entry(self, gridtype, basepath, vert_coord=None, rebuild=False):
+        grid_entry_name = builder.create_grid_entry_name(os.path.basename(basepath), vert_coord)
+        grid_block = builder.create_grid_entry_block(gridtype, basepath, vert_coord)
+        self.create_grid_entry(grid_entry_name, grid_block, rebuild=rebuild)
+    
+    def create_grid_entry(self, grid_entry_name, grid_block, rebuild=False):
         """
         Create a grid entry in the grid file for the given gridtype.
 
         Args:
-            gridtype (GridType): The smmregrid GridType object containing grid information.
-            basepath (str): The base path for the grid file.
-            vert_coord (str, optional): The vertical coordinate if applicable.
+            grid_entry_name (str): The name of the grid entry.
+            grid_block (dict): The grid block to add to the grid file.
             rebuild (bool): Whether to rebuild the grid entry if it already exists. Defaults to False
         """
-
-        grid_entry_name = self.create_grid_entry_name(os.path.basename(basepath), vert_coord)
-        grid_block = self._create_grid_entry_block(gridtype, basepath, vert_coord)
 
         self.logger.info("Grid entry name: %s", grid_entry_name)
         self.logger.info("Grid block: %s", grid_block)
@@ -241,54 +239,4 @@ class GridBuilder():
                 return
             final_block['grids'][grid_entry_name] = grid_block
         dump_yaml(self.gridfile, final_block)
-
-
-    @staticmethod
-    def _create_grid_entry_block(
-        gridtype: Any,
-        basepath: str,
-        vert_coord: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """ Create a grid entry for the gridtype.
-
-        Args:
-            gridtype (GridType): The smmregrid GridType object containing grid information.
-            basepath (str): The base path for the grid file.
-            vert_coord (str, optional): The vertical coordinate if applicable.
-
-        Returns:
-            dict: The grid entry block.
-        """
-        
-        grid_block = {
-            'cdo_options': '--force',
-            'path': f"{basepath}.nc",
-            'space_coord': gridtype.horizontal_dims,
-        }
-        if vert_coord:
-            grid_block['vert_coord'] = vert_coord
-            grid_block['path'] = {vert_coord: f"{basepath}.nc"}
-        return grid_block
-
-    @staticmethod
-    def create_grid_entry_name(
-        name: str,
-        vert_coord: Optional[str]
-    ) -> str:
-        """Create a grid entry name based on the grid type and vertical coordinate.
-        
-        Args:
-            name (str): The base name for the grid file.
-            vert_coord (str, optional): The vertical coordinate if applicable.
-
-        Returns:
-            str: The grid entry name.
-        """
-
-        if vert_coord is not None:
-            name = name.replace(vert_coord, '3d')  # Replace _hpz10 with -hpz7
-    
-        return name.replace('_oce_', '_').replace('_', '-')
-    
-
 
