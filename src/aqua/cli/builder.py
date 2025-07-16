@@ -16,6 +16,7 @@ def builder_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA grids builder CLI')
     parser.add_argument('-c', '--config', type=str, help='YAML configuration file for the builder')
+    parser.add_argument('--catalog', type=str, help='Catalog for the Reader')
     parser.add_argument('-m', '--model', type=str,
                         help='Model name (e.g. "ECMWF", "ERA5")')
     parser.add_argument('-e', '--exp', type=str,
@@ -36,6 +37,8 @@ def builder_parser(parser=None):
                         help='alternative name for the model for grid naming [default: None]')
     parser.add_argument('--fix', action='store_true',
                         help='Fix the original source [default: False]')
+    parser.add_argument('--verify', action='store_true', default=False,
+                        help='Verify the grid file after creation [default: False]')
 
     return parser
 
@@ -52,6 +55,7 @@ def builder_execute(args):
         builder_config = config.get('builder', {})
 
     # Use get_arg to merge CLI args and config file values
+    catalog = get_arg(args, 'catalog', reader_config.get('catalog'))
     model = get_arg(args, 'model', reader_config.get('model'))
     exp = get_arg(args, 'exp', reader_config.get('exp'))
     source = get_arg(args, 'source', reader_config.get('source'))
@@ -62,6 +66,7 @@ def builder_execute(args):
     model_name = get_arg(args, 'modelname', builder_config.get('modelname'))
     rebuild = get_arg(args, 'rebuild', builder_config.get('rebuild', False))
     version = get_arg(args, 'version', builder_config.get('version'))
+    verify = get_arg(args, 'verify', builder_config.get('verify', False))
 
     # Ensure required arguments are present
     if model is None:
@@ -72,7 +77,7 @@ def builder_execute(args):
         raise ValueError("Source must be specified via --source or in the config file")
 
     # retrieve the data
-    reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix)
+    reader = Reader(catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix)
     data = reader.retrieve()
 
     model_name = model_name.lower() if model_name else model.lower()
@@ -85,5 +90,5 @@ def builder_execute(args):
     )
 
     # Build the grid
-    grid_builder.build(data, rebuild, version)
+    grid_builder.build(data, rebuild, version, verify)
     

@@ -3,6 +3,7 @@ from typing import Optional, Any, Dict
 import numpy as np
 import xarray as xr
 from cdo import Cdo
+from smmregrid import CdoGenerate, Regridder
 from aqua.logger import log_configure
 
 
@@ -20,7 +21,7 @@ class BaseGridBuilder:
         ):
         """
         Initialize the BaseGridBuilder.
-        
+
         Args:
             vert_coord (str): The vertical coordinate if applicable.
             original_resolution (str): The original resolution of the data.
@@ -71,7 +72,12 @@ class BaseGridBuilder:
         elif self.masked == "land":
             raise NotImplementedError("Land masking is not implemented yet!")
         elif self.masked == "oce":
-            basename = f"{self.model_name}_{self.original_resolution}_{metadata['aquagrid']}_oce"
+            basename = f"{self.model_name}"
+            if self.original_resolution:
+                basename += f"-{self.original_resolution}"
+            if metadata['aquagrid'] != self.model_name:
+                basename += f"_{metadata['aquagrid']}"
+            basename += "_oce"
             if self.vert_coord:
                 basename += f"_{self.vert_coord}"
         return basename
@@ -102,8 +108,11 @@ class BaseGridBuilder:
         Returns:
             xarray.Dataset: The reduced data.
         """
-        # extract first var from GridType, and guess time dimension from there
+        # extract first var from GridType and get the attributes of the original variable
         var = next(iter(gridtype.variables))
+        attrs = data[var].attrs.copy()
+
+        # guess time dimension from the GridType
         timedim = gridtype.time_dims[0] if gridtype.time_dims else None
 
         # temporal reduction
@@ -111,7 +120,9 @@ class BaseGridBuilder:
             data = data.isel({timedim: 0}, drop=True)
 
         # load the variables and rename to mask for consistency
-        load_vars = [var] + (gridtype.bounds or [])
+        space_bounds = [bound for bound in gridtype.bounds if not 'time' in bound]
+        print(space_bounds)
+        load_vars = [var] + space_bounds #(gridtype.bounds or [])
         data = data[load_vars]
         data = data.rename({var: 'mask'})
 
@@ -120,7 +131,10 @@ class BaseGridBuilder:
             data = data.drop_vars(f"idx_{vert_coord}")
 
         # set the mask variable to 1 where data is not null
-        data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1, keep_attrs=True)
+        data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1)
+
+        # preserve the attributes of the original variable
+        data['mask'].attrs = attrs
 
         return data
 
@@ -151,13 +165,15 @@ class BaseGridBuilder:
             Optional[str]: 'oce', 'land', or None if no mask is detected.
         """
         nan_count = float(data['mask'].isnull().sum().values) / data['mask'].size
+        self.logger.info("Nan count: %s", nan_count)
         if nan_count == 0:
-            return None
-        if 0 < nan_count < 0.5:
-            return "oce"
-        if nan_count >= 0.5:
-            return "land"
-        raise ValueError(f"Unexpected nan count {nan_count}")
+            self.masked = None
+        elif 0 < nan_count < 0.5:
+            self.masked = "oce"
+        elif nan_count >= 0.5:
+            self.masked = "land"
+        else:
+            raise ValueError(f"Unexpected nan count {nan_count}")
 
     def verify_weights(
         self, filename, target_grid="r180x90", metadata=None
@@ -170,12 +186,20 @@ class BaseGridBuilder:
         remap_method = metadata.get('remap_method', "con")
         cdo_options = metadata.get('cdo_options', "")
         try:
-            # TODO: is there a better way to verify that we can generate the weights?
-            self.logger.info("Verifying the creation of the weights from the grid file")
-            getattr(self.cdo, f"gen{remap_method}")(target_grid, input=filename, options=f"{cdo_options} -f nc")
+            self.logger.info("Generating weights for %s with method %s and vert_coord %s", filename, remap_method, self.vert_coord)
+            generator = CdoGenerate(source_grid=filename, target_grid=target_grid, cdo_options=cdo_options, loglevel=self.loglevel)
+            weights = generator.weights(method=remap_method, vert_coord=self.vert_coord)
             self.logger.info("Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!", remap_method, filename)
         except Exception as e:
-            self.logger.error("Error generating weights, something is wrong with the obtained file: %s", e)
+            self.logger.error("Error generating weights, something is wrong with weights generation: %s", e)
+            raise
+        try:
+            regridder = Regridder(weights=weights, cdo_options=cdo_options, loglevel=self.loglevel)
+            data = xr.open_dataset(filename)
+            regridder.regrid(data)
+            self.logger.info("Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!", remap_method, filename)
+        except Exception as e:
+            self.logger.error("Error regridding, something is wrong with the regridding: %s", e)
             raise
 
     def write_gridfile(self, input_file: str, output_file: str, metadata=None):

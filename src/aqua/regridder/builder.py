@@ -7,14 +7,9 @@ from cdo import Cdo
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, load_yaml, dump_yaml, to_list
+from aqua.util import ConfigPath, load_yaml, dump_yaml
 from aqua.regridder.extragridbuilder import HealpixGridBuilder, RegularGridBuilder
 from aqua.regridder.extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
-
-# these are the vertical coordinates that are considered reasonable for the grid build
-# TODO: we probably need to find a better way to handle this
-VERT_COORDS = ['depth_full', 'depth_half', 'level']
-
 
 class GridBuilder():
     """
@@ -22,9 +17,9 @@ class GridBuilder():
     Currently supports HEALPix grids and can be extended for other grid types.
     """
     GRIDTYPE_REGISTRY = {
-        'Healpix': HealpixGridBuilder,
+        'HEALPix': HealpixGridBuilder,
         'Regular': RegularGridBuilder,
-        'Unstructuxred': UnstructuredGridBuilder,
+        'Unstructured': UnstructuredGridBuilder,
         'Curvilinear': CurvilinearGridBuilder,
         # Add more grid types here as needed
     }
@@ -44,7 +39,7 @@ class GridBuilder():
             outdir (str): The output directory for the grid files.
             model_name (str, optional): The name of the model, if different from the model argument.
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
-            vert_coord (str, optional): The vertical coordinate to consider for the grid build.
+            vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one detected by the GridInspector.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
         # store output directory
@@ -61,7 +56,7 @@ class GridBuilder():
         self.loglevel = loglevel
 
         # vertical coordinates to consider for the grid build for the 3d case.
-        self.reasonable_vert_coords = VERT_COORDS if vert_coord is None else to_list(vert_coord)
+        self.vert_coord = vert_coord
 
         # get useful paths and CDO instance
         self.cdo = Cdo()
@@ -70,7 +65,7 @@ class GridBuilder():
         self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
 
 
-    def build(self, data, rebuild=False, version=None):
+    def build(self, data, rebuild=False, version=None, verify=True):
         """
         Retrieve and build the grid data for all gridtypes available.
         
@@ -78,21 +73,24 @@ class GridBuilder():
             rebuild (bool): Whether to rebuild the grid file if it already exists. Defaults to False.
             fix (bool): Whether to fix the original source. Might be useful for some models. Defaults to False.
             version (int, optional): The version number to append to the grid file name. Defaults to None.
+            verify (bool): Whether to verify the grid file after creation. Defaults to True.
         """
         gridtypes = GridInspector(data).get_gridtype()
         if not gridtypes:
             self.logger.error("No grid type detected, skipping grid build")
             self.logger.error("You can try to fix the source when calling the Reader() with the --fix flag")
             return
+        self.logger.info("Build on %s gridtypes", len(gridtypes))
         for gridtype in gridtypes:
-            self._build_gridtype(data, gridtype, rebuild=rebuild, version=version)
+            self._build_gridtype(data, gridtype, rebuild=rebuild, version=version, verify=verify)
             
     def _build_gridtype(
         self,
         data: Any,
         gridtype: Any,
         rebuild: bool = False,
-        version: Optional[int] = None
+        version: Optional[int] = None,
+        verify: bool = True
     ) -> None:
         """
         Build the grid data based on the detected grid type.
@@ -108,12 +106,11 @@ class GridBuilder():
         self.logger.debug("Builder class: %s", BuilderClass)
 
         # vertical coordinate detection
-        vert_coord_candidates = list(set(self.reasonable_vert_coords) & set(gridtype.other_dims))
-        vert_coord = vert_coord_candidates[0] if vert_coord_candidates else None
+        vert_coord = self.vert_coord if self.vert_coord else gridtype.vertical_dim
+        self.logger.info("Detected vertical coordinate: %s", vert_coord)
 
         # add vertical information to help CDO
         if vert_coord:
-            self.logger.info("Detected vertical coordinate: %s", vert_coord)
             data[vert_coord].attrs['axis'] = 'Z'
 
         # Initialize the builder
@@ -125,11 +122,11 @@ class GridBuilder():
         # data reduction. Load the data into memory for convenience.
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
 
-        # add history attribute
-        exp = data.attrs.get('AQUA_exp', None)
-        source = data.attrs.get('AQUA_source', None)
-        model = data.attrs.get('AQUA_model', None)
-        log_history(data, msg=f'Gridfile generated with GridBuilder from {model}_{exp}_{source}')
+        # add history attribute, get metadata from the attributes
+        exp = data3d['mask'].attrs.get('AQUA_exp', None)
+        source = data3d['mask'].attrs.get('AQUA_source', None)
+        model = data3d['mask'].attrs.get('AQUA_model', None)
+        log_history(data3d, msg=f'Gridfile generated with GridBuilder from {model}_{exp}_{source}')
 
         # store the data in a temporary netcdf file
         filename_tmp = f"{self.model_name}_{exp}_{source}.nc"
@@ -140,8 +137,8 @@ class GridBuilder():
         # TODO: this will likely not work for 3d unstructured grids.
         # An alternative might be to check if the NaN are changing along the vertical coordinate.
         data2d = builder.select_2d_slice(data3d, vert_coord)
-        masked = builder.detect_mask_type(data2d)
-        self.logger.info("Masked type: %s", masked)
+        builder.detect_mask_type(data2d)
+        self.logger.info("Masked type: %s", builder.masked)
 
         # get the basename and metadata for the grid file
         basename, metadata = builder.prepare(data3d)
@@ -182,7 +179,8 @@ class GridBuilder():
         os.remove(filename_tmp)
 
         # verify the creation of the weights
-        builder.verify_weights(filename, metadata=metadata)
+        if verify:
+            builder.verify_weights(filename, metadata=metadata)
 
 
         # create the grid entry in the grid file
