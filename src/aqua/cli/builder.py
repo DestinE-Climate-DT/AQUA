@@ -1,4 +1,9 @@
+"""
+This module contains the CLI for the GridBuilder.
+"""
+
 import argparse
+from aqua import Reader
 from aqua.regridder.builder import GridBuilder
 from aqua.util import load_yaml, get_arg
 
@@ -66,14 +71,19 @@ def builder_execute(args):
     if source is None:
         raise ValueError("Source must be specified via --source or in the config file")
 
+    # retrieve the data
+    reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix)
+    data = reader.retrieve()
+
+    model_name = model_name.lower() if model_name else model.lower()
+
     # Create GridBuilder instance
     grid_builder = GridBuilder(
-        model=model, exp=exp,
-        source=source, loglevel=loglevel,
+        loglevel=loglevel,
         outdir=outdir, original_resolution=original_resolution,
         model_name=model_name
     )
 
     # Build the grid
-    grid_builder.build(rebuild, fix, version)
+    grid_builder.build(data, rebuild, version)
     

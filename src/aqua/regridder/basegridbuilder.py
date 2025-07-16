@@ -6,21 +6,21 @@ from cdo import Cdo
 from aqua.logger import log_configure
 
 
-class BaseGridTypeBuilder:
+class BaseGridBuilder:
     """
     Base class for grid type builders.
     """
     requires_bounds = False
     bounds_error_message = "Data has no bounds, cannot create grid"
-    logger_name = "BaseGridTypeBuilder"
+    logger_name = "BaseGridBuilder"
 
     def __init__(
         self, vert_coord,
         original_resolution, model_name, loglevel='warning'
         ):
         """
-        Initialize the BaseGridTypeBuilder.
-
+        Initialize the BaseGridBuilder.
+        
         Args:
             vert_coord (str): The vertical coordinate if applicable.
             original_resolution (str): The original resolution of the data.
@@ -159,7 +159,26 @@ class BaseGridTypeBuilder:
             return "land"
         raise ValueError(f"Unexpected nan count {nan_count}")
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata={}):
+    def verify_weights(
+        self, filename, target_grid="r180x90", metadata=None
+    ):
+        """
+        Verify the creation of the weights from the grid file.
+        """
+        if metadata is None:
+            raise ValueError("metadata must be provided for BaseGridTypeBuilder.verify_weights")
+        remap_method = metadata.get('remap_method', "con")
+        cdo_options = metadata.get('cdo_options', "")
+        try:
+            # TODO: is there a better way to verify that we can generate the weights?
+            self.logger.info("Verifying the creation of the weights from the grid file")
+            getattr(self.cdo, f"gen{remap_method}")(target_grid, input=filename, options=f"{cdo_options} -f nc")
+            self.logger.info("Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!", remap_method, filename)
+        except Exception as e:
+            self.logger.error("Error generating weights, something is wrong with the obtained file: %s", e)
+            raise
+
+    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
         """
         Write the grid file using CDO or by copying, depending on grid type.
         Can be overridden by subclasses for custom behavior.
@@ -169,7 +188,7 @@ class BaseGridTypeBuilder:
             metadata (dict, optional): Metadata dictionary from prepare().
             cdo: CDO instance for grid operations (optional).
         """
-        if not metadata.get('cdogrid'):
+        if not metadata or not metadata.get('cdogrid'):
             self.cdo.copy(input=input_file, output=output_file, options="-f nc4 -z zip")
         else:
             raise ValueError("cdogrid is not set in the metadata")
@@ -178,7 +197,8 @@ class BaseGridTypeBuilder:
     def create_grid_entry_block(
         gridtype: Any,
         basepath: str,
-        vert_coord: Optional[str] = None
+        vert_coord: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """ Create a grid entry for the gridtype.
 
@@ -186,6 +206,7 @@ class BaseGridTypeBuilder:
             gridtype (GridType): The smmregrid GridType object containing grid information.
             basepath (str): The base path for the grid file.
             vert_coord (str, optional): The vertical coordinate if applicable.
+            metadata (dict, optional): Metadata dictionary from prepare().
 
         Returns:
             dict: The grid entry block.
@@ -199,6 +220,12 @@ class BaseGridTypeBuilder:
         if vert_coord:
             grid_block['vert_coord'] = vert_coord
             grid_block['path'] = {vert_coord: f"{basepath}.nc"}
+        # add metadata if provided
+        if metadata:
+            if 'cdo_options' in metadata:
+                grid_block['cdo_options'] = metadata['cdo_options']
+            if 'remap_method' in metadata:
+                grid_block['remap_method'] = metadata['remap_method']
         return grid_block
 
     @staticmethod
@@ -221,115 +248,3 @@ class BaseGridTypeBuilder:
     
         return name.replace('_oce_', '_').replace('_', '-')
            
-
-class RegularGridTypeBuilder(BaseGridTypeBuilder):
-    """
-    Class to build regular lon-lat grid files.
-    """
-    logger_name = "RegularGridTypeBuilder"
-    requires_bounds = False
-
-    def get_metadata(self, data):
-        """
-        Get metadata for the lon-lat grid based on the data size.
-        Args: 
-            data (xarray.Dataset): The dataset containing grid data.
-        Returns:
-            dict: Metadata for the lon-lat grid, including nlon, nlat, cdogrid, and aquagrid.
-        """
-        nlon = data['lon'].size
-        nlat = data['lat'].size
-        cdogrid = f"r{nlon}x{nlat}"
-        aquagrid = f"r{int(36000/nlon)}"
-        if nlat % 2 == 1:
-            aquagrid += "s"
-        return {
-            'nlon': nlon,
-            'nlat': nlat,
-            'cdogrid': cdogrid,
-            'aquagrid': aquagrid
-        }
-
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
-        """
-        Write the grid file using CDO setgrid for regular grids.
-        """
-        if metadata is None:
-            raise ValueError("metadata must be provided for RegularGridTypeBuilder.write_gridfile")
-        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options="-f nc4 -z zip")
-
-class HealpixGridTypeBuilder(BaseGridTypeBuilder):
-    """
-    Class to build HEALPix grid files.
-    """
-    logger_name = "HEALpixGridTypeBuilder"
-    requires_bounds = False
-    
-    def get_metadata(self, data):
-        """
-        Get metadata for the HEALPix grid based on the data size.
-        Args: 
-            data (xarray.Dataset): The dataset containing grid data.
-        Returns:
-            dict: Metadata for the HEALPix grid, including nside, zoom, cdogrid, and aquagrid.
-        """
-        nside = np.sqrt(data['mask'].size / 12)
-        zoom = int(np.log2(nside))
-        return {
-            'nside': nside,
-            'zoom': zoom,
-            'cdogrid': f"hp{int(nside)}_nested",
-            'aquagrid': f"hpz{int(zoom)}_nested"
-        }
-
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None, cdo=None, logger=None):
-        """
-        Write the grid file using CDO setgrid for HEALPix grids.
-        """
-        if metadata is None:
-            raise ValueError("metadata and cdo must be provided for HealpixGridTypeBuilder.write_gridfile")
-        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options="-f nc4 -z zip")
-
-class UnstructuredGridTypeBuilder(BaseGridTypeBuilder):
-    """
-    Class to build Unstructured grid files.
-    """
-    logger_name = "UnstructuredGridTypeBuilder"
-    requires_bounds = True
-    bounds_error_message = "Data has no bounds, cannot create Unstructured grid"
-
-    def get_metadata(self, data):
-        """
-        Get metadata for the Unstructured grid based on the data size.
-        Args: 
-            data (xarray.Dataset): The dataset containing grid data.
-        Returns:
-            dict: Metadata for the Unstructured grid, including nlon, nlat, cdogrid, and aquagrid.
-        """
-        return {
-            'aquagrid': self.model_name,
-            'cdogrid': None,
-            'size': data['mask'].size,
-        }
-
-class CurvilinearGridTypeBuilder(BaseGridTypeBuilder):
-    """
-    Class to build Curvilinear grid files.
-    """
-    logger_name = "CurvilinearGridTypeBuilder"
-    requires_bounds = True
-    bounds_error_message = "Data has no bounds, cannot create Curvilinear grid"
-
-    def get_metadata(self, data):
-        """
-        Get metadata for the Curvilinear grid based on the data size.
-        Args: 
-            data (xarray.Dataset): The dataset containing grid data.
-        Returns:
-            dict: Metadata for the Curvilinear grid, including nlon, nlat, cdogrid, and aquagrid.
-        """
-        return {
-            'aquagrid': self.model_name,
-            'cdogrid': None,
-            'size': data['mask'].size,
-        }

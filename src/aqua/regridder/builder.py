@@ -5,12 +5,11 @@ from glob import glob
 from typing import Optional, Any
 from cdo import Cdo
 from smmregrid import GridInspector
-from aqua import Reader
-from aqua.regridder.regridder_util import detect_grid
+
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, load_yaml, dump_yaml, to_list
-from aqua.regridder.gridtypebuilder import HealpixGridTypeBuilder, RegularGridTypeBuilder
-from aqua.regridder.gridtypebuilder import UnstructuredGridTypeBuilder, CurvilinearGridTypeBuilder
+from aqua.regridder.extragridbuilder import HealpixGridBuilder, RegularGridBuilder
+from aqua.regridder.extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
 
 # these are the vertical coordinates that are considered reasonable for the grid build
 # TODO: we probably need to find a better way to handle this
@@ -23,18 +22,15 @@ class GridBuilder():
     Currently supports HEALPix grids and can be extended for other grid types.
     """
     GRIDTYPE_REGISTRY = {
-        'Healpix': HealpixGridTypeBuilder,
-        'Regular': RegularGridTypeBuilder,
-        'Unstructuxred': UnstructuredGridTypeBuilder,
-        'Curvilinear': CurvilinearGridTypeBuilder,
+        'Healpix': HealpixGridBuilder,
+        'Regular': RegularGridBuilder,
+        'Unstructuxred': UnstructuredGridBuilder,
+        'Curvilinear': CurvilinearGridBuilder,
         # Add more grid types here as needed
     }
 
     def __init__(
             self,
-            model: str,
-            exp: str,
-            source: str,
             outdir: str = '.',
             model_name: Optional[str] = None,
             original_resolution: Optional[str] = None,
@@ -45,23 +41,20 @@ class GridBuilder():
         Initialize the GridBuilder with a reader instance.
 
         Args:
-            model (str): The model name.
-            exp (str): The experiment name.
-            source (str): The source of the data.
             outdir (str): The output directory for the grid files.
             model_name (str, optional): The name of the model, if different from the model argument.
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
             vert_coord (str, optional): The vertical coordinate to consider for the grid build.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
-        self.model = model
-        self.exp = exp
-        self.source = source
+        # store output directory
         self.outdir = outdir
 
-        # If model_name is not provided, use the model name in lowercase
-        self.model_name = model_name.lower() if model_name else model.lower()
+        # store original resolution if necessary
         self.original_resolution = original_resolution
+
+        # set model name
+        self.model_name = model_name
 
         # loglevel
         self.logger = log_configure(log_level=loglevel, log_name='GridBuilder')
@@ -76,21 +69,8 @@ class GridBuilder():
         self.gridpath = os.path.join(self.configpath, 'grids')
         self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
 
-    def retrieve(self, fix=False):
-        """
-        Retrieve the grid data based on the model, experiment, and source.
 
-        Args:
-            fix (bool, optional): Whether to fix the original source. Defaults to False.
-        Returns:
-            xarray.Dataset: The retrieved grid data.
-        """
-        reader = Reader(
-            model=self.model, exp=self.exp, source=self.source,
-            loglevel=self.loglevel, areas=False, fix=fix)
-        return reader.retrieve()
-
-    def build(self, rebuild=False, fix=False, version=None):
+    def build(self, data, rebuild=False, version=None):
         """
         Retrieve and build the grid data for all gridtypes available.
         
@@ -99,7 +79,6 @@ class GridBuilder():
             fix (bool): Whether to fix the original source. Might be useful for some models. Defaults to False.
             version (int, optional): The version number to append to the grid file name. Defaults to None.
         """
-        data = self.retrieve(fix=fix)
         gridtypes = GridInspector(data).get_gridtype()
         if not gridtypes:
             self.logger.error("No grid type detected, skipping grid build")
@@ -119,7 +98,7 @@ class GridBuilder():
         Build the grid data based on the detected grid type.
         """
         self.logger.info("Detected grid type: %s", gridtype)
-        kind = detect_grid(data)
+        kind = gridtype.kind
         self.logger.info("Grid type is: %s", kind)
 
         # access the class registry to get the builder class appropriate for the gridtype
@@ -147,10 +126,13 @@ class GridBuilder():
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
 
         # add history attribute
-        log_history(data, msg=f'Gridfile generated with GridBuilder from {self.model}_{self.exp}_{self.source}')
+        exp = data.attrs.get('AQUA_exp', None)
+        source = data.attrs.get('AQUA_source', None)
+        model = data.attrs.get('AQUA_model', None)
+        log_history(data, msg=f'Gridfile generated with GridBuilder from {model}_{exp}_{source}')
 
         # store the data in a temporary netcdf file
-        filename_tmp = f"{self.model_name}_{self.exp}_{self.source}.nc"
+        filename_tmp = f"{self.model_name}_{exp}_{source}.nc"
         self.logger.debug("Saving tmp data in %s", filename_tmp)
         data3d.to_netcdf(filename_tmp)
 
@@ -199,18 +181,13 @@ class GridBuilder():
         self.logger.info('Removing temporary file %s', filename_tmp)
         os.remove(filename_tmp)
 
-        try:
-            # TODO: is there a better way to verify that we can generate the weights?
-            self.logger.info("Verifying the creation of the weights from the grid file")
-            self.cdo.gencon("r180x90", input=filename, options="-f nc  --force")
-            self.logger.info("Weights generated successfully for %s!!! This grid file is approved for AQUA, take a bow!", filename)
-        except Exception as e:
-            self.logger.error("Error generating weights, something is wrong with the obtained file: %s", e)
-            raise
+        # verify the creation of the weights
+        builder.verify_weights(filename, metadata=metadata)
+
 
         # create the grid entry in the grid file
         grid_entry_name = builder.create_grid_entry_name(os.path.basename(basepath), vert_coord)
-        grid_block = builder.create_grid_entry_block(gridtype, basepath, vert_coord)
+        grid_block = builder.create_grid_entry_block(gridtype, basepath, vert_coord, metadata=metadata)
         self.create_grid_entry(grid_entry_name, grid_block, rebuild=rebuild)
     
     def create_grid_entry(self, grid_entry_name, grid_block, rebuild=False):
