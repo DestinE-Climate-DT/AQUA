@@ -15,7 +15,8 @@ def area_selection(data=None, lat=None, lon=None,
         Works on coordinates from 0 to 360, but converts different requests
 
         Args:
-            indat (xarray.DataSet):   input data to be selected
+            data (xarray.DataArray 
+                  or xarray.DataSet): input data to be selected
             lat (list, opt):          latitude coordinates
             lon (list, opt):          longitude coordinates
             box_brd (bool,opt):       choose if coordinates are comprised or not.
