@@ -27,6 +27,7 @@ class GridBuilder():
             self,
             outdir: str = '.',
             model_name: Optional[str] = None,
+            grid_name: Optional[str] = None,
             original_resolution: Optional[str] = None,
             vert_coord: Optional[str] = None,
             loglevel: str = 'warning'
@@ -37,6 +38,7 @@ class GridBuilder():
         Args:
             outdir (str): The output directory for the grid files.
             model_name (str, optional): The name of the model, if different from the model argument.
+            grid_name (str, optional): The name of the grid, to specify extra information in the grid file
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
             vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one detected by the GridInspector.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
@@ -49,6 +51,7 @@ class GridBuilder():
 
         # set model name
         self.model_name = model_name
+        self.grid_name = grid_name
 
         # loglevel
         self.logger = log_configure(log_level=loglevel, log_name='GridBuilder')
@@ -60,10 +63,9 @@ class GridBuilder():
         # get useful paths
         self.configpath = ConfigPath().get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
-        self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
 
 
-    def build(self, data, rebuild=False, version=None, verify=True):
+    def build(self, data, rebuild=False, version=None, verify=True, create_yaml=True):
         """
         Retrieve and build the grid data for all gridtypes available.
         
@@ -72,6 +74,7 @@ class GridBuilder():
             fix (bool): Whether to fix the original source. Might be useful for some models. Defaults to False.
             version (int, optional): The version number to append to the grid file name. Defaults to None.
             verify (bool): Whether to verify the grid file after creation. Defaults to True.
+            create_yaml (bool): Whether to create the grid entry in the grid file. Defaults to True.
         """
         gridtypes = GridInspector(data).get_gridtype()
         if not gridtypes:
@@ -88,7 +91,8 @@ class GridBuilder():
         gridtype: Any,
         rebuild: bool = False,
         version: Optional[int] = None,
-        verify: bool = True
+        verify: bool = True,
+        create_yaml: bool = True
     ) -> None:
         """
         Build the grid data based on the detected grid type.
@@ -111,7 +115,7 @@ class GridBuilder():
 
         # Initialize the builder
         builder = BuilderClass(
-            vert_coord=vert_coord, model_name=self.model_name,
+            vert_coord=vert_coord, model_name=self.model_name, grid_name=self.grid_name,
             original_resolution=self.original_resolution, loglevel=self.loglevel
         )
 
@@ -176,7 +180,7 @@ class GridBuilder():
 
         # cleanup
         self.logger.info('Removing temporary file %s', filename_tmp)
-        #os.remove(filename_tmp)
+        os.remove(filename_tmp)
 
         # verify the creation of the weights
         if verify:
@@ -184,34 +188,42 @@ class GridBuilder():
 
 
         # create the grid entry in the grid file
-        grid_entry_name = builder.create_grid_entry_name(os.path.basename(basepath), vert_coord)
-        grid_block = builder.create_grid_entry_block(gridtype, basepath, vert_coord, metadata=metadata)
-        self.create_grid_entry(grid_entry_name, grid_block, rebuild=rebuild)
+        if create_yaml:
+            grid_entry_name = builder.create_grid_entry_name(os.path.basename(basepath), vert_coord)
+            grid_block = builder.create_grid_entry_block(gridtype, basepath, vert_coord, metadata=metadata)
+            self.create_grid_entry(grid_entry_name, grid_block, gridtype.kind, rebuild=rebuild)
     
-    def create_grid_entry(self, grid_entry_name, grid_block, rebuild=False):
+    def create_grid_entry(self, grid_entry_name, grid_block, gridkind, rebuild=False):
         """
         Create a grid entry in the grid file for the given gridtype.
 
         Args:
             grid_entry_name (str): The name of the grid entry.
             grid_block (dict): The grid block to add to the grid file.
+            gridkind (str): The kind of grid to add to the grid file.
             rebuild (bool): Whether to rebuild the grid entry if it already exists. Defaults to False
         """
 
         self.logger.info("Grid entry name: %s", grid_entry_name)
         self.logger.info("Grid block: %s", grid_block)
 
+        if self.model_name is None:
+            gridfilename = f'{gridkind}.yaml'
+        else:
+            gridfilename = f'{self.model_name}.yaml'
+        gridfile = os.path.join(self.gridpath, gridfilename)
+
         # if file do not exist, create it
-        if not os.path.exists(self.gridfile):
-            self.logger.info("Grid file %s does not exist, creating it", self.gridfile)
+        if not os.path.exists(gridfile):
+            self.logger.info("Grid file %s does not exist, creating it", gridfile)
             final_block = {'grids': {grid_entry_name: grid_block}}
         # else, add the grid entry to the existing file
         else:
-            self.logger.info("Grid file %s exists, adding the grid entry %s", self.gridfile, grid_entry_name)
-            final_block = load_yaml(self.gridfile)
+            self.logger.info("Grid file %s exists, adding the grid entry %s", gridfile, grid_entry_name)
+            final_block = load_yaml(gridfile)
             if grid_entry_name in final_block.get('grids', {}) and not rebuild:
-                self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, self.gridfile)
+                self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
                 return
             final_block['grids'][grid_entry_name] = grid_block
-        dump_yaml(self.gridfile, final_block)
+        dump_yaml(gridfile, final_block)
 

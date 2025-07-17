@@ -17,7 +17,7 @@ class BaseGridBuilder:
 
     def __init__(
         self, vert_coord,
-        original_resolution, model_name, loglevel='warning'
+        original_resolution, model_name, grid_name=None, loglevel='warning'
         ):
         """
         Initialize the BaseGridBuilder.
@@ -33,6 +33,7 @@ class BaseGridBuilder:
         self.loglevel = loglevel
         self.original_resolution = original_resolution
         self.model_name = model_name
+        self.grid_name = grid_name
         self.logger = log_configure(log_level=loglevel, log_name=self.logger_name)
         self.cdo = Cdo()
 
@@ -66,13 +67,32 @@ class BaseGridBuilder:
         Returns:
             str: The basename for the grid type.
         """
-    
+        # no oceanic masking: name is defined by the AQUA grid name
+        # or alternative by the grid_name parameter provided to the GridBuilder
         if self.masked is None:
-            basename = f"{metadata['aquagrid']}"
+            if self.grid_name:
+                self.logger.error(self.grid_name)
+                basename = f"{self.grid_name}"
+            else:
+                basename = f"{metadata['aquagrid']}"
+
+        # land masking: not supported yet
         elif self.masked == "land":
             raise NotImplementedError("Land masking is not implemented yet!")
+
+        # oceanic masking: improvement needed. TODO: 
+        # currently the name is defined by the AQUA the model name or 
+        # by the grid_name parameter provided to the GridBuilder.
+        # if both are provided, the grid_name parameter takes precedence.
+        # the original resolution is added to the name if provided.
+        # the aquagrid name is added to the name if it is different from the model name.
+        # the vert_coord is added to the name if provided.
+        # the oce suffix is added to the name.
         elif self.masked == "oce":
-            basename = f"{self.model_name}"
+            if self.grid_name:
+                basename = f"{self.grid_name}"
+            else:
+                basename = f"{self.model_name}"
             if self.original_resolution:
                 basename += f"-{self.original_resolution}"
             if metadata['aquagrid'] != self.model_name:
@@ -80,11 +100,13 @@ class BaseGridBuilder:
             basename += "_oce"
             if self.vert_coord:
                 basename += f"_{self.vert_coord}"
+            
         return basename
 
     def clean_attributes(self, data):
         """
         Clean the attributes of the data.
+
         """
         # cleaning attributes for variables
         for var in data.data_vars:
@@ -273,7 +295,6 @@ class BaseGridBuilder:
         """
         
         grid_block = {
-            'cdo_options': '--force',
             'path': f"{basepath}.nc",
             'space_coord': gridtype.horizontal_dims,
         }
@@ -285,7 +306,8 @@ class BaseGridBuilder:
             if 'cdo_options' in metadata:
                 grid_block['cdo_options'] = metadata['cdo_options']
             if 'remap_method' in metadata:
-                grid_block['remap_method'] = metadata['remap_method']
+                if metadata['remap_method'] != 'con':
+                    grid_block['remap_method'] = metadata['remap_method']
         return grid_block
 
     @staticmethod
@@ -304,7 +326,9 @@ class BaseGridBuilder:
         """
 
         if vert_coord is not None:
-            name = name.replace(vert_coord, '3d')  # Replace _hpz10 with -hpz7
-    
-        return name.replace('_oce_', '_').replace('_', '-')
+            name = name.replace(vert_coord, '3d')  
+        # Replace _hpz10 with -hpz7
+        name = name.replace('_oce_', '_').replace('_', '-')
+
+        return name
            
