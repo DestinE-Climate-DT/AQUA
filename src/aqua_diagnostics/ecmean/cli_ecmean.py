@@ -37,22 +37,6 @@ def parse_arguments(arguments):
     # to be used when oceanic data is in a different source than atmospheric data
     parser.add_argument('--nprocs',  type=int,
                         help='number of multiprocessing processes to use', default=1)
-    parser.add_argument('-c', '--config', type=str,
-                        help='ecmean yaml configuration file', default='config_ecmean_cli.yaml')
-    parser.add_argument('-n', '--nworkers',  type=int,
-                        help='number of dask distributed processes')
-    parser.add_argument('--catalog', type=str,
-                        help='catalog to be analysed')    
-    parser.add_argument('-m', '--model', type=str,
-                        help='model to be analysed')
-    parser.add_argument('-e', '--exp', type=str,
-                        help='exp to be analysed')
-    parser.add_argument('-s', '--source', type=str,
-                        help='source to be analysed')
-    parser.add_argument('--regrid', type=str,
-                        help='regrid method to be used [default: r100]', default='r100')
-    parser.add_argument('--realization', type=str, default=None,
-                        help='Realization name (default: None)')
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
     parser.add_argument('--source_oce', type=str,
