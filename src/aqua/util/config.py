@@ -202,7 +202,8 @@ class ConfigPath():
         else:
             self.logger.debug('No paths found in the main configuration file %s', self.base_available)
         if machine_paths == {}:
-            raise KeyError(f'Cannot find machine paths for {self.machine}, regridding and areas feature will not work')
+            self.logger.error('Cannot find machine paths for %s, regridding and areas feature will not work', self.machine)
+            #raise KeyError(f'Cannot find machine paths for {self.machine}, regridding and areas feature will not work')
 
         # extract potential intake variables
         if 'intake' in machine_paths:
