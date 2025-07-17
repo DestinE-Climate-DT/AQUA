@@ -343,17 +343,36 @@ class AquaConsole():
                 print(f'AQUA current installed {content} in {self.configpath}:')
                 self._list_folder(os.path.join(self.configpath, content))
 
-    def _list_folder(self, mydir):
-        """List all the files in a AQUA config folder and check if they are link or file/folder"""
+    def _list_folder(self, mydir, return_list=False, silent=False):
+        """
+        List all the files in a AQUA config folder and check if they are link or file/folder
+        
+        Args:
+            mydir (str): the directory to be listed
+            return_list (bool): if True, return the list of files for further processing
+            silent (bool): if True, do not print the files, just return the list
+        
+        Returns:
+            None or list: a list of files if return_list is True, otherwise nothing
+        """
 
+        list_files = []
         yaml_files = os.listdir(mydir)
         for file in yaml_files:
             file = os.path.join(mydir, file)
             if os.path.islink(file):
                 orig_path = os.readlink(file)
-                print(f"\t - {file} (editable from {orig_path})")
+                if not silent:
+                    print(f"\t - {file} (editable from {orig_path})")
             else:
-                print(f"\t - {file}")
+                if not silent:
+                    print(f"\t - {file}")
+                list_files.append(file)
+        
+        if return_list:
+            return list_files
+        else:
+            return None
 
     def fixes_add(self, args):
         """Add a fix file
@@ -518,12 +537,14 @@ class AquaConsole():
             token = os.getenv("GITHUB_TOKEN")  # Get GitHub token
 
             # Use authentication only when running inside GitHub Actions
-            if is_github_actions and token:
-                auth_kwargs = {"username": "github-actions", "token": token}
+            username = 'github-actions' if is_github_actions else os.getenv("GITHUB_USER")
+            if token and username:
+                auth_kwargs = {"username": username, "token": token}
                 self.logger.info("Using authenticated access to GitHub API.")
             else:
                 auth_kwargs = {}
-                self.logger.info("Running without authentication. Rate limits may apply.")
+                self.logger.warning("Running without authentication. Rate limits may apply.")
+                self.logger.warning("Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access.")
 
             fs = fsspec.filesystem(
                 "github",
@@ -622,19 +643,14 @@ class AquaConsole():
 
         self._check()
         if args.catalog:
-            self.logger.info('Updating catalog %s ..', args.catalog)
-            cdir = f'{self.configpath}/{CATPATH}/{args.catalog}'
-            sdir = f'{self.aquapath}/{CATPATH}/{args.catalog}'
-            if os.path.exists(cdir):
-                if os.path.islink(cdir):
-                    self.logger.error('%s catalog has been installed in editable mode, no need to update', args.catalog)
-                    sys.exit(1)
-                self.logger.info('Removing %s from %s', args.catalog, sdir)
-                shutil.rmtree(cdir)
-                self._add_catalog_github(args.catalog)
+            if args.catalog == 'all':
+                self.logger.info('Updating all AQUA catalogs')
+                catalogs = self._list_folder(f'{self.configpath}/{CATPATH}', return_list=True, silent=True)
+                for catalog in catalogs:
+                    print(f'Updating catalog {catalog} ..')
+                    self._update_catalog(os.path.basename(catalog))
             else:
-                self.logger.error('%s does not appear to be installed, please consider `aqua add`', args.catalog)
-                sys.exit(1)
+                self._update_catalog(args.catalog)
         else:
             self.logger.info('Updating AQUA installation...')
             for directory in BASIC_DIRECTORIES:
@@ -646,6 +662,25 @@ class AquaConsole():
                 self._copy_update_folder_file(os.path.join(self.aquapath, '..', directory),
                                          os.path.join(self.configpath, directory),
                                          update=True)
+                
+    def _update_catalog(self, catalog):
+        """Update a catalog by copying it if not installed in editable mode
+
+        Args:
+            catalog (str): the catalog to be updated
+        """
+        cdir = f'{self.configpath}/{CATPATH}/{catalog}'
+        sdir = f'{self.aquapath}/{CATPATH}/{catalog}'
+        if os.path.exists(cdir):
+            if os.path.islink(cdir):
+                self.logger.error('%s catalog has been installed in editable mode, no need to update', catalog)
+                sys.exit(1)
+            self.logger.info('Removing %s from %s', catalog, sdir)
+            shutil.rmtree(cdir)
+            self._add_catalog_github(catalog)
+        else:
+            self.logger.error('%s does not appear to be installed, please consider `aqua add`', catalog)
+            sys.exit(1)
 
 
     def _set_catalog(self, catalog):
