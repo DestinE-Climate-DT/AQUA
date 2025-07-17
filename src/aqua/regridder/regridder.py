@@ -165,7 +165,7 @@ class Regridder():
         """
 
         gridinspector = GridInspector(data, loglevel=self.loglevel, extra_dims=self.extra_dims)
-        gridtypes = gridinspector.get_grid_info()
+        gridtypes = gridinspector.get_gridtype()
 
         # if we have not them from the dictionary, get it from the file
         if not self.src_horizontal_dims:
@@ -524,7 +524,7 @@ class Regridder():
         masked_vars = shared_vars.get(DEFAULT_DIMENSION_MASK, [])
 
         # scan the grid
-        gridtypes = GridInspector(data, extra_dims=self.extra_dims, loglevel=self.loglevel).get_grid_info()
+        gridtypes = GridInspector(data, extra_dims=self.extra_dims, loglevel=self.loglevel).get_gridtype()
 
         self.logger.debug("Gridtypes found: %s", len(gridtypes))
         for gridtype in gridtypes:

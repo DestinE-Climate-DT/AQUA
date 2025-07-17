@@ -85,7 +85,7 @@ class FldStat():
         # if horizontal_dims is not provided, try to guess it
         if self.horizontal_dims is None:
             # please notice GridInspector always return a list of GridType objects
-            data_gridtype = GridInspector(data).get_grid_info()
+            data_gridtype = GridInspector(data).get_gridtype()
             if len(data_gridtype) > 1:
                 raise ValueError("Multiple grid types found in the data, please provide horizontal_dims!")
             self.horizontal_dims = data_gridtype[0].horizontal_dims
