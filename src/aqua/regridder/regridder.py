@@ -221,7 +221,7 @@ class Regridder():
             # Extra: infer target grid horizontal dimensions
             self.tgt_horizontal_dims = GridInspector(
                 self.tgt_grid_area, loglevel=self.loglevel
-            ).get_grid_info()[0].horizontal_dims
+            ).get_gridtype()[0].horizontal_dims
 
         else:
             self.src_grid_area = grid_area

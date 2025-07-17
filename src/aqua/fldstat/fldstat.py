@@ -138,7 +138,7 @@ class FldStat():
         # If not, try to rename them. Use gridtype to get the horizontal dimensions
         # TODO: "rgrid" is not a default dimension in smmregrid, it should be added.
         # please notice GridInspector always return a list of GridType objects
-        area_gridtype = GridInspector(self.area, extra_dims={"horizontal": ["rgrid"]}).get_grid_info()
+        area_gridtype = GridInspector(self.area, extra_dims={"horizontal": ["rgrid"]}).get_gridtype()
         area_horizontal_dims = area_gridtype[0].horizontal_dims
         self.logger.debug("Area horizontal dimensions are %s", area_horizontal_dims)
 
