@@ -169,7 +169,7 @@ class PlotBaseMixin():
 
         self.outputsaver = OutputSaver(diagnostic=diagnostic,  catalog=self.catalogs, model=self.models,
                                        exp=self.exps, catalog_ref=self.ref_catalogs, model_ref=self.ref_models,
-                                       exp_ref=self.ref_exps, outdir=outputdir, rebuild=rebuild, loglevel=self.loglevel)
+                                       exp_ref=self.ref_exps, outdir=outputdir, loglevel=self.loglevel)
 
     def get_data_info(self):
         """
@@ -256,6 +256,7 @@ class PlotBaseMixin():
         return description
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+                  rebuild: bool = True,
                   dpi: int = 300, format: str = 'png', metadata: dict = None):
         """
         Save the plot to a file.
@@ -264,6 +265,7 @@ class PlotBaseMixin():
             fig (matplotlib.figure.Figure): The figure to be saved.
             diagnostic_product (str): The name of the diagnostic product. Default is None.
             extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is None.
+            rebuild (bool): If True, the output files will be rebuilt. Default is True.
             dpi (int): The dpi of the figure. Default is 300.
             format (str): The format of the figure. Default is 'png'.
             metadata (dict): The metadata to be used for the figure. Default is None.
@@ -271,10 +273,10 @@ class PlotBaseMixin():
                              We usually want to add here the description of the figure.
         """
         if format == 'png':
-            _ = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product,
+            _ = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                           extra_keys=extra_keys, metadata=metadata, dpi=dpi)
         elif format == 'pdf':
-            _ = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product,
+            _ = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                           extra_keys=extra_keys, metadata=metadata)
 
     def set_map_description(self, maps=None, ref_maps=None, statistic: str = None, telecname: str = None):

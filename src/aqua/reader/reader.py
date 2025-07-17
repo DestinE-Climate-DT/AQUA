@@ -43,6 +43,7 @@ class Reader():
                  rebuild=False, loglevel=None, nproc=4,
                  aggregation=None, chunks=None,
                  preproc=None, convention='eccodes',
+                 engine='fdb',
                  **kwargs):
         """
         Initializes the Reader class, which uses the catalog
@@ -77,9 +78,9 @@ class Reader():
             preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
             convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
                                         (Only one supported so far)
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.
 
-        Keyword Args:
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'. 
+        Keyword Args: 
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
             realization (int, optional): The ensemble realization number, included in the output filename.
             **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
@@ -150,15 +151,15 @@ class Reader():
         # load the catalog
         aqua.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
-        self.esmcat = self.expcat[self.source](**kwargs) 
+        # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
+        self.esmcat = self.expcat[self.source]()
+        self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine)
+        self.esmcat = self.expcat[self.source](**self.kwargs)
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             if not files_exist(self.esmcat.urlpath):
                 raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}")  # noqa E501
-
-        # store the kwargs for further usage
-        self.kwargs = self._check_kwargs_parameters(kwargs, intake_vars)
 
         # extend the unit registry
         units_extra_definition()
@@ -556,36 +557,54 @@ class Reader():
     #                             name, list(drop_coords))
     #     return data.drop_vars(drop_coords)
 
-    def _check_kwargs_parameters(self, main_parameters, intake_parameters):
+    def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb'):
         """
-        Function to check if which parameters are included in the metadata of
-        the source and performs a few safety checks.
+        Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
+        Kwargs which are not present in the intake_vars will be removed.
 
         Args:
-            main_parameters: get them from kwargs
-            intake_parameters: get them from catalog machine specific file
+            intake_vars (dict): The intake variables from the catalog machine specific file.
+            kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
+            engine (str): The engine used for the GSV retrieval, default is 'fdb'.
 
         Returns:
-            kwargs after check has been processed
+            A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
         """
-        # join the kwargs
-        parameters = {**main_parameters, **intake_parameters}
+        esm_dict = self.esmcat.describe().get('user_parameters', {})
+        len_esmcat = len(esm_dict)
 
-        # remove null kwargs
-        parameters = {key: value for key, value in parameters.items() if value is not None}
+        # This contains both the intake_vars and the esmcat parameters
+        params = [esm_dict[i]['name'] for i in range(len_esmcat)]
 
-        user_parameters = self.esmcat.describe().get('user_parameters')
-        if user_parameters is not None:
-            if parameters is None:
-                parameters = {}
+        # List comprehension to filter out kwargs that are not in the params
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k in params}
+        unfiltered_kwargs = {k: v for k, v in kwargs.items() if k not in params}
 
-            for param in user_parameters:
-                if param['name'] not in parameters:
-                    self.logger.warning('%s parameter is required but is missing, setting to default %s',
-                                        param['name'], param['default'])
-                    parameters[param['name']] = param['default']
+        # Log warnings for unfiltered kwargs
+        for key, _ in unfiltered_kwargs.items():
+            self.logger.warning('kwarg %s is not in the intake parameteres of the source, removing it', key)
 
-        return parameters
+        # Check if all required parameters are present in the filtered kwargs and set defaults if not
+        filtered_list = list(filtered_kwargs.keys())
+        intake_vars_list = list(intake_vars.keys())
+        for param in params:
+            if param not in filtered_list and param not in intake_vars_list:
+                self.logger.warning('%s parameter is required but is missing, setting to default %s',
+                                    param, esm_dict[params.index(param)]['default'])
+                allowed = esm_dict[params.index(param)].get('allowed', None)
+                # It is possible to have intake_vars which are not specified for the machine,
+                # so that we still need to check whether there is an allowed list
+                if allowed is not None:
+                    self.logger.warning('Available values for %s are: %s', param, allowed)
+                filtered_kwargs[param] = esm_dict[params.index(param)]['default']
+
+        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
+            # If the engine is fdb, we need to add the engine parameter
+            if 'engine' not in filtered_kwargs:
+                filtered_kwargs['engine'] = engine
+                self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
+        return filtered_kwargs
 
     def vertinterp(self, data, levels=None, vert_coord='plev', units=None,
                    method='linear'):
