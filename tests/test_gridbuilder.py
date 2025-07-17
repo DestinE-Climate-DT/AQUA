@@ -1,5 +1,5 @@
 """Tests for the GridBuilder class."""
-from aqua.regridder.builder import GridBuilder
+from aqua import GridBuilder
 from aqua import Reader
 
 class TestGridBuilder:
