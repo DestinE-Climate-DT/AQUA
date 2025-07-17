@@ -4,7 +4,7 @@ This module contains the CLI for the GridBuilder.
 
 import argparse
 from aqua import Reader
-from aqua.regridder.builder import GridBuilder
+from aqua import GridBuilder
 from aqua.util import load_yaml, get_arg
 
 
