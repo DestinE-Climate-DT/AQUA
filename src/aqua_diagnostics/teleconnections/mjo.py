@@ -100,14 +100,13 @@ class PlotMJO():
     PlotMJO class for plotting the MJO Hovmoller data.
     This class is a placeholder for future plotting methods.
     """
-    def __init__(self, data, outputdir: str = './', rebuild: bool = True, loglevel: str = 'WARNING'):
+    def __init__(self, data, outputdir: str = './', loglevel: str = 'WARNING'):
         """
         Initialize the PlotMJO class.
 
         Args:
             data (xarray.DataArray): Data to be plot.
             outputdir (str): Directory where the plots will be saved. Default is './'.
-            rebuild (bool): If True, the plots will be rebuilt. Default is True.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
         # Data info initalized as empty
@@ -119,7 +118,7 @@ class PlotMJO():
         self.data = data
 
         self.outputsaver = OutputSaver(diagnostic='mjo',  catalog=self.catalogs, model=self.models,
-                                       exp=self.exps, outdir=outputdir, rebuild=rebuild, loglevel=self.loglevel)
+                                       exp=self.exps, outdir=outputdir, loglevel=self.loglevel)
 
     def plot_hovmoller(self, invert_axis: bool = True,
                        invert_time: bool = True,
@@ -152,6 +151,7 @@ class PlotMJO():
         return fig
     
     def save_plot(self, fig, diagnostic_product: str = 'hovmoller', extra_keys: dict = None,
+                  rebuild: bool = True,
                   dpi: int = 300, format: str = 'png', metadata: dict = None):
         """
         Save the plot to a file.
@@ -160,6 +160,7 @@ class PlotMJO():
             fig (matplotlib.figure.Figure): The figure to be saved.
             diagnostic_product (str): The name of the diagnostic product. Default is None.
             extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is None.
+            rebuild (bool): If True, the output files will be rebuilt. Default is True.
             dpi (int): The dpi of the figure. Default is 300.
             format (str): The format of the figure. Default is 'png'.
             metadata (dict): The metadata to be used for the figure. Default is None.
@@ -167,8 +168,8 @@ class PlotMJO():
                              We usually want to add here the description of the figure.
         """
         if format == 'png':
-            _ = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product,
+            _ = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                           extra_keys=extra_keys, metadata=metadata, dpi=dpi)
         elif format == 'pdf':
-            _ = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product,
+            _ = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                           extra_keys=extra_keys, metadata=metadata)
