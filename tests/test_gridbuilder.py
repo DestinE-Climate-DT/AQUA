@@ -1,7 +1,10 @@
 """Tests for the GridBuilder class."""
+import pytest
 from aqua import GridBuilder
 from aqua import Reader
 
+
+@pytest.mark.aqua
 class TestGridBuilder:
     """Test the GridBuilder class."""
 

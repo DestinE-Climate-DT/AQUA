@@ -486,7 +486,7 @@ class TestAquaConsole():
         assert 'AQUA current installed catalogs in' in out
         assert 'ci' in out
         assert 'ciccio (editable' in out
-        assert 'IFS.yaml' in out
+        assert 'ifs.yaml' in out
         assert 'HealPix.yaml' in out
 
         run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
