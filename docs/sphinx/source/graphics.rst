@@ -32,7 +32,7 @@ of the input DataArray. Not only longitude-latitude grids are supported, but als
 data, which are automatically resampled to a regular lon-lat grid before plotting.
 
 The function is built on top of the ``cartopy`` and ``matplotlib`` libraries,
-and it is possible to customize the plot with many options, including a different projection.
+and it is possible to customize the plot with many options, including a different projections (see Single map with differences below).
 
 In the following example we plot an sst map from the first timestep of ERA5 reanalysis:
 
@@ -71,6 +71,44 @@ which are automatically resampled to a regular lon-lat grid.
 
     Example of a ``plot_single_map_diff()`` output done with the :ref:`teleconnections`.
     The map shows the correlation for the ENSO teleconnection between ICON historical run and ERA5 reanalysis.
+
+Projections and custom maps
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+AQUA also supports a wide variety of map projections provided by the ``cartopy`` library. To simplify projection selection, 
+a utility function ``get_projection()`` is provided, which accepts a lowercase function names (e.g. ``"plate_carree"``) to select the 
+desired projection. A dictionary with the complete list of available projections can be found in the ``projections.py`` file.
+The function ``get_projection()`` also accepts additional keyword arguments depending on the selected projection and and user-defined plotting requirements. 
+The returned ``cartopy.crs`` objects can be used directly with ``plot_single_map()``.
+A minimal example using subplots with different projections is shown below:
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+    from aqua import plot_single_map, get_projection
+
+    # Define a dictionary with projection names and the wanted extra parameters from Cartopy
+    projections = {"plate_carree": {},
+        "nearside": {"central_longitude": 0, "central_latitude": 20, "satellite_height": 35785831},
+        "robinson": {"central_longitude": 70},
+        "aitoff": {"central_longitude": 85.3}
+        }
+
+    fig = plt.figure(figsize=(14, 10))
+
+    for i, name in enumerate(projections.keys()):
+        kwargs = projections.get(name, {})
+        proj = get_projection(name, **kwargs)
+
+        ax = fig.add_subplot(2, 2, i + 1, projection=proj)
+        plot_single_map(tos_plot, proj=proj, ax=ax, fig=fig, contour=False) # Note: tos_plot is the retrieved data as in example above
+
+This code will produce a single figure with four different map projections, all displaying the same data.
+
+.. figure:: figures/single_map_subplot_projections.png
+    :align: center
+    :width: 100%
+    :alt: Example subplot with different Cartopy map projections
 
 Time series
 ^^^^^^^^^^^
