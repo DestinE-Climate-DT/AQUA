@@ -39,7 +39,7 @@
         allowed: {{ range(1, num_of_realizations + 1) | list }}
         description: realization member
         type: int
-        default: 1
+        default: {{ default_realization | default(1) }}
     {% endif %}
     description: {{ description }}
     driver: gsv
