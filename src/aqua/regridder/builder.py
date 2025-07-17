@@ -3,7 +3,6 @@ import os
 import re
 from glob import glob
 from typing import Optional, Any
-from cdo import Cdo
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
@@ -58,8 +57,7 @@ class GridBuilder():
         # vertical coordinates to consider for the grid build for the 3d case.
         self.vert_coord = vert_coord
 
-        # get useful paths and CDO instance
-        self.cdo = Cdo()
+        # get useful paths
         self.configpath = ConfigPath().get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
         self.gridfile = os.path.join(self.gridpath, f'{self.model_name}.yaml')
@@ -109,9 +107,7 @@ class GridBuilder():
         vert_coord = self.vert_coord if self.vert_coord else gridtype.vertical_dim
         self.logger.info("Detected vertical coordinate: %s", vert_coord)
 
-        # add vertical information to help CDO
-        if vert_coord:
-            data[vert_coord].attrs['axis'] = 'Z'
+
 
         # Initialize the builder
         builder = BuilderClass(
@@ -130,7 +126,11 @@ class GridBuilder():
 
         # store the data in a temporary netcdf file
         filename_tmp = f"{self.model_name}_{exp}_{source}.nc"
-        self.logger.debug("Saving tmp data in %s", filename_tmp)
+        self.logger.info("Saving tmp data in %s", filename_tmp)
+
+        # configure attributes for the grid file
+        data3d = builder.clean_attributes(data3d)
+        
         data3d.to_netcdf(filename_tmp)
 
         # select the 2D slice of the data and detect the mask type
@@ -176,7 +176,7 @@ class GridBuilder():
 
         # cleanup
         self.logger.info('Removing temporary file %s', filename_tmp)
-        os.remove(filename_tmp)
+        #os.remove(filename_tmp)
 
         # verify the creation of the weights
         if verify:

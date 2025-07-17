@@ -81,6 +81,43 @@ class BaseGridBuilder:
             if self.vert_coord:
                 basename += f"_{self.vert_coord}"
         return basename
+
+    def clean_attributes(self, data):
+        """
+        Clean the attributes of the data.
+        """
+        # cleaning attributes for variables
+        for var in data.data_vars:
+            data[var].attrs = {}
+
+        # setting attributes for mask
+        data['mask'].attrs['_FillValue'] = -9999
+        data['mask'].attrs['missing_value'] = -9999
+        data['mask'].attrs['long_name'] = 'mask'
+        data['mask'].attrs['units'] = '1'
+        data['mask'].attrs['standard_name'] = 'mask'
+
+        # attribute checks for coordinates
+        for coord in data.coords:
+
+            # remove axis which can confuse CDO
+            if not self.vert_coord or coord not in self.vert_coord:
+                self.logger.debug("Removing axis for %s", coord)
+                if 'axis' in data[coord].attrs:
+                    del data[coord].attrs['axis']
+   
+            # remove bounds which can confuse CDO
+            if not self.has_bounds(data):
+                self.logger.debug("No bounds found for %s", coord)
+                if 'bounds' in data[coord].attrs:
+                    self.logger.debug("Removing bounds for %s", coord)
+                    del data[coord].attrs['bounds']
+
+        # adding vertical properties
+        if self.vert_coord:
+            data[self.vert_coord].attrs['axis'] = 'Z'
+        
+        return data
     
     def has_bounds(self, data):
         """
@@ -121,7 +158,6 @@ class BaseGridBuilder:
 
         # load the variables and rename to mask for consistency
         space_bounds = [bound for bound in gridtype.bounds if not 'time' in bound]
-        print(space_bounds)
         load_vars = [var] + space_bounds #(gridtype.bounds or [])
         data = data[load_vars]
         data = data.rename({var: 'mask'})
