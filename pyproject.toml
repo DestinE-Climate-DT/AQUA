@@ -60,7 +60,7 @@ dependencies = [
     "kerchunk",
     "h5py>=3.12.1", #specific github pin to avoid installation of binaries
     "fastparquet",
-    "ECmean4>=0.1.14",
+    "ECmean4==0.1.15",
     "pyfdb==0.1.2",
     "gsv-interface==2.11.0",
     "zarr"
