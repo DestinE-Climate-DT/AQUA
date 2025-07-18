@@ -1,9 +1,11 @@
 """Tests for the GridBuilder class."""
 import subprocess
+import os
 import pytest
 from aqua import GridBuilder
 from aqua import Reader
 from aqua.regridder.gridentry import GridEntryManager
+from aqua.util import load_yaml
 
 
 @pytest.mark.aqua
@@ -92,6 +94,47 @@ class TestGridEntryManager:
         assert basename == 'orca2_oce_depth'
         entry = gem.create_grid_entry_name(masked='oce')
         assert 'orca2-3d' == entry
+
+        block = gem.create_grid_entry_block(
+            path='orca2_oce_depth_v1.nc',
+            horizontal_dims='cells',
+            cdo_options='-f nc',
+            remap_method='bil'
+        )
+        assert block['space_coord'] == 'cells'
+        assert block['vert_coord'] == 'depth'
+        assert block['cdo_options'] == '-f nc'
+        assert block['remap_method'] == 'bil'
+        assert block['path']['depth'] == 'orca2_oce_depth_v1.nc'
+
+    def test_gem_unstructured(self):
+        gem = GridEntryManager(
+            model_name='PLUTOTHEDOG', grid_name='ng5', vert_coord='level'
+        )
+        gridfile = gem.get_gridfilename(gridkind='unstructured')
+        assert os.path.basename(gridfile) == 'plutothedog.yaml'
+        filename = gem.get_basename(aquagrid='ng5', masked='oce')
+        assert filename == 'ng5_oce_level'
+        entry = gem.create_grid_entry_name(aquagrid='ng5', masked='oce')
+        assert 'ng5-3d' == entry
+        block = gem.create_grid_entry_block(
+            path=filename + '.nc',
+            horizontal_dims='cells',
+            cdo_options='-f nc',
+        )
+
+        gem.create_grid_entry(gridfile, entry, block)
+
+        assert os.path.exists(gridfile)
+        yaml = load_yaml(gridfile)
+        assert yaml['grids'][entry]['path']['level'] == filename + '.nc'
+        assert yaml['grids'][entry]['vert_coord'] == 'level'
+        assert yaml['grids'][entry]['cdo_options'] == '-f nc'
+        assert yaml['grids'][entry]['space_coord'] == 'cells'
+        os.remove(gridfile)
+
+        
+
 
 
 
