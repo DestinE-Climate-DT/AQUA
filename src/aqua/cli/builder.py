@@ -39,6 +39,8 @@ def builder_parser(parser=None):
                         help='Fix the original source [default: False]')
     parser.add_argument('--verify', action='store_true', default=False,
                         help='Verify the grid file after creation [default: False]')
+    parser.add_argument('--yaml', action='store_true', default=False,
+                        help='Create the grid entry in the grid file [default: False]')
 
     return parser
 
@@ -67,6 +69,7 @@ def builder_execute(args):
     rebuild = get_arg(args, 'rebuild', builder_config.get('rebuild', False))
     version = get_arg(args, 'version', builder_config.get('version'))
     verify = get_arg(args, 'verify', builder_config.get('verify', False))
+    create_yaml = get_arg(args, 'yaml', builder_config.get('yaml', False))
 
     # Ensure required arguments are present
     if model is None:
@@ -90,5 +93,5 @@ def builder_execute(args):
     )
 
     # Build the grid
-    grid_builder.build(data, rebuild, version, verify)
+    grid_builder.build(data, rebuild, version, verify, create_yaml)
     
