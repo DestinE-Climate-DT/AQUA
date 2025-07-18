@@ -1,7 +1,5 @@
 """Module for aqua grid build"""
 import os
-import re
-from glob import glob
 from typing import Optional, Any
 from smmregrid import GridInspector
 
@@ -65,7 +63,6 @@ class GridBuilder():
             model_name=self.model_name,
             grid_name=self.grid_name,
             original_resolution=self.original_resolution,
-            vert_coord=vert_coord,
             loglevel=loglevel
         )
 
@@ -153,7 +150,7 @@ class GridBuilder():
         cdogrid = metadata['cdogrid']
 
         # Initialize GridEntryManager for this gridtype
-        basename = self.gem.get_basename(aquagrid, cdogrid, masked)
+        basename = self.gem.get_basename(aquagrid, cdogrid, masked, vert_coord)
 
         if not cdogrid or masked:
             self.logger.warning("No CDO grid detected, or mask, need physical file")
@@ -193,11 +190,12 @@ class GridBuilder():
         if create_yaml:
             gridfile = self.gem.get_gridfilename(cdogrid, kind)
             self.logger.info("Creating grid entry in %s", gridfile)
-            grid_entry_name = self.gem.create_grid_entry_name(aquagrid, cdogrid, masked)
+            grid_entry_name = self.gem.create_grid_entry_name(aquagrid, cdogrid, masked, vert_coord)
             cdo_options = metadata.get('cdo_options') if metadata else None
             remap_method = metadata.get('remap_method') if metadata else None
             grid_block = self.gem.create_grid_entry_block(
-                filename, horizontal_dims=gridtype.horizontal_dims, cdo_options=cdo_options, remap_method=remap_method
+                filename, horizontal_dims=gridtype.horizontal_dims, cdo_options=cdo_options, remap_method=remap_method,
+                vert_coord=vert_coord
             )
             self.gem.create_grid_entry(gridfile, grid_entry_name, grid_block, rebuild=rebuild)
 

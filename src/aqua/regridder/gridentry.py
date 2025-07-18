@@ -23,7 +23,6 @@ class GridEntryManager:
         model_name: Optional[str] = None,
         grid_name: Optional[str] = None,
         original_resolution: Optional[str] = None,
-        vert_coord: Optional[str] = None,
         loglevel: str = 'warning'
     ):
         # get useful paths
@@ -34,14 +33,13 @@ class GridEntryManager:
         self.model_name = model_name.lower() if model_name else None
         self.grid_name = grid_name.lower() if grid_name else None
         self.original_resolution = original_resolution.lower() if original_resolution else None
-        self.vert_coord = vert_coord
 
         # set log level and logger
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name='GridEntryManager')
 
     def get_basename(
-        self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None) -> str:
+        self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
         """
         Get the basename for the grid type based on the context and aquagrid name.
         """
@@ -59,22 +57,23 @@ class GridEntryManager:
         if self.original_resolution:
             basename += f"_{self.original_resolution}"
         basename += f"_{aquagrid}"
-        if self.vert_coord:
-            basename += f"_3d_{self.vert_coord}"
+        if vert_coord:
+            basename += f"_3d_{vert_coord}"
         else:
             basename += "_2d"
         return basename
 
-    def create_grid_entry_name(self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None) -> str:
+    def create_grid_entry_name(self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
         """Create a grid entry name based on the grid type and vertical coordinate."""
-        return self.get_basename(aquagrid, cdogrid, masked).replace('_', '-')
+        return self.get_basename(aquagrid, cdogrid, masked, vert_coord).replace('_', '-')
 
     def create_grid_entry_block(
         self,
         path: str,
         horizontal_dims: Optional[str] = None,
         cdo_options: Optional[str] = None,
-        remap_method: Optional[str] = None
+        remap_method: Optional[str] = None,
+        vert_coord: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create a grid entry block for the gridtype, with only cdo_options and remap_method."""
         grid_block = {
@@ -82,9 +81,9 @@ class GridEntryManager:
         }
         if horizontal_dims:
             grid_block['space_coord'] = horizontal_dims
-        if self.vert_coord:
-            grid_block['vert_coord'] = self.vert_coord
-            grid_block['path'] = {self.vert_coord: f"{path}"}
+        if vert_coord:
+            grid_block['vert_coord'] = vert_coord
+            grid_block['path'] = {vert_coord: f"{path}"}
         if cdo_options:
             grid_block['cdo_options'] = cdo_options
         if remap_method and remap_method != 'con':
