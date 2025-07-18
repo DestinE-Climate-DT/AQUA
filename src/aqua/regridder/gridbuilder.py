@@ -6,9 +6,10 @@ from typing import Optional, Any
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, load_yaml, dump_yaml
+from aqua.util import ConfigPath
 from aqua.regridder.extragridbuilder import HealpixGridBuilder, RegularGridBuilder
 from aqua.regridder.extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
+from aqua.regridder.gridentry import GridEntryManager
 
 class GridBuilder():
     """
@@ -63,6 +64,8 @@ class GridBuilder():
         # get useful paths
         self.configpath = ConfigPath().get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
+        # Initialize GridEntryManager
+        # self.grid_entry_manager = GridEntryManager(self.gridpath, logger=self.logger) # This line is removed
 
 
     def build(self, data, rebuild=False, version=None, verify=True, create_yaml=True):
@@ -145,7 +148,20 @@ class GridBuilder():
         self.logger.info("Masked type: %s", builder.masked)
 
         # get the basename and metadata for the grid file
-        basename, metadata = builder.prepare(data3d)
+        metadata = builder.get_metadata(data3d)
+        aquagrid = metadata['aquagrid']
+        # Initialize GridEntryManager for this gridtype
+        grid_entry_manager = GridEntryManager(
+            self.gridpath,
+            gridkind=kind,
+            model_name=self.model_name,
+            grid_name=self.grid_name,
+            original_resolution=self.original_resolution,
+            vert_coord=vert_coord,
+            masked=builder.masked,
+            logger=self.logger
+        )
+        basename = grid_entry_manager.get_basename(aquagrid)
 
         # create the base path for the grid file
         basepath = os.path.join(self.outdir, basename)
@@ -189,41 +205,9 @@ class GridBuilder():
 
         # create the grid entry in the grid file
         if create_yaml:
-            grid_entry_name = builder.create_grid_entry_name(os.path.basename(basepath), vert_coord)
-            grid_block = builder.create_grid_entry_block(gridtype, basepath, vert_coord, metadata=metadata)
-            self.create_grid_entry(grid_entry_name, grid_block, gridtype.kind, rebuild=rebuild)
-    
-    def create_grid_entry(self, grid_entry_name, grid_block, gridkind, rebuild=False):
-        """
-        Create a grid entry in the grid file for the given gridtype.
-
-        Args:
-            grid_entry_name (str): The name of the grid entry.
-            grid_block (dict): The grid block to add to the grid file.
-            gridkind (str): The kind of grid to add to the grid file.
-            rebuild (bool): Whether to rebuild the grid entry if it already exists. Defaults to False
-        """
-
-        self.logger.info("Grid entry name: %s", grid_entry_name)
-        self.logger.info("Grid block: %s", grid_block)
-
-        if self.model_name is None:
-            gridfilename = f'{gridkind}.yaml'
-        else:
-            gridfilename = f'{self.model_name}.yaml'
-        gridfile = os.path.join(self.gridpath, gridfilename)
-
-        # if file do not exist, create it
-        if not os.path.exists(gridfile):
-            self.logger.info("Grid file %s does not exist, creating it", gridfile)
-            final_block = {'grids': {grid_entry_name: grid_block}}
-        # else, add the grid entry to the existing file
-        else:
-            self.logger.info("Grid file %s exists, adding the grid entry %s", gridfile, grid_entry_name)
-            final_block = load_yaml(gridfile)
-            if grid_entry_name in final_block.get('grids', {}) and not rebuild:
-                self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
-                return
-            final_block['grids'][grid_entry_name] = grid_block
-        dump_yaml(gridfile, final_block)
+            grid_entry_name = grid_entry_manager.create_grid_entry_name(aquagrid)
+            cdo_options = metadata.get('cdo_options') if metadata else None
+            remap_method = metadata.get('remap_method') if metadata else None
+            grid_block = grid_entry_manager.create_grid_entry_block(gridtype, basepath, cdo_options=cdo_options, remap_method=remap_method)
+            grid_entry_manager.create_grid_entry(self.model_name, grid_entry_name, grid_block, rebuild=rebuild)
 
