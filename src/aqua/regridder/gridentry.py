@@ -96,9 +96,9 @@ class GridEntryManager:
         Get the grid filename based on the grid kind.
         """
         if cdogrid:
-            gridfilename = f'{gridkind}.yaml'
+            gridfilename = f'{gridkind.lower()}.yaml'
         else:
-            gridfilename = f'{self.model_name}-{gridkind}.yaml'
+            gridfilename = f'{self.model_name}-{gridkind.lower()}.yaml'
         return os.path.join(self.gridpath, gridfilename)
 
     def get_versioned_basepath(self, outdir: str, basename: str, version: Optional[int] = None) -> str:

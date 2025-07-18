@@ -155,25 +155,31 @@ class GridBuilder():
         # Initialize GridEntryManager for this gridtype
         basename = self.gem.get_basename(aquagrid, cdogrid, masked)
 
-        # create the base path for the grid file
-        basepath = self.gem.get_versioned_basepath(self.outdir, basename, version=version)
+        if not cdogrid or masked:
+            self.logger.warning("No CDO grid detected, or mask, need physical file")
 
-        # verify the existence of files and handle versioning
+            # create the base path for the grid file
+            basepath = self.gem.get_versioned_basepath(self.outdir, basename, version=version)
 
-        # check if the file already exists and clean it if needed
-        filename = f"{basepath}.nc"
-        if os.path.exists(filename):
-            if rebuild:
-                self.logger.warning('File %s already exists, removing it', filename)
-                os.remove(filename)
-            else:
-                self.logger.error("File %s already exists, skipping", filename)
-                return
-        
-        # write the grid file with the class specific method
-        builder.write_gridfile(
-            input_file=filename_tmp, output_file=filename, metadata=metadata
-        )
+            # verify the existence of files and handle versioning
+
+            # check if the file already exists and clean it if needed
+            filename = f"{basepath}.nc"
+            if os.path.exists(filename):
+                if rebuild:
+                    self.logger.warning('File %s already exists, removing it', filename)
+                    os.remove(filename)
+                else:
+                    self.logger.error("File %s already exists, skipping", filename)
+                    return
+            
+            # write the grid file with the class specific method
+            builder.write_gridfile(
+                input_file=filename_tmp, output_file=filename, metadata=metadata
+            )
+        else:
+            self.logger.warning("CDO grid %s detected without mask, skipping physical file creation for %s", cdogrid, basename)
+            filename = cdogrid
 
         # cleanup
         self.logger.info('Removing temporary file %s', filename_tmp)
@@ -185,12 +191,13 @@ class GridBuilder():
 
         # create the grid entry in the grid file
         if create_yaml:
+            gridfile = self.gem.get_gridfilename(cdogrid, kind)
+            self.logger.info("Creating grid entry in %s", gridfile)
             grid_entry_name = self.gem.create_grid_entry_name(aquagrid, cdogrid, masked)
             cdo_options = metadata.get('cdo_options') if metadata else None
             remap_method = metadata.get('remap_method') if metadata else None
             grid_block = self.gem.create_grid_entry_block(
                 filename, horizontal_dims=gridtype.horizontal_dims, cdo_options=cdo_options, remap_method=remap_method
             )
-            gridfile = self.gem.get_gridfilename(cdogrid, kind)
             self.gem.create_grid_entry(gridfile, grid_entry_name, grid_block, rebuild=rebuild)
 

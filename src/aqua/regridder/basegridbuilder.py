@@ -1,4 +1,5 @@
 """This module base class for grid type builders and its extensions."""
+import os
 from typing import Optional
 import numpy as np
 import xarray as xr
@@ -190,7 +191,10 @@ class BaseGridBuilder:
             raise
         try:
             regridder = Regridder(weights=weights, cdo_options=cdo_options, loglevel=self.loglevel)
-            data = xr.open_dataset(filename)
+            if os.path.exists(filename):
+                data = xr.open_dataset(filename)
+            else:
+                data = self.cdo.const(f'1,{filename}', options=cdo_options, returnXDataset=True)
             regridder.regrid(data)
             self.logger.info("Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!", remap_method, filename)
         except Exception as e:
