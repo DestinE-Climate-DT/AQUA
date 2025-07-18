@@ -11,6 +11,7 @@ Removed:
 -  removed Reader.info() method (#2076)
 
 AQUA core complete list:
+- Introduce a tentative command to generate grids from sources, `aqua grids build` based on `GridBuilder` class (#2066)
 - `aqua add <catalog>` option in the AQUA console can use GITHUB_TOKEN and GITHUB_USER environment variables to authenticate with GitHub API (#2081)
 - Added a `aqua update -c all` option in the AQUA console to update all the catalogs intalled from the Climate-DT repository (#2081)
 - `Reader` can filter kwargs so that a parameter not available in the intake source is removed and not passed to the intake driver (#2074)

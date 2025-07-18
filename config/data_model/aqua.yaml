@@ -11,7 +11,7 @@ data_model:
     long_name: latitude
     stored_direction: increasing
     units: degrees_north
-    axis: Y
+    #axis: Y
 
   longitude:
     name: lon
@@ -19,7 +19,7 @@ data_model:
     long_name: longitude
     stored_direction: increasing
     units: degrees_east
-    axis: X
+    #axis: X
 
   isobaric:
     name: plev
