@@ -150,9 +150,10 @@ class GridBuilder():
         # get the basename and metadata for the grid file
         metadata = builder.get_metadata(data3d)
         aquagrid = metadata['aquagrid']
-        # Initialize GridEntryManager for this gridtype
+        cdogrid = metadata['cdogrid']
 
-        basename = self.gem.get_basename(aquagrid, masked)
+        # Initialize GridEntryManager for this gridtype
+        basename = self.gem.get_basename(aquagrid, cdogrid, masked)
 
         # create the base path for the grid file
         basepath = self.gem.get_versioned_basepath(self.outdir, basename, version=version)
@@ -184,12 +185,12 @@ class GridBuilder():
 
         # create the grid entry in the grid file
         if create_yaml:
-            grid_entry_name = self.gem.create_grid_entry_name(aquagrid, masked)
+            grid_entry_name = self.gem.create_grid_entry_name(aquagrid, cdogrid, masked)
             cdo_options = metadata.get('cdo_options') if metadata else None
             remap_method = metadata.get('remap_method') if metadata else None
             grid_block = self.gem.create_grid_entry_block(
                 filename, horizontal_dims=gridtype.horizontal_dims, cdo_options=cdo_options, remap_method=remap_method
             )
-            gridfile = self.gem.get_gridfilename(kind)
+            gridfile = self.gem.get_gridfilename(cdogrid, kind)
             self.gem.create_grid_entry(gridfile, grid_entry_name, grid_block, rebuild=rebuild)
 

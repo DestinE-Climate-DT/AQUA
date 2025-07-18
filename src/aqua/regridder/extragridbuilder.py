@@ -32,6 +32,7 @@ class RegularGridBuilder(BaseGridBuilder):
             'cdogrid': cdogrid,
             'aquagrid': aquagrid,
             'remap_method': "con",
+            'kind': 'regular'
         }
 
     def write_gridfile(self, input_file: str, output_file: str, metadata=None):
@@ -66,6 +67,7 @@ class HealpixGridBuilder(BaseGridBuilder):
             'aquagrid': f"hpz{int(zoom)}_nested",
             'remap_method': "con",
             'cdo_options': '--force',
+            'kind': 'healpix'
         }
 
     def write_gridfile(self, input_file: str, output_file: str, metadata=None, cdo=None, logger=None):
@@ -92,11 +94,15 @@ class UnstructuredGridBuilder(BaseGridBuilder):
         Returns:
             dict: Metadata for the Unstructured grid, including nlon, nlat, cdogrid, and aquagrid.
         """
+        if not self.grid_name:
+            raise ValueError("Grid name is not set for UnstructuredGrid, please provide it")
+
         return {
-            'aquagrid': self.model_name,
+            'aquagrid': self.grid_name,
             'cdogrid': None,
             'size': data['mask'].size,
             'remap_method': "con",
+            'kind': 'unstructured',
         }
 
 class CurvilinearGridBuilder(BaseGridBuilder):
@@ -114,6 +120,9 @@ class CurvilinearGridBuilder(BaseGridBuilder):
         Returns:
             dict: Metadata for the Curvilinear grid, including nlon, nlat, cdogrid, and aquagrid.
         """
+        if not self.grid_name:
+            raise ValueError("Grid name is not set for CurvilinearGrid, please provide it")
+
         if self.has_bounds(data):
             remap_method = "con"
         else:
@@ -121,9 +130,10 @@ class CurvilinearGridBuilder(BaseGridBuilder):
             remap_method = "bil"
 
         return {
-            'aquagrid': self.model_name,
+            'aquagrid': self.grid_name,
             'cdogrid': None,
             'size': data['mask'].size,
             'remap_method': remap_method,
+            'kind': 'curvilinear'
         }
 

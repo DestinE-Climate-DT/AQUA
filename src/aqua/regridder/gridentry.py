@@ -40,44 +40,34 @@ class GridEntryManager:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name='GridEntryManager')
 
-    def get_basename(self, aquagrid: Optional[str] = None, masked: Optional[str] = None) -> str:
+    def get_basename(
+        self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None) -> str:
         """
         Get the basename for the grid type based on the context and aquagrid name.
         """
-
-        # default: if grid name is set, use it, otherwise use the aquagrid name
-        if self.grid_name:
-            basename = self.grid_name
-        elif aquagrid:
-            basename = aquagrid
-        else:
-            raise ValueError("Aquagrid name is not set, please provide at least a grid name")
         
-        # if masked is not set, return the basename
-        if masked is None:
-            return basename
+        # if masked is not set
+        if not masked:
+            if cdogrid:
+                return aquagrid
+            if aquagrid and self.model_name:
+                return f"{self.model_name}_{aquagrid}"          
+            raise ValueError("Grid name or model name are not set, please provide at least a grid name")
 
-        # land masking: not supported yet
-        if masked == "land":
-            raise NotImplementedError("Land masking is not implemented yet!")
-        # oceanic masking: improvement needed, add oceanic native resolution
-        if masked == "oce":
-            if self.original_resolution:
-                basename += f"_{self.original_resolution}"
-            basename += "_oce"
-            if self.vert_coord:
-                basename += f"_{self.vert_coord}"
+        # masking
+        basename = f"{self.model_name}"
+        if self.original_resolution:
+            basename += f"_{self.original_resolution}"
+        basename += f"_{aquagrid}"
+        if self.vert_coord:
+            basename += f"_3d_{self.vert_coord}"
         else:
-            raise ValueError(f"Masked type {masked} not supported")
+            basename += "_2d"
         return basename
 
-    def create_grid_entry_name(self, aquagrid: Optional[str] = None, masked: Optional[str] = None) -> str:
+    def create_grid_entry_name(self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None) -> str:
         """Create a grid entry name based on the grid type and vertical coordinate."""
-        name = self.get_basename(aquagrid, masked=masked)
-        if self.vert_coord is not None:
-            name = name.replace(self.vert_coord, '3d')
-        name = name.replace('_oce_', '_').replace('_', '-')
-        return name
+        return self.get_basename(aquagrid, cdogrid, masked).replace('_', '-')
 
     def create_grid_entry_block(
         self,
@@ -101,16 +91,14 @@ class GridEntryManager:
             grid_block['remap_method'] = remap_method
         return grid_block
 
-    def get_gridfilename(self, gridkind: Optional[str] = None) -> str:
+    def get_gridfilename(self, cdogrid, gridkind) -> str:
         """
         Get the grid filename based on the grid kind.
         """
-        if self.model_name is None:
-            if gridkind is None:
-                raise ValueError("Model name is not set, please provide at least a grid kind")
+        if cdogrid:
             gridfilename = f'{gridkind}.yaml'
         else:
-            gridfilename = f'{self.model_name}.yaml'
+            gridfilename = f'{self.model_name}-{gridkind}.yaml'
         return os.path.join(self.gridpath, gridfilename)
 
     def get_versioned_basepath(self, outdir: str, basename: str, version: Optional[int] = None) -> str:

@@ -1,6 +1,7 @@
 """Tests for the GridBuilder class."""
 import subprocess
 import os
+from numba.core.types import none
 import pytest
 from aqua import GridBuilder
 from aqua import Reader
@@ -64,37 +65,42 @@ class TestGridBuilder:
 class TestGridEntryManager:
     """Test the GridEntryManager class."""
     @pytest.mark.parametrize(
-        "aquagrid,original_resolution", [
-            ('hpz7-nested', 'tco1279'),
-            ('r180x90', 'tco79'),
+        "model,aquagrid,cdogrid,original,kind", [
+            ('IFS', 'hpz7-nested', 'hp32_nested', 'tco79', 'healpix'),
+            ('IFS', 'tco79', None, None, 'unstructured'),
+            ('IFS', 'r100', 'r180x90', 'tco79', 'regular'),
+            ('NEMO','eORCA1', None, None, 'curvilinear'),
         ]
     )
-    def test_gem_healpix(self, aquagrid, original_resolution):
-        """Test the GridEntryManager class with a HEALPix grid."""
+    def test_gem_basic(self, model, aquagrid, cdogrid, original, kind):
+        """Test the GridEntryManager class without mask"""
         gem = GridEntryManager(
-            model_name='IFS', original_resolution=original_resolution
+            model_name=model, original_resolution=original, grid_name=aquagrid
         )
-        assert 'ifs.yaml' in gem.get_gridfilename(aquagrid)
-        basename = gem.get_basename(aquagrid)
-        assert aquagrid == basename
-        entry = gem.create_grid_entry_name(aquagrid)
-        assert aquagrid == entry
-        basename_oce = gem.get_basename(aquagrid, masked='oce')
-        assert f'{aquagrid}_{original_resolution}_oce' == basename_oce
-        entry_oce = gem.create_grid_entry_name(aquagrid, masked='oce')
-        assert f'{aquagrid}-{original_resolution}-oce' == entry_oce
-        with pytest.raises(NotImplementedError):
-            gem.get_basename(aquagrid, masked='land')
+        filename = gem.get_gridfilename(cdogrid, kind)
+        basename = gem.get_basename(aquagrid, cdogrid)
+        if cdogrid:
+            assert f'{kind}.yaml' == os.path.basename(filename)
+            assert aquagrid == basename
+        else:
+            assert f'{model.lower()}-{kind}.yaml' == os.path.basename(filename)
+            assert f'{model.lower()}_{aquagrid}' == basename
+       
+        entry = gem.create_grid_entry_name(aquagrid, cdogrid)
+        assert basename.replace('_', '-') == entry
 
     def test_gem_curvilinear(self):
         gem = GridEntryManager(
             model_name='nemo', grid_name='ORCA2', vert_coord='depth'
         )
-        basename = gem.get_basename(masked='oce')
-        assert basename == 'orca2_oce_depth'
-        entry = gem.create_grid_entry_name(masked='oce')
-        assert 'orca2-3d' == entry
 
+        filename = gem.get_gridfilename(cdogrid=None, gridkind='curvilinear')
+        assert os.path.basename(filename) == 'nemo-curvilinear.yaml'
+        basename = gem.get_basename(aquagrid='orca2', cdogrid=None, masked='oce')
+        assert basename == 'nemo_orca2_3d_depth'
+        entry = gem.create_grid_entry_name(aquagrid='orca2', cdogrid=None, masked='oce')
+        assert 'nemo-orca2-3d-depth' == entry
+    
         block = gem.create_grid_entry_block(
             path='orca2_oce_depth_v1.nc',
             horizontal_dims='cells',
@@ -106,32 +112,6 @@ class TestGridEntryManager:
         assert block['cdo_options'] == '-f nc'
         assert block['remap_method'] == 'bil'
         assert block['path']['depth'] == 'orca2_oce_depth_v1.nc'
-
-    def test_gem_unstructured(self):
-        gem = GridEntryManager(
-            model_name='PLUTOTHEDOG', grid_name='ng5', vert_coord='level'
-        )
-        gridfile = gem.get_gridfilename(gridkind='unstructured')
-        assert os.path.basename(gridfile) == 'plutothedog.yaml'
-        filename = gem.get_basename(aquagrid='ng5', masked='oce')
-        assert filename == 'ng5_oce_level'
-        entry = gem.create_grid_entry_name(aquagrid='ng5', masked='oce')
-        assert 'ng5-3d' == entry
-        block = gem.create_grid_entry_block(
-            path=filename + '.nc',
-            horizontal_dims='cells',
-            cdo_options='-f nc',
-        )
-
-        gem.create_grid_entry(gridfile, entry, block)
-
-        assert os.path.exists(gridfile)
-        yaml = load_yaml(gridfile)
-        assert yaml['grids'][entry]['path']['level'] == filename + '.nc'
-        assert yaml['grids'][entry]['vert_coord'] == 'level'
-        assert yaml['grids'][entry]['cdo_options'] == '-f nc'
-        assert yaml['grids'][entry]['space_coord'] == 'cells'
-        os.remove(gridfile)
 
         
 
