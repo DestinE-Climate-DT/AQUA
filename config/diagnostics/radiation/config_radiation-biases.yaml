@@ -51,12 +51,26 @@ diagnostics:
       tnlwrf+tnswrf-tnlwrfcs-tnswrfcs:
         short_name: "cre_toa_net"
         long_name: "Net cloud radiative effect at TOA (All Sky - Clear Sky)"
-    plot_params:
-      limits:
-        2d_maps:
-          tnlwrf: {vmin: -30, vmax: 30}
-          tnswrf: {vmin: -30, vmax: 30}
-          tnr: {vmin: -30, vmax: 30}
-          cre_toa_net: {vmin: -55, vmax: 55}
-          cre_toa_sw: {vmin: -55, vmax: 55}
-          cre_toa_lw: {vmin: -55, vmax: 55}
+    plot_params: 
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      tnlwrf:
+        vmin: -30
+        vmax: 30
+      tnswrf:
+        vmin: -30
+        vmax: 30
+      tnr:
+        vmin: -30
+        vmax: 30
+      cre_toa_net:
+        vmin: -55
+        vmax: 55
+      cre_toa_sw:
+        vmin: -55
+        vmax: 55
+      cre_toa_lw:
+        vmin: -55
+        vmax: 55
+      
