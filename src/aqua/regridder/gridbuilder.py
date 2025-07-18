@@ -6,7 +6,6 @@ from typing import Optional, Any
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath
 from aqua.regridder.extragridbuilder import HealpixGridBuilder, RegularGridBuilder
 from aqua.regridder.extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
 from aqua.regridder.gridentry import GridEntryManager
@@ -61,11 +60,14 @@ class GridBuilder():
         # vertical coordinates to consider for the grid build for the 3d case.
         self.vert_coord = vert_coord
 
-        # get useful paths
-        self.configpath = ConfigPath().get_config_dir()
-        self.gridpath = os.path.join(self.configpath, 'grids')
-        # Initialize GridEntryManager
-        # self.grid_entry_manager = GridEntryManager(self.gridpath, logger=self.logger) # This line is removed
+        # Initialize GridEntryManager to generate the grid file name and entry
+        self.gem = GridEntryManager(
+            model_name=self.model_name,
+            grid_name=self.grid_name,
+            original_resolution=self.original_resolution,
+            vert_coord=vert_coord,
+            loglevel=loglevel
+        )
 
 
     def build(self, data, rebuild=False, version=None, verify=True, create_yaml=True):
@@ -86,7 +88,7 @@ class GridBuilder():
             return
         self.logger.info("Build on %s gridtypes", len(gridtypes))
         for gridtype in gridtypes:
-            self._build_gridtype(data, gridtype, rebuild=rebuild, version=version, verify=verify)
+            self._build_gridtype(data, gridtype, rebuild=rebuild, version=version, verify=verify, create_yaml=create_yaml)
             
     def _build_gridtype(
         self,
@@ -113,8 +115,6 @@ class GridBuilder():
         # vertical coordinate detection
         vert_coord = self.vert_coord if self.vert_coord else gridtype.vertical_dim
         self.logger.info("Detected vertical coordinate: %s", vert_coord)
-
-
 
         # Initialize the builder
         builder = BuilderClass(
@@ -144,40 +144,20 @@ class GridBuilder():
         # TODO: this will likely not work for 3d unstructured grids.
         # An alternative might be to check if the NaN are changing along the vertical coordinate.
         data2d = builder.select_2d_slice(data3d, vert_coord)
-        builder.detect_mask_type(data2d)
+        masked = builder.detect_mask_type(data2d)
         self.logger.info("Masked type: %s", builder.masked)
 
         # get the basename and metadata for the grid file
         metadata = builder.get_metadata(data3d)
         aquagrid = metadata['aquagrid']
         # Initialize GridEntryManager for this gridtype
-        grid_entry_manager = GridEntryManager(
-            self.gridpath,
-            gridkind=kind,
-            model_name=self.model_name,
-            grid_name=self.grid_name,
-            original_resolution=self.original_resolution,
-            vert_coord=vert_coord,
-            masked=builder.masked,
-            logger=self.logger
-        )
-        basename = grid_entry_manager.get_basename(aquagrid)
+
+        basename = self.gem.get_basename(aquagrid, masked)
 
         # create the base path for the grid file
-        basepath = os.path.join(self.outdir, basename)
+        basepath = self.gem.get_versioned_basepath(self.outdir, basename, version=version)
 
         # verify the existence of files and handle versioning
-        existing_files = glob(f"{basepath}*.nc")
-        self.logger.info("Existing files: %s", existing_files)
-        if existing_files and version is None:
-            pattern = re.compile(r"_v\d+\.nc$")
-            check_version = [bool(pattern.search(file)) for file in existing_files]
-            if any(check_version):
-                raise ValueError(f"Versioned files already exist for {basepath}. Please specify a version")
-
-        # check if version has been defined and set the filename accordingly
-        if version is not None:
-            basepath = f"{basepath}_v{version}"
 
         # check if the file already exists and clean it if needed
         filename = f"{basepath}.nc"
@@ -202,12 +182,14 @@ class GridBuilder():
         if verify:
             builder.verify_weights(filename, metadata=metadata)
 
-
         # create the grid entry in the grid file
         if create_yaml:
-            grid_entry_name = grid_entry_manager.create_grid_entry_name(aquagrid)
+            grid_entry_name = self.gem.create_grid_entry_name(aquagrid, masked)
             cdo_options = metadata.get('cdo_options') if metadata else None
             remap_method = metadata.get('remap_method') if metadata else None
-            grid_block = grid_entry_manager.create_grid_entry_block(gridtype, basepath, cdo_options=cdo_options, remap_method=remap_method)
-            grid_entry_manager.create_grid_entry(self.model_name, grid_entry_name, grid_block, rebuild=rebuild)
+            grid_block = self.gem.create_grid_entry_block(
+                filename, horizontal_dims=gridtype.horizontal_dims, cdo_options=cdo_options, remap_method=remap_method
+            )
+            gridfile = self.gem.get_gridfilename(kind)
+            self.gem.create_grid_entry(gridfile, grid_entry_name, grid_block, rebuild=rebuild)
 

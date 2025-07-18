@@ -1,5 +1,5 @@
 """This module base class for grid type builders and its extensions."""
-from typing import Optional, Any, Dict
+from typing import Optional
 import numpy as np
 import xarray as xr
 from cdo import Cdo
@@ -168,6 +168,7 @@ class BaseGridBuilder:
             self.masked = "land"
         else:
             raise ValueError(f"Unexpected nan count {nan_count}")
+        return self.masked
 
     def verify_weights(
         self, filename, target_grid="r180x90", metadata=None

@@ -3,6 +3,7 @@ import subprocess
 import pytest
 from aqua import GridBuilder
 from aqua import Reader
+from aqua.regridder.gridentry import GridEntryManager
 
 
 @pytest.mark.aqua
@@ -24,14 +25,14 @@ class TestGridBuilder:
         reader = Reader(model='IFS', exp='test-tco79', source='long', loglevel='debug', areas=False, fix=False)
         data = reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution='tco79')
-        grid_builder.build(data, verify=True, rebuild=rebuild)
+        grid_builder.build(data, verify=True, rebuild=rebuild, create_yaml=False)
     
     def test_grid_curvilinear(self, tmp_path):
         """Test the GridBuilder class with a regular grid."""
         reader = Reader(model='ECE4-FAST', exp='test', source='monthly-oce', loglevel='debug', areas=False)
         data = reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, model_name='nemo', grid_name='ORCA2')
-        grid_builder.build(data, verify=False) #set to False since it is very heavy
+        grid_builder.build(data, verify=False, create_yaml=False) #set to False since it is very heavy
 
     def test_grid_unstructured(self, tmp_path):
         """Test the GridBuilder class with an unstructured grid."""
@@ -55,5 +56,42 @@ class TestGridBuilder:
             '--verify', '--outdir', tmp_path
         ]
         subprocess.run(command, check=True)
+
+
+@pytest.mark.aqua
+class TestGridEntryManager:
+    """Test the GridEntryManager class."""
+    @pytest.mark.parametrize(
+        "aquagrid,original_resolution", [
+            ('hpz7-nested', 'tco1279'),
+            ('r180x90', 'tco79'),
+        ]
+    )
+    def test_gem_healpix(self, aquagrid, original_resolution):
+        """Test the GridEntryManager class with a HEALPix grid."""
+        gem = GridEntryManager(
+            model_name='IFS', original_resolution=original_resolution
+        )
+        assert 'ifs.yaml' in gem.get_gridfilename(aquagrid)
+        basename = gem.get_basename(aquagrid)
+        assert aquagrid == basename
+        entry = gem.create_grid_entry_name(aquagrid)
+        assert aquagrid == entry
+        basename_oce = gem.get_basename(aquagrid, masked='oce')
+        assert f'{aquagrid}_{original_resolution}_oce' == basename_oce
+        entry_oce = gem.create_grid_entry_name(aquagrid, masked='oce')
+        assert f'{aquagrid}-{original_resolution}-oce' == entry_oce
+        with pytest.raises(NotImplementedError):
+            gem.get_basename(aquagrid, masked='land')
+
+    def test_gem_curvilinear(self):
+        gem = GridEntryManager(
+            model_name='nemo', grid_name='ORCA2', vert_coord='depth'
+        )
+        basename = gem.get_basename(masked='oce')
+        assert basename == 'orca2_oce_depth'
+        entry = gem.create_grid_entry_name(masked='oce')
+        assert 'orca2-3d' == entry
+
 
 
