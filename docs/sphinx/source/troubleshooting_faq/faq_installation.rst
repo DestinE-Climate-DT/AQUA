@@ -8,7 +8,8 @@ Resource is busy
 
 It is possible that, if you're recreating the environment, the code breaks while removing the folder ``~/mambaforge/aqua/bin``, complaining the resource is busy.
 In this case you may have some processes running in the background. 
-You can check them with ``ps -ef | grep aqua | grep $USER``. and kill them manually if needed.
+You can check them with ``ps -ef | grep aqua | grep $USER``. and kill them manually if needed.  
+Even in the event of an unexpected termination during the reinstallation of the container, it may be necessary to manually terminate the processes and then repeat the reinstallation.
 
 Pip dependency resolution
 -------------------------

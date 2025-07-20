@@ -93,8 +93,8 @@ class Diagnostic():
             self.logger.error('Data to save as netcdf must be an xarray Dataset or DataArray')
 
         outputsaver = OutputSaver(diagnostic=diagnostic, 
-                                  catalog=self.catalog, model=self.model, exp=self.exp, 
-                                  outdir=outdir, rebuild=rebuild, loglevel=self.logger.level)
+                                  catalog=self.catalog, model=self.model, exp=self.exp,
+                                  outdir=outdir, loglevel=self.logger.level)
 
         outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, **kwargs)
 

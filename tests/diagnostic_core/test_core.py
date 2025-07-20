@@ -42,7 +42,7 @@ def test_class_diagnostic(tmp_path):
                      outdir=outdir,
                      rebuild=True)
 
-    assert outdir.joinpath('netcdf/test.save.ci.ERA5.era5-hpz3.nc').exists()
+    assert outdir.joinpath('netcdf/test.save.ci.ERA5.era5-hpz3.r1.nc').exists()
     
     #test select_region
     region, diagnostic = None, None #testing when region is None

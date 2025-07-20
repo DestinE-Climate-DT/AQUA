@@ -55,6 +55,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          path: AQUA
       # The FDB docker image does not have git and other dependencies
       - name: Install GH Actions dependencies
         run: |
@@ -63,7 +65,7 @@ jobs:
             apt-get install -y \
               curl \
               git \
-              rustc
+              gpg
       - name: Checkout Climate-DT-catalog repository
         uses: actions/checkout@v4
         with:
@@ -80,7 +82,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
-          environment-file: environment.yml 
+          environment-file: AQUA/environment.yml 
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -97,19 +99,22 @@ jobs:
           python -m pip install flake8
       - name: Lint with flake8
         run: |
+          # compile code to check for syntax errors
+          python -W error -m compileall -f -q src
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
       - name: Download and set up tests
         run: |
+          cd AQUA
           ./download_data_for_tests.sh
       - name: Set up FDB
         run: |
           export
           # FDB for GSV
           rm -rf /app/
-          cp -r ./AQUA_tests/fdb/ /app/
+          cp -r ./AQUA/AQUA_tests/fdb/ /app/
           cat /app/etc/fdb/config.yaml
           mkdir -pv /app/localroot/
           cd /app/
@@ -126,11 +131,27 @@ jobs:
         run: |
           # Initialize the AQUA catalog in the $HOME/.aqua folder
           aqua -vv install github
+          # Add the climatedt-phase1 catalog (for polytope testing)
+          aqua -vv add climatedt-phase1
           # Add the ci/cd catalog
           aqua -vv add ci
           # Double check the catalogs
           aqua -vv list
+          # add default paths to the config
+          cat >> $HOME/.aqua/config-aqua.yaml <<EOF
+          paths:
+              grids: ./AQUA_tests/grids
+              weights: ./AQUA_tests/weights
+              areas: ./AQUA_tests/weights
+          EOF
+          # Set up polytope secrets
+          cat >$HOME/.polytopeapirc << EOF
+          {
+            "user_key": "${{ secrets.POLYTOPE_KEY }}"
+          }
+          EOF
       - name: Run tests
         run: |
+          cd AQUA
           # Produce the HTML report. Defaults to writing in htmlcov/index.html.
           pytest -m "aqua or slow or gsv or graphics or catgen or diagnostics"

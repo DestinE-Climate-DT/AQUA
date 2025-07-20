@@ -243,7 +243,7 @@ class Hovmoller(Diagnostic):
             super().save_netcdf(
                 data=processed_data,
                 diagnostic=diagnostic,
-                diagnostic_product=f"{diagnostic_product}_{processed_data.attrs["AQUA_ocean_drift_type"]}",
+                diagnostic_product=f"{diagnostic_product}_{processed_data.attrs['AQUA_ocean_drift_type']}",
                 outdir=outputdir,
                 rebuild=rebuild,
                 extra_keys={"region": region}

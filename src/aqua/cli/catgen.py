@@ -214,9 +214,9 @@ class AquaFDBGenerator:
             'oce2d' if profile["levtype"] == 'o2d' else
             'oce3d' if profile["levtype"] == 'o3d' and 'full' in profile['vertical'] else
             'oce3d-half' if profile["levtype"] == 'o3d' and 'half' in profile['vertical'] else
-            'sol4' if profile["levtype"] == 'sol' and profile['vertical'] == 'sol4' else
-            'sol5' if profile["levtype"] == 'sol' and profile['vertical'] == 'sol5' else
-            profile["levtype"]
+            'sol4' if profile["levtype"] == 'sol' and profile['vertical'] == 'IFS-sol4' or profile['vertical'] == 'ICON-sol4' else
+            'sol5' if profile["levtype"] == 'sol' and profile['vertical'] == 'IFS-sol5' or profile['vertical'] == 'ICON-sol5' else
+            profile["levtype"] 
         )
 
         if not self.ocean_grid:

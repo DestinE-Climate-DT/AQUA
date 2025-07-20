@@ -165,6 +165,11 @@ class TestAquaConsole():
             run_aqua(['-v', 'add', 'antani'])
             assert excinfo.value.code == 1
 
+        # add from wrongly formatted repository
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['-v', 'add', 'pippo', '--repository', 'thisisnotauserandrepo'])
+            assert excinfo.value.code == 1
+
         # add existing folder which is not a catalog
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(['add', 'config/fixes'])
@@ -301,6 +306,11 @@ class TestAquaConsole():
         # add catalog with editable option
         run_aqua(['-v', 'add', 'ci', '-e', 'AQUA_tests/catalog_copy'])
         assert os.path.isdir(os.path.join(mydir, '.aqua/catalogs/ci'))
+
+        # update a catalog installed in editable mode
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['-v', 'update', '-c', 'ci'])
+            assert excinfo.value.code == 1
 
         # add catalog again and error
         with pytest.raises(SystemExit) as excinfo:
@@ -494,6 +504,11 @@ class TestAquaConsole():
 
         assert 'climatedt-phase1' in out
         assert 'lumi-phase1' in out
+
+        run_aqua(['-v', 'update', '-c', 'all'])
+
+        out, _ = capfd.readouterr()
+        assert '.aqua/catalogs/ci ..' in out
 
         # uninstall everything again
         run_aqua_console_with_input(['uninstall'], 'yes')

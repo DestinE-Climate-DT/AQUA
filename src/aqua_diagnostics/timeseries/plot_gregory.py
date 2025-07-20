@@ -132,8 +132,8 @@ class PlotGregory(PlotBaseMixin):
         """Set the reference label for the plot"""
         # TODO: Improve this to avoid the Try/Except
         try:
-            ref_label = f"{self.ref_models["t2m"]} {self.ref_exps["t2m"]}"
-            ref_label += f" {self.ref_models["net_toa"]} {self.ref_exps["net_toa"]}"
+            ref_label = f"{self.ref_models['t2m']} {self.ref_exps['t2m']}"
+            ref_label += f" {self.ref_models['net_toa']} {self.ref_exps['net_toa']}"
         except KeyError:
             ref_label = None
 

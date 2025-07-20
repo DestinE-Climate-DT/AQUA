@@ -181,9 +181,11 @@ As shown below, it is also possible to specify a local path and install the cata
     The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
     If this option is not specified, the default repository will be used.
 
-.. note::
-
-    With the editable mode it is possible to install a catalog not present in the Climate-DT repository.
+.. warning::
+    Adding a catalog not in editable mode makes use of GitHub API.
+    These are limited to 60 requests per hour for unauthenticated users and it may easily hit the limit.
+    If you encounter this issue, you can generate a personal access token and set it as an environment variable
+    ``GITHUB_TOKEN``, together with a ``GITHUB_USER`` variable with your GitHub username.
 
 .. _aqua-remove:
 
@@ -251,6 +253,7 @@ It is very useful if you pull a new version of AQUA and want to update your loca
     This command will check if there is a new version of the catalog available and update it by overwriting the current installation.
     This will work only for catalogs installed from the Climate-DT repository.
     If the catalog is installed in editable mode, this command will not work.
+    It is possible to specify 'all' as catalog name to update all the catalogs installed not in editable mode.
 
 
 .. _aqua-fixes:
