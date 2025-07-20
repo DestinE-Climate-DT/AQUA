@@ -35,6 +35,8 @@ def builder_parser(parser=None):
                         help='Original resolution of the grid [default: None]')
     parser.add_argument('--modelname', type=str,
                         help='alternative name for the model for grid naming [default: None]')
+    parser.add_argument('--gridname', type=str,
+                        help='alternative name for the grid for grid naming [default: None]. Required for Curvilinear and Unstructured grids.')
     parser.add_argument('--fix', action='store_true',
                         help='Fix the original source [default: False]')
     parser.add_argument('--verify', action='store_true', default=False,
@@ -65,7 +67,8 @@ def builder_execute(args):
     loglevel = get_arg(args, 'loglevel', builder_config.get('loglevel', 'WARNING'))
     outdir = get_arg(args, 'outdir', builder_config.get('outdir', '.'))
     original_resolution = get_arg(args, 'original', builder_config.get('original'))
-    model_name = get_arg(args, 'modelname', builder_config.get('modelname'))
+    modelname = get_arg(args, 'modelname', builder_config.get('modelname'))
+    gridname = get_arg(args, 'gridname', builder_config.get('gridname'))
     rebuild = get_arg(args, 'rebuild', builder_config.get('rebuild', False))
     version = get_arg(args, 'version', builder_config.get('version'))
     verify = get_arg(args, 'verify', builder_config.get('verify', False))
@@ -83,15 +86,18 @@ def builder_execute(args):
     reader = Reader(catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix)
     data = reader.retrieve()
 
-    model_name = model_name.lower() if model_name else model.lower()
-
     # Create GridBuilder instance
     grid_builder = GridBuilder(
         loglevel=loglevel,
-        outdir=outdir, original_resolution=original_resolution,
-        model_name=model_name
+        outdir=outdir, 
+        original_resolution=original_resolution,
+        model_name=modelname,
+        grid_name=gridname
     )
 
     # Build the grid
-    grid_builder.build(data, rebuild, version, verify, create_yaml)
+    grid_builder.build(
+        data, rebuild=rebuild, 
+        version=version, verify=verify, 
+        create_yaml=create_yaml)
     

@@ -85,8 +85,11 @@ class GridBuilder():
             return
         self.logger.info("Build on %s gridtypes", len(gridtypes))
         for gridtype in gridtypes:
-            self._build_gridtype(data, gridtype, rebuild=rebuild, version=version, verify=verify, create_yaml=create_yaml)
-            
+            self._build_gridtype(
+                data, gridtype, rebuild=rebuild,
+                version=version, verify=verify,
+                create_yaml=create_yaml)
+
     def _build_gridtype(
         self,
         data: Any,
@@ -134,7 +137,7 @@ class GridBuilder():
 
         # configure attributes for the grid file
         data3d = builder.clean_attributes(data3d)
-        
+
         data3d.to_netcdf(filename_tmp)
 
         # select the 2D slice of the data and detect the mask type
@@ -169,7 +172,7 @@ class GridBuilder():
                 else:
                     self.logger.error("File %s already exists, skipping", filename)
                     return
-            
+
             # write the grid file with the class specific method
             builder.write_gridfile(
                 input_file=filename_tmp, output_file=filename, metadata=metadata
@@ -198,4 +201,3 @@ class GridBuilder():
                 vert_coord=vert_coord
             )
             self.gem.create_grid_entry(gridfile, grid_entry_name, grid_block, rebuild=rebuild)
-

@@ -15,10 +15,13 @@ class BaseGridBuilder:
     requires_bounds = False
     bounds_error_message = "Data has no bounds, cannot create grid"
     logger_name = "BaseGridBuilder"
+    CDOZIP = "-f nc4 -z zip"
 
     def __init__(
         self, vert_coord,
-        original_resolution, model_name, grid_name=None, loglevel='warning'
+        original_resolution,
+        model_name, grid_name=None,
+        loglevel='warning'
         ):
         """
         Initialize the BaseGridBuilder.
@@ -27,6 +30,7 @@ class BaseGridBuilder:
             vert_coord (str): The vertical coordinate if applicable.
             original_resolution (str): The original resolution of the data.
             model_name (str): The name of the model.
+            grid_name (str): The name of the grid.
             loglevel (str): The logging level for the logger. Defaults to 'warning'.
         """
         self.masked = None
@@ -64,7 +68,7 @@ class BaseGridBuilder:
                 self.logger.debug("Removing axis for %s", coord)
                 if 'axis' in data[coord].attrs:
                     del data[coord].attrs['axis']
-   
+
             # remove bounds which can confuse CDO
             if not self.has_bounds(data):
                 self.logger.debug("No bounds found for %s", coord)
@@ -75,9 +79,9 @@ class BaseGridBuilder:
         # adding vertical properties
         if self.vert_coord:
             data[self.vert_coord].attrs['axis'] = 'Z'
-        
+
         return data
-    
+
     def has_bounds(self, data):
         """
         Check if the data has bounds.
@@ -212,6 +216,6 @@ class BaseGridBuilder:
             cdo: CDO instance for grid operations (optional).
         """
         if not metadata or not metadata.get('cdogrid'):
-            self.cdo.copy(input=input_file, output=output_file, options="-f nc4 -z zip")
+            self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)
         else:
             raise ValueError("cdogrid is not set in the metadata")

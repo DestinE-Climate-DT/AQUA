@@ -41,7 +41,7 @@ class RegularGridBuilder(BaseGridBuilder):
         """
         if metadata is None:
             raise ValueError("metadata must be provided for RegularGridTypeBuilder.write_gridfile")
-        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options="-f nc4 -z zip")
+        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
 
 class HealpixGridBuilder(BaseGridBuilder):
     """
@@ -49,7 +49,7 @@ class HealpixGridBuilder(BaseGridBuilder):
     """
     logger_name = "HEALpixGridBuilder"
     requires_bounds = False
-    
+
     def get_metadata(self, data):
         """
         Get metadata for the HEALPix grid based on the data size.
@@ -70,13 +70,13 @@ class HealpixGridBuilder(BaseGridBuilder):
             'kind': 'healpix'
         }
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None, cdo=None, logger=None):
+    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
         """
         Write the grid file using CDO setgrid for HEALPix grids.
         """
         if metadata is None:
             raise ValueError("metadata and cdo must be provided for HealpixGridTypeBuilder.write_gridfile")
-        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options="-f nc4 -z zip")
+        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
 
 class UnstructuredGridBuilder(BaseGridBuilder):
     """
@@ -136,4 +136,3 @@ class CurvilinearGridBuilder(BaseGridBuilder):
             'remap_method': remap_method,
             'kind': 'curvilinear'
         }
-
