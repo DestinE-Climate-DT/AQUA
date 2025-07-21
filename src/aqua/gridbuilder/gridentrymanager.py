@@ -63,7 +63,9 @@ class GridEntryManager:
             basename += "_2d"
         return basename
 
-    def create_grid_entry_name(self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
+    def create_grid_entry_name(
+            self, aquagrid: str, cdogrid: Optional[str] = None, 
+            masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
         """Create a grid entry name based on the grid type and vertical coordinate."""
         return self.get_basename(aquagrid, cdogrid, masked, vert_coord).replace('_', '-')
 

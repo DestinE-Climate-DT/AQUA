@@ -3,7 +3,7 @@ This module contains the specific grid type builders for the different grid type
 """
 
 import numpy as np
-from aqua.regridder.basegridbuilder import BaseGridBuilder
+from .basegridbuilder import BaseGridBuilder
 
 class RegularGridBuilder(BaseGridBuilder):
     """

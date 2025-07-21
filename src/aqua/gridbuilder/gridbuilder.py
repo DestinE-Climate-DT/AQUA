@@ -4,9 +4,9 @@ from typing import Optional, Any
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.regridder.extragridbuilder import HealpixGridBuilder, RegularGridBuilder
-from aqua.regridder.extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
-from aqua.regridder.gridentry import GridEntryManager
+from .extragridbuilder import HealpixGridBuilder, RegularGridBuilder
+from .extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
+from .gridentrymanager import GridEntryManager
 
 class GridBuilder():
     """

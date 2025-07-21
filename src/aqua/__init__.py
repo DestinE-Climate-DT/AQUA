@@ -4,7 +4,8 @@ from .graphics import plot_single_map, plot_maps, plot_single_map_diff, plot_tim
 from .graphics import plot_hovmoller
 from .lra_generator import LRAgenerator
 from .reader import Reader, catalog, Streaming, inspect_catalog
-from .regridder import Regridder, GridBuilder
+from .regridder import Regridder
+from .gridbuilder import GridBuilder
 from .fldstat import FldStat
 from .fixer import Fixer
 from .accessor import AquaAccessor
