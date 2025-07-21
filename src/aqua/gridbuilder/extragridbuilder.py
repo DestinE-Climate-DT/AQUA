@@ -5,6 +5,7 @@ This module contains the specific grid type builders for the different grid type
 import numpy as np
 from .basegridbuilder import BaseGridBuilder
 
+
 class RegularGridBuilder(BaseGridBuilder):
     """
     Class to build regular lon-lat grid files.
@@ -15,7 +16,7 @@ class RegularGridBuilder(BaseGridBuilder):
     def get_metadata(self, data):
         """
         Get metadata for the lon-lat grid based on the data size.
-        Args: 
+        Args:
             data (xarray.Dataset): The dataset containing grid data.
         Returns:
             dict: Metadata for the lon-lat grid, including nlon, nlat, cdogrid, and aquagrid.
@@ -23,7 +24,7 @@ class RegularGridBuilder(BaseGridBuilder):
         nlon = data['lon'].size
         nlat = data['lat'].size
         cdogrid = f"r{nlon}x{nlat}"
-        aquagrid = f"r{int(36000/nlon)}"
+        aquagrid = f"r{int(36000 / nlon)}"
         if nlat % 2 == 1:
             aquagrid += "s"
         return {
@@ -43,6 +44,7 @@ class RegularGridBuilder(BaseGridBuilder):
             raise ValueError("metadata must be provided for RegularGridTypeBuilder.write_gridfile")
         self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
 
+
 class HealpixGridBuilder(BaseGridBuilder):
     """
     Class to build HEALPix grid files.
@@ -53,7 +55,7 @@ class HealpixGridBuilder(BaseGridBuilder):
     def get_metadata(self, data):
         """
         Get metadata for the HEALPix grid based on the data size.
-        Args: 
+        Args:
             data (xarray.Dataset): The dataset containing grid data.
         Returns:
             dict: Metadata for the HEALPix grid, including nside, zoom, cdogrid, and aquagrid.
@@ -78,6 +80,7 @@ class HealpixGridBuilder(BaseGridBuilder):
             raise ValueError("metadata and cdo must be provided for HealpixGridTypeBuilder.write_gridfile")
         self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
 
+
 class UnstructuredGridBuilder(BaseGridBuilder):
     """
     Class to build Unstructured grid files.
@@ -89,7 +92,7 @@ class UnstructuredGridBuilder(BaseGridBuilder):
     def get_metadata(self, data):
         """
         Get metadata for the Unstructured grid based on the data size.
-        Args: 
+        Args:
             data (xarray.Dataset): The dataset containing grid data.
         Returns:
             dict: Metadata for the Unstructured grid, including nlon, nlat, cdogrid, and aquagrid.
@@ -105,6 +108,7 @@ class UnstructuredGridBuilder(BaseGridBuilder):
             'kind': 'unstructured',
         }
 
+
 class CurvilinearGridBuilder(BaseGridBuilder):
     """
     Class to build Curvilinear grid files.
@@ -115,7 +119,7 @@ class CurvilinearGridBuilder(BaseGridBuilder):
     def get_metadata(self, data):
         """
         Get metadata for the Curvilinear grid based on the data size.
-        Args: 
+        Args:
             data (xarray.Dataset): The dataset containing grid data.
         Returns:
             dict: Metadata for the Curvilinear grid, including nlon, nlat, cdogrid, and aquagrid.

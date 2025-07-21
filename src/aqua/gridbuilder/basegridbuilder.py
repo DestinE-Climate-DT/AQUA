@@ -22,7 +22,7 @@ class BaseGridBuilder:
         original_resolution,
         model_name, grid_name=None,
         loglevel='warning'
-        ):
+    ):
         """
         Initialize the BaseGridBuilder.
 
@@ -121,7 +121,7 @@ class BaseGridBuilder:
 
         # load the variables and rename to mask for consistency
         space_bounds = [bound for bound in gridtype.bounds if not 'time' in bound]
-        load_vars = [var] + space_bounds #(gridtype.bounds or [])
+        load_vars = [var] + space_bounds  # (gridtype.bounds or [])
         data = data[load_vars]
         data = data.rename({var: 'mask'})
 
@@ -137,7 +137,7 @@ class BaseGridBuilder:
 
         return data
 
-    def select_2d_slice(self, data: xr.Dataset, vert_coord = None) -> xr.Dataset:
+    def select_2d_slice(self, data: xr.Dataset, vert_coord=None) -> xr.Dataset:
         """
         Select a 2D slice from the data along the vertical coordinate, if present.
         Args:
@@ -186,10 +186,21 @@ class BaseGridBuilder:
         remap_method = metadata.get('remap_method', "con")
         cdo_options = metadata.get('cdo_options', "")
         try:
-            self.logger.info("Generating weights for %s with method %s and vert_coord %s", filename, remap_method, self.vert_coord)
-            generator = CdoGenerate(source_grid=filename, target_grid=target_grid, cdo_options=cdo_options, loglevel=self.loglevel)
+            self.logger.info(
+                "Generating weights for %s with method %s and vert_coord %s",
+                filename,
+                remap_method,
+                self.vert_coord)
+            generator = CdoGenerate(
+                source_grid=filename,
+                target_grid=target_grid,
+                cdo_options=cdo_options,
+                loglevel=self.loglevel)
             weights = generator.weights(method=remap_method, vert_coord=self.vert_coord)
-            self.logger.info("Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!", remap_method, filename)
+            self.logger.info(
+                "Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!",
+                remap_method,
+                filename)
         except Exception as e:
             self.logger.error("Error generating weights, something is wrong with weights generation: %s", e)
             raise
@@ -200,7 +211,10 @@ class BaseGridBuilder:
             else:
                 data = self.cdo.const(f'1,{filename}', options=cdo_options, returnXDataset=True)
             regridder.regrid(data)
-            self.logger.info("Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!", remap_method, filename)
+            self.logger.info(
+                "Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!",
+                remap_method,
+                filename)
         except Exception as e:
             self.logger.error("Error regridding, something is wrong with the regridding: %s", e)
             raise

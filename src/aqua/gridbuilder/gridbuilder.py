@@ -8,6 +8,7 @@ from .extragridbuilder import HealpixGridBuilder, RegularGridBuilder
 from .extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
 from .gridentrymanager import GridEntryManager
 
+
 class GridBuilder():
     """
     Class to build automatically grids from data sources.
@@ -22,14 +23,14 @@ class GridBuilder():
     }
 
     def __init__(
-            self,
-            outdir: str = '.',
-            model_name: Optional[str] = None,
-            grid_name: Optional[str] = None,
-            original_resolution: Optional[str] = None,
-            vert_coord: Optional[str] = None,
-            loglevel: str = 'warning'
-        ) -> None:
+        self,
+        outdir: str = '.',
+        model_name: Optional[str] = None,
+        grid_name: Optional[str] = None,
+        original_resolution: Optional[str] = None,
+        vert_coord: Optional[str] = None,
+        loglevel: str = 'warning'
+    ) -> None:
         """
         Initialize the GridBuilder with a reader instance.
 
@@ -66,11 +67,10 @@ class GridBuilder():
             loglevel=loglevel
         )
 
-
     def build(self, data, rebuild=False, version=None, verify=True, create_yaml=True):
         """
         Retrieve and build the grid data for all gridtypes available.
-        
+
         Args:
             rebuild (bool): Whether to rebuild the grid file if it already exists. Defaults to False.
             fix (bool): Whether to fix the original source. Might be useful for some models. Defaults to False.

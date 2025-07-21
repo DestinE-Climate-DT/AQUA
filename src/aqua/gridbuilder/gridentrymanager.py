@@ -12,12 +12,14 @@ from aqua.util import load_yaml, dump_yaml
 from aqua.util import ConfigPath
 from aqua.logger import log_configure
 
+
 class GridEntryManager:
     """
     Class to manage grid entry naming, block creation, and YAML file writing.
     It also control the filename of the grid file.
     Handles all context for naming and entry logic.
     """
+
     def __init__(
         self,
         model_name: Optional[str] = None,
@@ -39,17 +41,17 @@ class GridEntryManager:
         self.logger = log_configure(log_level=loglevel, log_name='GridEntryManager')
 
     def get_basename(
-        self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
+            self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
         """
         Get the basename for the grid type based on the context and aquagrid name.
         """
-        
+
         # if masked is not set
         if not masked:
             if cdogrid:
                 return aquagrid
             if aquagrid and self.model_name:
-                return f"{self.model_name}_{aquagrid}"          
+                return f"{self.model_name}_{aquagrid}"
             raise ValueError("Grid name or model name are not set, please provide at least a grid name")
 
         # masking
@@ -64,7 +66,7 @@ class GridEntryManager:
         return basename
 
     def create_grid_entry_name(
-            self, aquagrid: str, cdogrid: Optional[str] = None, 
+            self, aquagrid: str, cdogrid: Optional[str] = None,
             masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
         """Create a grid entry name based on the grid type and vertical coordinate."""
         return self.get_basename(aquagrid, cdogrid, masked, vert_coord).replace('_', '-')
@@ -140,4 +142,4 @@ class GridEntryManager:
                     self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
                 return
             final_block['grids'][grid_entry_name] = grid_block
-        dump_yaml(gridfile, final_block) 
+        dump_yaml(gridfile, final_block)
