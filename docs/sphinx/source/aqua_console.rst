@@ -308,6 +308,79 @@ This subcommand sets in the configuration file the path to the grids, areas and 
     AQUA will determine the path automatically based on the machine in the configuration file.
     This command is useful in new machines or if you don't have access to the default folders.
 
+.. _aqua-grids-build:
+
+aqua grids build
+----------------
+
+This subcommand is used to build grids from sources. Given a specific ``Reader()`` source, it tries to build a grid file based on the data available.
+This is available for regular, healpix, curvilinear grids. Partial support for unstructured grids is also available, while gaussian grids are not supported yet.
+It also create the correspondent grid entry in the grid file in the ``config/grids`` folder.
+
+The following options are available for ``aqua grids build``:
+
+.. option:: -c, --config <file>
+
+    YAML configuration file for the builder. If not specified, options must be provided via CLI.
+
+.. option:: --catalog <catalog>
+
+    Catalog identifying the source for the Reader() call.
+
+.. option:: -m, --model <model>
+
+    Model name (e.g. "IFS") for the Reader() call. **(Required)**
+
+.. option:: -e, --exp <experiment>
+
+    Experiment name for the Reader() call. **(Required)**
+
+.. option:: -s, --source <source>
+
+    Data source for the Reader() call. **(Required)**
+
+.. option:: -l, --loglevel <level>
+
+    Log level for the builder. Default is WARNING.
+
+.. option:: --rebuild
+
+    Rebuild the grid even if it already exists.
+
+.. option:: --version <version>
+
+    Version number for the grid file. Currently integer versioning is supported. Useful for multiple versions of the same grid.
+
+.. option:: --outdir <directory>
+
+    Output directory for the grid file. Default is the current directory.
+
+.. option:: --original <resolution>
+
+    Original resolution of the grid. Useful for masked grids which have been remapped to a different resolution.
+
+.. option:: --modelname <name>
+
+    Alternative name for the model for grid naming. Useful for coupled models sources. 
+
+.. option:: --gridname <name>
+
+    Alternative name for the grid for grid naming. Required for Curvilinear and Unstructured grids, where the CDO grids cannot be guessed.
+
+.. option:: --fix
+
+    Fix the original source before building the grid. Useful for models with very specific coordinates/dimensions
+
+.. option:: --verify
+
+    Verify the grid file after creation. This is done by calling CDO via ``smmregrid`` to check if the weights generation is valid.
+
+.. option:: --yaml
+
+    Create the grid entry in the grid file after building. This has to be added to catalog `source_grid_name` manually to be used by the Reader.
+    Please keep in mind that this is not verified yet. 
+
+
 .. _aqua-lra:
 
 aqua lra -c <config_file> <lra-options>

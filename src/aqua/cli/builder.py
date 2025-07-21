@@ -15,7 +15,8 @@ def builder_parser(parser=None):
     """
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA grids builder CLI')
-    parser.add_argument('-c', '--config', type=str, help='YAML configuration file for the builder')
+    parser.add_argument('-c', '--config', type=str, 
+                        help='YAML configuration file for the builder [default: None]')
     parser.add_argument('--catalog', type=str, help='Catalog for the Reader')
     parser.add_argument('-m', '--model', type=str,
                         help='Model name (e.g. "ECMWF", "ERA5")')
@@ -97,7 +98,7 @@ def builder_execute(args):
 
     # Build the grid
     grid_builder.build(
-        data, rebuild=rebuild, 
-        version=version, verify=verify, 
+        data, rebuild=rebuild,
+        version=version, verify=verify,
         create_yaml=create_yaml)
     
