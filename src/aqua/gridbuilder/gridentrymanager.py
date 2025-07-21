@@ -205,8 +205,7 @@ class GridEntryManager:
                 self.logger.info("Grid file %s exists, adding the grid entry %s", gridfile, grid_entry_name)
             final_block = load_yaml(gridfile)
             if grid_entry_name in final_block.get('grids', {}) and not rebuild:
-                if self.logger:
-                    self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
+                self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
                 return
             final_block['grids'][grid_entry_name] = grid_block
         dump_yaml(gridfile, final_block)

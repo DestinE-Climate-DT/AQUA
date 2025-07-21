@@ -1,6 +1,7 @@
 """This module base class for grid type builders and its extensions."""
 import os
-from typing import Optional, Any
+from typing import Optional
+from jinja2.nodes import Dict
 import numpy as np
 import xarray as xr
 from cdo import Cdo
@@ -184,7 +185,7 @@ class BaseGridBuilder:
         if nan_count == 0:
             self.masked = None
         elif 0 < nan_count < 0.5:
-            self.masked = "oce"
+            self.masked = "ocean"
         elif nan_count >= 0.5:
             self.masked = "land"
         else:
@@ -192,20 +193,18 @@ class BaseGridBuilder:
         return self.masked
 
     def verify_weights(
-        self, filename: str, target_grid: str = "r180x90", metadata: Optional[dict] = None
+        self, filename: str, metadata: Dict, target_grid: str = "r180x90"
     ) -> None:
         """
         Verify the creation of the weights from the grid file.
 
         Args:
             filename (str): Path to the grid file. Could be also a CDO grid name.
+            metadata (dict): Metadata dictionary for weights generation.
             target_grid (str, optional): Target grid for weights generation. Defaults to "r180x90".
-            metadata (dict, optional): Metadata dictionary for weights generation.
         Returns:
             None
         """
-        if metadata is None:
-            raise ValueError("metadata must be provided for BaseGridTypeBuilder.verify_weights")
         remap_method = metadata.get('remap_method', "con")
         cdo_options = metadata.get('cdo_options', "")
         try:
@@ -242,18 +241,18 @@ class BaseGridBuilder:
             self.logger.error("Error regridding, something is wrong with the regridding: %s", e)
             raise
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata: Optional[dict] = None) -> None:
+    def write_gridfile(self, input_file: str, output_file: str, metadata: dict) -> None:
         """
         Write the grid file using CDO or by copying, depending on grid type.
         Can be overridden by subclasses for custom behavior.
         Args:
             input_file (str): Path to the temporary input file.
+            metadata (dict): Metadata dictionary from prepare().
             output_file (str): Path to the final output file.
-            metadata (dict, optional): Metadata dictionary from prepare().
         Returns:
             None
         """
-        if not metadata or not metadata.get('cdogrid'):
-            self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)
+        if metadata.get('cdogrid'):
+            self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
         else:
-            raise ValueError("cdogrid is not set in the metadata")
+            self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)

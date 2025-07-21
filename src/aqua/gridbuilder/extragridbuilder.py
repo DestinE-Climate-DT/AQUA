@@ -36,15 +36,6 @@ class RegularGridBuilder(BaseGridBuilder):
             'kind': 'regular'
         }
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
-        """
-        Write the grid file using CDO setgrid for regular grids.
-        """
-        if metadata is None:
-            raise ValueError("metadata must be provided for RegularGridTypeBuilder.write_gridfile")
-        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
-
-
 class HealpixGridBuilder(BaseGridBuilder):
     """
     Class to build HEALPix grid files.
@@ -71,14 +62,6 @@ class HealpixGridBuilder(BaseGridBuilder):
             'cdo_options': '--force',
             'kind': 'healpix'
         }
-
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
-        """
-        Write the grid file using CDO setgrid for HEALPix grids.
-        """
-        if metadata is None:
-            raise ValueError("metadata and cdo must be provided for HealpixGridTypeBuilder.write_gridfile")
-        self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
 
 
 class UnstructuredGridBuilder(BaseGridBuilder):
