@@ -16,7 +16,7 @@ from aqua.logger import log_configure
 class GridEntryManager:
     """
     Class to manage grid entry naming, block creation, and YAML file writing.
-    It also control the filename of the grid file.
+    It also controls the filename of the grid file.
     Handles all context for naming and entry logic.
     """
 
@@ -26,7 +26,16 @@ class GridEntryManager:
         grid_name: Optional[str] = None,
         original_resolution: Optional[str] = None,
         loglevel: str = 'warning'
-    ):
+    ) -> None:
+        """
+        Initialize the GridEntryManager.
+
+        Args:
+            model_name (Optional[str]): The name of the model.
+            grid_name (Optional[str]): The name of the grid.
+            original_resolution (Optional[str]): The original resolution of the grid.
+            loglevel (str): The logging level for the logger.
+        """
         # get useful paths
         self.configpath = ConfigPath().get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
@@ -41,11 +50,23 @@ class GridEntryManager:
         self.logger = log_configure(log_level=loglevel, log_name='GridEntryManager')
 
     def get_basename(
-            self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
+        self,
+        aquagrid: str,
+        cdogrid: Optional[str] = None,
+        masked: Optional[str] = None,
+        vert_coord: Optional[str] = None
+    ) -> str:
         """
         Get the basename for the grid type based on the context and aquagrid name.
-        """
 
+        Args:
+            aquagrid (str): The AQUA grid name.
+            cdogrid (Optional[str]): The CDO grid name.
+            masked (Optional[str]): Mask type if present.
+            vert_coord (Optional[str]): Vertical coordinate if present.
+        Returns:
+            str: The constructed basename.
+        """
         # if masked is not set
         if not masked:
             if cdogrid:
@@ -66,9 +87,23 @@ class GridEntryManager:
         return basename
 
     def create_grid_entry_name(
-            self, aquagrid: str, cdogrid: Optional[str] = None,
-            masked: Optional[str] = None, vert_coord: Optional[str] = None) -> str:
-        """Create a grid entry name based on the grid type and vertical coordinate."""
+        self,
+        aquagrid: str,
+        cdogrid: Optional[str] = None,
+        masked: Optional[str] = None,
+        vert_coord: Optional[str] = None
+    ) -> str:
+        """
+        Create a grid entry name based on the grid type and vertical coordinate.
+
+        Args:
+            aquagrid (str): The AQUA grid name.
+            cdogrid (Optional[str]): The CDO grid name.
+            masked (Optional[str]): Mask type if present.
+            vert_coord (Optional[str]): Vertical coordinate if present.
+        Returns:
+            str: The grid entry name.
+        """
         return self.get_basename(aquagrid, cdogrid, masked, vert_coord).replace('_', '-')
 
     def create_grid_entry_block(
@@ -79,7 +114,18 @@ class GridEntryManager:
         remap_method: Optional[str] = None,
         vert_coord: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Create a grid entry block for the gridtype, with only cdo_options and remap_method."""
+        """
+        Create a grid entry block for the gridtype, with only cdo_options and remap_method.
+
+        Args:
+            path (str): Path to the grid file.
+            horizontal_dims (Optional[str]): Horizontal dimensions.
+            cdo_options (Optional[str]): CDO options string.
+            remap_method (Optional[str]): Remap method string.
+            vert_coord (Optional[str]): Vertical coordinate if present.
+        Returns:
+            Dict[str, Any]: The grid entry block.
+        """
         grid_block = {
             'path': f"{path}",
         }
@@ -94,9 +140,15 @@ class GridEntryManager:
             grid_block['remap_method'] = remap_method
         return grid_block
 
-    def get_gridfilename(self, cdogrid, gridkind) -> str:
+    def get_gridfilename(self, cdogrid: Optional[str], gridkind: str) -> str:
         """
         Get the grid filename based on the grid kind.
+
+        Args:
+            cdogrid (Optional[str]): The CDO grid name.
+            gridkind (str): The kind of grid.
+        Returns:
+            str: The grid filename.
         """
         if cdogrid:
             gridfilename = f'{gridkind.lower()}.yaml'
@@ -109,6 +161,13 @@ class GridEntryManager:
         Returns the correct basepath (without .nc) for the grid file, handling versioning logic.
         Raises ValueError if versioning rules are violated (e.g., versioned files exist but no version specified).
         Does NOT remove or create any files.
+
+        Args:
+            outdir (str): Output directory.
+            basename (str): Base name for the file.
+            version (Optional[int]): Version number.
+        Returns:
+            str: The versioned basepath.
         """
         basepath = os.path.join(outdir, basename)
         existing_files = glob.glob(f"{basepath}*.nc")
@@ -121,9 +180,17 @@ class GridEntryManager:
             basepath = f"{basepath}_v{version}"
         return basepath
 
-    def create_grid_entry(self, gridfile, grid_entry_name, grid_block, rebuild=False):
+    def create_grid_entry(self, gridfile: str, grid_entry_name: str, grid_block: Dict[str, Any], rebuild: bool = False) -> None:
         """
         Create or update a grid entry in the grid YAML file.
+
+        Args:
+            gridfile (str): Path to the grid YAML file.
+            grid_entry_name (str): Name of the grid entry.
+            grid_block (Dict[str, Any]): The grid entry block.
+            rebuild (bool): Whether to overwrite existing entry if present.
+        Returns:
+            None
         """
         if self.logger:
             self.logger.info("Grid entry name: %s", grid_entry_name)

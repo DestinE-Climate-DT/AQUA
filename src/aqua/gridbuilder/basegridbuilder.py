@@ -1,10 +1,10 @@
 """This module base class for grid type builders and its extensions."""
 import os
-from typing import Optional
+from typing import Optional, Any
 import numpy as np
 import xarray as xr
 from cdo import Cdo
-from smmregrid import CdoGenerate, Regridder
+from smmregrid import CdoGenerate, Regridder, GridType
 from aqua.logger import log_configure
 
 
@@ -18,11 +18,13 @@ class BaseGridBuilder:
     CDOZIP = "-f nc4 -z zip"
 
     def __init__(
-        self, vert_coord,
-        original_resolution,
-        model_name, grid_name=None,
-        loglevel='warning'
-    ):
+        self,
+        vert_coord: str,
+        original_resolution: str,
+        model_name: str,
+        grid_name: Optional[str] = None,
+        loglevel: str = 'warning'
+    ) -> None:
         """
         Initialize the BaseGridBuilder.
 
@@ -30,8 +32,8 @@ class BaseGridBuilder:
             vert_coord (str): The vertical coordinate if applicable.
             original_resolution (str): The original resolution of the data.
             model_name (str): The name of the model.
-            grid_name (str): The name of the grid.
-            loglevel (str): The logging level for the logger. Defaults to 'warning'.
+            grid_name (str, optional): The name of the grid.
+            loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
         self.masked = None
         self.vert_coord = vert_coord
@@ -44,10 +46,14 @@ class BaseGridBuilder:
 
     # Remove the prepare method entirely; users should call get_metadata directly
 
-    def clean_attributes(self, data):
+    def clean_attributes(self, data: xr.Dataset) -> xr.Dataset:
         """
         Clean the attributes of the data.
 
+        Args:
+            data (xarray.Dataset): The dataset to clean attributes for.
+        Returns:
+            xarray.Dataset: The dataset with cleaned attributes.
         """
         # cleaning attributes for variables
         for var in data.data_vars:
@@ -64,7 +70,7 @@ class BaseGridBuilder:
         for coord in data.coords:
 
             # remove axis which can confuse CDO
-            if not self.vert_coord or coord not in self.vert_coord:
+            if not self.vert_coord or coord != self.vert_coord:
                 self.logger.debug("Removing axis for %s", coord)
                 if 'axis' in data[coord].attrs:
                     del data[coord].attrs['axis']
@@ -82,9 +88,14 @@ class BaseGridBuilder:
 
         return data
 
-    def has_bounds(self, data):
+    def has_bounds(self, data: xr.Dataset) -> bool:
         """
         Check if the data has bounds.
+
+        Args:
+            data (xarray.Dataset): The dataset to check for bounds.
+        Returns:
+            bool: True if bounds are present, False otherwise.
         """
         if 'lon_bounds' in data.variables and 'lat_bounds' in data.variables:
             return True
@@ -92,13 +103,18 @@ class BaseGridBuilder:
             return True
         return False
 
-    def get_metadata(self, data):
+    def get_metadata(self, data: xr.Dataset) -> dict:
         """
         Abstract method to get metadata for the grid type. Must be implemented by subclasses.
+
+        Args:
+            data (xarray.Dataset): The dataset to extract metadata from.
+        Returns:
+            dict: Metadata dictionary for the grid type.
         """
         raise NotImplementedError("Subclasses must implement get_metadata()")
 
-    def data_reduction(self, data, gridtype, vert_coord=None):
+    def data_reduction(self, data: xr.Dataset, gridtype: GridType, vert_coord: Optional[str] = None) -> xr.Dataset:
         """
         Reduce the data to a single variable and time step.
         Args:
@@ -137,7 +153,7 @@ class BaseGridBuilder:
 
         return data
 
-    def select_2d_slice(self, data: xr.Dataset, vert_coord=None) -> xr.Dataset:
+    def select_2d_slice(self, data: xr.Dataset, vert_coord: Optional[str] = None) -> xr.Dataset:
         """
         Select a 2D slice from the data along the vertical coordinate, if present.
         Args:
@@ -176,10 +192,17 @@ class BaseGridBuilder:
         return self.masked
 
     def verify_weights(
-        self, filename, target_grid="r180x90", metadata=None
-    ):
+        self, filename: str, target_grid: str = "r180x90", metadata: Optional[dict] = None
+    ) -> None:
         """
         Verify the creation of the weights from the grid file.
+
+        Args:
+            filename (str): Path to the grid file. Could be also a CDO grid name.
+            target_grid (str, optional): Target grid for weights generation. Defaults to "r180x90".
+            metadata (dict, optional): Metadata dictionary for weights generation.
+        Returns:
+            None
         """
         if metadata is None:
             raise ValueError("metadata must be provided for BaseGridTypeBuilder.verify_weights")
@@ -219,7 +242,7 @@ class BaseGridBuilder:
             self.logger.error("Error regridding, something is wrong with the regridding: %s", e)
             raise
 
-    def write_gridfile(self, input_file: str, output_file: str, metadata=None):
+    def write_gridfile(self, input_file: str, output_file: str, metadata: Optional[dict] = None) -> None:
         """
         Write the grid file using CDO or by copying, depending on grid type.
         Can be overridden by subclasses for custom behavior.
@@ -227,7 +250,8 @@ class BaseGridBuilder:
             input_file (str): Path to the temporary input file.
             output_file (str): Path to the final output file.
             metadata (dict, optional): Metadata dictionary from prepare().
-            cdo: CDO instance for grid operations (optional).
+        Returns:
+            None
         """
         if not metadata or not metadata.get('cdogrid'):
             self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)
