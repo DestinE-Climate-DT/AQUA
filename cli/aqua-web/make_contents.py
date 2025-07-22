@@ -167,7 +167,10 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
 
         for fn in os.listdir(f"{path}"):
             if fn.endswith(".png"):
-                fn_line = f"{catalog}/{model}/{exp}/{fn}"
+                if realization:
+                    fn_line = f"{catalog}/{model}/{exp}/{realization}/{fn}"
+                else:
+                    fn_line = f"{catalog}/{model}/{exp}/{fn}"
                 filename_list.append(fn_line)
                 # Read description for capion from the pdf file
                 pdf_path = f"../pdf/{path}/" + os.path.splitext(fn)[0] + ".pdf"
