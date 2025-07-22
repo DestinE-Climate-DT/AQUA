@@ -6,6 +6,7 @@ from smmregrid import GridInspector
 from aqua.logger import log_configure, log_history
 from .extragridbuilder import HealpixGridBuilder, RegularGridBuilder
 from .extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
+from .extragridbuilder import GaussianRegularGridBuilder
 from .gridentrymanager import GridEntryManager
 
 
@@ -19,6 +20,7 @@ class GridBuilder():
         'Regular': RegularGridBuilder,
         'Unstructured': UnstructuredGridBuilder,
         'Curvilinear': CurvilinearGridBuilder,
+        'GaussianRegular': GaussianRegularGridBuilder,
         # Add more grid types here as needed
     }
 

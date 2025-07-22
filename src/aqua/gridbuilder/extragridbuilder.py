@@ -36,6 +36,36 @@ class RegularGridBuilder(BaseGridBuilder):
             'kind': 'regular'
         }
 
+class GaussianRegularGridBuilder(BaseGridBuilder):
+    """
+    Class to build Gaussian regular lon-lat grid files.
+    """
+    logger_name = "GaussianRegularGridBuilder"
+    requires_bounds = False
+    
+    def get_metadata(self, data):
+        """
+        Get metadata for the Gaussian regular lon-lat grid based on the data size.
+        Args:
+            data (xarray.Dataset): The dataset containing grid data.
+        Returns:
+            dict: Metadata for the Gaussian regular lon-lat grid, including nlon, nlat, cdogrid, and aquagrid.
+        """
+
+        nlon = data['lon'].size
+        nlat = data['lat'].size
+        cdogrid = f"F{int(nlat/2)}"
+        aquagrid = f"F{int(nlat/2)}"
+        return {
+            'nlon': nlon,
+            'nlat': nlat,
+            'cdogrid': cdogrid,
+            'aquagrid': aquagrid,
+            'spectral_truncation': nlat-1,
+            'remap_method': "con",
+            'kind': 'gaussianregular'
+        }
+
 class HealpixGridBuilder(BaseGridBuilder):
     """
     Class to build HEALPix grid files.
