@@ -54,8 +54,11 @@ class GaussianRegularGridBuilder(BaseGridBuilder):
 
         nlon = data['lon'].size
         nlat = data['lat'].size
-        cdogrid = f"F{int(nlat/2)}"
-        aquagrid = f"F{int(nlat/2)}"
+        if data['lat'][0] > data['lat'][-1]:
+            cdogrid = f"F{int(nlat/2)}"
+            aquagrid = f"F{int(nlat/2)}"
+        else:
+            raise ValueError("Latitude values are not from North to South, cannot build Gaussian regular grid")
         return {
             'nlon': nlon,
             'nlat': nlat,
