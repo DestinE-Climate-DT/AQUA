@@ -1,5 +1,17 @@
 # """Ensemble Module"""
 
-from .ensemble_class import EnsembleTimeseries, EnsembleLatLon, EnsembleZonal
+from .ensembleTimeseries import EnsembleTimeseries
+from .plot_ensemble_timeseries import PlotEnsembleTimeseries
+from .ensembleLatLon import EnsembleLatLon
+from .plot_ensemble_latlon import PlotEnsembleLatLon
+from .ensembleZonal import EnsembleZonal
+from .plot_ensemble_zonal import PlotEnsembleZonal
 
-__all__ = ["EnsembleTimeseries","EnsembleLatLon","EnsembleZonal"]
+__all__ = [
+    "EnsembleTimeseries",
+    "EnsembleLatLon",
+    "EnsembleZonal",
+    "PlotEnsembleTimeseries",
+    "PlotEnsembleLatLon",
+    "PlotEnsembleZonal",
+]
