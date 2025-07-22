@@ -37,7 +37,7 @@ do
         for dir3 in $d3
         do
           cd $dir3
-          dest="../../../../png/${dir0}/${dir1}/${dir2}/${dir3}"
+          dest="../../../../../png/${dir0}/${dir1}/${dir2}/${dir3}"
           mkdir -p $dest
           echo "Performing pdf to png conversion in $dest"
 	        magick mogrify -verbose -format png -density 100 -trim -path $dest *.pdf
