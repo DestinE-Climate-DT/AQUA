@@ -230,7 +230,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         logger.info(f"Content files for {path} already exist. Skipping. Use --force to overwrite.")
 
 
-def main(force=False, experiment=None, configfile="config.yaml", ensemble=False, loglevel="INFO"):
+def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, loglevel="INFO"):
     """
     Main function to create content.yaml and content.json files for each experiment in the content/png directory.
 

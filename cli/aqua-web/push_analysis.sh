@@ -150,7 +150,7 @@ print_help() {
     echo "  -b, --bucket BUCKET    push to the specified bucket (defaults to 'aqua-web')"
     echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml)"
     echo "  -d, --no-update        do not update the remote github repository"  
-    echo "  -n, --no-ensemble      use old ensemble structure with only 3 levels catalog/model/exp"
+    echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
     echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"  
@@ -192,7 +192,7 @@ while [[ $# -gt 0 ]]; do
         loglevel="$2"
         shift 2
         ;;
-    -n|--no-ensemble)
+    --no-ensemble)
         ensemble=0
         shift
         ;;

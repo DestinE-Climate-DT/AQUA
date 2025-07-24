@@ -74,8 +74,10 @@ Basic usage
 This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
-or a text file containing a list of experiments. For standard runs, the file should be in the format "catalog model experiment".
-For ensemble runs (using the ``-e`` flag), the file must be in the format "catalog model experiment realization".
+or a text file containing a list of experiments. 
+The file should be in the format "catalog model experiment realization". 
+In case the compatibility flag ``--no-ensemble``
+has been specified, the file must be in the format "catalog model experiment".
 It creates ``content.yaml`` files for each experiment, pushes the images to the ``aqua-web`` bucket on LUMI-O and
 updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
 
@@ -98,9 +100,9 @@ Additional options
 
     Do not update the aqua-web Github repository.
 
-.. option:: -e, --ensemble
+.. option:: --no-ensemble
 
-    Use new ensemble structure. This enables processing of experiments with a 4-level structure (``catalog/model/experiment/realization``).
+    Compatibility flag to process experiments with old 3-level structure (``catalog/model/experiment``).
 
 .. option:: -h, --help
 
@@ -280,17 +282,16 @@ Options
 
     Source to be processed.
 
-.. option:: --ensemble
+.. option:: --no-ensemble
 
-    Specifies the new 4-level ensemble structure (catalog/model/experiment/realization).
-    If specified, the script will expect the experiment list to contain realizations.
-    If a single experiment is specified, and ``--realization`` is not specified,
-    "r1" will be assumed as the realization.
+    Specifies that the old 3-level ensemble structure (catalog/model/experiment) should be used instead
+    of the default one (catalog/model/experiment/realization).
 
 .. option:: --realization <realization>
 
-    Used with the ``ensemble`` flag to specify the realization of the experiment.
-    If specified ``ensemble``is set to ``True`` by default.
+    Used to specify the realization of the experiment.
+    If a single experiment is specified, and ``--realization`` is not specified,
+    "r1" will be assumed as the realization by default.
 
 .. option:: -r, --serial
 
