@@ -24,7 +24,7 @@ class Submitter():
 
     def __init__(self, loglevel='INFO', config='config.aqua-web.yaml',
                  template='aqua-web.job.j2', dryrun=False, parallel=True, ensemble=True,
-                 wipe=False, native=False, fresh=False, jobname=None):
+                 native=False, fresh=False, jobname=None):
         """
         Initialize the Submitter class
 
@@ -35,7 +35,6 @@ class Submitter():
             dryrun: perform a dry run (no job submission)
             parallel: run in parallel mode (multiple cores)
             ensemble: process ensemble experiments/new folder structure.
-            wipe: wipe the destination directory before copying the images
             native: use the native AQUA version (default is the container version)
             fresh: use a fresh (new) output directory, do not recycle original one
             jobname: alternative prefix for job name
@@ -51,7 +50,6 @@ class Submitter():
         self.jobname = jobname
         self.dryrun = dryrun
         self.parallel = parallel
-        self.wipe = wipe
         self.native = native
         self.ensemble = ensemble
         if fresh:
@@ -113,10 +111,6 @@ class Submitter():
             definitions['parallel'] = '-p'
         else:
             definitions['parallel'] = ''
-        if self.wipe:
-            definitions['wipe'] = '-w'
-        else:
-            definitions['wipe'] = ''
         if self.native:
             definitions['nativeaqua'] = 'true'
         else:
@@ -198,10 +192,6 @@ class Submitter():
 
         definitions['push'] = "true"
         definitions['explist'] = listfile
-        if self.wipe:
-            definitions['wipe'] = '-w'
-        else:
-            definitions['wipe'] = ''
         if self.native:
             definitions['nativeaqua'] = 'true'
         else:
@@ -318,8 +308,6 @@ def parse_arguments(arguments):
                         help='flag to push to aqua-web')
     parser.add_argument('-j', '--jobname', type=str,
                         help='alternative prefix for job name')
-    parser.add_argument('-w', '--wipe', action="store_true",
-                        help='wipe the destination directory before copying the images')
     parser.add_argument('-n', '--native', action="store_true",
                         help='use the native (native) AQUA version (default is the container version)')
     parser.add_argument('-f', '--fresh', action="store_true",
@@ -347,7 +335,6 @@ if __name__ == '__main__':
     dryrun = get_arg(args, 'dry', False)
     loglevel = get_arg(args, 'loglevel', 'info')
     push = get_arg(args, 'push', False)
-    wipe = get_arg(args, 'wipe', False)
     native = get_arg(args, 'native', False)
     fresh = get_arg(args, 'fresh', False)
     jobname = get_arg(args, 'jobname', None)
@@ -362,7 +349,7 @@ if __name__ == '__main__':
     template = get_arg(args, 'template', 'aqua-web.job.j2')
 
     submitter = Submitter(config=config, template=template, dryrun=dryrun,
-                          parallel=not serial, wipe=wipe, native=native, ensemble=ensemble,
+                          parallel=not serial, native=native, ensemble=ensemble,
                           fresh=fresh, loglevel=loglevel, jobname=jobname)
 
     if ensemble:

@@ -258,8 +258,8 @@ experiments specified in the list.
 
 Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
 
-The extra ``-w``, ``-f`` and ``-n`` flags are used for maintenance and debugging 
-and can be used to wipe the destination directory before pushing the images to aqua-web,
+The extra ``-f`` and ``-n`` flags are used for maintenance and debugging 
+and can be used to
 use a fresh temporary output directory for the analysis generation and use the
 native (local) AQUA version respectively.
 
@@ -316,10 +316,6 @@ Options
 .. option:: -p, --push
     
     Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
-
-.. option:: -w, --wipe
-    
-    Flag to wipe the destination directory before pushing the images to aqua-web.
 
 .. option:: -f, --fresh
     
