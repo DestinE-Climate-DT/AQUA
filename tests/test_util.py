@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from aqua import Reader
 from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
+from aqua.util import format_realization
 
 @pytest.fixture
 def test_text():
@@ -149,6 +150,16 @@ class TestFileIsComplete:
 ])
 def test_to_list(arg, expected):
     assert to_list(arg) == expected
+
+@pytest.mark.aqua
+def test_format_realization():
+    """Test the format_realization function"""
+    assert format_realization() == "r1"
+    assert format_realization(1) == "r1"
+    assert format_realization("2") == "r2"
+    assert format_realization("test") == "test"
+    assert format_realization("") == "r1"
+    assert format_realization(None) == "r1"
 
 # Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
 # def test_flip_time():
