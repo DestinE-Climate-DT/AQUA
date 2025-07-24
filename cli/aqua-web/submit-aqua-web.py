@@ -377,8 +377,13 @@ if __name__ == '__main__':
                 else:
                     catalog, model, exp, *source = re.split(r',|\s+|\t+', line.strip())  # split by comma, space, tab
 
+                # Convert source list to string or None
                 if len(source) == 0:
                     source = None
+                elif len(source) == 1:
+                    source = source[0]  # Extract the single source string
+                else:
+                    source = "_".join(source)  # Join multiple sources with underscore
 
                 if dependency and (count % dependency == 0) and count != 0:
                             submitter.logger.info('Updating parent job to %s', str(jobid))
