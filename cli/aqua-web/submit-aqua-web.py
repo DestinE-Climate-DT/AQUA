@@ -159,7 +159,10 @@ class Submitter():
             return '0'
 
         if not self.dryrun:
-            self.logger.info('Submitting %s %s %s', model, exp, source)
+            if self.ensemble:
+                self.logger.info('Submitting %s %s %s %s', model, exp, source, realization)
+            else:
+                self.logger.info('Submitting %s %s %s', model, exp, source)
             result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
             jobid = re.findall(r'\b\d+\b', result)[-1]
             return jobid
@@ -177,7 +180,7 @@ class Submitter():
             listfile: file with list of experiments or "$model$/$exp" string
         """
 
-        self.logger.info('Submitting push job %s', listfile)
+        self.logger.info('Creating push job %s', listfile)
 
         yaml = YAML(typ='rt')
         with open(self.config, 'r', encoding='utf-8') as file:
@@ -353,7 +356,7 @@ if __name__ == '__main__':
                           fresh=fresh, loglevel=loglevel, jobname=jobname)
 
     if ensemble:
-        submitter.logger.debug('Running in ensemble mode with realization %s', realization)
+        submitter.logger.debug('Running in ensemble mode')
 
     count = 0
     parent_job = None
