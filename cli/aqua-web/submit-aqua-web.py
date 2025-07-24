@@ -23,7 +23,7 @@ class Submitter():
     """
 
     def __init__(self, loglevel='INFO', config='config.aqua-web.yaml',
-                 template='aqua-web.job.j2', dryrun=False, parallel=True,
+                 template='aqua-web.job.j2', dryrun=False, parallel=True, ensemble=True,
                  wipe=False, native=False, fresh=False, jobname=None):
         """
         Initialize the Submitter class
@@ -34,6 +34,7 @@ class Submitter():
             template: jinja template file base name
             dryrun: perform a dry run (no job submission)
             parallel: run in parallel mode (multiple cores)
+            ensemble: process ensemble experiments/new folder structure.
             wipe: wipe the destination directory before copying the images
             native: use the native AQUA version (default is the container version)
             fresh: use a fresh (new) output directory, do not recycle original one
@@ -52,6 +53,7 @@ class Submitter():
         self.parallel = parallel
         self.wipe = wipe
         self.native = native
+        self.ensemble = ensemble
         if fresh:
             self.fresh = f"/tmp{str(uuid.uuid4())[:13]}"
         else:
@@ -119,6 +121,10 @@ class Submitter():
             definitions['nativeaqua'] = 'true'
         else:
             definitions['nativeaqua'] = 'false'
+        if self.ensemble:
+            definitions['ensemble'] = 'true'
+        else:
+            definitions['ensemble'] = 'false'
 
         definitions['fresh'] = self.fresh
 
@@ -200,6 +206,10 @@ class Submitter():
             definitions['nativeaqua'] = 'true'
         else:
             definitions['nativeaqua'] = 'false'
+        if self.ensemble:
+            definitions['ensemble'] = 'true'
+        else:
+            definitions['ensemble'] = 'false'
 
         definitions['fresh'] = self.fresh
 
@@ -342,21 +352,21 @@ if __name__ == '__main__':
     fresh = get_arg(args, 'fresh', False)
     jobname = get_arg(args, 'jobname', None)
 
-    ensemble = get_arg(args, 'ensemble', False)
+    ensemble = get_arg(args, 'ensemble', True)
     realization = get_arg(args, 'realization', None)
     if realization:
         ensemble = True  # Specifying a realization implies ensemble mode
     elif ensemble and not realization:
         realization = 'r1' # Default realization for ensemble mode
 
-    if ensemble:
-        template = get_arg(args, 'template', 'aqua-web.ensemble.job.j2')
-    else:
-        template = get_arg(args, 'template', 'aqua-web.job.j2')
-    
+    template = get_arg(args, 'template', 'aqua-web.job.j2')
+
     submitter = Submitter(config=config, template=template, dryrun=dryrun,
-                          parallel=not serial, wipe=wipe, native=native,
+                          parallel=not serial, wipe=wipe, native=native, ensemble=ensemble,
                           fresh=fresh, loglevel=loglevel, jobname=jobname)
+
+    if ensemble:
+        submitter.logger.debug('Running in ensemble mode with realization %s', realization)
 
     count = 0
     parent_job = None
