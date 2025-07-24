@@ -34,7 +34,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
     that are plot as timeseries together with their reference
     data and standard deviation.
 
-    Arguments:
+    Args:
         monthly_data (list of xr.DataArray): monthly data to plot
         annual_data (list of xr.DataArray): annual data to plot
         ref_monthly_data (xr.DataArray): reference monthly data to plot
@@ -54,7 +54,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
         title (str): title of the plot
         loglevel (str): logging level
 
-    Keyword Arguments:
+    Keyword Args:
         figsize (tuple): size of the figure
         title (str): title of the plot
 
@@ -116,7 +116,6 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
 
     return fig, ax
 
-
 def plot_seasonalcycle(data=None,
                        ref_data=None,
                        std_data=None,
@@ -124,11 +123,12 @@ def plot_seasonalcycle(data=None,
                        ref_label: str = None,
                        style: str = None,
                        loglevel: str = 'WARNING',
+                       fig: plt.Figure = None,
+                       ax: plt.Axes = None,
                        **kwargs):
-    """
-    Plot the seasonal cycle of the data and the reference data.
+    """ Plot the seasonal cycle of the data and the reference data.
 
-    Arguments:
+    Args:
         data (list of xr.DataArray): data to plot
         ref_data (xr.DataArray): reference data to plot
         std_data (xr.DataArray): standard deviation of the reference data
@@ -136,20 +136,20 @@ def plot_seasonalcycle(data=None,
         ref_label (str): label for the reference data
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
         loglevel (str): logging level
-
-    Keyword Arguments:
+    Keyword Args:
         figsize (tuple): size of the figure
         title (str): title of the plot
-
     Returns:
         fig, ax (tuple): tuple containing the figure and axis objects
     """
 
     logger = log_configure(loglevel, 'PlotSeasonalCycle')
-    ConfigStyle(style=style, loglevel=loglevel)
 
-    fig_size = kwargs.get('figsize', (6, 4))
-    fig, ax = plt.subplots(1, 1, figsize=fig_size)
+    if fig is None and ax is None:
+        fig_size = kwargs.get('figsize', (6, 4))
+        fig, ax = plt.subplots(1, 1, figsize=fig_size)
+
+    ConfigStyle(style=style, loglevel=loglevel)
 
     monthsNumeric = range(0, 13 + 1)  # Numeric months
     monthsNames = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
@@ -202,10 +202,9 @@ def _extend_cycle(data: xr.DataArray = None, loglevel='WARNING'):
     Add december value at the beginning and january value at the end of the data
     for a cyclic plot
 
-    Arguments:
+    Args:
         data (xr.DataArray): data to extend
         loglevel (str): logging level. Default is 'WARNING'
-
     Returns:
         data (xr.DataArray): extended data (if possible)
     """

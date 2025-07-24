@@ -5,6 +5,7 @@ from .global_biases import GlobalBiases, PlotGlobalBiases
 from .radiation import Radiation
 from .ensemble import EnsembleTimeseries, EnsembleLatLon, EnsembleZonal
 from .ecmean import PerformanceIndices, GlobalMean
+from .seaice import SeaIce, PlotSeaIce, Plot2DSeaIce
 
 __all__ = ["NAO", "ENSO", "MJO",
            "PlotNAO", "PlotENSO", "PlotMJO",
@@ -12,4 +13,4 @@ __all__ = ["NAO", "ENSO", "MJO",
            "GlobalBiases", "PlotGlobalBiases",
            "Radiation",
            "EnsembleTimeseries", "EnsembleLatLon", "EnsembleZonal",
-           "GlobalMean", "PerformanceIndices"]
+           "GlobalMean", "PerformanceIndices", "SeaIce", "PlotSeaIce", "Plot2DSeaIce"]

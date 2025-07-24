@@ -20,6 +20,7 @@ from aqua.util import cbar_get_label, set_map_title
 from aqua.util import coord_names, set_ticks, ticks_round
 from aqua.exceptions import NoDataError
 from .styles import ConfigStyle
+import cartopy.feature as cfeature
 
 def plot_single_map(data: xr.DataArray,
                     contour=True, sym=False,
@@ -29,7 +30,7 @@ def plot_single_map(data: xr.DataArray,
                     vmin=None, vmax=None, cmap='RdBu_r',
                     cbar: bool = True, cbar_label=None,
                     title=None, transform_first=False, cyclic_lon=True,
-                    fig: plt.Figure = None, ax: plt.Axes = None,
+                    add_land=False, fig: plt.Figure = None, ax: plt.Axes = None,
                     ax_pos: tuple = (1, 1, 1),
                     return_fig=False, loglevel='WARNING',  **kwargs):
     """
@@ -39,7 +40,7 @@ def plot_single_map(data: xr.DataArray,
         data (xr.DataArray):         Data to plot.
         contour (bool, optional):    If True, plot a contour map, otherwise a pcolormesh. Defaults to True.
         sym (bool, optional):        If True, set the colorbar to be symmetrical. Defaults to False.
-        proj (cartopy.crs.Projection, optional): Projection to use. Defaults to PlateCarree.
+        proj (cartopy.crs.Projection, optional): Projection to use. Defaults to Robinson.
         extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
         coastlines (bool, optional): If True, add coastlines. Defaults to True.
         style (str, optional):       Style to use. Defaults to None (aqua style).
@@ -49,14 +50,15 @@ def plot_single_map(data: xr.DataArray,
         vmax (float, optional):      Maximum value for the colorbar.
                                      Defaults to None.
         cmap (str, optional):        Colormap. Defaults to 'RdBu_r'.
-        cbar (bool, optional):      If True, add a colorbar. Defaults to True.
+        cbar (bool, optional):       If True, add a colorbar. Defaults to True.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
         title (str, optional):       Title of the figure. Defaults to None.
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
+        add_land (bool, optional):   If True, add land to the map. Defaults to False.
         fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
-        ax (plt.Axes, optional):    Axes to plot on. By default a new axes is created.
-        ax_pos (list, optional):  Axes position. Used if the axes has to be created. Defaults to (1, 1, 1).
+        ax (plt.Axes, optional):     Axes to plot on. By default a new axes is created.
+        ax_pos (list, optional):     Axes position. Used if the axes has to be created. Defaults to (1, 1, 1).
         return_fig (bool, optional): If True, return the figure and axes. Defaults to False.
         loglevel (str, optional):    Log level. Defaults to 'WARNING'.
 
@@ -153,6 +155,10 @@ def plot_single_map(data: xr.DataArray,
         logger.debug("Adding coastlines")
         ax.coastlines()
 
+    if add_land:
+        logger.debug("Adding land")
+        ax.add_feature(cfeature.LAND, edgecolor='k')
+        
     # TODO: To reimplement, we need a meshgrid for this
     # if gridlines:
     #     logger.debug("Adding gridlines")
