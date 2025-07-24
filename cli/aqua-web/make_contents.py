@@ -315,14 +315,15 @@ def parse_arguments(arguments):
 
     parser = argparse.ArgumentParser(description='Create content.yaml and content.json files for each experiment in the content/png directory.')
 
-    parser.add_argument('-n', '--ensemble', action="store_true",
-                        help='When processing all subdirectories, assume new structure with 4 levels (catalog/model/experiment/realization).')
+    parser.add_argument('-n', '--no-ensemble', action="store_false",
+                        dest='ensemble',
+                        help='When processing all subdirectories, revert to old structure with 3 levels (catalog/model/experiment) instead of default 4 levels (catalog/model/experiment/realization).')
     parser.add_argument('-f', '--force', action="store_true",
                         help='Create content.yaml and content.json even if they exist already')
     parser.add_argument('-e', '--experiment', type=str,
                         help='Specific experiment for which to create content in format $catalog/$model/$experiment/$realization. Realization is optional.')
     parser.add_argument('-c', '--config', type=str, default="config.yaml",
-                        help='Alternate confg file')
+                        help='Alternate config file')
     parser.add_argument('-l', '--loglevel', type=str, default='INFO',
                         help='Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.')
     

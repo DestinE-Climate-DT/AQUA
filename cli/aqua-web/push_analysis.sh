@@ -77,10 +77,10 @@ make_contents() {
     log_message INFO "Making content files for $1 with config $2 and ensemble $3"
     if [ $ensemble -eq 1 ]; then
         # If ensemble structure, we need to pass the ensemble flag
-        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --ensemble
+        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
     else
         # Otherwise, we use the old structure
-        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
+        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --no-ensemble
     fi
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
@@ -150,7 +150,7 @@ print_help() {
     echo "  -b, --bucket BUCKET    push to the specified bucket (defaults to 'aqua-web')"
     echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml)"
     echo "  -d, --no-update        do not update the remote github repository"  
-    echo "  -e, --ensemble         use new ensemble structure"
+    echo "  -n, --no-ensemble      use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
     echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"  
@@ -175,7 +175,7 @@ repository="DestinE-Climate-DT/aqua-web"
 update=1
 rsync=""
 config="$SCRIPT_DIR/config.grouping.yaml"
-ensemble=0
+ensemble=1  # Default to new ensemble structure with 4 levels (catalog/model/experiment/realization)
 
 # Parse all options first
 while [[ $# -gt 0 ]]; do
@@ -192,8 +192,8 @@ while [[ $# -gt 0 ]]; do
         loglevel="$2"
         shift 2
         ;;
-    -e|--ensemble)
-        ensemble=1
+    -n|--no-ensemble)
+        ensemble=0
         shift
         ;;
     -d|--no-update)

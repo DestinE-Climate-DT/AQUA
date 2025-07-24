@@ -290,8 +290,8 @@ def parse_arguments(arguments):
                         help='experiment to be processed')
     parser.add_argument('--realization', type=str,
                         help='realization to be processed. Specifying it assumes ensemble usage.')
-    parser.add_argument('--ensemble', action="store_true",
-                        help='process ensemble experiments/new folder structure. If realization not chosen set it to r1 by default')
+    parser.add_argument('--no-ensemble', action="store_false", dest='ensemble',
+                        help='Assume old 3-level folder structure. NB: If realization not chosen set it to r1 by default')
     parser.add_argument('-s', '--source', type=str,
                         help='source to be processed')
     parser.add_argument('-r', '--serial', action="store_true",
