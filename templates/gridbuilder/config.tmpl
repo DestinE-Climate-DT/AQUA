@@ -1,10 +1,10 @@
 # template for configuration file for `aqua grids build` tool
 
 reader:
-  catalog: "ci"
-  model: "ERA5"
-  exp: "era5-hpz3"
-  source: "monthly"
+  catalog: {{ catalog }}
+  model: {{ model }}
+  exp: {{ exp }}
+  source: {{ source }}
 
 builder:
   loglevel: "INFO"
