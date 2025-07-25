@@ -36,13 +36,14 @@ class RegularGridBuilder(BaseGridBuilder):
             'kind': 'regular'
         }
 
+
 class GaussianRegularGridBuilder(BaseGridBuilder):
     """
     Class to build Gaussian regular lon-lat grid files.
     """
     logger_name = "GaussianRegularGridBuilder"
     requires_bounds = False
-    
+
     def get_metadata(self, data):
         """
         Get metadata for the Gaussian regular lon-lat grid based on the data size.
@@ -55,8 +56,8 @@ class GaussianRegularGridBuilder(BaseGridBuilder):
         nlon = data['lon'].size
         nlat = data['lat'].size
         if data['lat'][0] > data['lat'][-1]:
-            cdogrid = f"F{int(nlat/2)}"
-            aquagrid = f"F{int(nlat/2)}"
+            cdogrid = f"F{int(nlat / 2)}"
+            aquagrid = f"F{int(nlat / 2)}"
         else:
             raise ValueError("Latitude values are not from North to South, cannot build Gaussian regular grid")
         return {
@@ -64,10 +65,11 @@ class GaussianRegularGridBuilder(BaseGridBuilder):
             'nlat': nlat,
             'cdogrid': cdogrid,
             'aquagrid': aquagrid,
-            'spectral_truncation': nlat-1,
+            'spectral_truncation': nlat - 1,
             'remap_method': "con",
             'kind': 'gaussianregular'
         }
+
 
 class HealpixGridBuilder(BaseGridBuilder):
     """

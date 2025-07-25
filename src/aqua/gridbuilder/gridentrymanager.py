@@ -37,7 +37,8 @@ class GridEntryManager:
             loglevel (str): The logging level for the logger.
         """
         # get useful paths
-        self.configpath = ConfigPath().get_config_dir()
+        conf = ConfigPath()
+        self.configpath = conf.get_config_dir()
         self.gridpath = os.path.join(self.configpath, 'grids')
 
         # try to keep model and grid names as lowercase
@@ -73,7 +74,7 @@ class GridEntryManager:
                 return aquagrid
             if aquagrid and self.model_name:
                 return f"{self.model_name}_{aquagrid}"
-            raise ValueError("Grid name or model name are not set, please provide at least a grid name")
+            raise ValueError("CDO grid is not detected and model name is not set, please provide model name.")
 
         # masking
         basename = f"{self.model_name}"
@@ -180,7 +181,8 @@ class GridEntryManager:
             basepath = f"{basepath}_v{version}"
         return basepath
 
-    def create_grid_entry(self, gridfile: str, grid_entry_name: str, grid_block: Dict[str, Any], rebuild: bool = False) -> None:
+    def create_grid_entry(self, gridfile: str, grid_entry_name: str,
+                          grid_block: Dict[str, Any], rebuild: bool = False) -> None:
         """
         Create or update a grid entry in the grid YAML file.
 

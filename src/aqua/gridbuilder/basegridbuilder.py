@@ -1,7 +1,6 @@
 """This module base class for grid type builders and its extensions."""
 import os
-from typing import Optional
-from jinja2.nodes import Dict
+from typing import Optional, Dict
 import numpy as np
 import xarray as xr
 from cdo import Cdo
@@ -33,7 +32,7 @@ class BaseGridBuilder:
             vert_coord (str): The vertical coordinate if applicable.
             original_resolution (str): The original resolution of the data.
             model_name (str): The name of the model.
-            grid_name (str, optional): The name of the grid.
+            grid_name (Optional[str]): The name of the grid, if applicable.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
         self.masked = None
@@ -44,8 +43,6 @@ class BaseGridBuilder:
         self.grid_name = grid_name
         self.logger = log_configure(log_level=loglevel, log_name=self.logger_name)
         self.cdo = Cdo()
-
-    # Remove the prepare method entirely; users should call get_metadata directly
 
     def clean_attributes(self, data: xr.Dataset) -> xr.Dataset:
         """
