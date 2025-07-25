@@ -15,9 +15,8 @@ import xarray as xr
 import healpy as hp
 from aqua.logger import log_configure
 from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
-from aqua.util import healpix_resample
-from aqua.util import cbar_get_label, set_map_title
-from aqua.util import coord_names, set_ticks, ticks_round
+from aqua.util import healpix_resample, coord_names, set_ticks, ticks_round
+from aqua.util import cbar_get_label, set_map_title, generate_colorbar_ticks
 from aqua.exceptions import NoDataError
 from .styles import ConfigStyle
 
@@ -39,7 +38,6 @@ def plot_single_map(data: xr.DataArray,
         data (xr.DataArray):         Data to plot.
         contour (bool, optional):    If True, plot a contour map, otherwise a pcolormesh. Defaults to True.
         sym (bool, optional):        If True, set the colorbar to be symmetrical. Defaults to False.
-        proj (cartopy.crs.Projection, optional): Projection to use. Defaults to PlateCarree.
         extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
         coastlines (bool, optional): If True, add coastlines. Defaults to True.
         style (str, optional):       Style to use. Defaults to None (aqua style).
@@ -49,14 +47,14 @@ def plot_single_map(data: xr.DataArray,
         vmax (float, optional):      Maximum value for the colorbar.
                                      Defaults to None.
         cmap (str, optional):        Colormap. Defaults to 'RdBu_r'.
-        cbar (bool, optional):      If True, add a colorbar. Defaults to True.
+        cbar (bool, optional):       If True, add a colorbar. Defaults to True.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
         title (str, optional):       Title of the figure. Defaults to None.
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
         fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
-        ax (plt.Axes, optional):    Axes to plot on. By default a new axes is created.
-        ax_pos (list, optional):  Axes position. Used if the axes has to be created. Defaults to (1, 1, 1).
+        ax (plt.Axes, optional):     Axes to plot on. By default a new axes is created.
+        ax_pos (list, optional):     Axes position. Used if the axes has to be created. Defaults to (1, 1, 1).
         return_fig (bool, optional): If True, return the figure and axes. Defaults to False.
         loglevel (str, optional):    Log level. Defaults to 'WARNING'.
 
@@ -172,11 +170,11 @@ def plot_single_map(data: xr.DataArray,
                             ticks_rounding=ticks_rounding, lon_name=lon_name,
                             lat_name=lat_name, proj=proj, loglevel=loglevel)
 
-    # Adjust the location of the subplots on the page to make room for the colorbar
-    fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
-                        wspace=0.1, hspace=0.5)
-
     if cbar:
+        # Adjust the location of the subplots on the page to make room for the colorbar
+        fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
+                            wspace=0.1, hspace=0.5)
+
         # Add a colorbar axis at the bottom of the graph
         cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
 
@@ -185,26 +183,13 @@ def plot_single_map(data: xr.DataArray,
 
         cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', label=cbar_label)
 
-        # Make tick of colorbar symmetric if sym=True
         cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
-        if sym:
-            logger.debug("Setting colorbar ticks to be symmetrical")
-            cbar_ticks = np.linspace(-vmax, vmax, nlevels + 1)
-        else:
-            cbar_ticks = np.linspace(vmin, vmax, nlevels + 1)
-
-        # If too many ticks, select a subset for readability
-        max_ticks = 15
-        if len(cbar_ticks) > max_ticks:
-            step = max(1, int(np.ceil(len(cbar_ticks) / max_ticks)))
-            cbar_ticks = cbar_ticks[::step]
-            # Ensure last tick is included
-            if cbar_ticks[-1] != (vmax if not sym else vmax):
-                cbar_ticks = np.append(cbar_ticks, vmax if not sym else vmax)
-
-        if cbar_ticks_rounding is not None:
-            logger.debug("Setting colorbar ticks rounding to %s", cbar_ticks_rounding)
-            cbar_ticks = ticks_round(cbar_ticks, cbar_ticks_rounding)
+        cbar_ticks = generate_colorbar_ticks(vmin=vmin,
+                                             vmax=vmax, 
+                                             sym=sym,
+                                             nlevels=nlevels,
+                                             ticks_rounding=cbar_ticks_rounding,
+                                             loglevel=loglevel)
         cbar.set_ticks(cbar_ticks)
         cbar.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
 

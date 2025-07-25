@@ -5,6 +5,7 @@ import os
 import pytest
 import logging
 from aqua.util import load_yaml, dump_yaml
+from aqua.cli.catgen import AquaFDBGenerator
 
 loglevel = "DEBUG"
 
@@ -153,5 +154,22 @@ def test_catgen_full(tmp_path, model, nsources, nocelevels):
     # check number of vertical levels in the atmosphere
     assert len(sources['sources']['daily-hpz10-oce3d']['metadata']['levels']) == nocelevels
 
+@pytest.mark.catgen
+def test_catgen_raise(tmp_path):
+    """test for catgen raise"""
 
+    config_path = 'tests/catgen/config-test-catgen.j2'
 
+    with pytest.raises(ValueError):
+        config = load_yaml(config_path)
+        config.pop('author', None)
+        dump_path = os.path.join(tmp_path, 'test.yaml')
+        dump_yaml(dump_path, config)
+        AquaFDBGenerator(config_path=dump_path, data_portfolio='minimal')
+
+    with pytest.raises(ValueError):
+        config = load_yaml(config_path)
+        config.pop('machine', None)
+        dump_path = os.path.join(tmp_path, 'test.yaml')
+        dump_yaml(dump_path, config)
+        AquaFDBGenerator(config_path=dump_path, data_portfolio='minimal')

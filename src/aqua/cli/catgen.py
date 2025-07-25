@@ -50,6 +50,9 @@ class AquaFDBGenerator:
         self.author = self.config.get('author')
         if not self.author: 
             raise ValueError("Please specify the author of the experiment")
+        self.machine = self.config.get('machine')
+        if not self.machine:
+            raise ValueError("Please specify the machine you are using")
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
         self.model = self.config["model"].lower()
@@ -61,8 +64,8 @@ class AquaFDBGenerator:
 
         # portfolio
         self.logger.info("Running FDB catalog generator for %s portfolio for model %s", data_portfolio, self.model)
-        self.dp = load_yaml(os.path.join(self.dp_dir_path, data_portfolio, 'portfolio.yaml'))
-        self.grids = load_yaml(os.path.join(self.dp_dir_path, data_portfolio, 'grids.yaml'))
+        self.dp = load_yaml(os.path.join(self.dp_dir_path, 'portfolios', data_portfolio, 'portfolio.yaml'))
+        self.grids = load_yaml(os.path.join(self.dp_dir_path, 'portfolios', data_portfolio, 'grids.yaml'))
         self.levels = load_yaml(os.path.join(self.dp_dir_path, 'definitions', 'levels.yaml'))
 
         self.local_grids = self.get_local_grids(self.resolution, self.grids)
@@ -324,7 +327,7 @@ class AquaFDBGenerator:
             'metadata': {
                 'author': self.author,
                 'maintainer': self.config.get('maintainer') or 'not specified',
-                'machine': self.config['machine'],
+                'machine': self.machine,
                 'expid': self.config['expver'],
                 'resolution_atm': self.atm_grid,
                 'resolution_oce': self.ocean_grid,

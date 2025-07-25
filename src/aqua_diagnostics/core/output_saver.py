@@ -190,6 +190,7 @@ class OutputSaver:
         filename = '.'.join(parts)
 
         self.logger.debug("Generated filename: %s", filename)
+        self.logger.debug("Generated filename: %s", filename)
         return filename
 
     def _core_save(self, diagnostic_product: str, file_format: str,
@@ -228,6 +229,7 @@ class OutputSaver:
 
         if not rebuild and os.path.exists(filepath):
             self.logger.info("File already exists and rebuild=False, skipping: %s", filepath)
+            self.logger.info("File already exists and rebuild=False, skipping: %s", filepath)
             return filepath
 
         metadata = self.create_metadata(
@@ -244,9 +246,33 @@ class OutputSaver:
 
         dataset.to_netcdf(filepath)
 
-        self.logger.info("Saved NetCDF %s", filepath)
+        self.logger.info("Saved NetCDF: %s", filepath)
         return filepath
+    
+    def generate_folder(self, extension: str = 'pdf'):
+        """
+        Generate a folder for saving output files based on the specified format.
 
+        Args:
+            extension (str): The extension of the output files (e.g., 'pdf', 'png', 'netcdf').
+        
+        Returns:
+            str: The path to the generated folder.
+        """
+        folder = os.path.join(self.outdir, extension)
+        create_folder(folder=str(folder), loglevel=self.loglevel)
+        return folder
+    
+    def generate_path(self, extension: str, diagnostic_product: str,
+                      extra_keys: dict = None) -> str:
+        """
+        Generate a full file path for saving output files based on the provided parameters.
+        Simplified wrapper around `generate_name` and `generate_folder` to include the output directory.
+        """
+        filename = self.generate_name(diagnostic_product=diagnostic_product,
+                                       extra_keys=extra_keys)
+        folder = self.generate_folder(extension=extension) 
+        return os.path.join(folder, filename + '.' + extension)
 
     def _save_figure(self, fig: Figure, diagnostic_product: str, file_format: str,
                      rebuild: bool = True, extra_keys: Optional[dict] = None, metadata: Optional[dict] = None,

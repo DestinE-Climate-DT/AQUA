@@ -160,48 +160,64 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
     return cbar_label
 
 
-def set_map_title(data: xr.DataArray, title: str = None,
-                  loglevel='WARNING'):
+def set_map_title(data: xr.DataArray, title: str = None, 
+                  put_units: bool = True, use_attr_name: str = None, 
+                  set_units: str = None, loglevel='WARNING'):
     """
     Evaluate the map title.
 
     Args:
-        data (xarray.DataArray): Input data array.
-        title (str, opt):        Map title.
-        loglevel (str, opt):     Log level.
+        data (xarray.DataArray):  Input data array.
+        title (str, opt):         Map title.
+        loglevel (str, opt):      Log level.
+        use_attr_name (str, opt): Use directly a specific attribute to use as title avoiding loop.
+        set_units (str, opt):     Manually override units to include in title.
 
     Returns:
         title (str): Map title.
     """
     logger = log_configure(loglevel, 'set map title')
 
-    if title is None:
-        title = ""
+    if title is not None:
+        logger.debug(f"Using explicitly provided title: {title}")
+        return title
+    
+    title = ""
+    varname = None
+
+    if use_attr_name:
+        varname = data.attrs.get(use_attr_name, None)
+        if varname:
+            logger.debug(f"Using title from specified attribute '{use_attr_name}': {varname}")
+        else:
+            raise ValueError(f"Attribute '{use_attr_name}' not found in data attributes.")
+
+    if varname is None:
         # Getting the variables from the possible attributes
         for attr in ['long_name', 'short_name', 'shortName']:
             varname = data.attrs[attr] if attr in data.attrs else None
             if varname is not None:
                 break
-        units = data.attrs['units'] if 'units' in data.attrs else None
-        model = data.attrs["AQUA_model"] if 'AQUA_model' in data.attrs else None
-        exp = data.attrs["AQUA_exp"] if 'AQUA_exp' in data.attrs else None
-        time = data.time.values if 'time' in data.dims else None
 
-        if varname:
-            title += varname
-            if units:
-                title += f" [{units}]"
-        if model is not None and exp is not None:
-            title += f" {model} {exp}"
-        if time is not None:
-            time = np.datetime_as_string(time, unit='h')
-            title += f" {time}"
-        if title == "":
-            logger.warning("No title found, please specify one with the title argument.")
-            title = None
-        else:
-            logger.debug("Using %s as map title", title)
+    units = set_units if set_units is not None else data.attrs.get('units', None)
+    model = data.attrs["AQUA_model"] if 'AQUA_model' in data.attrs else None
+    exp = data.attrs["AQUA_exp"] if 'AQUA_exp' in data.attrs else None
+    time = data.time.values if 'time' in data.dims else None
 
+    if varname:
+        title += varname
+        if units and put_units:
+            title += f" [{units}]"
+    if model is not None and exp is not None:
+        title += f" {model} {exp}"
+    if time is not None:
+        time = np.datetime_as_string(time, unit='h')
+        title += f" {time}"
+    if title == "":
+        logger.warning("No title found, please specify one with the title argument.")
+        title = None
+    else:
+        logger.debug("Using %s as map title", title)
     return title
 
 
@@ -329,6 +345,46 @@ def set_ticks(data: xr.DataArray,
     ax.yaxis.set_major_formatter(lat_formatter)
 
     return fig, ax
+
+def generate_colorbar_ticks(vmin, vmax, nlevels=11, sym=False,
+                            ticks_rounding=None, max_ticks=15, loglevel='WARNING'):
+    """
+    Generate and optionally round colorbar ticks for consistent and readable display.
+
+    Args:
+        vmin (float): Minimum colorbar value.
+        vmax (float): Maximum colorbar value.
+        nlevels (int): Number of desired levels. Default is 11.
+        sym (bool): Whether the colorbar should be symmetric around zero.
+        ticks_rounding (int, optional): Decimal places for rounding. Default is None.
+        max_ticks (int): Max allowed ticks on the colorbar. Default is 15.
+        loglevel (str): Logging level.
+
+    Returns:
+        np.ndarray: Array of colorbar tick positions.
+    """
+    logger = log_configure(loglevel, 'generate_colorbar_ticks')
+
+    if sym:
+        vmax = max(abs(vmin), abs(vmax))
+        vmin = -vmax
+        logger.debug(f"Using symmetric colorbar: {vmin=}, {vmax=}")
+
+    cbar_ticks = np.linspace(vmin, vmax, nlevels + 1)
+
+    # Reduce number of ticks if too many
+    if len(cbar_ticks) > max_ticks:
+        step = max(1, int(np.ceil(len(cbar_ticks) / max_ticks)))
+        cbar_ticks = cbar_ticks[::step]
+        # Ensure last tick is included
+        if cbar_ticks[-1] != vmax:
+            cbar_ticks = np.append(cbar_ticks, vmax)
+
+    if ticks_rounding is not None:
+        logger.debug(f"Rounding colorbar ticks to {ticks_rounding} decimals")
+        cbar_ticks = ticks_round(cbar_ticks, ticks_rounding)
+
+    return cbar_ticks
 
 """
 Following functions are taken and adjusted from the easygems package,

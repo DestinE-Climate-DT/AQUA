@@ -40,7 +40,7 @@ The configuration file ``config.tmpl`` contains the following keys:
 
 - ``author``: the author of the experiment. This field is mandatory.
 - ``maintainer``: the maintainer of the experiment. 
-- ``machine``: the machine where the experiment is running. Default is ``lumi``.
+- ``machine``: the machine where the experiment is running. This field is mandatory. Supported machine names so far are ``lumi``, ``MN5``, ``levante``, ``hpc2020``.
 - ``repos``: the paths to the data-portfolio and Climate-DT-catalog repositories.
 - ``resolution``: the resolution of the experiment, which can be ``production``, ``develop``, ``lowres`` (if production portfolio), or ``intermediate`` (if reduced portfolio).
 - ``catalog_dir``: the folder in the Climate-DT-catalog where the catalog entry will be stored.
@@ -55,6 +55,7 @@ FDB Request definitions (to be filled by the user/workflow):
 - ``generation``: the generation to use. Default is ``1``
 - ``expver: 0001``:  Default is ``0001``
 - ``num_of_realizations``: number of realizations in case of ensembles. Default is ``1``.
+- ``default_realization``: in case of ensembles, the first realization to be loaded by default. Default is ``1``.
 
 Info on the experiment:
 

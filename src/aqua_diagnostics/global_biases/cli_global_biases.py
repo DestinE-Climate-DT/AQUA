@@ -106,7 +106,12 @@ if __name__ == '__main__':
 
             for var, is_formula in all_vars:
                 logger.info(f"Running Global Biases diagnostic for {'formula' if is_formula else 'variable'}: {var}")
-                plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['2d_maps'].get(var, {})
+
+                all_plot_params = config_dict['diagnostics']['globalbiases'].get('plot_params', {})
+                default_params = all_plot_params.get('default', {})
+                var_params = all_plot_params.get(var, {})
+                plot_params = {**default_params, **var_params}
+
                 vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
                 param_dict = config_dict['diagnostics']['globalbiases'].get('params', {}).get(var, {})
                 units = param_dict.get('units', None)
@@ -131,26 +136,33 @@ if __name__ == '__main__':
 
                 if 'plev' in biases_dataset.data.get(var, {}).dims and plev:
                     plev_list = to_list(plev)
-                    logger.debug(f"Pressure levels for variable {var}: {plev_list}")
                 else: 
                     plev_list = [None] 
 
                 for p in plev_list:
                     logger.info(f"Processing variable: {var} at pressure level: {p}" if p else f"Processing variable: {var} at surface level")
 
+                    proj = plot_params.get('projection', 'robinson')
+                    proj_params = plot_params.get('projection_params', {})
+
+                    logger.debug(f"Using projection: {proj} for variable: {var}")
                     plot_biases = PlotGlobalBiases(save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
-                                          var=var, plev=p, vmin=vmin, vmax=vmax) 
+                                          var=var, plev=p,
+                                          proj=proj, proj_params=proj_params,
+                                          vmin=vmin, vmax=vmax) 
                     if seasons:
                         plot_biases.plot_seasonal_bias(data=biases_dataset.seasonal_climatology, 
                                                        data_ref=biases_reference.seasonal_climatology,
-                                                       var=var, plev=p, vmin=vmin, vmax=vmax)
+                                                       var=var, plev=p, 
+                                                       proj=proj, proj_params=proj_params,
+                                                       vmin=vmin, vmax=vmax)
 
                 if vertical and 'plev' in biases_dataset.data.get(var, {}).dims:
                     logger.debug(f"Plotting vertical bias for variable: {var}")
-                    plot_params = config_dict['diagnostics']['globalbiases']['plot_params']['limits']['vertical_maps'].get(var, {})
-                    vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
-                    plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, var=var)
+                    vmin_v , vmax_v = plot_params.get('vmin_v'), plot_params.get('vmax_v')
+                    plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, 
+                                                   var=var, vmin=vmin_v, vmax=vmax_v)
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 

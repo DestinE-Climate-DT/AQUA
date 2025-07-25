@@ -11,7 +11,7 @@ import re
 import os
 import sys
 import jinja2
-from aqua.util import load_yaml, get_arg, ConfigPath
+from aqua.util import load_yaml, get_arg, ConfigPath, to_list
 
 def is_job_running(job_name, username):
     """verify that a job name is not already submitted in the slurm queue"""
@@ -41,7 +41,7 @@ def load_jinja_template(template_file='aqua_lra.j2'):
     
     raise FileNotFoundError(f'Cannot file template file {template_file}')
 
-def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
+def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_file,
                   workers=1, definitive=False, overwrite=False,
                   dependency=None, singularity=None):
     
@@ -53,6 +53,7 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
         exp: exp to be processed
         source: source to be processed
         varname: varname to be processed
+        realization: realization to be processed
         slurm_dict: dictionary with slurm optiosn
         yaml_file: config file for submission
         workers: dask workers
@@ -90,11 +91,12 @@ def submit_sbatch(model, exp, source, varname, slurm_dict, yaml_file,
         'exp': exp,
         'source': source,
         'varname': varname,
+        'realization': realization,
         'definitive': definitive,
         'overwrite': overwrite,
         'config': yaml_file,
         'machine': ConfigPath().get_machine(),
-        'aqua': aquapath
+        'aqua': aquapath,
     }
 
     if is_job_running(full_job_name, jinjadict['username']):
@@ -175,15 +177,21 @@ if __name__ == '__main__':
     for model in config['data'].keys():
         for exp in config['data'][model].keys():
             for source in config['data'][model][exp].keys():
-                varnames = config['data'][model][exp][source]['vars']
-                for varname in varnames:
-                    if (COUNT % int(parallel)) == 0 and COUNT != 0:
-                        print('Updating parent job to' + str(jobid))
-                        PARENT_JOB = str(jobid)
-                    COUNT = COUNT + 1
-                    print(' '.join(['Submitting', model, exp, source, varname]))
-                    jobid = submit_sbatch(model=model, exp=exp, source=source, varname=varname,
-                                          slurm_dict=slurm, yaml_file=config_file,
-                                          workers=workers, definitive=definitive,
-                                          overwrite=overwrite, dependency=PARENT_JOB,
-                                          singularity=singularity)
+                if 'realizations' in config['data'][model][exp][source].keys():
+                    realizations = to_list(config['data'][model][exp][source]['realizations'])
+                else:
+                    realizations = [1]
+                for realization in realizations:
+                    varnames = config['data'][model][exp][source]['vars']
+                    for varname in varnames:
+                        if (COUNT % int(parallel)) == 0 and COUNT != 0:
+                            print('Updating parent job to' + str(jobid))
+                            PARENT_JOB = str(jobid)
+                        COUNT = COUNT + 1
+                        print(' '.join(['Submitting', model, exp, source, varname]))
+                        jobid = submit_sbatch(model=model, exp=exp, source=source,
+                                            varname=varname, realization=realization,
+                                            slurm_dict=slurm, yaml_file=config_file,
+                                            workers=workers, definitive=definitive,
+                                            overwrite=overwrite, dependency=PARENT_JOB,
+                                            singularity=singularity)
