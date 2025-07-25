@@ -10,6 +10,7 @@ import xarray as xr
 from matplotlib.figure import Figure
 from aqua.logger import log_configure, log_history
 from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata
+from .catalog_util import Catalog_util
 
 DEFAULT_REALIZATION = 'r1'  # Default realization if not specified
 
@@ -185,6 +186,20 @@ class OutputSaver:
 
         # Remove None values
         parts = [str(value) for value in parts_dict.values() if value is not None]
+
+        # create catalog entry 
+        cat_entry = Catalog_util(
+            diagnostic_name=self.diagnostic_name,
+            diagnostic_product=self.diagnostic_product,
+            catalog=self.catalog,
+            model=self.model,
+            exp=self.model,
+            realization=self.realization,
+            extra_keys=self.extra_keys,
+            parts_dict=parts_dict,
+            basedir=self.outdir,
+        )
+        cat_entry.create_catalog_entry()
 
         # Join all parts
         filename = '.'.join(parts)
