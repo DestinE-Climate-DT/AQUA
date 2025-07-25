@@ -26,7 +26,6 @@ except KeyError:
     gsv_available = False
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
 
-#BRIDGE_API_URL = "https://climate-catalogue.lumi.apps.dte.destination-earth.eu/api/stac"
 BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"  # LUMI QUBED STAC API
 
 
@@ -902,13 +901,14 @@ class GSVSource(base.DataSource):
             stac_json = response.json()
         except ValueError as exc:
             raise ValueError("Failed to parse STAC API response as JSON") from exc
+
     
-        check = stac_json['links'][0]['title']
-        if check != 'date':
-            raise ValueError(f"The first link in the response is not a date link, but {check}")
+        dateblock = [el for el in stac_json['links'] if el.get('title') == 'date']
+        if not dateblock:
+            raise ValueError(f"The first link in the response is not a date link, but {dateblock}")
 
         # specific extraction of the dates: new format following the qube STAC API
-        dates = stac_json['links'][0].get('variables').get('date').get('enum')
+        dates = dateblock[0].get('variables').get('date').get('enum')
         sorted_dates = sorted(dates)
         
         return sorted_dates[0], sorted_dates[-1]
