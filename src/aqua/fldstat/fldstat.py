@@ -189,6 +189,9 @@ class FldStat():
                     self.area = self.area.isel({coord: slice(None, None, -1)})
                     continue
 
+                # If coordinates are not aligned, raise an error
+                self.logger.error("Coordinate '%s' is not aligned, reporting difference:")
+                self.logger.error(data_coord.values - area_coord.values)
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
     
         return self.area
