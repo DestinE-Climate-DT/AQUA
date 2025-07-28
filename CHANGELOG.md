@@ -10,7 +10,7 @@ Unreleased in the current development version (target v0.18.0):
 ## [v0.17.0]
 
 Main changes are:
-1. Support for realizations `aqua-analysis` and a set of diagnostics (Timeseries, Global Biases, Teleconnections, Ecmean)
+1. Support for realizations for `aqua-analysis`, `aqua-push` and a set of diagnostics (Timeseries, Global Biases, Teleconnections, Ecmean)
 2. Support for data-portfolio v2.0.0
 3. LRA output tree refactored accomodating for realization, statistic and frequency
 
