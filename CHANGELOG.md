@@ -5,7 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.17.0): 
+Unreleased in the current development version (target v0.18.0): 
+
+## [v0.17.0]
+
+Main changes are:
+1. Support for realizations `aqua-analysis` and a set of diagnostics (Timeseries, Global Biases, Teleconnections, Ecmean)
+2. Support for data-portfolio v2.0.0
+3. LRA output tree refactored accomodating for realization, statistic and frequency
 
 Removed:
 -  removed Reader.info() method (#2076) 
@@ -1017,7 +1024,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.16.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...HEAD
+[v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.16.0...v0.17.0
 [v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
 [v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0
 [v0.14.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.14.0
