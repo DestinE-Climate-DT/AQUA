@@ -74,7 +74,10 @@ Basic usage
 This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-phase1/IFS-NEMO/historical-1990``
-or a text file containing a list of experiments in the format "catalog model experiment".
+or a text file containing a list of experiments. 
+The file should be in the format "catalog model experiment realization". 
+In case the compatibility flag ``--no-ensemble``
+has been specified, the file must be in the format "catalog model experiment".
 It creates ``content.yaml`` files for each experiment, pushes the images to the ``aqua-web`` bucket on LUMI-O and
 updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
 
@@ -96,6 +99,10 @@ Additional options
 .. option:: -d, --no-update
 
     Do not update the aqua-web Github repository.
+
+.. option:: --no-ensemble
+
+    Compatibility flag to process experiments with old 3-level structure (``catalog/model/experiment``).
 
 .. option:: -h, --help
 
@@ -251,8 +258,8 @@ experiments specified in the list.
 
 Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
 
-The extra ``-w``, ``-f`` and ``-n`` flags are used for maintenance and debugging 
-and can be used to wipe the destination directory before pushing the images to aqua-web,
+The extra ``-f`` and ``-n`` flags are used for maintenance and debugging 
+and can be used to
 use a fresh temporary output directory for the analysis generation and use the
 native (local) AQUA version respectively.
 
@@ -274,6 +281,17 @@ Options
 .. option:: -s <source>, --source <source>
 
     Source to be processed.
+
+.. option:: --no-ensemble
+
+    Specifies that the old 3-level ensemble structure (catalog/model/experiment) should be used instead
+    of the default one (catalog/model/experiment/realization).
+
+.. option:: --realization <realization>
+
+    Used to specify the realization of the experiment.
+    If a single experiment is specified, and ``--realization`` is not specified,
+    "r1" will be assumed as the realization by default.
 
 .. option:: -r, --serial
 
@@ -298,10 +316,6 @@ Options
 .. option:: -p, --push
     
     Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
-
-.. option:: -w, --wipe
-    
-    Flag to wipe the destination directory before pushing the images to aqua-web.
 
 .. option:: -f, --fresh
     

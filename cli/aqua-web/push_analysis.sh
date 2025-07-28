@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -ex
+set -e
 
 # CLI tool to push analysis results to aqua-web
 
@@ -74,8 +74,19 @@ push_lumio() {
 make_contents() {
     # This assumes that we are inside the aqua-web repository
 
-    log_message INFO "Making content files for $1 with config $2"
-    python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
+    log_message INFO "Making content files for $1 with config $2 and ensemble $3"
+    if [ $ensemble -eq 1 ]; then
+        # If ensemble structure, we need to pass the ensemble flag
+        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
+    else
+        # Otherwise, we use the old structure
+        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --no-ensemble
+    fi
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        log_message ERROR "Creating content files for $1 failed with exit code $exit_code"
+        exit $exit_code
+    fi
 }
 
 collect_figures() {
@@ -118,8 +129,13 @@ convert_pdf_to_png() {
 
         mkdir -p $dstdir
     
-        IFS='/' read -r catalog model experiment <<< "$1"
-        $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment"
+        if [ $ensemble -eq 1 ]; then
+            IFS='/' read -r catalog model experiment realization <<< "$1"
+            $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment" "$realization"
+        else
+            IFS='/' read -r catalog model experiment <<< "$1"
+            $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment"
+        fi
     fi
 }
 
@@ -134,6 +150,7 @@ print_help() {
     echo "  -b, --bucket BUCKET    push to the specified bucket (defaults to 'aqua-web')"
     echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml)"
     echo "  -d, --no-update        do not update the remote github repository"  
+    echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
     echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"  
@@ -158,8 +175,10 @@ repository="DestinE-Climate-DT/aqua-web"
 update=1
 rsync=""
 config="$SCRIPT_DIR/config.grouping.yaml"
+ensemble=1  # Default to new ensemble structure with 4 levels (catalog/model/experiment/realization)
 
-while [[ $# -gt 2 ]]; do
+# Parse all options first
+while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)
       print_help
@@ -172,6 +191,10 @@ while [[ $# -gt 2 ]]; do
     -l|--loglevel)
         loglevel="$2"
         shift 2
+        ;;
+    --no-ensemble)
+        ensemble=0
+        shift
         ;;
     -d|--no-update)
         update=0
@@ -198,8 +221,22 @@ while [[ $# -gt 2 ]]; do
       echo "Unknown option: $1"
       exit 1
       ;;
+    *)
+      # Stop parsing options, the rest are positional arguments
+      break
+      ;;
   esac
 done
+
+# Check for the two required positional arguments
+if [ "$#" -ne 2 ]; then
+    echo "Error: Missing required arguments INDIR and EXPS."
+    print_help
+    exit 1
+fi
+
+indir=$1
+exps=$2
 
 localrepo=0
 if [[ $repository == local:* ]]; then
@@ -212,8 +249,6 @@ if [ -z "$1" ] || [ -z "$2" ]; then
     exit 0
 fi
 
-indir=$1
-exps=$2
 
 if [ ! -f "$SCRIPT_DIR/../util/logger.sh" ]; then
     echo "Warning: $SCRIPT_DIR/../util/logger.sh not found, using dummy logger"
@@ -273,14 +308,23 @@ if [ -f "$exps" ]; then
         catalog=$(echo "$line" | awk '{print $1}')
         model=$(echo "$line" | awk '{print $2}')
         experiment=$(echo "$line" | awk '{print $3}')
+        if [ $ensemble -eq 1 ]; then
+            realization=$(echo "$line" | awk '{print $4}')
+            realization=${realization:-r1}  # Default to r1 if not specified
+        fi
 
-        log_message INFO "Collect figures for $catalog/$model/$experiment and converting to png"
-        collect_figures "$1" "$catalog/$model/$experiment"
-        convert_pdf_to_png "$catalog/$model/$experiment"
+        if [ $ensemble -eq 1 ]; then
+            expstr="$catalog/$model/$experiment/$realization"
+        else
+            expstr="$catalog/$model/$experiment"
+        fi
+        log_message INFO "Collect figures for $expstr and converting to png"
+        collect_figures "$1" "$expstr"
+        convert_pdf_to_png "$expstr"
         get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
-        make_contents "$catalog/$model/$experiment" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
-        push_lumio $bucket "$catalog/$model/$experiment" "$rsync"  # push figures including experiments.yaml
-        echo "$catalog/$model/$experiment" >> updated.txt
+        make_contents "$expstr" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
+        push_lumio $bucket "$expstr" "$rsync"  # push figures including experiments.yaml
+        echo "$expstr" >> updated.txt
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
     log_message INFO "Collect figures for $exps and converting to png"

@@ -25,6 +25,7 @@ AQUA core complete list:
 - `Reader` can filter kwargs so that a parameter not available in the intake source is removed and not passed to the intake driver (#2074)
 - Adapt catgen to changes in data-portfolio v1.3.2 (#2076)
 - Add `get_projection()` utility function for selection of Cartopy map projections (#2068)
+- Tools to push to dashboard support ensemble realizations (#2070)
 - `aqua-analysis.py` now supports a `--realization` option to enable the analysis of a specific realization (#2041, #2090)
 - Separate new histogram function in the framework (#2061)
 - Introducing `timsum()` method to compute cumulative sum (#2059)
