@@ -9,8 +9,6 @@ import numpy as np
 import healpy as hp
 from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
-import matplotlib.path as mpath
-import matplotlib.patches as mpatches
 
 from aqua.logger import log_configure
 from .sci_util import check_coordinates
@@ -388,39 +386,6 @@ def generate_colorbar_ticks(vmin, vmax, nlevels=11, sym=False,
 
     return cbar_ticks
 
-def apply_circular_window(ax, extent=None, apply_black_circle=False):
-    """
-    Apply a circular boundary mask to a Cartopy GeoAxes and set geographic extent
-    to avoid the default rectangular plotting window with some projections.
-
-    Args:
-        ax (GeoAxes): Cartopy axes object to modify.
-        extent (list or None): Geographic extent [west, east, south, north]. Default is Arctic region.
-
-    Returns:
-        ax (GeoAxes): Modified axes with circular boundary and extent.
-    """
-    if extent is None:
-        extent = [-180, 180, 10, 90] # [west, east, south, north]
-
-    # create circular boundary path
-    theta = np.linspace(0, 2 * np.pi, 100)
-    center, radius = [0.5, 0.5], 0.5
-    verts = np.vstack([np.sin(theta), np.cos(theta)]).T
-    circle = mpath.Path(verts * radius + center)
-
-    # apply circle to axis
-    ax.set_boundary(circle, transform=ax.transAxes)
-    ax.set_extent(extent, crs=ccrs.PlateCarree())
-
-    if apply_black_circle:
-        # overlay a more visible black circle outline (drawn in axes coordinates)
-        circle_patch = mpatches.Circle(
-            center, radius=radius, transform=ax.transAxes,
-            fill=False, color='darkgrey', linewidth=1.5, zorder=10)
-        ax.add_patch(circle_patch)
-    return ax
-    
 """
 Following functions are taken and adjusted from the easygems package,
 on this repository:

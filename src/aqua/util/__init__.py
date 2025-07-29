@@ -6,7 +6,6 @@ from .units import normalize_units, convert_units, convert_data_units
 from .graphics import add_cyclic_lon, plot_box, minmax_maps
 from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
 from .graphics import coord_names, ticks_round, set_ticks, generate_colorbar_ticks
-from .graphics import apply_circular_window
 from .graphics import get_nside, get_npix, healpix_resample
 from .projections import get_projection
 from .realizations import format_realization
@@ -28,7 +27,6 @@ __all__ = ['ConfigPath',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
            'evaluate_colorbar_limits', 'cbar_get_label', 'set_map_title',
            'coord_names', 'ticks_round', 'set_ticks', 'generate_colorbar_ticks',
-           'apply_circular_window',
            'area_selection', 'check_coordinates', 'select_season',
            'generate_random_string', 'get_arg', 'create_folder', 'to_list',
            'files_exist',

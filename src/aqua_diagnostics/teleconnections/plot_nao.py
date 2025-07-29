@@ -6,7 +6,6 @@ import matplotlib.path as mpath
 from cartopy.crs import NorthPolarStereo
 from aqua.logger import log_configure
 from aqua.graphics import indexes_plot, plot_single_map, plot_single_map_diff
-from aqua.util import apply_circular_window
 from .base import PlotBaseMixin, _homogeneize_maps
 
 
@@ -85,14 +84,14 @@ class PlotNAO(PlotBaseMixin):
         fig = plt.figure(figsize=(11, 8.5))
         ax = fig.add_subplot(111, projection=proj)
 
-        # Plot details
-        proj = NorthPolarStereo(central_longitude=-20.0)
-        extent = [-180, 180, 10, 90]
+        theta = np.linspace(0, 2*np.pi, 100)
+        center, radius = [0.5, 0.5], 0.5
+        verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+        circle = mpath.Path(verts * radius + center)
 
-        fig = plt.figure(figsize=(11, 8.5))
-        ax = fig.add_subplot(111, projection=proj)
-
-        ax = apply_circular_window(ax, extent=extent)
+        # Fix the axes with the circle
+        ax.set_boundary(circle, transform=ax.transAxes)
+        ax.set_extent(extent, crs=ccrs.PlateCarree())
 
         # Case 1: no reference maps
         if maps is not None and ref_maps is None:
