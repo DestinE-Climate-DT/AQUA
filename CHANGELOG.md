@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v0.18.0): 
+Removed:
+
+Workflow modifications:
+
+AQUA core complete list:
+
+AQUA diagnostics complete list:
+- Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 
 AQUA core complete list:
 

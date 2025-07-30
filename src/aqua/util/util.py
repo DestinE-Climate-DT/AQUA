@@ -424,6 +424,21 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
     return metadata
 
 
+def extract_attrs(data, attr):
+    """Extract attribute(s) from dataset or list of datasets.
+    Args:
+        data (xarray.Dataset or list of xarray.Dataset): Dataset(s) to extract
+        attr (str): Attribute name to extract.
+        Returns:
+            list: List of attribute values from the dataset(s).
+    """
+    if data is None:
+        return None
+    if isinstance(data, list):
+        return [getattr(ds, attr, None) for ds in data]
+    return getattr(data, attr, None)
+
+
 def username():
     """
     Retrieves the current user's username from the 'USER' environment variable.
