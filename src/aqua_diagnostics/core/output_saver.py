@@ -364,3 +364,4 @@ class OutputSaver:
             metadata = {}
         metadata = update_metadata(base_metadata, metadata)
         return metadata
+

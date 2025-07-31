@@ -188,6 +188,22 @@ diagnostic_config = {
             'source_path': 'diagnostics/tropical_rainfall/cli',
             'target_path': 'diagnostics/tropical_rainfall/cli'
         }
-    ]
-    # Add other diagnostic configurations here
+    ],
+    'ensemble': [
+        {
+            'config_file': 'config_global_2D_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        },
+        {
+            'config_file': 'config_timeseries_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        },
+        {
+            'config_file': 'config_zonalmean_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        }
+    ],  # Add other diagnostic configurations here
 }

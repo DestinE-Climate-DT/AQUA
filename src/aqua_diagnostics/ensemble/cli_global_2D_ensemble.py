@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Command-line interface for ensemble zonalmean diagnostic.
+Command-line interface for ensemble atmglobalmean diagnostic.
 
-This CLI allows to plot a map of aqua analysis zonalmean
+This CLI allows to plot a map of aqua analysis atmglobalmean
 defined in a yaml configuration file for multiple models.
 """
 import argparse
 import sys
+
 from aqua.util import get_arg
 from aqua.logger import log_configure
 from aqua.version import __version__ as aqua_version
@@ -14,16 +15,17 @@ from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
 from aqua.diagnostics import retrieve_merge_ensemble_data
-from aqua.diagnostics import EnsembleZonal
-from aqua.diagnostics import PlotEnsembleZonal
+from aqua.diagnostics import EnsembleLatLon
+from aqua.diagnostics import PlotEnsembleLatLon
+
 
 def parse_arguments(args):
-    """Parse command-line arguments for EnsembleZonal diagnostic.
+    """Parse command-line arguments for EnsembleLatLon diagnostic.
 
     Args:
         args (list): list of command-line arguments to parse.
     """
-    parser = argparse.ArgumentParser(description="EnsembleZonal CLI")
+    parser = argparse.ArgumentParser(description="EnsembleLatLon CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
 
@@ -33,8 +35,8 @@ if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
 
     loglevel = get_arg(args, "loglevel", "WARNING")
-    logger = log_configure(loglevel, "CLI Single model Zonal ensemble")
-    logger.info("Starting Ensemble Zonal diagnostic")
+    logger = log_configure(loglevel, "CLI multi-model Lat-Lon Ensemble")
+    logger.info("Starting Ensemble Lat-Lon diagnostic")
 
     cluster = get_arg(args, "cluster", None)
     nworkers = get_arg(args, "nworkers", None)
@@ -49,7 +51,7 @@ if __name__ == "__main__":
     config_dict = load_diagnostic_config(
         diagnostic="ensemble",
         config=args.config,
-        default_config="config_zonalmean_ensemble.yaml",
+        default_config="config_global_2D_ensemble.yaml",
         loglevel=loglevel,
     )
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
@@ -65,11 +67,9 @@ if __name__ == "__main__":
     # EnsembleLatLon diagnostic
     if "ensemble" in config_dict["diagnostics"]:
         if config_dict["diagnostics"]["ensemble"]["run"]:
-            logger.info("EnsembleZonal module is used.")
+            logger.info("EnsembleLatLon module is used.")
 
             variable = config_dict["diagnostics"]["ensemble"].get("variable", None)
-            region = config_dict["diagnostics"]["ensemble"].get("region", None)
-
             logger.info(f"Variable under consideration: {variable}")
             title_mean = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
                 "title_mean", None
@@ -79,9 +79,6 @@ if __name__ == "__main__":
             )
             cbar_label = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
                 "cbar_label", None
-            )
-            figure_size = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "figure_size", None
             )
 
             # Model data
@@ -103,23 +100,27 @@ if __name__ == "__main__":
                     source_list.append(model["source"])
 
             ens_dataset = retrieve_merge_ensemble_data(
-                region=region,
                 variable=variable,
+                catalog_list=catalog_list,
                 model_list=model_list,
                 exp_list=exp_list,
                 source_list=source_list,
+                log_level="WARNING",
+                ens_dim="ensemble",
             )
-            ens_zm = EnsembleZonal(
+
+            ens_latlon = EnsembleLatLon(
                 var=variable,
                 dataset=ens_dataset,
                 catalog_list=catalog_list,
                 model_list=model_list,
                 source_list=source_list,
-                outputdir=outputdir,
+                ensemble_dimension_name="ensemble",
             )
-            ens_zm.run()
 
-            # PlotEnsembleZonal class
+            ens_latlon.run()
+
+            # PlotEnsembleLatLon class
             plot_arguments = {
                 "var": variable,
                 "catalog_list": catalog_list,
@@ -131,14 +132,15 @@ if __name__ == "__main__":
                 "title_mean": title_mean,
                 "title_std": title_std,
                 "cbar_label": cbar_label,
-                "figure_size": figure_size,
             }
 
-            ens_zm_plot = PlotEnsembleZonal(
-                **plot_arguments, dataset_mean=ens_zm.dataset_mean, dataset_std=ens_zm.dataset_std
+            ens_latlon_plot = PlotEnsembleLatLon(
+                **plot_arguments,
+                dataset_mean=ens_latlon.dataset_mean,
+                dataset_std=ens_latlon.dataset_std,
             )
-            ens_zm_plot.plot()
-            logger.info(f"Finished Ensemble_Zonal diagnostic for {variable}.")
+            ens_latlon_plot.plot()
+            logger.info(f"Finished Ensemble_latLon diagnostic for {variable}.")
 
     # Close the Dask client and cluster
     close_cluster(
