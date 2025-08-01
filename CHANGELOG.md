@@ -14,6 +14,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
 
 ## [v0.17.0]

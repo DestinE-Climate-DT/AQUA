@@ -226,8 +226,8 @@ class Diagnostic():
             tuple: (region, lon_limits, lat_limits)
         """
         res_dict = self._select_region(data=self.data, region=region, diagnostic=diagnostic, drop=drop)
-        return res_dict['region'], res_dict['lon_limits'], res_dict['lat_limits']
-    
+        return res_dict['data'], res_dict['region'], res_dict['lon_limits'], res_dict['lat_limits']
+
     def _select_region(self, data: xr.Dataset, region: str = None, diagnostic: str = None, drop: bool = True, **kwargs):
         """
         Select a geographic region from the dataset. Used when selection is not on the self.data attribute.
