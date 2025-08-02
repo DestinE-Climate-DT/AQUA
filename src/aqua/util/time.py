@@ -189,3 +189,10 @@ def time_to_string(time=None, format='%Y-%m-%d'):
         return pd.to_datetime(time).strftime(format)
     else:
         raise ValueError('time_to_string() requires a time argument of type str, pd.Timestamp or np.datetime64')
+
+
+def int_month_name(month, abbreviated=False):
+    """Return month name from integer (1-12) if xarray functions cannot be used"""
+    name = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"][month - 1]
+    return name[:3] if abbreviated else name

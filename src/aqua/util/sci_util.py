@@ -15,7 +15,8 @@ def area_selection(data=None, lat=None, lon=None,
         Works on coordinates from 0 to 360, but converts different requests
 
         Args:
-            indat (xarray.DataSet):   input data to be selected
+            data (xarray.DataArray 
+                  or xarray.DataSet): input data to be selected
             lat (list, opt):          latitude coordinates
             lon (list, opt):          longitude coordinates
             box_brd (bool,opt):       choose if coordinates are comprised or not.
@@ -262,3 +263,21 @@ def select_season(xr_data, season: str):
         return xr_data
     else:
         raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(triplet_months.keys())}, or 'annual' to perform no season selection.")
+
+def merge_attrs(target, source, overwrite=False):
+    """Merge attributes from source into target.
+
+    Args:
+        target (xr.Dataset or xr.DataArray or dict): The target for merging.
+        source (xr.Dataset or xr.DataArray or dict): The source of attributes.
+        overwrite (bool): If True, overwrite existing keys in target.
+                          If False, only add keys that don't already exist.
+    """
+    if isinstance(target, (xr.Dataset, xr.DataArray)):
+        target = target.attrs
+    if isinstance(source, (xr.Dataset, xr.DataArray)):
+        source = source.attrs
+
+    for k, v in source.items():
+        if overwrite or k not in target:
+            target[k] = v
