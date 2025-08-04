@@ -38,7 +38,7 @@ dependencies = [
     "cartopy==0.24.1",
     "cfgrib",
     "dask",
-    "eccodes==2.41.0",
+    "eccodes==2.43.0",
     "docker",
     "gcsfs", # Google Cloud Storage File System
     "pandas",
