@@ -35,7 +35,7 @@ classifiers = [
 ]
 dependencies = [
     "boto3",
-    "cartopy",
+    "cartopy==0.24.1",
     "cfgrib",
     "dask",
     "eccodes==2.41.0",
