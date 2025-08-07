@@ -1,0 +1,7 @@
+job:
+  run_checker: true
+
+diagnostics:
+  run: ['dummy']
+  dummy:
+    script_path: '../src/aqua_diagnostics/dummy/cli_dummy.py'

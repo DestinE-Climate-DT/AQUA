@@ -18,6 +18,7 @@ from aqua.util.util import HiddenPrints, to_list
 
 from aqua.cli.parser import parse_arguments
 from aqua.cli.diagnostic_config import diagnostic_config
+from aqua.cli.analysis import analysis_execute
 from aqua.cli.lra import lra_execute
 from aqua.cli.catgen import catgen_execute
 from aqua.cli.builder import builder_execute
@@ -27,7 +28,7 @@ from aqua.cli.builder import builder_execute
 CATPATH = 'catalogs'
 
 # directories to be installed in the AQUA config folder
-BASIC_DIRECTORIES = ['fixes', 'data_model', 'grids', 'catgen', 'datachecker', 'styles']
+BASIC_DIRECTORIES = ['analysis', 'catgen', 'datachecker', 'data_model', 'fixes', 'grids', 'styles']
 
 
 class AquaConsole():
@@ -66,6 +67,7 @@ class AquaConsole():
                 'set': self.grids_set,
                 'build': self.grids_build
             },
+            'analysis': self.analysis,
             'lra': self.lra,
             'catgen': self.catgen
         }
@@ -829,15 +831,36 @@ class AquaConsole():
                 self.logger.error("Existing files in the %s folder are not compatible", kind)
             self.logger.error(e)
             return False
+        
+    def analysis(self, args):
+        """
+        Run the AQUA analysis
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+
+        print('Running the AQUA analysis')
+        analysis_execute(args)
 
     def lra(self, args):
-        """Run the Low Resolution Archive generator"""
+        """
+        Run the Low Resolution Archive generator
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
 
         print('Running the Low Resolution Archive generator')
         lra_execute(args)
 
     def catgen(self, args):
-        """Run the FDB catalog generator"""
+        """
+        Run the FDB catalog generator
+        
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
 
         print("Running the catalog generator")
         catgen_execute(args)       
