@@ -26,6 +26,7 @@ Currently implemented diagnostics are:
    radiation
    seaice
    teleconnections
+   ensemble
 
 Running the monitoring diagnostics
 ----------------------------------
