@@ -149,7 +149,7 @@ function setup_container_path(){
             AQUA_folder="/gpfs/projects/ehpc01/containers/aqua"
             ;;
         "nord4")
-            AQUA_folder="/esarchive/scratch/EERIE_AQUA/AQUA/containers"
+            AQUA_folder="/esarchive/scratch/AQUA/containers"
             ;;
                 
         *)
