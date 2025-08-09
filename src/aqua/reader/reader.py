@@ -978,8 +978,33 @@ class Reader():
         data.aqua.set_default(self) #accessor linking
         return data
     
-    def timmean(self, data, **kwargs):
-        return self.timstat(data, stat='mean', **kwargs)
+    def timmean(self, data, freq=None, **kwargs):
+        """
+        Compute time mean of input data.
+        
+        Args:
+            data (xarray.Dataset): Input data to compute the mean on.
+            freq (str): Frequency for time mean computation. 
+                       - If None, uses the default timstat behavior
+                       - If 'seasonal', returns list of seasonal means [DJF, MAM, JJA, SON]
+                       - If 'annual', returns annual mean
+                       - Other valid freq strings are passed to timstat
+            **kwargs: Additional arguments passed to timstat
+            
+        Returns:
+            xarray.Dataset or list: 
+                - If freq='seasonal': list of seasonal means [DJF, MAM, JJA, SON]
+                - If freq='annual' or other values: single dataset with computed mean
+        """
+        
+        # Handle special cases for seasonal and annual means using TimStat
+        if freq == 'seasonal':
+            return self.timemodule.compute_seasonal_means(data)
+        elif freq == 'annual':
+            return self.timemodule.compute_annual_mean(data)
+        else:
+            # Use the standard timstat method for other frequencies
+            return self.timstat(data, stat='mean', freq=freq, **kwargs)
 
     def timmax(self, data, **kwargs):
         return self.timstat(data, stat='max', **kwargs)
