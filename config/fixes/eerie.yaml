@@ -1,0 +1,11 @@
+fixer_name:
+    eerie:
+        data_model: false
+        sos: # not working
+            src_units: "0.001"
+            units: g kg**-1
+        
+        
+
+        #vars:
+        #units etc, to do
