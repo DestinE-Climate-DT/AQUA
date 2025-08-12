@@ -413,6 +413,10 @@ class Fixer():
                             data[source].attrs.update({key: value})
                             self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, float(value))
                             log_history(data[source], f"Fixing {source} to {var}. Unit fix: {key}={value}")
+                    elif conversion_dictionary == {} and data[source].units != tgt_units:
+                        self.logger.info("No conversion needed for %s, but units are renamed from %s to %s",
+                                         var, data[source].units, tgt_units)
+                        data[source].attrs.update({"units": tgt_units})
 
                 # Set to NaN before a certain date
                 mindate = varfix.get("mindate", None)

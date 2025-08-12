@@ -52,8 +52,8 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
               (e.g., `time_conversion_flag`).
     """
     logger = log_configure(loglevel, 'convert_units')
-    src = normalize_units(src)
-    dst = normalize_units(dst)
+    src = normalize_units(src, loglevel)
+    dst = normalize_units(dst, loglevel)
     factor = units(src).to_base_units() / units(dst).to_base_units()
 
     # Dictionary for storing conversion attributes
