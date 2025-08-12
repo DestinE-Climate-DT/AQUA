@@ -265,6 +265,7 @@ function setup_binds(){
         "nord4")
             binds=(
                 "/esarchive"
+                "/gpfs/archive/bsc32/esarchive"
             )
             ;;
         *)
