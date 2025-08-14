@@ -150,8 +150,7 @@ function setup_container_path(){
             ;;
         "nord4")
             AQUA_folder="/esarchive/scratch/AQUA/containers"
-            ;;
-                
+            ;;                
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
