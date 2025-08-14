@@ -60,6 +60,7 @@ AQUA core complete list:
 - `AQUA_CONFIG` environment variable can be set to customize the path of the configuration files in `aqua-analysis.py` (#2027)
 - Development base container updated to stack 7.0.2.8 (#2022, #2025)
 - `Trender()` class provide also coefficients and normalize them (#1991)
+- Catalog entry builder functionality for diagnostics included in OutputSaver Class (#2086)
 
 AQUA diagnostics complete list:
 - Sea-ice extent and volume: bugs related to use of legacy reader functionality (#2111)
