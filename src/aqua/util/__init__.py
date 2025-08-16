@@ -13,7 +13,7 @@ from .realizations import format_realization
 from .sci_util import area_selection, check_coordinates, select_season, merge_attrs
 from .util import generate_random_string, get_arg, create_folder, to_list
 from .util import file_is_complete, find_vert_coord
-from .util import files_exist, strlist_to_phrase
+from .util import files_exist, strlist_to_phrase, clean_std
 from .util import extract_literal_and_numeric, extract_attrs, add_pdf_metadata, add_png_metadata
 from .util import open_image, username, update_metadata
 from .yaml import load_yaml, dump_yaml, load_multi_yaml
@@ -32,7 +32,7 @@ __all__ = ['ConfigPath',
            'area_selection', 'check_coordinates', 'select_season',
            'generate_random_string', 'get_arg', 'create_folder', 'to_list',
            'files_exist',
-           'file_is_complete', 'find_vert_coord',
+           'file_is_complete', 'find_vert_coord', 'clean_std',
            'extract_literal_and_numeric', 'add_pdf_metadata', 'add_png_metadata',
            'extract_attrs',
            'get_nside', 'get_npix', 'healpix_resample',
