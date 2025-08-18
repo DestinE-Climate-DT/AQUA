@@ -19,12 +19,6 @@ def parse_arguments(cli_args):
 
     parser = template_parse_arguments(parser)
 
-    parser.add_argument('-n', '--nworkers', type=int,
-                        help='number of dask distributed workers')
-    parser.add_argument("--cluster", type=str,
-                        required=False, help="dask cluster address")
-    parser.add_argument('--outputdir', type=str, help='output directory',
-                        required=False)
     parser.add_argument('--year', type=int, help='year',
                         required=False)
     parser.add_argument('--month', type=int, help='month to start the calculation from',
