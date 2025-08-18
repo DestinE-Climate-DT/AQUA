@@ -1,15 +1,16 @@
 # you can turn on/off the indices to be calculated
 indices:
   SDII: true
+  TR: true
 
-year: null # year to calculate the indices, overwritten by the script with the flag --year
+year: 1990 # year to calculate the indices, overwritten by the script with the flag --year
 
 # It is overwritten if the script with the flags --catalog, --model, --exp, --source
 models:
-  - catalog: null
-    model: null
-    exp: null
-    source: null
+  - catalog: climatedt-phase1
+    model: ICON
+    exp: historical-1990
+    source: hourly-hpz10-atm2d
 
 # This is overwritten if the script with the flags --configdir
 # Common output directory for all the indices
