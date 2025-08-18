@@ -1,11 +1,11 @@
 # -----------------------------------------------------------------------------
 # --- Micromamba / Conda (used later).
-FROM mambaorg/micromamba:1.5.6 as micromamba
+FROM mambaorg/micromamba:2.0.7 as micromamba
 
 # -----------------------------------------------------------------------------
 # The container is created by the AQUA team, with the Dockerfile.ubuntu
 # it includes updated FDB and ECCODES libraries.
-FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.14-eccodes2.39.2-aqua:docker24.04_updated as fdb
+FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.15.15-eccodes2.41.0-aqua:aqua-base-container as fdb
 
 # Install dependencies
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -22,15 +22,16 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # We switch to mamba user later, root for now just to create the user.
 USER root
 
-# --- x snip x ---
 # --- This is from the official docs from the micromamba image.
 # --- https://micromamba-docker.readthedocs.io/en/latest/advanced_usage.html#adding-micromamba-to-an-existing-docker-image
 # if your image defaults to a non-root user, then you may want to make the
 # next 3 ARG commands match the values in your image. You can get the values
 # by running: docker run --rm -it my/image id -a
+# From Ubuntu 24.04 onwards, there is a default user already created
+# in the base image with GID 1000.
 ARG MAMBA_USER=mamba
-ARG MAMBA_USER_ID=1000
-ARG MAMBA_USER_GID=1000
+ARG MAMBA_USER_ID=57439
+ARG MAMBA_USER_GID=57439
 ENV MAMBA_USER=$MAMBA_USER
 ENV MAMBA_ROOT_PREFIX="/opt/conda"
 ENV MAMBA_EXE="/bin/micromamba"
@@ -63,10 +64,11 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 # git for the pip dependencies installed from source
 # gcc for pytdigest (whells not being picked up?)
 # jupyterlab to run notebooks
+# cartopy_offlinedata to avoid downloading data at runtime on MN5
 # Generate conda environment (env name does not matter,
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
-RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab && \
+RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab cartopy_offlinedata && \
     micromamba install -y -n base -f AQUA/environment.yml
 
 EXPOSE 8888

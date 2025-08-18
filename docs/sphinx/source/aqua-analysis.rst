@@ -3,30 +3,30 @@
 AQUA analysis wrapper
 =====================
 
-A wrapper containing calls to all the state-of-the-art diagnostic available in AQUA
-is provided in the ``cli/aqua-analysis/`` folder.
+A wrapper containing calls to all the state-of-the-art diagnostic available in AQUA.
+
+.. note::
+
+    Since ``v0.18.0``, the AQUA analysis tool is available as part of the AQUA console (see :ref:`aqua-console`).
+    If you are using an older version of AQUA, you can find it in the ``cli/aqua-analysis`` folder.
 
 Basic usage
 -----------
 
 .. code-block:: bash
 
-    python aqua-analysis.py
+    aqua analysis <options>
 
 Without any argument, the script will run all the diagnostics available in AQUA on an hard-coded dataset,
-with LUMI configuration and output directory in the ``cli/aqua-analysis/output`` folder.
+with LUMI configuration and output directory in the ``./output`` folder.
 
 All the diagnostic logfiles will be saved in this main folder, while the diagnostics output will be saved in subfolders
 named after the diagnostic name.
 Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
 
 The exact list of diagnostics to run and technical details of the analysis
-(such as the number of workers/thread/memory to use for the dask cluster) 
-are specified in the configuration file ``config.aqua-analysis.yaml`` in the same folder.
-
-.. warning::
-
-    A bash script called ``aqua-analysis.sh`` is also available in the same folder but it is deprecated and will be removed in future releases.
+(such as the number of workers/thread/memory to use for the dask cluster) are specified in the configuration file ``config.aqua-analysis.yaml`` in the same folder.
+This file is available in the ``$AQUA/config/analysis`` folder and it is installed with AQUA (see :ref:`aqua-install`).
 
 Additional options
 ------------------
@@ -54,6 +54,16 @@ so that the script can be used in a batch job or in a workflow. These override c
 .. option:: -f <config>, --config <source>
 
     The config file to use.
+
+.. option:: --regrid <target_grid>
+
+    The target grid to use for regridding the data.
+    If not specified, the default is ``null``, which means no regridding will be applied.
+
+.. option:: --realization <realization>
+
+    The realization to use. If not specified or set to ``None``,
+    no realization argument will be passed to the diagnostics.
 
 .. option:: -d <dir>, --outputdir <dir>
 
@@ -98,6 +108,11 @@ The configuration file is divided in three main sections:
 - ``cluster``: contains the details of the dask cluster to use.
 - ``diagnostics``: contains the list of diagnostics to run.
 
+.. note::
+
+    The configuration file allows for the definition of a custom folder path where the individual diagnostics configuration files are stored.
+    This is done by setting an environment variable ``AQUA_CONFIG``.
+
 Job
 ^^^
 
@@ -111,6 +126,7 @@ The job section contains the following keys:
 - ``model``: the model to use. Default is ``IFS-NEMO``
 - ``exp``: the experiment to use. Default is ``historical-1990``
 - ``source``: the source to use. Default is ``lra-r100-monthly``
+- ``regrid``: the target grid to use for regridding the data. Default is ``null``, which means no regridding will be applied.
 - ``script_path_base``: the base path for the diagnostic scripts. Default is ``${AQUA}/diagnostics``, but it is going to be updated.
 
 .. note::

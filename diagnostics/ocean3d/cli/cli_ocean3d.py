@@ -80,6 +80,7 @@ class Ocean3DCLI:
         self.config["model"] = self.get_arg('model', self.ocean3d_config_dict['model'])
         self.config["exp"] = self.get_arg('exp', self.ocean3d_config_dict['exp'])
         self.config["source"] = self.get_arg('source', self.ocean3d_config_dict['source'])
+        self.config["regrid"] = self.get_arg('regrid', self.ocean3d_config_dict.get('regrid', None))
         self.config["outputdir"] = self.get_arg('outputdir', self.ocean3d_config_dict['outputdir'])
         self.config["outputdir"] = os.path.realpath(self.config['outputdir'])
         self.logger.info(f"output will be saved here: {self.config['outputdir']}")
@@ -104,10 +105,11 @@ class Ocean3DCLI:
         model = self.config["model"]
         exp = self.config["exp"]
         source = self.config["source"]
-        self.logger.info(f"Reader selecting for model={model}, exp={exp}, source={source}")
+        regrid = self.config["regrid"]
+        self.logger.info(f"Reader selecting for model={model}, exp={exp}, source={source}, regrid={regrid}")
 
         reader = Reader(model=model, exp=exp, source=source,
-                        fix=True, loglevel=self.loglevel)
+                        fix=True, regrid=regrid, loglevel=self.loglevel)
         
         if self.config["variables"] == []:
             self.config["variables"] = None
@@ -115,11 +117,14 @@ class Ocean3DCLI:
             self.logger.info(f"retrieving {self.config['variables']}")
 
         if self.config["select_time"]:
-            self.data["catalog_data"] = reader.retrieve(var= self.config["variables"],
-                                                        startdate= str(self.config["start_year"]),
-                                                        enddate= str(self.config["end_year"]))
+            self.data["catalog_data"] = reader.retrieve(var=self.config["variables"],
+                                                        startdate=str(self.config["start_year"]),
+                                                        enddate=str(self.config["end_year"]))
         else:
-            self.data["catalog_data"] = reader.retrieve(var= self.config["variables"])
+            self.data["catalog_data"] = reader.retrieve(var=self.config["variables"])
+        if regrid:
+            self.data["catalog_data"] = reader.regrid(self.data["catalog_data"])
+
         self.logger.info(f"data retrieved for model={model}, exp={exp}, source={source}")
         self.logger.debug("model data: %s", self.data["catalog_data"])   
         self.data["catalog_data"] = check_variable_name(self.data["catalog_data"])
@@ -127,8 +132,10 @@ class Ocean3DCLI:
         if self.config["ocean_circulation"]:
             if self.config["compare_model"]== True:
                 self.logger.info("Loading Observation data")
-                obs_data = Reader("EN4", "en4", "monthly", loglevel=self.loglevel)
-                self.data["obs_data"] = obs_data.retrieve()
+                obs_reader = Reader("EN4", "en4", "monthly", loglevel=self.loglevel, regrid=regrid)
+                self.data["obs_data"] = obs_reader.retrieve()
+                if regrid:
+                    self.data["obs_data"] = obs_reader.regrid(self.data["obs_data"])
                 self.data["obs_data"] = check_variable_name(self.data["obs_data"], loglevel=self.loglevel)
                 self.logger.info("Loaded Observation data")
 
@@ -300,6 +307,10 @@ def parse_arguments(args):
     parser.add_argument('--model', type=str, help='Model name')
     parser.add_argument('--exp', type=str, help='Experiment name')
     parser.add_argument('--source', type=str, help='Source name')
+    parser.add_argument('--regrid', type=str, help='Regrid target grid')
+    #TODO: not used yet
+    parser.add_argument('--realization', type=str, default=None,
+                        help='Realization name (default: None)')
     parser.add_argument('--outputdir', type=str,
                         help='Output directory')
     parser.add_argument("--cluster", type=str,

@@ -25,6 +25,7 @@ class mld:
                                                             self.lat_s, self.lat_n, self.lon_w, self.lon_e, areamean= False,
                                                             timemean= True, compute_mld= True, loglevel= self.loglevel )  # To select the month and compute its climatology
             self.obs_clim = self.obs_clim[["mld"]].compute()
+        return self.__dict__
 
     def plot(self):
         self._process_data()

@@ -1,18 +1,19 @@
 .. _aqua-console:
 
-Configuration and catalog manager
-=================================
-
-Since ``v0.9`` a command line interface has been added to AQUA.
-We refer to this as the **AQUA console**.
-
 The AQUA console
-----------------
+================
 
-The AQUA console has two main purposes:
+What is the AQUA console?
+-------------------------
+
+The AQUA console (introduced since v0.9.0) has two main purposes:
 
 - A central access to manage where the configuration and catalog files are stored has been added. This can also handle fixes and grids files.
-- A tool for more complex operations, for the moment the LRA generator (see :ref:`aqua-lra` and :ref:`lra`) and the FDB catalog generator (see :ref:`catalog_generator`).
+- A tool for more complex operations:
+
+    - LRA generator (see :ref:`aqua-lra` and :ref:`lra`) 
+    - FDB catalog generator (see :ref:`catalog_generator`).
+    - Diagnostics wrapper for a complete experiment analysis (see :ref:`aqua_analysis`).
 
 Here we give a brief overview of the features.
 If you are a developer, you may want to read the :ref:`dev-notes` section.
@@ -31,6 +32,7 @@ It has the following subcommands:
 - :ref:`aqua-fixes`
 - :ref:`aqua-grids`
 - :ref:`aqua-lra`
+- :ref:`aqua-analysis`
 
 The main command has some options listed below:
 
@@ -135,8 +137,14 @@ This structure ensures that all configuration files are neatly organized and eas
 aqua avail
 ----------
 
-This simple command will print all the available catalogs on the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
-You don't need to have access to the repository to see the available catalogs.
+This simple command will print all the available catalogs on a repository.
+By default this will be the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
+
+.. option:: -r, --repository <user/repo>
+
+    It is possible to specify a different repository to explore.
+    The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
+    If this option is not specified, the default repository will be used.
 
 .. _aqua-add:
 
@@ -154,8 +162,8 @@ and it is possible to install extra catalogs not present in the AQUA release.
 
 Multiple catalogs can be installed with multiple calls to ``aqua add``.
 By default the catalog will be downloaded from the external Climate-DT catalog repository,
-if a matching catalog is found. As shown below, it is possible to specify a local path
-and install the catalog from there.
+if a matching catalog is found. It is possible to specify a different repository.
+As shown below, it is also possible to specify a local path and install the catalog from there.
 
 .. option:: catalog
 
@@ -169,9 +177,17 @@ and install the catalog from there.
     It will create a symbolic link to the catalog folder.
     This is very recommended for developers. Please read the :ref:`dev-notes` section.
 
-.. note::
+.. option:: --repository, -r <user/repo>
 
-    With the editable mode it is possible to install a catalog not present in the Climate-DT repository.
+    It is possible to specify a different repository to explore.
+    The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
+    If this option is not specified, the default repository will be used.
+
+.. warning::
+    Adding a catalog not in editable mode makes use of GitHub API.
+    These are limited to 60 requests per hour for unauthenticated users and it may easily hit the limit.
+    If you encounter this issue, you can generate a personal access token and set it as an environment variable
+    ``GITHUB_TOKEN``, together with a ``GITHUB_USER`` variable with your GitHub username.
 
 .. _aqua-remove:
 
@@ -239,6 +255,7 @@ It is very useful if you pull a new version of AQUA and want to update your loca
     This command will check if there is a new version of the catalog available and update it by overwriting the current installation.
     This will work only for catalogs installed from the Climate-DT repository.
     If the catalog is installed in editable mode, this command will not work.
+    It is possible to specify 'all' as catalog name to update all the catalogs installed not in editable mode.
 
 
 .. _aqua-fixes:
@@ -264,7 +281,7 @@ This is useful if a new external fix is created and needs to be added to the lis
 aqua grids {add,remove} <grid-file>
 -----------------------------------
 
-This submcommand is able to add or remove a grids YAML file to the list of available installed grids.
+This subcommand is able to add or remove a grids YAML file to the list of available installed grids.
 It will copy the grids file to the destination folder, or create a symbolic link if the editable mode is used.
 This is useful if new external grids are created and need to be added to the list of available grids.
 
@@ -277,6 +294,95 @@ This is useful if new external grids are created and need to be added to the lis
 
     It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
 
+aqua grids set <path>
+---------------------
+
+This subcommand sets in the configuration file the path to the grids, areas and weights folders.
+
+.. option:: <path>
+
+    The path to the grids, areas and weights folders.
+    This is a mandatory field.
+    The code will create the subfolders ``grids``, ``areas`` and ``weights`` in the specified path.
+
+.. note::
+    By default, if is not needed to set the path to the grids, areas and weights folders.
+    AQUA will determine the path automatically based on the machine in the configuration file.
+    This command is useful in new machines or if you don't have access to the default folders.
+
+.. _aqua-grids-build:
+
+aqua grids build
+----------------
+
+This subcommand is used to build grids from sources. Given a specific ``Reader()`` source, it tries to build a grid file based on the data available.
+This is available for regular, healpix, curvilinear grids. Partial support for unstructured grids is also available, while gaussian grids are not supported yet.
+It also create the correspondent grid entry in the grid file in the ``config/grids`` folder.
+
+The following options are available for ``aqua grids build``:
+
+.. option:: -c, --config <file>
+
+    YAML configuration file for the builder. If not specified, options must be provided via CLI.
+
+.. option:: --catalog <catalog>
+
+    Catalog identifying the source for the Reader() call.
+
+.. option:: -m, --model <model>
+
+    Model name (e.g. "IFS") for the Reader() call. **(Required)**
+
+.. option:: -e, --exp <experiment>
+
+    Experiment name for the Reader() call. **(Required)**
+
+.. option:: -s, --source <source>
+
+    Data source for the Reader() call. **(Required)**
+
+.. option:: -l, --loglevel <level>
+
+    Log level for the builder. Default is WARNING.
+
+.. option:: --rebuild
+
+    Rebuild the grid even if it already exists.
+
+.. option:: --version <version>
+
+    Version number for the grid file. Currently integer versioning is supported. Useful for multiple versions of the same grid.
+
+.. option:: --outdir <directory>
+
+    Output directory for the grid file. Default is the current directory.
+
+.. option:: --original <resolution>
+
+    Original resolution of the grid. Useful for masked grids which have been remapped to a different resolution.
+
+.. option:: --modelname <name>
+
+    Alternative name for the model for grid naming. Useful for coupled models sources. 
+
+.. option:: --gridname <name>
+
+    Alternative name for the grid for grid naming. Required for Curvilinear and Unstructured grids, where the CDO grids cannot be guessed.
+
+.. option:: --fix
+
+    Fix the original source before building the grid. Useful for models with very specific coordinates/dimensions
+
+.. option:: --verify
+
+    Verify the grid file after creation. This is done by calling CDO via ``smmregrid`` to check if the weights generation is valid.
+
+.. option:: --yaml
+
+    Create the grid entry in the grid file after building. This has to be added to catalog `source_grid_name` manually to be used by the Reader.
+    Please keep in mind that this is not verified yet. 
+
+
 .. _aqua-lra:
 
 aqua lra -c <config_file> <lra-options>
@@ -286,3 +392,11 @@ This subcommand launch the LRA generation based on the LRA tool.
 For full description of the LRA generator functionalities, please refer to the :ref:`lra` section.
 In most of cases, it is better to embed this tool within a batch job.
 
+.. _aqua-analysis:
+
+aqua analysis <analysis-options>
+--------------------------------
+
+This subcommand launch the analysis tool, which is a flexible wrapper for the diagnostics.
+It allows to run a set of diagnostics on a specific experiment.
+For a complete description of the analysis tool, please refer to the :ref:`aqua_analysis` section.

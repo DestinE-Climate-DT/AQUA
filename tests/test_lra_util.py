@@ -17,26 +17,26 @@ def output_directory(tmpdir):
 def lra_arguments(request):
     return request.param
 
-@pytest.mark.aqua
-def test_opa_catalog_entry(tmp_directory, lra_arguments):
-    model, exp, source = lra_arguments
-    fixer_name = 'fixer'
-    frequency = 'monthly'
-    loglevel = 'WARNING'
-    entry_name = lra_util.opa_catalog_entry(datadir=tmp_directory, model=model, exp=exp, 
-                                            source=source, fixer_name=fixer_name, frequency=frequency, 
-                                            loglevel=loglevel, catalog='ci')
+# @pytest.mark.aqua
+# def test_opa_catalog_entry(tmp_directory, lra_arguments):
+#     model, exp, source = lra_arguments
+#     fixer_name = 'fixer'
+#     frequency = 'monthly'
+#     loglevel = 'WARNING'
+#     entry_name = lra_util.opa_catalog_entry(datadir=tmp_directory, model=model, exp=exp, 
+#                                             source=source, fixer_name=fixer_name, frequency=frequency, 
+#                                             loglevel=loglevel, catalog='ci')
 
-    # Create temporary files
-    tmp_file1 = os.path.join(tmp_directory, f'test_{frequency}_mean.nc')
-    with open(tmp_file1, 'w') as f:
-        f.write('Temporary file 1')
+#     # Create temporary files
+#     tmp_file1 = os.path.join(tmp_directory, f'test_{frequency}_mean.nc')
+#     with open(tmp_file1, 'w') as f:
+#         f.write('Temporary file 1')
 
-    reader = Reader(model='IFS', exp='test-tco79', source='opa_long', areas=False, loglevel='DEBUG')
+#     reader = Reader(model='IFS', exp='test-tco79', source='opa_long', areas=False, loglevel='DEBUG')
 
-    assert entry_name == 'opa_long'
-    assert reader.esmcat.metadata['fixer_name'] == 'fixer'
-    assert reader.esmcat.describe()['args']['urlpath'] == os.path.join(tmp_directory, f'*{frequency}_mean.nc')
+#     assert entry_name == 'opa_long'
+#     assert reader.esmcat.metadata['fixer_name'] == 'fixer'
+#     assert reader.esmcat.describe()['args']['urlpath'] == os.path.join(tmp_directory, f'*{frequency}_mean.nc')
 
 @pytest.mark.aqua
 def test_move_tmp_files(tmp_directory, output_directory):

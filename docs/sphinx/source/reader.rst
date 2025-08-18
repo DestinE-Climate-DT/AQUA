@@ -105,8 +105,8 @@ by the users, but things can be speed up if we target a specific catalog. This c
     reader = Reader(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly', catalog='climatedt-phase1')
     data = reader.retrieve()
 
-Dask and Iterator access
-^^^^^^^^^^^^^^^^^^^^^^^^
+Dask and streaming capabilities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The standard usage of the ``Reader`` class will load metadata in memory and
 make the data available for processing.
@@ -117,7 +117,7 @@ This allows to fully process also large datasets using dask lazy and parallel pr
 However, for specific testing or development needs,
 the ``Reader`` class is also able to allow a streaming of data, 
 where the data are loaded in chunks and processed step by step.
-Please check the :ref:`iterators` section for more details.
+Please check the :ref:`streaming` section for more details.
 
 .. note::
     Dask access to data is available also for FDB data.

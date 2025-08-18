@@ -1,21 +1,243 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.14):
+Unreleased in the current development version (target v0.18.0):
+
+Workflow modifications:
+- `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Added Nord4 support in the `load-aqua-container.sh` script (#2130)
+- Add `aqua analysis` to replace the `aqua-analysis.py` script, with a more flexible CLI interface (#2065)
+- Bugfix in `plot_seasonalcycles()` trying to use a non-existing `time` coordinate (#2114)
+- Add `norm` keyword argument to the `plot_single_map` to allow non-linear colorbar normalisation (#2107)
+- `draw_manual_gridlines()` utility function to draw gridlines on cartopy maps (#2105)
+- `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
+
+AQUA diagnostics complete list:
+- Boxplots: add tests and update docs (#2129)
+- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684)
+- Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
+- Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
+- SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
+
+## [v0.17.0]
+
+Main changes are:
+1. Support for realizations for `aqua-analysis`, `aqua-push` and a set of diagnostics (Timeseries, Global Biases, Teleconnections, Ecmean)
+2. Support for data-portfolio v2.0.0
+3. LRA output tree refactored accomodating for realization, statistic and frequency
+
+Removed:
+-  removed Reader.info() method (#2076) 
+
+Workflow modifications:
+- `machine` and `author` are mandatory fields in the catalog generator config file.
+- Data portfolio required is v2.0.0, no API changes are involved in this change.
+- Add possibility to change the 'default' realization in Catalog Generator config file.
+- AQUA analysis can take a `--realization` option to enable the analysis of a specific realization.
+
+AQUA core complete list:
+- Introduce a tentative command to generate grids from sources, `aqua grids build` based on `GridBuilder` class (#2066)
+- Support for data-portfolio v2.0.0: updated catalog generator, pinned gsv to v2.12.0. Machine now required in config. (#2092)
+- Add possibility to change the 'default' realization in Catalog Generator config file (#2058) 
+- `aqua add <catalog>` option in the AQUA console can use GITHUB_TOKEN and GITHUB_USER environment variables to authenticate with GitHub API (#2081)
+- Added a `aqua update -c all` option in the AQUA console to update all the catalogs intalled from the Climate-DT repository (#2081)
+- `Reader` can filter kwargs so that a parameter not available in the intake source is removed and not passed to the intake driver (#2074)
+- Adapt catgen to changes in data-portfolio v1.3.2 (#2076)
+- Add `get_projection()` utility function for selection of Cartopy map projections (#2068)
+- Tools to push to dashboard support ensemble realizations (#2070)
+- `aqua-analysis.py` now supports a `--realization` option to enable the analysis of a specific realization (#2041, #2090)
+- Separate new histogram function in the framework (#2061)
+- Introducing `timsum()` method to compute cumulative sum (#2059)
+- `EvaluateFormula` class to replace the `eval_formula` function with extra provenance features (#2042)
+- Solve fixer issue leading to wrong target variable names (#2057)
+- Upgrade to `smmregrid=0.1.2`, which fixes coastal erosion in conservative regridding (#1963)
+- Refactor LRA of output and catalog entry creatro with `OutputPathBuilder` and `CatalogEntryBuilder` classes (#1932)
+- LRA cli support realization, stat and frequency (#1932)
+- Update to the new STACv2 API for Lumi (#2039)
+- `aqua add` and `aqua avail` commands now support a `--repository` option to specify a different repository to explore (#2037)
+- `AQUA_CONFIG` environment variable can be set to customize the path of the configuration files in `aqua-analysis.py` (#2027)
+- Development base container updated to stack 7.0.2.8 (#2022, #2025)
+- `Trender()` class provide also coefficients and normalize them (#1991)
+- Catalog entry builder functionality for diagnostics included in OutputSaver Class (#2086)
+
+AQUA diagnostics complete list:
+- Sea-ice extent and volume: bugs related to use of legacy reader functionality (#2111)
+- Ocean Trends: Trends class to create trend data along with zonal trend, notebook and tests added. (#1990)
+- Global Biases: allow GlobalBias to take projection as argument (#2036)
+- ECmean: diagnostics refactored to use `OutputSaver` and new common configuration file (#2012)
+- ECmean: dependency to 0.1.15 (#2012)
+- Timeseries, Global Biases, Teleconnections, Ecmean: `--realization` option to select a specific realization in the CLI (#2041)
+- Global Biases: add try-except block in cli (#2069)
+- Global Biases: handling of formulae and Cloud Radiative Forcing Computation (#2031)
+- Global Biases: pressure levels plot works correctly with the CLI (#2027)
+- Timeseries: `diagnostic_name` option to override the default name in the CLI (#2027)
+- Global Biases: output directory is now correctly set in the cli (#2027)
+- Timeseries: `center_time` option to center the time axis is exposed in the CLI (#2028)
+- Timeseries: fix the missing variable name in some netcdf output (#2023)
+- Diagnostic core: new `_select_region` method in `Diagnostic`, wrapped by `select_region` to select a region also on custom datasets (#2020, #2032)
+
+## [v0.16.0]
+
+Removed:
+- Removed source or experiment specific fixes; only the `fixer_name` is now supported.
+
+Workflow modifications:
+- Due to a bug in Singularity, `--no-mount /etc/localtime` has to be implemented into the AQUA container call 
+- `push_analysis.sh` now updates and pushes to LUMI-O the file `experiments.yaml`, which is used by the 
+  dashboard to know which experiments to list. The file is downloaded from the object store, updated and 
+  pushed back. Additionally it exit with different error codes if the bucket is missing or the S3 credential
+  are not correct.
+
+AQUA core complete list:
+- Update to the new STAC API for Lumi (#2017)
+- Added the `aqua grids set` command to set the paths block in the `aqua-config.yaml` file, overwriting the default values (#2003)
+- Derivation of metadata from eccodes is done with a builtin python method instead of definiton file inspection (#2009, #2014)
+- `h5py` installed from pypi. Hard pin to version 3.12.1 removed in favor of a lower limit to the version (#2002)
+- `aqua-analysis` can accept a `--regrid` argument in order to activate the regrid on each diagnostics supporting it (#1947)
+- `--no-mount /etc/localtime` option added to the `load_aqua_container.sh` script for all HPC (#1975)
+- Upgrade to eccodes==2.41.0 (#1890)
+- Fix HPC2020 (ECMWF) installation (#1994)
+- `plot_timeseries` can handle multiple references and ensemble mean and std (#1988, #1999)
+- Support for CDO 2.5.0, modified test files accordingly (v6) (#1987)
+- Remove DOCKER secrets and prepare ground for dependabot action e.g introduce AQUA_GITHUB_PAT (#1983)
+- `Trender()` class to include both `trend()` and `detrend()` method (#1980)
+- `cartopy_offlinedata` is added on container and path is set in cli call, to support MN5 no internet for coastlines download (#1960)
+- plot_single_map() can now handle high nlevels with a decreased cbar ticks density (#1940)
+- plot_single_map() now can avoid coastlines to support paleoclimate maps (#1940)
+- Fixes to support EC-EARTH4 conversion to GRIB2 (#1940)
+- Added support for TL63, TL255, eORCA1, ORCA2 grids for EC-EARTH4 model (#1940)
+- `FldStat()` as independent module for area-weighted operations (#1835)
+- Refactor of `Fixer()`, now independent from the `Reader()` and supported by classes `FixerDataModel` and `FixerOperator` (#1929) 
+- Update and push to lumi-o the a file listing experiments needed by the dashboard (#1950)
+- Integration of HEALPix data with `plot_single_map()` (#1897)
+- Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
+
+AQUA diagnostics complete list:
+- Diagnostic core: a `diagnostic_name` is now available in the configuration file to override the default name (#2000)
+- Ecmean, GlobalBiases, Teleconnections: regrid functionality correctly working in cli (#2006)
+- Diagnostic core: updated docs for `OutputSaver` (#2010)
+- Diagnostic core: save_netcdf() is now based on the new OutputSaver (#1965)
+- Diagnostic core: raise an error if retrieve() returns an empty dataset (#1997)
+- GlobalBiases: major refactor (#1803, #1993)
+- Ocean Drift: using the `_set_region` method from the `Diagnostic` class (#1981)
+- Diagnostic core: new `_set_region` method in `Diagnostic` class to find region name, lon and lat limits (#1979)
+- Timeseries: regions are now in the `definitions` folder (not `interface` anymore) (#1884)
+- Teleconnections: complete refactor according to the Diagnostic, PlotDiagnostic schema (#1884)
+- Radiations: timeseries correctly working for exps with enddate before 2000 (#1940)
+- Diagnostic core: new `round_startdate` and `round_enddate` functions for time management (#1940)
+- Timeseries: fix in the new cli wich was ignoring the regrid option and had bad time handling (#1940)
+- Timeseries: Use new OutputSaver in Timeseries diagnostics (#1948, #2000)
+- Diagnostic core: new `select_region` to crop a region based on `_set_region` and `area_selection` method (#1984)
+
+## [v0.15.0]
+
+Main changes are:
+- Polytope support 
+- Plotting routines support cartopy projections and matplotlib styles
+- Major refactor of AQUA core functionalities: Regridder, Datamodel, OutputSaver, Timstat  
+- Major refactor of Timeseries, SeasonalCycle, GregoryPlot diagnostics
+
+Removed:
+- `aqua.slurm` has been removed.
+
+Workflow modifications:
+- `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes. As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
+
+AQUA core complete list:
+- Add FDB_HOME to debug logs (#1914)
+- Enabling support for DestinE STAC API to detect `bridge_start_date`and `bridge_end_date` (#1895)
+- Return codes for push_s3 and push_analysis utilities (#1903)
+- Polytope support (#1893)
+- Additional stats for LRA and other refinements (#1886) 
+- New OutputSaver class (#1837)
+- Introduce a `Timstat()` module independent from the `Reader()` (#1832)
+- Adapt Catalog Generator to Data-Portfolio v1.3.0 (#1848)
+- Introduction of a internal AQUA data model able to guess coordinates and convert toward required target data convention definition (#1862, #1877, #1883)
+- Custom `paths` in the `config-aqua.yaml` can now be defined and will take priority over the catalog paths (#1809)
+- Remove deprecated `aqua.slurm` module (#1860)
+- Refactor of `plot_maps()` and `plot_maps_diff()` functions with projection support and use their single map version internally (#1865)
+- Refactor of `plot_single_map()` and `plot_single_map_diff()` functions with projection support (#1854)
+- Refactor time handling: replacement of `datetime` objects and of `pd.Timestamp` lists (#1828)
+- Fix the `regrid_method` option in the Reader (#1859)
+- Add a GitHub Token for downloading ClimateDT catalogs (#1855)
+- Ignore `nonlocal` complaints by flake8 (#1855)
+- WOCE-ARGO ocean dataset grids and fixes added (#1846)
+- Upgrade of base container to FDB 5.15.11 (#1845)
+- Matplotlib styles can be set in the configuration file (#1729)
+- Graphics refactoring for timeseries plot functions (#1729, #1841)
+- Major refactor of the regrid options, with new modular `Regridder()` class replacing `Regrid()` mixin (#1768)
+- Refactor of the `retrieve_plain()` function with contextmanager and smmregrid GridInspector (#1768)
+
+AQUA diagnostics complete list:
+- Diagnostic core: refinement of OutputSaver metadata and name handling (#1901)
+- Diagnostic core: refactor of the documentation folder structure (#1891)
+- Timeseries: complete refactor of the timeseries diagnostic according to the Diagnostic, PlotDiagnostic schema (#1712, #1896)
+
+## [v0.14.0]
+
+Main changes are:
+- AQUA is now open source
+- Documentation is now available on ReadTheDocs
+- Attributes added by AQUA are now "AQUA_" prefixed
+- A core diagnostic class has been introduced
+
+Removed:
+- Support for python==3.9 has been dropped.
+- Generators option from the Reader has been removed.
+
+Workflow modifications:
+- `aqua_analysis.py`: all the config files are used from the `AQUA_CONFIG` folder. This allows individual run modification kept in the `AQUA_CONFIG` folder for reproducibility.
+- `makes_contents.py`: can now take a config file as an argument to generate the `content.yaml` file.
+- `push_analysis.sh`: now has an option to rsync the figures to a specified location. Extra flags have been added (see Dashboard section in the documentation).
+
+AQUA core complete list:
+- Updated AQUA development container to micromamba 2.0.7 (#1834)
+- Updated base container to eccodes 2.40 (#1833)
+- Added Healpix zoom 7 grid for ICON R02B08 native oceanic grid (#1823)
+- Remove generators from Reader (#1791)
+- Fix tcc grib code and add some cmor codes in the convention file (#1800)
+- Add a regrid option to cli of relevant diagnostics (#1792)
+- Limit estimation of time for weight generation only to regular lon/lat grids (#1786)
+- LRA generation can operate spatial subsection (#1711)
+- Attributes added by AQUA are now "AQUA_" prefixed (#1790)
+- Remove zarr pin (#1794)
+- Dropping support for python==3.9 (#1778, #1797)
+- Reader intake-xarray sources can select a coder for time decoding (#1778)
+- Document use of AQUA on ECMWF HPC2020 (#1782)
+- Added history logging for lat-lon in area selection (#1479)
+- Cleaner workflow and pytest/coverage configuration (#1755, #1758)
+- catalog, model, exp, source info are now stored in the DataArray attributes (#1753)
+- Avoid infinite hanging during bridge access (#1733, #1738)
+- Enable dependabot to monitor dependencies every month (#1748)
+- `eccodes` bump to 2.40.0 (#1747)
+- Integrate codecov to monitor coverage and test analytics and remove old bot (#1736, #1737, #1755, #1819)
+- Reinitialize `GSVRetriever` instance only when needed (#1733)
+- Enable the option to read FDB data info from file, and refactor start/end hpc/bridge dates handling (#1732, #1743, #1762)
+- Fix `push_analysis.sh` options and `aqua_analysis.py` config paths (#1723, #1754)
+- Enable zip compression for LRA yearly files (#1726)
 - Enable publication of documentation on ReadTheDocs (#1699, #1716)
 - Adapt Catgen test to the new number of sources for ICON (#1708)
 - Added tests for the Hovmoller plot routine (#1532)
-- push_s3 compatibility with boto3>=1.36.0 (#1704)
+- `push_s3` compatibility with `boto3>=1.36.0` (#1704)
 - Rsync option for push_analysis.sh (#1689)
 - Multiple updates to allow for AQUA open source, including Dockerfiles, actions, dependencies and containers (#1574)
 
 AQUA diagnostics complete list:
+- Ensemble: config file structure and tests (#1630)
+- Ocean3d: Tests for the Ocean3d diagnostic (#1780)
+- Diagnostic core: A common function to check and convert variable units is provided as `convert_data_units()` (#1806)
+- Ocean3d: Bug fix to regridding of observations in cli (#1811)
+- Diagnostic core: the `retrieve()` method uses internally a `_retrieve()` method that returns instead of updating attributes (#1763)
+- Diagnostic core: documentation about class and config file structure (#1790)
+- Diagnostic core: A common function to load the diagnostic config file is provided (#1750)
+- Global bias: add test (#1675)
+- Diagnostic core: Add additional command-line arguments for configuration and processing options (#1745)
 - Global bias: Handling plev and using scientific notation in contour plots (#1649)
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1696)
 - Diagnostic core: A common parser and fuctions to open/close the dask cluster are provided (#1703)
@@ -822,7 +1044,11 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...HEAD
+[v0.17.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.16.0...v0.17.0
+[v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
+[v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0
+[v0.14.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.14.0
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
 [v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0
 [v0.13-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-alpha...v0.13-beta

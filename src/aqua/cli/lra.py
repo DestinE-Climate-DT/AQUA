@@ -52,8 +52,14 @@ def lra_parser(parser = None):
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
-    #parser.add_argument('-r', '--realization', type=str,
-    #                    help="realization to be processed. Use with coherence with --var")
+    parser.add_argument('--realization', type=str,
+                        help='realization to be processed. Use with coherence with --model, --exp and --source')
+    parser.add_argument('--stat', type=str,
+                        help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std'].")
+    parser.add_argument('--frequency', type=str,
+                        help="Frequency of the LRA. Can be anything in the AQUA frequency.")
+    parser.add_argument('--resolution', type=str,
+                        help="Resolution of the LRA. Can be anything in the AQUA resolution.")
 
     #return parser.parse_args(arguments)
     return parser
@@ -85,15 +91,17 @@ def lra_execute(args):
         if not item in config:
             raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
 
-    # mandatory arguments
-    resolution = config['target']['resolution']
-    frequency = config['target']['frequency']
+    # main arguments
+    resolution = config['target'].get('resolution')
+    frequency = config['target'].get('frequency')
+    region = config['target'].get('region', None)
+    catalog = config['target'].get('catalog', None)
+    stat = config['target'].get('stat', 'mean')
+    
+    # assig paths
     paths = config['paths']
     outdir = paths['outdir']
     tmpdir = paths['tmpdir']
-
-    # optional main catalog switch
-    catalog = config['target'].get('catalog', None)
 
     # options
     loglevel = config['options'].get('loglevel', 'WARNING')
@@ -101,6 +109,11 @@ def lra_execute(args):
     verify_zarr = config['options'].get('verify_zarr', False)
 
     # command line override
+    stat = get_arg(args, 'stat', stat)
+    frequency = get_arg(args, 'frequency', frequency)
+    resolution = get_arg(args, 'resolution', resolution)
+    loglevel = get_arg(args, 'loglevel', loglevel)
+
     definitive = get_arg(args, 'definitive', False)
     monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
@@ -110,16 +123,18 @@ def lra_execute(args):
         print('--only-catalog selected, doing a lot of noise but in the end producing only catalog update!')
     fix = get_arg(args, 'fix', True)
     default_workers = get_arg(args, 'workers', 1)
-    loglevel = get_arg(args, 'loglevel', loglevel)
+    
 
     lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
+            region=region, stat=stat,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
+            region=None, stat='mean',
             definitive=False, overwrite=False,
             rebuild=False, monitoring=False,
             default_workers=1, do_zarr=False, verify_zarr=False,
@@ -128,6 +143,27 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
     Running the default LRA from CLI, looping on all the configuration model/exp/source/var combination
     Optional feature for each source can be defined as `zoom`, `workers` and `realizations`
     Options for dry run and overwriting, as well as monitoring and zarr creation, are available
+
+    Args:
+        args: argparse arguments
+        config: configuration dictionary
+        catalog: catalog to be processed
+        resolution: resolution of the LRA
+        frequency: frequency of the LRA
+        fix: fixer option
+        outdir: output directory
+        tmpdir: temporary directory
+        loglevel: log level
+        region: region to be processed
+        stat: statistic to be computed
+        definitive: bool flag to create definitive files
+        overwrite: bool flag to overwrite existing files
+        rebuild: bool flag to rebuild the areas and weights
+        default_workers: default number of workers
+        monitoring: bool flag to enable the dask monitoring
+        do_zarr: bool flag to create zarr
+        verify_zarr: bool flag to verify zarr
+        only_catalog: bool flag to only update the catalog
     """
 
     models = to_list(get_arg(args, 'model', config['data']))
@@ -138,8 +174,8 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
             # if you do require the entire catalog generator
             sources = to_list(get_arg(args, 'source', config['data'][model][exp]))
             for source in sources:
-                # get info on potential realizations
-                realizations = config['data'][model][exp][source].get('realizations')
+                # get info on potential realizations from the configuration file or from the args of command line
+                realizations = get_arg(args, 'realization', config['data'][model][exp][source].get('realizations'))
                 loop_realizations = to_list(realizations) if realizations is not None else [1]
 
                 # get info on varlist and workers
@@ -170,6 +206,7 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir,
                                         nproc=workers, loglevel=loglevel,
+                                        region=region, stat=stat,
                                         definitive=definitive, overwrite=overwrite,
                                         rebuild=rebuild,
                                         performance_reporting=monitoring,

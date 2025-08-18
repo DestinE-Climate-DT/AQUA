@@ -5,6 +5,7 @@ import pytest
 from aqua import Reader
 from aqua.util import load_yaml, ConfigPath
 from aqua.diagnostics import PerformanceIndices, GlobalMean
+from aqua.diagnostics.core import OutputSaver
 
 @pytest.fixture
 def common_setup(tmp_path):
@@ -28,10 +29,12 @@ def common_setup(tmp_path):
         "loglevel": loglevel,
         "outputdir": tmp_path,
         "data": data,
+        "model": 'ERA5',
+        "catalog": 'ci',
         "exp": exp
     }
 
-@pytest.mark.ecmean
+@pytest.mark.diagnostics
 def test_performance_indices(common_setup):
     """Test PerformanceIndices diagnostic."""
     setup = common_setup
@@ -42,14 +45,18 @@ def test_performance_indices(common_setup):
     )
     pi.prepare()
     pi.run()
-    pi.store()
-    pi.plot()
-    yamlfile = f'{setup["outputdir"]}/YAML/PI4_EC23_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.yml'
-    pdffile = f'{setup["outputdir"]}/PDF/PI4_EC23_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.pdf'
-    assert os.path.exists(yamlfile)
-    assert os.path.exists(pdffile)
+    outputsaver = OutputSaver(diagnostic='ecmean',
+                    catalog=setup['catalog'], model=setup['model'], exp=setup["exp"],
+                    outdir=setup['outputdir'], loglevel=setup['loglevel'])
+    yamlfile = outputsaver.generate_path(extension='yml', diagnostic_product='performance_indices')
+    pdffile = outputsaver.generate_path(extension='pdf', diagnostic_product='performance_indices')
+    pi.store(yamlfile=yamlfile)
+    ecmean_fig = pi.plot(diagname='performance_indices', returnfig=True, storefig=False)
+    outputsaver.save_pdf(fig=ecmean_fig, diagnostic_product='performance_indices')
+    assert os.path.exists(yamlfile), f"{yamlfile} file not found"
+    assert os.path.exists(pdffile), f"{pdffile} file not found"
 
-@pytest.mark.ecmean
+@pytest.mark.diagnostics
 def test_global_mean(common_setup):
     """Test GlobalMean diagnostic."""
     setup = common_setup
@@ -60,9 +67,14 @@ def test_global_mean(common_setup):
     )
     gm.prepare()
     gm.run()
-    gm.store()
-    gm.plot()
-    yamlfile = f'{setup["outputdir"]}/YAML/global_mean_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.yml'
-    pdffile = f'{setup["outputdir"]}/PDF/global_mean_era5-hpz3_ClimateDT_r1i1p1f1_1990_1994.pdf'
-    assert os.path.exists(yamlfile)
-    assert os.path.exists(pdffile)
+    outputsaver = OutputSaver(diagnostic='ecmean',
+                    catalog=setup['catalog'], model=setup['model'], exp=setup["exp"],
+                    outdir=setup['outputdir'], loglevel=setup['loglevel'])
+    yamlfile = outputsaver.generate_path(extension='yml', diagnostic_product='global_mean')
+    pngfile = outputsaver.generate_path(extension='png', diagnostic_product='global_mean')
+    gm.store(yamlfile=yamlfile)
+    ecmean_fig = gm.plot(diagname='global_mean', returnfig=True, storefig=False)
+    outputsaver.save_png(fig=ecmean_fig, diagnostic_product='global_mean')
+
+    assert os.path.exists(yamlfile), f"{yamlfile} file not found"
+    assert os.path.exists(pngfile), f"{pngfile} file not found"

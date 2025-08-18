@@ -5,11 +5,13 @@ Regrid and interpolation capabilities
 
 AQUA provides functions to interpolate and regrid data to match the spatial resolution of different datasets. 
 AQUA regridding functionalities are based on the external tool `smmregrid <https://github.com/jhardenberg/smmregrid>`_ which 
-operates sparse matrix computation based on pre-computed weights.
+operates sparse matrix computation based on pre-computed weights. They are wrapper within a `Regridder()` class
+that can be used in a modular way to regrid data to a target grid, or seamlessy within the `Reader()`
 
-Basic usage
-^^^^^^^^^^^
+Basic usage within the Reader()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+This is the reccomended usage. 
 When the ``Reader`` is called, if regrid functionalities are needed, the target grid has to be specified
 during the class initialization:
 
@@ -24,9 +26,38 @@ This will return an ``xarray.Dataset`` with the data lazily regridded to the tar
 We can then use the ``data_r`` object for further processing and the data
 will be loaded in memory only when necessary, allowing for further subsetting and processing.
 
+
+Basic usage of the Regridder()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alternatively - although not recommended - the regridding functionalities can be used in a standalone way.
+
+When using the ``Regridder()`` in this way, users can provide a dataset (xr.Dataset or xr.DataArray) 
+and then regrid it to a target grid. The class can also initialized with a dictionary containing a set of 
+AQUA grids: however, in this case it might be preferrer to go through the ``Reader()``. 
+The target grid has to be specified when generating the weights (which is a mandatory step). 
+Please notice that the regridder will write the data provided to the disk to initialize the regridding process, 
+so it might be a long operation if data are not sampled in the right way. 
+
+.. code-block:: python
+
+    regridder = Regridder(data=data.isel(time=0), loglevel='debug')
+    regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+    data_r = regridder.regrid(data)
+
+As in the previous case, this will return an ``xarray.Dataset`` with the data lazily regridded to the target grid.
 The default regrid method is ``ycon`` which is a conservative regrid method.
 If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
 following the CDO convention.
+
+The ``Regridder()`` class can also be used to retrieve the areas of the source and target grids.
+
+.. code-block:: python
+
+    src_area = regridder.areas()
+    tgt_area = regridder.areas(tgt_grid_name='n64')
+
+This - as before - will use the ``smmregrid`` engine based on CDO to compute the areas of the source and target grids.
 
 Concept
 ^^^^^^^
@@ -35,7 +66,7 @@ The idea of the regridder is first to generate the weights for the interpolation
 then to use them for each regridding operation. 
 The reader generates the regridding weights automatically (with CDO) if not already
 existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/machine.yaml`` file. 
-This can have a `default` argument but can also specific for each machine you are working on. 
+This can have a ``default`` argument but can also specific for each machine you are working on. 
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
 then stored on the machine so that further operations are considerably fast. 
@@ -61,8 +92,11 @@ Such an approach has two main advantages:
 Available target grids
 ^^^^^^^^^^^^^^^^^^^^^^
 
-At the current stage, AQUA supports only regular lon-lat grids as target grids.
-The available target grids are:
+.. note::
+
+    From AQUA version v0.14, all CDO grids are supported natively by AQUA, so it is possible to target `r360x180` without the need to specify `r100`
+
+The "predefined" target grids are:
 
 .. code-block:: yaml
 
@@ -94,7 +128,8 @@ The list is available in the ``config/grids/default.yaml`` file.
 
 .. note::
     Inside the ``config/grids`` directory, it is possible to define custom grids that can be used in the regridding process.
-    We are planning to be able to support also irregular grids as target grids in the future (e.g. allowing to regrid everything to
+    Currently grids supported by CDO, which do not require extra CDO options, are supported and can be used directly as target grids.
+    We are planning to be able to support also more complex irregular grids as target grids in the future (e.g. allowing to regrid everything to
     HealPix grids).
 
 Oceanic grid files naming scheme

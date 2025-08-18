@@ -20,7 +20,7 @@ except ModuleNotFoundError:
 
 approx_rel = 1e-4 #
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 @pytest.fixture
 def retrieved_dataarray():
     if os.getenv('INPUT_ARG') is None:
@@ -53,7 +53,7 @@ def retrieved_dataarray():
         return retrieved_array.isel(time=slice(10, 11))
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_module_import():
     """Testing the import of tropical rainfall diagnostic
     """
@@ -77,7 +77,7 @@ def data_size(retrieved_dataarray):
     return size
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_update_default_attribute():
     """ Testing the update of default attributes
     """
@@ -88,7 +88,7 @@ def test_update_default_attribute():
     assert old_trop_lat_value != new_trop_lat_value
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_attribute_type():
     """ Testing the type of attributes
     """
@@ -120,7 +120,7 @@ def histogram_output(retrieved_dataarray):
     return hist
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_hisogram_counts(histogram_output, data_size):
     """ Testing the histogram counts
     """
@@ -130,7 +130,7 @@ def test_hisogram_counts(histogram_output, data_size):
     assert counts_sum <= data_size
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_histogram_frequency(histogram_output):
     """ Testing the histogram frequency
     """
@@ -139,7 +139,7 @@ def test_histogram_frequency(histogram_output):
     assert frequency_sum - 1 < 10**(-4)
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_histogram_pdf(histogram_output):
     """ Testing the histogram pdf
     """
@@ -148,7 +148,7 @@ def test_histogram_pdf(histogram_output):
     assert pdf_sum-1 < 10**(-4)
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_histogram_load_to_memory(histogram_output):
     """ Testing the histogram load to memory
     """
@@ -176,7 +176,7 @@ def test_histogram_load_to_memory(histogram_output):
     assert re_time_band in time_band
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_hist_figure_load_to_memory(histogram_output):
     """ Testing the saving of the figure with histogram
     """
@@ -196,7 +196,7 @@ def test_hist_figure_load_to_memory(histogram_output):
     assert 'test_hist_fig_saving' in listdir(path_to_pdf)[0]
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_local_attributes_of_histogram(histogram_output):
     """ Testing the local attributes of histogram
     """
@@ -206,7 +206,7 @@ def test_local_attributes_of_histogram(histogram_output):
     assert 'lon_band' in hist.counts.attrs
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_global_attributes_of_histogram(histogram_output):
     """ Testing the global attributes of histogram
     """
@@ -219,7 +219,7 @@ def test_global_attributes_of_histogram(histogram_output):
         print("The obtained xarray.Dataset doesn't have global attributes.")
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_variables_of_histogram(histogram_output):
     """ Testing the variables of histogram
     """
@@ -239,7 +239,7 @@ def test_variables_of_histogram(histogram_output):
         assert False,       "pdf not in variables"
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_coordinates_of_histogram(histogram_output):
     """ Testing the coordinates of histogram
     """
@@ -248,7 +248,7 @@ def test_coordinates_of_histogram(histogram_output):
     'width' in hist.coords
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_latitude_band(retrieved_dataarray):
     """ Testing the latitude band
     """
@@ -260,7 +260,7 @@ def test_latitude_band(retrieved_dataarray):
     assert 10 > data_trop.lat.values[-1]
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_histogram_merge(histogram_output):
     """ Testing the histogram merge
     """
@@ -280,7 +280,7 @@ def test_histogram_merge(histogram_output):
     assert counts_merged == (counts_1 + counts_2)
 
 
-@pytest.mark.tropical_rainfall
+@pytest.mark.diagnostics
 def test_units_converter(retrieved_dataarray):
     """ Testing convertation of units"""
 

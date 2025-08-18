@@ -10,6 +10,7 @@ try:
 except ModuleNotFoundError:
     print("Import error for the ensemble module.")
 
+@pytest.mark.ensemble
 def test_timeseries_datasets():
     """
     load aqua-analysis output of timeseries.
@@ -20,6 +21,7 @@ def test_timeseries_datasets():
     del dataset_list
     return dataset
 
+@pytest.mark.ensemble
 def test_ensemble_timeseries_compute():
     """Test the compute method of EnsembleTimeseries."""
     sample_dataset = test_timeseries_datasets()
@@ -29,6 +31,7 @@ def test_ensemble_timeseries_compute():
     assert ts.mon_dataset_mean is not None
     assert ts.mon_dataset_std.values.all() == 0 
 
+@pytest.mark.ensemble
 def test_edit_attributes():
     """Test the edit_attributes method."""
     ts = EnsembleTimeseries(var="2t")

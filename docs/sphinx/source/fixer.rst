@@ -21,8 +21,8 @@ Concept
 
 The fixer performs a range of operations on data:
 
-- adopts a **common data model** for coordinates (default is the CDS common data model):
-  names of coordinates and dimensions (lon, lat, etc.),
+- adopts a **common data model** for coordinates:
+  names of coordinates and dimensions (lon, lat, plev, depth, etc.),
   coordinate units and direction, name (and meaning) of the time dimension. (See :ref:`coord-fix` for more details)
 - **changes variable names and metadata**.
   The fixer can match the available and target variables with a convention table (see :ref:`convention-structure`)
@@ -113,7 +113,6 @@ Here we show an example of a fixer file, including all the possible options:
 
     fixer_name:
         documentation-mother: 
-            data_model: ifs
             delete: 
                 - bad_variable
             vars:
@@ -123,7 +122,6 @@ Here we show an example of a fixer file, including all the possible options:
         documentation-fix:
             parent: documentation-to-merge
             convention: eccodes
-            data_model: ifs
             dims:
                 cells:
                     source: cells-to-rename
@@ -166,7 +164,7 @@ different sections of the fixer file.
   Notice that this is another ``fixer_name``, so that if the convention is specified in one of the two, it will be used as well.
 - **convention**: the name of the convention to be used. This is used to merge the convention file with the fixer file.
   If this key is not present, the fixer will not be merged with the convention file.
-- **data_model**: the name of the data model for coordinates. (See :ref:`coord-fix`).
+- **data_model**: the name of the data model for coordinates. The default is ``aqua`` convention (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough. (See :ref:`coord-fix`).
 - **dims**: extra dimensions handling if data model is not flexible enough.  (See :ref:`coord-fix`).
 - **decumulation**: 
@@ -299,10 +297,13 @@ Then, extra keys can be then specified for **each** variable to allow for furthe
 Data Model and Coordinates/Dimensions Correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The fixer can adopt a common **coordinate data model**
-(default is the CDS data model).
+The fixer can adopt a common **coordinate data model**. The default is the **aqua** data model,
+which is a simplified version of the CF data model and is stored in the ``config/data_model/aqua.yaml`` folder.
 If this data model is not appropriate for a specific source,
-it is possible to specify a different one in the catalog source.
+it is possible to specify a different one in the catalog source, but it has to be defined accordingly in the config folder.
+
+.. warning ::
+  Data model is being refactored which means that behaviour may change in the future.
 
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
 it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks

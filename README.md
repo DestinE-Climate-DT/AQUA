@@ -1,5 +1,8 @@
 ![maintenance-status](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
+[![AQUA tests](https://github.com/DestinE-Climate-DT/AQUA/actions/workflows/aqua.yml/badge.svg)](https://github.com/DestinE-Climate-DT/AQUA/actions/workflows/aqua.yml)
 [![Documentation Status](https://readthedocs.org/projects/aqua/badge/?version=latest)](https://aqua.readthedocs.io/en/latest/)
+[![codecov](https://codecov.io/gh/DestinE-Climate-DT/AQUA/graph/badge.svg?token=E9D0A8SWIU)](https://codecov.io/gh/DestinE-Climate-DT/AQUA)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14906075.svg)](https://doi.org/10.5281/zenodo.14906075)
 
 # AQUA
 
@@ -13,9 +16,10 @@ The Application for QUality Assessment (AQUA) is a model evaluation framework de
 
 ## Installation
 
-AQUA requires python>=3.9. Recommended installation should be done through any package manager for conda-forge.
+AQUA requires python>=3.10,<3.13. Recommended installation should be done through a package manager for conda-forge (e.g. [Miniforge](https://github.com/conda-forge/miniforge)).
 
 ### Create conda/mamba environment and install packages
+
 ```
 git clone git@github.com:DestinE-Climate-DT/AQUA.git
 cd AQUA
@@ -44,3 +48,7 @@ Please look at the `cli` folder to have access to the AQUA command line tools.
 ## Contributing guide
 
 Please refer to the [Guidelines for Contributors](https://github.com/DestinE-Climate-DT/AQUA/blob/main/CONTRIBUTING.md) if you want to join AQUA team!
+
+## License
+
+AQUA is distributed as open source software under Apache 2.0 License. The copyright owner is the European Union, represented by the European Commission. The development of AQUA has been funded by the European Union through Contract `DE_340_CSC - Destination Earth Programme Climate Adaptation Digital Twin (Climate DT)`. Further info can be found at https://destine.ecmwf.int/ and https://destination-earth.eu/

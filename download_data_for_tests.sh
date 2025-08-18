@@ -1,9 +1,9 @@
 #!/bin/bash
 
-file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/framework/AQUA_testsv5.tar.gz?temp_url_sig=0738c078c9d994c3cee25ceae4f739a47844ee8d&temp_url_expires=2026-11-16T16:31:15Z"
-file_path="AQUA_testsv5.tar.gz"
-#file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/framework/AQUA_testsv4.tar.gz?temp_url_sig=0edd32127555f6c9ff3e0eb750746d622d1d8d4f&temp_url_expires=2025-01-06T11:35:45Z"
-#file_path="AQUA_testsv4.tar.gz"
+file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/framework/AQUA_testsv6.tar.gz?temp_url_sig=38bfddb3ff0b9584db673f695167895896e6a2d6&temp_url_expires=2027-05-06T09:26:02Z"
+file_path="AQUA_testsv6.tar.gz"
+# file_url="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/framework/AQUA_testsv5.tar.gz?temp_url_sig=0738c078c9d994c3cee25ceae4f739a47844ee8d&temp_url_expires=2026-11-16T16:31:15Z"
+# file_path="AQUA_testsv5.tar.gz"
 
 if [ ! -f "$file_path" ]; then
     echo "Downloading file..."
@@ -15,12 +15,6 @@ else
     echo "File already exists."
 fi
 
-# if [ -f "./config/config-aqua.yaml" ] ; then
-#     cp ./config/config-aqua.yaml ./config/config-aqua.yaml.bak
-# else
-#     cp ./config/config-aqua.tmpl ./config/config-aqua.yaml
-# fi
-
 # if [[ "$OSTYPE" == "darwin"* ]]; then
 #   # Mac OSX
 #   sed -i '' "/^catalog:/c\\
@@ -31,4 +25,3 @@ fi
 # fi
 
 #python -m pytest ./tests/test_basic.py
-#mv ./config/config.yaml.bak ./config/config.yaml

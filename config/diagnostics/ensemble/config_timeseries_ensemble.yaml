@@ -1,0 +1,49 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+
+# This yaml file will only have either annual or monthly
+models_monthly:
+  - model: 'IFS-NEMO'
+    exp: 'historical-1990'
+    source: 'aqua-timeseries-monthly'
+  - model: 'IFS-FESOM'
+    exp: 'historical-1990'
+    source: 'aqua-timeseries-monthly'
+
+models_annual:
+  - model: 'IFS-NEMO'
+    exp: 'historical-1990'
+    source: 'aqua-timeseries-annual'
+  - model: 'IFS-FESOM'
+    exp: 'historical-1990'
+    source: 'aqua-timeseries-annual'
+
+reference_model_monthly:  
+  - model: 'ERA5'
+    exp: 'era5'
+    source: 'aqua-timeseries-monthly'
+
+reference_model_annual:  
+  - model: 'ERA5'
+    exp: 'era5'
+    source: 'aqua-timeseries-annual'
+
+
+outputdir: "./"
+
+# This is the variable that will be plotted as timeseries
+variable: '2t'
+
+timeseries_plot_params:
+  startdate: '1990-01-01'
+  enddate: '2000-12-31'
+  plot_std: True
+  plot_ensemble_members: False
+  ensemble_label: 'Multi-model'
+  ref_label: 'ERA5'
+  figure_size: [10,5]
+  label_ncol: 3
+  label_size: 7
+  pdf_save: True
+  units: 

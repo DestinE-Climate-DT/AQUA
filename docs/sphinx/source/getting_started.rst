@@ -63,11 +63,16 @@ This command will create the configuration folder in the ``$HOME/.aqua`` directo
 You will need to specify the machine name on which you are installing (e.g. "lumi", "levante" or "MN5")
 Check the :ref:`aqua-install` section for more information.
 
-.. warning::
+.. note::
 
     If you are using a supported machine please be sure to specify the correct machine name.
     Supported machines are ``lumi``, ``levante`` and ``MN5``.
     You may need to check to have the correct permissions to access the HPC specific directories.
+
+.. warning::
+
+    If you are using a new machine or you want to specify some extra options in the configuration file, you can customize the configuration file.
+    Please refer to the :ref:`config-file` section for more information.
 
 Add a catalog
 ^^^^^^^^^^^^^^^

@@ -42,13 +42,22 @@ grids:
     path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
     cdo_options: '--force'
     space_coord: ['cells']
+  test-hpz3-nested-nn:
+    path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
+    cdo_options: '--force'
+    space_coord: ['cells']
+    regrid_method: 'nn'
   test-hpz7-nested-fdb:
     path: '{{ grids }}/HealPix/hpz7_nested_atm.nc'
     cdo_options: '--force'
     space_coord: ['ncells']
+  test-hpz3-nested-fesom:
+    path: '{{ grids }}/HealPix/fesom_hpz3_nested_oce.nc'
+    space_coord: ['cells']
+    cdo_options: '--force'
   test-hpz3-nested-fesom-3d:
-    path: 
+    path:
       level: '{{ grids }}/HealPix/fesom_hpz3_nested_oce_level.nc'
     space_coord: ['cells']
-    vert_coord: ["level"]
+    vert_coord: ['level']
     cdo_options: '--force'

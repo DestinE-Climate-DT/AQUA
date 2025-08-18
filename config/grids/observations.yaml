@@ -8,6 +8,7 @@ grids:
   # EN4
   en4:
     path:
+      2d: '{{ grids }}/EN4/en4-grid.nc'
       lev: '{{ grids }}/EN4/en4-grid.nc'
     space_coord: ["lon", "lat"]
     vert_coord: ["lev"]
@@ -30,14 +31,14 @@ grids:
     path: '{{ grids }}/OSI-SAF/grid_osi-saf_nh.nc'
     space_coord: ['xc', 'yc']
     cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc'
-    cellarea_var: areacello
+    cellareas_var: areacello
     regrid_method: 'bil'
 
   osi-saf-sh:
     path: '{{ grids }}/OSI-SAF/grid_osi-saf_sh.nc'
     space_coord: ['xc', 'yc']
     cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc'
-    cellarea_var: areacello
+    cellareas_var: areacello
     regrid_method: 'bil'
 
   # WOA
@@ -51,12 +52,19 @@ grids:
   psc-piomas:
     space_coord: ["x", "y"]
     cellareas: '{{ grids }}/PSC/cellarea_piomas.nc'
-    cellarea_var: areacello
+    cellareas_var: areacello
     path: '{{ grids }}/PSC/grid_piomas_new.nc'
     regrid_method: 'bil'
   psc-giomas:
     space_coord: ["x", "y"]
     cellareas: '{{ grids }}/PSC/cellarea_giomas.nc'
-    cellarea_var: areacello
+    cellareas_var: areacello
     path: '{{ grids }}/PSC/grid_giomas_new.nc'
     regrid_method: 'bil'
+
+  # WAGHC
+  waghc:
+    space_coord: ["lon", "lat"]
+    vert_coord: ["depth"]
+    path:
+      depth: '{{ grids }}/WAGHC/grid-waghc.nc'

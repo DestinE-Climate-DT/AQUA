@@ -28,6 +28,7 @@ grids:
     space_coord: [longitude, latitude]
 
   # target regrid
+  # Regular lon/lat grids
   # rxxxs are staggered grids
   r005s: r7200x3601
   r005: r7200x3600
@@ -45,3 +46,4 @@ grids:
   r200: r180x90
   r250s: r144x73
   r250: r144x72
+  # full Gaussian grids -> these can be now used with a string in the reader's regrid arg

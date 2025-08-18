@@ -1,0 +1,94 @@
+{
+    "creators": [
+      {
+        "affiliation": "CNR-ISAC, Italy",
+        "name": "Nurisso, Matteo",
+        "orcid": "0000-0002-5962-0680"
+      },
+      {
+        "affiliation": "Politecnico di Torino, Italy",
+        "name": "Caprioli, Silvia",
+        "orcid": "0009-0005-6746-9473"
+      },
+      {
+        "affiliation": "CNR-ISAC, Italy",
+        "name": "Davini, Paolo",
+        "orcid": "0000-0003-3389-7849"
+      },
+      {
+        "affiliation": "Politecnico di Torino, Italy",
+        "name": "von Hardenberg, Jost",
+        "orcid": "0000-0002-5312-8070"
+      },
+      {
+        "name": "Nazarova, Natalia",
+        "affiliation": "Politecnico di Torino, Italy",
+        "orcid": "0000-0002-3905-2620"
+      },
+      {
+        "affiliation": "BSC, Spain",
+        "name": "Ghosh, Supriyo",
+        "orcid": "0000-0003-0581-9907"
+      },
+      {
+        "affiliation": "CNR-ISAC, Italy",
+        "name": "Ghinassi, Paolo",
+        "orcid": "0000-0002-7368-4947"
+      },
+      { 
+        "name": "Cadau, Marco",
+        "affiliation": "Politecnico di Torino, Italy",
+        "orcid": "0009-0004-4363-3892"
+      },
+      { 
+        "name": "Tovazzi, Emanuele",
+        "affiliation": "CNR-ISAC, Italy",
+        "orcid": "0000-0001-9838-4249"
+      },
+      {
+        "affiliation": "AWI, Germany",
+        "name": "Koldunov, Nikolay",
+        "orcid": "0000-0002-3365-8146"
+      },
+      { 
+        "name": "Massonnet, François",
+        "affiliation": "University of Louvain, Belgium",
+        "orcid": "0000-0002-4697-5781"
+      },
+      {
+        "name": "Rajput, Maqsood Mubarak",
+        "affiliation": "AWI, Germany",
+        "orcid": "0009-0002-8409-7171"
+      },
+      { 
+        "name": "Sayed, Susan",
+        "affiliation": "DWD, Germany"
+      },
+      {
+        "name": "Sharma, Tamvi",
+        "affiliation": "AWI, Germany"
+      },
+      { 
+        "name": "Sunny, Jaleena",
+        "affiliation": "AWI, Germany"
+      },
+      {
+        "name": "Kluft, Lukas",
+        "affiliation": "MPI-M, Germany",
+        "orcid": "0000-0002-6533-3928"
+      },
+      { 
+        "name": "Kinoshita, Bruno",
+        "affiliation": "BSC, Spain",
+        "orcid": "0000-0001-8250-4074"
+      },
+      {
+        "name": "Ortega, Pablo",
+        "affiliation": "BSC, Spain",
+        "orcid": "0000-0002-4135-9621"
+      }
+    ],
+    "description": "AQUA: The Application for QUality Assessment of the Destination Earth Climate DT.",
+    "license": "Apache-2.0",
+    "title": "AQUA"
+  }

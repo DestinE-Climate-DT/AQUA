@@ -4,15 +4,13 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package AQUA.
-AQUA is developed and tested with Python 3.12 and it supports Python 3.9 and later.
+AQUA is developed and tested with Python 3.12 and it supports Python 3.9 or later (with the exclusions of 3.13).
 
-We recommend using Mamba, a package manager for conda-forge, for the installation process.
-However, you can also use Conda, the default package manager for Anaconda.
+We recommend using Mamba/Conda package manager for the installation process.
 
 .. note ::
     Soon AQUA will be available on the PyPI repository, so you will be able to install it with pip.
     The installation process will be updated accordingly.
-    Some dependencies are not available in the PyPI repository, so mamba or conda are recommended for the installation process.
 
 Prerequisites
 -------------
@@ -20,11 +18,7 @@ Prerequisites
 Before installing AQUA, ensure that you have the following software installed:
 
 - `Git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_: AQUA is hosted on GitHub, and you will need Git to clone the repository.
-- `Miniforge <https://github.com/conda-forge/miniforge>`_ or `Conda <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_: Miniforge is a package manager for conda-forge, and it is recommended for the installation process. 
-
-.. note ::
-    Currently, AQUA is a private repository, so you need to be registered as a user to access it.
-    If you need access, please contact the AQUA team.
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process. 
 
 .. _installation-conda:
 
@@ -61,11 +55,6 @@ Finally, activate the environment:
 At this point, you should have successfully installed the AQUA package and its dependencies 
 in the newly created aqua environment.
 
-.. warning ::
-    If you are installing AQUA on a Mac, please be aware that the ``tempest-extremes`` package is not available for the Mac platform.
-    You will need to remove the ``tempest-extremes`` package from the environment file before creating the environment.
-    This means that at the current stage, the Tropical Cyclone diagnostics will not be available on Mac.
-
 .. note ::
     Together with the environment file, a ``pyproject.toml`` file is provided in the repository.
     This file contains the required dependencies for the AQUA package and allows you to install the package with the pip package manager.
@@ -91,8 +80,12 @@ Replace ``<environment_name>`` with the name of the existing environment if this
 
 .. _installation-lumi:
 
+
+HPC Installation
+----------------
+
 Installation on LUMI HPC
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 LUMI is currently the main HPC of the DestinE-Climate-DT project, and it is the main platform for the development of AQUA.
 The Lustre filesystem does not support the use of conda environments, so another approach has been developed to install on LUMI,
@@ -138,7 +131,7 @@ If you do not agree, you will need to call ``load_aqua.sh`` manually every time 
 .. _installation-levante:
 
 Installation on Levante HPC at DKRZ
------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can follow the installation process described in the previous section (see :ref:`installation-conda`).
 In order to use the FDB access, you need to load the FDB5 binary library (``libfdb5.so``).
@@ -163,7 +156,7 @@ Also in this case, you can set the environment variable in your ``.bash_profile`
 .. _installation-mn5:
 
 Installation on MareNostrum 5 (MN5) HPC at BSC
---------------------------------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To enable internet-dependent operations like git, pip or conda on MN5, you can configure an SSH tunnel and set up proxy environment variables.
 
@@ -226,6 +219,71 @@ To use the FDB5 binary library on MN5, set the following environment variable:
 .. code-block:: bash
 
     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/gpfs/projects/ehpc01/sbeyer/models/DE_CY48R1.0_climateDT_tco399_aerosol_runoff/build/lib"
+
+
+.. _installation-hpc2020:
+
+Installation on ECMWF HPC2020
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+HPC2020 is moving to a more container-based approach, so the suggested installation process uses a technology similar to the one used on LUMI.
+In fact, using directly conda or mamba on lustre filesystems (``$PERM`` and ``$HPCPERM``) is not recommended 
+and has been verified to lead to severe performance issues.
+
+The recommended approach is to use the `tykky module <https://docs.csc.fi/computing/containers/tykky/>`_ developed by CSC, and available on HPC2020, which provides
+the same container wrapper technology used for an install on LUMI. 
+This process is also described in the relevant HPC2020 `documentation pages <https://confluence.ecmwf.int/display/UDOC/Moving+away+from+Anaconda+and+Miniconda>`_.
+
+While basically you could follow the instructions in the ECMWF docs on how to create a tykky environment, a small bug in one of the AQUA dependencies requires a slightly 
+more complex procedure, so that, as for LUMI, a convenience installation script has been created.
+
+First, clone the AQUA repository from GitHub as described in the previous section.
+
+The installation process uses considerable resources which may exceed the capacity of the login node.
+For this reason, it is recommended to start an interactive session asking for adequate resources:
+
+.. code-block:: bash
+
+    ecinteractive -c 8 -m 20 -s 30
+
+which will ask for a session with 8 cpus, 20 GB of RAM and 30 GB of temporary local disk storage. This is required only for the installation, not necessarily for using AQUA.
+
+.. note ::
+    If this is the first time that you run ``ecinteractive``, you should first set up your ssh keys by running the command ``ssh-key-setup``.
+
+It is recommended to define an ``$AQUA`` environment variable that points to the AQUA directory (the script will assume by default ``AQUA=$HPCPERM/AQUA``):
+
+.. code-block:: bash
+
+    export AQUA=/path/to/AQUA
+
+Then run the the installation script:
+
+.. code-block:: bash
+
+    cd $AQUA/cli/hpc2020-install
+    ./hpc2020-install.sh
+
+The script installs by default the AQUA tykky environment in the directory ``$HPCPERM/tykky/aqua``.
+
+The script will ask the user if they wish to add the AQUA environment  permanently to their ``$PATH`` in the ``.bash_profile`` file at the end of the installation.
+Please note that adding AQUA to your PATH will make you use the aqua environment for all activities on HPC2020, so this is not really recommended.
+
+Instead, the recommended way to use AQUA is by loading the environment with a conda-like syntax:
+
+.. code-block:: bash
+    
+    module load tykky
+    tykky activate aqua
+
+You can later also use ``tykky deactivate`` to deactivate the environment.
+
+In case you plan to use Visual Studio Code, you can add a kernel pointing to the containerized AQUA by running also the following command:
+
+.. code-block:: bash
+
+    $HPCPERM/tykky/aqua/bin/python3 -m ipykernel install --user --name=<my_containerised_env_name>
+
 
 Installation and use of the AQUA container
 ------------------------------------------

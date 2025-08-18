@@ -1,7 +1,7 @@
 from ocean3d.ocean_drifts.tools import *
 from ocean3d.ocean_drifts.hovmoller_plot import hovmoller_plot
 import re
-from datetime import datetime
+import pandas as pd
 
 class time_series:
     def __init__(self, o3d_request):
@@ -64,14 +64,14 @@ class time_series:
                     label=f"{round(int(data_level.lev.data),-2)}")
                 
                 if re.search(r'Hist', data_name):
-                    start_date = np.datetime64('1990-01-01')
-                    end_date =  np.datetime64('2006-12-31')
+                    start_date = pd.Timestamp('1990-01-01')
+                    end_date =  pd.Timestamp('2006-12-31')
                     axs[num, 1].set_xlim(start_date, end_date)
                     axs[num, 0].set_xlim(start_date, end_date)
                 
                 if re.search(r'ssp', data_name):
-                    start_date = np.datetime64('2020-01-01')
-                    end_date =  np.datetime64('2039-12-31')
+                    start_date = pd.Timestamp('2020-01-01')
+                    end_date =  pd.Timestamp('2039-12-31')
                     axs[num, 1].set_xlim(start_date, end_date)
                     axs[num, 0].set_xlim(start_date, end_date)
                 

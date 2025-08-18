@@ -18,15 +18,15 @@ authors = [ # AQUA core team reported here
 description = "AQUA; a model evaluation framework for high-resolution climate model simulations"
 readme = "README.md"
 keywords = ["climate", "modeling", "diagnostics", "high-resolution"]
-license = {text = "Private"}
-requires-python = ">=3.9"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "Intended Audience :: Science/Research",
     "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -35,16 +35,14 @@ classifiers = [
 ]
 dependencies = [
     "boto3",
-    "cartopy",
+    "cartopy==0.24.1",
     "cfgrib",
     "dask",
-    "dask_jobqueue",
-    "eccodes==2.39.2",
+    "eccodes==2.41.0",
     "docker",
     "gcsfs", # Google Cloud Storage File System
-    "gribscan",
     "pandas",
-    "intake==0.7.0", # Version 2 is not yet compatible with intake-xarray
+    "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-esm",
     "intake-xarray",
     "jinja2",
@@ -55,15 +53,17 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
-    "smmregrid==0.1.0",
+    "smmregrid==0.1.3",
+    #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
     "sparse",
-    "xarray",
+    "xarray>=2025.01.2", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
     "kerchunk",
-    "h5py@git+https://github.com/h5py/h5py.git@3.12.1", #specific github pin to avoid installation of binaries
+    "h5py>=3.12.1", #specific github pin to avoid installation of binaries
     "fastparquet",
-    "pyfdb==0.1.1",
-    "gsv-interface==2.9.0",
-    "ECmean4>=0.1.12"
+    "ECmean4==0.1.15",
+    "pyfdb==0.1.2",
+    "gsv-interface==2.12.0",
+    "zarr"
 ]
 
 [project.optional-dependencies]
@@ -78,9 +78,8 @@ notebooks = [
 tests = [
     "pytest",
     "pytest-cov",
-    "coverage[toml]",
-    "pandoc",
-    "pycobertura"
+    "coverage",
+    "cdo"
 ]
 all = [
     "aqua[docs]",
@@ -92,8 +91,8 @@ all = [
 aqua = "aqua.cli.main:main"
 
 [project.urls]
-homepage = "https://aqua-web-climatedt.2.rahtiapp.fi"
-documentation = "https://aqua-web-climatedt.2.rahtiapp.fi/documentation/index.html"
+homepage = "https://github.com/DestinE-Climate-DT/AQUA/"
+documentation = "https://aqua.readthedocs.io/en/latest/index.html"
 repository = "https://github.com/DestinE-Climate-DT/AQUA/"
 issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 
@@ -108,7 +107,8 @@ platforms = ["any"]
 version = {attr = "aqua.version.__version__"}
 
 [tool.pytest.ini_options]
-addopts = "-v --cov=aqua --cov-config=.coveragerc"
+# verbose to have full test, run coverage on src folder and use pyproject as a configuration file
+addopts = "--durations=10 -v --cov=aqua" 
 testpaths = [
     "tests"
 ]
@@ -118,38 +118,18 @@ markers = [
     "sbatch: tests which require sbatch",
     "graphics: tests which deal with graphics",
     "gsv: mark test that requires ECMWF FDB libraries",
-    # beginning of diagnostic tests
-    "dummy: mark test for dummy diagnostic",
-    "teleconnections: mark test for teleconnections diagnostic",
-    "tropical_rainfall: mark test for tropical_rainfall diagnostic",
+    "diagnostics: single marker for all diagnostics",
     "catgen: mark test for catalog generator",
-    "ecmean: mark for ecmean performance indices and global mean"
+    "ensemble: pytest for ensemble diagnostic"
 ]
 
-# This appears to be the correct configuration, but for some reason
-# pytest-cov doesn't appear to be reading this? We are passing some
-# options via the command-line for now, but this needs to be fixed.
-# Ref: https://github.com/pytest-dev/pytest-cov/issues/390
 [tool.coverage.run]
 branch = true
 command_line = '-m pytest tests'
 source = ["src/aqua"]
-omit = ["tests/*"]
+omit = [
+    "tests/*", 
+    "**/__init__.py",
+    "src/aqua_diagnostics/dummy"
+    ]
 
-[tool.coverage.report]
-show_missing = true
-ignore_errors = true
-exclude_lines = [
-  "pragma: no cover",
-  "def __repr__",
-  "def __str__",
-  "raise AssertionError",
-  "raise NotImplementedError",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-  "if typing.TYPE_CHECKING:"
-]
-
-[tool.coverage.html]
-show_contexts = true
-directory = "coverage/html"

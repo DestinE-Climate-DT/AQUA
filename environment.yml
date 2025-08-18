@@ -9,21 +9,18 @@ channels:
   - nodefaults
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
-  - python>=3.9,<3.13
-  - cdo>=2.2.0 #for healpix support
-  - eccodes==2.39.0
+  - python>=3.10,<3.13
+  - cdo>=2.5.0 #for smmregrid compatibility
+  - eccodes==2.41.0
   # for eccodes see issues #252, #634, #870, #1282
   # PR #36 catalog repo
   - pandas      
-  - pandoc
   - pip
   - hdf5 #explicitly to avoid issues with pypi version
-  - python-cdo # for teleconnections
   - tempest-extremes # for TCs
   - xesmf # for ECmean
   - intake-esm
   - imagemagick
-  - zarr<3.0.0 # Kerchunk is not compatible with zarr 3.0.0 (https://github.com/fsspec/kerchunk/pull/516)
   - pip:
     - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
     - -e ./diagnostics/seaice/ # pip install -e of seaice

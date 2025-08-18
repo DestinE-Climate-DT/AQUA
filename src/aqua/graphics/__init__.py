@@ -14,12 +14,31 @@ The following functions are available:
 - plot_seasonalcycle: Plot a seasonal cycle
 - plot_maps: Plot multiple maps using plot_single_map
 """
+from .gregory import plot_gregory_monthly, plot_gregory_annual
 from .hovmoller import plot_hovmoller
+from .boxplot import boxplot
+from .index_plot import index_plot, indexes_plot
 from .single_map import plot_single_map, plot_single_map_diff
+from .styles import ConfigStyle
 from .timeseries import plot_timeseries, plot_seasonalcycle
 from .multiple_maps import plot_maps, plot_maps_diff
 
-__all__ = ["plot_hovmoller",
+
+__all__ = ["plot_gregory_monthly", "plot_gregory_annual",
+           "plot_hovmoller", "boxplot",
+           "index_plot", "indexes_plot",
            "plot_single_map", "plot_single_map_diff",
+           "ConfigStyle",
            "plot_timeseries", "plot_seasonalcycle",
            "plot_maps", "plot_maps_diff"]
+
+
+def activate_style(style: str = None,
+                   loglevel: str = 'WARNING'):
+    """Activate the style for graphical utilities
+    Args:
+        style (str): name of the style to load.
+                     If not provided, it will be read from the configuration file.
+        loglevel (str): logging level. Default is 'WARNING'.
+    """
+    ConfigStyle(style=style, loglevel=loglevel)

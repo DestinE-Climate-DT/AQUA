@@ -1,547 +1,326 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 '''
-AQUA teleconnections command line interface for a single dataset.
-Reads configuration file and performs teleconnections diagnostic.
+Command-line interface for Teleconnections diagnostic.
+
+This CLI allows to run the NAO and ENSO diagnostics.
+Details of the run are defined in a yaml configuration file for a
+single or multiple experiments.
 '''
 import argparse
-import os
 import sys
-import gc
 
-from dask.distributed import Client, LocalCluster
-
-from aqua import __version__ as aquaversion
-from aqua.util import load_yaml, get_arg
-from aqua.util import add_pdf_metadata, add_png_metadata
-from aqua.util import OutputSaver, ConfigPath
-from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.graphics import plot_single_map, plot_single_map_diff
-from aqua.diagnostics.teleconnections.plots import indexes_plot
-from aqua.diagnostics.teleconnections.tc_class import Teleconnection
-from aqua.diagnostics.teleconnections.tools import set_figs
+from aqua.util import get_arg
+from aqua.version import __version__ as aqua_version
+from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
+from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
+from aqua.diagnostics.teleconnections import NAO, ENSO
+from aqua.diagnostics.teleconnections import PlotNAO, PlotENSO
 
 
-def parse_arguments(cli_args):
-    """Parse command line arguments"""
+def parse_arguments(args):
+    """Parse command-line arguments for Teleconnections diagnostic.
 
+    Args:
+        args (list): list of command-line arguments to parse.
+    """
     parser = argparse.ArgumentParser(description='Teleconnections CLI')
-
-    parser.add_argument('-c', '--config', type=str,
-                        help='yaml configuration file')
-    parser.add_argument('-n', '--nworkers', type=int,
-                        help='number of dask distributed workers')
-    parser.add_argument('-d', '--dry', action='store_true',
-                        required=False,
-                        help='if True, run is dry, no files are written')
-    parser.add_argument('-l', '--loglevel', type=str,
-                        help='log level [default: WARNING]')
-    parser.add_argument('--ref', action='store_true',
-                        required=False,
-                        help='if True, analysis is performed against a reference')
-    parser.add_argument("--cluster", type=str,
-                        required=False, help="dask cluster address")
-
-    # This arguments will override the configuration file if provided
-    parser.add_argument('--catalog', type=str, help='catalog name',
-                        required=False)
-    parser.add_argument('--model', type=str, help='model name',
-                        required=False)
-    parser.add_argument('--exp', type=str, help='experiment name',
-                        required=False)
-    parser.add_argument('--source', type=str, help='source name',
-                        required=False)
-    parser.add_argument('--outputdir', type=str, help='output directory',
-                        required=False)
-    parser.add_argument('--interface', type=str, help='interface to use',
-                        required=False)
-
-    return parser.parse_args(cli_args)
+    parser = template_parse_arguments(parser)
+    return parser.parse_args(args)
 
 
 if __name__ == '__main__':
-
     args = parse_arguments(sys.argv[1:])
+
     loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_name='Teleconnections CLI', log_level=loglevel)
+    logger = log_configure(log_level=loglevel, log_name='Teleconnections CLI')
+    logger.info(f"Running Teleconnections diagnostic with AQUA version {aqua_version}")
 
-    logger.info(f'Running AQUA v{aquaversion} Teleconnections diagnostic')
-
-    # change the current directory to the one of the CLI so that relative path works
-    # before doing this we need to get the directory from wich the script is running
-    execdir = os.getcwd()
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    if os.getcwd() != dname:
-        os.chdir(dname)
-        logger.info(f'Moving from current directory to {dname} to run!')
-
-    # Dask distributed cluster
-    nworkers = get_arg(args, 'nworkers', None)
     cluster = get_arg(args, 'cluster', None)
-    private_cluster = False
-    if nworkers or cluster:
-        if not cluster:
-            cluster = LocalCluster(n_workers=nworkers, threads_per_worker=1)
-            logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
-            private_cluster = True
-        else:
-            logger.info(f"Connecting to cluster {cluster}.")
-        client = Client(cluster)
+    nworkers = get_arg(args, 'nworkers', None)
+
+    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
+
+    # Load the configuration file and then merge it with the command-line arguments,
+    # overwriting the configuration file values with the command-line arguments.
+    config_dict = load_diagnostic_config(diagnostic='teleconnections', config=args.config,
+                                         default_config='config_teleconnections.yaml',
+                                         loglevel=loglevel)
+    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
+
+    regrid = get_arg(args, 'regrid', None)
+    logger.debug(f'Regrid CLI option: {regrid}')
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        logger.info(f"Realization option is set to {realization}")
+        reader_kwargs = {'realization': realization}
     else:
-        client = None
+        reader_kwargs = {}
 
-    # Read configuration file
-    configdir = ConfigPath(loglevel=loglevel).configdir
-    default_config = os.path.join(configdir, "diagnostics", "teleconnections",
-                                  "cli_config_atm.yaml")
-    file = get_arg(args, 'config', default_config)
-    logger.info('Reading configuration yaml file: {}'.format(file))
-    config = load_yaml(file)
+    # Output options
+    outputdir = config_dict['output'].get('outputdir', './')
+    rebuild = config_dict['output'].get('rebuild', True)
+    save_pdf = config_dict['output'].get('save_pdf', True)
+    save_png = config_dict['output'].get('save_png', True)
+    dpi = config_dict['output'].get('dpi', 300)
 
-    # if ref we're running the analysis against a reference
-    ref = get_arg(args, 'ref', False)
-    if ref:
-        logger.debug('Running against a reference')
+    if 'teleconnections' in config_dict['diagnostics']:
+        if 'NAO' in config_dict['diagnostics']['teleconnections']:
+            if config_dict['diagnostics']['teleconnections']['NAO']['run']:
+                logger.info('Running NAO teleconnections diagnostic')
 
-    # if dry we're not saving any file, debug mode
-    dry = get_arg(args, 'dry', False)
-    if dry:
-        logger.warning('Dry run, no files will be written')
-        save_pdf, save_png = False, False
-        save_netcdf = False
-    else:
-        logger.debug('Saving files')
-        save_pdf, save_png = True, True
-        save_netcdf = True
+                nao = [None] * len(config_dict['datasets'])
 
-    dpi = 300
+                nao_config = config_dict['diagnostics']['teleconnections']['NAO']
+                seasons = nao_config.get('seasons', 'annual')
 
-    try:
-        outputdir = get_arg(args, 'outputdir', config['outputdir'])
-        # if the outputdir is relative we need to make it absolute
-        if not os.path.isabs(outputdir):
-            outputdir = os.path.join(execdir, outputdir)
-    except KeyError:
-        outputdir = None
-        logger.error('Output directory not defined')
+                # Initialize a matrix to store the NAO regressions and correlations
+                # for each dataset and each season
+                nao_regressions = {season: [None] * len(config_dict['datasets']) for season in seasons}
+                nao_correlations = {season: [None] * len(config_dict['datasets']) for season in seasons}
 
-    configdir = config['configdir']
-    logger.debug('configdir: %s', configdir)
+                init_args = {'loglevel': loglevel}
 
-    interface = get_arg(args, 'interface', config['interface'])
-    logger.debug('Interface name: %s', interface)
+                for i, dataset in enumerate(config_dict['datasets']):
+                    dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
+                                    'exp': dataset['exp'], 'source': dataset['source'],
+                                    'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
+                    logger.info(f'Running dataset: {dataset_args}')
 
-    # Turning on/off the teleconnections
-    # the try/except is used to avoid KeyError if the teleconnection is not
-    # defined in the yaml file, since we have oceanic and atmospheric
-    # configuration files
-    NAO = config['teleconnections'].get('NAO', False)
-    ENSO = config['teleconnections'].get('ENSO', False)
+                    nao[i] = NAO(**dataset_args, **init_args)
+                    nao[i].retrieve(reader_kwargs=reader_kwargs)
+                    nao[i].compute_index(months_window=nao_config.get('months_window', 3),
+                                         rebuild=rebuild)
 
-    teleclist = []
-    if NAO:
-        teleclist.append('NAO')
-    if ENSO:
-        teleclist.append('ENSO')
+                    nao[i].save_netcdf(nao[i].index, diagnostic='nao', diagnostic_product='index',
+                                       outdir=outputdir, rebuild=rebuild)
+                    
+                    for season in seasons:
+                        nao_regressions[season][i] = nao[i].compute_regression(season=season)
+                        nao_correlations[season][i] = nao[i].compute_correlation(season=season)
 
-    logger.debug('Teleconnections to be evaluated: %s', teleclist)
+                        diagnostic_product_reg = f'regression_{season}' if season != 'annual' else 'regression'
+                        diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
-    # if exclusive we're running only the first model/exp/source combination
-    # if model/exp/source are provided as arguments, we're overriding the
-    # first model/exp/source combination
-    models = config['models']
+                        nao[i].save_netcdf(nao_regressions[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_reg,
+                                           outdir=outputdir, rebuild=rebuild)
+                        nao[i].save_netcdf(nao_correlations[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_cor,
+                                           outdir=outputdir, rebuild=rebuild)
 
-    models[0]['catalog'] = get_arg(args, 'catalog', models[0]['catalog'])
-    models[0]['model'] = get_arg(args, 'model', models[0]['model'])
-    models[0]['exp'] = get_arg(args, 'exp', models[0]['exp'])
-    models[0]['source'] = get_arg(args, 'source', models[0]['source'])
+                nao_ref = [None] * len(config_dict['references'])
 
-    for telec in teleclist:
-        logger.info('Running %s teleconnection', telec)
-        # Getting generic configs
-        months_window = config[telec].get('months_window', 3)
-        full_year = config[telec].get('full_year', True)
-        seasons = config[telec].get('seasons', None)
+                nao_ref_regressions = {season: [None] * len(config_dict['references']) for season in seasons}
+                nao_ref_correlations = {season: [None] * len(config_dict['references']) for season in seasons}
 
-        if ref:  # We run first the reference model since it's needed for comparison plots
-            logger.info('--ref: evaluating reference models first')
-            ref_config = config['reference'][0]
-            catalog_ref = ref_config.get('catalog', 'obs')
-            model_ref = ref_config.get('model', 'ERA5')
-            exp_ref = ref_config.get('exp', 'era5')
-            source_ref = ref_config.get('source', 'monthly')
-            regrid = ref_config.get('regrid', None)
-            freq = ref_config.get('freq', None)
-            logger.debug("setup: %s %s %s %s %s",
-                         model_ref, exp_ref, source_ref, regrid, freq)
+                for i, reference in enumerate(config_dict['references']):
+                    reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
+                                      'exp': reference['exp'], 'source': reference['source'],
+                                      'regrid': regrid if regrid is not None else reference.get('regrid', None)}
+                    logger.info(f'Running reference: {reference_args}')
+                    nao_ref[i] = NAO(**reference_args, **init_args)
+                    nao_ref[i].retrieve()
+                    nao_ref[i].compute_index(months_window=nao_config.get('months_window', 3),
+                                             rebuild=rebuild)
+                    
+                    nao_ref[i].save_netcdf(nao_ref[i].index, diagnostic='nao', diagnostic_product='index',
+                                           outdir=outputdir, rebuild=rebuild)
+                    
+                    for season in seasons:
+                        nao_ref_regressions[season][i] = nao_ref[i].compute_regression(season=season)
+                        nao_ref_correlations[season][i] = nao_ref[i].compute_correlation(season=season)
 
-            try:
-                tc = Teleconnection(telecname=telec,
-                                    configdir=configdir,
-                                    catalog=catalog_ref,
-                                    model=model_ref, exp=exp_ref, source=source_ref,
-                                    regrid=regrid, freq=freq,
-                                    months_window=months_window,
-                                    outputdir=outputdir,
-                                    save_pdf=False, save_png=False,
-                                    save_netcdf=save_netcdf,
-                                    interface=interface,
-                                    loglevel=loglevel)
-                tc.retrieve()
-                output_saver = OutputSaver(diagnostic='teleconnections', catalog=tc.catalog, model=model_ref,
-                               exp=exp_ref, loglevel=loglevel, default_path=outputdir, filename_keys=None)
-            except NoDataError:
-                logger.error('No data available for %s teleconnection', telec)
-                continue
-            except ValueError as e:
-                logger.error('Error retrieving data for %s teleconnection: %s',
-                             telec, e)
-                continue
-            except Exception as e:
-                logger.error('Unexpected error retrieving data for %s teleconnection: %s',
-                             telec, e)
+                        diagnostic_product_reg = f'regression_{season}' if season != 'annual' else 'regression'
+                        diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
-            try:
-                tc.evaluate_index()
-                ref_index = tc.index
-            except NotEnoughDataError:
-                logger.error('Not enough data available for %s teleconnection', telec)
-                continue
-            except Exception as e:
-                logger.error('Error evaluating index for %s teleconnection: %s', telec, e)
-                continue
+                        nao_ref[i].save_netcdf(nao_ref_regressions[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_reg,
+                                               outdir=outputdir, rebuild=rebuild)
+                        nao_ref[i].save_netcdf(nao_ref_correlations[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_cor,
+                                               outdir=outputdir, rebuild=rebuild)
 
-            # We now evaluate the regression and correlation
-            # They are not saved, we just need them for comparison plots
-            # so we save them as variables
-            if full_year:
-                try:
-                    ref_reg_full = tc.evaluate_regression()
-                    ref_cor_full = tc.evaluate_correlation()
-                except NotEnoughDataError:
-                    logger.error('Not enough data available for %s teleconnection',
-                                 telec)
-                    continue
-            else:
-                ref_reg_full = None
-                ref_cor_full = None
+                # Plot NAO regressions
+                if save_pdf or save_png:
+                    logger.info('Plotting NAO')
+                    plot_args = {'indexes': [nao[i].index for i in range(len(nao))],
+                                 'ref_indexes': [nao_ref[i].index for i in range(len(nao_ref))],
+                                 'outputdir': outputdir, 'rebuild': rebuild,
+                                 'loglevel': loglevel}
+                    
+                    plot_nao = PlotNAO(**plot_args)
 
-            if seasons:
-                ref_reg_season = []
-                ref_cor_season = []
-                for i, season in enumerate(seasons):
-                    try:
-                        logger.info('Evaluating %s regression and correlation for %s season',
-                                    telec, season)
-                        reg = tc.evaluate_regression(season=season)
-                        ref_reg_season.append(reg)
-                        cor = tc.evaluate_correlation(season=season)
-                        ref_cor_season.append(cor)
-                    except NotEnoughDataError:
-                        logger.error('Not enough data available for %s teleconnection',
-                                     telec)
-                        continue
-            else:
-                ref_reg_season = None
-                ref_cor_season = None
+                    # Plot the NAO index
+                    fig_index, _ = plot_nao.plot_index()
+                    index_description = plot_nao.set_index_description()
+                    if save_pdf:
+                        plot_nao.save_plot(fig_index, diagnostic_product='index', format='pdf',
+                                           metadata={'description': index_description}, dpi=dpi)
+                    if save_png:
+                        plot_nao.save_plot(fig_index, diagnostic_product='index', format='png',
+                                           metadata={'description': index_description}, dpi=dpi)
 
-            del tc
-            gc.collect()
-        else:
-            ref_index = None
-            ref_reg_full = None
-            ref_cor_full = None
-            ref_reg_season = None
-            ref_cor_season = None
+                    # Plot regressions and correlations
+                    for season in seasons:
+                        # Load the regression and correlation maps for each season
+                        # to greatly speed up the plotting process
+                        for i in range(len(nao)):
+                            nao_regressions[season][i].load(keep_attrs=True)
+                            nao_ref_regressions[season][i].load(keep_attrs=True)
+                            nao_correlations[season][i].load(keep_attrs=True)
+                            nao_ref_correlations[season][i].load(keep_attrs=True)
 
-        # Model evaluation
-        logger.debug('Models to be evaluated: %s', models)
-        for mod in models:
-            catalog = mod['catalog']
-            model = mod['model']
-            exp = mod['exp']
-            source = mod['source']
-            regrid = mod.get('regrid', None)
-            freq = mod.get('freq', None)
-            reference = mod.get('reference', False)
-            startdate = mod.get('startdate', None)
-            enddate = mod.get('enddate', None)
+                        fig_reg = plot_nao.plot_maps(maps=nao_regressions[season], ref_maps=nao_ref_regressions[season],
+                                                        statistic='regression')
+                        fig_cor = plot_nao.plot_maps(maps=nao_correlations[season], ref_maps=nao_ref_correlations[season],
+                                                        statistic='correlation')
 
-            logger.debug("setup: %s %s %s %s %s",
-                         model, exp, source, regrid, freq)
+                        regression_description = plot_nao.set_map_description(maps=nao_regressions[season],
+                                                                             ref_maps=nao_ref_regressions[season],
+                                                                             statistic='regression')
+                        correlation_description = plot_nao.set_map_description(maps=nao_correlations[season],
+                                                                             ref_maps=nao_ref_correlations[season],
+                                                                             statistic='correlation')
 
-            try:
-                tc = Teleconnection(telecname=telec,
-                                    configdir=configdir,
-                                    catalog=catalog,
-                                    model=model, exp=exp, source=source,
-                                    regrid=regrid, freq=freq,
-                                    months_window=months_window,
-                                    outputdir=outputdir,
-                                    # If ref we do index plot against the reference model
-                                    save_pdf=save_pdf if not ref else False,
-                                    save_png=save_png if not ref else False,
-                                    save_netcdf=save_netcdf,
-                                    startdate=startdate, enddate=enddate,
-                                    interface=interface,
-                                    loglevel=loglevel)
-                tc.retrieve()
-                catalog = tc.catalog
-                output_saver = OutputSaver(diagnostic='teleconnections', catalog=catalog, model=model,
-                                           exp=exp, loglevel=loglevel, default_path=outputdir, filename_keys=None)
-            except NoDataError:
-                logger.error('No data available for %s teleconnection', telec)
-                continue
-            except ValueError as e:
-                logger.error('Error retrieving data for %s teleconnection: %s',
-                             telec, e)
-                continue
-            except Exception as e:
-                logger.error('Unexpected error retrieving data for %s teleconnection: %s',
-                             telec, e)
+                        reg_product = f'regression_{season}' if season != 'annual' else 'regression'
+                        cor_product = f'correlation_{season}' if season != 'annual' else 'correlation'
 
-            try:
-                tc.evaluate_index()
-            except NotEnoughDataError:
-                logger.error('Not enough data available for %s teleconnection', telec)
-                continue
-            except Exception as e:
-                logger.error('Error evaluating index for %s teleconnection: %s', telec, e)
-                continue
-
-            if full_year:
-                try:
-                    reg_full = tc.evaluate_regression()
-                    cor_full = tc.evaluate_correlation()
-                except NotEnoughDataError:
-                    logger.error('Not enough data available for %s teleconnection',
-                                 telec)
-                    continue
-            else:
-                reg_full = None
-                cor_full = None
-
-            if seasons:
-                reg_season = []
-                cor_season = []
-                for i, season in enumerate(seasons):
-                    try:
-                        logger.info('Evaluating %s regression and correlation for %s season',
-                                    telec, season)
-                        reg = tc.evaluate_regression(season=season)
-                        reg_season.append(reg)
-                        cor = tc.evaluate_correlation(season=season)
-                        cor_season.append(cor)
-                    except NotEnoughDataError:
-                        logger.error('Not enough data available for %s teleconnection',
-                                     telec)
-                        continue
-            else:
-                reg_season = None
-                cor_season = None
-
-            if save_pdf or save_png:
-                if ref:  # Plot against the reference model
-                    title = '{} index'.format(telec)
-                    titles = ['{} index for {} {}'.format(telec, model, exp),
-                              '{} index for {}'.format(telec, model_ref)]
-                    description = '{} index plot for {} {} and {}'.format(telec, model, exp, model_ref)
-                    logger.debug('Description: %s', description)
-                    # Index plots
-                    try:
-                        fig, _ = indexes_plot(indx1=tc.index, indx2=ref_index, titles=titles, loglevel=loglevel)
-                        common_save_args = {'diagnostic_product': telec + '_index', 'dpi': dpi, 'model_2': model_ref}
                         if save_pdf:
-                            output_saver.save_pdf(fig, **common_save_args, metadata={'description': description})
+                            plot_nao.save_plot(fig_reg, diagnostic_product=reg_product, format='pdf',
+                                               metadata={'description': regression_description})
+                            plot_nao.save_plot(fig_cor, diagnostic_product=cor_product, format='pdf',
+                                               metadata={'description': correlation_description})
                         if save_png:
-                            output_saver.save_png(fig, **common_save_args, metadata={'description': description})
-                    except Exception as e:
-                        logger.error('Error plotting %s index: %s', telec, e)
+                            plot_nao.save_plot(fig_reg, diagnostic_product=reg_product, format='png',
+                                               metadata={'description': regression_description}, dpi=dpi)
+                            plot_nao.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
+                                               metadata={'description': correlation_description}, dpi=dpi)
 
-                    # Correlation plot
-                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels =\
-                        set_figs(telec=telec,
-                                 catalog=catalog,
-                                 model=model,
-                                 exp=exp,
-                                 ref=model_ref,
-                                 cor=True, reg=False,
-                                 full_year=full_year,
-                                 seasons=seasons,
-                                 reg_full=reg_full,
-                                 cor_full=cor_full,
-                                 reg_season=reg_season,
-                                 cor_season=cor_season,
-                                 ref_reg_full_year=ref_reg_full,
-                                 ref_cor_full_year=ref_cor_full,
-                                 ref_reg_season=ref_reg_season,
-                                 ref_cor_season=ref_cor_season)
-                    logger.debug('common_save_args: %s ', common_save_args)
-                    logger.debug('titles: %s', titles)
-                    logger.debug('descriptions: %s', descriptions)
-                    for i, data_map in enumerate(maps):
-                        vmin = -1
-                        vmax = 1
-                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'save': False, 'sym': False,
-                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
-                                     'title': titles[i], 'vmin_contour': vmin, 'vmax_contour': vmax,
-                                     'return_fig': True, 'vmin_fill': vmin, 'vmax_fill': vmax,
-                                     'loglevel': loglevel}
-                        try:
-                            fig, _ =  plot_single_map_diff(**plot_args, transform_first=False)
-                        except Exception as err:
-                            logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, common_save_args[i], err)
-                            logger.info('Trying with transform_first=True')
-                            try:
-                                fig, _ = plot_single_map_diff(**plot_args, transform_first=True)
-                            except Exception as err2:
-                                logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, common_save_args[i], err2)
+        if 'ENSO' in config_dict['diagnostics']['teleconnections']:
+            if config_dict['diagnostics']['teleconnections']['ENSO']['run']:
+                logger.info('Running ENSO teleconnections diagnostic')
+
+                enso = [None] * len(config_dict['datasets'])
+
+                enso_config = config_dict['diagnostics']['teleconnections']['ENSO']
+                seasons = enso_config.get('seasons', 'annual')
+
+                # Initialize a matrix to store the ENSO regressions and correlations
+                # for each dataset and each season
+                enso_regressions = {season: [None] * len(config_dict['datasets']) for season in seasons}
+                enso_correlations = {season: [None] * len(config_dict['datasets']) for season in seasons}
+
+                init_args = {'loglevel': loglevel}
+
+                for i, dataset in enumerate(config_dict['datasets']):
+                    dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
+                                    'exp': dataset['exp'], 'source': dataset['source'],
+                                    'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
+                    logger.info(f'Running dataset: {dataset_args}')
+
+                    enso[i] = ENSO(**dataset_args, **init_args)
+                    enso[i].retrieve(reader_kwargs=reader_kwargs)
+                    enso[i].compute_index(months_window=enso_config.get('months_window', 3),
+                                          rebuild=rebuild)
+                    enso[i].save_netcdf(enso[i].index, diagnostic='enso', diagnostic_product='index',
+                                       outdir=outputdir, rebuild=rebuild)
+
+                    for season in seasons:
+                        enso_regressions[season][i] = enso[i].compute_regression(season=season)
+                        enso_correlations[season][i] = enso[i].compute_correlation(season=season)
+
+                        diagnostic_product_reg = f'regression_{season}' if season != 'annual' else 'regression'
+                        diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
+
+                        enso[i].save_netcdf(enso_regressions[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_reg,
+                                            outdir=outputdir, rebuild=rebuild)
+                        enso[i].save_netcdf(enso_correlations[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_cor,
+                                            outdir=outputdir, rebuild=rebuild)
+
+                enso_ref = [None] * len(config_dict['references'])
+
+                enso_ref_regressions = {season: [None] * len(config_dict['references']) for season in seasons}
+                enso_ref_correlations = {season: [None] * len(config_dict['references']) for season in seasons}
+
+                for i, reference in enumerate(config_dict['references']):
+                    reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
+                                      'exp': reference['exp'], 'source': reference['source'],
+                                      'regrid': regrid if regrid is not None else reference.get('regrid', None)}
+                    logger.info(f'Running reference: {reference_args}')
+
+                    enso_ref[i] = ENSO(**reference_args, **init_args)
+                    enso_ref[i].retrieve()
+                    enso_ref[i].compute_index(months_window=enso_config.get('months_window', 3),
+                                              rebuild=rebuild)
+
+                    enso_ref[i].save_netcdf(enso_ref[i].index, diagnostic='enso', diagnostic_product='index',
+                                            outdir=outputdir, rebuild=rebuild)
+
+                    for season in seasons:
+                        enso_ref_regressions[season][i] = enso_ref[i].compute_regression(season=season)
+                        enso_ref_correlations[season][i] = enso_ref[i].compute_correlation(season=season)
+
+                        diagnostic_product_reg = f'regression_{season}' if season != 'annual' else 'regression'
+                        diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
+
+                        enso_ref[i].save_netcdf(enso_ref_regressions[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_reg,
+                                                outdir=outputdir, rebuild=rebuild)
+                        enso_ref[i].save_netcdf(enso_ref_correlations[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_cor,
+                                                outdir=outputdir, rebuild=rebuild)
+
+                # Plot ENSO regressions
+                if save_pdf or save_png:
+                    logger.info('Plotting ENSO')
+                    plot_args = {'indexes': [enso[i].index for i in range(len(enso))],
+                                 'ref_indexes': [enso_ref[i].index for i in range(len(enso_ref))],
+                                 'outputdir': outputdir, 'rebuild': rebuild,
+                                 'loglevel': loglevel}
+
+                    plot_enso = PlotENSO(**plot_args)
+
+                    # Plot the ENSO index
+                    fig_index, _ = plot_enso.plot_index()
+                    index_description = plot_enso.set_index_description()
+                    if save_pdf:
+                        plot_enso.save_plot(fig_index, diagnostic_product='index', format='pdf',
+                                            metadata={'description': index_description})
+                    if save_png:
+                        plot_enso.save_plot(fig_index, diagnostic_product='index', format='png',
+                                            metadata={'description': index_description}, dpi=dpi)
+
+                    # Plot regressions and correlations
+                    for season in seasons:
+                        # Load the regression and correlation maps for each season
+                        # to greatly speed up the plotting process
+                        for i in range(len(enso)):
+                            enso_regressions[season][i].load(keep_attrs=True)
+                            enso_ref_regressions[season][i].load(keep_attrs=True)
+                            enso_correlations[season][i].load(keep_attrs=True)
+                            enso_ref_correlations[season][i].load(keep_attrs=True)
+
+                        fig_reg = plot_enso.plot_maps(maps=enso_regressions[season], ref_maps=enso_ref_regressions[season],
+                                                      statistic='regression')
+                        fig_cor = plot_enso.plot_maps(maps=enso_correlations[season], ref_maps=enso_ref_correlations[season],
+                                                      statistic='correlation')
+
+                        regression_description = plot_enso.set_map_description(maps=enso_regressions[season],
+                                                                             ref_maps=enso_ref_regressions[season],
+                                                                             statistic='regression')
+                        correlation_description = plot_enso.set_map_description(maps=enso_correlations[season],
+                                                                             ref_maps=enso_ref_correlations[season],
+                                                                             statistic='correlation')
+
+                        reg_product = f'regression_{season}' if season != 'annual' else 'regression'
+                        cor_product = f'correlation_{season}' if season != 'annual' else 'correlation'
+
                         if save_pdf:
-                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
+                            plot_enso.save_plot(fig_reg, diagnostic_product=reg_product, format='pdf',
+                                               metadata={'description': regression_description})
+                            plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='pdf',
+                                               metadata={'description': correlation_description})
                         if save_png:
-                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
-                    # Regression plot
-                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels =\
-                        set_figs(telec=telec,
-                                 catalog=catalog,
-                                 model=model,
-                                 exp=exp,
-                                 ref=model_ref,
-                                 cor=False, reg=True,
-                                 full_year=full_year,
-                                 seasons=seasons,
-                                 reg_full=reg_full,
-                                 cor_full=cor_full,
-                                 reg_season=reg_season,
-                                 cor_season=cor_season,
-                                 ref_reg_full_year=ref_reg_full,
-                                 ref_cor_full_year=ref_cor_full,
-                                 ref_reg_season=ref_reg_season,
-                                 ref_cor_season=ref_cor_season)
-                    logger.debug('common_save_args: %s', common_save_args)
-                    logger.debug('titles: %s', titles)
-                    logger.debug('descriptions: %s', descriptions)
-                    for i, data_map in enumerate(maps):
-                        vmin, vmax = config[telec].get('cbar_range', None)
-                        if vmin is None or vmax is None:
-                            sym = True
-                        else:
-                            sym = False
-                        plot_args = {'data': data_map, 'data_ref': ref_maps[i], 'save': False, 'sym': sym,
-                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
-                                     'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
-                                     'loglevel': loglevel}
-                        try:
-                            fig, _ = plot_single_map_diff(**plot_args, transform_first=False)
-                        except Exception as err:
-                            logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, common_save_args[i], err)
-                            logger.info('Trying with transform_first=True')
-                            try:
-                                fig, _ = plot_single_map_diff(**plot_args, transform_first=True)
-                            except Exception as err2:
-                                logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, common_save_args[i], err2)
-                        if save_pdf and fig is not None:
-                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
-                        if save_png and fig is not None:
-                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
-                else:  # Individual plots
-                    # Index plot
-                    try:
-                        tc.plot_index()
-                    except Exception as e:
-                        logger.error('Error plotting %s index: %s', telec, e)
-                    # Correlation plot
-                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels = \
-                        set_figs(telec=telec,
-                                 catalog=catalog,
-                                 model=model,
-                                 exp=exp,
-                                 cor=True, reg=False,
-                                 full_year=full_year,
-                                 seasons=seasons,
-                                 reg_full=reg_full,
-                                 cor_full=cor_full,
-                                 reg_season=reg_season,
-                                 cor_season=cor_season)
-                    logger.debug('common_save_args: %s', common_save_args)
-                    logger.debug('titles: %s', titles)
-                    logger.debug('descriptions: %s', descriptions)
-                    for i, data_map in enumerate(maps):
-                        vmin = -1
-                        vmax = 1
-                        plot_args = {'data': data_map, 'save': False, 'sym': False,
-                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
-                                     'title': titles[i], 'vmin': vmin, 'vmax': vmax, 'return_fig': True,
-                                     'loglevel': loglevel}
-                        try:
-                            fig, _ = plot_single_map(**plot_args, transform_first=False)
-                        except Exception as err:
-                            logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, common_save_args[i], err)
-                            logger.info('Trying with transform_first=True')
-                            try:
-                                fig, _ = plot_single_map(**plot_args, transform_first=True)
-                            except Exception as err2:
-                                logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, common_save_args[i], err2)
-                        if save_pdf and fig is not None:
-                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
-                        if save_png and fig is not None:
-                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
-                    # Regression plot
-                    common_save_args, maps, ref_maps, titles, descriptions, cbar_labels =\
-                        set_figs(telec=telec,
-                                 catalog=catalog,
-                                 model=model,
-                                 exp=exp,
-                                 cor=False, reg=True,
-                                 full_year=full_year,
-                                 seasons=seasons,
-                                 reg_full=reg_full,
-                                 cor_full=cor_full,
-                                 reg_season=reg_season,
-                                 cor_season=cor_season)
-                    logger.debug('common_save_args: %s', common_save_args)
-                    logger.debug('titles: %s', titles)
-                    logger.debug('descriptions: %s', descriptions)
-                    for i, data_map in enumerate(maps):
-                        vmin, vmax = config[telec].get('cbar_range', None)
-                        if vmin is None or vmax is None:
-                            sym = True
-                        else:
-                            sym = False
-                        plot_args = {'data': data_map, 'save': False, 'sym': sym,
-                                     'cbar_label': cbar_labels[i], 'outputdir': outputdir,
-                                     'title': titles[i], 'vmin_fill': vmin, 'vmax_fill': vmax, 'return_fig': True,
-                                     'loglevel': loglevel}
-                        try:
-                            fig, _ = plot_single_map(**plot_args, transform_first=False)
-                        except Exception as err:
-                            logger.warning('Error plotting %s %s %s: %s',
-                                           model, exp, common_save_args[i], err)
-                            logger.info('Trying with transform_first=True')
-                            try:
-                                fig, _ = plot_single_map(**plot_args, transform_first=True)
-                            except Exception as err2:
-                                logger.error('Error plotting %s %s %s: %s',
-                                             model, exp, common_save_args[i], err2)
-                        if save_pdf and fig is not None:
-                            output_saver.save_pdf(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
-                        if save_png and fig is not None:
-                            output_saver.save_png(fig, **common_save_args[i], dpi=dpi, metadata={'description': descriptions[i]})
+                            plot_enso.save_plot(fig_reg, diagnostic_product=reg_product, format='png',
+                                               metadata={'description': regression_description}, dpi=dpi)
+                            plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
+                                               metadata={'description': correlation_description}, dpi=dpi)
 
-    if client:
-        client.close()
-        logger.debug("Dask client closed.")
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
-    if private_cluster:
-        cluster.close()
-        logger.debug("Dask cluster closed.")
-    
     logger.info('Teleconnections diagnostic finished.')

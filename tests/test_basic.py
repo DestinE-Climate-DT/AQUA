@@ -50,6 +50,10 @@ class TestAqua:
         data = reader_instance.retrieve()
         assert len(data) > 0
         assert data.a_ice.shape == (2, 3140)
+        assert data.a_ice.attrs['AQUA_catalog'] == 'ci'
+        assert data.a_ice.attrs['AQUA_model'] == 'FESOM'
+        assert data.a_ice.attrs['AQUA_exp'] == 'test-pi'
+        assert data.a_ice.attrs['AQUA_source'] == 'original_2d'
 
     def test_regrid_data(self, reader_instance):
         """
@@ -102,4 +106,9 @@ class TestAqua:
         reader = Reader(model=model, exp=exp, source=source, regrid=regrid,
                         fix=False, loglevel=loglevel)
         data = reader.retrieve()
+
+        # Check the time precision
+        if model == 'NEMO':
+            assert data.time.values[0].dtype == 'datetime64[s]'
+
         assert len(data) > 0

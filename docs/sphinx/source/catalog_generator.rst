@@ -30,7 +30,7 @@ To add a new experiment to the catalog, follow these steps:
 
 1. Clone the two repositories, `DestinE-ClimateDT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog/tree/main>`_ and `data-portfolio <https://earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio>`_, to your preferred location.
 2. Create your own ``config.yaml`` file with the details of your simulation, including the paths of the cloned repositories. A template is provided in ``.aqua/templates/catgen``
-3. Run the command ``aqua catgen -p production -c config.yaml``, where the ``-p`` argument can be either ``production`` or ``reduced`` to specify the Jinja2 template to be used.
+3. Run the command ``aqua catgen -p production -c config.yaml``, where the ``-p`` argument can be ``production``, ``reduced`` or ``minimal``.
 4. The catalog entry will be created in the appropriate location in the ``DestinE-ClimateDT-catalog`` folder as defined by the configuration file.
 
 Configuration file
@@ -38,6 +38,9 @@ Configuration file
 
 The configuration file ``config.tmpl`` contains the following keys:
 
+- ``author``: the author of the experiment. This field is mandatory.
+- ``maintainer``: the maintainer of the experiment. 
+- ``machine``: the machine where the experiment is running. This field is mandatory. Supported machine names so far are ``lumi``, ``MN5``, ``levante``, ``hpc2020``.
 - ``repos``: the paths to the data-portfolio and Climate-DT-catalog repositories.
 - ``resolution``: the resolution of the experiment, which can be ``production``, ``develop``, ``lowres`` (if production portfolio), or ``intermediate`` (if reduced portfolio).
 - ``catalog_dir``: the folder in the Climate-DT-catalog where the catalog entry will be stored.
@@ -52,6 +55,7 @@ FDB Request definitions (to be filled by the user/workflow):
 - ``generation``: the generation to use. Default is ``1``
 - ``expver: 0001``:  Default is ``0001``
 - ``num_of_realizations``: number of realizations in case of ensembles. Default is ``1``.
+- ``default_realization``: in case of ensembles, the first realization to be loaded by default. Default is ``1``.
 
 Info on the experiment:
 

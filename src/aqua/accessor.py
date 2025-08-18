@@ -73,3 +73,7 @@ class AquaAccessor:
     def stream(self, **kwargs):
         """Stream the dataset."""
         return self.instance.stream(self._obj, **kwargs)
+
+    def histogram(self, **kwargs):
+        """Compute a histogram (or pdf) of the data."""
+        return self.instance.histogram(self._obj, **kwargs)

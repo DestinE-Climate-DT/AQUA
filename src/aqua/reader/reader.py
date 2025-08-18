@@ -1,45 +1,35 @@
 """The main AQUA Reader class"""
 
-from json import load
-import os
-import re
-import types
-import shutil
+from contextlib import contextmanager
 import intake_esm
 import intake_xarray
 import xarray as xr
-from smmregrid import Regridder
+from metpy.units import units
+
+from smmregrid import GridInspector
 
 from aqua.util import load_multi_yaml, files_exist, to_list
-from aqua.util import ConfigPath, area_selection
+from aqua.util import ConfigPath, find_vert_coord
 from aqua.logger import log_configure, log_history
-from aqua.util import flip_lat_dir, find_vert_coord
 from aqua.exceptions import NoDataError, NoRegridError
+from aqua.version import __version__ as aqua_version
+from aqua.regridder import Regridder
+from aqua.fldstat import FldStat
+from aqua.timstat import TimStat
+from aqua.fixer import Fixer
+from aqua.data_model import counter_reverse_coordinate
+from aqua.histogram import histogram
 import aqua.gsv
 
 from .streaming import Streaming
-from .fixer import FixerMixin
-from .regrid import RegridMixin
-from .timstat import TimStatMixin
-from .reader_utils import group_shared_dims, set_attrs
-from .reader_utils import configure_masked_fields
+from .trender import Trender
 
-# default spatial dimensions and vertical coordinates
-default_space_dims = ['i', 'j', 'x', 'y', 'lon', 'lat', 'longitude',
-                      'latitude', 'cell', 'cells', 'ncells', 'values',
-                      'value', 'nod2', 'pix', 'elem', 'xc', 'yc']
-
-# default vertical dimension
-default_vertical_dims = ['nz1', 'nz', 'level', 'height']
-
-# parameters which will affect the weights and areas name
-default_weights_areas_parameters = ['zoom']
+from .reader_utils import set_attrs
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
-
-class Reader(FixerMixin, RegridMixin, TimStatMixin):
+class Reader():
     """General reader for climate data."""
 
     instance = None  # Used to store the latest instance of the class
@@ -47,12 +37,13 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
                  regrid=None, regrid_method=None,
-                 areas=True, datamodel=None,
-                 streaming=False, stream_generator=False,
+                 areas=True, 
+                 streaming=False,
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
                  aggregation=None, chunks=None,
                  preproc=None, convention='eccodes',
+                 engine='fdb',
                  **kwargs):
         """
         Initializes the Reader class, which uses the catalog
@@ -69,16 +60,13 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                                            If not specified anywhere, using "ycon".
             fix (bool, optional): Activate data fixing
             areas (bool, optional): Compute pixel areas if needed. Defaults to True.
-            datamodel (str, optional): Destination data model for coordinates, overrides the one in fixes.yaml.
-                                       Defaults to None.
             streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
-            stream_generator (bool, optional): if to return a generator object for data streaming. Defaults to False
             startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
             loglevel (str, optional): Level of logging according to logging module.
                                       Defaults to log_level_default of loglevel().
-            nproc (int,optional): Number of processes to use for weights generation. Defaults to 4.
+            nproc (int, optional): Number of processes to use for weights generation. Defaults to 4.
             aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
                                          Defaults to None (using default from catalog, recommended).
             chunks (str or dict, optional): chunking to be used for GSV access.
@@ -90,8 +78,12 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
             convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
                                         (Only one supported so far)
-            **kwargs: Arbitrary keyword arguments to be passed as parameters to the catalog entry.
-                      'zoom', meant for HEALPix grid, is a predefined one which will allow for multiple gridname definitions.
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.
+
+        Keyword Args: 
+            zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
+            realization (int, optional): The ensemble realization number, included in the output filename.
+            **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
 
         Returns:
             Reader: A `Reader` class object.
@@ -106,10 +98,11 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         self.exp = exp
         self.model = model
         self.source = source
+        # these infos are used by the regridder to correct define areas/weights name
+        reader_kwargs = {'model': model, 'exp': exp, 'source': source}
         self.regrid_method = regrid_method
         self.nproc = nproc
         self.vert_coord = None
-        self.deltat = 1  # time in seconds to be used for cumulated variables unit convrersion
         self.time_correction = False  # extra flag for correction data with cumulation time on monthly timescale
         self.aggregation = aggregation
         self.chunks = chunks
@@ -117,12 +110,13 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         # Preprocessing function
         self.preproc = preproc
 
+        # init the areas and dimensions
         self.grid_area = None
         self.src_grid_area = None
-        self.dst_grid_area = None
-
-        if stream_generator:  # Stream generator also implies streaming
-            streaming = True
+        self.tgt_grid_area = None
+        self.src_space_coord = None
+        self.tgt_space_coord = None
+        self.vert_coord = None
 
         if streaming:
             self.streamer = Streaming(startdate=startdate,
@@ -132,42 +126,43 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             # Export streaming methods TO DO: probably useless
             self.reset_stream = self.streamer.reset
             self.stream = self.streamer.stream
-
-        self.stream_generator = stream_generator
         self.streaming = streaming
 
         self.startdate = startdate
         self.enddate = enddate
 
-        self.previous_data = None  # used for FDB iterator fixing
         self.sample_data = None  # used to avoid multiple calls of retrieve_plain
 
         # define configuration file and paths
-        Configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
-        self.configdir = Configurer.configdir
-        self.machine = Configurer.get_machine()
-        self.config_file = Configurer.config_file
-        self.cat, self.catalog_file, self.machine_file = Configurer.deliver_intake_catalog(catalog=catalog, model=model, exp=exp, source=source)
-        self.fixer_folder, self.grids_folder = Configurer.get_reader_filenames()
+        configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
+        self.configdir = configurer.configdir
+        self.machine = configurer.get_machine()
+        self.config_file = configurer.config_file
+        self.cat, self.catalog_file, self.machine_file = configurer.deliver_intake_catalog(
+            catalog=catalog, model=model, exp=exp, source=source)
+        self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
 
         # deduce catalog name
         self.catalog = self.cat.name
 
         # machine dependent catalog path
-        machine_paths, intake_vars = Configurer.get_machine_info()
+        machine_paths, intake_vars = configurer.get_machine_info()
 
         # load the catalog
-        self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source](**kwargs)
+        aqua.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
+        # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
+        self.esmcat = self.expcat[self.source]()
+        self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine)
+        self.esmcat = self.expcat[self.source](**self.kwargs)
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             if not files_exist(self.esmcat.urlpath):
-                raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}") # noqa E501
+                raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}")  # noqa E501
 
-        # store the kwargs for further usage
-        self.kwargs = self._check_kwargs_parameters(kwargs, intake_vars)
-
+        # extend the unit registry
+        units_extra_definition()
         # Get fixes dictionary and find them
         self.fix = fix  # fix activation flag
         self.fixer_name = self.esmcat.metadata.get('fixer_name', None)
@@ -182,310 +177,111 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
-            self.fixes = self.find_fixes()  # find fixes for this model/exp/source
-            self.dst_datamodel = datamodel
-            # Default destination datamodel
-            # (unless specified in instantiating the Reader)
-            if not self.dst_datamodel:
-                self.dst_datamodel = self.fixes_dictionary["defaults"].get("dst_datamodel", None)
+            self.fixer = Fixer(fixer_name=self.fixer_name,
+                               convention=self.convention,
+                               fixes_dictionary=self.fixes_dictionary,
+                               metadata=self.esmcat.metadata,
+                               loglevel=self.loglevel)
+            
+    
+        # define grid names
+        self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
+        self.tgt_grid_name = regrid
 
-        self.cdo = self._set_cdo()
+        # init the regridder and the areas
+        self._configure_regridder(machine_paths, regrid=regrid, areas=areas,
+                                  rebuild=rebuild, reader_kwargs=reader_kwargs)
+        
+        # init the fldstat modules. if areas are not available, will issue a warning
+        cell_area = self.src_grid_area.cell_area if areas else None
+        self.src_fldstat = FldStat(
+            cell_area, grid_name=self.src_grid_name,
+            horizontal_dims=self.src_space_coord, loglevel=self.loglevel
+            )
+        self.tgt_fldstat = None
+        if regrid:
+            self.tgt_fldstat = FldStat(
+                self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
+                horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
+                )
+            
+        self.trender = Trender(loglevel=self.loglevel)
+
+    def _configure_regridder(self, machine_paths, regrid=False, areas=False,
+                             rebuild=False, reader_kwargs=None):
+        """
+        Configure the regridder and generate areas and weights.
+
+        Arguments:
+            machine_paths (dict): The machine specific paths. Used to configure regridder file paths
+            regrid (bool): If regrid is required. Defaults to False.
+            areas (bool): If areas are required. Defaults to False.
+            rebuild (bool): If weights and areas should be rebuilt. Defaults to False.
+            reader_kwargs (dict): The reader kwargs.
+        """
 
         # load and check the regrid
         if regrid or areas:
 
+            # create the configuration dictionary
             cfg_regrid = load_multi_yaml(folder_path=self.grids_folder,
                                          definitions=machine_paths['paths'],
                                          loglevel=self.loglevel)
-
             cfg_regrid = {**machine_paths, **cfg_regrid}
 
-            # define grid names
-            self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
-            if self.src_grid_name is not None:
-                self.logger.info('Grid metadata is %s', self.src_grid_name)
-                self.dst_grid_name = regrid
-                # configure all the required elements
-                self._configure_coords(cfg_regrid)
+            if self.src_grid_name is None:
+                self.logger.warning('Grid metadata is not defined. Trying to access the real data')
+                data = self._retrieve_plain()
+                self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
             else:
-                self.logger.warning('Grid metadata is not defined. Disabling regridding and areas capabilities.')
+                self.logger.info('Grid metadata is %s', self.src_grid_name)
+                self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, 
+                                           loglevel=self.loglevel)
+
+                if self.regridder.error:
+                    self.logger.warning('Issues in the Regridder() init: trying with data')
+                    data = self._retrieve_plain()
+                    self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, 
+                                               data=data, loglevel=self.loglevel)
+
+            # export src space coord and vertical coord
+            self.src_space_coord = self.regridder.src_horizontal_dims
+            self.vert_coord = self.regridder.src_vertical_dim
+
+            # TODO: it is likely there are other cases where we need to disable regrid.
+            if not self.regridder.cdo:
                 areas = False
-                regrid = None
+                regrid = False
+
 
         # generate source areas
         if areas:
-            self._generate_load_src_area(cfg_regrid, rebuild)
+            # generate source areas and expose them in the reader
+            self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
+            if self.fix:
+                # TODO: this should include the latitudes flipping fix.
+                # TODO: No check is done on the areas coords vs data coords
+                self.src_grid_area = self.fixer.datamodel.fix_area(self.src_grid_area)
 
         # configure regridder and generate weights
         if regrid:
-            self._regrid_configure(cfg_regrid)
-            self._load_generate_regrid_weights(cfg_regrid, rebuild)
+            # generate weights and init the SMMregridder
+            self.regridder.weights(
+                rebuild=rebuild,
+                tgt_grid_name=self.tgt_grid_name,
+                regrid_method=self.regrid_method,
+                reader_kwargs=reader_kwargs)
 
-        # generate destination areas
+        # generate destination areas, expost them and the associated space coordinates
         if areas and regrid:
-            self._generate_load_dst_area(cfg_regrid, rebuild)
+            self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
+            if self.fix:
+                # TODO: this should include the latitudes flipping fix
+                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
+            self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
-    def _set_cdo(self):
-        """
-        Check information on CDO to set the correct version
-
-        Arguments:
-            cfg_base (dict): the configuration dictionary
-
-        Returns:
-            The path to the CDO executable
-        """
-
-        cdo = shutil.which("cdo")
-        if cdo:
-            self.logger.debug("Found CDO path: %s", cdo)
-        else:
-            self.logger.error("CDO not found in path: Weight and area generation will fail.")
-
-        return cdo
-
-    def _load_generate_regrid_weights(self, cfg_regrid, rebuild):
-
-        """
-        Generated and load the regrid weights for all the vertical coordinates available
-        This is done by looping on vetical coordinates, defining a template and calling
-        the correspondet smmregrid function
-
-        Args:
-            cfg_regrid (dict): dictionary with the grid definitions
-            rebuild (bool): true/false flag to trigger recomputation of areas
-
-        Returns:
-            Define in the class object the smmregridder object
-        """
-
-        self.weightsfile = {}
-        self.weights = {}
-        self.regridder = {}
-
-        source_grid = cfg_regrid['grids'][self.src_grid_name]
-        sgridpath = source_grid.get("path", None)
-
-        # List of vertical coordinates or 2d to iterate over
-        if sgridpath:
-            if isinstance(sgridpath, dict):
-                vclist = sgridpath.keys()
-            else:
-                vclist = self.vert_coord
-        else:
-            vclist = self.vert_coord
-
-        for vc in vclist:
-            # compute correct filename ending
-            levname = vc if vc == "2d" or vc == "2dm" else f"3d-{vc}"
-
-            if sgridpath:
-                template_file = cfg_regrid["weights"]["template_grid"].format(sourcegrid=self.src_grid_name,
-                                                                              method=self.regrid_method,
-                                                                              targetgrid=self.dst_grid_name,
-                                                                              level=levname)
-            else:
-                template_file = cfg_regrid["weights"]["template_default"].format(model=self.model,
-                                                                                 exp=self.exp,
-                                                                                 source=self.source,
-                                                                                 method=self.regrid_method,
-                                                                                 targetgrid=self.dst_grid_name,
-                                                                                 level=levname)
-            # add the kwargs naming in the template file
-            for parameter in default_weights_areas_parameters:
-                if parameter in self.kwargs:
-                    template_file = re.sub(r'\.nc',
-                                        '_' + parameter + str(self.kwargs[parameter]) + r'\g<0>',
-                                        template_file)
-
-            self.weightsfile.update({vc: os.path.join(
-                cfg_regrid["paths"]["weights"],
-                template_file)})
-
-            # If weights do not exist, create them
-            if rebuild or not os.path.exists(self.weightsfile[vc]):
-                if os.path.exists(self.weightsfile[vc]):
-                    os.unlink(self.weightsfile[vc])
-                self._make_weights_file(self.weightsfile[vc], source_grid,
-                                        cfg_regrid, regrid=self.dst_grid_name,
-                                        vert_coord=vc, extra=[],
-                                        method=self.regrid_method,
-                                        original_grid_size=self.grid_area.size,
-                                        nproc = self.nproc)
-
-
-            self.weights.update({vc: xr.open_mfdataset(self.weightsfile[vc])})
-            vc2 = None if vc == "2d" or vc == "2dm" else vc
-            self.regridder.update({vc: Regridder(weights=self.weights[vc],
-                                                    vert_coord=vc2,
-                                                    space_dims=default_space_dims)})
-
-    def _configure_coords(self, cfg_regrid):
-        """
-        Define the horizontal and vertical coordinates to be used by areas and regrid.
-        Horizontal coordinates are guessed from a predefined list.
-        Vertical coordinates are read from the grid file.
-
-        Args:
-            cfg_regrid (dict): dictionary with the grid definitions
-
-        Returns:
-            Defined into the class object space and vert cordinates
-        """
-
-        if self.src_grid_name not in cfg_regrid['grids']:
-            raise KeyError(f'Source grid {self.src_grid_name} does not exist in aqua-grid.yaml!')
-
-        source_grid = cfg_regrid['grids'][self.src_grid_name]
-
-        # get values from files
-        vert_coord = source_grid.get("vert_coord", None)
-        space_coord = source_grid.get("space_coord", None)
-
-        # guessing space coordinates
-        self.src_space_coord, self.vert_coord = self._guess_coords(space_coord, vert_coord,
-                                                                   default_space_dims,
-                                                                   default_vertical_dims)
-        self.logger.debug("Space coords are %s", self.src_space_coord)
-        self.logger.debug("Vert coords are %s", self.vert_coord)
-
-        # Normalize vert_coord to list
-        if not isinstance(self.vert_coord, list):
-            self.vert_coord = [self.vert_coord]
-
-        self.support_dims = source_grid.get("support_dims", [])  # TODO do we use this?
-        self.space_coord = self.src_space_coord
-
-    def _regrid_configure(self, cfg_regrid):
-        """
-        Configure all the different steps need for the regridding computation
-        1) define the masked variables 2) load the source grid file for the different vert grids
-        3) define regrid_method to be passed to CDO
-
-        Args:
-            cfg_regrid (dict): dictionary with the grid definitions
-
-        Returns:
-            All the required class definition to run the regridding later on
-        """
-
-        source_grid = cfg_regrid['grids'][self.src_grid_name]
-
-        # define which variables has to be masked
-        self.masked_attr, self.masked_vars = configure_masked_fields(source_grid)
-
-        # set target grid coordinates
-        self.dst_space_coord = ["lon", "lat"]
-
-        # Expose grid information for the source as a dictionary of
-        # open xarrays
-        sgridpath = source_grid.get("path", None)
-        if sgridpath:
-            if isinstance(sgridpath, dict):
-                self.src_grid = {}
-                for k, v in sgridpath.items():
-                    self.src_grid.update({k: xr.open_dataset(v.format(**self.kwargs),
-                                                             decode_times=False)})
-            else:
-                if self.vert_coord:
-                    self.src_grid = {self.vert_coord[0]: xr.open_dataset(sgridpath.format(**self.kwargs),
-                                                                         decode_times=False)}
-                else:
-                    self.src_grid = {"2d": xr.open_dataset(sgridpath.format(**self.kwargs),
-                                                           decode_times=False)}
-        else:
-            self.src_grid = None
-
-        # if regrid method is not defined, read from the grid and use "ycon" as default
-        default_regrid_method = "ycon"
-        if self.regrid_method is None:
-            self.regrid_method = source_grid.get("regrid_method", default_regrid_method)
-        else:
-            self.regrid_method = self.regrid_method
-
-        if self.regrid_method is not default_regrid_method:
-            self.logger.info("Regrid method: %s", self.regrid_method)
-
-    def _generate_load_dst_area(self, cfg_regrid, rebuild):
-        """
-        Generate and load area file for the destination grid.
-
-        Arguments:
-            cfg_regrid (dict): dictionary with the grid definitions
-            rebuild (bool): true/false flag to trigger recomputation of areas
-
-        Returns:
-            the destination area file loaded as xarray dataset and stored in the class object
-        """
-
-        self.dst_areafile = os.path.join(
-                cfg_regrid["paths"]["areas"],
-                cfg_regrid["areas"]["template_grid"].format(grid=self.dst_grid_name))
-
-        if rebuild or not os.path.exists(self.dst_areafile):
-            if os.path.exists(self.dst_areafile):
-                os.unlink(self.dst_areafile)
-            grid = cfg_regrid["grids"][self.dst_grid_name]
-            self._make_dst_area_file(self.dst_areafile, grid)
-
-        # open the area file and possibily fix it
-        self.dst_grid_area = xr.open_mfdataset(self.dst_areafile).cell_area
-        if self.fix:
-            self.dst_grid_area = self._fix_area(self.dst_grid_area)
-
-    def _generate_load_src_area(self, cfg_regrid, rebuild):
-        """
-        Generate and load area file for the source grid.
-
-        Arguments:
-            cfg_regrid (dict): dictionary with the grid definitions
-            rebuild (bool): true/false flag to trigger recomputation of areas
-
-        Returns:
-            the source area file loaded as xarray dataset and stored in the class object
-        """
-
-        source_grid = cfg_regrid['grids'][self.src_grid_name]
-        sgridpath = source_grid.get("path", None)
-
-        if sgridpath:
-            template_file = cfg_regrid["areas"]["template_grid"].format(grid=self.src_grid_name)
-        else:
-            template_file = cfg_regrid["areas"]["template_default"].format(model=self.model,
-                                                                           exp=self.exp,
-                                                                           source=self.source)
-        # add the kwargs naming in the template file
-        for parameter in default_weights_areas_parameters:
-            if parameter in self.kwargs:
-                template_file = re.sub(r'\.nc',
-                                    '_' + parameter + str(self.kwargs[parameter]) + r'\g<0>',
-                                    template_file)
-
-        self.src_areafile = os.path.join(
-            cfg_regrid["paths"]["areas"],
-            template_file)
-
-        # If source areas do not exist, create them
-        if rebuild or not os.path.exists(self.src_areafile):
-            if os.path.exists(self.src_areafile):
-                os.unlink(self.src_areafile)
-
-            # Another possibility: was a "cellarea" file provided in regrid.yaml?
-            cellareas = source_grid.get("cellareas", None)
-            cellarea_var = source_grid.get("cellarea_var", None)
-            if cellareas and cellarea_var:
-                self.logger.info("Using cellareas file provided in aqua-grids.yaml")
-                xr.open_mfdataset(cellareas)[cellarea_var].rename("cell_area").squeeze().to_netcdf(self.src_areafile)
-            else:
-                self._make_src_area_file(self.src_areafile, source_grid,
-                                         gridpath=cfg_regrid["cdo-paths"]["download"],
-                                         icongridpath=cfg_regrid["cdo-paths"]["icon"])
-
-        self.src_grid_area = xr.open_mfdataset(self.src_areafile).cell_area
-
-        self.grid_area = self.src_grid_area
-        if self.fix:
-            self.grid_area = self._fix_area(self.grid_area)
+        # activste time statistics
+        self.timemodule = TimStat(loglevel=self.loglevel)
 
     def retrieve(self, var=None, level=None,
                  startdate=None, enddate=None,
@@ -505,10 +301,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             A xarray.Dataset containing the required data.
         """
 
-        # Streaming emulator require these to be defined in __init__
-        if (self.streaming and not self.stream_generator) and (startdate or enddate):
-            raise KeyError("In case of streaming=true the arguments startdate/enddate have to be specified when initializing the class.")  # noqa E501
-
         if not startdate:  # In case the streaming startdate is used also for FDB copy it
             startdate = self.startdate
         if not enddate:  # In case the streaming startdate is used also for FDB copy it
@@ -519,7 +311,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             if isinstance(var, str) or isinstance(var, int):
                 var = str(var).split()  # conversion to list guarantees that a Dataset is produced
             self.logger.info("Retrieving variables: %s", var)
-            loadvar = self.get_fixer_varname(var) if self.fix else var
+            # HACK: to be checked if can be done in a better way
+            loadvar = self.fixer.get_fixer_varname(var) if self.fix else var
         else:
             # If we are retrieving from fdb we have to specify the var
             if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
@@ -543,7 +336,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             else:
                 loadvar = None
 
-        fiter = False
         ffdb = False
         # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
@@ -551,8 +343,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         # If this is an fdb entry
         elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
-                                   dask=(not self.stream_generator), level=level)
-            fiter = self.stream_generator  # this returs an iterator unless dask is set
+                                   dask=True, level=level)
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
@@ -565,26 +356,24 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
                 fkind = "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
 
-        if self.fix:
-            data = self.fixer(data, var)
 
         if not ffdb:  # FDB sources already have the index, already selected levels
-            data = self._index_and_level(data, level=level)  # add helper index, select levels (optional)
+            data = self._add_index(data)  # add helper index
+            data = self._select_level(data, level=level)  # select levels (optional)
+
+        if self.fix:
+            data = self.fixer.fixer(data, var)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
-            for var in data.data_vars:
-                if not hasattr(data[var], 'units'):
-                    self.logger.warning('Variable %s has no units!', var)
+            for variable in data.data_vars:
+                if not hasattr(data[variable], 'units'):
+                    self.logger.warning('Variable %s has no units!', variable)
 
-        if not fiter:  # This is not needed if we already have an iterator
-            if self.streaming:
-                if self.stream_generator:
-                    data = self.streamer.generator(data, startdate=startdate, enddate=enddate)
-                else:
-                    data = self.streamer.stream(data)
-            elif startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
-                data = data.sel(time=slice(startdate, enddate))
+        if self.streaming:
+            data = self.streamer.stream(data)
+        elif startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+            data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
@@ -593,44 +382,77 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         if self.preproc:
             data = self.preproc(data)
 
+        # Add info metadata in each dataset
+        info_metadata = {'AQUA_model': self.model, 'AQUA_exp': self.exp,
+                         'AQUA_source': self.source, 'AQUA_catalog': self.catalog,
+                         'AQUA_version': aqua_version}
+        data = set_attrs(data, info_metadata)
+        
         return data
 
-    def _index_and_level(self, data, level=None):
+    def _add_index(self, data):
+
         """
-        Add a helper idx_3d coordinate to the data and select levels if provided
+        Add a helper idx_{dim3d} coordinate to the data to be used for level selection
+
+        Arguments:
+            data (xr.Dataset):  the input xarray.Dataset
+
+        Returns:
+            A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
+        """
+
+        if self.vert_coord:
+            for dim in to_list(self.vert_coord):
+                if dim in data.coords:
+                    idx = list(range(0, len(data.coords[dim])))
+                    data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
+        return data
+
+    def _select_level(self, data, level=None):
+        """
+        Select levels if provided. It is based on self.vert_coord but it extends the feature 
+        to atmospheric levels, so it should not be considered as the same vertical coordinate
 
         Arguments:
             data (xr.Dataset):  the input xarray.Dataset
             level (list, int):  levels to be selected. Defaults to None.
 
         Returns:
-            A xarray.Dataset containing the data with the idx_3d coordinate.
+            A xarray.Dataset containing the data with the selected levels.
         """
 
-        if self.vert_coord:
-            vert_coord = [coord for coord in self.vert_coord if coord not in ["2d", "2dm"]]  # filter out 2d stuff
-        else:
-            vert_coord = []
+        # return if no levels are selected
+        if not level:
+            return data
 
-        for dim in vert_coord:  # Add a helper index to the data
-            if dim in data.coords:
-                idx = list(range(0, len(data.coords[dim])))
-                data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
+        # find the vertical coordinate, which can be the smmregrid one or 
+        # any other with a dimension compatible (Pa, cm, etc)
+        full_vert_coord = find_vert_coord(data) if not self.vert_coord else self.vert_coord
 
-        if level:
-            if not isinstance(level, list):
-                level = [level]
-            if not vert_coord:  # try to find a vertical coordinate
-                vert_coord = find_vert_coord(data)
-            if vert_coord:
-                if len(vert_coord) > 1:
-                    self.logger.warning("Found more than one vertical coordinate, using the first one: %s", vert_coord[0])
-                data = data.sel(**{vert_coord[0]: level})
-                data = log_history(data, f"Selecting levels {level} from vertical coordinate {vert_coord[0]}")
-            else:
-                self.logger.error("Levels selected but no vertical coordinate found in data!")
+        # return if no vertical coordinate is found
+        if not full_vert_coord:
+            self.logger.error("Levels selected but no vertical coordinate found in data!")
+            return data
+        
+        # ensure that level is a list
+        level = to_list(level)
 
+        # do the selection on the first vertical coordinate found
+        if len(full_vert_coord) > 1:
+            self.logger.warning(
+                "Found more than one vertical coordinate, using the first one: %s", 
+                full_vert_coord[0])
+        data = data.sel(**{full_vert_coord[0]: level})
+        data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
         return data
+    
+    def fldmean(self, data, lon_limits=None, lat_limits=None, **kwargs):
+        """Fldmean average on the data. If regridded, it will use the target grid areas."""
+
+        if self._check_if_regridded(data):
+            return self.tgt_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
+        return self.src_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
 
     def set_default(self):
         """Sets this reader as the default for the accessor."""
@@ -640,125 +462,50 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
 
-        if self.dst_grid_name is None:
+        if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
+        
+        data = counter_reverse_coordinate(data)
 
-        if isinstance(data, types.GeneratorType):
-            return self._regridgen(data)
-        else:
-            return self._regrid(data)
-
-    def _regridgen(self, data):
-        for ds in data:
-            yield self._regrid(ds)
-
-    def _regrid(self, datain):
-        """
-        Perform regridding of the input dataset.
-
-        Arguments:
-            data (xr.Dataset):  the input xarray.Dataset
-        Returns:
-            A xarray.Dataset containing the regridded data.
-        """
-
-        # Check if original lat has been flipped and in case flip back, returns a deep copy in that case
-        data = flip_lat_dir(datain)
-
-        data = data.copy()  # make a copy to avoid modifying the original dataset/dataarray
-
-        # Scan the variables:
-        # if a 2d one is found but this was not expected, then assume that it comes from a 3d one
-        # and expand it along the vertical dimension.
-        # This works only if only one variable was selected,
-        # else the information on which variable was using which dimension is lost.
-        expand_list = []
-        if self.vert_coord and "2d" not in self.vert_coord:
-            if isinstance(data, xr.Dataset):
-                for var in data:
-                    # check if none of the dimensions of var is in self.vert_coord
-                    if not list(set(data[var].dims) & set(self.vert_coord)):
-                        # find list of coordinates that start with idx_ in their name
-                        idx = [coord for coord in data[var].coords if coord.startswith("idx_")]
-                        if idx:  # found coordinates starting with idx_, use first one to expand var
-                            coord_exp = idx[0][4:]  # remove idx_ from the name of the first one (there should be only one)
-                            if coord_exp in data[var].coords:
-                                expand_list.append(var)
-                if expand_list:
-                    for var in expand_list:
-                        data[var] = data[var].expand_dims(dim=coord_exp, axis=1)
-                    self.logger.debug(f"Expanding variables {expand_list} with vertical dimension {coord_exp}")
-                    if len(idx) > 1:
-                        self.logger.warning("Found more than one idx_ coordinate for expanded variables, did you select slices of multiple vertical coordinates? Results may not be correct.")
-
-            else:  # assume DataArray
-                if not list(set(data.dims) & set(self.vert_coord)):
-                    idx = [coord for coord in data.coords if coord.startswith("idx_")]
-                    if idx:
-                        if len(idx) > 1:
-                            self.logger.warning("Found more than one idx_ coordinate, did you select slices of multiple vertical coordinates? Results may not be correct.")
-                        coord_exp = idx[0][4:]
-                        if coord_exp in data.coords:
-                            data = data.expand_dims(dim=coord_exp, axis=1)
-                            self.logger.debug(f"Expanding variable {data.name} with vertical dimension {coord_exp}")
-                            expand_list = [data.name]
-
-        if self.vert_coord == ["2d"]:
-            datadic = {"2d": data}
-        else:
-            self.logger.debug("Grouping variables that share the same dimension")
-            self.logger.debug("Vert coord: %s", self.vert_coord)
-            self.logger.debug("masked_att: %s", self.masked_attr)
-            self.logger.debug("masked_vars: %s", self.masked_vars)
-
-            datadic = group_shared_dims(data, self.vert_coord, others="2d",
-                                        masked="2dm", masked_att=self.masked_attr,
-                                        masked_vars=self.masked_vars)
-
-        # Iterate over list of groups of variables, regridding them separately
-        out = []
-        for vc, dd in datadic.items():
-            if isinstance(dd, xr.Dataset):
-                self.logger.debug(f"Using vertical coordinate {vc}: {list(dd.data_vars)}")
-            else:
-                self.logger.debug(f"Using vertical coordinate {vc}: {dd.name}")
-
-            # remove extra coordinates starting with idx_ (if any)
-            # to make the regridder work correctly with multiple helper indices
-            for coord in dd.coords:
-                if coord.startswith("idx_") and coord != f"idx_{vc}":
-                    dd = dd.drop_vars(coord)
-                    if isinstance(dd, xr.Dataset):
-                        self.logger.debug(f"Dropping {coord} from {list(dd.data_vars)}")
-                    else:
-                        self.logger.debug(f"Dropping {coord} from {dd.name}")
-
-            out.append(self.regridder[vc].regrid(dd))
-
-        if len(out) > 1:
-            out = xr.merge(out)
-        else:
-            # If this was a single dataarray
-            out = out[0]
-
-        # If we expanded some variables, squeeze them back
-        if expand_list:
-            out = out.squeeze(dim=coord_exp)
+        out = self.regridder.regrid(data)
 
         # set regridded attribute to 1 for all vars
-        out = set_attrs(out, {"regridded": 1})
-
-        # set these two to the target grid
-        # (but they are actually not used so far)
-        self.grid_area = self.dst_grid_area
-        self.space_coord = ["lon", "lat"]
-
-        out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
-
-        out = log_history(out, f"Regrid from {self.src_grid_name} to {self.dst_grid_name}")
-
+        out = set_attrs(out, {"AQUA_regridded": 1})
         return out
+    
+    # def trend(self, data, dim='time', degree=1, skipna=False):
+    #     """
+    #     Estimate the trend of an xarray object using polynomial fitting.
 
+    #     Args:
+    #         data (DataArray or Dataset): The input data.
+    #         dim (str): Dimension to apply trend along. Defaults to 'time'.
+    #         degree (int): Degree of the polynomial. Defaults to 1.
+    #         skipna (bool): Whether to skip NaNs. Defaults to False.
+
+    #     Returns:
+    #         DataArray or Dataset: The trend component.
+    #     """
+    #     final = self.trender.trend(data, dim=dim, degree=degree, skipna=skipna)
+    #     final.aqua.set_default(self)
+    #     return final
+
+    def detrend(self, data, dim='time', degree=1, skipna=False):    
+        """
+        Remove the trend from an xarray object using polynomial fitting.
+
+        Args:
+            data (DataArray or Dataset): The input data.
+            dim (str): Dimension to apply detrend along. Defaults to 'time'.
+            degree (int): Degree of the polynomial. Defaults to 1.
+            skipna (bool): Whether to skip NaNs. Defaults to False.
+
+        Returns:
+            DataArray or Dataset: The detrended data.
+        """
+        final = self.trender.detrend(data, dim=dim, degree=degree, skipna=skipna)
+        final.aqua.set_default(self)
+        return final
 
     def _check_if_regridded(self, data):
         """
@@ -775,139 +522,89 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         else:
             att = data.attrs
 
-        return att.get("regridded", False)
+        return att.get("AQUA_regridded", False)
 
-    def _clean_spourious_coords(self, data, name=None):
+    # def _clean_spourious_coords(self, data, name=None):
+    #     """
+    #     Remove spurious coordinates from an xarray DataArray or Dataset.
+
+    #     This function identifies and removes unnecessary coordinates that may
+    #     be incorrectly associated with spatial coordinates, such as a time
+    #     coordinate being linked to latitude or longitude.
+
+    #     Parameters:
+    #     ----------
+    #     data : xarray.DataArray or xarray.Dataset
+    #         The input data object from which spurious coordinates will be removed.
+
+    #     name : str, optional
+    #         An optional name or identifier for the data. This will be used in
+    #         warning messages to indicate which dataset the issue pertains to.
+
+    #     Returns:
+    #     -------
+    #     xarray.DataArray or xarray.Dataset
+    #         The cleaned data object with spurious coordinates removed.
+    #     """
+
+    #     drop_coords = set()
+    #     for coord in list(data.coords):
+    #         if len(data[coord].coords)>1:
+    #             drop_coords.update(koord for koord in data[coord].coords if koord != coord)
+    #     if not drop_coords:
+    #         return data
+    #     self.logger.warning('Issue found in %s, removing %s coordinates',
+    #                             name, list(drop_coords))
+    #     return data.drop_vars(drop_coords)
+
+    def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb'):
         """
-        Remove spurious coordinates from an xarray DataArray or Dataset.
-
-        This function identifies and removes unnecessary coordinates that may
-        be incorrectly associated with spatial coordinates, such as a time
-        coordinate being linked to latitude or longitude.
-
-        Parameters:
-        ----------
-        data : xarray.DataArray or xarray.Dataset
-            The input data object from which spurious coordinates will be removed.
-
-        name : str, optional
-            An optional name or identifier for the data. This will be used in
-            warning messages to indicate which dataset the issue pertains to.
-
-        Returns:
-        -------
-        xarray.DataArray or xarray.Dataset
-            The cleaned data object with spurious coordinates removed.
-        """
-
-        drop_coords = set()
-        for coord in list(data.coords):
-            if len(data[coord].coords)>1:
-                drop_coords.update(koord for koord in data[coord].coords if koord != coord)
-        if not drop_coords:
-            return data
-        self.logger.warning('Issue found in %s, removing %s coordinates',
-                                name, list(drop_coords))
-        return data.drop_vars(drop_coords)
-
-
-    def fldmean(self, data, lon_limits=None, lat_limits=None, **kwargs):
-        """
-        Perform a weighted global average.
-        If a subset of the data is provided, the average is performed only on the subset.
-
-        Arguments:
-            data (xr.DataArray or xarray.DataDataset):  the input data
-            lon_limits (list, optional):  the longitude limits of the subset
-            lat_limits (list, optional):  the latitude limits of the subset
-
-        Kwargs:
-            - box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
-                                  Default is True
-
-        Returns:
-            the value of the averaged field
-        """
-
-        # If these data have been regridded we should use
-        # the destination grid info
-        if self._check_if_regridded(data):
-            space_coord = self.dst_space_coord
-            grid_area = self.dst_grid_area
-        else:
-            space_coord = self.src_space_coord
-            grid_area = self.src_grid_area
-
-        if lon_limits is not None or lat_limits is not None:
-            data = area_selection(data, lon=lon_limits, lat=lat_limits,
-                                  loglevel=self.loglevel, **kwargs)
-
-        # cleaning coordinates which have "multiple" coordinates in their own definition
-        grid_area = self._clean_spourious_coords(grid_area, name = "area")
-        data = self._clean_spourious_coords(data, name = "data")
-
-        # check if coordinates are aligned
-        try:
-            xr.align(grid_area, data, join='exact')
-        except ValueError as err:
-            # check in the dimensions what is wrong
-            for coord in grid_area.coords:
-                if coord in space_coord:
-                    xcoord = data.coords[coord]
-
-                    # first case: shape different
-                    if len(grid_area[coord]) != len(xcoord):
-                        raise ValueError(f'{coord} has different shape between area files and your dataset.'
-                                        'If using the LRA, try setting the regrid=r100 option') from err
-                    # shape are ok, but coords are different
-                    if not grid_area[coord].equals(xcoord):
-                        # if they are fine when sorted, there is a sorting mismatch
-                        if grid_area[coord].sortby(coord).equals(xcoord.sortby(coord)):
-                            self.logger.warning('%s is sorted in different way between area files and your dataset. Flipping it!',
-                                                coord)
-                            grid_area = grid_area.reindex({coord: list(reversed(grid_area[coord]))})
-                        else:
-                            raise ValueError(f'{coord} has a mismatch in coordinate values!') from err
-
-        out = data.weighted(weights=grid_area.fillna(0)).mean(dim=space_coord)
-
-        out.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
-
-        log_history(data, f"Spatially averaged from {self.src_grid_name} grid")
-
-        return out
-
-    def _check_kwargs_parameters(self, main_parameters, intake_parameters):
-
-        """
-        Function to check if which parameters are included in the metadata of
-        the source and performs a few safety checks.
+        Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
+        Kwargs which are not present in the intake_vars will be removed.
 
         Args:
-            main_parameters: get them from kwargs
-            intake_parameters: get them from catalog machine specific file
+            intake_vars (dict): The intake variables from the catalog machine specific file.
+            kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
+            engine (str): The engine used for the GSV retrieval, default is 'fdb'.
 
         Returns:
-            kwargs after check has been processed
+            A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
         """
-        # join the kwargs
-        parameters = {**main_parameters, **intake_parameters}
+        esm_dict = self.esmcat.describe().get('user_parameters', {})
+        len_esmcat = len(esm_dict)
 
-        # remove null kwargs
-        parameters = {key: value for key, value in parameters.items() if value is not None}
+        # This contains both the intake_vars and the esmcat parameters
+        params = [esm_dict[i]['name'] for i in range(len_esmcat)]
 
-        user_parameters =  self.esmcat.describe().get('user_parameters')
-        if user_parameters is not None:
-            if parameters is None:
-                parameters = {}
+        # List comprehension to filter out kwargs that are not in the params
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k in params}
+        unfiltered_kwargs = {k: v for k, v in kwargs.items() if k not in params}
 
-            for param in user_parameters:
-                if param['name'] not in parameters:
-                    self.logger.warning('%s parameter is required but is missing, setting to default %s',
-                                        param['name'], param['default'])
-                    parameters[param['name']] = param['default']
+        # Log warnings for unfiltered kwargs
+        for key, _ in unfiltered_kwargs.items():
+            self.logger.warning('kwarg %s is not in the intake parameteres of the source, removing it', key)
 
-        return parameters
+        # Check if all required parameters are present in the filtered kwargs and set defaults if not
+        filtered_list = list(filtered_kwargs.keys())
+        intake_vars_list = list(intake_vars.keys())
+        for param in params:
+            if param not in filtered_list and param not in intake_vars_list:
+                self.logger.warning('%s parameter is required but is missing, setting to default %s',
+                                    param, esm_dict[params.index(param)]['default'])
+                allowed = esm_dict[params.index(param)].get('allowed', None)
+                # It is possible to have intake_vars which are not specified for the machine,
+                # so that we still need to check whether there is an allowed list
+                if allowed is not None:
+                    self.logger.warning('Available values for %s are: %s', param, allowed)
+                filtered_kwargs[param] = esm_dict[params.index(param)]['default']
+
+        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
+            # If the engine is fdb, we need to add the engine parameter
+            if 'engine' not in filtered_kwargs:
+                filtered_kwargs['engine'] = engine
+                self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
+        return filtered_kwargs
 
     def vertinterp(self, data, levels=None, vert_coord='plev', units=None,
                    method='linear'):
@@ -956,7 +653,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         else:
             raise ValueError('This is not an xarray object!')
 
-        final = log_history(final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.")
+        final = log_history(
+            final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.") # noqa E501
 
         final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
@@ -975,54 +673,6 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
         return final
 
-    def detrend(self, data, dim="time", degree=1, skipna=True):
-        """
-        A basic detrending routine based on polyfit and polyval xarray functions
-        within AQUA. Given an xarray object, will provide the detrended timeseries,
-        by default working along time coordinate
-        If it is a Dataset, only variables with the required
-        coordinate will be detrended.
-
-        Args:
-            data (DataArray, Dataset): your dataset
-            dim (str): The dimension along which apply detrending
-            degree (str, optional): The degree of the polinominal fit. Default is 1, i.e. linear detrend
-            skinpna (bool, optional): skip or not the NaN
-
-        Return
-            A detrended DataArray or a Dataset
-        """
-
-        if isinstance(data, xr.DataArray):
-            final = self._detrend(data=data, dim=dim, degree=degree, skipna=skipna)
-
-        elif isinstance(data, xr.Dataset):
-            selected_vars = [da for da in data.data_vars if dim in data[da].coords]
-            final = data[selected_vars].map(self._detrend, keep_attrs=True,
-                                            dim=dim, degree=degree, skipna=skipna)
-        else:
-            raise ValueError('This is not an xarray object!')
-
-        final = log_history(final, f"Detrended with polynominal of order {degree} along {dim} dimension")
-
-        # This links the dataset accessor to this instance of the Reader class
-        final.aqua.set_default(self)
-
-        return final
-
-    def _detrend(self, data, dim="time", degree=1, skipna=True):
-        """
-        Detrend a DataArray along a single dimension.
-        Taken from https://ncar.github.io/esds/posts/2022/dask-debug-detrend/
-        According to the post, current implementation is not the most efficient one.
-        """
-
-        # calculate polynomial coefficients
-        p = data.polyfit(dim=dim, deg=degree, skipna=skipna)
-        # evaluate trend
-        fit = xr.polyval(data[dim], p.polyfit_coefficients)
-        # remove the trend
-        return data - fit
 
     def reader_esm(self, esmcat, var):
         """Reads intake-esm entry. Returns a dataset."""
@@ -1043,18 +693,18 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
-        Read fdb data. Returns an iterator or dask array.
+        Read fdb data. Returns a dask array.
 
         Args:
             esmcat (intake catalog): the intake catalog to read
             var (str, int or list): the variable(s) to read
             startdate (str): a starting date and time in the format YYYYMMDD:HHTT
             enddate (str): an ending date and time in the format YYYYMMDD:HHTT
-            dask (bool): return directly a dask array instead of an iterator
+            dask (bool): return directly a dask array
             level (list, float, int): level to be read, overriding default in catalog
 
         Returns:
-            An xarray.Dataset or an iterator over datasets
+            An xarray.Dataset 
         """
         # Var can be a list or a single one of these cases:
         # - an int, in which case it is a paramid
@@ -1089,7 +739,7 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         # We're trying to set the if/else by int vs str and then eventually by the fix option
         # We store the fixer_dict once for all for semplicity of the if case.
         if self.fix is True:
-            fixer_dict = self.fixes.get('vars', {})
+            fixer_dict = self.fixer.fixes.get('vars', {})
             if fixer_dict == {}:
                 self.logger.debug("No 'vars' block in the fixer, guessing variable names base on ecCodes")
         if var != fdb_var:
@@ -1166,7 +816,8 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
             if self.aggregation and not chunks.get('time'):
                 chunks['time'] = self.aggregation
             if self.streaming and not self.aggregation:
-                self.logger.warning("Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value")
+                self.logger.warning(
+                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value") # noqa E501
 
         if dask:
             if chunks:  # if the chunking or aggregation option is specified override that from the catalog
@@ -1198,6 +849,10 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         Returns:
             Dataset
         """
+        # The coder introduces the possibility to specify a time decoder for the time axis
+        if 'time_coder' in esmcat.metadata:
+            coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
+            esmcat.xarray_kwargs.update({'decode_times': coder})
 
         data = esmcat.to_dask()
 
@@ -1236,72 +891,124 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
 
         return data
 
-    # # An error arised here by pylin: An attribute defined in aqua.reader.reader line 125 hides this method
-    # def stream(self, data, startdate=None, enddate=None, aggregation=None,
-    #            timechunks=None, reset=False):
-    #     """
-    #     Stream a dataset chunk using the startdate, enddate, and aggregation parameters defined in the constructor.
-    #     This operation utilizes the 'stream' method from the Streaming class.
-    #     It first checks if the Streaming class has been initialized; if not, it initializes the class.
+    @contextmanager
+    def _temporary_attrs(self, **kwargs):
+        """Temporarily override Reader attributes, restoring them afterward."""
+        original_values = {key: getattr(self, key) for key in kwargs}
+        try:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+            yield
+        finally:
+            for key, value in original_values.items():
+                setattr(self, key, value)
 
-    #     Arguments:
-    #         data (xr.Dataset):      the input xarray.Dataset
-    #         startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
-    #         enddate (str): the ending date for streaming the data (e.g. '2021-01-01') (None)
-    #         aggregation (str): the streaming frequency in pandas style (1M, 7D etc.)
-    #         timechunks (DataArrayResample, optional): a precomputed chunked time axis
-    #         reset (bool, optional): reset the streaming
+    def _retrieve_plain(self, *args, **kwargs):
+        """
+        Retrieve data without any additional processing.
+        Making use of GridInspector, provide a sample data which has minimum
+        size by subselecting along variables and time dimensions 
 
-    #     Returns:
-    #         A xarray.Dataset containing the subset of the input data that has been streamed.
-    #     """
-    #     if not hasattr(self, 'streamer'):
-    #         self.streamer = Streaming(startdate=startdate,
-    #                                   enddate=enddate,
-    #                                   aggregation=aggregation)
-    #         self.stream = self.streamer.stream
+        Args:
+            *args: arguments to be passed to retrieve
+            **kwargs: keyword arguments to be passed to retrieve
 
-    #     stream_data = self.stream(data,
-    #                               startdate=startdate,
-    #                               enddate=enddate,
-    #                               aggregation=aggregation,
-    #                               timechunks=timechunks,
-    #                               reset=reset)
+        Returns:
+            A xarray.Dataset containing the required miminal sample data.
+        """
+        if self.sample_data is not None:
+            self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
+            return self.sample_data
 
-    #     stream_data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
+        # Temporarily disable unwanted settings
+        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, streaming=False,
+                                   startdate=None, enddate=None, preproc=None):
+            self.logger.debug('Getting sample data through _retrieve_plain()...')
+            data = self.retrieve(history=False, *args, **kwargs)
 
-    #     return stream_data
+        self.sample_data = self._grid_inspector(data)
+        return self.sample_data
 
-    def info(self):
-        """Prints info about the reader"""
-        print("Reader for model %s, experiment %s, source %s" %
-              (self.model, self.exp, self.source))
+    def _grid_inspector(self, data):
+        """
+        Use smmregrid GridInspector to get minimal sample data
 
-        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
-            if "expver" in self.esmcat._request.keys():
-                print("  This experiment has expID %s" % self.esmcat._request['expver'])
+        Args:
+            data (xarray.Dataset): input data
 
-        metadata = self.esmcat.metadata
+        Returns:
+            A xarray.Dataset containing the required miminal sample data.
+        """
 
-        if self.fix:
-            print("Data fixing is active:")
-            if "fixer_name" in metadata.keys():
-                print("  Fixer name is %s" % metadata["fixer_name"])
-            else:
-                # TODO: to be removed when all the catalogs are updated
-                print("  Fixes: %s" % self.fixes)
+        # get gridtypes from smrregird
+        gridinspect = GridInspector(data, loglevel=self.loglevel)
+        gridtypes = gridinspect.get_gridtype()
 
-        if self.dst_grid_name:
-            print("Regridding is active:")
-            print("  Target grid is %s" % self.dst_grid_name)
-            print("  Regridding method is %s" % self.regrid_method)
+        # get info on time dimensions and variables
+        minimal_variables = gridinspect.get_gridtype_attr(gridtypes, 'variables')
+        minimal_time = gridinspect.get_gridtype_attr(gridtypes, 'time_dims')
 
-        print("Metadata:")
-        for k, v in metadata.items():
-            print("  %s: %s" % (k, v))
+        if minimal_variables:
+            self.logger.debug('Variables found: %s', minimal_variables)
+            data = data[minimal_variables]
+        if minimal_time:
+            self.logger.debug('Time dimensions found: %s', minimal_time)
+            data = data.isel({t: 0 for t in minimal_time})
+        return data
 
-        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
-            print("GSV request for this source:")
-            for k, v in self.esmcat._request.items():
-                if k not in ["time", "param", "step", "expver"]:
-                    print("  %s: %s" % (k, v))
+    def timstat(self, data, stat, freq=None, exclude_incomplete=False,
+             time_bounds=False, center_time=False):
+        """
+        Time averaging wrapper which is calling the timstat module
+
+        Args:
+            data (xr.DataArray or xarray.Dataset):  the input data
+            stat (str):  the statistical function to be applied
+            freq (str):  the frequency of the time average
+            exclude_incomplete (bool):  exclude incomplete time averages
+            time_bounds (bool):  produce time bounds after averaging
+            center_time (bool):  center time for averaging
+        """
+
+        data = self.timemodule.timstat(
+            data, stat=stat, freq=freq,
+            exclude_incomplete=exclude_incomplete,
+            time_bounds=time_bounds,
+            center_time=center_time)
+        data.aqua.set_default(self) #accessor linking
+        return data
+    
+    def timmean(self, data, **kwargs):
+        return self.timstat(data, stat='mean', **kwargs)
+
+    def timmax(self, data, **kwargs):
+        return self.timstat(data, stat='max', **kwargs)
+    
+    def timmin(self, data, **kwargs):
+       return self.timstat(data, stat='min', **kwargs)
+    
+    def timstd(self, data, **kwargs):
+       return self.timstat(data, stat='std', **kwargs)
+    
+    def timsum(self, data, **kwargs):
+       return self.timstat(data, stat='sum', **kwargs)
+
+    def histogram(self, data, **kwargs):
+        """ Wrapper for the histogram function. """
+
+        return histogram(data, **kwargs)
+
+
+def units_extra_definition():
+    """Add units to the pint registry"""
+
+    # special units definition
+    # needed to work with metpy 1.4.0 see
+    # https://github.com/Unidata/MetPy/issues/2884
+    units._on_redefinition = 'ignore'
+    units.define('fraction = [] = Fraction = frac')
+    units.define('psu = 1e-3 frac')
+    units.define('PSU = 1e-3 frac')
+    units.define('Sv = 1e+6 m^3/s')
+    units.define("North = degrees_north = degreesN = degN")
+    units.define("East = degrees_east = degreesE = degE")

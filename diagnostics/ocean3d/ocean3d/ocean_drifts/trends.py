@@ -251,7 +251,7 @@ class multilevel_trend:
         self.logger.debug("Interpolating data for required depths")
         self.trend_data = TrendCalculator.TS_3dtrend(self.data, loglevel=self.loglevel)
         self._plot_multilevel_trend()
-        return
+        return self.__dict__
 
     def _plot_multilevel_trend(self):
         """
@@ -402,4 +402,4 @@ class zonal_mean_trend:
             export_fig(self.output_dir, filename, "pdf", metadata_value=title, loglevel=self.loglevel)
         if not IPython.get_ipython():  
             plt.close() 
-        return
+        return self.__dict__

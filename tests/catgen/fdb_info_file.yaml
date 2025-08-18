@@ -1,0 +1,11 @@
+# This is a mockup version of the yaml file that the workflow
+# writes in the FDB_HOME so that dynamically we can know
+# if a date is on the HPC FDB or in the DataBridge FDB
+bridge:
+  bridge_end_date: 19900102T2300
+  bridge_start_date: 19900101T0000
+  expver: t039
+data:
+  data_end_date: 19900103T2300
+  data_start_date: 19900101T0000
+  expver: t039

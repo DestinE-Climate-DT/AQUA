@@ -1,6 +1,6 @@
 """Module for scientific utility functions."""
 import xarray as xr
-from aqua.logger import log_configure
+from aqua.logger import log_configure, log_history
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
@@ -15,7 +15,8 @@ def area_selection(data=None, lat=None, lon=None,
         Works on coordinates from 0 to 360, but converts different requests
 
         Args:
-            indat (xarray.DataSet):   input data to be selected
+            data (xarray.DataArray 
+                  or xarray.DataSet): input data to be selected
             lat (list, opt):          latitude coordinates
             lon (list, opt):          longitude coordinates
             box_brd (bool,opt):       choose if coordinates are comprised or not.
@@ -34,6 +35,7 @@ def area_selection(data=None, lat=None, lon=None,
             KeyError:   if 'lon' or 'lat' are not in the coordinates
             ValueError: if lat and lon are both None
     """
+    
     if data is None:
         raise ValueError('data cannot be None')
 
@@ -70,11 +72,9 @@ def area_selection(data=None, lat=None, lon=None,
         else:
             lon_condition = (data.lon > lon[0]) & (data.lon < lon[1])
 
-    data = data.where(lat_condition & lon_condition)
+    data = data.where(lat_condition & lon_condition, drop=drop)
 
-    if drop:
-        data = data.dropna(dim='lon', how='all')
-        data = data.dropna(dim='lat', how='all')
+    data = log_history(data, f"Area selection: lat={lat}, lon={lon}")
 
     return data
 
@@ -216,7 +216,7 @@ def _lon_360_to_180(lon: float):
         lon = - 360 + lon
     return lon
 
-def select_season(xr_data: xr.DataArray or xr.Dataset, season: str):
+def select_season(xr_data, season: str):
     """
     Select a season from a xarray.DataArray or xarray.Dataset.
     Available seasons are:
@@ -255,6 +255,29 @@ def select_season(xr_data: xr.DataArray or xr.Dataset, season: str):
 
     if season in triplet_months:
         selected_months = triplet_months[season]
-        return xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
+        selected =  xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
+        # Add AQUA_season attribute
+        selected.attrs['AQUA_season'] = season
+        return selected
+    elif season == 'annual':
+        return xr_data
     else:
-        raise ValueError("Invalid season abbreviation. Please use one of the provided abbreviations.")
+        raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(triplet_months.keys())}, or 'annual' to perform no season selection.")
+
+def merge_attrs(target, source, overwrite=False):
+    """Merge attributes from source into target.
+
+    Args:
+        target (xr.Dataset or xr.DataArray or dict): The target for merging.
+        source (xr.Dataset or xr.DataArray or dict): The source of attributes.
+        overwrite (bool): If True, overwrite existing keys in target.
+                          If False, only add keys that don't already exist.
+    """
+    if isinstance(target, (xr.Dataset, xr.DataArray)):
+        target = target.attrs
+    if isinstance(source, (xr.Dataset, xr.DataArray)):
+        source = source.attrs
+
+    for k, v in source.items():
+        if overwrite or k not in target:
+            target[k] = v

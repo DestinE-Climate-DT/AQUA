@@ -3,6 +3,8 @@
 Advanced Topics
 ===============
 
+.. _config-file:
+
 Set up the configuration file
 -----------------------------
 
@@ -26,6 +28,21 @@ The configuration file is used to specify the following parameters:
   These paths are required to be inside the AQUA repository,
   so these paths should not be changed unless strictly necessary.
   Refer to :ref:`add-data` for more information.
+- **paths**: this is an optional block, which can be used to specify and override the paths specified in the catalog where grids, areas and weights are stored.
+  This is useful if you want to store the grids, areas and weights in a different location than the default one, you don't have access to the default location or
+  you are setting up a new machine.
+
+  The paths block should have the following structure:
+
+.. code-block:: yaml
+
+    paths:
+        grids: /path/to/aqua/data/grids
+        weights: /path/to/aqua/data/weights
+        areas: /path/to/aqua/data/areas
+
+One or all the paths can be specified in the configuration file.
+If a path is not specified in the configuration file, the default path specified in the catalog will be used.
 
 The configuration folder has this structure:
 
@@ -179,35 +196,49 @@ It is also possible to specify vertical chunking by passing a dictionary with th
 In this case ``time`` will follow the notation discussed above, while ``vertical`` specifies the number of vertical
 levels to use for each chunk.
 
-.. _iterators:
+.. _lev-selection-regrid:
 
-Iterator access to data
------------------------
+Polytope access to Destination Earth data
+-----------------------------------------
 
-In alternative to the lazy access it is also possible to ask the reader to return an *iterator/generator* object passing the ``stream_generator=True`` 
-keyword to the ``retrieve()`` method.
-In that case the next block of data can be read from the iterator with ``next()`` as follows:
+It is possible to access ClimateDT data available on the 'Databridge' for the DestinE ClimateDT also remotely, from other machines,
+using the 'polytope' access. to this end you will need to specify ``engine="polytope"`` when instantiating the `Reader` or permanently, adding
+the argument ``engine: polytope`` as an additional argument in the intake catalog source entry in the corresponding yaml file, under `args:`.
 
 .. code-block:: python
 
-    reader = Reader(model="IFS", exp="fdb-tco399", source="fdb-long", aggregation="D",
-                    regrid="r025")
-    data = reader.retrieve(startdate='20200120', enddate='20200413', var='ci',
-                           stream_generator=True)
-    dd = next(data)
+    reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="polytope")
+    data = reader.retrieve(var='2t')
 
-or with a loop iterating over ``data``. The result of these operations is in turn a regular xarray.Dataset containg the data.
-Since this is a data stream the user should also specify the desired initial time and the final time (the latter can be omitted and will default to the end of the dataset).
-When using an iterator it is possible to specify the size of the data blocks read at each iteration with the ``aggregation`` keyword
-(``M`` is month, ``D`` is day etc.). 
-The default is ``S`` (step), i.e. single saved timesteps are read at each iteration.
+This allows accessing ClimateDT data on the Databridge also remotely from other machines.
 
-Please notice that the resulting object obtained at each iteration is not a lazy dask array, but is instead entirely loaded into memory.
-Please consider memory usage in choosing an appropriate value for the ``aggregation`` keyword.
+To access Destination Earth ClimateDT data you will need to be registered on the `Destine Service Platform  <https://platform.destine.eu/>`_
+and have requested "upgraded access" to the data (follow the link "Access policy upgrade" under your username at the top left corner of the page).
 
-In the special case where the source is FDB/GSV and iterator access is requested, ``aggregation`` takes precedence over ``chunks`` and chunking is set to the value specified by it.
+In order for his to work you will need to store an access token in the file ``~/.polytopeapirc`` in your home directory.
+You can create this file following two proceures:
 
-.. _lev-selection-regrid:
+1. **Using DestinE Service Platform credentials**: 
+
+Follow the instructions in the `Polytope documentation <https://github.com/destination-earth-digital-twins/polytope-examples>`_
+and the username and password which you defined for the Destine Service Platform to download the credentials into this file. 
+
+2. **Using ECMWF credentials**:
+
+You can also use your ECMWF credentials to access the data. You will find the email and key which you need by logging in to your `ECMWF account <https://www.ecmwf.int/>`_.
+After logging in you will find your key at `https://api.ecmwf.int/v1/key/ <https://api.ecmwf.int/v1/key/>`_.
+
+A sample ``~/.polytopeapirc`` file will look like this:
+
+.. code-block:: text
+
+    {
+        "user_email" : "<your.email>",
+        "user_key" : "<your.token>"
+    }
+
+.. note::
+    Please notice that the two procedures use different tokens and that in the first case there will be no `"user_email"` in the polytope credentials file.
 
 Level selection and regridding
 ------------------------------
@@ -260,176 +291,6 @@ In order to use this option, the user must pass a function as ``preproc`` keywor
 .. note::
     There is not yet a way to define a preproc function in the catalog, so it must be passed as a keyword argument.
     This is a feature that will be added in the future, if needed.
-
-.. _slurm:
-
-Slurm utilities
----------------
-
-The ``aqua.slurm`` module is based on the ``dask_jobqueue`` `package <https://jobqueue.dask.org/en/latest/>`_.
-This package makes easy to run Dask on job-queuing systems in HPC environments.
-It has a simple interface accessible from interactive systems like Jupyter Notebooks or batch Jobs.
-
-The Slurm Class
-^^^^^^^^^^^^^^^
-
-The ``aqua.slurm`` module contains several functions that allow us to create and operate Dask jobs:
-
-- ``squeue``: Allows us to check the status of created jobs in the queue.
-- ``job``: Allows the creation and submission of a job to a selected queue.
-- ``scancel``: Allows the cancellation of all submitted jobs or only a job with a specified Job_ID.
-
-
-Dask-Job Initialization
-^^^^^^^^^^^^^^^^^^^^^^^
-
-The ``job()`` function can be used to launch a job to the queue directly from a notebook cell.
-This function leverages the ``dask_jobqueue.SLURMCluster`` for initializing and managing Dask jobs on SLURM-managed clusters.
-
-.. code-block:: python
-
-    slurm.job(machine_name='lumi')
-
-
-Submitting Jobs on Different Machines
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The ``job()`` function provides a flexible and efficient way to submit jobs to SLURM-managed clusters on different machines.
-Users can specify machine-specific configurations through a YAML configuration file (``.aqua/aqua/slurm/config-slurm.yml``) or provide parameters directly through the function call.
-
-The ``job()`` function allows users to either use predefined settings from a YAML file for known machines or manually input job parameters for machines without predefined settings. 
-Here's how to use the function for different scenarios:
-
-
-Submit a Job Using Predefined Configurations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If the machine has predefined settings in the YAML configuration file, simply specify the machine's name:
-
-.. code-block:: python
-
-    slurm.job(machine_name='lumi')
-
-This method pulls all necessary parameters like memory, cores, and walltime from the YAML file associated with the specified machine name.
-
-.. note::
-
-    The available machines are Lumi, Levante, Atos (HPC2020) and Mafalda.
-    Please be aware that the user or project fields may be specific of the Destination Earth project and may need to be changed.
-
-Submit a Job with Maximum Available Resources per Node
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To utilize the maximum available resources per node for the selected queue, set ``max_resources_per_node=True``:
-
-.. code-block:: python
-
-    slurm.job(machine_name='lumi', max_resources_per_node=True)
-
-
-Change default attributes
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If a machine is defined then default arguments are used for a simple call of the ``slurm.job()`` function.
-On Lumi for example they are as follows:
-
-.. code-block:: yaml
-
-    machines:
-      lumi:
-        queue: 'small'
-        account: 'project_465000454'
-        walltime: '02:30:00'
-        memory: '10 GB'
-        cores: 1
-        jobs: 1
-        loglevel: 'WARNING'
-        path_to_output: '.'
-
-.. note::
-
-    The ``slurm.job()`` function has an argument ``exclusive=False`` by default.
-    Setting ``exclusive=True`` reserves an entire node for the job.
-
-If you would like to reserve a node on a different queue, specify the queue's name as an argument of the function:
-
-.. code-block:: python
-
-    slurm.job(machine_name='lumi', queue="small")
-
-.. warning::
-
-    The `exclusive` argument **does not** automatically provide the maximum available memory, number of cores, and walltime.
-    Anyway for some machines you will be billed for the entire node every time you ask exclusive access to it.
-
-The ``slurm.job()`` function has an argument ``max_resources_per_node``, which is ``False`` by default.
-Setting ``max_resources_per_node=True`` will allocate the maximum number of cores, memory, and walltime available for the chosen node.
-
-
-Path to the Output
-^^^^^^^^^^^^^^^^^^
-
-The ``slurm.job()`` function creates folders for the job output.
-By default, the path is ``"."``.
-Therefore, the paths for log and output are:
-
-- ``./slurm/logs`` for errors,
-- ``./slurm/output/`` for output.
-
-Users can specify different paths for the SLURM output:
-
-.. code-block:: python
-
-    slurm.job(machine_name='lumi', path_to_output="/any/other/folder/")
-
-
-Canceling the Dask Job
-^^^^^^^^^^^^^^^^^^^^^^
-
-The user can cancel all submitted jobs by:
-
-.. code-block:: python
-
-    slurm.scancel()
-
-If the user would like to cancel a specific job, they need to know the Job_ID of that job.
-The Job_ID can be found using the ``slurm.squeue()`` function, which returns information about all user SLURM jobs on the machine.
-Then, the user can cancel the particular job as:
-
-.. code-block:: python
-
-    slurm.scancel(all=False, Job_ID=5000000)
-
-.. warning::
-
-    It is potentially dangerous to cancel all your jobs. Always prefer to cancel jobs with the Job_ID.
-
-
-Modifying and Adding Machine Configurations in YAML
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To modify existing configurations or add new machines, edit the ``.aqua/aqua/slurm/config-slurm.yml`` file:
-
-1. Open the YAML file and locate the machines section.
-2. Modify or add entries for machines. For example, to add a new machine configuration:
-
-.. code-block:: yaml
-
-    machines:
-      mafalda:
-        queue: 'batch'
-        account: null
-        walltime: '02:30:00'
-        memory: '10 GB'
-        cores: 1
-        jobs: 1
-        loglevel: 'WARNING'
-        path_to_output: '.'
-
-.. note::
-
-    Currently, the pip installation does not copy the YAML configuration file to a user-accessible directory.
-    This functionality will be updated in the future to ensure easier modification of configurations by users.
 
 .. _new-machine-regrid:
 

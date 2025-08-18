@@ -2,8 +2,8 @@
 
 import logging
 import types
-import datetime
 import xarray as xr
+import pandas as pd
 import warnings
 
 
@@ -105,58 +105,27 @@ def _check_loglevel(log_level=None):
 
     return log_level
 
-
 def log_history(data, msg):
-    """
-    Elementary provenance logger in the history attribute also for iterators.
-
-    Args:
-        data: a dataset or a iterator
-        msg: a string with the message to be logged
-
-    Returns:
-        The dataset or the iterator with the history attribute updated
-    """
-    if isinstance(data, types.GeneratorType):
-        data = _log_history_iter(data, msg)
-        return data
-    else:
-        _log_history(data, msg)
-        return data
-
-
-def _log_history_iter(data, msg):
-    """
-    Iterator loop convenience function for log_history_iter
-
-    Args:
-        data: an iterator
-        msg: a string with the message to be logged
-    """
-    for ds in data:
-        log_history(ds, msg)
-        yield ds
-
-
-def _log_history(data, msg):
     """
     Elementary provenance logger in the history attribute
 
     Args:
         data: a dataset or a dataarray
         msg: a string with the message to be logged
+    Returns:
+        The dataset with the history attribute updated
     """
+    now = pd.Timestamp.now()
+    date_now = now.strftime("%Y-%m-%d %H:%M:%S")
+    hist = data.attrs.get("history", "")
 
-    if isinstance(data, (xr.DataArray, xr.Dataset)):
-        now = datetime.datetime.now()
-        date_now = now.strftime("%Y-%m-%d %H:%M:%S")
-        hist = data.attrs.get("history", "")
+    # check that there is a new line at the end of the current history
+    if not hist.endswith("\n"):
+        hist += "\n"
+    hist += f"{date_now} AQUA💧: {msg};\n"
+    data.attrs.update({"history": hist})
 
-        # check that there is a new line at the end of the current history
-        if not hist.endswith("\n"):
-            hist += "\n"
-        hist += f"{date_now} AQUA💧: {msg};\n"
-        data.attrs.update({"history": hist})
+    return data
 
 
 class CustomLogColors(logging.Formatter):

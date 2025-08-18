@@ -11,14 +11,15 @@ and please include also the following acknowledgements:
 
 .. code-block:: bibtex
 
-   @software{AQUA,
-     author       = {Matteo Nurisso, Silvia Caprioli, Jost von Hardenberg, Paolo Ghinassi, Supriyo Ghosh,  Bruno P. Kinoshita, Lukas Kluft, Nikolay Koldunov, François Massonnet, Natalia Nazarova, Pablo Ortega, Susan Sayed, Tanvi Sharma, Jaleena Sunny and Paolo Davini},
-     title        = {AQUA: A Python Framework for High-Resolution Climate Model Diagnostics},
-     year         = {2024},
-     publisher    = {GitHub},
-     journal      = {GitHub Repository},
-     howpublished = {\url{https://github.com/DestinE-ClimateDT/AQUA/tree/main}},
-   }
+  @software{AQUA,
+  doi = {10.5281/ZENODO.14906075},
+  url = {https://zenodo.org/doi/10.5281/zenodo.14906075},
+  author = {Nurisso,  Matteo and Caprioli,  Silvia and Davini,  Paolo and von Hardenberg,  Jost and Nazarova,  Natalia and Ghosh,  Supriyo and Ghinassi,  Paolo and Cadau,  Marco and Tovazzi,  Emanuele and Koldunov,  Nikolay and Massonnet,  Fran\c{c}ois and Rajput,  Maqsood Mubarak and Sayed,  Susan and Sharma,  Tamvi and Sunny,  Jaleena and Kluft,  Lukas and Kinoshita,  Bruno and Ortega,  Pablo},
+  title = {AQUA},
+  publisher = {Zenodo},
+  year = {2025},
+  copyright = {Apache License 2.0}
+  }
 
 Acknowledgments
 ---------------

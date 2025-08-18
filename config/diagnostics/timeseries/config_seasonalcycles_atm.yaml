@@ -1,11 +1,26 @@
+# Template according to #1613
 # The first model in this block can be overridden
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
-models:
+datasets:
   - catalog: null
     model: null
     exp: null
     source: 'lra-r100-monthly'
+    regrid: null
+  # Possible second/third/fourth datasets here, no present by default
+  # - catalog: 'obs'
+  #   model: 'ERA5'
+  #   exp: 'era5'
+  #   source: 'monthly'
+  #   regrid: r100
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: null
 
 output:
   outputdir: "./"
@@ -14,8 +29,11 @@ output:
   save_png: true
   dpi: 300
 
-# This is the list of variables that will be plotted as seasonal cycles
-seasonal_cycle: ['2t', 'tprate', 'ie', 'msl',
+diagnostics:
+  seasonalcycles:
+    run: true
+    diagnostic_name: 'atmosphere'
+    variables: ['2t', 'tprate', 'ie', 'msl',
                  'tcc', 'lcc', 'mcc', 'hcc',
                  'slhtf', #Mean surface latent heat flux
                  'ishf', #Mean surface sensible heat flux
@@ -26,24 +44,9 @@ seasonal_cycle: ['2t', 'tprate', 'ie', 'msl',
                  'tnlwrf', #Mean top net long-wave radiation flux
                  'tnswrf' #Mean top net short-wave radiation flux
                  ]
-
-
-timeseries_plot_params:
-# These are options that specify how the data is plotted
-# Default values are used if the variable that is being
-# plotted is not specified here.
-# If you need specific options for a variable, you can
-# add it here.
-  default:
-    plot_ref: True
-    monthly: True
-    annual: True
-    std_startdate: '1990-01-01'
-    std_enddate: '2020-12-31'
-  # 2t:
-  #   plot_kw:
-  #     color: "tab:blue"
-  #   plot_era5: True
-  #   resample: "M"
-  #   savefig: True
-  #   ylim: [-10, 10]
+    params:
+      default:
+        std_startdate: '19900101'
+        std_enddate: '20201231'
+      tprate:
+        units: "mm/day"

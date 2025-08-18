@@ -1,0 +1,19 @@
+# codecov.yml
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 0.1%  # Allow a 0.1% drop without failing
+
+ignore:
+  - "tests/*"          # Ignore test files
+  - "diagnostics/*"     # Ignore diagnostics
+  - "cli/*"            # Ignore CLI scripts
+
+comment:
+  layout: "diff, flags"
+  require_changes: true
+
+fixes:
+  - "AQUA/::"

@@ -9,28 +9,13 @@ from aqua.reader.reader_utils import check_catalog_source
 loglevel = "DEBUG"
 
 @pytest.fixture(params=[(model, exp, source)
-                        for model in catalog()
-                        for exp in catalog()[model]
-                        for source in catalog()[model][exp]])
+                        for model in catalog(catalog_name="ci")  # there could also be other catalogues installed
+                        for exp in catalog(catalog_name="ci")[model]
+                        for source in catalog(catalog_name="ci")[model][exp]])
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
-    print([model, exp, source])
-    # very slow access, skipped
-    if model == 'ICON' and source == 'intake-esm-test':
-        pytest.skip()
-    if model == 'ICON' and exp == 'hpx':
-        pytest.skip()
-    if model == 'MSWEP':
-        pytest.skip()
-    if model == 'ERA5':
-        pytest.skip()
-    if model == 'IFS' and exp == 'test-fdb':
-        pytest.skip()
-    # teleconnections catalog, only on teleconnections workflow
-    if model == 'IFS' and exp == 'test-tco79' and source == 'teleconnections':
-        pytest.skip()
-    myread = Reader(model=model, exp=exp, source=source, areas=False,
+    myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=False,
                     fix=False, loglevel=loglevel)
     data = myread.retrieve()
     return myread, data
@@ -51,28 +36,14 @@ def test_catalog_gsv():
         assert isinstance(data, xarray.Dataset)
 
 @pytest.fixture(params=[(model, exp, source)
-                        for model in catalog()
-                        for exp in catalog()[model]
-                        for source in catalog()[model][exp]])
+                        for model in catalog(catalog_name="ci")
+                        for exp in catalog(catalog_name="ci")[model]
+                        for source in catalog(catalog_name="ci")[model][exp]])
 def reader_regrid(request):
     """Reader instance fixture"""
     model, exp, source = request.param
     print([model, exp, source])
-    # very slow access, skipped
-    if model == 'ICON' and source == 'intake-esm-test':
-        pytest.skip()
-    if model == 'ICON' and exp == 'hpx':
-        pytest.skip()
-    if model == 'MSWEP':
-        pytest.skip()
-    if model == 'ERA5':
-        pytest.skip()
-    if model == 'IFS' and source == 'fdb':  # there is another test for that
-        pytest.skip()
-    # teleconnections catalog, only on teleconnections workflow
-    if model == 'IFS' and exp == 'test-tco79' and source == 'teleconnections':
-        pytest.skip()
-    myread = Reader(model=model, exp=exp, source=source, areas=True, regrid='r200',
+    myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=True, regrid='r200',
                     loglevel=loglevel, rebuild=False)
     data = myread.retrieve()
 
@@ -86,10 +57,8 @@ def test_catalog(reader):
     """
     aaa, bbb = reader
     assert isinstance(aaa, Reader)
-    try:
-        assert isinstance(bbb, xarray.Dataset)
-    except AssertionError: #fdb is a generator
-        assert isinstance(bbb, types.GeneratorType)
+    assert isinstance(bbb, xarray.Dataset)
+
 
 @pytest.mark.sbatch
 def test_catalog_reader(reader_regrid):

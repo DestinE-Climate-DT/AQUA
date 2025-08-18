@@ -10,6 +10,7 @@ try:
 except ModuleNotFoundError:
     print("Import error for the ensemble module.")
 
+@pytest.mark.ensemble
 def test_2D_datasets():
     """
     load aqua-analysis output of timeseries.
@@ -20,6 +21,7 @@ def test_2D_datasets():
     del dataset_list
     return dataset
 
+@pytest.mark.ensemble
 def test_ensemble_2D_compute():
     """Test the compute method of EnsembleLatLons."""
     sample_dataset = test_2D_datasets()
@@ -29,6 +31,7 @@ def test_ensemble_2D_compute():
     assert latlon.dataset_mean is not None
     assert latlon.dataset_std.all() == 0 
 
+@pytest.mark.ensemble
 def test_edit_attributes():
     """Test the edit_attributes method."""
     latlon = EnsembleLatLon(var="2t")

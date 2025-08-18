@@ -1,7 +1,6 @@
 fixer_name:
     ERA5-destine-v1:
         convention: eccodes
-        data_model: cf
         vars:
             ie:
                 source: E
@@ -114,6 +113,18 @@ fixer_name:
                     valid_min: 0
                     valid_max: 1400
                     positive: down
+            tnlwrfcs: #clear sky
+                derived: 0.-toa_lw_clr_c_mon
+                attributes:
+                    valid_min: -500
+                    valid_max: 0
+                    positive: down
+            tnswrfcs: #clear sky
+                derived: solar_mon-toa_sw_clr_c_mon
+                attributes:
+                    valid_min: 0
+                    valid_max: 1400
+                    positive: down
 
     ceres-syn-destine-v1:
         convention: eccodes 
@@ -203,7 +214,6 @@ fixer_name:
     # GPM
     GPM-default:
         convention: eccodes 
-        data_model: cf
         vars:
             # Automatic conversion to destination grib units
             tprate:
@@ -212,7 +222,6 @@ fixer_name:
     # MSWEP
     MSWEP-default:
         convention: eccodes 
-        data_model: cf
         vars:
             tprate:
                 source: precipitation
@@ -258,4 +267,20 @@ fixer_name:
                 source: sftof
                 src_units: frac
                 units: frac
+    
+    WAGHC:
+        convention: eccodes
+        data_model: false
+        coords:
+            lat:
+                source: latitude
+            lon:
+                source: longitude
+        vars:
+            tos:
+                source: temperature
+                src_units: C
+            sos:   
+                source: salinity
+                src_units: psu
     

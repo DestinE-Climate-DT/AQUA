@@ -1,11 +1,15 @@
 import pytest
 import xarray as xr
 import numpy as np
+import healpy as hp
+from scipy.interpolate import griddata
 from pypdf import PdfReader
 
 from aqua import Reader
 from aqua.util.graphics import add_cyclic_lon, plot_box, minmax_maps
 from aqua.util import cbar_get_label, evaluate_colorbar_limits, add_pdf_metadata
+from aqua.util import get_nside, get_npix, healpix_resample
+from aqua.util import coord_names, set_map_title
 from aqua.graphics import plot_single_map
 
 loglevel = 'DEBUG'
@@ -34,6 +38,9 @@ def test_add_cyclic_lon(da):
     assert np.allclose(new_da.isel(lon=-1).values, old_da.isel(lon=0).values), \
            "First and last longitude values should be equal"
     assert new_da.shape == (18, 37), "Output shape is incorrect"
+
+    with pytest.raises(ValueError):
+        add_cyclic_lon(da='test')  # Test with invalid input
 
 
 @pytest.mark.graphics
@@ -82,7 +89,7 @@ def test_label():
     label = cbar_get_label(da, loglevel=loglevel)
     # assert label is a string
     assert isinstance(label, str), "Colorbar label should be a string"
-    assert label == '2t [K]', "Colorbar label is incorrect"
+    assert label == "2 metre temperature [K]", "Colorbar label is incorrect"
 
     # Test the function with a custom label
     label = cbar_get_label(da, cbar_label='Temperature', loglevel=loglevel)
@@ -100,24 +107,150 @@ def test_label():
     assert vmin == -310.61033630371094, "Minimum value is incorrect"
     assert vmax == 310.61033630371094, "Maximum value is incorrect"
 
+    with pytest.raises(ValueError):
+        evaluate_colorbar_limits(maps=None)
+
 
 @pytest.mark.graphics
-def test_pdf_metadata():
+def test_pdf_metadata(tmp_path):
     """Test the add_pdf_metadata function"""
     # Generate a test figure from a random xarray DataArray
     da = xr.DataArray(np.random.rand(18, 36), dims=['lat', 'lon'], coords={'lon': np.linspace(0, 360, 36),
-                                                                          'lat': np.linspace(-90, 90, 18)})
-    plot_single_map(da, title='Test', save=True, filename='test', format='pdf', loglevel=loglevel)
+                                                                           'lat': np.linspace(-90, 90, 18)})
+    fig, _ = plot_single_map(da, title='Test', filename='test', format='pdf',
+                             return_fig=True, loglevel=loglevel)
 
+    fig.savefig(tmp_path / 'test.pdf')
+    filename = str(tmp_path / 'test.pdf')
     # Test the function
-    add_pdf_metadata(filename='./test.pdf', metadata_value='Test',
+    add_pdf_metadata(filename=filename, metadata_value='Test',
                      metadata_name='/Test description', loglevel=loglevel)
-    add_pdf_metadata(filename='./test.pdf', metadata_value='Test caption',
+    add_pdf_metadata(filename=filename, metadata_value='Test caption',
                      loglevel=loglevel)
 
     # Open the PDF and check the metadata
-    pdf_reader = PdfReader("./test.pdf")
+    pdf_reader = PdfReader(filename)
     metadata = pdf_reader.metadata
 
     assert metadata['/Test description'] == 'Test', "Old metadata should be kept"
     assert metadata['/Description'] == 'Test caption', "Description should be added to metadata"
+
+
+@pytest.mark.graphics
+def test_set_map_title(da):
+    title = set_map_title(da)
+
+    assert title is None, "Title should be None"
+
+
+@pytest.mark.graphics
+def test_coord_names():
+    """Test the coord_names function"""
+    # Create a test DataArray
+    lon_values = np.linspace(0, 360, 36)
+    lat_values = np.linspace(-90, 90, 18)
+    data = np.random.rand(18, 36)
+    da = xr.DataArray(data, dims=['latitude', 'longitude'],
+                      coords={'longitude': lon_values, 'latitude': lat_values})
+
+    # Test the function
+    lon_name, lat_name = coord_names(da)
+    assert lon_name == 'longitude', "Longitude name is incorrect"
+    assert lat_name == 'latitude', "Latitude name is incorrect"
+
+@pytest.mark.graphics
+class TestHealpixUtils:
+    def test_get_nside_valid_ndarray(self):
+        nside = 8
+        npix = hp.nside2npix(nside)
+        data = np.arange(npix)
+        assert get_nside(data) == nside
+
+    def test_get_nside_valid_xarray(self):
+        nside = 4
+        npix = hp.nside2npix(nside)
+        data = xr.DataArray(np.arange(npix))
+        assert get_nside(data) == nside
+
+    def test_get_nside_invalid_type(self):
+        with pytest.raises(ValueError, match="Input data must be a numpy array or xarray DataArray"):
+            get_nside("invalid")
+
+    def test_get_nside_empty_array(self):
+        with pytest.raises(ValueError, match="data array is empty"):
+            get_nside(np.array([]))
+
+    def test_get_nside_invalid_npix(self):
+        data = np.arange(123)  # 123 not a valid npix
+        with pytest.raises(ValueError, match="Invalid HEALPix map: npix=123"):
+            get_nside(data)
+
+    def test_get_npix_valid(self):
+        nside = 16
+        data = np.arange(hp.nside2npix(nside))
+        expected = hp.nside2npix(nside)
+        assert get_npix(data) == expected
+
+    def test_get_npix_invalid_type(self):
+        with pytest.raises(ValueError, match="Input data must be a numpy array or xarray DataArray"):
+            get_npix("invalid")
+
+    def test_get_npix_invalid_npix(self):
+        data = np.arange(999)  # Not valid npix
+        with pytest.raises(ValueError, match="Invalid HEALPix map: npix=999"):
+            get_npix(data)
+
+    def test_get_npix_empty_array(self):
+        with pytest.raises(ValueError, match="data array is empty"):
+            get_npix(np.array([]))
+
+
+@pytest.fixture
+def healpix_data():
+    nside = 8
+    npix = hp.nside2npix(nside)
+    data = xr.DataArray(np.random.rand(npix))
+    xlims = (-30, 30)
+    ylims = (-30, 30)
+    return data, xlims, ylims
+
+@pytest.mark.graphics
+class TestHealpixResample:
+    def test_healpix_resample_nearest(self, healpix_data):
+        data, xlims, ylims = healpix_data
+        result = healpix_resample(data, xlims=xlims, ylims=ylims, nx=10, ny=10, method="nearest")
+        assert isinstance(result, xr.DataArray)
+        assert result.ndim == 2
+        assert result.shape == (10, 10)
+
+    def test_healpix_resample_linear(self, healpix_data):
+        data, xlims, ylims = healpix_data
+        result = healpix_resample(data, xlims=xlims, ylims=ylims, nx=10, ny=10, method="linear")
+        assert isinstance(result, xr.DataArray)
+        assert result.ndim == 2
+        assert result.shape == (10, 10)
+
+    def test_healpix_resample_default_grid_size(self, healpix_data):
+        data, _, _ = healpix_data
+        result = healpix_resample(data, method="nearest")
+        assert isinstance(result, xr.DataArray)
+        assert result.ndim == 2
+        assert result.shape[0] > 0 and result.shape[1] > 0
+
+    def test_healpix_resample_sparse_valid(self):
+        nside = 8
+        full_npix = hp.nside2npix(nside)  # 768, valid
+        selected_cells = np.random.choice(full_npix, size=100, replace=False)
+        
+        # Build a *sparse* DataArray, but with npix = 768 (valid)
+        # Set all values to NaN, except for the selected_cells
+        data_array = np.full(full_npix, np.nan, dtype=np.float32)
+        values = np.random.rand(100).astype(np.float32)
+        data_array[selected_cells] = values
+        
+        # Assign the 'cell' coordinate
+        var = xr.DataArray(data_array, coords={"cell": np.arange(full_npix)}, dims=["cell"])
+
+        result = healpix_resample(var, nx=20, ny=20, method="nearest")
+        assert isinstance(result, xr.DataArray)
+        assert result.ndim == 2

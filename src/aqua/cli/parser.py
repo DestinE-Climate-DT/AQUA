@@ -6,8 +6,10 @@ AQUA command line parser
 import argparse
 from aqua import __version__ as version
 from aqua import __path__ as pypath
+from aqua.cli.analysis import analysis_parser
 from aqua.cli.lra import lra_parser
 from aqua.cli.catgen import catgen_parser
+from aqua.cli.builder import builder_parser
 
 
 def parse_arguments():
@@ -34,14 +36,17 @@ def parse_arguments():
     catalog_remove_parser = subparsers.add_parser("remove", description='Remove a catalog in the current AQUA installation')
     set_parser = subparsers.add_parser("set", description="Set an installed catalog as the predefined in config-aqua.yaml")
     list_parser = subparsers.add_parser("list", description="List the currently installed AQUA catalogs")
-    subparsers.add_parser("avail", description='List the ClimateDT available catalogs on GitHub')
+    avail_parser = subparsers.add_parser("avail", description='List the ClimateDT available catalogs on GitHub')
 
     # subparser for other AQUA commands as they are importing the parser from their code
+    analysis_subparser = subparsers.add_parser("analysis", description="Run AQUA diagnostics")
+    analysis_subparser = analysis_parser(parser=analysis_subparser)
+
     lra_subparser = subparsers.add_parser("lra", description="Low Resolution Archive generator")
-    lra_subparser = lra_parser(parser = lra_subparser)
+    lra_subparser = lra_parser(parser=lra_subparser)
  
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
-    catgen_subparser = catgen_parser(parser = catgen_subparser)
+    catgen_subparser = catgen_parser(parser=catgen_subparser)
 
     # subparser with no arguments
     subparsers.add_parser("uninstall", description="Remove the current AQUA installation")
@@ -62,6 +67,11 @@ def parse_arguments():
                                     help="Catalog to be installed")
     catalog_add_parser.add_argument('-e', '--editable', type=str,
                                     help='Install a catalog in editable mode from the original source: provide the Path')
+    catalog_add_parser.add_argument('-r', '--repository', type=str,
+                                    help='Install a catalog from a specific repository: provide the user/repo string')
+    
+    avail_parser.add_argument('-r', '--repository', type=str,
+                              help='Explore a specific repository: provide the user/repo string')
 
     catalog_remove_parser.add_argument("catalog", metavar="CATALOG_NAME",
                                        help="Catalog to be removed")
@@ -89,7 +99,7 @@ def parse_arguments():
 def file_subparser(main_parser, name):
     """Compact subparsers for file handling - fixes and grids"""
 
-    # subparsers for fixes
+    # subparsers for fixe and grids
     parser = main_parser.add_parser(name, help=f'{name} related commands')
     subparsers = parser.add_subparsers(dest='nested_command')
 
@@ -99,5 +109,13 @@ def file_subparser(main_parser, name):
                                   help=f"Add a {name} file in editable mode from the original path")
     parser_remove = subparsers.add_parser('remove', help=f'Remove a {name} file')
     parser_remove.add_argument('file', help=f'The {name} file to remove')
+
+    # We have for the grids the possibility to set a default path to overwrite the individual catalog one
+    # This will create a block in the config-aqua.yaml file for grids, areas and weights.
+    if name == 'grids':
+        parser_set = subparsers.add_parser('set', help=f'Set a {name} path as the default in config-aqua.yaml')
+        parser_set.add_argument('path', help=f'The {name} path to set as default')
+        parser_build = subparsers.add_parser('build', help=f'Build {name} grids from data sources')
+        parser_build = builder_parser(parser_build)
 
     return parser

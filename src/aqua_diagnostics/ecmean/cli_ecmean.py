@@ -7,165 +7,278 @@ import sys
 import argparse
 import os
 import xarray as xr
-from aqua.diagnostics import PerformanceIndices, GlobalMean
 from ecmean import __version__ as eceversion
-from aqua.util import load_yaml, get_arg, ConfigPath, OutputSaver
+
 from aqua import Reader
 from aqua import __version__ as aquaversion
+from aqua.util import get_arg
 from aqua.logger import log_configure
 from aqua.exceptions import NoDataError, NotEnoughDataError
 
+from aqua.diagnostics import PerformanceIndices, GlobalMean
+from aqua.diagnostics.core import template_parse_arguments
+from aqua.diagnostics.core import load_diagnostic_config, merge_config_args, get_diagnostic_configpath
+from aqua.diagnostics.core import OutputSaver
 
-def parse_arguments(args):
+
+def parse_arguments(arguments):
     """
-    Parse command line arguments
+    Parse command line arguments, extending the AQUA core parser
     """
 
+    # load AQUA core diagnostic default parser
     parser = argparse.ArgumentParser(description='ECmean Performance Indices  CLI')
-    parser.add_argument('-c', '--config', type=str,
-                        help='ecmean yaml configuration file', default='config_ecmean_cli.yaml')
-    parser.add_argument('-n', '--nworkers',  type=int,
-                        help='number of dask distributed processes')
-    parser.add_argument('--catalog', type=str,
-                        help='catalog to be analysed')    
-    parser.add_argument('-m', '--model', type=str,
-                        help='model to be analysed')
-    parser.add_argument('-e', '--exp', type=str,
-                        help='exp to be analysed')
-    parser.add_argument('-s', '--source', type=str,
-                        help='source to be analysed')
+    parser = template_parse_arguments(parser)
+
+    # Extend the parser with specific arguments for ECmean
+    # processors here is controlled by multhprocess, so it is not standard dask workers
+    # interface file is the one to match names of variables in the dataset
+    # source_oce is the source of the oceanic data,
+    # to be used when oceanic data is in a different source than atmospheric data
+    parser.add_argument('--nprocs',  type=int,
+                        help='number of multiprocessing processes to use', default=1)
     parser.add_argument('-i', '--interface', type=str,
                         help='non-standard interface file')
-    parser.add_argument('-o', '--outputdir', type=str,
-                        help='source to be analysed')
-    parser.add_argument('-l', '--loglevel', type=str,
-                        help='log level [default: WARNING]', default='warning')
+    parser.add_argument('--source_oce', type=str,
+                        help='source of the oceanic data, to be used when oceanic data is in a different source than atmospheric data',
+                        default=None)
 
-    return parser.parse_args(args)
+    return parser.parse_args(arguments)
 
 
-def reader_data(model, exp, source, catalog=None, keep_vars=None):
+def reader_data(model, exp, source,
+                catalog=None, regrid='r100',
+                keep_vars=None, loglevel='WARNING',
+                reader_kwargs: dict = {}):
     """
     Simple function to retrieve and do some operation on reader data
+
+    Args:
+        model (str): model name
+        exp (str): experiment name
+        source (str): source of the data
+        catalog (str, optional): catalog to be used, defaults to None
+        regrid (str, optional): regrid method, defaults to 'r100'
+        keep_vars (list, optional): list of variables to keep, defaults to None
+        loglevel (str, optional): logging level, defaults to 'WARNING'
+        reader_kwargs (dict, optional): list of reader_kwargs. Defaults to {}.
+    
+    Returns:
+        xarray.Dataset: dataset with the data retrieved and regridded
+        None: if model is False or if there is an error retrieving the data
     """
+    reader_logger = log_configure(log_level=loglevel, log_name='ECmean.Reader')
+
     # if False/None return empty array
     if model is False:
         return None
 
     # Try to read the data, if dataset is not available return None
     try:
-        reader = Reader(model=model, exp=exp, source=source, catalog=catalog, 
-                        regrid='r100')
-        data = reader.retrieve()
-        data = reader.regrid(data)
-     
+        reader = Reader(
+            model=model, exp=exp, source=source, catalog=catalog, 
+            regrid=regrid, **reader_kwargs
+        )
+        xfield = reader.retrieve()
+        if regrid is not None:
+            xfield = reader.regrid(xfield)
+
     except Exception as err:
-        logger.error('Error while reading model %s: %s', model, err)
+        reader_logger.error('Error while reading model %s: %s', model, err)
         return None
 
     # return only vars that are available: slower but avoid reader failures
     if keep_vars is None:
-        return data
-    return data[[value for value in keep_vars if value in data.data_vars]]
+        return xfield
+    return xfield[[value for value in keep_vars if value in xfield.data_vars]]
+
+def data_check(data_atm, data_oce, logger=None):
+    """
+    Check if the data is available and has enough time steps
+
+    Args:
+        data_atm (xarray.Dataset): atmospheric data
+        data_oce (xarray.Dataset): oceanic data
+    """
+
+    # create a single dataset
+    if data_oce is None:
+        mydata = data_atm
+        if logger is not None:
+            logger.warning('No oceanic data, only atmospheric data will be used')
+    elif data_atm is None:
+        mydata = data_oce
+        if logger is not None:
+            logger.warning('No atmospheric data, only oceanic data will be used')
+    else:
+        mydata = xr.merge([data_atm, data_oce])
+        if logger is not None:
+            logger.debug('Merging atmospheric and oceanic data')
+
+    # Quit if no data is available
+    if mydata is None:
+        raise NoDataError('No data available, exiting...')
+    
+    return mydata
+
+def time_check(mydata, y1, y2, logger=None):
+    """
+    Check if the data has enough time steps
+
+    Args:
+        data (xarray.Dataset): dataset to check
+        year1 (int): first year of the time period
+        year2 (int): last year of the time period
+
+    Raises:
+        NotEnoughDataError: if the data does not have enough time steps
+    """
+
+    # guessing years from the dataset
+    if y1 is None:
+        y1 = int(mydata.time[0].values.astype('datetime64[Y]').astype(str))
+        if logger is not None:
+            logger.info('Guessing starting year %s', y1)
+    if y2 is None:
+        y2 = int(mydata.time[-1].values.astype('datetime64[Y]').astype(str))
+        if logger is not None:
+            logger.info('Guessing ending year %s', y2)
+
+    # run the performance indices if you have at least 12 month of data
+    if len(mydata.time) < 12:
+        raise NotEnoughDataError("Not enough data, exiting...")
+
+    return y1, y2
 
 
 if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
     loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='PI')
+    logger = log_configure(log_level=loglevel, log_name='ECmean')
 
-    # change the current directory to the one of the CLI so that relative path works
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    if os.getcwd() != dname:
-        os.chdir(dname)
-        logger.info(f'Moving from current directory to {dname} to run!')
+    # load the configuration files and override with command line arguments
+    configfile = load_diagnostic_config(
+        diagnostic='ecmean',
+        config=args.config,
+        default_config='config_ecmean_cli.yaml',
+        loglevel=loglevel)
+    configfile = merge_config_args(configfile, args)
 
-    file = get_arg(args, 'config', 'config_ecmean_cli.yaml')
-    configfile = load_yaml(file)
-    logger.info(f'Running AQUA v{aquaversion} Performance Indices diagnostic with ECmean4 v{eceversion}')
+    logger.info(
+        'Running AQUA v%s Performance Indices diagnostic with ECmean4 v%s',
+        aquaversion,
+        eceversion
+    )
 
-    # setting options from configuration files
-    atm_vars = configfile['dataset']['atm_vars']
-    oce_vars = configfile['dataset']['oce_vars']
-    year1 = configfile['dataset']['year1']
-    year2 = configfile['dataset']['year2']
+    # set configuration
+    ecmean_config = configfile['diagnostics']['ecmean']
+    output_config = configfile['output']
 
-    numproc = get_arg(args, 'nworkers', configfile['compute']['numproc'])
+    # define the output properties
+    outputdir = output_config.get('outputdir')
+    rebuild = output_config.get('rebuild', True)
+    save_pdf = output_config.get('save_pdf', False)
+    save_png = output_config.get('save_png', False)
+
+    # merge config args works only with a predefined set of options, need to extend it
+    numproc = get_arg(args, 'nprocs', ecmean_config.get('nprocs', 1))
+    interface_file = get_arg(args, 'interface', ecmean_config.get('interface_file'))
 
     # define the interface file
-    Configurer = ConfigPath()
-    ecmeandir = os.path.join(Configurer.configdir, 'diagnostics', 'ecmean')
-    interface = os.path.join(ecmeandir, configfile['setup']['interface_file'])
-    logger.debug('Default interface file: %s', interface)
+    ecmeandir = get_diagnostic_configpath('ecmean', loglevel=loglevel)
+    interface = os.path.join(ecmeandir, interface_file)
 
-    config = os.path.join(ecmeandir, configfile['setup']['config_file'])
-    config = load_yaml(config)
+    # define the ecmean configuration file, using the default as a trick
+    config = load_diagnostic_config(
+        diagnostic='ecmean',
+        config=None,
+        default_config=ecmean_config.get('config_file'),
+        loglevel=loglevel
+    )
+    # this is required to access the predefined areas and masks
     config['dirs']['exp'] = ecmeandir
     logger.debug('Default config file: %s', config)
-
-    # activate override from command line
-    exp = get_arg(args, 'exp', configfile['dataset']['exp'])
-    source = get_arg(args, 'source', configfile['dataset'].get('source', 'lra-r100-monthly'))
-    model = get_arg(args, 'model', configfile['dataset']['model'])
-    catalog = get_arg(args, 'catalog', configfile['dataset']['catalog'])
-    outputdir = get_arg(args, 'outputdir', configfile['setup']['outputdir'])
-    interface = get_arg(args, 'interface', interface)
     logger.debug('Definitive interface file %s', interface)
 
-    # load the data
-    logger.info('Loading atmospheric data %s', model)
-    data_atm = reader_data(model=model, exp=exp, source=source, 
-                           catalog=catalog, keep_vars=atm_vars)
-    
-    logger.info('Loading oceanic data from %s', model)
-    data_oce = reader_data(model=model, exp=exp, source=source, 
-                            catalog=catalog, keep_vars=oce_vars)
+    # loop on datasets
+    for dataset in configfile['datasets']:
+        catalog = get_arg(args, 'catalog', dataset.get('catalog'))
+        model = get_arg(args, 'model', dataset.get('model'))
+        exp = get_arg(args, 'exp', dataset.get('exp'))
+        source_atm = get_arg(args, 'source', dataset.get('source', 'lra-r100-monthly'))
+        source_oce = get_arg(args, 'source_oce', dataset.get('source_oce', source_atm))
+        regrid = get_arg(args, 'regrid', dataset.get('regrid', 'r100'))
 
-    # create a single dataset
-    if data_oce is None:
-        data = data_atm
-        logger.warning('No oceanic data, only atmospheric data will be used')
-    elif data_atm is None:
-        data = data_oce
-        logger.warning('No atmospheric data, only oceanic data will be used')
-    else:
-        data = xr.merge([data_atm, data_oce])
-        logger.debug('Merging atmospheric and oceanic data')
+        # activate override from command line
+        realization = get_arg(args, 'realization', None)
+        if realization:
+            reader_kwargs = {'realization': realization}
+        else:
+            reader_kwargs = {}
 
-    # Quit if no data is available
-    if data is None:
-        raise NoDataError('No data available, exiting...')
+        #setup the output saver
+        outputsaver = OutputSaver(diagnostic='ecmean',
+                          catalog=catalog, model=model, exp=exp,
+                          outdir=outputdir, loglevel=loglevel)
 
-    # guessing years from the dataset
-    if year1 is None:
-        year1 = int(data.time[0].values.astype('datetime64[Y]').astype(str))
-        logger.info('Guessing starting year %s', year1)
-    if year2 is None:
-        year2 = int(data.time[-1].values.astype('datetime64[Y]').astype(str))
-        logger.info('Guessing ending year %s', year2)
+        for diagnostic in ['global_mean', 'performance_indices']:
 
-    # run the performance indices if you have at least 12 month of data
-    if len(data.time) < 12:
-        raise NotEnoughDataError("Not enough data, exiting...")
-    else:
-        logger.info('Launching ECmean performance indices...')
-        pi = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
-                            interface=interface, loglevel=loglevel,
-                            outputdir=outputdir, xdataset=data)
-        pi.prepare()
-        pi.run()
-        pi.store()
-        pi.plot()
-        logger.info('Launching ECmean global mean...')
+            # setting options from configuration files
+            atm_vars = ecmean_config[diagnostic]['atm_vars']
+            oce_vars = ecmean_config[diagnostic]['oce_vars']
+            year1 = ecmean_config[diagnostic]['year1']
+            year2 = ecmean_config[diagnostic]['year2']
 
-        gm = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
-                            interface=interface, loglevel=loglevel,
-                            outputdir=outputdir, xdataset=data)
-        gm.prepare()
-        gm.run()
-        gm.store()
-        gm.plot()
+            # load the data
+            logger.info('Loading atmospheric data %s', model)
+            data_atm = reader_data(model=model, exp=exp, source=source_atm,
+                                catalog=catalog, keep_vars=atm_vars, regrid=regrid,
+                                reader_kwargs=reader_kwargs)
 
-    logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')
+            logger.info('Loading oceanic data from %s', model)
+            data_oce = reader_data(model=model, exp=exp, source=source_oce,
+                                    catalog=catalog, keep_vars=oce_vars, regrid=regrid,
+                                    reader_kwargs=reader_kwargs)
+
+            # check the data
+            data = data_check(data_atm, data_oce, logger=logger)
+            year1, year2 = time_check(data, year1, year2, logger=logger)
+
+            # store the data in the output saver and create the metadata
+            filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'txt'] }
+            metadata = outputsaver.create_metadata(diagnostic_product=diagnostic)
+            
+            # performance indices
+            if diagnostic == 'performance_indices':
+                logger.info('Launching ECmean performance indices...')
+                ecmean = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
+                                    interface=interface, loglevel=loglevel,
+                                    outputdir=outputdir, xdataset=data)
+            elif diagnostic == 'global_mean':
+                logger.info('Launching ECmean global mean...')
+                ecmean = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
+                                    interface=interface, loglevel=loglevel,
+                                    outputdir=outputdir, xdataset=data)
+            else:
+                logger.error('Unknown diagnostic %s, exiting...', diagnostic)
+                sys.exit()
+            
+            ecmean.prepare()
+            ecmean.run()
+            if diagnostic == 'performance_indices':
+                ecmean.store(yamlfile=filename_dict['yml'])
+            elif diagnostic == 'global_mean':
+                ecmean.store(yamlfile=filename_dict['yml'], tablefile=filename_dict['txt'])
+            ecmean_fig = ecmean.plot(diagname=diagnostic, returnfig=True, storefig=False)
+            if save_pdf:
+                logger.info('Saving PDF %s plot...', diagnostic)
+                outputsaver.save_pdf(fig=ecmean_fig, diagnostic_product=diagnostic,
+                                        metadata=metadata, rebuild=rebuild)
+
+            if save_png:
+                logger.info('Saving PNG %s plot...', diagnostic)
+                outputsaver.save_png(fig=ecmean_fig, diagnostic_product=diagnostic,
+                                        metadata=metadata, rebuild=rebuild)
+
+            logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')

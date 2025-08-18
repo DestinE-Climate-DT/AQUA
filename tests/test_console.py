@@ -145,7 +145,7 @@ class TestAquaConsole():
         # do it twice!
         run_aqua_console_with_input(['-vv', 'install', machine], 'yes')
         assert os.path.exists(os.path.join(mydir, '.aqua'))
-        for folder in ['fixes', 'data_models', 'grids']:
+        for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.isdir(os.path.join(mydir, '.aqua', folder))
 
         # add two catalogs
@@ -163,6 +163,11 @@ class TestAquaConsole():
         # add non existing catalog from default
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(['-v', 'add', 'antani'])
+            assert excinfo.value.code == 1
+
+        # add from wrongly formatted repository
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['-v', 'add', 'pippo', '--repository', 'thisisnotauserandrepo'])
             assert excinfo.value.code == 1
 
         # add existing folder which is not a catalog
@@ -231,7 +236,7 @@ class TestAquaConsole():
 
         # aqua install
         run_aqua(['install', machine])
-        run_aqua(['add', 'ci'])
+        run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
         # create fake config file
         lratest = os.path.join(mydir, 'faketrip.yaml')
@@ -261,9 +266,54 @@ class TestAquaConsole():
         # run the LRA and verify that at least one file exist
         run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild'])
         path = os.path.join(os.path.join(mydir, 'lra_test'),
-                            "ci/IFS/test-tco79/r200/monthly/2t_test-tco79_r200_monthly_202002.nc")
-        assert os.path.isfile(path)
+                            "ci/IFS/test-tco79/r1/r200/monthly/mean/global/2t_ci_IFS_test-tco79_r1_r200_monthly_mean_global_202002.nc")
+        assert os.path.isfile(path), f"File not found: {path}"
+
+        # run the LRA with a different stat and verify that at least one file exist
+        run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild', '--stat', 'min'])
+        path = os.path.join(os.path.join(mydir, 'lra_test'),
+                            "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.nc")
+        assert os.path.isfile(path), f"File not found: {path}"
         
+        # remove aqua
+        run_aqua_console_with_input(['uninstall'], 'yes')
+
+    def test_console_analysis(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
+        """Test for running the analysis via the console"""
+
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        # aqua install
+        run_aqua(['install', machine])
+        run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
+
+        config_path = 'tests/analysis/config.aqua-analysis-test.yaml'
+
+        # Run details
+        catalog = 'ci'
+        model = 'IFS'
+        experiment = 'test-tco79'
+        source = 'teleconnections'
+        output_dir = os.path.join(mydir, 'output')
+        regrid = False
+
+        # run the analysis and verify that at least one file exist
+        run_aqua(['analysis', '--config', config_path, '-m', model, '-e', experiment,
+                  '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
+        
+        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'experiment.yaml')), \
+            "experiment.yaml not found"
+        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'dummy.log')), \
+            "dummy.log not found"
+        # Check if "This is a dummy CLI script that does nothing." is in the dummy.log
+        with open(os.path.join(output_dir, catalog, model, experiment, 'r1', 'dummy.log'), 'r') as f:
+            content = f.read()
+        assert "This is a dummy CLI script that does nothing." in content, \
+            "Expected content not found in dummy.log"
+        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'setup_checker.log')), \
+            "setup_checker.log not found"
+
         # remove aqua
         run_aqua_console_with_input(['uninstall'], 'yes')
 
@@ -295,6 +345,11 @@ class TestAquaConsole():
         # add catalog with editable option
         run_aqua(['-v', 'add', 'ci', '-e', 'AQUA_tests/catalog_copy'])
         assert os.path.isdir(os.path.join(mydir, '.aqua/catalogs/ci'))
+
+        # update a catalog installed in editable mode
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['-v', 'update', '-c', 'ci'])
+            assert excinfo.value.code == 1
 
         # add catalog again and error
         with pytest.raises(SystemExit) as excinfo:
@@ -353,6 +408,28 @@ class TestAquaConsole():
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(['-v', 'fixes', 'remove', 'ciccio.yaml'])
             assert excinfo.value.code == 1
+
+        # set the grids path in the config-aqua.yaml
+        run_aqua(['-v', 'grids', 'set', os.path.join(mydir, 'pippo')])
+        assert os.path.exists(os.path.join(mydir, 'pippo', 'grids'))
+        assert os.path.exists(os.path.join(mydir, 'pippo', 'areas'))
+        assert os.path.exists(os.path.join(mydir, 'pippo', 'weights'))
+        config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert config_file['paths'] == {
+            'grids': os.path.join(mydir, 'pippo', 'grids'),
+            'areas': os.path.join(mydir, 'pippo', 'areas'),
+            'weights': os.path.join(mydir, 'pippo', 'weights')
+        }
+        
+        # set the grids path in the config-aqua.yaml with the block already existing
+        run_aqua(['-v', 'grids', 'set', os.path.join(mydir, 'pluto')])
+        assert os.path.exists(os.path.join(mydir, 'pluto', 'grids'))
+        config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert config_file['paths'] == {
+            'grids': os.path.join(mydir, 'pluto', 'grids'),
+            'areas': os.path.join(mydir, 'pluto', 'areas'),
+            'weights': os.path.join(mydir, 'pluto', 'weights')
+        }
 
         # uninstall everything
         run_aqua_console_with_input(['uninstall'], 'yes')
@@ -417,7 +494,7 @@ class TestAquaConsole():
         # install from path with grids
         run_aqua(['-vv', 'install', machine, '--editable', 'config'])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
-        for folder in ['fixes', 'data_models', 'grids']:
+        for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.islink(os.path.join(mydir, '.aqua', folder))
         assert os.path.isdir(os.path.join(mydir, '.aqua', 'catalogs'))
 
@@ -458,15 +535,19 @@ class TestAquaConsole():
         assert 'AQUA current installed catalogs in' in out
         assert 'ci' in out
         assert 'ciccio (editable' in out
-        assert 'IFS.yaml' in out
+        assert 'ifs.yaml' in out
         assert 'HealPix.yaml' in out
-        assert 'ifs2cds.json' in out
 
-        run_aqua(['avail'])
+        run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
         out, _ = capfd.readouterr()
 
         assert 'climatedt-phase1' in out
         assert 'lumi-phase1' in out
+
+        run_aqua(['-v', 'update', '-c', 'all'])
+
+        out, _ = capfd.readouterr()
+        assert '.aqua/catalogs/ci ..' in out
 
         # uninstall everything again
         run_aqua_console_with_input(['uninstall'], 'yes')

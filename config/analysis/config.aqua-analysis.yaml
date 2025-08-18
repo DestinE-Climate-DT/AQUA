@@ -1,0 +1,144 @@
+# Configuration file for aqua-analysis.sh
+
+# Variables $AQUA, $AQUA_CONFIG and $OUTPUT can be used to refer to the root directory of AQUA,
+# the config directory (i.e. .aqua/diagnostics) and the output directory respectively
+
+job:
+    # The max_threads variable serves as a mechanism to control the maximum number of threads
+    # i.e. diagnostic scripts that can run concurrently.
+    # - If max_threads is set to 0 or a negative value: There is no limit on the number of threads,
+    #                                                   and all processes run in parallel without waiting. 
+    #                                                   This is suitable for situations where you want to utilize
+    #                                                   the maximum available resources without any restrictions.
+    # - If max_threads is set to a positive value: It limits the number of concurrent threads to the specified value. 
+    #                                              After launching the designated number of threads, the script waits
+    #                                              for these threads to complete before launching additional ones. 
+    #                                              This is useful when you are working on a system with limitations
+    #                                              on the number of concurrent threads, like a login node.
+
+    max_threads: 0  # Set to the desired maximum number of threads, or leave it as 0 for no limit
+    loglevel: "WARNING" # DEBUG, IN FO, WARNING, ERROR, CRITICAL
+
+    # Run a check analysis to test the configuration and the presence of needed data
+    # This also rebuild the area files, to avoid error with corrupted files
+    run_checker: true
+    
+    # Default output directory for the analysis. Can be overridden by the command line arguments
+    outputdir: "./output"
+
+    # Default values, overriden from command line arguments
+    catalog: null  # The catalog to use for the analysis
+    model: "IFS-NEMO"
+    exp: "historical-1990"
+    source: "lra-r100-monthly"
+    regrid: null
+
+    script_path_base: "${AQUA_CONFIG}/diagnostics"  # Base directory for the diagnostic scripts
+
+cluster:  # options for dask cluster (this works well on lumi)
+    workers: 32
+    threads: 2  # per worker
+    memory_limit: 7GiB  # per worker
+
+diagnostics:
+
+  run: ["global_biases", "timeseries_atm", "timeseries_oce", "seasonal_cycles",
+        "radiation-boxplots", "radiation-timeseries", "radiation-biases", 
+        "teleconnections_atm", "teleconnections_oce",
+        "tropical_rainfall", "ecmean", "ocean3d_circulation", "ocean3d_drift",
+        "seaice_volume", "seaice_thick", "seaice_conc", "seaice_extent"]
+
+  # List of diagnostics
+
+  # Each diagnostic can have the following options (all optional):
+  #    nworkers: the number of workers to use for the diagnostic if a global dask cluster is not used. Default is 1.
+  #              Notice: these are still provided mostly for testing the local cluster option, using a global cluster (not using this option) is the new default.
+  #    config: the configuration file for the diagnostic.
+  #    extra: extra command line arguments to pass to the diagnostic script.
+  #    outname: the name of the output directory for the diagnostic. Default is the diagnostic name itself.
+  #    script_path: the location of the script to run the diagnostic.
+  #                 Default script_path is "$script_path_base/$diagnostic/cli/cli_${diagnostic}.py"
+  #    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default is false (needed for ECmean)
+
+  global_biases:
+    nworkers: 16
+    script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
+    config: "${AQUA_CONFIG}/diagnostics/global_biases/cli/config_global_biases.yaml"
+  timeseries_atm:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_atm.yaml"
+    nworkers: 16
+    outname: timeseries
+  timeseries_oce:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_oce.yaml"
+    nworkers: 8
+    outname: timeseries
+  seasonal_cycles:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    nworkers: 16
+    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
+    outname: timeseries
+  radiation-biases:
+    script_path: "../src/aqua_diagnostics/global_biases/cli_global_biases.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-biases.yaml"
+    outname: radiation
+  radiation-boxplots:
+    script_path: "../src/aqua_diagnostics/boxplots/cli_boxplots.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-boxplots.yaml"
+    outname: radiation
+  radiation-timeseries:
+    script_path: "../src/aqua_diagnostics/timeseries/cli_timeseries.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-timeseries.yaml"
+    outname: radiation
+  teleconnections_atm:
+    script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/teleconnections/config_teleconnections_atm.yaml"
+    outname: teleconnections
+  teleconnections_oce:
+    script_path: "../src/aqua_diagnostics/teleconnections/cli_teleconnections.py"
+    nworkers: 4
+    config: "${AQUA_CONFIG}/diagnostics/teleconnections/config_teleconnections_oce.yaml"
+    outname: teleconnections
+  tropical_rainfall:
+    nworkers: 16
+    config: "${AQUA_CONFIG}/diagnostics/tropical_rainfall/cli/cli_config_trop_rainfall.yml"
+    extra: "--regrid=r100 --freq=M --xmax=75 --bufferdir=${OUTPUT}/tropical_rainfall/"
+  ecmean:
+    script_path: "../src/aqua_diagnostics/ecmean/cli_ecmean.py"
+    nworkers: 4
+    nocluster: true  # ECmean does not use the global dask cluster
+    config: "${AQUA_CONFIG}/diagnostics/ecmean/config_ecmean_cli.yaml"
+  ocean3d_drift:
+    script_path: "ocean3d/cli/cli_ocean3d.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.drift.yaml"
+  ocean3d_circulation:
+    script_path: "ocean3d/cli/cli_ocean3d.py"
+    nworkers: 4
+    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.circulation.yaml"
+  seaice_volume:
+    script_path: "seaice/cli/cli_seaice.py"
+    nworkers: 4
+    # Command line extra arguments for seaice:
+    # --all-regions (if set it will plot all regions)
+    #               (default is False)
+    # --config (seaice config file)
+    # --regrid (regrid data to a different grid)
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Volume.yaml"
+  seaice_thick:
+    script_path: "seaice/cli/cli_seaice.py"
+    nworkers: 4
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Thickness.yaml"
+  seaice_conc:
+    script_path: "seaice/cli/cli_seaice.py"
+    nworkers: 4
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Concentration.yaml"
+  seaice_extent:
+    script_path: "seaice/cli/cli_seaice.py"
+    nworkers: 4
+    config: "${AQUA_CONFIG}/diagnostics/seaice/cli/config_Extent.yaml"

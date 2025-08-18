@@ -37,7 +37,7 @@ if [ $# -eq 0 ]; then
 fi
 
 if [[ $model == "all" ]] ; then
-	models=("EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WOA18")
+	models=("EC-EARTH4" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
 else
 	models=( $model ) 	
 fi
@@ -50,6 +50,8 @@ fi
 # outputdir="/work/bb1153/b382075/aqua/grids"
 # for Leonardo
 # outputdir="/leonardo_work/DestE_330_24/AQUA/grids"
+# for HPC202
+# outputdir="/ec/res4/hpcperm/ccjh/aqua_data/grids"
 
 log_message INFO "Creating output directory $outputdir"
 mkdir -p $outputdir
@@ -60,6 +62,11 @@ do
     log_message INFO "Downloading grid for $model"
 
     # Hardcoded path to the grids on the Swift server
+
+    # EC-EARTH4 link
+    if [ "$model" == "EC-EARTH4" ]; then
+        path="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/grids/EC-EARTH4.tar.gz?temp_url_sig=6ae4fb1a9e2c0c487de3b1f148a81f93019984be&temp_url_expires=2027-04-20T09:10:05Z"
+    fi
 
     # EN4 link
     if [ "$model" == "EN4" ]; then
@@ -109,6 +116,11 @@ do
     # PSC link
     if [ "$model" == "PSC" ]; then
         path="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/grids/PSC.tar.gz?temp_url_sig=dee0a029000a9fe7328f4f43bc5162541e319366&temp_url_expires=2027-02-04T14:30:58Z"
+    fi
+
+    # WAGHC link
+    if [ "$model" == "WAGHC" ]; then
+        path="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/grids/WAGHC.tar.gz?temp_url_sig=bf1e77227057fe330469071389a88064d75dd6d7&temp_url_expires=2027-02-24T12:57:07Z"
     fi
 
     # WOA18 link

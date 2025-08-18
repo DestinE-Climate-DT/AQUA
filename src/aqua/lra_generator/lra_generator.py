@@ -3,8 +3,8 @@ LRA class for glob
 """
 
 import os
-import types
 from time import time
+import subprocess
 import glob
 import shutil
 import dask
@@ -20,7 +20,22 @@ from aqua.util import create_folder, generate_random_string
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
-from aqua.lra_generator.lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
+from aqua.util import area_selection
+from .lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
+from .catalog_entry_builder import CatalogEntryBuilder
+
+
+TIME_ENCODING = {
+    'units': 'days since 1850-01-01 00:00:00',
+    'calendar': 'standard',
+    'dtype': 'float64'}
+
+VAR_ENCODING = {
+    'dtype': 'float64',
+    'zlib': True,
+    'complevel': 1,
+    '_FillValue': np.nan
+}
 
 
 class LRAgenerator():
@@ -38,26 +53,33 @@ class LRAgenerator():
                  var=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
                  outdir=None, tmpdir=None, nproc=1,
-                 loglevel=None, overwrite=False, definitive=False,
+                 loglevel=None,
+                 region=None, drop=False,
+                 overwrite=False, definitive=False,
                  performance_reporting=False,
                  rebuild=False,
-                 exclude_incomplete=False, **kwargs):
+                 exclude_incomplete=False,
+                 stat="mean",
+                 compact="xarray",
+                 cdo_options=["-f", "nc4", "-z", "zip_1"],
+                 **kwargs):
         """
         Initialize the LRA_Generator class
 
         Args:
-            catalog (string):        The catalog you want to reader. If None, guessed by the reader. 
+            catalog (string):        The catalog you want to reader. If None, guessed by the reader.
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
             var (str, list):         Variable(s) to be processed and archived
                                      in LRA.
-            resolution (string):     The target resolution for the LRA
+            resolution (string):     The target resolution for the LRA. If None,
+                                        no regridding is performed.
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
-            outdir (string):         Where the LRA is
+            outdir (string):         Where the LRA is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
@@ -65,125 +87,107 @@ class LRAgenerator():
                                      are found
             nproc (int, opt):        Number of processors to use. default is 1
             loglevel (string, opt):  Logging level
+            region (dict, opt):      Region to be processed, default is None,
+                                     meaning 'global'.
+                                     Requires 'name' (str), 'lon' (list) and 'lat' (list)
+            drop (bool, opt):        Drop the missing values in the region selection.
             overwrite (bool, opt):   True to overwrite existing files in LRA,
                                      default is False
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
                                      operations, default is False
             performance_reporting (bool, opt): True to save an html report of the
-                                               dask usage, default is False.
+                                               dask usage, default is False. This will run a single month
+                                               to collect the performance data.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
-                                            when averaging, default is false. 
-            rebuild (bool, opt):     Rebuild the weights when calling the reader 
+                                            when averaging, default is false.
+            rebuild (bool, opt):     Rebuild the weights when calling the reader
+            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min'.
+            compact (string, opt):   Compact the data into yearly files using xarray or cdo.
+                                     If set to None, no compacting is performed. Default is "xarray"
+            cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
-                                     please notice that realization will change the file name 
-                                     produced by the LRA
         """
+
+        # Check mandatory parameters
+        self.catalog = self._require_param(catalog, "catalog")
+        self.model = self._require_param(model, "model")
+        self.exp = self._require_param(exp, "experiment")
+        self.source = self._require_param(source, "source")
+        self.var = self._require_param(var, "variable string or list.")
+        self.resolution = self._require_param(resolution, "resolution")
+
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
         self.loglevel = loglevel
 
+        # save parameters
+        self.frequency = frequency
         self.overwrite = overwrite
-        if self.overwrite:
-            self.logger.warning('File will be overwritten if already existing.')
-
         self.exclude_incomplete = exclude_incomplete
-        if self.exclude_incomplete:
-            self.logger.info('Exclude incomplete for time averaging activated!')
-
         self.definitive = definitive
-        if not self.definitive:
-            self.logger.warning('IMPORTANT: no file will be created, this is a dry run')
-
         self.nproc = int(nproc)
+        self.rebuild = rebuild
+        self.kwargs = kwargs
+        self.fix = fix
+
+        # configure statistics
+        self.stat = stat
+        if self.stat not in ['mean', 'std', 'max', 'min']:
+            raise KeyError('Please specify a valid statistic: mean, std, max or min.')
+
+        # configure regional selection
+        self._configure_region(region, drop)
+
+        # print some info about the settings
+        self._issue_info_warning()
+
+        # define the tmpdir
         if tmpdir is None:
             self.logger.warning('No tmpdir specifield, will use outdir')
             self.tmpdir = os.path.join(outdir, 'tmp')
         else:
             self.tmpdir = tmpdir
+        self.tmpdir = os.path.join(self.tmpdir, f'LRA_{generate_random_string(10)}')
 
-        if self.dask:
-            self.logger.info('Running dask.distributed with %s workers', self.nproc)
+        # set up compacting method for concatenation
+        self.compact = compact
+        if self.compact not in ['xarray', 'cdo', None]:
+            raise KeyError('Please specify a valid compact method: xarray, cdo or None.')
 
-        self.tmpdir = os.path.join(self.tmpdir, 'LRA_' +
-                                   generate_random_string(10))
+        self.cdo_options = cdo_options
+        if not isinstance(self.cdo_options, list):
+            raise TypeError('cdo_options must be a list.')
 
-        self.rebuild = rebuild
-        if self.rebuild:
-            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
+        # configure the configdir
+        configpath = ConfigPath(configdir=configdir)
+        self.configdir = configpath.configdir
 
-        # safechecks
-        if catalog is not None:
-            self.catalog = catalog
-        else:
-            raise KeyError('Please specify catalog.')
-
-        if model is not None:
-            self.model = model
-        else:
-            raise KeyError('Please specify model.')
-
-        if exp is not None:
-            self.exp = exp
-        else:
-            raise KeyError('Please specify experiment.')
-
-        if source is not None:
-            self.source = source
-        else:
-            raise KeyError('Please specify source.')
-
-        if var is not None:
-            self.var = var
-        else:
-            raise KeyError('Please specify variable string or list.')
-
-        if resolution is not None:
-            self.resolution = resolution
-        else:
-            raise KeyError('Please specify resolution.')
-        self.logger.info('Variable(s) to be processed: %s', self.var)
-
-        self.kwargs = kwargs
-
-        Configurer = ConfigPath(configdir=configdir)
-        self.configdir = Configurer.configdir
-
-        self.frequency = frequency
-        if not self.frequency:
-            self.logger.info('Frequency not specified, no time averagin will be performed.')
+        # get default grids
+        _, grids_path = configpath.get_reader_filenames()
+        self.default_grids = load_yaml(os.path.join(grids_path, 'default.yaml'))
 
         # option for encoding, defined once for all
-        self.time_encoding = {
-            'units': 'days since 1850-01-01 00:00:00',
-            'calendar': 'standard',
-            'dtype': 'float64'}
-
-        self.var_encoding = {
-            'dtype': 'float64',
-            'zlib': True,
-            'complevel': 1,
-            '_FillValue': np.nan
-        }
+        self.time_encoding = TIME_ENCODING
+        self.var_encoding = VAR_ENCODING
 
         # add the performance report
         self.performance_reporting = performance_reporting
-
-        self.fix = fix
-        self.logger.info('Fixing data: %s', self.fix)
-
-        # for data reading from FDB
-        self.last_record = None
-        self.check = False
 
         # Create LRA folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
 
-        self.outdir = os.path.join(outdir, self.catalog, self.model, self.exp, self.resolution)
+        self.catbuilder = CatalogEntryBuilder(
+            catalog=self.catalog, model=self.model,
+            exp=self.exp, resolution=self.resolution, frequency=self.frequency,
+            region=self.region_name, stat=self.stat, loglevel=self.loglevel, **self.kwargs
+        )
+        # Create output path builder from the catalog entry builder
+        self.outbuilder = self.catbuilder.opt
 
-        if self.frequency:
-            self.outdir = os.path.join(self.outdir, self.frequency)
+        self.basedir = outdir
+        self.outdir = os.path.join(self.basedir, self.outbuilder.build_directory())
 
         create_folder(self.outdir, loglevel=self.loglevel)
         create_folder(self.tmpdir, loglevel=self.loglevel)
@@ -193,6 +197,64 @@ class LRAgenerator():
         self.cluster = None
         self.client = None
         self.reader = None
+
+        # for data reading from FDB
+        self.last_record = None
+        self.check = False
+
+    @staticmethod
+    def _require_param(param, name, msg=None):
+        if param is not None:
+            return param
+        raise KeyError(msg or f"Please specify {name}.")
+
+    def _issue_info_warning(self):
+        """
+        Print information about the LRA generator settings
+        """
+
+        if not self.frequency:
+            self.logger.info('Frequency not specified, no time averaging will be performed.')
+        else:
+            self.logger.info('Frequency: %s', self.frequency)
+
+        if self.overwrite:
+            self.logger.warning('File will be overwritten if already existing.')
+
+        if self.exclude_incomplete:
+            self.logger.info('Exclude incomplete for time averaging activated!')
+
+        if not self.definitive:
+            self.logger.warning('IMPORTANT: no file will be created, this is a dry run')
+
+        if self.dask:
+            self.logger.info('Running dask.distributed with %s workers', self.nproc)
+
+        if self.rebuild:
+            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
+
+        self.logger.info('Variable(s) to be processed: %s', self.var)
+        self.logger.info('Fixing data: %s', self.fix)
+        self.logger.info('Resolution: %s', self.resolution)
+        self.logger.info('Statistic to be computed: %s', self.stat)
+        self.logger.info('Domain selection: %s', self.region_name)
+
+    def _configure_region(self, region, drop):
+        """ Configure the region for regional selection, and the drop option"""
+
+        if region is not None:
+            self.region = region
+            if self.region['name'] is None:
+                raise KeyError('Please specify name in region.')
+            if self.region['lon'] is None and self.region['lat'] is None:
+                raise KeyError(f"Please specify at least one between lat and lon for {region['name']}.")
+            self.region_name = self.region['name']
+            self.logger.info('Regional selection active! region: %s, lon: %s and lat: %s...',
+                             self.region['name'], self.region['lon'], self.region['lat'])
+        else:
+            self.region = None
+            self.region_name = None
+        self.drop = drop
 
     def retrieve(self):
         """
@@ -210,12 +272,6 @@ class LRAgenerator():
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
-        if self.frequency:
-            self.logger.info('I am going to produce LRA at %s resolution and %s frequency...',
-                             self.resolution, self.frequency)
-        else:
-            self.logger.info('I am going to produce LRA at %s resolution...',
-                             self.resolution)
 
         if self.catalog is None:
             self.logger.info('Assuming catalog from the reader so that is %s', self.reader.catalog)
@@ -242,7 +298,8 @@ class LRAgenerator():
         else:  # Only one variable
             self._write_var(self.var)
 
-        self.logger.info('Move tmp files to output directory')
+        self.logger.info('Move tmp files from %s to output directory %s', self.tmpdir, self.outdir)
+        # Move temporary files to output directory
         move_tmp_files(self.tmpdir, self.outdir)
 
         # Cleaning
@@ -252,54 +309,44 @@ class LRAgenerator():
 
         self.logger.info('Finished generating LRA data.')
 
+    def _define_source_grid_name(self):
+        """"
+        Define the source grid name based on the resolution
+        """
+        if self.resolution in self.default_grids:
+            return 'lon-lat'
+        if self.resolution == 'native':
+            try:
+                return self.reader.source_grid_name
+            except AttributeError:
+                self.logger.warning('No source grid name defined in the reader, using resolution as source grid name')
+                return False
+        return self.resolution
+
     def create_catalog_entry(self):
         """
         Create an entry in the catalog for the LRA
         """
-
-        entry_name = f'lra-{self.resolution}-{self.frequency}'
-        self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
-
-        # modify filename if realization is there
-        if 'realization' in self.kwargs:
-            urlpath = os.path.join(self.outdir, f"*{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc")
-        else:      
-            urlpath = os.path.join(self.outdir, f'*{self.exp}_{self.resolution}_{self.frequency}_*.nc')
-
-        self.logger.info('Fully expanded urlpath %s', urlpath)
-        urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
-        self.logger.info('New urlpath with intake variables is %s', urlpath)
 
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # if the entry already exists, update the urlpath if requested and return
+        # define the entry name
+        entry_name = self.catbuilder.create_entry_name()
+        sgn = self._define_source_grid_name()
+
         if entry_name in cat_file['sources']:
-            self.logger.info('Catalog entry for %s %s %s already exists', self.model, self.exp, entry_name)
-            self.logger.info('Updating the urlpath to %s', urlpath)
-            cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
+            catblock = cat_file['sources'][entry_name]
+        else:
+            catblock = None
 
-        else: 
-            # if the entry is not there, define the block to be uploaded into the catalog
-            block_cat = {
-                'driver': 'netcdf',
-                'description': f'LRA data {self.frequency} at {self.resolution}',
-                'args': {
-                    'urlpath': urlpath,
-                    'chunks': {},
-                    'xarray_kwargs': {
-                        'decode_times': True,
-                        'combine': 'by_coords'
-                    },
-                },
-                'metadata': {
-                    'source_grid_name': 'lon-lat',
-                }
-            }
+        block = self.catbuilder.create_entry_details(
+            basedir=self.basedir, catblock=catblock, source_grid_name=sgn
+        )
 
-            cat_file['sources'][entry_name] = block_cat
+        cat_file['sources'][entry_name] = block
 
         # dump the update file
         dump_yaml(outfile=catalogfile, cfg=cat_file)
@@ -312,10 +359,7 @@ class LRAgenerator():
             verify: open the LRA source and verify it can be read by the reader
         """
 
-        entry_name = f'lra-{self.resolution}-{self.frequency}-zarr'
         full_dict, partial_dict = list_lra_files_complete(self.outdir)
-        # full_dict, partial_dict = list_lra_files_vars(self.outdir)
-        self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
 
         # extra zarr only directory
         zarrdir = os.path.join(self.outdir, 'zarr')
@@ -346,35 +390,26 @@ class LRAgenerator():
         for index, value in enumerate(urlpath):
             urlpath[index] = replace_intake_vars(catalog=self.catalog, path=value)
 
-        # load, add the block and close
+        # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # if entry exists
+        # define the entry name
+        entry_name = self.catbuilder.create_entry_name() + '-zarr'
+        self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
+        sgn = self._define_source_grid_name()
+
         if entry_name in cat_file['sources']:
-
-            self.logger.info('Catalog entry for %s %s %s exists, updating the urlpath only...',
-                             self.model, self.exp, entry_name)
-            cat_file['sources'][entry_name]['args']['urlpath'] = urlpath
-
+            catblock = cat_file['sources'][entry_name]
         else:
-            self.logger.info('Creating zarr catalog entry %s %s %s', self.model, self.exp, entry_name)
+            catblock = None
 
-            # define the block to be uploaded into the catalog
-            block_cat = {
-                'driver': 'zarr',
-                'description': f'LRA data {self.frequency} at {self.resolution} reference on zarr',
-                'args': {
-                    'consolidated': False,
-                    'combine': 'by_coords',
-                    'urlpath': urlpath
-                },
-                'metadata': {
-                    'source_grid_name': 'lon-lat',
-                }
-            }
-            cat_file['sources'][entry_name] = block_cat
+        block = self.catbuilder.create_entry_details(
+            basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
+        )
+        block['args']['urlpath'] = urlpath
+        cat_file['sources'][entry_name] = block
 
         dump_yaml(outfile=catalogfile, cfg=cat_file)
 
@@ -382,8 +417,8 @@ class LRAgenerator():
         if verify:
             self.logger.info('Verifying that zarr entry can be loaded...')
             try:
-                reader = Reader(model=self.model, exp=self.exp, source='lra-r100-monthly-zarr')
-                data = reader.retrieve()
+                reader = Reader(model=self.model, exp=self.exp, source=entry_name)
+                _ = reader.retrieve()
                 self.logger.info('Zarr entry successfully created!!!')
             except (KeyError, ValueError) as e:
                 self.logger.error('Cannot load zarr LRA with error --> %s', e)
@@ -431,19 +466,34 @@ class LRAgenerator():
         from the same year
         """
 
-        # infiles = os.path.join(self.outdir,
-        #                       f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}??.nc')
-        infiles = self.get_filename(var, year, month = '??')
+        infiles = self.get_filename(var, year, month='??')
         if len(glob.glob(infiles)) == 12:
-            xfield = xr.open_mfdataset(infiles)
+
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
-            # outfile = os.path.join(self.tmpdir,
-            #                        f'{var}_{self.exp}_{self.resolution}_{self.frequency}_{year}.nc')
+
             # clean older file
             if os.path.exists(outfile):
                 os.remove(outfile)
-            xfield.to_netcdf(outfile)
+
+            if self.compact == 'cdo':
+                infiles_list = sorted(glob.glob(infiles))
+                command = [
+                    'cdo',
+                    *self.cdo_options,
+                    'cat',
+                    *infiles_list,
+                    outfile
+                ]
+                self.logger.debug("Using CDO command: %s", command)
+                subprocess.check_output(command, stderr=subprocess.STDOUT)
+            else:
+                # these XarrayDatasets are made of a single variable
+                self.logger.debug("Using xarray to concatenate files")
+                xfield = xr.open_mfdataset(infiles)
+                name = list(xfield.data_vars)[0]
+                xfield.to_netcdf(outfile,
+                                 encoding={'time': self.time_encoding, name: self.var_encoding})
 
             # clean of monthly files
             for infile in glob.glob(infiles):
@@ -453,20 +503,12 @@ class LRAgenerator():
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
 
-        # modify filename if realization is in the kwargs
-        if 'realization' in self.kwargs:
-            filestring = f"{var}_{self.exp}_r{self.kwargs['realization']}_{self.resolution}_{self.frequency}_*.nc"
-        else:
-            filestring = f"{var}_{self.exp}_{self.resolution}_{self.frequency}_*.nc"
-        if tmp:
-            filename = os.path.join(self.tmpdir, filestring)
-        else:
-            filename = os.path.join(self.outdir, filestring)
+        filename = self.outbuilder.build_filename(var=var, year=year, month=month)
 
-        if (year is not None) and (month is None):
-            filename = filename.replace("*", str(year))
-        if (year is not None) and (month is not None):
-            filename = filename.replace("*", str(year) + str(month).zfill(2))
+        if tmp:
+            filename = os.path.join(self.tmpdir, filename)
+        else:
+            filename = os.path.join(self.outdir, filename)
 
         return filename
 
@@ -491,83 +533,19 @@ class LRAgenerator():
         """Call write var for generator or catalog access"""
         t_beg = time()
 
-        if isinstance(self.data, types.GeneratorType):
-            raise ValueError('Generator no longer supported by AQUA LRA.')
-        else:
-            #if not self.check:
-            self._write_var_catalog(var)
+        self._write_var_catalog(var)
 
         t_end = time()
-        self.logger.info('Process took {:.4f} seconds'.format(t_end - t_beg))
+        self.logger.info('Process took %.4f seconds', t_end - t_beg)
 
     def _remove_regridded(self, data):
 
         # remove regridded attribute to avoid issues with Reader
         # https://github.com/oloapinivad/AQUA/issues/147
-        if 'regridded' in data.attrs:
+        if "AQUA_regridded" in data.attrs:
             self.logger.debug('Removing regridding attribute...')
-            del data.attrs['regridded']
+            del data.attrs["AQUA_regridded"]
         return data
-
-    # def _write_var_generator(self, var):
-    #     """
-    #     Write a variable to file using the GSV generator
-    #     """
-
-    #     # supplementary retrieve tu use the generator
-    #     self.data = self.reader.retrieve(var=var, startdate=self.last_record)
-    #     self.logger.info('Looping on generator data...')
-    #     t_beg = time()
-    #     for data in self.data:
-
-    #         temp_data = data[var]
-    #         self.logger.info('Generator returned data from %s to %s', temp_data.time[0].values, temp_data.time[-1].values)
-
-    #         if self.frequency:
-    #             temp_data = self.reader.timmean(temp_data)
-    #         temp_data = self.reader.regrid(temp_data)
-
-    #         temp_data = self._remove_regridded(temp_data)
-
-    #         year = temp_data.time.dt.year.values[0]
-    #         month = temp_data.time.dt.month.values[0]
-
-    #         yearfile = self.get_filename(var, year = year)
-    #         filecheck = file_is_complete(yearfile, loglevel=self.loglevel)
-    #         if filecheck:
-    #             if not self.overwrite:
-    #                 self.logger.info('Yearly file %s already exists, skipping...', yearfile)
-    #                 continue
-    #             else:
-    #                 self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
-
-    #         self.logger.info('Processing year %s month %s...', str(year), str(month))
-    #         outfile = self.get_filename(var, year = year, month = month)
-
-    #         # checking if file is there and is complete
-    #         filecheck = file_is_complete(outfile, loglevel=self.loglevel)
-    #         if filecheck:
-    #             if not self.overwrite:
-    #                 self.logger.info('Monthly file %s already exists, skipping...', outfile)
-    #                 continue
-    #             else:
-    #                 self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
-
-    #         # real writing
-    #         if self.definitive:
-    #             self.write_chunk(temp_data, outfile)
-
-    #             # check everything is correct
-    #             filecheck = file_is_complete(outfile, loglevel=self.loglevel)
-    #             # we can later add a retry
-    #             if not filecheck:
-    #                 self.logger.error('Something has gone wrong in %s!', outfile)
-
-    #         if self.definitive and month == 12:
-    #             self._concat_var_year(var, year)
-
-    #         self.logger.info('Processing this chunk took {:.4f} seconds'.format(time() - t_beg))
-    #         t_beg = time()
 
     def _write_var_catalog(self, var):
         """
@@ -581,12 +559,15 @@ class LRAgenerator():
         temp_data = self.data[var]
 
         if self.frequency:
-            temp_data = self.reader.timmean(temp_data, freq=self.frequency,
+            temp_data = self.reader.timstat(temp_data, self.stat, freq=self.frequency,
                                             exclude_incomplete=self.exclude_incomplete)
 
         # regrid
         temp_data = self.reader.regrid(temp_data)
         temp_data = self._remove_regridded(temp_data)
+
+        if self.region:
+            temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
 
         # Splitting data into yearly files
         years = sorted(set(temp_data.time.dt.year.values))
@@ -639,10 +620,12 @@ class LRAgenerator():
                     # we can later add a retry
                     if not filecheck:
                         self.logger.error('Something has gone wrong in %s!', tmpfile)
+                    self.logger.info('Moving temporary file %s to %s', tmpfile, outfile)
+
                     move_tmp_files(self.tmpdir, self.outdir)
                 del month_data
             del year_data
-            if self.definitive:
+            if self.definitive and self.compact:
                 self._concat_var_year(var, year)
         del temp_data
 
@@ -652,7 +635,8 @@ class LRAgenerator():
 
         # update data attributes for history
         if self.frequency:
-            log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.orig_freq} to {self.frequency} through LRA generator')                
+            log_history(
+                data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} through LRA generator')
         else:
             log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator')
 
@@ -685,8 +669,8 @@ class LRAgenerator():
                     progress(w_job)
                     del w_job
                 array_data = np.array(vars(ms)['samples']['chunk'])
-                avg_mem = np.mean(array_data[:, 1])/1e9
-                max_mem = np.max(array_data[:, 1])/1e9
+                avg_mem = np.mean(array_data[:, 1]) / 1e9
+                max_mem = np.max(array_data[:, 1]) / 1e9
                 self.logger.info('Avg memory used: %.2f GiB, Peak memory used: %.2f GiB', avg_mem, max_mem)
 
         else:

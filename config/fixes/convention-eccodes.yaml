@@ -13,38 +13,39 @@ convention_name:
           - 2d
           - avg_2d
           - D2M # AQUA ERA5
+          - tdps # cmor
         grib: 168
       2t: # 2 meter temperature
         source:
           - 167 # original GRIB2 code
           - 228004
           - 2t
-          - tas # cmor
           - mean2t # legacy eccodes
           - avg_2t
           - T2M # AQUA ERA5
+          - tas # cmor
         grib: 167
       10u: # 10 meter U wind component
         source:
           - 165 # original GRIB2 code
           - 235165 # avg_10u
           - 10u
-          - uas # cmor
           - m10u # legacy eccodes
           - avg_10u 
           - U10M # AQUA ERA5
           - u10 # cds
+          - uas # cmor
         grib: 165
       10v: # 10 meter V wind component
         source:
           - 166 # original GRIB2 code
           - 235166 # avg_10v
           - 10v
-          - vas # cmor
           - m10v # legacy eccodes
           - avg_10v
           - V10M # AQUA ERA5
           - v10 # cds
+          - vas # cmor
         grib: 166
       clwc: # Specific cloud liquid water content
         source:
@@ -52,6 +53,7 @@ convention_name:
           - 235246 # avg_clwc
           - clwc
           - avg_clwc
+          - lwp # cmor
         grib: 246
       hcc: # High cloud cover
         source:
@@ -93,9 +95,9 @@ convention_name:
           - msl
           - avg_msl
           - mmsl # eccodes 2.35.*
-          - psl # cmor
           - sea_level_pressure # from ICON-hpx fixer_name, {src_units: Pa}
           - MSL  # AQUA ERA5
+          - psl # cmor
         grib: 151
       pv: # Potential vorticity
         source:
@@ -110,9 +112,9 @@ convention_name:
           - 235133 # avg_q
           - q
           - avg_q
-          - hus # cmor
           - mq # legacy eccodes
           - Q # AQUA ERA5
+          - hus # cmor
         grib: 133
       r: # Relative humidity
         source:
@@ -132,15 +134,16 @@ convention_name:
           - avg_sd
           - msd # eccodes 2.35.*
           - avg_sd_m # corresponding to 235141
+          - snw # cmor
         grib: 228141
       skt: # skin/surface temperature: (name on GRIB is Skin temperature)
         source:
           - 235 # original GRIB2 code
           - 235079
           - skt
-          - ts # cmor
           - avg_skt
           - mskt # legacy eccodes
+          - ts # cmor
         grib: 235
       sp: # Surface pressure
         source:
@@ -160,6 +163,7 @@ convention_name:
           - ssurfror
           - mssror
           - avg_ssurfror
+          - mrrob # cmor
         grib: 231011
       surfror: # Surface runoff rate
         source:
@@ -179,21 +183,22 @@ convention_name:
           - 235130 # avg_t
           - t
           - avg_t
-          - ta
           - mt # legacy eccodes
           - T # AQUA ERA5
+          - ta # cmor
         grib: 130
       tcc: # Total cloud cover
         source:
           - 164 # original GRIB2 code
           - 228006 # meantcc in 0-1 GRIB2 code
           - 228164 # avg_tcc in %
+          - 131164 # ICON used this at some point
           - tcc
-          - clt # cmor
           - meantcc #legacy eccodes name
           - avg_tcc
           - TCC # AQUA ERA5
-        grib: 131164
+          - clt # cmor
+        grib: 228164
       tciw: # Total column vertically-integrated cloud ice water
         source:
           - 79 # original GRIB2 code
@@ -209,6 +214,7 @@ convention_name:
           - tclw
           - avg_tclw
           - cllvi # vertically integrated cloud water (https://easy.gems.dkrz.de/DYAMOND/NextGEMS/Models/c2_icon_ngc2013_output.html)
+          - lwp # cmor
         grib: 78
       tcwv: # Total column vertically-integrated water vapour
         source:
@@ -258,6 +264,7 @@ convention_name:
           - 143 
           - 160143
           - cp
+          - prc # cmor
         grib: 160143
       ie: # Evaporation or moisture flux
         source:
@@ -321,8 +328,8 @@ convention_name:
           - avg_sdlwrf
           - msdwlwrf
           - strd # (required deltat)
-          - rlds # cmor
           - STRD # AQUA ERA5
+          - rlds # cmor
         grib: 260097
       sdswrf: # Surface downward short-wave radiation flux
         source:
@@ -334,8 +341,8 @@ convention_name:
           - msdwswrf
           - ssrd # (required deltat)
           - msdsrf
-          - rsds # cmor
           - SSRD # AQUA ERA5
+          - rsds # cmor
         grib: 260087
       slhtf: # Surface latent heat net flux
         source:
@@ -347,7 +354,7 @@ convention_name:
           - mslhf # legacy eccodes
           - slhf
           - SLHF # AQUA ERA5
-          - hfls # cmor
+          # - hfls # cmor --> sign wrong
         grib: 260002
       snlwrf: # Surface net long-wave radiation flux
         source:
@@ -359,7 +366,6 @@ convention_name:
           - msnlwrf
           - str
           - STR # AQUA ERA5
-          - rlus # cmor
         grib: 260099
       snlwrfcs: # Surface net long-wave radiation flux clear sky
         source:
@@ -405,6 +411,7 @@ convention_name:
           - mtdwswrf
           - tisr
           - TISR
+          - rsdt # cmor
         grib: 260676
       tnlwrf: # Top net long-wave radiation flux
         source:
@@ -416,6 +423,7 @@ convention_name:
           - mtnlwrf
           - ttr
           - TTR # AQUA ERA5
+          # - rlut # cmor --> sign wrong
         grib: 260672
       tnlwrfcs: # Top net long-wave radiation flux clear sky
         source:
@@ -459,11 +467,11 @@ convention_name:
           - mtpr # legacy eccodes
           - tprate
           - avg_tprate
-          - pr # cmor
           - prec
           - tp
           - TP # AQUA ERA5
           - rr # E-OBS
+          - pr # cmor
         grib: 260048
       tsrwe: # Total snowfall rate water equivalent
         source:
@@ -472,9 +480,9 @@ convention_name:
           - 144 # (m of water equivalent)
           - tsrwe
           - avg_tsrwe
-          - prsn # cmor
           - sf
           - msr
+          - prsn # cmor
         grib: 260049
 
 
@@ -513,19 +521,19 @@ convention_name:
           - 262101 # original GRIB2 code
           - 263101 # avg_tos
           - avg_tos
-          - tos # cmor
           - sst
           - analysed_sst
           - SSTK # AQUA ERA5
           - avg_sst
+          - tos # cmor
         grib: 262101
       zos: # Sea surface height
         source:
           - 262124 # original GRIB2 code
           - 263124 # avg_zos
           - avg_zos
-          - zos # cmor
           - ssh # FESOM legacy
+          - zos # cmor
         grib: 262124
 
       #### OCEAN 3D VARIABLES ####
@@ -533,20 +541,20 @@ convention_name:
         source:
           - 262500 # original GRIB2 code
           - 263500 # avg_so
-          - so # cmor
           - salt # PHC3
           - avg_so
+          - so # cmor
         grid: 262500
       thetao: # Sea water potential temperature
         source:
           - 150129 # ocpt
           - 262501 # original GRIB2 code
           - 263501 # avg_thetao
-          - thetao # cmor
           - avg_thetao
           - temp # PHC3, FESOM legacy
           - ocpt
           - to
+          - thetao # cmor
         grid: 262501
       uoe: # Sea water zonal current (eastward)
         source:
@@ -583,12 +591,12 @@ convention_name:
           - 263001 # avg_siconc
           - siconc
           - avg_siconc
-          - sic # cmor
           - sea_ice_fraction
           - ci
           - CI # AQUA ERA5
           - a_ice # FESOM legacy
           - ice_conc # OSI-SAF
+          - sic # cmor
         grib: 262001
       sisnthick: # Snow thickness over sea ice
         source:
@@ -605,6 +613,7 @@ convention_name:
           - m_ice # FESOM legacy
           - avg_sithick
           - sithick
+          - sithic  # NEMO
         grib: 262000
       siue: # Sea ice zonal velocity (eastward)
         source:
@@ -630,6 +639,7 @@ convention_name:
           - 263008 # avg_sivol
           - sivol
           - avg_sivol
+          - sivolu  # NEMO
         grib: 262008
       snvol: # Snow volume over sea ice per unit area
         source:
@@ -650,6 +660,7 @@ convention_name:
     orog: # Orography
       source:
         - 228002 # original GRIB2 code
-        - orog # cmor
         - orography
+        - orog # cmor
       grib: 228002
+

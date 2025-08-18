@@ -1,11 +1,11 @@
 """Test fixer functionality for Reader"""
 
 import pytest
-from aqua import Reader
 import numpy as np
+from aqua import Reader
+from aqua.fixer import EvaluateFormula
 
-loglevel = 'DEBUG'
-
+LOGLEVEL = 'DEBUG'
 
 @pytest.mark.aqua
 def test_fixer_ifs_long():
@@ -13,7 +13,7 @@ def test_fixer_ifs_long():
 
     ntime = [10, 20, 1000]  # points in time to be checked (includes 1 month jump)
     reader = Reader(model="IFS", exp="test-tco79", source="long",
-                    fix=False, loglevel=loglevel)
+                    fix=False, loglevel=LOGLEVEL)
     data0 = reader.retrieve(var=['2t', 'ttr'])  # Retrieve not fixed data
     ttr0 = data0.ttr[ntime, 0, 0]
     tas0 = data0['2t'][ntime, 5, 5]
@@ -66,7 +66,7 @@ def test_fixer_ifs_long_mindate():
     """Test fixing with a minimum date functionality"""
 
     reader = Reader(model="IFS", exp="test-tco79", source="long-mindate",
-                    fix=True, loglevel=loglevel)
+                    fix=True, loglevel=LOGLEVEL)
     data = reader.retrieve(var='2t')
 
     data1 = data['2t'].sel(time="2020-07-31T00:00")[1,1]
@@ -79,19 +79,10 @@ def test_fixer_ifs_long_mindate():
 
 
 @pytest.mark.aqua
-def test_fixer_ifs_short():
-    """Check alternative fix with replace method"""
-
-    reader = Reader(model="IFS", exp="test-tco79", source="short", loglevel=loglevel)
-    data = reader.retrieve()
-    assert data['2t'].attrs['mickey'] == 'mouse'
-
-
-@pytest.mark.aqua
 def test_fixer_ifs_names():
     """Check with fixer_name method"""
 
-    reader = Reader(model="IFS", exp="test-tco79", source="short_masked", loglevel=loglevel)
+    reader = Reader(model="IFS", exp="test-tco79", source="short_masked", loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert data['2t'].attrs['donald'] == 'duck'
 
@@ -99,28 +90,18 @@ def test_fixer_ifs_names():
 def test_fixer_ifs_disable():
     """Check with fixer_name: False method"""
 
-    reader = Reader(model="IFS", exp="test-tco79", source="short_disable_fix", loglevel=loglevel)
-    assert reader.fix == False
-
-
-# @pytest.mark.aqua
-# def test_fixer_ifs_default_fix():
-#     """Check with fixer_name with roll back on model default"""
-
-#     reader = Reader(model="IFS", exp="test-tco79", source="long_default_fix", loglevel=loglevel)
-#     data = reader.retrieve()
-#     assert data['tnlwrf'].attrs['paramId'] == '260672'
-
+    reader = Reader(model="IFS", exp="test-tco79", source="short_disable_fix", loglevel=LOGLEVEL)
+    assert reader.fix is False
 
 @pytest.mark.aqua
 def test_fixer_ifs_timeshift():
     """Check fixer for timeshift with both timestep and pandas"""
 
-    reader = Reader(model="IFS", exp="test-tco79", source="long-shift-timestep", loglevel=loglevel)
+    reader = Reader(model="IFS", exp="test-tco79", source="long-shift-timestep", loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert data.time[0].values == np.datetime64('2020-01-19T00:00:00')
 
-    reader = Reader(model="IFS", exp="test-tco79", source="long-shift-pandas", loglevel=loglevel)
+    reader = Reader(model="IFS", exp="test-tco79", source="long-shift-pandas", loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert data.time[0].values == np.datetime64('2020-01-01T00:00:00')
 
@@ -129,7 +110,7 @@ def test_fixer_ifs_timeshift():
 def test_fixer_ifs_coords():
     """Check with fixer_name and coords block"""
 
-    reader = Reader(model="IFS", exp="test-tco79", source="short_masked-coord-test", loglevel=loglevel)
+    reader = Reader(model="IFS", exp="test-tco79", source="short_masked-coord-test", loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert 'timepippo' in data.coords
     assert 'cellspippo' in data.dims
@@ -139,7 +120,7 @@ def test_fixer_ifs_coords():
 def test_fixer_fesom_coords():
     """Check with fixer_name and coords block"""
 
-    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", loglevel=loglevel)
+    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert 'level' in data.coords
     assert 'a lot of water' in data.level.attrs['units']
@@ -149,7 +130,7 @@ def test_fixer_fesom_coords():
 def test_fixer_fesom_names():
     """Check with fixer parent from fixer_name method"""
 
-    reader = Reader(model="FESOM", exp="test-pi", source="original_2d_fix", loglevel=loglevel)
+    reader = Reader(model="FESOM", exp="test-pi", source="original_2d_fix", loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert data['mlotst125'].attrs['uncle'] == 'scrooge'
 
@@ -157,11 +138,37 @@ def test_fixer_fesom_names():
 def test_fixer_deltat():
     """Check that output for deltat read from metadata and from fixes are the same"""
     
-    reader1 = Reader(model='IFS', exp='test-tco79', source='long-deltat', loglevel=loglevel)
+    reader1 = Reader(model='IFS', exp='test-tco79', source='long-deltat', loglevel=LOGLEVEL)
     data_metadata = reader1.retrieve(var='tnlwrf').isel(time=5)
-    reader2 = Reader(model='IFS', exp='test-tco79', source='long', loglevel=loglevel)
+    reader2 = Reader(model='IFS', exp='test-tco79', source='long', loglevel=LOGLEVEL)
     data_fixer = reader2.retrieve(var='tnlwrf').isel(time=5)
     assert data_metadata.equals(data_fixer)
-    assert reader1.deltat == 3600
-    assert reader2.deltat == 3600
+    assert reader1.fixer.deltat == 3600
+    assert reader2.fixer.deltat == 3600
 
+
+@pytest.fixture
+def reader():
+    return Reader(model="ERA5", exp='era5-hpz3', source='monthly', loglevel=LOGLEVEL)
+
+@pytest.fixture
+def data(reader):
+    return reader.retrieve()
+
+@pytest.mark.aqua
+class TestEvaluateFormula:
+    def test_evaluate_formula(self, data):
+        formula = "2t -273.15"
+        convert = EvaluateFormula(
+            data=data, formula=formula,
+            units='Celsius',
+            short_name="2t_celsius",
+            long_name='2t converted to Celsius').evaluate()
+
+        assert convert.attrs['short_name'] == '2t_celsius'
+        assert convert.attrs['long_name'] == '2t converted to Celsius'
+        assert convert.attrs['units'] == 'Celsius'
+
+        original_values = (data['2t'].isel(time=0) - 273.15).mean()
+        expected_values = convert.isel(time=0).mean()
+        assert np.allclose(original_values.values, expected_values.values)

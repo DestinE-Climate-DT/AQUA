@@ -71,16 +71,3 @@ class TestAquaStreaming:
         reader.reset_stream()
         data = reader.retrieve()
         assert data.time.values[0] == start_date
-
-
-    def test_generator(self):
-        """
-        Test generator option of streaming mode
-        """
-        reader = Reader(model='IFS', exp='test-tco79', source='long', fix = False, stream_generator = True, startdate = '2020-05-01', aggregation = 'monthly')
-        data_gen = reader.retrieve()
-        start_dates = ["2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01"]
-        i = 0
-        for data in data_gen:
-            assert data.time[0].values == pd.to_datetime(start_dates[i])
-            i+=1

@@ -68,64 +68,6 @@ def check_att(da, att):
         return False
 
 
-def group_shared_dims(ds, shared_dims, others=None, masked=None,
-                      masked_att=None, masked_vars=None):
-    """
-    Groups variables in a dataset that share the same dimension.
-
-    Arguments:
-        ds (xarray.Dataset or xarray.DataArray): Input dataset or dataarray to group variables
-        shared_dims (list): List of shared dimensions
-        others (str, optional): Name of group for variables not in `shared_dims`.
-        masked (str, optional): Name of extra group for masked variables.
-                                Used only if the "others" option is set.
-        masked_att (dict, optional): Dictionary of attributes to use to check if variable has to be masked.
-        masked_vars (dict, optional): List of variables to mask.
-
-    Raises:
-        ValueError: If no shared dimensions are found.
-
-    Returns:
-        Dictionary containing datasets that share the same dimension
-    """
-    # Is this a DataArray?
-    if not isinstance(ds, xr.Dataset):
-        dim = [x for x in shared_dims if x in ds.dims]
-        if dim:
-            return {dim[0]: ds}
-        else:
-            if others:
-                if check_att(ds, masked_att) or (masked_vars is not None and ds.name in masked_vars):
-                    return {masked: ds}
-                else:
-                    return {others: ds}
-            else:
-                raise ValueError("No shared dimensions found.")
-
-    shared_vars = {}
-    for dim in shared_dims:
-        vlist = []
-        for var in ds.data_vars:
-            if dim in ds[var].dims:
-                vlist.append(var)
-        if vlist:
-            shared_vars.update({dim: ds[vlist]})
-    if others:
-        vlist = []
-        vlistm = []
-        for var in ds.data_vars:
-            if not any(x in shared_dims for x in ds[var].dims):
-                if check_att(ds[var], masked_att) or (masked_vars is not None and var in masked_vars):
-                    vlistm.append(var)
-                else:
-                    vlist.append(var)
-        if vlist:
-            shared_vars.update({others: ds[vlist]})
-        if vlistm:
-            shared_vars.update({masked: ds[vlistm]})
-    return shared_vars
-
-
 def set_attrs(ds, attrs):
     """
     Set an attribute for all variables in an xarray.Dataset
@@ -133,38 +75,17 @@ def set_attrs(ds, attrs):
     Args:
         ds (xarray.Dataset or xarray.DataArray): Dataset to set attributes on
         attrs (dict): Dictionary of attributes to set
+    
+    Returns:
+        xarray.Dataset or xarray.DataArray: Updated Dataset or DataArray, or the same object if not this.
     """
+    if not isinstance(attrs, dict):
+        raise TypeError("The 'attrs' argument must be a dictionary.")
+
     if isinstance(ds, xr.Dataset):
         for var in ds.data_vars:
             ds[var].attrs.update(attrs)
-    else:
+    elif isinstance(ds, xr.DataArray):
         ds.attrs.update(attrs)
     return ds
 
-
-def configure_masked_fields(source_grid):
-    """
-    Help function to define where to apply masks:
-    if the grids has the 'masked' option, this can be based on
-    generic attribute or alternatively of a series of specific variables using the 'vars' key
-
-    Args:
-        source_grid (dict): Dictionary containing the grid information
-
-    Returns:
-        masked_attr (dict): Dict with name and proprierty of the attribute to be used for masking
-        masked_vars (list): List of variables to mask
-    """
-    masked_vars = None
-    masked_attr = None
-    masked_info = source_grid.get("masked", None)
-    if masked_info is not None:
-        for attr, value in masked_info.items():
-            if attr == 'vars':
-                masked_vars = value
-            else:
-                if masked_attr is None:
-                    masked_attr = {}
-                masked_attr[attr] = value
-
-    return masked_attr, masked_vars

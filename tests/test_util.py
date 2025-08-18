@@ -1,11 +1,12 @@
 """Test for some of the utils"""
 
 import pytest
-import datetime
 import xarray as xr
 import numpy as np
 import pandas as pd
-from aqua.util import extract_literal_and_numeric, file_is_complete, to_list
+from aqua import Reader
+from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
+from aqua.util import format_realization, extract_attrs
 
 @pytest.fixture
 def test_text():
@@ -22,6 +23,31 @@ def test_extract_literal_and_numeric(test_text):
         result = extract_literal_and_numeric(input_text)
         assert result == expected_output
 
+loglevel = 'DEBUG'
+
+@pytest.mark.aqua
+def test_convert_data_units():
+    """Test the check_data function"""
+    data = Reader(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly', loglevel=loglevel).retrieve()
+    initial_units = data['tprate'].attrs['units']
+
+    # Dataset test
+    data_test = convert_data_units(data=data, var='tprate', units='mm/day', loglevel=loglevel)
+    assert data_test['tprate'].attrs['units'] == 'mm/day'
+
+    # DataArray test
+    data = data['tprate']
+    data_test = convert_data_units(data=data, var='tprate', units='mm/day', loglevel=loglevel)
+    # We don't test values since this is done in the test_fixer.py
+    assert data_test.attrs['units'] == 'mm/day'
+    assert f"Converting units of tprate: from {initial_units} to mm/day" in data_test.attrs['history']
+
+    # Test with no conversion to be done
+    data_test = convert_data_units(data=data, var='tprate', units=initial_units, loglevel=loglevel)
+    assert data_test.attrs['units'] == initial_units
+    assert f"Converting units of tprate: from {initial_units} to mm/day" not in data_test.attrs['history']
+
+
 # Define a fixture to create a sample netCDF file for testing
 @pytest.mark.aqua
 class TestFileIsComplete:
@@ -33,7 +59,7 @@ class TestFileIsComplete:
         """Create a sample Dataset and its file"""
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i) for i in range(3)]
+        time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
         dataset = xr.Dataset({"sample_data": data})
@@ -48,7 +74,7 @@ class TestFileIsComplete:
     def test_file_is_complete_full_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i) for i in range(3)]
+        time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
         data[:,:,:] = np.nan
@@ -62,7 +88,7 @@ class TestFileIsComplete:
     def test_file_is_complete_partial_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
         data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
-        time_values = [datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i*40) for i in range(3)]
+        time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i * 40) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
         data[0,:,:] = np.nan
@@ -124,6 +150,28 @@ class TestFileIsComplete:
 ])
 def test_to_list(arg, expected):
     assert to_list(arg) == expected
+
+@pytest.mark.aqua
+def test_format_realization():
+    """Test the format_realization function"""
+    assert format_realization() == "r1"
+    assert format_realization(1) == "r1"
+    assert format_realization("2") == "r2"
+    assert format_realization("test") == "test"
+    assert format_realization("") == "r1"
+    assert format_realization(None) == "r1"
+
+@pytest.mark.aqua
+def test_extract_attrs():
+    assert extract_attrs(None, "attr") is None # Data is None
+    ds_with_attr = xr.Dataset()
+    ds_with_attr.attrs = {"attr": "value1"}
+    ds_without_attr = xr.Dataset()
+    assert extract_attrs(ds_with_attr, "attr") == "value1" # Single dataset with attribute
+    assert extract_attrs(ds_without_attr, "attr") is None # Single dataset without attribute
+    result = extract_attrs([ds_with_attr, ds_without_attr], "attr") 
+    assert result == ["value1", None] # List of datasets
+
 
 # Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
 # def test_flip_time():

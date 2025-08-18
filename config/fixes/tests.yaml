@@ -3,7 +3,6 @@ fixer_name:
     # These are for tests
     ifs-ci-test:
         convention: eccodes
-        data_model: ifs
         deltat: 3600
         jump: month
         vars:
@@ -37,7 +36,6 @@ fixer_name:
                 mindate: 2020-08-01T00:00
 
     ifs-ci-coords:
-        data_model: ifs
         coords:
             timepippo:
                 source: time
@@ -82,7 +80,6 @@ fixer_name:
 
     ifs-ci-nodeltat:
         convention: eccodes
-        data_model: ifs
         jump: month
         vars:
             tnlwrf:
@@ -90,3 +87,6 @@ fixer_name:
                 attributes:
                     description: "Top thermal radiation originally found in the dataset and decumulated"
     
+    test-fesom-3d:
+        convention: eccodes
+        delete: [healpix]

@@ -4,6 +4,10 @@
 
 Close #issue_number
 
+## People involved:
+
+Tag here relevant people to involve in the discussion:
+
 ----
 
 Please leave the checkboxes that apply to this pull request.

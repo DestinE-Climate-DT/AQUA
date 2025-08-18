@@ -1,67 +1,71 @@
-# The first model in this block can be overridden
-# in the command line by using:
-# --model, --exp, --source, --outputdir, --catalog
-data:
-    catalog: null
-    model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'lra-r100-monthly'
+# Currently, the diagnostic supports comparing one dataset against one reference dataset at a time.
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
 
-obs: 
-  catalog: null
-  model: 'ERA5'
-  exp: 'era5'
-  source: 'monthly'
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: null
+
+setup:
+  loglevel: 'WARNING'
 
 output:
   outputdir: "./"
   rebuild: true
-  filename_keys: ['diagnostic', 'diagnostic_product', 'catalog', 'model', 'exp',
-                  'var', 'model_2', 'exp_2', 'catalog_2', 'area', 'time_precision'] # null or, for example,  ['diagnostic', 'catalog', 'model', 'diagnostic_product', 'var']
   save_netcdf: true
   save_pdf: true
   save_png: true
   dpi: 300
 
-diagnostic_attributes:
-  variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
-  # Level plot for 2D bias map if variable 3d
-  plev: [85000, 25000]
-  seasons: True
-  seasons_stat: 'mean'
-  vertical: True
-  regrid: null
-  startdate_data: null
-  enddate_data: null
-  startdate_obs: "1990-01-01" 
-  enddate_obs: "2020-12-31"
+diagnostics:
+  globalbiases:
+    run: true
+    diagnostic_name: 'global_biases'
+    variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
+    params:
+      default:
+        plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: true     # Vertical profile if variable 3d
+        startdate_data: null
+        enddate_data: null
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2020-12-31"
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
 
-# Here you can specify the colorbar limits for each variable
-# If you don't specify them, the colorbar limits will be automatically calculated
-# based on the data.
-
-biases_plot_params:
-  bias_maps:
-    2t:
-      vmin: -15
-      vmax: 15
-    msl:
-      vmin: -1000
-      vmax: 1000
-    tnlwrf:
-      vmin: -40
-      vmax: 40
-    tprate:
-      vmin: -8
-      vmax: 8
-
-  vertical_plev:
-    t:
-      vmin: -20
-      vmax: 20
-    u:
-      vmin: -50
-      vmax: 50
-    q:
-      vmin: -0.002
-      vmax: 0.002
+    plot_params:
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      2t:
+        vmin: -15
+        vmax: 15
+      msl:
+        vmin: -1000
+        vmax: 1000
+      tnlwrf:
+        vmin: -40
+        vmax: 40
+      tprate:
+        vmin: -8
+        vmax: 8
+      t:
+        vmin_v: -20
+        vmax_v: 20
+      u:
+        vmin_v: -50
+        vmax_v: 50
+      q:
+        vmin_v: -0.002
+        vmax_v: 0.002

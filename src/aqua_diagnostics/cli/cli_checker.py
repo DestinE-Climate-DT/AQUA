@@ -9,7 +9,6 @@ import sys
 import os
 import argparse
 import yaml
-
 from aqua.diagnostics.core import template_parse_arguments
 
 
@@ -63,6 +62,12 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', None)
     exp = get_arg(args, 'exp', None)
     source = get_arg(args, 'source', None)
+    # For some diagnostics the regrid is required, so we set a default
+    # which is 1 degree for the regrid. The user can override it
+    # with the --regrid argument.
+    regrid = get_arg(args, 'regrid', 'r100')
+    realization = get_arg(args, 'realization', None)
+    reader_kwargs = {'realization': realization} if realization else {}
     yamldir = get_arg(args, 'yaml', None)
     fread = args.no_read
     frebuild = args.no_rebuild
@@ -74,7 +79,8 @@ if __name__ == '__main__':
 
     try:
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        loglevel=loglevel, rebuild=frebuild)
+                        loglevel=loglevel, rebuild=frebuild, regrid=regrid,
+                        **reader_kwargs)
 
         # extract metadata from catalog
         if yamldir:

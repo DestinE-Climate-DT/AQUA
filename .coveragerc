@@ -1,5 +1,0 @@
-[run]
-omit = 
-   tests/*
-   src/aqua/gribber/*
-   src/aqua/lra_generator/opa_generator.py

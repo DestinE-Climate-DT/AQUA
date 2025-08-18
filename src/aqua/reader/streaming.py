@@ -118,30 +118,6 @@ class Streaming():
             self.idx += 1
             return (data.sel(time=slice(date1, date2)))
 
-    def generator(self, data, startdate=None, enddate=None, aggregation=None):
-        """
-        The generator method is designed to split data into smaller chunks of data for
-        processing or analysis. It returns a generator object that yields the smaller chunks of data.
-        The method can split the data based on either a specific time interval or by a specific number of samples.
-        Aggregation (frequency/chunking) and starting and ending dates selected at class instantiation can
-        be overwritten.
-
-        Arguments:
-            data (xr.Dataset):      the input xarray.Dataset
-            startdate (str): the starting date for streaming the data (e.g. '2020-02-25') (None)
-            enddate (str): the ending date for streaming the data (e.g. '2021-01-01') (None)
-            aggregation (str): the streaming frequency in pandas style (1M, 7D etc.)
-        Returns:
-            A generator object that yields the smaller chunks of data.
-        """
-
-        timechunks = self.stream_chunk(data, startdate=startdate, enddate=enddate, aggregation=aggregation)
-
-        self.idx = 0  # reset in case stream has been called before
-        for idx in range(0, len(timechunks)):
-            yield self.stream(data, startdate=startdate, enddate=enddate,
-                              aggregation=aggregation, timechunks=timechunks)
-
     def reset(self):
         """
         Reset the state of the streaming process.

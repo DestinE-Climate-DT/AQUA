@@ -15,7 +15,6 @@ The ensemble module computes mean and standard deviation of climate model data.
   - [Installation Instructions](#installation-instructions)
   - [Data requirements](#data-requirements)
   - [Examples](#examples)
-  - [TODO](#TODO)
   - [Contributing](#contributing)
 
 ## Installation Instructions
@@ -40,21 +39,6 @@ Please note that notebooks may load data from the DKRZ cluster, so they may not 
 
 - [Example of how to use the 2D Zonal (lev-lat) ensemble of temperature](https://github.com/DestinE-Climate-DT/AQUA/blob/dev-ensemble/notebooks/diagnostics/ensemble/ensemble_zonalaverage.ipynb)
 
-## TODO
-
-- option to change the `cmap` in the `lon-lat` and `lev-lat` plots.
-- option to change the `zorder` in the timeseries plots (It matters while presenting via a projector).
-- Saving outputs to netcdf.
-- Implementation of the normalized standard deviation.
-- Implementation of vertical interpolation in the (ensemble) Zonal mean and standard deviation.
-- (preprocessing) checks or flags for the grids/time-frequency, e.g., the ensemble members have same `lon-lat`, `lev-lat` and/or time frequency before computing the ensemble computations.
-- checks for dropping `nan`s.
-- functions should be added in case of unequal data.
-- A combined CLI for all three ensemble sub-classes.
-- Implement a class to handle an ensemble of 3D data.
-- Integrated in the github workflow.
-- Include the Reader class in the notebooks in addition to the specific paths. 
-- Include the catalogs whereever the Reader class is used.
 
 ## Contributing
 
