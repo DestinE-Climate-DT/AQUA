@@ -115,7 +115,7 @@ class LRAgenerator():
         self.exp = self._require_param(exp, "experiment")
         self.source = self._require_param(source, "source")
         self.var = self._require_param(var, "variable string or list.")
-        self.resolution = self._require_param(resolution, "resolution")
+        self.resolution = resolution
 
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
@@ -563,8 +563,9 @@ class LRAgenerator():
                                             exclude_incomplete=self.exclude_incomplete)
 
         # regrid
-        temp_data = self.reader.regrid(temp_data)
-        temp_data = self._remove_regridded(temp_data)
+        if self.resolution:
+            temp_data = self.reader.regrid(temp_data)
+            temp_data = self._remove_regridded(temp_data)
 
         if self.region:
             temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
