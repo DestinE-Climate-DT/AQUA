@@ -38,6 +38,13 @@ diagnostic_config = {
             'target_path': 'diagnostics/ecmean'
         }
     ],
+    'etccdi': [
+        {
+            'config_file': 'cli_config_etccdi.yaml',
+            'source_path': 'config/diagnostics/etccdi',
+            'target_path': 'diagnostics/etccdi'
+        }
+    ],
     'timeseries': [
         {
             'config_file': 'regions.yaml',
