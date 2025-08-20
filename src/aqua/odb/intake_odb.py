@@ -23,7 +23,7 @@ class ODBSource(intake.source.base.DataSource):
     dask_access = False  # Flag to indicate if dask access is enabled
     first_run = True  # Flag to check if this is the first run of the class
 
-    def __init__(self, paths, columns=None, single=True, loglevel='WARNING', **kwargs):
+    def __init__(self, paths, columns=None, single=True, loglevel='DEBUG', **kwargs):
         """
         Initializes the ODBSource class.
 
@@ -71,7 +71,19 @@ class ODBSource(intake.source.base.DataSource):
 
         return schema
 
-    def _to_xarray(self, df: pd.DataFrame) -> xr.Dataset:
+    def _to_xarray(self, df: pd.DataFrame, variables: str | list[str] = "auto") -> xr.Dataset:
+        """
+        Convert an ODB pandas DataFrame into an xarray.Dataset.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            One partition of ODB data.
+        variables : {"auto", list of str}, optional
+            - "auto": promote all `@body` columns to data variables.
+            - list: promote only the specified columns.
+            - anything else: keep all columns as variables (flat).
+        """
         # --- Build time coordinate if possible ---
         time_map = {
             "year@hdr": "year",
@@ -83,8 +95,8 @@ class ODBSource(intake.source.base.DataSource):
         }
 
         available = {alias: df[col]
-                     for col, alias in time_map.items()
-                     if col in df.columns}
+                    for col, alias in time_map.items()
+                    if col in df.columns}
 
         if {"year", "month", "day", "hour"} <= set(available.keys()):
             df = df.copy()
@@ -93,13 +105,31 @@ class ODBSource(intake.source.base.DataSource):
             # Drop original columns
             df = df.drop(columns=[c for c in time_map if c in df.columns])
 
-        # --- Convert to xarray ---
-        ds = xr.Dataset.from_dataframe(df)
+        # --- Decide variables vs metadata ---
+        if variables == "auto":
+            var_cols = [c for c in df.columns if c.endswith("@body")]
+        elif isinstance(variables, (list, tuple)):
+            var_cols = [c for c in df.columns if c in variables]
+        else:
+            var_cols = df.columns.tolist()  # flat fallback
 
-        # --- If time exists, promote it to main dimension ---
-        if "time" in ds:
-            # Replace the generic index dimension with time
-            ds = ds.swap_dims({"index": "time"}).drop_vars("index")
+        # Everything else = coordinates / metadata
+        coord_cols = [c for c in df.columns if c not in var_cols]
+
+        # --- Build Dataset ---
+        ds = xr.Dataset()
+
+        # Coordinates
+        for c in coord_cols:
+            ds = ds.assign_coords({c: ("index", df[c].values)})
+
+        # Variables
+        for v in var_cols:
+            ds[v] = ("index", df[v].values)
+
+        # --- Promote time to main dimension if available ---
+        # if "time" in ds:
+        #     ds = ds.swap_dims({"index": "time"}).drop_vars("index")
 
         return ds
 
@@ -136,12 +166,13 @@ class ODBSource(intake.source.base.DataSource):
             df = df.drop(columns=[c for c in time_map if c in df.columns])
 
         # --- Convert to xarray ---
-        ds = xr.Dataset.from_dataframe(df)
+        ds = self._to_xarray(df)
+        #ds = xr.Dataset.from_dataframe(df)
 
         # --- If time exists, promote it to main dimension ---
-        if "time" in ds:
-            # Replace the generic index dimension with time
-            ds = ds.swap_dims({"index": "time"}).drop_vars("index")
+        # if "time" in ds:
+        #     # Replace the generic index dimension with time
+        #     ds = ds.swap_dims({"index": "time"}).drop_vars("index")
 
         return ds
 
@@ -177,7 +208,7 @@ class ODBSource(intake.source.base.DataSource):
         # Trigger concat lazily
         ds = xr.concat(
             [xr.Dataset.from_dataframe(dask.compute(d.to_dataframe())[0]) for d in delayed_dsets],
-            dim="time"
+            dim="station"
         )
 
         return ds
@@ -199,3 +230,33 @@ class ODBSource(intake.source.base.DataSource):
         self._npartitions = len(expanded_paths)
 
         return expanded_paths
+    
+    # def _to_xarray(self, df: pd.DataFrame) -> xr.Dataset:
+    #     # build time first (like you already do)
+
+    #     if {"station@hdr", "time"}.issubset(df.columns):
+    #         # pivot so rows = time, cols = station
+    #         df_pivot = df.pivot(index="time", columns="station@hdr", values="value@body")
+
+    #         ds = xr.Dataset(
+    #             {"value": (("index", "station"), df_pivot.values)},
+    #             coords={
+    #                 "index": df_pivot.index.values,
+    #                 "station": df_pivot.columns.values,
+    #             }
+    #         )
+
+    #         # Add station lon/lat as coordinates
+    #         if {"longitude@hdr", "latitude@hdr"}.issubset(df.columns):
+    #             station_meta = df[["station@hdr", "longitude@hdr", "latitude@hdr"]].drop_duplicates("station@hdr")
+    #             station_meta = station_meta.set_index("station@hdr").loc[df_pivot.columns]
+
+    #             ds = ds.assign_coords({
+    #                 "lon": ("station", station_meta["longitude@hdr"].values),
+    #                 "lat": ("station", station_meta["latitude@hdr"].values),
+    #             })
+    #     else:
+    #         # fallback to flat Dataset
+    #         ds = xr.Dataset.from_dataframe(df)
+
+    #     return ds
