@@ -23,7 +23,7 @@ class ODBSource(intake.source.base.DataSource):
     dask_access = False  # Flag to indicate if dask access is enabled
     first_run = True  # Flag to check if this is the first run of the class
 
-    def __init__(self, paths, columns=None, single=True, loglevel='DEBUG', **kwargs):
+    def __init__(self, paths, columns=None, single=True, loglevel='WARNING', **kwargs):
         """
         Initializes the ODBSource class.
 
@@ -95,6 +95,23 @@ class ODBSource(intake.source.base.DataSource):
 
         # Everything else = coordinates / metadata
         coord_cols = [c for c in df.columns if c not in var_cols]
+        self.logger.debug("Coordinate colums: %s", coord_cols)
+
+        # Remove @hdr from any coor_cols
+        coord_cols_old = coord_cols
+        coord_cols = [c.replace("@hdr", "") for c in coord_cols]
+        # Remove if from the column names
+        df.columns = [c.replace("@hdr", "") for c in df.columns]
+
+        # Filter out metadata
+        metadata_var = ['latitude', 'longitude', 'elevation', 'station']
+        attributes = {}
+        for md in metadata_var:
+            if md in coord_cols:
+                coord_cols.remove(md)
+                attributes[md] = df[md].values[0]
+                df.drop(md, axis=1, inplace=True)
+                self.logger.debug("Removed metadata column: %s", md)
 
         # --- Build Dataset ---
         ds = xr.Dataset()
@@ -112,9 +129,8 @@ class ODBSource(intake.source.base.DataSource):
         for v in var_cols:
             ds[v] = ("time", df[v].values)
 
-        # # --- Promote time to main dimension if available ---
-        # if "time" in ds:
-        #     ds = ds.swap_dims({"index": "time"}).drop_vars("index")
+        # Add attributes
+        ds.attrs.update(attributes)
 
         return ds
 
@@ -181,14 +197,16 @@ class ODBSource(intake.source.base.DataSource):
         self.dask_access = True
         _ = self.discover()
 
-        # Each partition delayed
-        delayed_dsets = [dask.delayed(self._get_partition)(i) for i in range(len(self.paths))]
+        # # Each partition delayed
+        # delayed_dsets = [dask.delayed(self._get_partition)(i) for i in range(len(self.paths))]
 
-        # Trigger concat lazily
-        ds = xr.concat(
-            [xr.Dataset.from_dataframe(dask.compute(d.to_dataframe())[0]) for d in delayed_dsets],
-            dim="station"
-        )
+        # # Trigger concat lazily
+        # ds = xr.concat(
+        #     [xr.Dataset.from_dataframe(dask.compute(d.to_dataframe())[0]) for d in delayed_dsets],
+        #     dim="index"
+        # )
+
+        ds = self._get_partition(0)
 
         return ds
 

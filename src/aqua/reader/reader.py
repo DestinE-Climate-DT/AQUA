@@ -853,7 +853,10 @@ class Reader():
         Returns:
             An xarray.Dataset 
         """
-        data = esmcat.to_dask()
+        data = esmcat(loglevel=self.loglevel).to_dask()
+        if 'variable' in self.kwargs:
+            # rename data['value@body'] to the variable kwarg
+            data = data.rename_vars({'value@body': self.kwargs['variable']})
         return data
 
     def reader_intake(self, esmcat, var, loadvar, keep="first"):
