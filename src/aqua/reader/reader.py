@@ -20,6 +20,7 @@ from aqua.fixer import Fixer
 from aqua.data_model import counter_reverse_coordinate
 from aqua.histogram import histogram
 import aqua.gsv
+import aqua.odb
 
 from .streaming import Streaming
 from .trender import Trender
@@ -345,6 +346,8 @@ class Reader():
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=True, level=level)
             ffdb = True  # These data have been read from fdb
+        elif isinstance(self.esmcat, aqua.odb.intake_odb.ODBSource):
+            data = self.reader_odb(self.esmcat)
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
 
@@ -838,6 +841,19 @@ class Reader():
                 data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
                               logging=True, loglevel=self.loglevel).read_chunked()
 
+        return data
+    
+    def reader_odb(self, esmcat):
+        """
+        Read fdb data. Returns a dask array.
+
+        Args:
+            esmcat (intake catalog): the intake catalog to read
+
+        Returns:
+            An xarray.Dataset 
+        """
+        data = esmcat.to_dask()
         return data
 
     def reader_intake(self, esmcat, var, loadvar, keep="first"):

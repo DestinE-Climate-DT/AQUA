@@ -23,7 +23,7 @@ class ODBSource(intake.source.base.DataSource):
     dask_access = False  # Flag to indicate if dask access is enabled
     first_run = True  # Flag to check if this is the first run of the class
 
-    def __init__(self, paths, columns=None, single=True, variable='auto', loglevel='DEBUG', **kwargs):
+    def __init__(self, paths, columns=None, single=True, loglevel='DEBUG', **kwargs):
         """
         Initializes the ODBSource class.
 
@@ -40,7 +40,6 @@ class ODBSource(intake.source.base.DataSource):
         self.paths = self._format_paths(paths)
         self.columns = columns
         self.single = single
-        self.variable = variable
 
         ODBSource.first_run = False
 
@@ -93,11 +92,6 @@ class ODBSource(intake.source.base.DataSource):
         # --- Decide variables vs metadata ---
         var_cols = [c for c in df.columns if c.endswith("@body")]
         self.logger.debug("Variable columns identified: %s", var_cols)
-        self.logger.debug("Renaming variable columns to %s", 'variable' if self.variable == 'auto' else self.variable)
-        if self.variable == 'auto': # rename the column identified to 'variable'
-            df = df.rename(columns={c: 'variable' for c in var_cols})
-        elif isinstance(self.variable, str):
-            df = df.rename(columns={c: self.variable for c in var_cols})
 
         # Everything else = coordinates / metadata
         coord_cols = [c for c in df.columns if c not in var_cols]
@@ -105,17 +99,22 @@ class ODBSource(intake.source.base.DataSource):
         # --- Build Dataset ---
         ds = xr.Dataset()
 
+        # Make time the main dimension if available
+        if "time" in df.columns:
+            ds = ds.assign_coords(time=("index", df["time"].values))
+            ds = ds.swap_dims({"index": "time"})
+
         # Coordinates
         for c in coord_cols:
-            ds = ds.assign_coords({c: ("index", df[c].values)})
+            ds = ds.assign_coords({c: ("time", df[c].values)})
 
         # Variables
         for v in var_cols:
-            ds[v] = ("index", df[v].values)
+            ds[v] = ("time", df[v].values)
 
-        # --- Promote time to main dimension if available ---
-        if "time" in ds:
-            ds = ds.swap_dims({"index": "time"}).drop_vars("index")
+        # # --- Promote time to main dimension if available ---
+        # if "time" in ds:
+        #     ds = ds.swap_dims({"index": "time"}).drop_vars("index")
 
         return ds
 
