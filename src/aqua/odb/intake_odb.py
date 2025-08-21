@@ -23,7 +23,7 @@ class ODBSource(intake.source.base.DataSource):
     dask_access = False  # Flag to indicate if dask access is enabled
     first_run = True  # Flag to check if this is the first run of the class
 
-    def __init__(self, paths, columns=None, single=True, loglevel='DEBUG', **kwargs):
+    def __init__(self, paths, columns=None, single=True, variable='auto', loglevel='DEBUG', **kwargs):
         """
         Initializes the ODBSource class.
 
@@ -31,13 +31,16 @@ class ODBSource(intake.source.base.DataSource):
             paths (str or list of str): Paths to the ODB files.
             columns (list of str, optional): Columns to read from the ODB files.
             single (bool, optional): If True, read a single file; if False, read multiple files.
+            variable (str, optional): Name of the variable to promote. Default is 'auto'.
             loglevel (str, optional): Logging level to use. Default is 'WARNING'.
         """
         self.logger = log_configure(log_level=loglevel, log_name='ODBSource')
+        self.logger.debug("Initializing ODBSource with paths: %s", paths)
 
         self.paths = self._format_paths(paths)
         self.columns = columns
         self.single = single
+        self.variable = variable
 
         ODBSource.first_run = False
 
@@ -51,8 +54,10 @@ class ODBSource(intake.source.base.DataSource):
             if not self._ds or not self._da:
                 # Load a sample to get the schema
                 self._ds = self._get_partition(0)
+                self.logger.debug("Loaded sample dataset for schema")
                 var = list(self._ds.data_vars)[0]
                 self._da = self._ds[var]
+                self.logger.debug("Loaded sample dataarray for schema")
             schema = intake.source.base.Schema(
                 datashape=None,
                 dtype=str(self._da.dtype),
@@ -71,47 +76,28 @@ class ODBSource(intake.source.base.DataSource):
 
         return schema
 
-    def _to_xarray(self, df: pd.DataFrame, variables: str | list[str] = "auto") -> xr.Dataset:
+    def _to_xarray(self, df: pd.DataFrame) -> xr.Dataset:
         """
-        Convert an ODB pandas DataFrame into an xarray.Dataset.
+        Converts an ODB pandas DataFrame into an xarray.Dataset.
+        Uses self.variable: 
+            - "auto": Promote all `@body` columns to data variables.
+            - str: Promote the `@body` column with the specified name.
 
-        Parameters
-        ----------
-        df : pd.DataFrame
-            One partition of ODB data.
-        variables : {"auto", list of str}, optional
-            - "auto": promote all `@body` columns to data variables.
-            - list: promote only the specified columns.
-            - anything else: keep all columns as variables (flat).
+        Args:
+            df (pd.DataFrame): One partition of ODB data.
+            
+
+        Returns:
+            xr.Dataset: The resulting xarray.Dataset.
         """
-        # --- Build time coordinate if possible ---
-        time_map = {
-            "year@hdr": "year",
-            "month@hdr": "month",
-            "day@hdr": "day",
-            "hour@hdr": "hour",
-            "minute@hdr": "minute",
-            "second@hdr": "second",
-        }
-
-        available = {alias: df[col]
-                    for col, alias in time_map.items()
-                    if col in df.columns}
-
-        if {"year", "month", "day", "hour"} <= set(available.keys()):
-            df = df.copy()
-            df["time"] = pd.to_datetime(available, errors="coerce")
-
-            # Drop original columns
-            df = df.drop(columns=[c for c in time_map if c in df.columns])
-
         # --- Decide variables vs metadata ---
-        if variables == "auto":
-            var_cols = [c for c in df.columns if c.endswith("@body")]
-        elif isinstance(variables, (list, tuple)):
-            var_cols = [c for c in df.columns if c in variables]
-        else:
-            var_cols = df.columns.tolist()  # flat fallback
+        var_cols = [c for c in df.columns if c.endswith("@body")]
+        self.logger.debug("Variable columns identified: %s", var_cols)
+        self.logger.debug("Renaming variable columns to %s", 'variable' if self.variable == 'auto' else self.variable)
+        if self.variable == 'auto': # rename the column identified to 'variable'
+            df = df.rename(columns={c: 'variable' for c in var_cols})
+        elif isinstance(self.variable, str):
+            df = df.rename(columns={c: self.variable for c in var_cols})
 
         # Everything else = coordinates / metadata
         coord_cols = [c for c in df.columns if c not in var_cols]
@@ -128,8 +114,8 @@ class ODBSource(intake.source.base.DataSource):
             ds[v] = ("index", df[v].values)
 
         # --- Promote time to main dimension if available ---
-        # if "time" in ds:
-        #     ds = ds.swap_dims({"index": "time"}).drop_vars("index")
+        if "time" in ds:
+            ds = ds.swap_dims({"index": "time"}).drop_vars("index")
 
         return ds
 
@@ -167,12 +153,6 @@ class ODBSource(intake.source.base.DataSource):
 
         # --- Convert to xarray ---
         ds = self._to_xarray(df)
-        #ds = xr.Dataset.from_dataframe(df)
-
-        # --- If time exists, promote it to main dimension ---
-        # if "time" in ds:
-        #     # Replace the generic index dimension with time
-        #     ds = ds.swap_dims({"index": "time"}).drop_vars("index")
 
         return ds
 
