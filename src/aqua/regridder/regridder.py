@@ -275,7 +275,7 @@ class Regridder():
                              cellareas_var, cellareas)
             if not os.path.exists(cellareas):
                 raise FileNotFoundError(f"Grid based cell area  file {cellareas} not found.")
-            return xr.open_mfdataset(cellareas)[cellareas_var].rename("cell_area").squeeze()
+            return xr.open_mfdataset(cellareas)[cellareas_var].rename("cell_area").squeeze().to_dataset()
 
         # clean if necessary
         if os.path.exists(area_filename):
