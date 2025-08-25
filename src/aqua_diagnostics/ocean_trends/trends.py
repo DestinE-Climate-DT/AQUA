@@ -42,10 +42,13 @@ class Trends(Diagnostic):
         self.logger.info("Starting trend analysis workflow")
         super().retrieve(var=var)
         self.logger.debug("Retrieved variables: %s", var)
-        region, lon_limits, lat_limits = super().select_region(
-            diagnostic="ocean3d", region=region
-        )
-        self.logger.debug("Selected region: %s, lon_limits: %s, lat_limits: %s", region, lon_limits, lat_limits)
+        res_dict = super()._select_region(data=self.data,
+                region=region, diagnostic="ocean3d",
+                drop=True
+            )
+        self.data = res_dict['data']
+        self.region = res_dict['region']
+        # self.logger.debug("Selected region: %s, lon_limits: %s, lat_limits: %s", region, lon_limits, lat_limits)
 
         if dim_mean:
             self.logger.debug("Averaging data over dimension: %s", dim_mean)
