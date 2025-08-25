@@ -13,7 +13,7 @@ class PlotTimeseries(PlotBaseMixin):
                  ref_monthly_data=None, ref_annual_data=None,
                  std_hourly_data=None, std_daily_data=None,
                  std_monthly_data=None, std_annual_data=None,
-                 loglevel: str = 'WARNING'):
+                 style=None, loglevel: str = 'WARNING'):
         """
         Initialize the PlotTimeseries class.
         This class is used to plot time series data previously processed
@@ -69,6 +69,8 @@ class PlotTimeseries(PlotBaseMixin):
 
         # Filling them
         self.get_data_info()
+
+        self.style = style
 
     def run(self, var: str, units: str = None, outputdir: str = './',
             rebuild: bool = True, dpi: int = 300, format: str = 'png'):
@@ -184,8 +186,8 @@ class PlotTimeseries(PlotBaseMixin):
                                   ref_annual_data=self.ref_annual_data,
                                   std_annual_data=self.std_annual_data,
                                   data_labels=data_labels, ref_label=ref_label,
-                                  title=title, loglevel=self.loglevel)
-
+                                  title=title, style=self.style, 
+                                  loglevel=self.loglevel)
         return fig, ax
 
     def save_plot(self, fig, var: str, description: str = None, region: str = None, rebuild: bool = True,

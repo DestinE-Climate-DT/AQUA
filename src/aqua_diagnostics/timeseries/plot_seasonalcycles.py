@@ -7,7 +7,8 @@ from .base import PlotBaseMixin
 class PlotSeasonalCycles(PlotBaseMixin):
     def __init__(self, diagnostic_name: str = 'seasonalcycles',
                  monthly_data=None, ref_monthly_data=None,
-                 std_monthly_data=None, loglevel: str = 'WARNING'):
+                 std_monthly_data=None, 
+                 style=None, loglevel: str = 'WARNING'):
         """
         Initialize the PlotSeasonalCycles class.
         This class is used to plot seasonal cycles data previously processed
@@ -31,6 +32,8 @@ class PlotSeasonalCycles(PlotBaseMixin):
 
         # Filling them
         self.get_data_info()
+
+        self.style = style
 
     def run(self, var: str, units: str = None, outputdir: str = './',
             rebuild: bool = True, dpi: int = 300, format: str = 'png'):
@@ -139,6 +142,7 @@ class PlotSeasonalCycles(PlotBaseMixin):
                                      data_labels=data_labels,
                                      ref_label=ref_label,
                                      title=title,
+                                     style=self.style,
                                      loglevel=self.loglevel)
 
         return fig, ax
