@@ -489,6 +489,14 @@ class PlotSeaIce:
             output_saver = OutputSaver(diagnostic='seaice', catalog=self.catalog, model=self.model, exp=self.exp,
                                         loglevel=self.loglevel, outputdir=self.outputdir)
 
-            product = f"{self.plot_type}_{self.method}_{'_'.join(region_dict.keys())}"
-            if save_pdf: output_saver.save_pdf(fig=fig, diagnostic_product=product, metadata=metadata, rebuild=self.rebuild)
-            if save_png: output_saver.save_png(fig=fig, diagnostic_product=product, metadata=metadata, rebuild=self.rebuild)
+            diagnostic_product = self.plot_type
+            
+            extra_keys = {'method': self.method,
+                          'regions': '_'.join(region_dict.keys())}
+            
+            if save_pdf: 
+                output_saver.save_pdf(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,
+                                      rebuild=self.rebuild, extra_keys=extra_keys)
+            if save_png: 
+                output_saver.save_png(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,
+                                      rebuild=self.rebuild, extra_keys=extra_keys)

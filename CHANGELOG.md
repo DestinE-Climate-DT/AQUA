@@ -33,7 +33,7 @@ AQUA diagnostics complete list:
 - Timeseries: fix lazy calculation of seasonal cycles (#2143)
 - Boxplots: fix output dir (#2136) 
 - Boxplots: add tests and update docs (#2129)
-- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165)
+- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165, #2171)
 - Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
 - Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
