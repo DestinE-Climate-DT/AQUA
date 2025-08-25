@@ -982,8 +982,36 @@ class Reader():
         data.aqua.set_default(self) #accessor linking
         return data
     
-    def timmean(self, data, **kwargs):
-        return self.timstat(data, stat='mean', **kwargs)
+    def timmean(self, data, freq=None, **kwargs):
+        """
+        Compute time mean of input data.
+        
+        Args:
+            data (xarray.Dataset): Input data to compute the mean on.
+            freq (str): Frequency for time mean computation. 
+                       - If None, uses the default timstat behavior
+                       - If 'seasonal', returns list of seasonal means [DJF, MAM, JJA, SON]
+                       - If 'annual', returns annual mean
+                       - Other valid freq strings are passed to timstat
+            **kwargs: Additional arguments passed to timstat
+            
+        Returns:
+            xarray.Dataset or list: 
+                - If freq='seasonal': list of seasonal means [DJF, MAM, JJA, SON]
+                - If freq='annual' or other values: single dataset with computed mean
+        """
+        if freq == 'seasonal':
+            # Use Q-NOV for meteorological seasons and convert to list for backward compatibility
+            seasonal_data = self.timstat(data, stat='mean', freq='Q-NOV', **kwargs)
+            # Convert to list for backward compatibility with existing plotting code
+            return [seasonal_data.isel(time=i) for i in range(4)]
+        elif freq == 'annual':
+            # For annual, compute climatological mean over entire time period
+            # This gives us a single mean value without time dimension
+            return self.timstat(data, stat='mean', freq=None, **kwargs)
+        else:
+            # Use the standard timstat method for other frequencies
+            return self.timstat(data, stat='mean', freq=freq, **kwargs)
 
     def timmax(self, data, **kwargs):
         return self.timstat(data, stat='max', **kwargs)

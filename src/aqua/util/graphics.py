@@ -231,31 +231,50 @@ def set_map_title(data: xr.DataArray, title: str = None,
     return title
 
 
-def coord_names(data: xr.DataArray):
+def coord_names(data: xr.DataArray, return_single: bool = False, prefer_lat: bool = True):
     """
     Get the names of the longitude and latitude coordinates.
 
     Args:
         data (xarray.DataArray): Input data array.
+        return_single (bool): If True, return only one coordinate name (the first found).
+        prefer_lat (bool): If return_single=True, prefer latitude over longitude.
 
     Returns:
-        lon_name (str): Name of the longitude coordinate.
-        lat_name (str): Name of the latitude coordinate.
+        If return_single=False: tuple (lon_name, lat_name)
+        If return_single=True: str or None (single coordinate name)
     """
-    try:
-        lon_name = 'lon'
-        data.lon
-    except AttributeError:
-        lon_name = 'longitude'
-        data.longitude
-    try:
-        lat_name = 'lat'
-        data.lat
-    except AttributeError:
-        lat_name = 'latitude'
-        data.latitude
-
-    return lon_name, lat_name
+    lon_name = None
+    lat_name = None
+    
+    # Find longitude coordinate
+    for lon_candidate in ['lon', 'longitude']:
+        if lon_candidate in data.coords:
+            lon_name = lon_candidate
+            break
+    
+    # Find latitude coordinate  
+    for lat_candidate in ['lat', 'latitude']:
+        if lat_candidate in data.coords:
+            lat_name = lat_candidate
+            break
+    
+    if return_single:
+        if prefer_lat and lat_name is not None:
+            return lat_name
+        elif lon_name is not None:
+            return lon_name
+        elif lat_name is not None:
+            return lat_name
+        else:
+            return None
+    else:
+        # Backward compatibility: raise error if coordinates not found
+        if lon_name is None:
+            raise AttributeError("No longitude coordinate found")
+        if lat_name is None:
+            raise AttributeError("No latitude coordinate found")
+        return lon_name, lat_name
 
 
 def ticks_round(ticks: list, round_to: int = None):

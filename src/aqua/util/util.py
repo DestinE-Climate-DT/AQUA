@@ -459,6 +459,20 @@ def strlist_to_phrase(items: list[str]) -> str:
     if len(items) == 2: return f"{items[0]} and {items[1]}"
     return ", ".join(items[:-1]) + f", and {items[-1]}"
 
+def clean_std(std_data):
+    """
+    Clean std data by handling NaN values for faster plotting
+    """
+    if std_data is None:
+        return None
+    
+    if isinstance(std_data, list):
+        return [clean_std(s) for s in std_data if s is not None]
+    
+    # Fill NaN values and load data into memory for faster access
+    cleaned = std_data.fillna(1e-8)
+    # Force computation to avoid repeated lazy evaluation
+    return cleaned.compute() if hasattr(cleaned, 'compute') else cleaned
 
 class HiddenPrints:
     # from stackoverflow https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print#:~:text=If%20you%20don't%20want,the%20top%20of%20the%20file. # noqa

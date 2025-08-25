@@ -6,6 +6,13 @@ diagnostic_config = {
             'target_path': 'diagnostics/global_biases/cli'
         },
     ],
+    'lat_lon_profiles': [
+        {
+            'config_file': 'regions.yaml',
+            'source_path': 'config/diagnostics/lat_lon_profiles/definitions',
+            'target_path': 'diagnostics/lat_lon_profiles/definitions'
+        },
+    ],
     'ecmean': [
         {
             'config_file': 'ecmean_config_climatedt.yaml',

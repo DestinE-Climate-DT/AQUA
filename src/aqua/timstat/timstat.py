@@ -154,4 +154,4 @@ class TimStat():
                               pd.to_datetime(avg_data['time']) + offset)
         
         return avg_data
-    
+
