@@ -70,6 +70,7 @@ class PlotTimeseries(PlotBaseMixin):
         # Filling them
         self.get_data_info()
 
+
     def run(self, var: str, units: str = None, outputdir: str = './',
             rebuild: bool = True, dpi: int = 300, format: str = 'png'):
         """
@@ -185,7 +186,6 @@ class PlotTimeseries(PlotBaseMixin):
                                   std_annual_data=self.std_annual_data,
                                   data_labels=data_labels, ref_label=ref_label,
                                   title=title, loglevel=self.loglevel)
-
         return fig, ax
 
     def save_plot(self, fig, var: str, description: str = None, region: str = None, rebuild: bool = True,
