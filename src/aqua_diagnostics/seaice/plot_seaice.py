@@ -450,7 +450,6 @@ class PlotSeaIce:
         if self.plot_type not in valid_type_plots:
             raise ValueError(f"Invalid plot_type. Allowed plots are: {valid_type_plots}")
 
-        # iterate over the methods in the dictionary
         for method, region_dict in self.repacked_dict.items():
 
             self.method = method
