@@ -26,7 +26,7 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleLatLon'
-    variable: '2t'
+    variable: ['2t',]
     params:
       default:
     plot_params:

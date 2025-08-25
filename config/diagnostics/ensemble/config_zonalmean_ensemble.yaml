@@ -27,8 +27,8 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleZonal'
-    variable: 'so'
-    region: 'arctic'
+    variable: ['so',]
+    region: ['arctic',]
     params:
       default:
     plot_params:

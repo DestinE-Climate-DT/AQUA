@@ -69,78 +69,78 @@ if __name__ == "__main__":
         if config_dict["diagnostics"]["ensemble"]["run"]:
             logger.info("EnsembleLatLon module is used.")
 
-            variable = config_dict["diagnostics"]["ensemble"].get("variable", None)
-            logger.info(f"Variable under consideration: {variable}")
-            title_mean = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "title_mean", None
-            )
-            title_std = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "title_std", None
-            )
-            cbar_label = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "cbar_label", None
-            )
+            for variable in config_dict["diagnostics"]["ensemble"].get("variable", None):
+                logger.info(f"Variable under consideration: {variable}")
+                title_mean = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                    "title_mean", None
+                )
+                title_std = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                    "title_std", None
+                )
+                cbar_label = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                    "cbar_label", None
+                )
 
-            # Model data
-            models = config_dict["datasets"]
+                # Model data
+                models = config_dict["datasets"]
 
-            catalog_list = []
-            model_list = []
-            exp_list = []
-            source_list = []
-            if models is not None:
-                models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
-                models[0]["model"] = get_arg(args, "model", models[0]["model"])
-                models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
-                models[0]["source"] = get_arg(args, "source", models[0]["source"])
-                for model in models:
-                    catalog_list.append(model["catalog"])
-                    model_list.append(model["model"])
-                    exp_list.append(model["exp"])
-                    source_list.append(model["source"])
+                catalog_list = []
+                model_list = []
+                exp_list = []
+                source_list = []
+                if models is not None:
+                    models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
+                    models[0]["model"] = get_arg(args, "model", models[0]["model"])
+                    models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
+                    models[0]["source"] = get_arg(args, "source", models[0]["source"])
+                    for model in models:
+                        catalog_list.append(model["catalog"])
+                        model_list.append(model["model"])
+                        exp_list.append(model["exp"])
+                        source_list.append(model["source"])
 
-            ens_dataset = retrieve_merge_ensemble_data(
-                variable=variable,
-                catalog_list=catalog_list,
-                model_list=model_list,
-                exp_list=exp_list,
-                source_list=source_list,
-                log_level="WARNING",
-                ens_dim="ensemble",
-            )
+                ens_dataset = retrieve_merge_ensemble_data(
+                    variable=variable,
+                    catalog_list=catalog_list,
+                    model_list=model_list,
+                    exp_list=exp_list,
+                    source_list=source_list,
+                    log_level="WARNING",
+                    ens_dim="ensemble",
+                )
 
-            ens_latlon = EnsembleLatLon(
-                var=variable,
-                dataset=ens_dataset,
-                catalog_list=catalog_list,
-                model_list=model_list,
-                source_list=source_list,
-                ensemble_dimension_name="ensemble",
-            )
+                ens_latlon = EnsembleLatLon(
+                    var=variable,
+                    dataset=ens_dataset,
+                    catalog_list=catalog_list,
+                    model_list=model_list,
+                    source_list=source_list,
+                    ensemble_dimension_name="ensemble",
+                )
 
-            ens_latlon.run()
+                ens_latlon.run()
 
-            # PlotEnsembleLatLon class
-            plot_arguments = {
-                "var": variable,
-                "catalog_list": catalog_list,
-                "model_list": model_list,
-                "exp_list": exp_list,
-                "source_list": source_list,
-                "save_pdf": save_pdf,
-                "save_png": save_png,
-                "title_mean": title_mean,
-                "title_std": title_std,
-                "cbar_label": cbar_label,
-            }
+                # PlotEnsembleLatLon class
+                plot_arguments = {
+                    "var": variable,
+                    "catalog_list": catalog_list,
+                    "model_list": model_list,
+                    "exp_list": exp_list,
+                    "source_list": source_list,
+                    "save_pdf": save_pdf,
+                    "save_png": save_png,
+                    "title_mean": title_mean,
+                    "title_std": title_std,
+                    "cbar_label": cbar_label,
+                }
 
-            ens_latlon_plot = PlotEnsembleLatLon(
-                **plot_arguments,
-                dataset_mean=ens_latlon.dataset_mean,
-                dataset_std=ens_latlon.dataset_std,
-            )
-            ens_latlon_plot.plot()
-            logger.info(f"Finished Ensemble_latLon diagnostic for {variable}.")
+                ens_latlon_plot = PlotEnsembleLatLon(
+                    **plot_arguments,
+                    dataset_mean=ens_latlon.dataset_mean,
+                    dataset_std=ens_latlon.dataset_std,
+                )
+                ens_latlon_plot.plot()
+                logger.info(f"Finished Ensemble_latLon diagnostic for {variable}.")
 
     # Close the Dask client and cluster
     close_cluster(

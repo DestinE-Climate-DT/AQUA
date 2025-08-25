@@ -47,7 +47,7 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleTimeseries'
-    variable: '2t'
+    variable: ['2t',]
     params:
       default:
         startdate_data: "1990-01-01"

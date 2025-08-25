@@ -67,78 +67,78 @@ if __name__ == "__main__":
         if config_dict["diagnostics"]["ensemble"]["run"]:
             logger.info("EnsembleZonal module is used.")
 
-            variable = config_dict["diagnostics"]["ensemble"].get("variable", None)
-            region = config_dict["diagnostics"]["ensemble"].get("region", None)
+            for variable in config_dict["diagnostics"]["ensemble"].get("variable", None):
+                for region in config_dict["diagnostics"]["ensemble"].get("region", None):
 
-            logger.info(f"Variable under consideration: {variable}")
-            title_mean = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "title_mean", None
-            )
-            title_std = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "title_std", None
-            )
-            cbar_label = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "cbar_label", None
-            )
-            figure_size = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                "figure_size", None
-            )
+                    logger.info(f"Variable under consideration: {variable}")
+                    title_mean = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                        "title_mean", None
+                    )
+                    title_std = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                        "title_std", None
+                    )
+                    cbar_label = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                        "cbar_label", None
+                    )
+                    figure_size = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                        "figure_size", None
+                    )
 
-            # Model data
-            models = config_dict["datasets"]
+                    # Model data
+                    models = config_dict["datasets"]
 
-            catalog_list = []
-            model_list = []
-            exp_list = []
-            source_list = []
-            if models is not None:
-                models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
-                models[0]["model"] = get_arg(args, "model", models[0]["model"])
-                models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
-                models[0]["source"] = get_arg(args, "source", models[0]["source"])
-                for model in models:
-                    catalog_list.append(model["catalog"])
-                    model_list.append(model["model"])
-                    exp_list.append(model["exp"])
-                    source_list.append(model["source"])
+                    catalog_list = []
+                    model_list = []
+                    exp_list = []
+                    source_list = []
+                    if models is not None:
+                        models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
+                        models[0]["model"] = get_arg(args, "model", models[0]["model"])
+                        models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
+                        models[0]["source"] = get_arg(args, "source", models[0]["source"])
+                        for model in models:
+                            catalog_list.append(model["catalog"])
+                            model_list.append(model["model"])
+                            exp_list.append(model["exp"])
+                            source_list.append(model["source"])
 
-            ens_dataset = retrieve_merge_ensemble_data(
-                region=region,
-                variable=variable,
-                model_list=model_list,
-                exp_list=exp_list,
-                source_list=source_list,
-            )
-            ens_zm = EnsembleZonal(
-                var=variable,
-                dataset=ens_dataset,
-                catalog_list=catalog_list,
-                model_list=model_list,
-                source_list=source_list,
-                outputdir=outputdir,
-            )
-            ens_zm.run()
+                    ens_dataset = retrieve_merge_ensemble_data(
+                        region=region,
+                        variable=variable,
+                        model_list=model_list,
+                        exp_list=exp_list,
+                        source_list=source_list,
+                    )
+                    ens_zm = EnsembleZonal(
+                        var=variable,
+                        dataset=ens_dataset,
+                        catalog_list=catalog_list,
+                        model_list=model_list,
+                        source_list=source_list,
+                        outputdir=outputdir,
+                    )
+                    ens_zm.run()
 
-            # PlotEnsembleZonal class
-            plot_arguments = {
-                "var": variable,
-                "catalog_list": catalog_list,
-                "model_list": model_list,
-                "exp_list": exp_list,
-                "source_list": source_list,
-                "save_pdf": save_pdf,
-                "save_png": save_png,
-                "title_mean": title_mean,
-                "title_std": title_std,
-                "cbar_label": cbar_label,
-                "figure_size": figure_size,
-            }
+                    # PlotEnsembleZonal class
+                    plot_arguments = {
+                        "var": variable,
+                        "catalog_list": catalog_list,
+                        "model_list": model_list,
+                        "exp_list": exp_list,
+                        "source_list": source_list,
+                        "save_pdf": save_pdf,
+                        "save_png": save_png,
+                        "title_mean": title_mean,
+                        "title_std": title_std,
+                        "cbar_label": cbar_label,
+                        "figure_size": figure_size,
+                    }
 
-            ens_zm_plot = PlotEnsembleZonal(
-                **plot_arguments, dataset_mean=ens_zm.dataset_mean, dataset_std=ens_zm.dataset_std
-            )
-            ens_zm_plot.plot()
-            logger.info(f"Finished Ensemble_Zonal diagnostic for {variable}.")
+                    ens_zm_plot = PlotEnsembleZonal(
+                        **plot_arguments, dataset_mean=ens_zm.dataset_mean, dataset_std=ens_zm.dataset_std
+                    )
+                    ens_zm_plot.plot()
+                    logger.info(f"Finished Ensemble_Zonal diagnostic for {variable}.")
 
     # Close the Dask client and cluster
     close_cluster(
