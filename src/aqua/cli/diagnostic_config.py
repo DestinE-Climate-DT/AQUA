@@ -113,7 +113,7 @@ diagnostic_config = {
         {
             'config_file': 'config_seaice.yaml',
             'source_path': 'config/diagnostics/seaice',
-            'target_path': 'diagnostics/seaice/config'
+            'target_path': 'diagnostics/seaice'
         }
     ],
     'ssh': [

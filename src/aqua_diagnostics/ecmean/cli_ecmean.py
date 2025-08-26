@@ -3,9 +3,9 @@
 '''
 AQUA ECmean4 Performance diagnostic CLI
 '''
-import sys
 import argparse
 import os
+import sys
 import xarray as xr
 from ecmean import __version__ as eceversion
 
@@ -19,6 +19,7 @@ from aqua.diagnostics import PerformanceIndices, GlobalMean
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args, get_diagnostic_configpath
 from aqua.diagnostics.core import OutputSaver
+from aqua.util import strlist_to_phrase, lat_to_phrase, ConfigPath
 
 
 def parse_arguments(arguments):
@@ -100,7 +101,7 @@ def data_check(data_atm, data_oce, logger=None):
         data_atm (xarray.Dataset): atmospheric data
         data_oce (xarray.Dataset): oceanic data
     """
-
+    
     # create a single dataset
     if data_oce is None:
         mydata = data_atm
@@ -149,6 +150,53 @@ def time_check(mydata, y1, y2, logger=None):
         raise NotEnoughDataError("Not enough data, exiting...")
 
     return y1, y2
+
+
+def set_description(diagnostic, model, exp, year1, year2, config):
+    """
+    Build the metadata description for figures.
+
+    Args:
+        diagnostic (str): The diagnostic type.
+        model (str): Model name.
+        exp (str): Experiment identifier.
+        year1, year2 (int): First and last year of the period covered by the data.
+        config (dict): configuration file.
+    
+    Returns:
+        description (str)
+    """
+    model_time = f"for {model} {exp} from {year1}-01-01 to {year2}-12-31. "
+
+    region_bounds = {
+        'Global':       (-90.0,  90.0),
+        'NH':           ( 20.0,  90.0),
+        'SH':           (-90.0, -20.0),
+        'Equatorial':   (-20.0,  20.0),
+        'Tropical':     (-30.0,  30.0),
+        'North Midlat': ( 30.0,  90.0),
+        'South Midlat': (-90.0, -30.0),
+        'North Pole':   ( 60.0,  90.0),
+        'South Pole':   (-90.0, -60.0)
+    }
+    region_text = strlist_to_phrase([f"{r} ({lat_to_phrase(int(lat1))}-{lat_to_phrase(int(lat2))})"
+                                       for r in config[diagnostic]["regions"] for (lat1, lat2) in [region_bounds.get(r, (0, 0))]])
+
+    regions_phrase = f"Processed regions are {region_text}."
+
+    if diagnostic == 'performance_indices':
+        description = (f"Performance Indices normalized to the CMIP6 average "
+                       f"for different regions and seasons {model_time}"
+                       f"{regions_phrase}. Numbers < 1 imply better results than CMIP6 mean.")
+    elif diagnostic == 'global_mean':
+        description = (f"Global mean biases normalized to observed interannual variability "
+                       f"with respect to references for different regions and seasons {model_time}"
+                       f"{regions_phrase}")
+    else:
+        # produce a generic description
+        description = f"Diagnostic {diagnostic} {model_time.strip()}"
+
+    return description
 
 
 if __name__ == '__main__':
@@ -203,12 +251,16 @@ if __name__ == '__main__':
 
     # loop on datasets
     for dataset in configfile['datasets']:
-        catalog = get_arg(args, 'catalog', dataset.get('catalog'))
         model = get_arg(args, 'model', dataset.get('model'))
         exp = get_arg(args, 'exp', dataset.get('exp'))
         source_atm = get_arg(args, 'source', dataset.get('source', 'lra-r100-monthly'))
         source_oce = get_arg(args, 'source_oce', dataset.get('source_oce', source_atm))
         regrid = get_arg(args, 'regrid', dataset.get('regrid', 'r100'))
+        catalog = get_arg(args, 'catalog', dataset.get('catalog'))
+        if catalog is None:
+            configurer = ConfigPath(loglevel=loglevel)
+            cat, _, _ = configurer.deliver_intake_catalog(model=model, exp=exp, source=source_atm)
+            catalog = cat.name
 
         # activate override from command line
         realization = get_arg(args, 'realization', None)
@@ -219,8 +271,8 @@ if __name__ == '__main__':
 
         #setup the output saver
         outputsaver = OutputSaver(diagnostic='ecmean',
-                          catalog=catalog, model=model, exp=exp,
-                          outputdir=outputdir, loglevel=loglevel)
+                                  catalog=catalog, model=model, exp=exp,
+                                  outputdir=outputdir, loglevel=loglevel)
 
         for diagnostic in ['global_mean', 'performance_indices']:
 
@@ -233,28 +285,31 @@ if __name__ == '__main__':
             # load the data
             logger.info('Loading atmospheric data %s', model)
             data_atm = reader_data(model=model, exp=exp, source=source_atm,
-                                catalog=catalog, keep_vars=atm_vars, regrid=regrid,
-                                reader_kwargs=reader_kwargs)
+                                   catalog=catalog, keep_vars=atm_vars, regrid=regrid,
+                                   reader_kwargs=reader_kwargs)
 
             logger.info('Loading oceanic data from %s', model)
             data_oce = reader_data(model=model, exp=exp, source=source_oce,
-                                    catalog=catalog, keep_vars=oce_vars, regrid=regrid,
-                                    reader_kwargs=reader_kwargs)
+                                   catalog=catalog, keep_vars=oce_vars, regrid=regrid,
+                                   reader_kwargs=reader_kwargs)
 
             # check the data
             data = data_check(data_atm, data_oce, logger=logger)
             year1, year2 = time_check(data, year1, year2, logger=logger)
 
+
             # store the data in the output saver and create the metadata
             filename_dict = {x: outputsaver.generate_path(extension=x, diagnostic_product=diagnostic) for x in ['yml', 'txt'] }
-            metadata = outputsaver.create_metadata(diagnostic_product=diagnostic)
-            
+            description = set_description(diagnostic, model, exp, year1, year2, config)
+            metadata = outputsaver.create_metadata(diagnostic_product=diagnostic,
+                                                   metadata={'Description': description})
+
             # performance indices
             if diagnostic == 'performance_indices':
                 logger.info('Launching ECmean performance indices...')
                 ecmean = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
-                                    interface=interface, loglevel=loglevel,
-                                    outputdir=outputdir, xdataset=data)
+                                            interface=interface, loglevel=loglevel,
+                                            outputdir=outputdir, xdataset=data)
             elif diagnostic == 'global_mean':
                 logger.info('Launching ECmean global mean...')
                 ecmean = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
@@ -274,11 +329,11 @@ if __name__ == '__main__':
             if save_pdf:
                 logger.info('Saving PDF %s plot...', diagnostic)
                 outputsaver.save_pdf(fig=ecmean_fig, diagnostic_product=diagnostic,
-                                        metadata=metadata, rebuild=rebuild)
+                                     metadata=metadata, rebuild=rebuild)
 
             if save_png:
                 logger.info('Saving PNG %s plot...', diagnostic)
                 outputsaver.save_png(fig=ecmean_fig, diagnostic_product=diagnostic,
-                                        metadata=metadata, rebuild=rebuild)
+                                     metadata=metadata, rebuild=rebuild)
 
-            logger.info('AQUA ECmean4 Performance Diagnostic is terminated. Go outside and live your life!')
+            logger.info('ECmean4 diagnostic completed.')

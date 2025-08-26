@@ -13,7 +13,10 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Hotfix in catgen for monthly chunking (#2184)
+- Fix loaded areas as dataset (#2174)
 - Few graphical adjustments in multiple_maps (#2159)
+- Add description for ECmean diagnostic (#2158)
 - Fix fldstat coordinate treatment (#2147)
 - Fixer applied when units name changes is required and no factor is found (#2128)
 - Update aqua-analysis config for refactored diagnostics (#2144)
@@ -29,11 +32,12 @@ AQUA diagnostics complete list:
 - Boxplots: add support for reader_kwargs (#2149)
 - Global Biases: add the `diagnostic_name` option in config file (#2159)
 - Gregory: refined the reference label generation (#2157)
+- Seaice: add support for `reader_kwargs` (#2153)
 - Remove old seaice diagnostic scripts (#2152)
 - Timeseries: fix lazy calculation of seasonal cycles (#2143)
 - Boxplots: fix output dir (#2136) 
 - Boxplots: add tests and update docs (#2129)
-- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165)
+- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165, #2178)
 - Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
 - Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
