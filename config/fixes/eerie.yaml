@@ -1,0 +1,8 @@
+fixer_name:
+    eerie:
+        data_model: true
+        # lat:
+        #     source: latitude
+        # lon:
+        #     source: longitude
+        
