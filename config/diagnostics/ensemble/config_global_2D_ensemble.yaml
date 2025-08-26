@@ -31,7 +31,7 @@ diagnostics:
       default:
     plot_params:
       default:
-        mean_title: 'Map of 2t for Ensemble Multi-Model mean'
-        std_title: 'Map of 2t for Ensemble Multi-Model standard deviation'
-        cbar_label: '2 meter temperature in K'  
+        mean_title: 
+        std_title: 
+        cbar_label: 
 

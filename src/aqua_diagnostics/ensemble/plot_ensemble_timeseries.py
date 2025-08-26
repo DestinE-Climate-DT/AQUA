@@ -154,7 +154,7 @@ class PlotEnsembleTimeseries(BaseMixin):
         )
 
         self.title = "Ensemble analysis of " + self.model if title is None else title
-        self.description = self.catalog + "_" + self.model if description is None else description
+        self.description = self.catalog + " " + self.model + " with " + self.model_list if description is None else description
 
         if hourly_data is not None or daily_data is not None:
             self.logger.warning("Hourly and daily data are not yet supported, they will be ignored")

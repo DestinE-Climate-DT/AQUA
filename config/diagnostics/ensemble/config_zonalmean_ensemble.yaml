@@ -34,7 +34,7 @@ diagnostics:
     plot_params:
       default:
         figure_size: [10,8]
-        mean_title: 'Mean of Ensemble of Zonal-average of avg_so'
-        std_title: 'Standard deviation of Ensemble of Zonal-average of avg_so'
-        cbar_label: 'Time-mean sea water practical salinity g kg**-1/year'
+        mean_title: 
+        std_title: 
+        cbar_label:
 

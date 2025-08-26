@@ -21,7 +21,7 @@ class BaseMixin(Diagnostic):
         ref_exp: str = None,
         region: str = None,
         outputdir: str = "./",
-        log_level: str = "WARNING",
+        loglevel: str = "WARNING",
     ):
         
         """
@@ -51,11 +51,11 @@ class BaseMixin(Diagnostic):
             ref_exp (str): This is specific to timeseries reference data exp. Default is None.
             region (str): This is variable assigns region name. Default is None. 
             outputdir (str): String input for output path. Default is './'
-            log_level (str): Default is set to "WARNING"
+            loglevel (str): Default is set to "WARNING"
         """
-        self.log_level = log_level
-        logger = log_configure(log_name="BaseMixin", log_level=log_level)
-        logger.info("Initializing the BaseMixin class")
+        self.log_level = loglevel
+        self.logger = log_configure(log_name="BaseMixin", log_level=loglevel)
+        self.logger.info("Initializing the BaseMixin class")
 
         self.region = region
         self.diagnostic_name = diagnostic_name
@@ -81,64 +81,65 @@ class BaseMixin(Diagnostic):
 
         # Handling catalog name
         if catalog_list is None:
-            logger.info("No catalog names given. Assigning it to catalog_name.")
+            self.logger.info("No catalog names given. Assigning it to catalog_name.")
             self.catalog = None_catalog
         else:
             catalog_counts = dict(Counter(catalog_list))
             if len(catalog_counts.keys()) <= 1:
-                logger.info("Catalog name is given. Single-model ensemble is given.")
+                self.logger.info("Catalog name is given. Single-model ensemble is given.")
                 catalog_str_list = [str(item) for item in catalog_list]
                 if catalog_str_list[0] == "None": catalog_str_list[0] = None_catalog 
                 self.catalog = catalog_str_list[0]
             else:
-                logger.info(
+                self.logger.info(
                     "Multi-model ensemble is given. Assigning catalog name to multi-catalog"
                 )
                 self.catalog = multi_catalog
 
         # Handling model name:
+        self.model_list = model_list
         if model_list is None:
-            logger.info("No model name is given. Assigning it to model_name")
+            self.logger.info("No model name is given. Assigning it to model_name")
             self.model = None_model
         else:
             model_counts = dict(Counter(model_list))
             if len(model_counts.keys()) <= 1:
-                logger.info("Model name is given. Single-model ensemble is given.")
+                self.logger.info("Model name is given. Single-model ensemble is given.")
                 model_str_list = [str(item) for item in model_list]
                 if model_str_list[0] == "None": model_str_list[0] = None_model
                 self.model = model_str_list[0]
             else:
-                logger.info("Multi-model ensmeble is given. Assigning model name to multi-model")
+                self.logger.info("Multi-model ensmeble is given. Assigning model name to multi-model")
                 self.model = multi_model
 
         # Handling exp name:
         if exp_list is None:
-            logger.info("No exp name is given. Assigning it to exp_name")
+            self.logger.info("No exp name is given. Assigning it to exp_name")
             self.exp = None_exp
         else:
             exp_counts = dict(Counter(exp_list))
             if len(exp_counts.keys()) <= 1:
-                logger.info("Model name is given. Single-exp ensemble is given.")
+                self.logger.info("Model name is given. Single-exp ensemble is given.")
                 exp_str_list = [str(item) for item in exp_list]
                 if exp_str_list[0] == "None": exp_str_list[0] = None_exp
                 self.exp = exp_str_list[0] 
             else:
-                logger.info("Multi-exp ensmeble is given. Assigning exp name to multi-exp")
+                self.logger.info("Multi-exp ensmeble is given. Assigning exp name to multi-exp")
                 self.exp = multi_exp
 
         # Handling source name:
         if source_list is None:
-            logger.info("No source name is given. Assigning it to source_name")
+            self.logger.info("No source name is given. Assigning it to source_name")
             self.source = None_source
         else:
             source_counts = dict(Counter(source_list))
             if len(source_counts.keys()) <= 1:
-                logger.info("Model name is given. Single-source ensemble is given.")
+                self.logger.info("Model name is given. Single-source ensemble is given.")
                 source_str_list = [str(item) for item in source_list]
                 if source_str_list[0] == "None": source_str_list[0] = None_source
                 self.source = source_str_list[0]
             else:
-                logger.info("Multi-source ensmeble is given. Assigning source name to multi-source")
+                self.logger.info("Multi-source ensmeble is given. Assigning source name to multi-source")
                 self.source = multi_source
 
         super().__init__(
@@ -146,9 +147,9 @@ class BaseMixin(Diagnostic):
             model=self.model,
             exp=self.exp,
             source=self.source,
-            loglevel=log_level,
+            loglevel=loglevel,
         )
-        logger.info(f"Outputs will be saved with {self.catalog}, {self.model} and {self.exp}.")
+        self.logger.info(f"Outputs will be saved with {self.catalog}, {self.model} and {self.exp}.")
         self.outputdir = outputdir
 
     def _str_freq(self, freq: str):
@@ -193,7 +194,7 @@ class BaseMixin(Diagnostic):
             (e.g., 'EnsembleTimeseries' or 'EnsembleLatLon' or 'EnsembleZonal').
             description (str): Description of the figure.
             data_name (str): The variable is used to label the output file for mean or std. 
-                             The dafault is set to None.
+                             The default is set to None.
             data (xarray.Dataset) or (xarray.Dataarray).     
         """
 
@@ -226,7 +227,7 @@ class BaseMixin(Diagnostic):
             "Saving %s for %s to netcdf in %s", data_name, self.diagnostic_product, self.outputdir
         )
         if description is None:
-            description = self.diagnostic_name + "_" + self.diagnostic_product
+            description = self.diagnostic_name + " " + self.diagnostic_product + " for " + self.catalog + " and " + self.model + " with " + self.model_list + " " + self.exp + " " + self.region  
         outputsaver = OutputSaver(
             diagnostic=self.diagnostic_name,
             #diagnostic_product=self.diagnostic_product,
@@ -273,7 +274,7 @@ class BaseMixin(Diagnostic):
             loglevel=self.log_level,
         )
         if description is None:
-            description = self.diagnostic_name + "_" + self.diagnostic_product
+            description = self.diagnostic_name + " " + self.diagnostic_product + " for " + self.catalog + " and " + self.model + " with " + self.model_list + " " + self.exp + " " + self.region
         metadata = {"Description": description}
         extra_keys = {}
         if fig_std is not None:
@@ -316,7 +317,7 @@ class BaseMixin(Diagnostic):
                 loglevel=self.log_level,
             )
             if description is None:
-                description = self.diagnostic_name + "_" + self.diagnostic_product
+                description = self.diagnostic_name + " " + self.diagnostic_product + " for " + self.catalog + " and " + self.model + " with " + self.model_list + " " + self.exp + " " + self.region
             metadata = {"Description": description}
             extra_keys = {}
             if fig_std is not None:

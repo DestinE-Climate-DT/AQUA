@@ -126,7 +126,7 @@ class PlotEnsembleLatLon(BaseMixin):
 
         self.title_mean = "Ensemble mean of " + self.model if title_mean is None else title_mean
         self.title_std = "Ensemble standard deviation of " + self.model if title_std is None else title_std
-        self.description = self.catalog + "_" + self.model if description is None else description
+        self.description = self.catalog + " " + self.model + " with " + self.model_list if description is None else description
 
     def plot(self):
         """

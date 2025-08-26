@@ -56,5 +56,5 @@ diagnostics:
         enddate_ref: "2005-01-01"
     plot_params:
       default:
-        title: "Multi-Model Ensemble Statistics"
+        title: 
         plot_ensemble_members: False
