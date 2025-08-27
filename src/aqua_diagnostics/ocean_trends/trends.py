@@ -6,6 +6,7 @@ from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
 from aqua.reader import Trender
 
+
 class Trends(Diagnostic):
     def __init__(
         self,
@@ -42,12 +43,11 @@ class Trends(Diagnostic):
         self.logger.info("Starting trend analysis workflow")
         super().retrieve(var=var)
         self.logger.debug("Retrieved variables: %s", var)
-        res_dict = super()._select_region(data=self.data,
-                region=region, diagnostic="ocean3d",
-                drop=True
-            )
-        self.data = res_dict['data']
-        self.region = res_dict['region']
+        res_dict = super()._select_region(
+            data=self.data, region=region, diagnostic="ocean3d", drop=True
+        )
+        self.data = res_dict["data"]
+        self.region = res_dict["region"]
         # self.logger.debug("Selected region: %s, lon_limits: %s, lat_limits: %s", region, lon_limits, lat_limits)
 
         if dim_mean:

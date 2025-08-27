@@ -1,17 +1,22 @@
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
+
 # from .multiple_hovmoller import plot_multi_hovmoller
 from .multiple_map import plot_maps
+
 xr.set_options(keep_attrs=True)
 
+
 class PlotTrends:
-    def __init__(self,
-                 data: xr.Dataset,
-                 diagnostic: str = "ocean_trends",
-                 outputdir: str = ".",
-                 rebuild: bool = True,
-                 loglevel: str = "WARNING"):
+    def __init__(
+        self,
+        data: xr.Dataset,
+        diagnostic: str = "ocean_trends",
+        outputdir: str = ".",
+        rebuild: bool = True,
+        loglevel: str = "WARNING",
+    ):
         self.data = data
 
         self.loglevel = loglevel
@@ -30,33 +35,41 @@ class PlotTrends:
             diagnostic=self.diagnostic,
             catalog=self.catalog,
             model=self.model,
-            exp=self.exp, 
-            outdir=outputdir, 
-            loglevel=self.loglevel)
-        
+            exp=self.exp,
+            outdir=outputdir,
+            loglevel=self.loglevel,
+        )
+
     def plot_multilevel(self):
         self.set_levels()
         self.set_data_list()
         self.set_suptitle()
         self.set_title()
         self.set_description()
-        plot_maps(maps = self.data_list,
-                  nrows=4, ncols=2,
-                  title=self.suptitle,
-                  titles=self.title_list,
-                  )
+        plot_maps(
+            maps=self.data_list,
+            nrows=4,
+            ncols=2,
+            title=self.suptitle,
+            titles=self.title_list,
+        )
+
     def set_levels(self):
         levels = [100, 200, 300, 400]
         self.levels = levels
         self.logger.debug(f"Levels set to: {levels}")
+
     def set_data_list(self):
         self.data_list = []
         self.data = self.data.interp(level=self.levels)
         for level in self.levels:
             for var in self.vars:
                 data_level_var = self.data[var].sel(level=level)
-                data_level_var.attrs['long_name'] = f"{data_level_var.attrs.get('long_name', var)} at {level}m"
+                data_level_var.attrs["long_name"] = (
+                    f"{data_level_var.attrs.get('long_name', var)} at {level}m"
+                )
                 self.data_list.append(data_level_var)
+
     def set_suptitle(self):
         """Set the title for the Hovmoller plot."""
         self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region}"
@@ -74,9 +87,11 @@ class PlotTrends:
                     title = f"{var} ({self.data[var].attrs.get('units')})"
                     self.title_list.append(title)
                 else:
-                    self.title_list.append(' ')
+                    self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
         self.description = {}
-        self.description['description'] = {f'Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}'}
+        self.description["description"] = {
+            f"Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
+        }
