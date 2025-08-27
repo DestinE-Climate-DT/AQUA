@@ -27,7 +27,7 @@ class OutputSaver:
                  exp: Optional[Union[str, list]] = None, realization: Optional[Union[str, list]] = None,
                  catalog_ref: Optional[Union[str, list]] = None, model_ref: Optional[Union[str, list]] = None, 
                  exp_ref: Optional[Union[str, list]] = None,
-                 outdir: str = '.', loglevel: str = 'WARNING'):
+                 outputdir: str = '.', loglevel: str = 'WARNING'):
         """
         Initialize the OutputSaver with diagnostic parameters and output directory.
         All the catalog, model, and experiment can be both a string or a list of strings.
@@ -42,7 +42,7 @@ class OutputSaver:
             catalog_ref (str, list, optional): Reference catalog name.
             model_ref (str, list, optional): Reference model name.
             exp_ref (str, list, optional): Reference experiment name.
-            outdir (str, optional): Output directory. Defaults to current directory.
+            outputdir (str, optional): Output directory. Defaults to current directory.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         """
         self.loglevel = loglevel
@@ -76,7 +76,7 @@ class OutputSaver:
             'exp_ref': self.exp_ref
         })
 
-        self.outdir = outdir
+        self.outputdir = outputdir
 
     @staticmethod
     def _format_realization(realization: Optional[Union[str, int, list]]) -> Union[str, list]:
@@ -207,7 +207,7 @@ class OutputSaver:
             diagnostic_product=diagnostic_product, extra_keys=extra_keys
         ) + f'.{file_format}'
         dir_format = 'netcdf' if file_format == 'nc' else file_format
-        folder = os.path.join(self.outdir, dir_format)
+        folder = os.path.join(self.outputdir, dir_format)
         create_folder(folder=str(folder), loglevel=self.loglevel)
         return os.path.join(folder, filename)
 
@@ -277,7 +277,7 @@ class OutputSaver:
         Returns:
             str: The path to the generated folder.
         """
-        folder = os.path.join(self.outdir, extension)
+        folder = os.path.join(self.outputdir, extension)
         create_folder(folder=str(folder), loglevel=self.loglevel)
         return folder
     

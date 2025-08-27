@@ -38,6 +38,15 @@ if __name__ == '__main__':
 
     regrid = get_arg(args, 'regrid', None) 
 
+    if regrid:
+        logger.info(f"Regrid option is set to {regrid}")
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        logger.info(f"Realization option is set to {realization}")
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = {}
+
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
     rebuild = config_dict['output'].get('rebuild', True)
@@ -65,7 +74,7 @@ if __name__ == '__main__':
                                 'enddate': dataset.get('enddate')}
 
                 boxplots = Boxplots(**dataset_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
-                boxplots.run(var=variables)
+                boxplots.run(var=variables, reader_kwargs=reader_kwargs)
                 fldmeans.append(boxplots.fldmeans)
             
             fldmeans_ref = []
@@ -77,7 +86,7 @@ if __name__ == '__main__':
                                   'enddate': reference.get('enddate')}
 
                 boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
-                boxplots_ref.run(var=variables)
+                boxplots_ref.run(var=variables, reader_kwargs=reader_kwargs)
                 fldmeans_ref.append(boxplots_ref.fldmeans)
 
 

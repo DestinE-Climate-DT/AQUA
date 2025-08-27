@@ -3,6 +3,7 @@ import os
 import numpy as np
 import xarray as xr
 from aqua.diagnostics import GlobalBiases, PlotGlobalBiases
+from aqua.exceptions import NoDataError
 
 # Tolerance for numerical comparisons
 approx_rel = 1e-4
@@ -74,8 +75,9 @@ class TestGlobalBiases:
 
     def test_variables(self):
         gb_local = GlobalBiases(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly')
-        with pytest.raises(ValueError):
+        with pytest.raises(Exception) as exc:
             gb_local.retrieve(var='pippo')
+        assert isinstance(exc.value, (ValueError, NoDataError))
 
         gb_local.retrieve(var='tprate', units='mm/day')
         gb_local.compute_climatology(var='tprate')

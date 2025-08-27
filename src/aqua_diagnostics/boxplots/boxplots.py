@@ -44,13 +44,16 @@ class Boxplots(Diagnostic):
         self.outputdir = outputdir
         self.loglevel = loglevel
 
-    def run(self, var: None, save_netcdf=False, units: str = None) -> None:
+    def run(self, var: str = None, save_netcdf: bool = False,
+            units: str = None, reader_kwargs: dict = {}) -> None:
         """
         Retrieve and preprocess dataset, selecting pressure level and/or converting units if needed.
 
         Args:
             var (str or list of str, optional): list of variables to retrieve. If None, uses self.var.
+            save_netcdf (bool, optional): If True, saves output fldmeans as netcdf file. Defaults to False.
             units (str or list of str, optional): Target units (e.g., 'mm/day').
+            reader_kwargs (dict, optional): Additional keyword arguments for the Reader.
 
         Raises:
             NoDataError: If variable not found in dataset.
@@ -60,7 +63,7 @@ class Boxplots(Diagnostic):
         if var is not None:
             self.var = [v.lstrip('-') for v in (var if isinstance(var, list) else [var])]
 
-        super().retrieve(var=self.var)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         if self.data is None:
             self.logger.error(f"Variable {self.var} not found in dataset {self.model}, {self.exp}, {self.source}")
@@ -115,7 +118,7 @@ class Boxplots(Diagnostic):
                 data=self.fldmeans,
                 diagnostic='boxplots',
                 diagnostic_product='boxplot',
-                outdir=self.outputdir,
+                outputdir=self.outputdir,
                 extra_keys=extra_keys
                 )
             self.logger.info(f"Field means saved to {self.outputdir}.")

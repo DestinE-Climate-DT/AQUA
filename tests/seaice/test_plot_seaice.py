@@ -3,7 +3,7 @@ import os, glob
 import numpy as np
 import xarray as xr
 from aqua.diagnostics import SeaIce, PlotSeaIce
-from aqua.util import OutputSaver
+from aqua.diagnostics.core import OutputSaver
 
 approx_rel = 1e-4
 loglevel = 'DEBUG'
@@ -227,7 +227,7 @@ class TestPlotSeaIce:
                          regions_to_plot=['Arctic', 'Antarctic'],
                          model=self.model, exp=self.exp, source=self.source,
                          catalog=self.catalog, loglevel=self.loglevel,
-                         outdir=self.tmp_path)
+                         outputdir=self.tmp_path)
 
         psi.plot_seaice(plot_type='timeseries', save_pdf=True, save_png=True)
 

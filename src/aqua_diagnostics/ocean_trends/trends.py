@@ -126,7 +126,7 @@ class Trends(Diagnostic):
         super().save_netcdf(
             diagnostic=diagnostic,
             diagnostic_product=diagnostic_product,
-            outdir=outputdir,
+            outputdir=outputdir,
             rebuild=rebuild,
             data=self.trend_coef,
             extra_keys={"region": region.replace(" ", "_") if region else None},

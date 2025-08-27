@@ -20,7 +20,6 @@ from .yaml import load_yaml, dump_yaml, load_multi_yaml
 from .time import check_chunk_completeness, frequency_string_to_pandas
 from .time import time_to_string, int_month_name
 from .zarr import create_zarr_reference
-from .output_saver import OutputSaver
 
 __all__ = ['ConfigPath',
            'get_eccodes_attr',
@@ -42,5 +41,5 @@ __all__ = ['ConfigPath',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas',
            'time_to_string',
-           'create_zarr_reference', 'OutputSaver',
+           'create_zarr_reference',
            'int_month_name', 'strlist_to_phrase', 'merge_attrs']

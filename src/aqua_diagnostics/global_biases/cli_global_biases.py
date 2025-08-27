@@ -73,6 +73,7 @@ if __name__ == '__main__':
                     "Only the first entry in 'references' will be used.\n"
                     "Multiple references are not supported by this diagnostic."
                 )
+            diagnostic_name = config_dict['diagnostics']['globalbiases'].get('diagnostic_name', 'globalbiases')
             dataset = config_dict['datasets'][0]
             reference = config_dict['references'][0]
             dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
@@ -145,7 +146,8 @@ if __name__ == '__main__':
                     proj_params = plot_params.get('projection_params', {})
 
                     logger.debug(f"Using projection: {proj} for variable: {var}")
-                    plot_biases = PlotGlobalBiases(save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                    plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png,
+                                                dpi=dpi, outputdir=outputdir, loglevel=loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
                                           var=var, plev=p,
                                           proj=proj, proj_params=proj_params,

@@ -221,12 +221,12 @@ class BaseMixin(Diagnostic):
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
 
         super().save_netcdf(data=data, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
-                            outdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
+                            outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
         if data_std is not None:
             extra_keys.update({'std': 'std'})
             self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
             super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
-                                outdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
+                                outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 
     def _check_data(self, var: str, units: str):
         """
@@ -414,7 +414,7 @@ class PlotBaseMixin():
                                   catalog_ref=list(self.ref_catalogs.values()) if isinstance(self.ref_catalogs, dict) else self.ref_catalogs,
                                   model_ref=list(self.ref_models.values()) if isinstance(self.ref_models, dict) else self.ref_models,
                                   exp_ref=list(self.ref_exps.values()) if isinstance(self.ref_exps, dict) else self.ref_exps,
-                                  outdir=outputdir,
+                                  outputdir=outputdir,
                                   loglevel=self.loglevel)
 
         metadata = {"Description": description, "dpi": dpi }

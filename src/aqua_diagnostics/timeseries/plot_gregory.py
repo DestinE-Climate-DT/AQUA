@@ -130,15 +130,15 @@ class PlotGregory(PlotBaseMixin):
 
     def set_ref_label(self):
         """Set the reference label for the plot"""
-        # TODO: Improve this to avoid the Try/Except
-        try:
-            ref_label = f"{self.ref_models['t2m']} {self.ref_exps['t2m']}"
-            ref_label += f" {self.ref_models['net_toa']} {self.ref_exps['net_toa']}"
-        except KeyError:
-            ref_label = None
+        t2m_model, toa_model = self.ref_models.get("t2m"), self.ref_models.get("net_toa")
+        t2m_exp, toa_exp     = self.ref_exps.get("t2m"), self.ref_exps.get("net_toa")
 
+        if None in (t2m_model, t2m_exp, toa_model, toa_exp):
+            return None
+
+        ref_label = f"{t2m_model} {t2m_exp} {toa_model} {toa_exp}"
         return ref_label
-
+        
     def set_description(self):
         """Set the description for the plot"""
         description = 'Gregory Plot'

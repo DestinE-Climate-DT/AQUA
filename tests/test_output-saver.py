@@ -1,177 +1,153 @@
+import os
 import pytest
+from pathlib import Path
 import xarray as xr
 import matplotlib.pyplot as plt
-from aqua.logger import log_configure
-from aqua.util import OutputSaver, open_image
-
-# Initialize the logger for the tests
-log_configure(log_level='DEBUG', log_name='OutputSaverTest')
-
+from aqua.diagnostics.core import OutputSaver
 
 # Fixture for OutputSaver instance
 @pytest.fixture
-def output_saver():
-    return OutputSaver(diagnostic='dummy', model='MSWEP', exp='past',
-                       catalog='lumi-phase2', loglevel='DEBUG', default_path='.')
+def output_saver(tmp_path):
+    def _factory(**overrides):
+        default_args = {
+            'diagnostic': 'dummy',
+            'model': 'IFS-NEMO',
+            'exp': 'historical',
+            'catalog': 'lumi-phase2',
+            'outputdir': tmp_path,
+            'loglevel': 'DEBUG',
+        }
+        default_args.update(overrides)
+        return OutputSaver(**default_args)
+    return _factory
 
+@pytest.fixture
+def base_saver(output_saver):
+    return output_saver()
 
 @pytest.mark.aqua
-def test_generate_name(output_saver):
+def test_generate_name(base_saver, output_saver):
     """Test the generation of output filenames with and without additional parameters."""
     # Test filename generation without additional parameters
-    filename = output_saver.generate_name(diagnostic_product='mean', suffix='nc')
-    assert filename == 'dummy.mean.lumi-phase2.MSWEP.past.nc'
+    
+    filename = base_saver.generate_name(diagnostic_product='mean')
+    assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1'
 
-    # Test filename generation with a second catalog for comparative studies
-    filename = output_saver.generate_name(diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                          time_start='1990-01-01', time_end='1990-02-01', time_precision='ym',
-                                          area='indian_ocean', catalog_2='lumi-phase3', frequency="3H", status="preliminary")
-    assert filename == 'dummy.mean.lumi-phase2.MSWEP.past.tprate.lumi-phase3.ERA5.era5.indian_ocean.199001.199002.ym.frequency_3H.status_preliminary.nc'  # noqa: E501
+    # Test with generic multimodel keyword
+    extra_keys = {'var': 'tprate'}
+    saver = output_saver(model='multimodel')
+    filename = saver.generate_name(diagnostic_product='mean', extra_keys=extra_keys)
+    assert filename == 'dummy.mean.multimodel.tprate'
 
-    filename = output_saver.generate_name(diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                          time_start='1990-01-01', time_end='1990-02-01',
-                                          time_precision='y', status="preliminary")
-    assert filename == 'dummy.mean.lumi-phase2.MSWEP.past.tprate.ERA5.era5.1990.1990.y.status_preliminary.nc'
+    # Test with multiple references
+    extra_keys = {'var': 'tprate', 'region' : 'indian_ocean'}
+    saver = output_saver(model='IFS-NEMO', realization=2, model_ref=['ERA5', 'CERES'])
+    filename = saver.generate_name(
+            diagnostic_product='mean', extra_keys=extra_keys
+    )
+    assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r2.multiref.tprate.indian_ocean'
 
-    filename = output_saver.generate_name(diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                          time_start='1990-01-01', time_end='1990-02-01',
-                                          area='pacific_ocean', catalog_2='lumi-phase3')
-    assert filename == 'dummy.mean.lumi-phase2.MSWEP.past.tprate.lumi-phase3.ERA5.era5.pacific_ocean.19900101.19900201.ymd.nc'
+    # Test with multiple models
+    extra_keys = {'var': 'tprate', 'region': 'indian_ocean'}
+    saver = output_saver(
+        catalog=['lumi-phase2', 'lumi-phase2'], model=['IFS-NEMO', 'ICON'],
+        exp=['hist-1990', 'hist-1990'], model_ref='ERA5')
+    filename = saver.generate_name(
+        diagnostic_product='mean', extra_keys=extra_keys
+    )
+    assert filename == 'dummy.mean.multimodel.ERA5.tprate.indian_ocean'
 
-    filename = output_saver.generate_name(diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                          time_start='1990-01-01', time_end='1990-02-01', time_precision='ymd')
-    assert filename == 'dummy.mean.lumi-phase2.MSWEP.past.tprate.ERA5.era5.19900101.19900201.ymd.nc'
+    # Test with multiple models
+    extra_keys = {'var': 'tprate', 'region': 'indian_ocean'}
+    saver = output_saver(
+        catalog=['lumi-phase2'], model=['IFS-NEMO'],
+        exp=['historical'], model_ref=['ERA5'])
+    filename = saver.generate_name(
+        diagnostic_product='mean', extra_keys=extra_keys
+    )
+    assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.ERA5.tprate.indian_ocean'
 
-    output_saver = OutputSaver(diagnostic='tropical_rainfall', model='MSWEP', exp='past', catalog='lumi-phase2',
-                               loglevel='DEBUG', default_path='.', filename_keys=['diagnostic', 'catalog', 'model'])
-    filename = output_saver.generate_name(var='tprate', model_2='ERA5', exp_2='era5', time_start='1990-01', time_end='1990-02',
-                                          diagnostic_product='mean', time_precision='ym', area='indian_ocean',
-                                          frequency="3H", status="preliminary")
-    assert filename == 'tropical_rainfall.lumi-phase2.MSWEP.nc'
+    with pytest.raises(ValueError):
+        # Test with invalid model type
+        saver = output_saver(model=['IFS-NEMO', 'ICON'])
+        saver.generate_name(diagnostic_product='mean')
 
+    with pytest.raises(ValueError):
+        # Test with invalid model type
+        saver = output_saver(model=['IFS-NEMO', 'ICON'], catalog=['lumi-phase2', 'lumi-phase2'], exp=['hist-1990'])
+        saver.generate_name(diagnostic_product='mean')
 
 @pytest.mark.aqua
-def test_save_netcdf(output_saver):
+def test_internal_function(base_saver):
+    """Test internal functions of OutputSaver."""
+
+    # Test cases per _format_realization
+    saver = base_saver
+    assert saver._format_realization(None) == 'r1'
+    assert saver._format_realization('5') == 'r5'
+    assert saver._format_realization(5) == 'r5'
+    assert saver._format_realization('r5') == 'r5'
+    assert saver._format_realization([1, 'r2']) == ['r1', 'r2']
+
+    # Test cases per unpack_list
+    assert saver.unpack_list(['item']) == 'item'
+    assert saver.unpack_list(['a', 'b']) == ['a', 'b']
+    assert saver.unpack_list(None) is None
+    assert saver.unpack_list([]) is None
+
+@pytest.mark.aqua
+def test_save_netcdf(base_saver, tmp_path):
     """Test saving a netCDF file."""
     # Create a simple xarray dataset
     data = xr.Dataset({'data': (('x', 'y'), [[1, 2], [3, 4]])})
 
-    # Test saving netCDF file without additional parameters
-    path = output_saver.save_netcdf(dataset=data, diagnostic_product='mean')
-    assert path == './netcdf/dummy.mean.lumi-phase2.MSWEP.past.nc'
+    extra_keys = {'var': 'tprate'}
+    base_saver.save_netcdf(dataset=data, diagnostic_product='mean', extra_keys=extra_keys)
+    nc = os.path.join(tmp_path, 'netcdf', 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.tprate.nc')
+    assert os.path.exists(nc)
 
-    path = output_saver.save_netcdf(dataset=data, diagnostic_product='mean', path='./')
-    assert path == './dummy.mean.lumi-phase2.MSWEP.past.nc'
-
-    # Test saving netCDF file with a second catalog for comparative studies
-    path = output_saver.save_netcdf(dataset=data, diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                    time_start='1990-01-01', time_end='1990-02-01', time_precision='ym',
-                                    area='indian_ocean', catalog_2='lumi-phase3', frequency="3H", status="preliminary")
-    assert path == './netcdf/dummy.mean.lumi-phase2.MSWEP.past.tprate.lumi-phase3.ERA5.era5.indian_ocean.199001.199002.ym.frequency_3H.status_preliminary.nc'  # noqa: E501
-
+    old_mtime = Path(nc).stat().st_mtime
+    base_saver.save_netcdf(dataset=data, diagnostic_product='mean', rebuild=False)
+    new_mtime = Path(nc).stat().st_mtime
+    assert new_mtime == old_mtime
 
 @pytest.mark.aqua
-def test_save_pdf(output_saver):
-    """Test saving a PDF file."""
-    # Create a simple matplotlib figure
-    fig, ax = plt.subplots()
-    ax.plot([1, 2, 3], [4, 5, 6])
-
-    # Test saving PDF file without additional parameters
-    path = output_saver.save_pdf(fig=fig, diagnostic_product='mean')
-    assert path == './pdf/dummy.mean.lumi-phase2.MSWEP.past.pdf'
-
-    path = output_saver.save_pdf(fig=fig, diagnostic_product='mean', path='./')
-    assert path == './dummy.mean.lumi-phase2.MSWEP.past.pdf'
-
-    # Test saving PDF file with a second catalog for comparative studies
-    path = output_saver.save_pdf(fig=fig, diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                 time_start='1990-01-01', time_end='1990-02-01', time_precision='ym',
-                                 area='indian_ocean', catalog_2='lumi-phase3', frequency="3H", status="preliminary")
-    assert path == './pdf/dummy.mean.lumi-phase2.MSWEP.past.tprate.lumi-phase3.ERA5.era5.indian_ocean.199001.199002.ym.frequency_3H.status_preliminary.pdf'  # noqa: E501
-
-
-@pytest.mark.aqua
-def test_save_png(output_saver):
+def test_save_png(base_saver, tmp_path):
     """Test saving a PNG file."""
-    # Create a simple matplotlib figure
-    fig, ax = plt.subplots()
-    ax.plot([1, 2, 3], [4, 5, 6])
-
-    # Test saving PNG file without additional parameters
-    path = output_saver.save_png(fig=fig, diagnostic_product='mean')
-    assert path == './png/dummy.mean.lumi-phase2.MSWEP.past.png'
-
-    path = output_saver.save_png(fig=fig, diagnostic_product='mean', path='./')
-    assert path == './dummy.mean.lumi-phase2.MSWEP.past.png'
-
-    # Test saving PNG file with a second catalog for comparative studies
-    path = output_saver.save_png(fig=fig, diagnostic_product='mean', var='tprate', model_2='ERA5', exp_2='era5',
-                                 time_start='1990-01-01', time_end='1990-02-01', time_precision='ym',
-                                 area='indian_ocean', catalog_2='lumi-phase3', frequency="3H", status="preliminary")
-    assert path == './png/dummy.mean.lumi-phase2.MSWEP.past.tprate.lumi-phase3.ERA5.era5.indian_ocean.199001.199002.ym.frequency_3H.status_preliminary.png'  # noqa: E501
-
-
-@pytest.mark.aqua
-def test_missing_diagnostic_product(output_saver):
-    """Test that a ValueError is raised when diagnostic_product is not provided."""
-    with pytest.raises(ValueError, match="The 'diagnostic_product' parameter is required and cannot be empty."):
-        output_saver.generate_name()
-
-    data = xr.Dataset({'data': (('x', 'y'), [[1, 2], [3, 4]])})
-    with pytest.raises(ValueError, match="The 'diagnostic_product' parameter is required and cannot be empty."):
-        output_saver.save_netcdf(dataset=data)
 
     fig, ax = plt.subplots()
-    ax.plot([1, 2, 3], [4, 5, 6])
-    with pytest.raises(ValueError, match="The 'diagnostic_product' parameter is required and cannot be empty."):
-        output_saver.save_pdf(fig=fig)
+    ax.plot([0, 1], [0, 1])
 
-    with pytest.raises(ValueError, match="The 'diagnostic_product' parameter is required and cannot be empty."):
-        output_saver.save_png(fig=fig)
+    # Save the PNG file
+    extra_keys = {'var': 'tprate'}
+    path = base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=300)
 
+    # Check if the file was created
+    png = os.path.join(tmp_path, 'png', 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.tprate.png')
+    assert os.path.exists(png)
+    assert path == png
+
+    old_mtime = Path(png).stat().st_mtime
+    base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=300, rebuild=False)
+    new_mtime = Path(png).stat().st_mtime
+    assert new_mtime == old_mtime
 
 @pytest.mark.aqua
-def test_metadata_addition(output_saver):
-    """Test saving a file with metadata."""
-    # Create a simple xarray dataset and metadata
-    data = xr.Dataset({'data': (('x', 'y'), [[1, 2], [3, 4]])})
-    metadata = {'author': 'test', 'description': 'test metadata'}
-
-    # Save netCDF file with metadata
-    path = output_saver.save_netcdf(dataset=data, diagnostic_product='mean', metadata=metadata)
-    loaded_data = xr.open_dataset(path)
-    assert loaded_data.attrs['author'] == 'test'
-    assert loaded_data.attrs['description'] == 'test metadata'
-
-    # Create a simple matplotlib figure
+def test_save_pdf(base_saver, tmp_path):
+    """Test saving a PDF file."""
+    # Create a simple figure
     fig, ax = plt.subplots()
-    ax.plot([1, 2, 3], [4, 5, 6])
+    ax.plot([0, 1], [0, 1])
 
-    # Save PDF file with metadata
-    pdf_path = output_saver.save_pdf(fig=fig, diagnostic_product='mean', metadata=metadata)
+    # Save the PDF file
+    extra_keys = {'var': 'tprate'}
+    base_saver.save_pdf(fig=fig, diagnostic_product='mean', extra_keys=extra_keys)
 
-    # Use the open_image function to open the PDF and verify the metadata
-    pdf_metadata = open_image(pdf_path, loglevel='DEBUG')
-    assert pdf_metadata.get('author') == 'test'
-    assert pdf_metadata.get('description') == 'test metadata'
+    # Check if the file was created
+    pdf = os.path.join(tmp_path, 'pdf', 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.tprate.pdf')
+    assert os.path.exists(pdf)
 
-    # Save PNG file with metadata
-    png_path = output_saver.save_png(fig=fig, diagnostic_product='mean', metadata=metadata)
-
-    # Use the open_image function to open the PNG and verify the metadata
-    png_metadata = open_image(png_path, loglevel='DEBUG')
-    assert png_metadata.get('author') == 'test'
-    assert png_metadata.get('description') == 'test metadata'
-
-
-@pytest.mark.aqua
-def test_invalid_figure_input(output_saver):
-    """Test handling of invalid figure input."""
-    # Test saving PDF with invalid figure input
-    with pytest.raises(ValueError, match="The provided fig parameter is not a valid matplotlib Figure or pyplot figure."):
-        output_saver.save_pdf(fig="invalid_figure", diagnostic_product='mean')
-
-    # Test saving PNG with invalid figure input
-    with pytest.raises(ValueError, match="The provided fig parameter is not a valid matplotlib Figure or pyplot figure."):
-        output_saver.save_png(fig="invalid_figure", diagnostic_product='mean')
+    old_mtime = Path(pdf).stat().st_mtime
+    base_saver.save_pdf(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, rebuild=False)
+    new_mtime = Path(pdf).stat().st_mtime
+    assert new_mtime == old_mtime

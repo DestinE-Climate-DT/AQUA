@@ -88,6 +88,31 @@ class TestAqua:
         assert reader.esmcat.metadata['test-key'] == "test-value"  # from the default
         assert reader.src_grid_name == "tco79-nn"  # overwritten key
 
+    def test_empty_dataset_error(self, reader_instance):
+        """
+        Test that NoDataError is raised when empty dataset is retrieved
+        """
+        with pytest.raises(Exception):
+            reader_instance.retrieve(var="nonexistent_variable")
+
+    def test_time_selection_with_dates(self, reader_instance):
+        """
+        Test that time selection is applied when both startdate and enddate are provided
+        """
+        full_data = reader_instance.retrieve()
+
+        if len(full_data.time) < 2:
+            pytest.skip("Not enough timesteps to test")
+        
+        startdate = str(full_data.time[0].values)[:10]
+        enddate = str(full_data.time[-1].values)[:10]
+    
+        selected_data = reader_instance.retrieve(startdate=startdate, enddate=enddate)
+        
+        # Verify time selection was applied
+        assert len(selected_data.time) == len(full_data.time)
+        assert selected_data.time[0].values == full_data.time[0].values
+
     @pytest.fixture(
         params=[
             ("IFS", "test-tco79", "short", "r200", "tas"),

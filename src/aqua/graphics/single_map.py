@@ -30,7 +30,7 @@ def plot_single_map(data: xr.DataArray,
                     vmin: Optional[float] = None, vmax: Optional[float] = None, cmap: str = 'RdBu_r',
                     cbar: bool = True, cbar_label: Optional[str] = None, 
                     norm: Optional[object] = None,
-                    title: Optional[str] = None, transform_first: bool = False, cyclic_lon: bool = True,
+                    title: Optional[str] = None, title_size: Optional[int] = 12, transform_first: bool = False, cyclic_lon: bool = True,
                     add_land: bool = False, fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                     ax_pos: tuple = (1, 1, 1), return_fig: bool = False, 
                     loglevel='WARNING',  **kwargs):
@@ -56,6 +56,7 @@ def plot_single_map(data: xr.DataArray,
         cbar (bool, optional):       If True, add a colorbar. Defaults to True.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
         title (str, optional):       Title of the figure. Defaults to None.
+        title_size (int, optional):   Title size. Defaults to None.
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
         add_land (bool, optional):   If True, add land to the map. Defaults to False.
@@ -212,7 +213,7 @@ def plot_single_map(data: xr.DataArray,
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title)
+        ax.set_title(title, fontsize=title_size)
 
     if return_fig:
         logger.debug("Returning figure and axes")
@@ -227,7 +228,8 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          add_contour: bool = True, add_land=False,
                          cyclic_lon: bool = True, return_fig: bool = False,
                          fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                         title: Optional[str] = None, loglevel: str = 'WARNING', **kwargs):
+                         title: Optional[str] = None, title_size: Optional[int] = 12,
+                         loglevel: str = 'WARNING', **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
     as a contour plot.
@@ -244,6 +246,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         sym_contour (bool, optional)    If True, set the contour levels to be symmetrical.  Default to False
         sym (bool, optional):           If True, set the colorbar for the diff to be symmetrical. Default to True
         title (str, optional):          Title of the figure. Defaults to None.
+        title_size (int, optional):     Title size. Defaults to None.
         cyclic_lon (bool, optional):    If True, add cyclic longitude. Defaults to True.
         return_fig (bool, optional):    If True, return the figure and axes. Defaults to False.
         fig (plt.Figure, optional):     Figure to plot on. By default a new figure is created.
@@ -332,7 +335,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title)
+        ax.set_title(title, fontsize=title_size)
 
     if return_fig:
         return fig, ax

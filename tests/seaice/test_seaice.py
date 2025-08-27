@@ -1,6 +1,7 @@
 import pytest 
 import xarray as xr
 from aqua.diagnostics import SeaIce
+from aqua.exceptions import NoDataError
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
@@ -32,12 +33,12 @@ class TestSeaIce:
 
         # Invalid cases (Errors expected)
         ('wrong_method', 'antarctic',   None, None, 'siconc',   None, ValueError, "Invalid method"),
-        ('extent',       'weddell_sea', None, None, 'errorvar', None, KeyError,   None),
-        ('volume',       'antarctic',   None, None, 'errorvar', None, KeyError,   None),
+        ('extent',       'weddell_sea', None, None, 'errorvar', None, (KeyError, NoDataError),   None),
+        ('volume',       'antarctic',   None, None, 'errorvar', None, (KeyError, NoDataError),   None),
 
         # Invalid standard deviation cases
-        ('extent', 'weddell_sea', None, None, 'errorvar', None, KeyError, None),
-        ('volume', 'antarctic',   None, None, 'errorvar', None, KeyError, None)
+        ('extent', 'weddell_sea', None, None, 'errorvar', None, (KeyError, NoDataError), None),
+        ('volume', 'antarctic',   None, None, 'errorvar', None, (KeyError, NoDataError), None)
         ]
     )
     def test_seaice_compute_with_std(self, method, region, value, expected_units, variable,
@@ -121,14 +122,14 @@ class TestSeaIce:
 
     ################## TO be implemented ###################
     @pytest.mark.parametrize(
-        ('method', 'region',  'value',  'expected_units',  'variable', 'calc_std_freq', 'expect_exception', 'error_message'),
+        ('method', 'region',  'value', 'variable', 'expect_exception'),
         [
         # Valid cases without standard deviation
-        ('fraction',  'arctic',    0.2817, '[0-1]', 'siconc',  None,   None,   None),
-        ('thickness', 'antarctic', 0.0619, 'm',    'sithick',  None,   None,   None),
+        ('fraction',  'arctic',    0.2817,  'siconc',   None),
+        ('thickness', 'antarctic', 0.0619,  'sithick',  None),
 
         # Invalid cases (Errors expected)
-        ('fraction',[1,2,3], None, None, 'siconc', None, ValueError, None),
+        ('fraction',[1,2,3], None, 'siconc', ValueError),
         # ('wrong_method', 'antarctic',   None, None, 'siconc',   None, ValueError, "Invalid method"),
         # ('fraction',     'weddell_sea', None, None, 'errorvar', None, KeyError, None),
         # ('thickness',    'antarctic',   None, None, 'errorvar', None, KeyError, None),
@@ -138,8 +139,7 @@ class TestSeaIce:
         # ('volume', 'antarctic',   None, None, 'errorvar', None, KeyError, None)
         ]
     )
-    def test_seaice_2d_monthly_climatology(self, method, region, value, expected_units, variable,
-                                           calc_std_freq, expect_exception, error_message):
+    def test_seaice_2d_monthly_climatology(self, method, region, value, variable, expect_exception):
         """Test sea ice computation for 2D monthly climatology including std for both valid and invalid cases."""
 
         def create_seaice():
@@ -149,7 +149,7 @@ class TestSeaIce:
 
         # Handle expected exceptions first
         if expect_exception:
-            with pytest.raises(expect_exception, match=error_message if error_message else ""):
+            with pytest.raises(expect_exception):
                 seaice = create_seaice()
                 seaice.compute_seaice(method=method, var=variable)
             return

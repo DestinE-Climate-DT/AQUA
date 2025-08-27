@@ -161,6 +161,7 @@ The configuration file is a YAML file that contains the following information:
   Variable-specific parameters override the defaults.
 
     * ``run``: enable/disable the diagnostic.
+    * ``diagnostic_name``: name of the diagnostic. ``globalbiases`` by default, but can be changed when the boxplots CLI is invoked within another ``recipe`` diagnostic, as is currently done for ``Radiation``.
     * ``variables``: list of variables to analyse.
     * ``formulae``: list of formulae to compute new variables from existing ones (e.g., ``tnlwrf+tnswrf``).
     * ``plev``: pressure levels to analyse for 3D variables.
@@ -174,6 +175,7 @@ The configuration file is a YAML file that contains the following information:
 
     globalbiases:
         run: true
+        diagnostic_name: 'globalbiases'
         variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
         formulae: ['tnlwrf+tnswrf']
         params:

@@ -228,7 +228,7 @@ class TestPlot2DSeaIce:
     def test_plot_saves_outputs(self):
         p2d = Plot2DSeaIce(ref=[self.frac_ref_antarctic, self.frac_ref_arctic],
                            models=self.frac_model, 
-                           outdir=self.tmp_path, loglevel="INFO")
+                           outputdir=self.tmp_path, loglevel="INFO")
 
         p2d.plot_2d_seaice(plot_type="var", projkw=self.projkw, 
                            save_pdf=True, save_png=True, months=[3])

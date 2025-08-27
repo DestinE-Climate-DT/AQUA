@@ -6,6 +6,7 @@ from metpy.units import units
 from aqua.logger import log_configure, log_history
 from aqua.util import load_yaml, ConfigPath
 from .coordidentifier import CoordIdentifier
+from pint.errors import DimensionalityError
 
 
 # Function to get the conversion factor
@@ -15,7 +16,10 @@ def units_conversion_factor(from_unit_str, to_unit_str):
     """
     from_unit = units(from_unit_str)
     to_unit = units(to_unit_str)
-    return from_unit.to(to_unit).magnitude
+    try:
+        return from_unit.to(to_unit).magnitude
+    except DimensionalityError:
+        return None
 
 
 
@@ -240,6 +244,12 @@ class CoordTransformer():
             self.logger.info("Converting units of coordinate %s from %s to %s",
                             src_coord['name'], src_coord['units'], tgt_coord['units'])
             factor = units_conversion_factor(src_coord['units'], tgt_coord['units'])
+            if factor is None:
+                self.logger.warning(
+                    "Incompatible unit conversion for coordinate %s: %s -> %s. Skipping conversion.",
+                    src_coord['name'], src_coord['units'], tgt_coord['units']
+                )
+                return data
             if factor != 0:
                 self.logger.info("Conversion factor is: %s ", factor)
                 data = data.assign_coords({tgt_coord['name']: data[tgt_coord['name']]*factor})

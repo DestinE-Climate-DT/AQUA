@@ -3,10 +3,10 @@ import os
 import xarray as xr
 from matplotlib import pyplot as plt
 
-from aqua.diagnostics.core import Diagnostic
+from aqua.diagnostics.core import OutputSaver
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, OutputSaver
+from aqua.util import ConfigPath
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from collections import defaultdict
 from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type
@@ -21,7 +21,7 @@ class PlotSeaIce:
                  monthly_std_ref: str = None, annual_std_ref: str = None,
                  model: str = None, exp: str = None, source: str = None, catalog: str = None,
                  regions_to_plot: list = ['Arctic', 'Antarctic'], # this is a list of strings with the region names to plot
-                 outdir='./',
+                 outputdir='./',
                  rebuild=True,
                  filename_keys=None,  # List of keys to keep in the filename. Default is None, which includes all keys.
                  dpi=300, loglevel='WARNING'):
@@ -53,7 +53,7 @@ class PlotSeaIce:
             regions_to_plot (list, optional): 
                 List of region names to be plotted (e.g., `['arctic', 'antarctic']`). 
                 If None, all available regions are plotted. Defaults to None.
-            outdir (str, optional): 
+            outputdir (str, optional): 
                 Directory to save output plots. Defaults to './'.
             rebuild (bool, optional): 
                 Whether to rebuild (overwrite) figure outputs if they already exist. Defaults to True.
@@ -83,7 +83,7 @@ class PlotSeaIce:
                                                       monthly_std_ref=monthly_std_ref, 
                                                       annual_std_ref=annual_std_ref)
         # Output & saving settings
-        self.outdir  = outdir
+        self.outputdir = outputdir
         self.rebuild = rebuild
         self.dpi = dpi
     
@@ -450,7 +450,6 @@ class PlotSeaIce:
         if self.plot_type not in valid_type_plots:
             raise ValueError(f"Invalid plot_type. Allowed plots are: {valid_type_plots}")
 
-        # iterate over the methods in the dictionary
         for method, region_dict in self.repacked_dict.items():
 
             self.method = method
@@ -486,9 +485,9 @@ class PlotSeaIce:
             self.logger.debug(f"Saving figure as format(s): {', '.join(fmt for fmt, flag in [('PNG', save_png), 
                                                                                              ('PDF', save_pdf)] 
                                                                                              if flag)}")
-            output_saver = OutputSaver(diagnostic='PlotSeaIce', catalog=self.catalog, model=self.model, exp=self.exp,
-                                        diagnostic_product=f"seaice_{self.plot_type}_{self.method}_{'_'.join(region_dict.keys())}",
-                                        loglevel=self.loglevel, default_path=self.outdir, rebuild=self.rebuild)
+            output_saver = OutputSaver(diagnostic='seaice', catalog=self.catalog, model=self.model, exp=self.exp,
+                                        loglevel=self.loglevel, outputdir=self.outputdir)
 
-        if save_pdf: output_saver.save_pdf(fig=fig, path=self.outdir, metadata=metadata)
-        if save_png: output_saver.save_png(fig=fig, path=self.outdir, metadata=metadata)
+            product = f"{self.plot_type}_{self.method}_{'_'.join(region_dict.keys())}"
+            if save_pdf: output_saver.save_pdf(fig=fig, diagnostic_product=product, metadata=metadata, rebuild=self.rebuild)
+            if save_png: output_saver.save_png(fig=fig, diagnostic_product=product, metadata=metadata, rebuild=self.rebuild)

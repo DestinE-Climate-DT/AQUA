@@ -56,9 +56,9 @@ setup:
 output:
   outputdir: "./" # mandatory
   rebuild: true
-  save_netcdf: false # mandatory
-  save_pdf: false    # mandatory
-  save_png: false    # mandatory
+  save_netcdf: true # mandatory
+  save_pdf: true    # mandatory
+  save_png: true    # mandatory
   dpi: 300
 
 # =======  Config for timeseries Sea Ice  =======

@@ -4,7 +4,7 @@ import xarray as xr
 import cartopy.crs as ccrs
 import matplotlib.colors as mcolors
 from matplotlib import pyplot as plt
-from aqua.diagnostics.core import Diagnostic, OutputSaver
+from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, get_projection, plot_box, to_list
@@ -23,7 +23,7 @@ class Plot2DSeaIce:
         models (list of xarray.DataArray or xarray.Dataset): List of models with sea ice data.
         regions_to_plot (list): List of strings with the region names to plot which must match 
                                 the 'AQUA_region' attribute in the data provided as input.
-        outdir (str): Output directory for saving plots.
+        outputdir (str): Output directory for saving plots.
         rebuild (bool): Whether to rebuild the plots if they already exist.
         dpi (int): Dots per inch for the saved figures.
         loglevel (str): Logging level for the logger. Default is 'WARNING'.
@@ -38,7 +38,7 @@ class Plot2DSeaIce:
     def __init__(self,
                  ref=None, models=None, 
                  regions_to_plot: list = ['Arctic', 'Antarctic'],
-                 outdir='./',
+                 outputdir='./',
                  rebuild=True,
                  dpi=300, 
                  loglevel='WARNING'):
@@ -54,7 +54,7 @@ class Plot2DSeaIce:
         if self.regions_to_plot is None:
             self._detect_common_regions([self.models, self.ref])
 
-        self.outdir  = outdir
+        self.outputdir = outputdir
         self.rebuild = rebuild
         self.dpi = dpi
 
@@ -217,7 +217,7 @@ class Plot2DSeaIce:
             f"spanning from {monmod.attrs.get('AQUA_startdate', '')} to {monmod.attrs.get('AQUA_enddate', '')}. "
             f"The reference dataset is {monref.attrs.get('AQUA_model')} with experiment {monref.attrs.get('AQUA_exp')} "
             f"spanning from {monref.attrs.get('AQUA_startdate', '')} to {monref.attrs.get('AQUA_enddate', '')}. "
-            f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
+            f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
             )
         self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
                          description=description, extra_keys={'method': self.method, 'region': region})
@@ -357,7 +357,12 @@ class Plot2DSeaIce:
                           orientation=orientation, **cb_kwargs)
         cb.set_ticks(cbar_ticks)
         cb.ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 3))
-        cb.set_label(f"Sea ice {data.attrs.get('AQUA_method', '')} {data.attrs.get('units', '')}", fontsize=11)
+        units = data.attrs.get('units', '')
+        if units and not (units.startswith('[') and units.endswith(']')):
+            units = f'[{units}]'
+        if units:
+            units = ' ' + units
+        cb.set_label(f"Sea-ice {data.attrs.get('AQUA_method', '')}{units}", fontsize=11)
         return cb
 
     def _get_cmap(self, datarr):
@@ -578,17 +583,17 @@ class Plot2DSeaIce:
             exp=data.attrs.get('AQUA_exp',''),
             model_ref=data_ref.attrs.get('AQUA_model','') if data_ref is not None else None,
             exp_ref=data_ref.attrs.get('AQUA_exp','') if data_ref is not None else None,
-            outdir=self.outdir,
+            outputdir=self.outputdir,
             loglevel=self.loglevel
         )
         metadata = {"Description": description}
 
         if format == 'pdf':
             outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product,
-                                 extra_keys=extra_keys, metadata=metadata)
+                                 extra_keys=extra_keys, metadata=metadata, rebuild=self.rebuild)
         elif format == 'png':
             outputsaver.save_png(fig, diagnostic_product=diagnostic_product,
-                                 extra_keys=extra_keys, metadata=metadata)
+                                 extra_keys=extra_keys, metadata=metadata, rebuild=self.rebuild)
         else:
             raise ValueError(f'Format {format} not supported. Use png or pdf.')
 

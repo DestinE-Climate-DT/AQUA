@@ -135,7 +135,6 @@ def load_diagnostic_config(diagnostic: str, config: str = None,
             get_diagnostic_configpath(diagnostic, loglevel), 
             default_config
         )
-    print(f"Using configuration file: {filename}")
 
     return load_yaml(filename)
 

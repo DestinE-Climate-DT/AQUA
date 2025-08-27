@@ -74,7 +74,7 @@ class Diagnostic():
             self.logger.debug(f'End date: {self.enddate}')
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
-                    outdir: str = '.', rebuild: bool = True, **kwargs):
+                    outputdir: str = '.', rebuild: bool = True, **kwargs):
         """
         Save the data to a netcdf file.
 
@@ -82,7 +82,7 @@ class Diagnostic():
             data (xarray Dataset or DataArray): The data to be saved.
             diagnostic (str): The diagnostic name.
             diagnostic_product (str): The diagnostic product.
-            outdir(str): The path to save the data. Default is '.'.
+            outputdir(str): The path to save the data. Default is '.'.
             rebuild (bool): If True, the netcdf file will be rebuilt. Default is True.
 
         Keyword Args:
@@ -93,7 +93,7 @@ class Diagnostic():
 
         outputsaver = OutputSaver(diagnostic=diagnostic, 
                                   catalog=self.catalog, model=self.model, exp=self.exp,
-                                  outdir=outdir, loglevel=self.logger.level)
+                                  outputdir=outputdir, loglevel=self.logger.level)
 
         outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, **kwargs)
 

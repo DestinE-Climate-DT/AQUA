@@ -169,7 +169,7 @@ class PlotBaseMixin():
 
         self.outputsaver = OutputSaver(diagnostic=diagnostic,  catalog=self.catalogs, model=self.models,
                                        exp=self.exps, catalog_ref=self.ref_catalogs, model_ref=self.ref_models,
-                                       exp_ref=self.ref_exps, outdir=outputdir, loglevel=self.loglevel)
+                                       exp_ref=self.ref_exps, outputdir=outputdir, loglevel=self.loglevel)
 
     def get_data_info(self):
         """

@@ -5,7 +5,7 @@ import numpy as np
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection
+from aqua.util import area_selection, to_list
 
 
 class FldStat():
@@ -171,12 +171,12 @@ class FldStat():
 
         # area.coords should be only lon-lat
         for coord in self.area.coords:
-            if coord in data.coords:
+            if coord in data.coords and coord != "time":
                 area_coord = self.area[coord]
                 data_coord = data[coord]
 
                 # verify coordinates has the same sizes
-                if len(area_coord) != len(data_coord):
+                if len(to_list(area_coord)) != len(to_list(data_coord)):
                     raise ValueError(f"{coord} has a mismatch in length!")
 
                 # Fast check if coordinates are already aligned

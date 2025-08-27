@@ -255,7 +255,7 @@ class Stratification(Diagnostic):
             data=self.data,
             diagnostic=diagnostic,
             diagnostic_product=f"{diagnostic_product}",
-            outdir=outputdir,
+            outputdir=outputdir,
             rebuild=rebuild,
             extra_keys={"region": region},
         )

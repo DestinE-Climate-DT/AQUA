@@ -372,8 +372,12 @@ class Reader():
 
         if self.streaming:
             data = self.streamer.stream(data)
-        elif startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
-            data = data.sel(time=slice(startdate, enddate))
+        else:
+            if data is None or len(data.data_vars) == 0:
+                raise NoDataError("Retrieved empty dataset. Check varname used as first step.")
+
+            if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+                data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class

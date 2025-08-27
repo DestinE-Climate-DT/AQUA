@@ -220,7 +220,7 @@ if __name__ == '__main__':
         #setup the output saver
         outputsaver = OutputSaver(diagnostic='ecmean',
                           catalog=catalog, model=model, exp=exp,
-                          outdir=outputdir, loglevel=loglevel)
+                          outputdir=outputdir, loglevel=loglevel)
 
         for diagnostic in ['global_mean', 'performance_indices']:
 
