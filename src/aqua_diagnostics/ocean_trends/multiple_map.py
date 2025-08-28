@@ -34,6 +34,7 @@ def plot_maps(
     transform_first=False,
     cyclic_lon=True,
     return_fig=False,
+    ytext=None,
     loglevel="WARNING",
     **kwargs,
 ):
@@ -129,6 +130,9 @@ def plot_maps(
             ax_pos=(nrows, ncols, i + 1),
             **kwargs,
         )
+        if ytext:
+            logger.debug("Adding text in the plot: %s", ytext[i])
+            ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
         if cbar_number == 'separate':
             # Retrieve last plotted object for colorbar (QuadMesh or ContourSet)
             if ax.collections:

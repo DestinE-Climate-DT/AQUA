@@ -46,19 +46,28 @@ class PlotTrends:
         self.set_suptitle()
         self.set_title()
         self.set_description()
+        self.set_ytext()
         plot_maps(
             maps=self.data_list,
             nrows=4,
             ncols=2,
             title=self.suptitle,
             titles=self.title_list,
-            cbar_number='separate'
+            cbar_number='separate',
+            ytext=self.ytext,
         )
+    def set_ytext(self):
+        self.ytext = []
+        for level in self.levels:
+            for i in range(len(self.vars)):
+                if i == 0:
+                    self.ytext.append(f"{level}m")
+                else:
+                    self.ytext.append(None)
 
     def set_levels(self):
-        levels = [100, 200, 300, 400]
-        self.levels = levels
-        self.logger.debug(f"Levels set to: {levels}")
+        self.levels = [100, 200, 300, 400]
+        self.logger.debug(f"Levels set to: {self.levels}")
 
     def set_data_list(self):
         self.data_list = []
