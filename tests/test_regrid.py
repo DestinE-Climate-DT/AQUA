@@ -242,7 +242,8 @@ class TestRegridder():
     def test_regridder_renamed(self):
         """Testing the regridder when a vertical coordinate has been renamed"""
 
-        reader = Reader(model="ECE4-FAST", exp="test", source="monthly-oce", regrid="r200", loglevel="ERROR")
+        reader = Reader(model="ECE4-FAST", exp="test", source="monthly-oce",
+                        regrid="r200", loglevel="ERROR", rebuild=True)
         data = reader.retrieve(var="so")
         val = data.so.isel(level=5).aqua.regrid().aqua.fldmean().values
 
