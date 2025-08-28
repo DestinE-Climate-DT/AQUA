@@ -47,15 +47,20 @@ class PlotTrends:
         self.set_title()
         self.set_description()
         self.set_ytext()
+        self.set_nrowcol()
         plot_maps(
             maps=self.data_list,
-            nrows=4,
-            ncols=2,
+            nrows=self.nrows,
+            ncols=self.ncols,
             title=self.suptitle,
             titles=self.title_list,
             cbar_number='separate',
             ytext=self.ytext,
         )
+    def set_nrowcol(self):
+        self.nrows = len(self.levels)
+        self.ncols = len(self.vars)
+
     def set_ytext(self):
         self.ytext = []
         for level in self.levels:
@@ -66,7 +71,8 @@ class PlotTrends:
                     self.ytext.append(None)
 
     def set_levels(self):
-        self.levels = [100, 200, 300, 400]
+        # self.levels = [0, 100, 200, 300, 400]
+        self.levels = [50, 100, 200, 300, 400, 500]
         self.logger.debug(f"Levels set to: {self.levels}")
 
     def set_data_list(self):
@@ -74,7 +80,11 @@ class PlotTrends:
         self.data = self.data.interp(level=self.levels)
         for level in self.levels:
             for var in self.vars:
-                data_level_var = self.data[var].sel(level=level)
+                if level == 0:
+                    data_level_var = self.data[var].isel(level=-1)
+                else:
+                    data_level_var = self.data[var].sel(level=level)
+
                 data_level_var.attrs["long_name"] = (
                     f"{data_level_var.attrs.get('long_name', var)} at {level}m"
                 )
