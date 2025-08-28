@@ -48,7 +48,7 @@ class PlotTrends:
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
-        plot_maps(
+        fig = plot_maps(
             maps=self.data_list,
             nrows=self.nrows,
             ncols=self.ncols,
@@ -56,6 +56,13 @@ class PlotTrends:
             titles=self.title_list,
             cbar_number='separate',
             ytext=self.ytext,
+            return_fig=True
+        )
+        self.save_plot(
+            fig,
+            diagnostic_product=self.diagnostic,
+            format='pdf',
+            metadata=self.description
         )
     def set_nrowcol(self):
         self.nrows = len(self.levels)
@@ -71,8 +78,7 @@ class PlotTrends:
                     self.ytext.append(None)
 
     def set_levels(self):
-        # self.levels = [0, 100, 200, 300, 400]
-        self.levels = [50, 100, 200, 300, 400, 500]
+        self.levels = [50, 100]
         self.logger.debug(f"Levels set to: {self.levels}")
 
     def set_data_list(self):
@@ -115,3 +121,28 @@ class PlotTrends:
         self.description["description"] = {
             f"Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
         }
+
+    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+                  rebuild: bool = True,
+                  dpi: int = 300, format: str = 'png', metadata: dict = None):
+        """
+        Save the plot to a file.
+
+        Args:
+            fig (matplotlib.figure.Figure): The figure to be saved.
+            diagnostic_product (str): The name of the diagnostic product. Default is None.
+            extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is None.
+            rebuild (bool): If True, the output files will be rebuilt. Default is True.
+            dpi (int): The dpi of the figure. Default is 300.
+            format (str): The format of the figure. Default is 'png'.
+            metadata (dict): The metadata to be used for the figure. Default is None.
+                             They will be complemented with the metadata from the outputsaver.
+                             We usually want to add here the description of the figure.
+        """
+        if format == 'png':
+            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                          extra_keys=extra_keys, metadata=metadata, dpi=dpi)
+        elif format == 'pdf':
+            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                          extra_keys=extra_keys, metadata=metadata)
+        self.logger.info(f"Figure saved as {result}")
