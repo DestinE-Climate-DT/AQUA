@@ -10,7 +10,7 @@ repos:
   Climate-DT-catalog_path: /work/ab0995/a270260/AQUA_13/Climate-DT-catalog
 
 resolution: production  #Experiment resolution: production/develop/intermediate/lowres
-catalog_dir: EERIE  #the folder in Climate-DT-catalog where the catalog entry will be stored
+catalog_dir: eerie  #the folder in Climate-DT-catalog where the catalog entry will be stored
 
 # AQUA definitions
 model: IFS-FESOM
@@ -29,8 +29,8 @@ default_realization: 1  # First realization to be loaded by default
 data_start_date: '19500101'
 data_end_date: '20141231'
 bridge_end_date: Null   # this can be 'Null' or 'complete' or a date
-# ocean_grid: eORCA1  # not mandatory 
-# atm_grid: tco2559  #not mandatory
+ocean_grid: NG5  # not mandatory 
+atm_grid: tco1279  #not mandatory
 description: 'FDB IFS/FESOM'  #not mandatory
 
 # dashboard
@@ -40,5 +40,6 @@ note: Null #not mandatory
 # paths
 # 
 fdb_home:  /work/bm1344/a270228/fdb_hist1950/NATIVE_grids
+fdb_path: /work/bm1344/a270228/ifs-bundle-DE_CY48R1-icgen/source/fdb5 
 fdb_home_bridge: Null  # this can be 'Null' or a path
 fdb_info_file: Null #this can be `Null` or a path
