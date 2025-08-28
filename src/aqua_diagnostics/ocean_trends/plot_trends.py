@@ -36,7 +36,7 @@ class PlotTrends:
             catalog=self.catalog,
             model=self.model,
             exp=self.exp,
-            outdir=outputdir,
+            outputdir=outputdir,
             loglevel=self.loglevel,
         )
 
@@ -52,6 +52,7 @@ class PlotTrends:
             ncols=2,
             title=self.suptitle,
             titles=self.title_list,
+            cbar_number='separate'
         )
 
     def set_levels(self):

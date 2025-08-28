@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from aqua.logger import log_configure
-from aqua.util import plot_box, evaluate_colorbar_limits, cbar_get_label
+from aqua.util import plot_box, evaluate_colorbar_limits, cbar_get_label, generate_colorbar_ticks
 from aqua import plot_single_map
 from aqua.graphics.styles import ConfigStyle
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def plot_maps(
     maps: list,
@@ -29,6 +29,7 @@ def plot_maps(
     title: str = None,
     titles: list = None,
     cmap="RdBu_r",
+    cbar_number: str = "single",
     cbar_label: str = None,
     transform_first=False,
     cyclic_lon=True,
@@ -87,13 +88,27 @@ def plot_maps(
 
     fig = plt.figure(figsize=figsize)
 
-    # Evaluate min and max values for the common colorbar
-    if vmin is None or vmax is None or sym:
-        vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
+    if cbar_number == 'single':
+        # Evaluate min and max values for the common colorbar
+        if vmin is None or vmax is None or sym:
+            vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
 
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
 
+    if cbar_number == 'single':
+        cbar = True
+    if cbar_number == 'separate':
+        cbar = False
+
+    # Adjust the location of the subplots on the page to make room for the colorbar
+    fig.subplots_adjust(
+        bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.1, hspace=0.5
+    )
+    
     for i in range(len(maps)):
+        if cbar_number == 'separate':
+            vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
+
         logger.debug("Plotting map %d", i)
         fig, ax = plot_single_map(
             data=maps[i],
@@ -105,7 +120,7 @@ def plot_maps(
             nlevels=nlevels,
             title=titles[i] if titles is not None else None,
             cmap=cmap,
-            cbar=True,
+            cbar=False,
             transform_first=transform_first,
             return_fig=True,
             cyclic_lon=cyclic_lon,
@@ -114,33 +129,58 @@ def plot_maps(
             ax_pos=(nrows, ncols, i + 1),
             **kwargs,
         )
+        if cbar_number == 'separate':
+            # Retrieve last plotted object for colorbar (QuadMesh or ContourSet)
+            if ax.collections:
+                mappable = ax.collections[-1]
+            elif ax.images:
+                mappable = ax.images[-1]
+            else:
+                logger.warning("No mappable object found for subplot (%d, %d)", j, i)
+                continue
+            
+            # Update mappable normalization and cmap
+            mappable.set_norm(plt.Normalize(vmin=vmin, vmax=vmax))
+            mappable.set_cmap(cmap)
 
-    # Adjust the location of the subplots on the page to make room for the colorbar
-    fig.subplots_adjust(
-        bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.1, hspace=0.5
-    )
+            # Attach colorbar
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.15, axes_class=plt.Axes)
+            cbar = fig.colorbar(mappable, cax=cax, orientation="vertical")
 
-    # Add a colorbar axis at the bottom of the graph
-    cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
+            # cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
+            # cbar_ticks = generate_colorbar_ticks(vmin=vmin,
+            #                                     vmax=vmax, 
+            #                                     sym=sym,
+            #                                     nlevels=nlevels,
+            #                                     ticks_rounding=cbar_ticks_rounding,
+            #                                     loglevel=loglevel)
+            # cbar.set_ticks(cbar_ticks)
 
-    cbar_label = cbar_get_label(data=maps[0], cbar_label=cbar_label, loglevel=loglevel)
-    logger.debug("Setting colorbar label to %s", cbar_label)
+    if cbar_number == 'single':
+        # Add a colorbar axis at the bottom of the graph
+        cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
 
-    mappable = ax.collections[0]
+        cbar_label = cbar_get_label(data=maps[0], cbar_label=cbar_label, loglevel=loglevel)
+        logger.debug("Setting colorbar label to %s", cbar_label)
 
-    # Add the colorbar
-    cbar = fig.colorbar(
-        mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label
-    )
+        
 
-    # Make the colorbar ticks symmetrical if sym=True
-    if sym:
-        logger.debug("Setting colorbar ticks to be symmetrical")
-        cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
-    else:
-        cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+        # Add the colorbar
+        mappable = ax.collections[0]
+        if cbar == True:
+            cbar = fig.colorbar(
+                mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label
+        )
 
-    cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
+        # Make the colorbar ticks symmetrical if sym=True
+        if sym:
+            logger.debug("Setting colorbar ticks to be symmetrical")
+            cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
+        else:
+            cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+
+        cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
 
     # Add a super title
     if title:
