@@ -46,7 +46,7 @@ class SeasonalCycles(BaseMixin):
             units: str = None, short_name: str = None, std: bool = False,
             exclude_incomplete: bool = True, center_time: bool = True,
             box_brd: bool = True, outputdir: str = './', rebuild: bool = True,
-            reader_kwargs: dict = {}):
+            reader_kwargs: dict = {}, create_catalog_entry: bool = False):
         """
         Run all the steps necessary for the computation of the SeasonalCyles.
         Save the results to netcdf files.
@@ -64,6 +64,7 @@ class SeasonalCycles(BaseMixin):
             outputdir (str): The directory to save the data.
             rebuild (bool): If True, rebuild the data.
             reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
+            create_catalog_entry (bool): If True, create a catalog entry for the data. Default is False.
         """
         self.logger.info("Running SeasonalCycles for %s", var)
         self.retrieve(var=var, formula=formula, long_name=long_name, units=units,
@@ -78,7 +79,8 @@ class SeasonalCycles(BaseMixin):
         self.logger.info("Computing the seasonal cycles")
         self.compute(exclude_incomplete=exclude_incomplete, center_time=center_time, box_brd=box_brd)
 
-        self.save_netcdf(diagnostic_product='seasonalcycles', freq='monthly', outputdir=outputdir, rebuild=rebuild)
+        self.save_netcdf(diagnostic_product='seasonalcycles', freq='monthly', outputdir=outputdir,
+                         rebuild=rebuild, create_catalog_entry=create_catalog_entry)
 
     def compute(self, exclude_incomplete: bool = True, center_time: bool = True,
                 box_brd: bool = True):

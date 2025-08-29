@@ -118,6 +118,7 @@ The configuration file is a YAML file that contains the following information:
     * ``save_pdf``: a boolean that enables the saving of the plots in pdf format.
     * ``save_png``: a boolean that enables the saving of the plots in png format.
     * ``dpi``: the resolution of the plots.
+    * ``create_catalog_entry``: a boolean that enables the creation of a catalog entry.
 
 .. code-block:: yaml
 
@@ -127,6 +128,7 @@ The configuration file is a YAML file that contains the following information:
       save_pdf: true
       save_png: true
       dpi: 300
+      create_catalog_entry: true
 
 * ``timeseries``: a block, nested in the ``diagnostics`` block, that contains the details required for the time series.
   The parameters specific to a single variable are merged with the default parameters, giving priority to the specific ones.

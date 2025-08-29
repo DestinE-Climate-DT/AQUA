@@ -161,6 +161,7 @@ def test_format_realization():
     assert format_realization("test") == "test"
     assert format_realization("") == "r1"
     assert format_realization(None) == "r1"
+    assert format_realization(["1", "2", "test", 3, None]) == ["r1", "r2", "test", "r3", "r1"]
 
 @pytest.mark.aqua
 def test_extract_attrs():

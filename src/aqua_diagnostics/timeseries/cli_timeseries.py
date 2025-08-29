@@ -65,6 +65,7 @@ if __name__ == '__main__':
     save_pdf = config_dict['output'].get('save_pdf', True)
     save_png = config_dict['output'].get('save_png', True)
     dpi = config_dict['output'].get('dpi', 300)
+    create_catalog_entry = config_dict['output'].get('create_catalog_entry', True)
 
     # Timeseries diagnostic
     if 'timeseries' in config_dict['diagnostics']:
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             logger.debug(f"Dataset args: {dataset_args}")
                             ts[i] = Timeseries(**init_args, **dataset_args)
-                            ts[i].run(**run_args)
+                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].startdate for i in range(len(ts))])
@@ -119,7 +120,7 @@ if __name__ == '__main__':
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 logger.info(f"Reference args: {reference_args}")
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
-                                ts_ref[i].run(**run_args, std=True)
+                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False)
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -172,7 +173,7 @@ if __name__ == '__main__':
                                             'exp': dataset['exp'], 'source': dataset['source'],
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             ts[i] = Timeseries(**init_args, **dataset_args)
-                            ts[i].run(**run_args)
+                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].plt_startdate for i in range(len(ts))])
@@ -191,7 +192,7 @@ if __name__ == '__main__':
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
-                                ts_ref[i].run(**run_args, std=True)
+                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False)
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -249,7 +250,7 @@ if __name__ == '__main__':
                                             'exp': dataset['exp'], 'source': dataset['source'],
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             sc[i] = SeasonalCycles(**init_args, **dataset_args)
-                            sc[i].run(**run_args)
+                            sc[i].run(**run_args, create_catalog_entry=create_catalog_entry)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([sc[i].startdate for i in range(len(sc))])
@@ -268,7 +269,7 @@ if __name__ == '__main__':
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 sc_ref[i] = SeasonalCycles(**init_args, **reference_args)
-                                sc_ref[i].run(**run_args, std=True)
+                                sc_ref[i].run(**run_args, std=True, create_catalog_entry=False)
 
                         # Plot the seasonal cycles
                         if save_pdf or save_png:

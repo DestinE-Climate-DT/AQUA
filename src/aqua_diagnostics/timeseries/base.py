@@ -185,7 +185,10 @@ class BaseMixin(Diagnostic):
             self.std_annual = data
 
     def save_netcdf(self, diagnostic_product: str, freq: str,
-                    outputdir: str = './', rebuild: bool = True):
+                    outputdir: str = './', rebuild: bool = True,
+                    create_catalog_entry: bool = False,
+                    dict_catalog_entry: dict = {'jinjalist': ['freq', 'realization', 'region'],
+                                                'wildcardlist': ['var']}):
         """
         Save the data to a netcdf file.
 
@@ -194,6 +197,8 @@ class BaseMixin(Diagnostic):
             freq (str): The frequency of the data.
             outputdir (str): The directory to save the data.
             rebuild (bool): If True, rebuild the data from the original files.
+            create_catalog_entry (bool): If True, create a catalog entry for the data. Default is False.
+            dict_catalog_entry (dict): A dictionary with catalog entry information. Default is {'jinjalist': ['freq', 'region', 'realization'], 'wildcardlist': ['var']}.
         """
         str_freq = self._str_freq(freq)
 
@@ -216,17 +221,19 @@ class BaseMixin(Diagnostic):
         if data.name is None:
             data.name = var
 
-        if self.region is not None:
-            region = self.region.replace(' ', '').lower()
-            extra_keys.update({'region': region})
+        # In order to have a catalog entry we want to have a key region even in the global case
+        region = self.region.replace(' ', '').lower() if self.region is not None else 'global'
+        extra_keys.update({'region': region})
 
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
 
         super().save_netcdf(data=data, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
-                            outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
+                            outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys,
+                            create_catalog_entry=create_catalog_entry, dict_catalog_entry=dict_catalog_entry)
         if data_std is not None:
             extra_keys.update({'std': 'std'})
             self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
+            #TODO: Check if the catalog entry generation is required for the std values
             super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                                 outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 

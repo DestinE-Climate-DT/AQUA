@@ -1,5 +1,6 @@
 """Utilities module"""
 
+from .catalog_entry import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
 from .config import ConfigPath
 from .eccodes import get_eccodes_attr
 from .units import normalize_units, convert_units, convert_data_units
@@ -9,7 +10,7 @@ from .graphics import coord_names, ticks_round, set_ticks, generate_colorbar_tic
 from .graphics import apply_circular_window
 from .graphics import get_nside, get_npix, healpix_resample
 from .projections import get_projection
-from .realizations import format_realization
+from .realizations import format_realization, DEFAULT_REALIZATION
 from .sci_util import area_selection, check_coordinates, select_season, merge_attrs
 from .string import strlist_to_phrase, lat_to_phrase
 from .util import generate_random_string, get_arg, create_folder, to_list
@@ -21,7 +22,8 @@ from .time import check_chunk_completeness, frequency_string_to_pandas
 from .time import time_to_string, int_month_name
 from .zarr import create_zarr_reference
 
-__all__ = ['ConfigPath',
+__all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard',
+           'ConfigPath',
            'get_eccodes_attr',
            'normalize_units', 'convert_units', 'convert_data_units',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
@@ -36,7 +38,7 @@ __all__ = ['ConfigPath',
            'extract_attrs',
            'get_nside', 'get_npix', 'healpix_resample',
            'get_projection',
-           'format_realization',
+           'format_realization', 'DEFAULT_REALIZATION',
            'open_image', 'username', 'update_metadata',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas',

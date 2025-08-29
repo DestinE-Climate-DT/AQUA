@@ -4,6 +4,7 @@ from pathlib import Path
 import xarray as xr
 import matplotlib.pyplot as plt
 from unittest.mock import patch, MagicMock
+from aqua.util import replace_urlpath_jinja, replace_urlpath_wildcard
 from aqua.diagnostics.core import OutputSaver
 
 # Fixture for OutputSaver instance
@@ -14,7 +15,7 @@ def output_saver(tmp_path):
             'diagnostic': 'dummy',
             'model': 'IFS-NEMO',
             'exp': 'historical',
-            'catalog': 'lumi-phase2',
+            'catalog': 'ci',
             'outputdir': tmp_path,
             'loglevel': 'DEBUG',
         }
@@ -32,7 +33,7 @@ def test_generate_name(base_saver, output_saver):
     # Test filename generation without additional parameters
     
     filename = base_saver.generate_name(diagnostic_product='mean')
-    assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1'
+    assert filename == 'dummy.mean.ci.IFS-NEMO.historical.r1'
 
     # Test with generic multimodel keyword
     extra_keys = {'var': 'tprate'}
@@ -46,12 +47,12 @@ def test_generate_name(base_saver, output_saver):
     filename = saver.generate_name(
             diagnostic_product='mean', extra_keys=extra_keys
     )
-    assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r2.multiref.tprate.indian_ocean'
+    assert filename == 'dummy.mean.ci.IFS-NEMO.historical.r2.multiref.tprate.indian_ocean'
 
     # Test with multiple models
     extra_keys = {'var': 'tprate', 'region': 'indian_ocean'}
     saver = output_saver(
-        catalog=['lumi-phase2', 'lumi-phase2'], model=['IFS-NEMO', 'ICON'],
+        catalog=['ci', 'ci'], model=['IFS-NEMO', 'ICON'],
         exp=['hist-1990', 'hist-1990'], model_ref='ERA5')
     filename = saver.generate_name(
         diagnostic_product='mean', extra_keys=extra_keys
@@ -61,12 +62,12 @@ def test_generate_name(base_saver, output_saver):
     # Test with multiple models
     extra_keys = {'var': 'tprate', 'region': 'indian_ocean'}
     saver = output_saver(
-        catalog=['lumi-phase2'], model=['IFS-NEMO'],
+        catalog=['ci'], model=['IFS-NEMO'],
         exp=['historical'], model_ref=['ERA5'])
     filename = saver.generate_name(
         diagnostic_product='mean', extra_keys=extra_keys
     )
-    assert filename == 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.ERA5.tprate.indian_ocean'
+    assert filename == 'dummy.mean.ci.IFS-NEMO.historical.r1.ERA5.tprate.indian_ocean'
 
     with pytest.raises(ValueError):
         # Test with invalid model type
@@ -75,20 +76,13 @@ def test_generate_name(base_saver, output_saver):
 
     with pytest.raises(ValueError):
         # Test with invalid model type
-        saver = output_saver(model=['IFS-NEMO', 'ICON'], catalog=['lumi-phase2', 'lumi-phase2'], exp=['hist-1990'])
+        saver = output_saver(model=['IFS-NEMO', 'ICON'], catalog=['ci', 'ci'], exp=['hist-1990'])
         saver.generate_name(diagnostic_product='mean')
 
 @pytest.mark.aqua
 def test_internal_function(base_saver):
     """Test internal functions of OutputSaver."""
-
-    # Test cases per _format_realization
     saver = base_saver
-    assert saver._format_realization(None) == 'r1'
-    assert saver._format_realization('5') == 'r5'
-    assert saver._format_realization(5) == 'r5'
-    assert saver._format_realization('r5') == 'r5'
-    assert saver._format_realization([1, 'r2']) == ['r1', 'r2']
 
     # Test cases per unpack_list
     assert saver.unpack_list(['item']) == 'item'
@@ -104,7 +98,7 @@ def test_save_netcdf(base_saver, tmp_path):
 
     extra_keys = {'var': 'tprate'}
     base_saver.save_netcdf(dataset=data, diagnostic_product='mean', extra_keys=extra_keys)
-    nc = os.path.join(tmp_path, 'netcdf', 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.tprate.nc')
+    nc = os.path.join(tmp_path, 'netcdf', 'dummy.mean.ci.IFS-NEMO.historical.r1.tprate.nc')
     assert os.path.exists(nc)
 
     old_mtime = Path(nc).stat().st_mtime
@@ -124,7 +118,7 @@ def test_save_png(base_saver, tmp_path):
     path = base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=300)
 
     # Check if the file was created
-    png = os.path.join(tmp_path, 'png', 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.tprate.png')
+    png = os.path.join(tmp_path, 'png', 'dummy.mean.ci.IFS-NEMO.historical.r1.tprate.png')
     assert os.path.exists(png)
     assert path == png
 
@@ -145,7 +139,7 @@ def test_save_pdf(base_saver, tmp_path):
     base_saver.save_pdf(fig=fig, diagnostic_product='mean', extra_keys=extra_keys)
 
     # Check if the file was created
-    pdf = os.path.join(tmp_path, 'pdf', 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.tprate.pdf')
+    pdf = os.path.join(tmp_path, 'pdf', 'dummy.mean.ci.IFS-NEMO.historical.r1.tprate.pdf')
     assert os.path.exists(pdf)
 
     old_mtime = Path(pdf).stat().st_mtime
@@ -154,7 +148,7 @@ def test_save_pdf(base_saver, tmp_path):
     assert new_mtime == old_mtime
 
 @pytest.mark.aqua
-def test_create_catalog_entry_new_entry(base_saver, tmp_path, monkeypatch):
+def test_create_catalog_entry_new_entry(base_saver, tmp_path):
     """Test creating a new catalog entry when none exists."""
     
     mock_config_path = MagicMock()
@@ -164,14 +158,13 @@ def test_create_catalog_entry_new_entry(base_saver, tmp_path, monkeypatch):
     with patch('aqua.diagnostics.core.output_saver.ConfigPath', return_value=mock_config_path), \
          patch('aqua.diagnostics.core.output_saver.load_yaml', return_value=mock_catalog_file), \
          patch('aqua.diagnostics.core.output_saver.dump_yaml') as mock_dump_yaml, \
-         patch.object(base_saver, 'replace_intake_vars', return_value='/mocked/path/data.nc'):
+         patch('aqua.diagnostics.core.output_saver.replace_intake_vars', return_value='/mocked/path/data.nc'):
         
-        (tmp_path / 'catalogs' / 'lumi-phase2' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
-        
+        (tmp_path / 'catalogs' / 'ci' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
+
         result = base_saver._create_catalog_entry('/test/path/data.nc', {'diagnostic_product': 'mean'})
-        
+
         assert result['driver'] == 'netcdf'
-        assert result['description'] == 'AQUA dummy data for mean'
         assert result['args']['urlpath'] == '/mocked/path/data.nc'
         mock_dump_yaml.assert_called_once()
 
@@ -190,9 +183,9 @@ def test_create_catalog_entry_existing_entry(base_saver, tmp_path, monkeypatch):
     with patch('aqua.diagnostics.core.output_saver.ConfigPath', return_value=mock_config_path), \
          patch('aqua.diagnostics.core.output_saver.load_yaml', return_value=mock_catalog_file), \
          patch('aqua.diagnostics.core.output_saver.dump_yaml') as mock_dump_yaml, \
-         patch.object(base_saver, 'replace_intake_vars', return_value='/new/path/data.nc'):
+         patch('aqua.diagnostics.core.output_saver.replace_intake_vars', return_value='/new/path/data.nc'):
         
-        (tmp_path / 'catalogs' / 'lumi-phase2' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
+        (tmp_path / 'catalogs' / 'ci' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
         
         result = base_saver._create_catalog_entry('/test/path/data.nc', {'diagnostic_product': 'mean'})
         
@@ -202,7 +195,7 @@ def test_create_catalog_entry_existing_entry(base_saver, tmp_path, monkeypatch):
         mock_dump_yaml.assert_called_once()
 
 @pytest.mark.aqua
-def test_create_catalog_entry_with_variables(base_saver, tmp_path, monkeypatch):
+def test_create_catalog_entry_with_variables(base_saver, tmp_path):
     """Test creating catalog entry with jinja and wildcard variable replacements."""
     
     mock_config_path = MagicMock()
@@ -212,11 +205,11 @@ def test_create_catalog_entry_with_variables(base_saver, tmp_path, monkeypatch):
     with patch('aqua.diagnostics.core.output_saver.ConfigPath', return_value=mock_config_path), \
          patch('aqua.diagnostics.core.output_saver.load_yaml', return_value=mock_catalog_file), \
          patch('aqua.diagnostics.core.output_saver.dump_yaml') as mock_dump_yaml, \
-         patch.object(base_saver, 'replace_intake_vars', return_value='/mocked/path/data.nc'), \
-         patch.object(base_saver, 'replace_urlpath_jinja') as mock_replace_jinja, \
-         patch.object(base_saver, 'replace_urlpath_wildcard') as mock_replace_wildcard:
-        
-        (tmp_path / 'catalogs' / 'lumi-phase2' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
+         patch('aqua.diagnostics.core.output_saver.replace_urlpath_jinja') as mock_replace_jinja, \
+         patch('aqua.diagnostics.core.output_saver.replace_urlpath_wildcard') as mock_replace_wildcard, \
+         patch('aqua.diagnostics.core.output_saver.replace_intake_vars', return_value='/mocked/path/data.nc'):
+
+        (tmp_path / 'catalogs' / 'ci' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
         
         metadata = {'diagnostic_product': 'mean', 'region': 'global', 'realization': 'r1'}
         filepath = '/test/path/data.nc'
@@ -227,7 +220,7 @@ def test_create_catalog_entry_with_variables(base_saver, tmp_path, monkeypatch):
                                           'metadata': {'source_grid_name': False}}
         mock_replace_wildcard.return_value = mock_replace_jinja.return_value
         
-        result = base_saver._create_catalog_entry(filepath, metadata, 
+        _ = base_saver._create_catalog_entry(filepath, metadata, 
                                                 jinjalist=['region'], wildcardlist=['realization'])
         # Verify replacements were called
         assert mock_replace_jinja.call_count == 1
@@ -235,7 +228,7 @@ def test_create_catalog_entry_with_variables(base_saver, tmp_path, monkeypatch):
         mock_dump_yaml.assert_called_once()
 
 @pytest.mark.aqua
-def test_create_catalog_entry_edge_cases(base_saver, tmp_path, monkeypatch):
+def test_create_catalog_entry_edge_cases(base_saver, tmp_path):
     """Test edge cases: None metadata values, file operations, and entry naming."""
     
     mock_config_path = MagicMock()
@@ -245,9 +238,9 @@ def test_create_catalog_entry_edge_cases(base_saver, tmp_path, monkeypatch):
     with patch('aqua.diagnostics.core.output_saver.ConfigPath', return_value=mock_config_path), \
          patch('aqua.diagnostics.core.output_saver.load_yaml', return_value=mock_catalog_file), \
          patch('aqua.diagnostics.core.output_saver.dump_yaml') as mock_dump_yaml, \
-         patch.object(base_saver, 'replace_intake_vars', return_value='/mocked/path/data.nc'):
-        
-        (tmp_path / 'catalogs' / 'lumi-phase2' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
+         patch('aqua.diagnostics.core.output_saver.replace_intake_vars', return_value='/mocked/path/data.nc'):
+
+        (tmp_path / 'catalogs' / 'ci' / 'catalog' / 'IFS-NEMO').mkdir(parents=True, exist_ok=True)
         
         # Test None metadata values
         metadata = {'diagnostic_product': 'mean', 'region': None, 'stat': None}
@@ -273,17 +266,17 @@ def test_replace_urlpath_wildcard():
     
     # Test that replacement only happens when surrounded by same character
     block = {'args': {'urlpath': 'data_r1_data.nc'}}
-    result = OutputSaver.replace_urlpath_wildcard(block, 'r1')
+    result = replace_urlpath_wildcard(block, 'r1')
     assert result['args']['urlpath'] == 'data_*_data.nc'
     
     # Test no replacement when not surrounded by same character
     block = {'args': {'urlpath': '/path/to/r1_data.nc'}}
-    result = OutputSaver.replace_urlpath_wildcard(block, 'r1')
+    result = replace_urlpath_wildcard(block, 'r1')
     assert result['args']['urlpath'] == '/path/to/r1_data.nc'
     
     # Test edge cases
-    assert OutputSaver.replace_urlpath_wildcard(block, None) == block
-    assert OutputSaver.replace_urlpath_wildcard(block, '') == block
+    assert replace_urlpath_wildcard(block, None) == block
+    assert replace_urlpath_wildcard(block, '') == block
 
 @pytest.mark.aqua
 def test_replace_urlpath_jinja():
@@ -291,7 +284,7 @@ def test_replace_urlpath_jinja():
     
     # Test URL replacement when surrounded by same character
     block = {'args': {'urlpath': 'data_global_data.nc'}}
-    result = OutputSaver.replace_urlpath_jinja(block, 'global', 'region', 'dummy')
+    result = replace_urlpath_jinja(block, 'global', 'region')
     assert result['args']['urlpath'] == 'data_{{region}}_data.nc'
     
     # Test parameters block creation
@@ -299,19 +292,8 @@ def test_replace_urlpath_jinja():
     assert result['parameters']['region']['allowed'] == ['global']
     
     # Test adding second value
-    result = OutputSaver.replace_urlpath_jinja(result, 'europe', 'region', 'dummy')
+    result = replace_urlpath_jinja(result, 'europe', 'region')
     assert 'europe' in result['parameters']['region']['allowed']
-    
-    # Test diagnostic special case
-    block = {'args': {'urlpath': 'dummy.nc'}}
-    result = OutputSaver.replace_urlpath_jinja(block, 'dummy', 'diagnostic', 'dummy')
-    assert result['args']['urlpath'] == '{{diagnostic}}.nc'
-
-@pytest.mark.aqua
-def test_get_urlpath():
-    """Test simple URL path getter."""
-    block = {'args': {'urlpath': '/test/path.nc'}}
-    assert OutputSaver.get_urlpath(block) == '/test/path.nc'
 
 @pytest.mark.aqua
 def test_core_save(base_saver, tmp_path):
@@ -333,7 +315,7 @@ def test_generate_folder(base_saver, tmp_path):
 def test_generate_path(base_saver, tmp_path):
     """Test full path generation."""
     result = base_saver.generate_path('pdf', 'mean')
-    expected = os.path.join(str(tmp_path / 'pdf'), 'dummy.mean.lumi-phase2.IFS-NEMO.historical.r1.pdf')
+    expected = os.path.join(str(tmp_path / 'pdf'), 'dummy.mean.ci.IFS-NEMO.historical.r1.pdf')
     assert result == expected
 
 @pytest.mark.aqua
@@ -341,7 +323,7 @@ def test_create_metadata(base_saver):
     """Test metadata creation and merging."""
     result = base_saver.create_metadata('mean')
     assert result['diagnostic'] == 'dummy'
-    assert result['catalog'] == 'lumi-phase2'
+    assert result['catalog'] == 'ci'
     
     # Test with extra keys and list handling
     extra_keys = {'var': ['tprate', 'temp'], 'region': 'global'}

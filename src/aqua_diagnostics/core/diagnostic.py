@@ -5,28 +5,29 @@ from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from aqua.util import load_yaml, convert_units
 from aqua.util import area_selection
+from aqua.util import DEFAULT_REALIZATION
 from .output_saver import OutputSaver
 
 
 class Diagnostic():
 
-    def __init__(self, catalog: str = None, model: str = None,
-                 exp: str = None, source: str = None, regrid: str = None,
-                 startdate: str = None, enddate: str = None, loglevel: str = 'WARNING'):
+    def __init__(self, model: str, exp: str, source: str,
+                 catalog: str | None = None, regrid: str | None = None,
+                 startdate: str | None = None, enddate: str | None = None, loglevel: str = 'WARNING'):
         """
         Initialize the diagnostic class. This is a general purpose class that can be used
         by the diagnostic classes to retrieve data from a single model and to save the data
         to a netcdf file. It is not a working diagnostic class by itself.
 
         Args:
-            catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
             model (str): The model to be used.
             exp (str): The experiment to be used.
             source (str): The source to be used.
-            regrid (str): The target grid to be used for regridding. If None, no regridding will be done.
-            startdate (str): The start date of the data to be retrieved.
-                             If None, all available data will be retrieved.
-            enddate (str): The end date of the data to be retrieved.
+            catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
+            regrid (str | None): The target grid to be used for regridding. If None, no regridding will be done.
+            startdate (str | None): The start date of the data to be retrieved.
+                        If None, all available data will be retrieved.
+            enddate (str | None): The end date of the data to be retrieved.
                            If None, all available data will be retrieved.
             loglevel (str): The log level to be used. Default is 'WARNING'.
         """
@@ -37,9 +38,7 @@ class Diagnostic():
         self.model = model
         self.exp = exp
         self.source = source
-
-        if self.model is None or self.exp is None or self.source is None:
-            raise ValueError('Model, experiment and source must be provided')
+        self.realization = None
 
         self.regrid = regrid
         self.startdate = startdate
@@ -48,12 +47,12 @@ class Diagnostic():
         # Data to be retrieved
         self.data = None
 
-    def retrieve(self, var: str = None, reader_kwargs: dict = {}):
+    def retrieve(self, var: str | None = None, reader_kwargs: dict = {}):
         """
         Retrieve the data from the model.
 
         Args:
-            var (str): The variable to be retrieved. If None, all variables will be retrieved.
+            var (str | None): The variable to be retrieved. If None, all variables will be retrieved.
             reader_kwargs (dict): Additional keyword arguments to be passed to the Reader.
 
         Attributes:
@@ -63,7 +62,9 @@ class Diagnostic():
         self.data, self.reader, self.catalog = self._retrieve(model=self.model, exp=self.exp, source=self.source,
                                                               var=var, catalog=self.catalog, startdate=self.startdate,
                                                               enddate=self.enddate, regrid=self.regrid,
-                                                              loglevel=self.logger.level, reader_kwargs=reader_kwargs)
+                                                              loglevel=self.loglevel, reader_kwargs=reader_kwargs)
+
+        self.realization = self.reader.kwargs['realization'] if 'realization' in reader_kwargs else DEFAULT_REALIZATION
         if self.regrid is not None:
             self.logger.info(f'Regridded data to {self.regrid} grid')
         if self.startdate is None:
@@ -74,7 +75,8 @@ class Diagnostic():
             self.logger.debug(f'End date: {self.enddate}')
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
-                    outputdir: str = '.', rebuild: bool = True, **kwargs):
+                    outputdir: str = '.', rebuild: bool = True,
+                    create_catalog_entry: bool = False, dict_catalog_entry: dict = None, **kwargs):
         """
         Save the data to a netcdf file.
 
@@ -84,6 +86,9 @@ class Diagnostic():
             diagnostic_product (str): The diagnostic product.
             outputdir(str): The path to save the data. Default is '.'.
             rebuild (bool): If True, the netcdf file will be rebuilt. Default is True.
+            create_catalog_entry (bool): If True, a catalog entry will be created. Default is False.
+            dict_catalog_entry (dict, optional): List of jinja and wildcard variables. Default is None.
+                                                 Keys are 'jinjalist' and 'wildcardlist'.
 
         Keyword Args:
             **kwargs: Additional keyword arguments to be passed to the OutputSaver.save_netcdf method.
@@ -93,9 +98,12 @@ class Diagnostic():
 
         outputsaver = OutputSaver(diagnostic=diagnostic, 
                                   catalog=self.catalog, model=self.model, exp=self.exp,
-                                  outputdir=outputdir, loglevel=self.logger.level)
+                                  realization=self.realization,
+                                  outputdir=outputdir, loglevel=self.loglevel)
 
-        outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, **kwargs)
+        outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                create_catalog_entry=create_catalog_entry, dict_catalog_entry=dict_catalog_entry,
+                                **kwargs)
 
     @staticmethod
     def _retrieve(model: str, exp: str, source: str, var: str = None, catalog: str = None,
@@ -167,7 +175,7 @@ class Diagnostic():
 
         return data
 
-    def _get_default_regions_file(self, diagnostic: str = None):
+    def _get_default_regions_file(self, diagnostic):
         """
         Get the default path to the regions file for the given diagnostic.
 
@@ -177,9 +185,6 @@ class Diagnostic():
         Returns:
             str: The path to the regions file.
         """
-        if not diagnostic:
-            raise ValueError("A diagnostic name must be provided when regions_file_path is not specified.")
-
         regions_file = ConfigPath().get_config_dir()
         regions_file = os.path.join(regions_file, 'diagnostics', diagnostic, 'definitions', 'regions.yaml')
         if os.path.exists(regions_file):
