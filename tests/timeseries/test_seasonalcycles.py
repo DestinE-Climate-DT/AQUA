@@ -53,7 +53,7 @@ class TestSeasonalCycles:
         plt = PlotSeasonalCycles(diagnostic_name=self.diagnostic_name,
                                  monthly_data = sc.monthly, ref_monthly_data = sc.monthly,
                                  std_monthly_data = sc.std_monthly, loglevel=loglevel)
-        plt.run(var=self.var, outputdir=tmp_path)
+        plt.run(outputdir=tmp_path)
 
         filename = f'{self.diagnostic_name}.seasonalcycles.{self.catalog}.{self.model}.{self.exp}.r1.{self.catalog}.{self.model}.{self.exp}.{self.var}.png'
         file = os.path.join(tmp_path, 'png', filename)

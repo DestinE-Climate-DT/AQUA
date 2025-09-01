@@ -278,6 +278,45 @@ class TestAquaConsole():
         # remove aqua
         run_aqua_console_with_input(['uninstall'], 'yes')
 
+    def test_console_analysis(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
+        """Test for running the analysis via the console"""
+
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        # aqua install
+        run_aqua(['install', machine])
+        run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
+
+        config_path = 'tests/analysis/config.aqua-analysis-test.yaml'
+
+        # Run details
+        catalog = 'ci'
+        model = 'IFS'
+        experiment = 'test-tco79'
+        source = 'teleconnections'
+        output_dir = os.path.join(mydir, 'output')
+        regrid = False
+
+        # run the analysis and verify that at least one file exist
+        run_aqua(['analysis', '--config', config_path, '-m', model, '-e', experiment,
+                  '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
+        
+        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'experiment.yaml')), \
+            "experiment.yaml not found"
+        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'dummy.log')), \
+            "dummy.log not found"
+        # Check if "This is a dummy CLI script that does nothing." is in the dummy.log
+        with open(os.path.join(output_dir, catalog, model, experiment, 'r1', 'dummy.log'), 'r') as f:
+            content = f.read()
+        assert "This is a dummy CLI script that does nothing." in content, \
+            "Expected content not found in dummy.log"
+        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'setup_checker.log')), \
+            "setup_checker.log not found"
+
+        # remove aqua
+        run_aqua_console_with_input(['uninstall'], 'yes')
+
 
     def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,

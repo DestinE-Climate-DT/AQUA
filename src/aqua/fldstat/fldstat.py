@@ -5,7 +5,7 @@ import numpy as np
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection
+from aqua.util import area_selection, to_list
 
 
 class FldStat():
@@ -57,7 +57,11 @@ class FldStat():
         """
         return self.fldstat(data, stat="mean", **kwargs)
 
-    def fldstat(self, data, stat="mean", lon_limits=None, lat_limits=None, **kwargs):
+    def fldstat(self, data: xr.DataArray | xr.Dataset,
+                stat: str = "mean",
+                lon_limits: list | None = None, lat_limits: list | None = None,
+                dims: list | None = None,
+                **kwargs):
         """
         Perform a weighted global average.
         If a subset of the data is provided, the average is performed only on the subset.
@@ -67,6 +71,7 @@ class FldStat():
             stat (str):  the statistic to compute, only supported is "mean"
             lon_limits (list, optional):  the longitude limits of the subset
             lat_limits (list, optional):  the latitude limits of the subset
+            dims (list, optional):  the dimensions to average over, if not provided, horizontal_dims are used
 
         Kwargs:
             - box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
@@ -91,6 +96,18 @@ class FldStat():
             self.horizontal_dims = data_gridtype[0].horizontal_dims
             self.logger.debug('Horizontal dimensions guessed from data are %s', self.horizontal_dims)
 
+        # Determine which dims to average over based on mean_type
+        if not dims:
+            dims = self.horizontal_dims
+        else:
+            if not isinstance(dims, list):
+                raise ValueError("dims must be a list of dimension names.")
+            # check if dims are in horizontal_dims
+            for dim in dims:
+                if dim not in self.horizontal_dims:
+                    raise ValueError(f"Dimension {dim} not found in horizontal dimensions: {self.horizontal_dims}")
+ 
+        
         #if area is not provided, return the raw mean
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
@@ -117,8 +134,10 @@ class FldStat():
         # compact call, equivalent of "out = weighted_data.mean()""
         if stat in ["mean"]:
             weighted_data = data.weighted(weights=self.area.fillna(0))
-            self.logger.info("Computing area-weighted %s on %s dimensions", stat, self.horizontal_dims)
-            out = getattr(weighted_data, stat)(dim=self.horizontal_dims)
+
+            self.logger.info("Computing area-weighted %s on %s dimensions", stat, dims)
+                
+            out = getattr(weighted_data, stat)(dim=dims)
 
         if self.grid_name is not None:
             log_history(out, f"Spatially reduced by fld{stat} from {self.grid_name} grid")
@@ -171,12 +190,12 @@ class FldStat():
 
         # area.coords should be only lon-lat
         for coord in self.area.coords:
-            if coord in data.coords:
+            if coord in data.coords and coord != "time":
                 area_coord = self.area[coord]
                 data_coord = data[coord]
 
                 # verify coordinates has the same sizes
-                if len(area_coord) != len(data_coord):
+                if len(to_list(area_coord)) != len(to_list(data_coord)):
                     raise ValueError(f"{coord} has a mismatch in length!")
 
                 # Fast check if coordinates are already aligned

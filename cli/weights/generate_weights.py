@@ -10,7 +10,7 @@ import sys
 import argparse
 from aqua import Reader, inspect_catalog
 from aqua.logger import log_configure
-from aqua.util import load_yaml, get_arg
+from aqua.util import load_yaml, get_arg, to_list
 import subprocess
 import time
 
@@ -118,10 +118,10 @@ def validate_models(logger=None, full_catalog=None, models=None, experiments=Non
     if full_catalog:
         models, experiments, sources = [], [], []
     else:
-        models = ensure_list(models)
-        experiments = ensure_list(experiments)
-        sources = ensure_list(sources)
-        resolutions = ensure_list(resolutions)
+        models = to_list(models)
+        experiments = to_list(experiments)
+        sources = to_list(sources)
+        resolutions = to_list(resolutions)
 
     if not full_catalog and (not models or not experiments or not sources):
         logger.error("If you do not want to generate weights for the entire catalog, "
@@ -131,18 +131,6 @@ def validate_models(logger=None, full_catalog=None, models=None, experiments=Non
         logger.info("The weights will be generated for the entire catalog.")
     else:
         logger.info("The weights will be generated for the specified models, experiments, and sources.")
-
-def ensure_list(value=None):
-    """
-    Ensure that the input is a list.
-
-    Args:
-        value: A single value or a list.
-
-    Returns:
-        list: A list containing the input value(s).
-    """
-    return [value] if not isinstance(value, list) else value
 
 def calculate_weights(logger=None, model=None, exp=None, source=None, regrid=None, zoom=None, nproc=None, rebuild=None):
     """

@@ -244,7 +244,7 @@ class Hovmoller(Diagnostic):
                 data=processed_data,
                 diagnostic=diagnostic,
                 diagnostic_product=f"{diagnostic_product}_{processed_data.attrs['AQUA_ocean_drift_type']}",
-                outdir=outputdir,
+                outputdir=outputdir,
                 rebuild=rebuild,
                 extra_keys={"region": region}
             )

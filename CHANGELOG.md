@@ -5,15 +5,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.18.0): 
+Unreleased in the current development version (target v0.18.0):
+Removed:
+-  removed old OutputSaver (#2146) 
+
+Workflow modifications:
+- `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Minor EC-Earth4 adjustments (#2196)
+- Hotfix in catgen for monthly chunking (#2184)
+- Fix loaded areas as dataset (#2174)
+- Show error message if empty data are retrieved by in `reader` (#2170)
+- Few graphical adjustments in multiple_maps (#2159)
+- Add description for ECmean diagnostic (#2158)
+- Fix fldstat coordinate treatment (#2147)
+- Fixer applied when units name changes is required and no factor is found (#2128)
+- Update aqua-analysis config for refactored diagnostics (#2144)
+- Fixed incompatible coordinate transformatiosn (#2137)
+- Added Nord4 support in the `load-aqua-container.sh` script (#2130)
+- Add `aqua analysis` to replace the `aqua-analysis.py` script, with a more flexible CLI interface (#2065)
 - Bugfix in `plot_seasonalcycles()` trying to use a non-existing `time` coordinate (#2114)
 - Add `norm` keyword argument to the `plot_single_map` to allow non-linear colorbar normalisation (#2107)
 - `draw_manual_gridlines()` utility function to draw gridlines on cartopy maps (#2105)
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Timeseries: refined title and description, more attributes used (#2193)
+- New Lat-Lon Profiles diagnostic tool (#1934)
+- Boxplots: add support for reader_kwargs (#2149)
+- Global Biases: add the `diagnostic_name` option in config file (#2159)
+- Gregory: refined the reference label generation (#2157)
+- Seaice: add support for `reader_kwargs` (#2153)
+- Remove old seaice diagnostic scripts (#2152)
+- Timeseries: fix lazy calculation of seasonal cycles (#2143)
+- Boxplots: fix output dir (#2136) 
+- Boxplots: add tests and update docs (#2129)
+- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165, #2171, #2178)
+- Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
+- Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
 
 ## [v0.17.0]
@@ -55,6 +85,7 @@ AQUA core complete list:
 - `AQUA_CONFIG` environment variable can be set to customize the path of the configuration files in `aqua-analysis.py` (#2027)
 - Development base container updated to stack 7.0.2.8 (#2022, #2025)
 - `Trender()` class provide also coefficients and normalize them (#1991)
+- Catalog entry builder functionality for diagnostics included in OutputSaver Class (#2086)
 
 AQUA diagnostics complete list:
 - Sea-ice extent and volume: bugs related to use of legacy reader functionality (#2111)

@@ -6,6 +6,7 @@ AQUA command line parser
 import argparse
 from aqua import __version__ as version
 from aqua import __path__ as pypath
+from aqua.cli.analysis import analysis_parser
 from aqua.cli.lra import lra_parser
 from aqua.cli.catgen import catgen_parser
 from aqua.cli.builder import builder_parser
@@ -38,11 +39,14 @@ def parse_arguments():
     avail_parser = subparsers.add_parser("avail", description='List the ClimateDT available catalogs on GitHub')
 
     # subparser for other AQUA commands as they are importing the parser from their code
+    analysis_subparser = subparsers.add_parser("analysis", description="Run AQUA diagnostics")
+    analysis_subparser = analysis_parser(parser=analysis_subparser)
+
     lra_subparser = subparsers.add_parser("lra", description="Low Resolution Archive generator")
-    lra_subparser = lra_parser(parser = lra_subparser)
+    lra_subparser = lra_parser(parser=lra_subparser)
  
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
-    catgen_subparser = catgen_parser(parser = catgen_subparser)
+    catgen_subparser = catgen_parser(parser=catgen_subparser)
 
     # subparser with no arguments
     subparsers.add_parser("uninstall", description="Remove the current AQUA installation")

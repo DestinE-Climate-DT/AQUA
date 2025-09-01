@@ -5,7 +5,6 @@ from aqua.logger import log_configure
 
 xr.set_options(keep_attrs=True)
 
-
 def loop_seasonalcycle(data: xr.DataArray, startdate: str, enddate: str,
                        freq: str, center_time: bool = False, loglevel='WARNING'):
     """
@@ -43,24 +42,34 @@ def loop_seasonalcycle(data: xr.DataArray, startdate: str, enddate: str,
 
     if freq == 'monthly':
         time_range = pd.date_range(start=startdate, end=enddate, freq='MS')
-        months_data = []
-        for i in range(1, 13):
-            months_data.append(cycle[i-1].values)
+    
+        if len(time_range) == 0:
+            base_slice = cycle.isel(month=0)
+            empty = base_slice.expand_dims(time=1).isel(time=slice(0, 0))
+            return empty.assign_coords(time=time_range)
 
-        loop_data = []
-        for timestamp in time_range:
-            loop_data.append(months_data[timestamp.month-1])
+        months_data = [cycle.sel(month=i) for i in range(1, 13)]
+        # Repeat slices over requested time range and concatenate lazily
+        loop_slices = [months_data[timestamp.month - 1] for timestamp in time_range]
+        data = xr.concat(loop_slices, dim='time')
+        data = data.drop_vars('month', errors='ignore')
+
     elif freq == 'annual':
         time_range = pd.date_range(start=startdate, end=enddate, freq='YS')
-        years_data = cycle.values
 
-        loop_data = []
-        for timestamp in time_range:
-            loop_data.append(years_data)
+        if len(time_range) == 0:
+            base_slice = cycle
+            empty = base_slice.expand_dims(time=1).isel(time=slice(0, 0))
+            return empty.assign_coords(time=time_range)
+    
+        # Repeat the single-year mean lazily for each year
+        loop_slices = [cycle] * len(time_range)
+        data = xr.concat(loop_slices, dim='time')
 
-    data = xr.DataArray(data=loop_data, coords=dict(time=time_range), dims=['time'])
+    # Assign the requested time coordinate
+    data = data.assign_coords(time=time_range)
+
     return data
-
 
 def center_timestamp(time: pd.Timestamp, freq: str):
     """

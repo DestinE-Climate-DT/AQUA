@@ -49,7 +49,7 @@ class Timeseries(BaseMixin):
                          lat_limits=lat_limits, loglevel=loglevel)
 
     def run(self, var: str, formula: bool = False, long_name: str = None,
-            units: str = None, standard_name: str = None, std: bool = False,
+            units: str = None, short_name: str = None, std: bool = False,
             freq: list = ['monthly', 'annual'], extend: bool = True,
             exclude_incomplete: bool = True, center_time: bool = True,
             box_brd: bool = True, outputdir: str = './', rebuild: bool = True,
@@ -64,7 +64,7 @@ class Timeseries(BaseMixin):
             formula (bool): If True, the variable is a formula.
             long_name (str): The long name of the variable, if different from the variable name.
             units (str): The units of the variable, if different from the original units.
-            standard_name (str): The standard name of the variable, if different from the variable name.
+            short_name (str): The short name of the variable, if different from the variable name.
             std (bool): If True, compute the standard deviation. Default is False.
             freq (list): The frequencies to be used for the computation. Available options are 'hourly', 'daily',
                          'monthly' and 'annual'. Default is ['monthly', 'annual'].
@@ -78,7 +78,7 @@ class Timeseries(BaseMixin):
         """
         self.logger.info('Running Timeseries for %s', var)
         self.retrieve(var=var, formula=formula, long_name=long_name, units=units,
-                      standard_name=standard_name, reader_kwargs=reader_kwargs)
+                      short_name=short_name, reader_kwargs=reader_kwargs)
         freq = to_list(freq)
 
         for f in freq:

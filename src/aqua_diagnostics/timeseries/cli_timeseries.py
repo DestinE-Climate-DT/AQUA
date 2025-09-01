@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
-                                    'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
+                                    'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
                                     'center_time': center_time, 'reader_kwargs': reader_kwargs}
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                                                 'std_startdate': var_config.get('std_startdate'),
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
-                                logger.warning(f"Reference args: {reference_args}")
+                                logger.info(f"Reference args: {reference_args}")
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
                                 ts_ref[i].run(**run_args, std=True)
 
@@ -135,14 +135,14 @@ if __name__ == '__main__':
                             data_label = plot_ts.set_data_labels()
                             ref_label = plot_ts.set_ref_label()
                             description = plot_ts.set_description()
-                            title = plot_ts.set_title(var=var, units=var_config.get('units'))
+                            title = plot_ts.set_title()
                             fig, _ = plot_ts.plot_timeseries(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='pdf')
                             if save_png:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='png')
                     except Exception as e:
                         logger.error(f"Error running Timeseries diagnostic for variable {var} in region {region if region else 'global'}: {e}")
@@ -160,7 +160,7 @@ if __name__ == '__main__':
 
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
-                                    'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
+                                    'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
                                     'center_time': center_time, 'reader_kwargs': reader_kwargs}
 
@@ -208,14 +208,14 @@ if __name__ == '__main__':
                             data_label = plot_ts.set_data_labels()
                             ref_label = plot_ts.set_ref_label()
                             description = plot_ts.set_description()
-                            title = plot_ts.set_title(var=var, units=var_config.get('units'))
+                            title = plot_ts.set_title()
                             fig, _ = plot_ts.plot_timeseries(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='pdf')
                             if save_png:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='png')
                     except Exception as e:
                         logger.error(f"Error running Timeseries diagnostic for variable {var} in region {region if region else 'global'}: {e}")
@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
-                                    'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
+                                    'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
 
                         # Initialize a list of len from the number of datasets
@@ -281,14 +281,14 @@ if __name__ == '__main__':
                             data_label = plot_sc.set_data_labels()
                             ref_label = plot_sc.set_ref_label()
                             description = plot_sc.set_description()
-                            title = plot_sc.set_title(var=var, units=var_config.get('units'))
+                            title = plot_sc.set_title()
                             fig, _ = plot_sc.plot_seasonalcycles(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
-                                plot_sc.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_sc.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='pdf')
                             if save_png:
-                                plot_sc.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_sc.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='png')
                 except Exception as e:
                     logger.error(f"Error running SeasonalCycles diagnostic for variable {var} in region {region if region else 'global'}: {e}")

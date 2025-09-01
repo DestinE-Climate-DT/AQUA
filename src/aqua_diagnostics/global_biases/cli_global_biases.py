@@ -1,16 +1,15 @@
 import argparse
 import sys
-import pandas as pd
 
 from aqua.logger import log_configure
 from aqua.util import get_arg
 from aqua.version import __version__ as aqua_version
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
-
-from aqua.util import load_yaml, get_arg, OutputSaver, ConfigPath, to_list
+from aqua.util import get_arg, to_list
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.diagnostics import GlobalBiases, PlotGlobalBiases
+
 
 def parse_arguments(args):
     """Parse command-line arguments for GlobalBiases diagnostic.
@@ -74,6 +73,7 @@ if __name__ == '__main__':
                     "Only the first entry in 'references' will be used.\n"
                     "Multiple references are not supported by this diagnostic."
                 )
+            diagnostic_name = config_dict['diagnostics']['globalbiases'].get('diagnostic_name', 'globalbiases')
             dataset = config_dict['datasets'][0]
             reference = config_dict['references'][0]
             dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
@@ -146,7 +146,8 @@ if __name__ == '__main__':
                     proj_params = plot_params.get('projection_params', {})
 
                     logger.debug(f"Using projection: {proj} for variable: {var}")
-                    plot_biases = PlotGlobalBiases(save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                    plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png,
+                                                dpi=dpi, outputdir=outputdir, loglevel=loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
                                           var=var, plev=p,
                                           proj=proj, proj_params=proj_params,

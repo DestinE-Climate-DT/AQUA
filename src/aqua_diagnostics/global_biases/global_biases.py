@@ -178,7 +178,7 @@ class GlobalBiases(Diagnostic):
                 data=self.climatology,
                 diagnostic='globalbiases',
                 diagnostic_product='climatology',
-                outdir=self.outputdir,
+                outputdir=self.outputdir,
                 extra_keys=extra_keys
             )
 
@@ -212,7 +212,7 @@ class GlobalBiases(Diagnostic):
                     data=self.seasonal_climatology,
                     diagnostic='globalbiases',
                     diagnostic_product='seasonal_climatology',
-                    outdir=self.outputdir,
+                    outputdir=self.outputdir,
                     extra_keys=extra_keys
                 )
                 self.logger.info(f'Seasonal climatology saved to {self.outputdir}.')

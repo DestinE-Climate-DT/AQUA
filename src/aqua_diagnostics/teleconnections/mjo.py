@@ -118,7 +118,7 @@ class PlotMJO():
         self.data = data
 
         self.outputsaver = OutputSaver(diagnostic='mjo',  catalog=self.catalogs, model=self.models,
-                                       exp=self.exps, outdir=outputdir, loglevel=self.loglevel)
+                                       exp=self.exps, outputdir=outputdir, loglevel=self.loglevel)
 
     def plot_hovmoller(self, invert_axis: bool = True,
                        invert_time: bool = True,

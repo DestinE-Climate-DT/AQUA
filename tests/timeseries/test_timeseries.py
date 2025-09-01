@@ -73,7 +73,7 @@ class TestTimeseries:
                              std_monthly_data = ts.std_monthly, std_annual_data = ts.std_annual,
                              loglevel=loglevel)
         
-        plt.run(var=self.var, outputdir=tmp_path)
+        plt.run(outputdir=tmp_path)
 
         filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.r1.{self.catalog}.{self.model}.{self.exp}.{self.var}.{self.region}.png'
         file = os.path.join(tmp_path, 'png', filename)
@@ -99,7 +99,7 @@ class TestTimeseries:
                         region=self.region, loglevel=loglevel, startdate='19940101', enddate='19941231',
                         regrid=self.regrid)
 
-        ts.retrieve(var='2*tcc', formula=True, standard_name='2tcc', long_name='2*Total Cloud Cover', units='%')
+        ts.retrieve(var='2*tcc', formula=True, short_name='2tcc', long_name='2*Total Cloud Cover', units='%')
 
         ts.compute(freq='monthly')
         assert ts.monthly.values[0] ==  pytest.approx(117.40372092960037, rel=approx_rel)

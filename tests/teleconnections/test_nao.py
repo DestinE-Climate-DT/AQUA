@@ -31,7 +31,7 @@ def test_NAO(tmp_path):
     assert nao.index[4].values == pytest.approx(0.21909582, rel=approx_rel)
 
     nao.save_netcdf(nao.index, diagnostic='nao', diagnostic_product='index',
-                    outdir=tmp_path)
+                    outputdir=tmp_path)
     netcdf_path = os.path.join(tmp_path, 'netcdf')
     filename = 'nao.index.ci.IFS.test-tco79.r1.nc'
     assert (os.path.exists(os.path.join(netcdf_path, filename))) is True

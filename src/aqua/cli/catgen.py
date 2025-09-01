@@ -158,7 +158,7 @@ class AquaFDBGenerator:
             },
             "monthly": {
                 'time': None,
-                'chunks': 'D' if levtype == 'o3d' else 'MS',
+                'chunks': 'MS',
                 'savefreq': "MS"
             }
         }

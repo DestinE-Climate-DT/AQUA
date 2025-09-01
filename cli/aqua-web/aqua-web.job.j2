@@ -24,9 +24,9 @@ unset SINGULARITY_BIND  # Lumi specific fix for singularity
 if [[ "{{ nativeaqua }}" == "true" ]]; then
     if [[ "{{ push }}" == "false" ]]; then
         if [[ "{{ ensemble }}" == "true" ]]; then
-            python $AQUA/cli/aqua-analysis/aqua-analysis.py -l debug -c $catalog -m $model -e $exp --realization {{ realization }} -s $source -d $OUTDIR {{ parallel }}
+            aqua analysis -l debug -c $catalog -m $model -e $exp --realization {{ realization }} -s $source -d $OUTDIR {{ parallel }}
         else
-            python $AQUA/cli/aqua-analysis/aqua-analysis.py -l debug -c $catalog -m $model -e $exp -s $source -d $OUTDIR {{ parallel }}
+            aqua analysis -l debug -c $catalog -m $model -e $exp -s $source -d $OUTDIR {{ parallel }}
         fi
     else
         if [[ "{{ ensemble }}" == "true" ]]; then
@@ -40,9 +40,9 @@ else
 #!/bin/bash
 if [[ "{{ push }}" == "false" ]]; then
     if [[ "{{ ensemble }}" == "true" ]]; then
-        python $AQUA/cli/aqua-analysis/aqua-analysis.py -l debug -c $catalog -m $model -e $exp --realization {{ realization }} -s $source -d $OUTDIR {{ parallel }}
+        aqua analysis -l debug -c $catalog -m $model -e $exp --realization {{ realization }} -s $source -d $OUTDIR {{ parallel }}
     else
-        python $AQUA/cli/aqua-analysis/aqua-analysis.py -l debug -c $catalog -m $model -e $exp -s $source -d $OUTDIR {{ parallel }}
+        aqua analysis -l debug -c $catalog -m $model -e $exp -s $source -d $OUTDIR {{ parallel }}
     fi
 else
     if [[ "{{ ensemble }}" == "true" ]]; then

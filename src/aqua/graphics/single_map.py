@@ -16,10 +16,11 @@ import xarray as xr
 import healpy as hp
 from aqua.logger import log_configure
 from aqua.util import add_cyclic_lon, evaluate_colorbar_limits
-from aqua.util import healpix_resample, coord_names, set_ticks
+from aqua.util import healpix_resample, coord_names, set_ticks, ticks_round
 from aqua.util import cbar_get_label, set_map_title, generate_colorbar_ticks
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
+import cartopy.feature as cfeature
 
 def plot_single_map(data: xr.DataArray,
                     contour: bool = True, sym: bool = False,
@@ -29,8 +30,8 @@ def plot_single_map(data: xr.DataArray,
                     vmin: Optional[float] = None, vmax: Optional[float] = None, cmap: str = 'RdBu_r',
                     cbar: bool = True, cbar_label: Optional[str] = None, 
                     norm: Optional[object] = None,
-                    title: Optional[str] = None, transform_first: bool = False, cyclic_lon: bool = True,
-                    fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
+                    title: Optional[str] = None, title_size: Optional[int] = 12, transform_first: bool = False, cyclic_lon: bool = True,
+                    add_land: bool = False, fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                     ax_pos: tuple = (1, 1, 1), return_fig: bool = False, 
                     loglevel='WARNING',  **kwargs):
     """
@@ -55,8 +56,10 @@ def plot_single_map(data: xr.DataArray,
         cbar (bool, optional):       If True, add a colorbar. Defaults to True.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
         title (str, optional):       Title of the figure. Defaults to None.
+        title_size (int, optional):   Title size. Defaults to None.
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
+        add_land (bool, optional):   If True, add land to the map. Defaults to False.
         fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
         ax (plt.Axes, optional):     Axes to plot on. By default a new axes is created.
         ax_pos (list, optional):     Axes position. Used if the axes has to be created. Defaults to (1, 1, 1).
@@ -114,6 +117,7 @@ def plot_single_map(data: xr.DataArray,
         if sym:
             logger.warning("sym=True, vmin and vmax given will be ignored")
             vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
+            
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
         levels = np.linspace(vmin, vmax, nlevels + 1)
@@ -153,10 +157,9 @@ def plot_single_map(data: xr.DataArray,
         logger.debug("Adding coastlines")
         ax.coastlines()
 
-    # TODO: To reimplement, we need a meshgrid for this
-    # if gridlines:
-    #     logger.debug("Adding gridlines")
-    #     ax.gridlines()
+    if add_land:
+        logger.debug("Adding land")
+        ax.add_feature(cfeature.LAND, facecolor='#efebd7', edgecolor='k', zorder=3)
 
     # Longitude labels
     # Evaluate the longitude ticks
@@ -187,7 +190,7 @@ def plot_single_map(data: xr.DataArray,
         cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
 
         cbar_label = cbar_get_label(data, cbar_label=cbar_label, loglevel=loglevel)
-        logger.debug("Setting colorbar label to %s", cbar_label)
+        logger.debug(f"Setting colorbar label to {cbar_label}")
 
         cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', label=cbar_label)
 
@@ -210,7 +213,7 @@ def plot_single_map(data: xr.DataArray,
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title)
+        ax.set_title(title, fontsize=title_size)
 
     if return_fig:
         logger.debug("Returning figure and axes")
@@ -221,33 +224,36 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          proj: ccrs.Projection = ccrs.Robinson(), extent: Optional[list] = None,
                          vmin_fill: Optional[float] = None, vmax_fill: Optional[float] = None,
                          vmin_contour: Optional[float] = None, vmax_contour: Optional[float] = None,
-                         sym_contour: bool = False, sym: bool = True,
+                         norm = None, sym_contour: bool = False, sym: bool = True,
+                         add_contour: bool = True, add_land=False,
                          cyclic_lon: bool = True, return_fig: bool = False,
                          fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                         title: Optional[str] = None, loglevel: str = 'WARNING', **kwargs):
+                         title: Optional[str] = None, title_size: Optional[int] = 12,
+                         loglevel: str = 'WARNING', **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
     as a contour plot.
 
     Args:
-        data (xr.DataArray):       Data to plot.
-        data_ref (xr.DataArray):   Reference data to plot the difference.
-        proj (cartopy.crs.Projection, optional): Projection to use. Defaults to PlateCarree.
-        extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
-        vmin_fill (float, optional): Minimum value for the colorbar of the fill.
-        vmax_fill (float, optional): Maximum value for the colorbar of the fill.
+        data (xr.DataArray):            Data to plot.
+        data_ref (xr.DataArray):        Reference data to plot the difference.
+        proj (cartopy.crs.Projection,   optional): Projection to use. Defaults to PlateCarree.
+        extent (list, optional):        Extent of the map to limit the projection. Defaults to None.
+        vmin_fill (float, optional):    Minimum value for the colorbar of the fill.
+        vmax_fill (float, optional):    Maximum value for the colorbar of the fill.
         vmin_contour (float, optional): Minimum value for the colorbar of the contour.
         vmax_contour (float, optional): Maximum value for the colorbar of the contour.
-        sym_contour (bool, optional): If True, set the contour levels to be symmetrical.  Default to False
-        sym (bool, optional):      If True, set the colorbar for the diff to be symmetrical. Default to True
-        title (str, optional):     Title of the figure. Defaults to None.
-        cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
-        return_fig (bool, optional): If True, return the figure and axes. Defaults to False.
-        fig (plt.Figure, optional):  Figure to plot on. By default a new figure is created.
-        ax (plt.Axes, optional):    Axes to plot on. By default a new axes is created.
-        loglevel (str, optional):  Log level. Defaults to 'WARNING'.
-        **kwargs:                  Keyword arguments for plot_single_map.
-                                   Check the docstring of plot_single_map.
+        sym_contour (bool, optional)    If True, set the contour levels to be symmetrical.  Default to False
+        sym (bool, optional):           If True, set the colorbar for the diff to be symmetrical. Default to True
+        title (str, optional):          Title of the figure. Defaults to None.
+        title_size (int, optional):     Title size. Defaults to None.
+        cyclic_lon (bool, optional):    If True, add cyclic longitude. Defaults to True.
+        return_fig (bool, optional):    If True, return the figure and axes. Defaults to False.
+        fig (plt.Figure, optional):     Figure to plot on. By default a new figure is created.
+        ax (plt.Axes, optional):        Axes to plot on. By default a new axes is created.
+        loglevel (str, optional):       Log level. Defaults to 'WARNING'.
+        **kwargs:                       Keyword arguments for plot_single_map.
+                                        Check the docstring of plot_single_map.
 
     Keyword Args:
         contour (bool, optional):  Plot the difference as contour. False to plot a pcolormesh
@@ -258,7 +264,6 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
     """
     logger = log_configure(loglevel, 'plot_single_map_diff')
 
-
     # Check if the data is in HEALPix format
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
@@ -267,7 +272,6 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
         data = healpix_resample(data)
         logger.debug("resampling HEALPix data")
-
 
     # Check if the data is in HEALPix format
     npix_ref = data_ref.size  # Number of cells in the data
@@ -292,7 +296,8 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         fig, ax = plot_single_map(diff_map, cyclic_lon=cyclic_lon,
                                   proj=proj, extent=extent,
                                   fig=fig, ax=ax,
-                                  sym=sym, vmin=vmin_fill, vmax=vmax_fill,
+                                  sym=sym, vmin=vmin_fill, vmax=vmax_fill, norm=None,
+                                  add_land=add_land,
                                   loglevel=loglevel, return_fig=True, **kwargs)
 
     logger.debug("Plotting the map")
@@ -318,18 +323,19 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
 
     logger.debug("Setting contour vmin to %s, vmax to %s", vmin_contour, vmax_contour)
 
-    ds = data.plot.contour(ax=ax,
-                           transform=ccrs.PlateCarree(),
-                           vmin=vmin_contour, vmax=vmax_contour,
-                           levels=10, colors='k',
-                           linewidths=0.5)
+    if add_contour:
+        ds = data.plot.contour(ax=ax,
+                               transform=ccrs.PlateCarree(),
+                               vmin=vmin_contour, vmax=vmax_contour,
+                               levels=10, colors='k',
+                               linewidths=0.5)
 
-    fmt = {level: f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}" for level in ds.levels}
-    ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
+        fmt = {level: f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}" for level in ds.levels}
+        ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title)
+        ax.set_title(title, fontsize=title_size)
 
     if return_fig:
         return fig, ax

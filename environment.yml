@@ -23,7 +23,6 @@ dependencies:
   - imagemagick
   - pip:
     - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
-    - -e ./diagnostics/seaice/ # pip install -e of seaice
     - -e ./diagnostics/tropical_cyclones/ # pip install -e of tropical cyclones
     - -e ./diagnostics/tropical_rainfall/ # pip install -e of tropical_rainfall
     # pip install -e of AQUA itself

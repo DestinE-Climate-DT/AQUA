@@ -93,7 +93,7 @@ if __name__ == '__main__':
                                          rebuild=rebuild)
 
                     nao[i].save_netcdf(nao[i].index, diagnostic='nao', diagnostic_product='index',
-                                       outdir=outputdir, rebuild=rebuild)
+                                       outputdir=outputdir, rebuild=rebuild)
                     
                     for season in seasons:
                         nao_regressions[season][i] = nao[i].compute_regression(season=season)
@@ -103,9 +103,9 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         nao[i].save_netcdf(nao_regressions[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_reg,
-                                           outdir=outputdir, rebuild=rebuild)
+                                           outputdir=outputdir, rebuild=rebuild)
                         nao[i].save_netcdf(nao_correlations[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_cor,
-                                           outdir=outputdir, rebuild=rebuild)
+                                           outputdir=outputdir, rebuild=rebuild)
 
                 nao_ref = [None] * len(config_dict['references'])
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
                                              rebuild=rebuild)
                     
                     nao_ref[i].save_netcdf(nao_ref[i].index, diagnostic='nao', diagnostic_product='index',
-                                           outdir=outputdir, rebuild=rebuild)
+                                           outputdir=outputdir, rebuild=rebuild)
                     
                     for season in seasons:
                         nao_ref_regressions[season][i] = nao_ref[i].compute_regression(season=season)
@@ -133,9 +133,9 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         nao_ref[i].save_netcdf(nao_ref_regressions[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_reg,
-                                               outdir=outputdir, rebuild=rebuild)
+                                               outputdir=outputdir, rebuild=rebuild)
                         nao_ref[i].save_netcdf(nao_ref_correlations[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_cor,
-                                               outdir=outputdir, rebuild=rebuild)
+                                               outputdir=outputdir, rebuild=rebuild)
 
                 # Plot NAO regressions
                 if save_pdf or save_png:
@@ -220,7 +220,7 @@ if __name__ == '__main__':
                     enso[i].compute_index(months_window=enso_config.get('months_window', 3),
                                           rebuild=rebuild)
                     enso[i].save_netcdf(enso[i].index, diagnostic='enso', diagnostic_product='index',
-                                       outdir=outputdir, rebuild=rebuild)
+                                       outputdir=outputdir, rebuild=rebuild)
 
                     for season in seasons:
                         enso_regressions[season][i] = enso[i].compute_regression(season=season)
@@ -230,9 +230,9 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         enso[i].save_netcdf(enso_regressions[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_reg,
-                                            outdir=outputdir, rebuild=rebuild)
+                                            outputdir=outputdir, rebuild=rebuild)
                         enso[i].save_netcdf(enso_correlations[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_cor,
-                                            outdir=outputdir, rebuild=rebuild)
+                                            outputdir=outputdir, rebuild=rebuild)
 
                 enso_ref = [None] * len(config_dict['references'])
 
@@ -251,7 +251,7 @@ if __name__ == '__main__':
                                               rebuild=rebuild)
 
                     enso_ref[i].save_netcdf(enso_ref[i].index, diagnostic='enso', diagnostic_product='index',
-                                            outdir=outputdir, rebuild=rebuild)
+                                            outputdir=outputdir, rebuild=rebuild)
 
                     for season in seasons:
                         enso_ref_regressions[season][i] = enso_ref[i].compute_regression(season=season)
@@ -261,9 +261,9 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         enso_ref[i].save_netcdf(enso_ref_regressions[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_reg,
-                                                outdir=outputdir, rebuild=rebuild)
+                                                outputdir=outputdir, rebuild=rebuild)
                         enso_ref[i].save_netcdf(enso_ref_correlations[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_cor,
-                                                outdir=outputdir, rebuild=rebuild)
+                                                outputdir=outputdir, rebuild=rebuild)
 
                 # Plot ENSO regressions
                 if save_pdf or save_png:

@@ -6,6 +6,13 @@ diagnostic_config = {
             'target_path': 'diagnostics/global_biases/cli'
         },
     ],
+    'lat_lon_profiles': [
+        {
+            'config_file': 'regions.yaml',
+            'source_path': 'config/diagnostics/lat_lon_profiles/definitions',
+            'target_path': 'diagnostics/lat_lon_profiles/definitions'
+        },
+    ],
     'ecmean': [
         {
             'config_file': 'ecmean_config_climatedt.yaml',
@@ -106,29 +113,14 @@ diagnostic_config = {
     ],
     'seaice': [
         {
-            'config_file': 'regions_definition.yaml',
-            'source_path': 'diagnostics/seaice/config',
-            'target_path': 'diagnostics/seaice/config'
+            'config_file': 'regions.yaml',
+            'source_path': 'config/diagnostics/seaice/definitions',
+            'target_path': 'diagnostics/seaice/definitions'
         },
         {
-            'config_file': 'config_Concentration.yaml',
-            'source_path': 'diagnostics/seaice/cli',
-            'target_path': 'diagnostics/seaice/cli'
-        },
-        {
-            'config_file': 'config_Extent.yaml',
-            'source_path': 'diagnostics/seaice/cli',
-            'target_path': 'diagnostics/seaice/cli'
-        },
-        {
-            'config_file': 'config_Thickness.yaml',
-            'source_path': 'diagnostics/seaice/cli',
-            'target_path': 'diagnostics/seaice/cli'
-        },
-        {
-            'config_file': 'config_Volume.yaml',
-            'source_path': 'diagnostics/seaice/cli',
-            'target_path': 'diagnostics/seaice/cli'
+            'config_file': 'config_seaice.yaml',
+            'source_path': 'config/diagnostics/seaice',
+            'target_path': 'diagnostics/seaice'
         }
     ],
     'ssh': [

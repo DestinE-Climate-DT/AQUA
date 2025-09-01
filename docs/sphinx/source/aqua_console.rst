@@ -1,18 +1,19 @@
 .. _aqua-console:
 
-Configuration and catalog manager
-=================================
-
-Since ``v0.9`` a command line interface has been added to AQUA.
-We refer to this as the **AQUA console**.
-
 The AQUA console
-----------------
+================
 
-The AQUA console has two main purposes:
+What is the AQUA console?
+-------------------------
+
+The AQUA console (introduced since v0.9.0) has two main purposes:
 
 - A central access to manage where the configuration and catalog files are stored has been added. This can also handle fixes and grids files.
-- A tool for more complex operations, for the moment the LRA generator (see :ref:`aqua-lra` and :ref:`lra`) and the FDB catalog generator (see :ref:`catalog_generator`).
+- A tool for more complex operations:
+
+    - LRA generator (see :ref:`aqua-lra` and :ref:`lra`) 
+    - FDB catalog generator (see :ref:`catalog_generator`).
+    - Diagnostics wrapper for a complete experiment analysis (see :ref:`aqua_analysis`).
 
 Here we give a brief overview of the features.
 If you are a developer, you may want to read the :ref:`dev-notes` section.
@@ -31,6 +32,7 @@ It has the following subcommands:
 - :ref:`aqua-fixes`
 - :ref:`aqua-grids`
 - :ref:`aqua-lra`
+- :ref:`aqua-analysis`
 
 The main command has some options listed below:
 
@@ -390,3 +392,11 @@ This subcommand launch the LRA generation based on the LRA tool.
 For full description of the LRA generator functionalities, please refer to the :ref:`lra` section.
 In most of cases, it is better to embed this tool within a batch job.
 
+.. _aqua-analysis:
+
+aqua analysis <analysis-options>
+--------------------------------
+
+This subcommand launch the analysis tool, which is a flexible wrapper for the diagnostics.
+It allows to run a set of diagnostics on a specific experiment.
+For a complete description of the analysis tool, please refer to the :ref:`aqua_analysis` section.

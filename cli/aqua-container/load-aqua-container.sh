@@ -148,7 +148,9 @@ function setup_container_path(){
         "MN5")
             AQUA_folder="/gpfs/projects/ehpc01/containers/aqua"
             ;;
-        
+        "nord4")
+            AQUA_folder="/esarchive/scratch/AQUA/containers"
+            ;;                
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
@@ -202,6 +204,11 @@ function setup_envs(){
             GRID_DEFINITION_PATH=""
             ESMFMKFILE="/opt/conda/lib/esmf.mk"
             ;;
+        "nord4")
+            GSV_WEIGHTS_PATH=""
+            GRID_DEFINITION_PATH=""
+            ESMFMKFILE="/opt/conda/lib/esmf.mk"
+            ;;            
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
@@ -254,7 +261,12 @@ function setup_binds(){
                 "/gpfs/projects/ehpc01/"
             )
             ;;
-
+        "nord4")
+            binds=(
+                "/esarchive"
+                "/gpfs/archive/bsc32/esarchive"
+            )
+            ;;
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1

@@ -23,11 +23,5 @@ defaults:
             'C': 'degC'
             '(0 - 1)': 'frac'
             'Celsius': 'degC'
-
-
-    
-    
-                    
-
-
-
+            '0.001': 'g kg**-1'
+            '1e-3': 'g kg**-1'

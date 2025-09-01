@@ -32,7 +32,6 @@ class Diagnostic():
         """
 
         self.logger = log_configure(log_name='Diagnostic', log_level=loglevel)
-
         self.loglevel = loglevel
         self.catalog = catalog
         self.model = model
@@ -75,7 +74,7 @@ class Diagnostic():
             self.logger.debug(f'End date: {self.enddate}')
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
-                    outdir: str = '.', rebuild: bool = True, **kwargs):
+                    outputdir: str = '.', rebuild: bool = True, **kwargs):
         """
         Save the data to a netcdf file.
 
@@ -83,7 +82,7 @@ class Diagnostic():
             data (xarray Dataset or DataArray): The data to be saved.
             diagnostic (str): The diagnostic name.
             diagnostic_product (str): The diagnostic product.
-            outdir(str): The path to save the data. Default is '.'.
+            outputdir(str): The path to save the data. Default is '.'.
             rebuild (bool): If True, the netcdf file will be rebuilt. Default is True.
 
         Keyword Args:
@@ -94,7 +93,7 @@ class Diagnostic():
 
         outputsaver = OutputSaver(diagnostic=diagnostic, 
                                   catalog=self.catalog, model=self.model, exp=self.exp,
-                                  outdir=outdir, loglevel=self.logger.level)
+                                  outputdir=outputdir, loglevel=self.logger.level)
 
         outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, **kwargs)
 
@@ -168,13 +167,64 @@ class Diagnostic():
 
         return data
 
-    def _set_region(self, diagnostic: str, region: str = None, lon_limits: list = None, lat_limits: list = None):
+    def _get_default_regions_file(self, diagnostic: str = None):
+        """
+        Get the default path to the regions file for the given diagnostic.
+
+        Args:
+            diagnostic (str): The diagnostic name. Used for creating the diagnostic file paths.
+        
+        Returns:
+            str: The path to the regions file.
+        """
+        if not diagnostic:
+            raise ValueError("A diagnostic name must be provided when regions_file_path is not specified.")
+
+        regions_file = ConfigPath().get_config_dir()
+        regions_file = os.path.join(regions_file, 'diagnostics', diagnostic, 'definitions', 'regions.yaml')
+        if os.path.exists(regions_file):
+            return regions_file
+        else:
+            raise FileNotFoundError(f'Region file path not found at: {regions_file}')
+    
+    def _read_regions_file(self, regions_file: str):
+        """
+        Read the regions list from the regions file.
+
+        Args:
+            regions_file (str): The path to the regions file.
+
+        Returns:
+            dict: A dictionary containing the regions and their properties form parsed YAML file.
+        """
+        return load_yaml(regions_file)
+    
+    def _load_regions_from_file(self, diagnostic: str = None, regions_file_path: str = None) -> dict:
+        """
+        Retrieve the regions dictionary from the specified or default regions file.
+
+        Args:
+            diagnostic (str): The diagnostic name.
+            regions_file_path (str, optional): Path to a custom regions file. 
+                If None, the default path for the diagnostic will be used.
+
+        Returns:
+            dict: A dictionary containing the regions and their properties.
+        """
+        if regions_file_path is None:
+            regions_file_path = self._get_default_regions_file(diagnostic)
+        
+        return self._read_regions_file(regions_file_path)
+
+    def _set_region(self, diagnostic: str, region: str = None, regions_file_path: str = None,
+                    lon_limits: list = None, lat_limits: list = None):
         """
         Set the region to be used.
 
         Args:
-            diagnostic (str): The diagnostic name. Used for creating file paths.
+            diagnostic (str): The diagnostic name. Used for creating the diagnostic file paths.
             region (str): The region to select. This will define the lon and lat limits.
+            regions_file_path (str): The path to the regions file. If None, the default regions file will be used.
             lon_limits (list): The longitude limits to be used. Overridden by region.
             lat_limits (list): The latitude limits to be used. Overridden by region.
 
@@ -184,25 +234,19 @@ class Diagnostic():
             lat_limits (list): The latitude limits to be used.
         """
         if region is not None:
-            region_file = ConfigPath().get_config_dir()
-            region_file = os.path.join(region_file, 'diagnostics',
-                                       diagnostic, 'definitions', 'regions.yaml')
-            if os.path.exists(region_file):
-                regions = load_yaml(region_file)
-                if region in regions['regions']:
-                    lon_limits = regions['regions'][region].get('lon_limits', None)
-                    lat_limits = regions['regions'][region].get('lat_limits', None)
-                    region = regions['regions'][region].get('longname', region)
-                    self.logger.info(f'Region {region} found, using lon: {lon_limits}, lat: {lat_limits}')
-                else:
-                    self.logger.error('Region %s not found', region)
-                    raise ValueError(f'Region {region} not found')
+            regions_file = self._load_regions_from_file(diagnostic, regions_file_path)
+
+            if region in regions_file['regions']:
+                lon_limits = regions_file['regions'][region].get('lon_limits', None)
+                lat_limits = regions_file['regions'][region].get('lat_limits', None)
+                region = regions_file['regions'][region].get('longname', region)
+                self.logger.info(f'Region {region} found, using lon: {lon_limits}, lat: {lat_limits}')
             else:
-                self.logger.error('Region file not found')
-                raise FileNotFoundError('Region file not found')
+                self.logger.error(f'Region {region} not found')
+                raise ValueError(f'Region {region} not found')
         else:
             region = None
-            self.logger.info('No region provided, using lon_limits: %s, lat_limits: %s', lon_limits, lat_limits)
+            self.logger.info(f'No region provided, using lon_limits: {lon_limits}, lat_limits: {lat_limits}')
 
         return region, lon_limits, lat_limits
 
@@ -233,7 +277,7 @@ class Diagnostic():
         Select a geographic region from the dataset. Used when selection is not on the self.data attribute.
 
         Args:
-            data (xarray Dataset): The dataset to select the region from.
+            data (xarray Dataset or DataArray): The dataset to select the region from.
             region (str): The region to select.
             lon_limits (list): The longitude limits to select.
             lat_limits (list): The latitude limits to select.
@@ -255,7 +299,6 @@ class Diagnostic():
                 data=data, lat=lat_limits, lon=lon_limits, drop=drop, loglevel=self.loglevel, **kwargs
             )
             data.attrs['AQUA_region'] = region
-            self.logger.info(f"Modified longname of the region: {region}")
         else:
             region, lon_limits, lat_limits = None, None, None
             self.logger.warning(

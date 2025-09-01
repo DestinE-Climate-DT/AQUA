@@ -147,11 +147,11 @@ The configuration file is a YAML file that contains the following information:
             std_startdate: '1990-01-01'
             std_enddate: '2020-12-31'
           tnlwrf+tnswrf:
-            standard_name: "net_top_radiation"
+            short_name: "net_top_radiation"
             long_name: "Net top radiation"
           tprate:
             units: 'mm/day'
-            standard_name: 'tprate'
+            short_name: 'tprate'
             long_name: 'Total precipitation rate'
             regions: ['tropics', 'europe'] # regions to plot the time series other than global
 

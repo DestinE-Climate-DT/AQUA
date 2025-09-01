@@ -162,26 +162,32 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
     return cbar_label
 
 
-def set_map_title(data: xr.DataArray, title: str = None, 
-                  put_units: bool = True, use_attr_name: str = None, 
-                  set_units: str = None, loglevel='WARNING'):
+def set_map_title(data: xr.DataArray, title: str = None,
+                  put_units=False, set_units=None,
+                  use_attr_name=None, put_model_name=True,
+                  put_exp_name=True, skip_varname=False,
+                  loglevel='WARNING'):
     """
     Evaluate the map title.
 
     Args:
-        data (xarray.DataArray):  Input data array.
-        title (str, opt):         Map title.
-        loglevel (str, opt):      Log level.
-        use_attr_name (str, opt): Use directly a specific attribute to use as title avoiding loop.
-        set_units (str, opt):     Manually override units to include in title.
+        data (xarray.DataArray):   Input data array.
+        title (str, opt):          Explicit title override.
+        put_units (bool):      Whether to include units in the title. Default True.
+        set_units (str):       Manually override units in title.
+        use_attr_name (str):   Specific attribute name to use as title.
+        put_model_name (bool): Include 'AQUA_model' in title. Default True.
+        put_exp_name (bool):   Include 'AQUA_exp' in title. Default True.
+        skip_varname (bool):   Skip including variable name in title. Default False.
+        loglevel (str, opt):       Logging level.
 
     Returns:
         title (str): Map title.
     """
     logger = log_configure(loglevel, 'set map title')
 
-    if title is not None:
-        logger.debug(f"Using explicitly provided title: {title}")
+    if title:
+        logger.debug("Explicit title provided: %s", title)
         return title
     
     title = ""
@@ -192,10 +198,10 @@ def set_map_title(data: xr.DataArray, title: str = None,
         if varname:
             logger.debug(f"Using title from specified attribute '{use_attr_name}': {varname}")
         else:
-            raise ValueError(f"Attribute '{use_attr_name}' not found in data attributes.")
+            logger.warning(f"Attribute '{use_attr_name}' not found in data attributes. Checking standard ones")
 
     if varname is None:
-        # Getting the variables from the possible attributes
+        # Getting the variables from the possible attrs in data
         for attr in ['long_name', 'short_name', 'shortName']:
             varname = data.attrs[attr] if attr in data.attrs else None
             if varname is not None:
@@ -206,12 +212,14 @@ def set_map_title(data: xr.DataArray, title: str = None,
     exp = data.attrs["AQUA_exp"] if 'AQUA_exp' in data.attrs else None
     time = data.time.values if 'time' in data.dims else None
 
-    if varname:
+    if varname and not skip_varname:
         title += varname
         if units and put_units:
             title += f" [{units}]"
-    if model is not None and exp is not None:
-        title += f" {model} {exp}"
+    if put_model_name and model:
+            title += f" {model}"
+    if put_exp_name and exp:
+            title += f" {exp}"
     if time is not None:
         time = np.datetime_as_string(time, unit='h')
         title += f" {time}"
@@ -219,7 +227,7 @@ def set_map_title(data: xr.DataArray, title: str = None,
         logger.warning("No title found, please specify one with the title argument.")
         title = None
     else:
-        logger.debug("Using %s as map title", title)
+        logger.debug(f"Using {title} as map title") 
     return title
 
 
@@ -231,35 +239,37 @@ def coord_names(data: xr.DataArray):
         data (xarray.DataArray): Input data array.
 
     Returns:
-        lon_name (str): Name of the longitude coordinate.
-        lat_name (str): Name of the latitude coordinate.
+        tuple: (lon_name, lat_name) - Names of longitude and latitude coordinates, 
+               or (None, None) if not found.
     """
-    try:
-        lon_name = 'lon'
-        data.lon
-    except AttributeError:
-        lon_name = 'longitude'
-        data.longitude
-    try:
-        lat_name = 'lat'
-        data.lat
-    except AttributeError:
-        lat_name = 'latitude'
-        data.latitude
-
+    lon_name = None
+    lat_name = None
+    
+    # Find longitude coordinate
+    for lon_candidate in ['lon', 'longitude']:
+        if lon_candidate in data.coords:
+            lon_name = lon_candidate
+            break
+    
+    # Find latitude coordinate  
+    for lat_candidate in ['lat', 'latitude']:
+        if lat_candidate in data.coords:
+            lat_name = lat_candidate
+            break
+    
     return lon_name, lat_name
 
 
 def ticks_round(ticks: list, round_to: int = None):
     """
-    Round a tick to the nearest round_to value.
+    Round ticks to the nearest round_to value.
 
     Args:
-        tick (list):          Tick value.
+        ticks (list):         Ticks value.
         round_to (int, opt):  Round to value.
 
     Returns:
-        tick (list):  Rounded tick value.
+        ticks (list):  Rounded tick value.
     """
     if round_to is None:
         # define round_to
@@ -420,7 +430,7 @@ def apply_circular_window(ax, extent=None, apply_black_circle=False):
             fill=False, color='darkgrey', linewidth=1.5, zorder=10)
         ax.add_patch(circle_patch)
     return ax
-    
+
 """
 Following functions are taken and adjusted from the easygems package,
 on this repository:
