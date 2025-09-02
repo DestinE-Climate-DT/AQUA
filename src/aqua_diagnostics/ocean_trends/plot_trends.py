@@ -64,18 +64,48 @@ class PlotTrends:
             format='pdf',
             metadata=self.description
         )
+
+    def plot_zonal(self):
+        # self.set_levels()
+        self.set_data_list()
+        self.set_suptitle()
+        self.set_title()
+        self.set_description()
+        self.set_ytext()
+        self.set_nrowcol()
+        fig = plot_maps(
+            maps=self.data_list,
+            nrows=self.nrows,
+            ncols=self.ncols,
+            title=self.suptitle,
+            titles=self.title_list,
+            cbar_number='separate',
+            ytext=self.ytext,
+            return_fig=True
+        )
+        self.save_plot(
+            fig,
+            diagnostic_product=self.diagnostic,
+            format='pdf',
+            metadata=self.description
+        )
+
     def set_nrowcol(self):
-        self.nrows = len(self.levels)
+        if hasattr(self, "levels") and self.levels:
+            self.nrows = len(self.levels)
+        else:
+            self.nrows = 1
         self.ncols = len(self.vars)
 
     def set_ytext(self):
         self.ytext = []
-        for level in self.levels:
-            for i in range(len(self.vars)):
-                if i == 0:
-                    self.ytext.append(f"{level}m")
-                else:
-                    self.ytext.append(None)
+        if hasattr(self, "levels") and self.levels:
+            for level in self.levels:
+                for i in range(len(self.vars)):
+                    if i == 0:
+                        self.ytext.append(f"{level}m")
+                    else:
+                        self.ytext.append(None)
 
     def set_levels(self):
         self.levels = [50, 100]
@@ -83,18 +113,23 @@ class PlotTrends:
 
     def set_data_list(self):
         self.data_list = []
-        self.data = self.data.interp(level=self.levels)
-        for level in self.levels:
-            for var in self.vars:
-                if level == 0:
-                    data_level_var = self.data[var].isel(level=-1)
-                else:
-                    data_level_var = self.data[var].sel(level=level)
+        if hasattr(self, "levels") and self.levels:
+            self.data = self.data.interp(level=self.levels)
+            for level in self.levels:
+                for var in self.vars:
+                    if level == 0:
+                        data_level_var = self.data[var].isel(level=-1)
+                    else:
+                        data_level_var = self.data[var].sel(level=level)
 
-                data_level_var.attrs["long_name"] = (
-                    f"{data_level_var.attrs.get('long_name', var)} at {level}m"
-                )
-                self.data_list.append(data_level_var)
+                    data_level_var.attrs["long_name"] = (
+                        f"{data_level_var.attrs.get('long_name', var)} at {level}m"
+                    )
+                    self.data_list.append(data_level_var)
+        else:
+            for var in self.vars:
+                data_var = self.data[var]
+                self.data_list.append(data_var)
 
     def set_suptitle(self):
         """Set the title for the Hovmoller plot."""
