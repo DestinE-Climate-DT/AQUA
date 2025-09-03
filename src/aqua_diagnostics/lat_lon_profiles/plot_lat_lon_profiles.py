@@ -16,6 +16,7 @@ class PlotLatLonProfiles():
                  data_type='standard',
                  std_data=None,
                  ref_std_data=None,
+                 mean_type=None,
                  loglevel: str = 'WARNING'):
         """
         Initialise the PlotLatLonProfiles class.
@@ -30,6 +31,7 @@ class PlotLatLonProfiles():
             data_type (str): 'standard' for single/multi-line plots, 'seasonal' for 4-panel seasonal plots
             std_data: Standard deviation data (structure matches data based on data_type)
             ref_std_data: Reference standard deviation data
+            mean_type (str): The type of mean to compute ('zonal' or 'meridional')
             loglevel (str): Logging level. Default is 'WARNING'.
             
         Note:
@@ -41,6 +43,7 @@ class PlotLatLonProfiles():
         self.logger = log_configure(loglevel, 'PlotLatLonProfiles')
 
         self.data_type = data_type
+        self.mean_type = mean_type
 
         # Store data based on type
         if data_type == 'standard':
@@ -129,6 +132,10 @@ class PlotLatLonProfiles():
             self.models = [first_data.AQUA_model]
             self.exps = [first_data.AQUA_exp]
             self.logger.debug(f'Metadata extracted: {self.models[0]} {self.exps[0]}')
+            
+            # Extract mean_type from data if not already set
+            if self.mean_type is None and hasattr(first_data, 'mean_type'):
+                self.mean_type = first_data.mean_type
         else:
             self.logger.warning('Data has no metadata attributes')
             self._set_defaults()
@@ -225,8 +232,16 @@ class PlotLatLonProfiles():
         """
         return self.plot_seasonal_lines(data_labels=data_labels, title=title)
     
-    def save_plot(self, fig, var: str = None, description: str = None, region: str = None, rebuild: bool = True,
-                outputdir: str = './', dpi: int = 300, format: str = 'png', diagnostic: str = None):
+    def save_plot(self, 
+                  fig, 
+                  var: str = None, 
+                  description: str = None, 
+                  region: str = None, 
+                  rebuild: bool = True,
+                  outputdir: str = './', 
+                  dpi: int = 300, 
+                  format: str = 'png', 
+                  diagnostic: str = None):
         """
         Save the plot to a file.
 
@@ -256,8 +271,12 @@ class PlotLatLonProfiles():
         if region: extra_keys['region'] = region.replace(' ', '').lower()
         
         # diagnostic_product must match the one used in OutputSaver
-        diagnostic_product = diagnostic or 'lat_lon_profiles'
-        
+        base_diagnostic = diagnostic or 'lat_lon_profiles'
+        if self.mean_type:
+            diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
+        else:
+            diagnostic_product = base_diagnostic
+            self.logger.warning("mean_type not available, filename will not distinguish between zonal/meridional profiles")        
         # Save based on format
         if format == 'png':
             outputsaver.save_png(fig, diagnostic_product, extra_keys=extra_keys, 
@@ -429,9 +448,14 @@ class PlotLatLonProfiles():
                                             ref_std_data=ref_std_data)
         
         region_short = region.replace(' ', '').lower() if region is not None else None
+
+        seasonal_diagnostic = 'lat_lon_profiles_seasonal'
+        if self.mean_type:
+            seasonal_diagnostic = f'lat_lon_profiles_seasonal_{self.mean_type}'
+
         self.save_plot(fig, var=var, description=description, region=region_short, 
                     rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
-                    diagnostic='lat_lon_profiles_seasonal')
+                    diagnostic=seasonal_diagnostic)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
@@ -450,7 +474,7 @@ class PlotLatLonProfiles():
             ref_data=self.ref_data,
             std_data=None,                     # Could be added later if needed
             ref_std_data=None,
-            titles=data_labels,
+            data_labels=data_labels,
             title=f"Multi-variable Seasonal Comparison: {', '.join(variables)}",
             loglevel=self.loglevel
         )
@@ -511,7 +535,7 @@ class PlotLatLonProfiles():
             ref_data=seasonal_ref_only,
             std_data=seasonal_std_only,
             ref_std_data=seasonal_ref_std_only,
-            titles=None,
+            data_labels=None,
             title=title,
             style=style,
             loglevel=self.loglevel

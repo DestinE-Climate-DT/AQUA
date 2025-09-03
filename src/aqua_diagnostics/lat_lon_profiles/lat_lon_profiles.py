@@ -202,7 +202,8 @@ class LatLonProfiles(Diagnostic):
 		if freq == 'seasonal':
 			seasons = ['DJF', 'MAM', 'JJA', 'SON']
 			for i, season_data in enumerate(data):
-				diagnostic_product = getattr(season_data, 'standard_name', 'unknown')
+				base_product = getattr(season_data, 'standard_name', 'unknown')
+				diagnostic_product = f"{base_product}_{self.mean_type}"
 				
 				extra_keys = {'freq': freq, 'season': seasons[i]}
 				if self.region is not None:
@@ -215,7 +216,8 @@ class LatLonProfiles(Diagnostic):
 									outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 		else:
 			# Handle annual data
-			diagnostic_product = getattr(data, 'standard_name', 'unknown')
+			base_product = getattr(data, 'standard_name', 'unknown')
+			diagnostic_product = f"{base_product}_{self.mean_type}"
 			
 			extra_keys = {'freq': freq}
 			if self.region is not None:
@@ -310,6 +312,8 @@ class LatLonProfiles(Diagnostic):
 			if self.region is not None:
 				for season_data in seasonal_data:
 					season_data.attrs['AQUA_region'] = self.region
+			for season_data in seasonal_data:
+				season_data.attrs['mean_type'] = self.mean_type
 			self.seasonal = seasonal_data
 				
 		elif freq == 'annual':
@@ -321,6 +325,7 @@ class LatLonProfiles(Diagnostic):
 											dims=dims)
 			if self.region is not None:
 				annual_data.attrs['AQUA_region'] = self.region
+			annual_data.attrs['mean_type'] = self.mean_type
 			self.annual = annual_data
 
 	def run(self, var: str, formula: bool = False, long_name: str = None,
