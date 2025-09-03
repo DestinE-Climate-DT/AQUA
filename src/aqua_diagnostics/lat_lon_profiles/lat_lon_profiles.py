@@ -11,24 +11,7 @@ class LatLonProfiles(Diagnostic):
 	It retrieves the data from the catalog, computes the mean and standard deviation
 	over the specified period and saves the results to netcdf files.
 	The class supports different frequencies (hourly, daily, monthly, annual) and
-	different types of means (zonal, meridional, global).
-
-	Args:
-	catalog (str): The catalog to be used for the retrieval of the data.
-	model (str): The model to be used for the retrieval of the data.
-	exp (str): The experiment to be used for the retrieval of the data.
-	source (str): The source to be used for the retrieval of the data.
-	regrid (str): The regridding method to be used for the retrieval of the data.
-	startdate (str): The start date of the data to be retrieved.
-	enddate (str): The end date of the data to be retrieved.
-	std_startdate (str): The start date of the standard deviation period.
-	std_enddate (str): The end date of the standard deviation period.
-	region (str): The region to be used for the retrieval of the data.
-	lon_limits (list): The longitude limits of the region.
-	lat_limits (list): The latitude limits of the region.
-	mean_type (str): The type of mean to compute ('zonal', 'meridional', 'global').
-	loglevel (str): The log level to be used for the logging.
-
+	different types of means (zonal or meridional).
 	"""    
 	def __init__(self, catalog: str = None, model: str = None,
 				 exp: str = None, source: str = None,
@@ -56,9 +39,8 @@ class LatLonProfiles(Diagnostic):
 			lon_limits (list): The longitude limits of the region.
 			lat_limits (list): The latitude limits of the region.
 			regions_file_path (str): The path to the regions file. Default is the AQUA config path.
-			mean_type (str): The type of mean to compute ('zonal', 'meridional', 'global').
+			mean_type (str): The type of mean to compute ('zonal' or 'meridional')
 			loglevel (str): The log level to be used for the logging.
-		
 		"""
 		# Initialize the Diagnostic class with the provided parameters
 		super().__init__(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
@@ -164,10 +146,8 @@ class LatLonProfiles(Diagnostic):
 			dims = ['lon']  # Average over longitude, keep latitude
 		elif self.mean_type == 'meridional':
 			dims = ['lat']  # Average over latitude, keep longitude  
-		elif self.mean_type == 'global':
-			dims = ['lat', 'lon']  # Average over both
 		else:
-			dims = ['lat', 'lon']  # Default to global
+			raise ValueError(f'Mean type {self.mean_type} not recognized for std computation.')
 
 		# Start with monthly data for both seasonal and annual std calculations
 		data = self.data
@@ -306,10 +286,7 @@ class LatLonProfiles(Diagnostic):
 			dims = ['lon']
 		elif self.mean_type == 'meridional':
 			dims = ['lat']
-		elif self.mean_type == 'global':
-			dims = ['lon', 'lat']
 		else:
-			self.logger.error('Mean type %s not recognized', self.mean_type)
 			raise ValueError('Mean type %s not recognized', self.mean_type)
 
 		self.logger.info('Computing %s mean', freq)
@@ -368,7 +345,7 @@ class LatLonProfiles(Diagnostic):
 				box_brd (bool): Whether to include the box boundaries.
 				outputdir (str): The output directory to save the results.
 				rebuild (bool): Whether to rebuild existing files.
-				mean_type (str): The type of mean to compute ('zonal', 'meridional', 'global').
+				mean_type (str): The type of mean to compute ('zonal' or 'meridional').
 			"""
 			self.logger.info('Running LatLonProfiles for %s', var)
 			
