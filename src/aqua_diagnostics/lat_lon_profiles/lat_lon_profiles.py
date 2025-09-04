@@ -294,20 +294,16 @@ class LatLonProfiles(Diagnostic):
 		self.logger.info('Computing %s mean', freq)
 		data = self.data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 		if len(data.time) == 0:
-			self.logger.error('No data available for the selected period %s - %s',
+			raise ValueError('No data available for the selected period %s - %s',
 							self.plt_startdate, self.plt_enddate)
-			raise ValueError(f'No data available for the selected period {self.plt_startdate} - {self.plt_enddate}')
 
 		if freq == 'seasonal':
-			monthly_data = self.reader.timmean(data, freq='monthly', 
-											exclude_incomplete=exclude_incomplete, 
-											center_time=center_time)
-			monthly_data = self.reader.fldmean(monthly_data, 
-											box_brd=box_brd, 
-											lon_limits=self.lon_limits, 
-											lat_limits=self.lat_limits,
-											dims=dims)
-			seasonal_dataset = self.reader.timmean(monthly_data, freq='seasonal')
+			data = self.reader.fldmean(data, 
+							  		   box_brd=box_brd, 
+									   lon_limits=self.lon_limits, 
+									   lat_limits=self.lat_limits,
+									   dims=dims)
+			seasonal_dataset = self.reader.timmean(data, freq=freq)
 			seasonal_data = [seasonal_dataset.isel(time=i) for i in range(4)]
 			if self.region is not None:
 				for season_data in seasonal_data:
