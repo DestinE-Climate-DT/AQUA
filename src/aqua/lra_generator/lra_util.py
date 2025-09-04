@@ -3,9 +3,9 @@
 import os
 import shutil
 from glob import glob
-from aqua.util import dump_yaml, load_yaml
-from aqua.util import ConfigPath
-from aqua.logger import log_configure
+# from aqua.util import dump_yaml, load_yaml
+# from aqua.util import ConfigPath
+# from aqua.logger import log_configure
 
 
 # def opa_catalog_entry(datadir, model, exp, source, catalog=None,
@@ -149,26 +149,3 @@ def move_tmp_files(tmp_directory, output_directory):
             tmp_file_path = os.path.join(tmp_directory, tmp_file)
             new_file_path = os.path.join(output_directory, new_file_name)
             shutil.move(tmp_file_path, new_file_path)
-
-
-def replace_intake_vars(path, catalog=None):
-    """
-    Replace the intake jinja vars into a string for a predefined catalog
-
-    Args:
-        catalog:  the catalog name where the intake vars must be read
-        path: the original path that you want to update with the intake variables
-    """
-
-    # We exploit of configurerto get info on intake_vars so that we can replace them in the urlpath
-    Configurer = ConfigPath(catalog=catalog)
-    _, intake_vars = Configurer.get_machine_info()
-
-    # loop on available intake_vars, replace them in the urlpath
-    for name in intake_vars.keys():
-        replacepath = intake_vars[name]
-        if replacepath is not None and replacepath in path:
-            # quotes used to ensure that then you can read the source
-            path = path.replace(replacepath, "{{ " + name + " }}")
-
-    return path

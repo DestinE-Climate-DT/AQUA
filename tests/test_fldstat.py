@@ -137,3 +137,64 @@ class TestFldmean():
         avg = reader.fldmean(data['so']).values
         assert avg.shape == (8,)
         assert avg[4] == pytest.approx(34.63406)
+
+@pytest.mark.aqua
+class TestFldStatDims():
+    """Test class for dims parameter functionality"""
+
+    def test_fldmean_custom_dims_icon(self):
+        """Test fldmean with custom dims parameter on ICON grid"""
+        reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=LOGLEVEL)
+        data = reader.retrieve()
+        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
+        
+        # Test with explicit horizontal dims (should be ['cell'] for ICON)
+        result = fldmodule.fldmean(data['t'], dims=['cell'])
+        assert result.shape == (2, 90)  # time, height levels
+        assert result.values[1, 1] == pytest.approx(214.4841)  # Same value as existing test
+
+    def test_fldmean_partial_dims_icon_3d(self):
+        """Test fldmean with subset of horizontal dims on 3D data"""
+        reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=LOGLEVEL)
+        data = reader.retrieve()
+        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
+        
+        # Test averaging over only spatial dimension, keeping height
+        result = fldmodule.fldmean(data['t'], dims=['cell'])
+        # Should preserve height dimension but average over space
+        assert 'level_full' in result.dims
+        assert 'cell' not in result.dims
+        assert result.shape == (2, 90)
+
+    def test_fldmean_dims_validation_icon(self):
+        """Test dims validation with ICON data"""
+        reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=LOGLEVEL)
+        data = reader.retrieve()
+        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
+        
+        # Test invalid dimension
+        with pytest.raises(ValueError, match="Dimension invalid_dim not found in horizontal dimensions"):
+            fldmodule.fldmean(data['t'], dims=['invalid_dim'])
+
+    def test_fldmean_dims_default_vs_explicit_icon(self):
+        """Test that default and explicit dims give same results on ICON"""
+        reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=LOGLEVEL)
+        data = reader.retrieve()
+        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
+        
+        # Compare default behavior with explicit dims
+        result_default = fldmodule.fldmean(data['t'])
+        result_explicit = fldmodule.fldmean(data['t'], dims=['cell'])
+        
+        # Results should be identical
+        assert result_default.equals(result_explicit)
+        assert result_default.values[1, 1] == pytest.approx(214.4841)
+
+    def test_fldmean_dims_not_list(self):
+        """Test that dims must be a list"""
+        reader = Reader(model="ICON", exp="test-r2b0", source='short', loglevel=LOGLEVEL)
+        data = reader.retrieve()
+        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
+        
+        with pytest.raises(ValueError, match="dims must be a list of dimension names."):
+            fldmodule.fldmean(data['t'], dims='cell')

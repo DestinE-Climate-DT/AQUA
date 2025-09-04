@@ -4,6 +4,7 @@ from aqua.fixer import EvaluateFormula
 from aqua.logger import log_configure
 from aqua.util import convert_data_units
 from aqua.diagnostics.core import Diagnostic
+from aqua.util import DEFAULT_REALIZATION
 
 xr.set_options(keep_attrs=True)
 
@@ -100,13 +101,17 @@ class Gregory(Diagnostic):
         data, self.reader, self.catalog = super()._retrieve(catalog=self.catalog, model=self.model,
                                                             exp=self.exp, source=self.source,
                                                             regrid=self.regrid, startdate=self.startdate,
-                                                            enddate=self.enddate, reader_kwargs=reader_kwargs)
+                                                            enddate=self.enddate, reader_kwargs=reader_kwargs,
+                                                            months_required=2)
+        self.realization = reader_kwargs['realization'] if 'realization' in reader_kwargs else DEFAULT_REALIZATION
 
         if t2m:
             self.t2m = data[t2m_name]
+            self.t2m.attrs['short_name'] = t2m_name
         if net_toa:
             self.net_toa = EvaluateFormula(data=data, formula=net_toa_name,
                                            short_name='net_toa', loglevel=self.loglevel).evaluate()
+            self.net_toa.attrs['short_name'] = 'net_toa'
 
     def compute_t2m(self, freq: list = ['monthly', 'annual'], std: bool = False,
                     var: str = '2t', units: str = 'degC', exclude_incomplete=True):
@@ -171,25 +176,25 @@ class Gregory(Diagnostic):
             if std: 
                 super().save_netcdf(data=self.t2m_std, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
-                                    outdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'annual', 'std':'std'})
+                                    outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'annual', 'std':'std'})
             if 'monthly' in freq:
                 super().save_netcdf(data=self.t2m_monthly, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
-                                    outdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'monthly'})
+                                    outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'monthly'})
             if 'annual' in freq:
                 super().save_netcdf(data=self.t2m_annual, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
-                                    outdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'annual'})
+                                    outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'annual'})
         if net_toa:
             if std:
                 super().save_netcdf(data=self.net_toa_std, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
-                                    outdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'annual', 'std':'std'})
+                                    outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'annual', 'std':'std'})
             if 'monthly' in freq:
                 super().save_netcdf(data=self.net_toa_monthly, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
-                                    outdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'monthly'})
+                                    outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'monthly'})
             if 'annual' in freq:
                 super().save_netcdf(data=self.net_toa_annual, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
-                                    outdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'annual'})
+                                    outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'annual'})

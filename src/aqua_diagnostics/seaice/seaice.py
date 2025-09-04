@@ -10,7 +10,9 @@ from aqua.diagnostics.seaice.util import ensure_istype
 xr.set_options(keep_attrs=True)
 
 class SeaIce(Diagnostic):
-    """ Class for seaice objects.
+    """ 
+    Class for seaice objects.
+    
     This class provides methods to compute sea ice extent and volume over specified regions.
     It also allows for the integration of masked data and the calculation of standard deviations.
 
@@ -100,14 +102,16 @@ class SeaIce(Diagnostic):
         self.regions = selected_regions
         
     def compute_seaice(self, method: str = 'extent', var: str = None, *args, **kwargs):
-        """ Execute the seaice diagnostic based on the specified method.
+        """
+        Execute the seaice diagnostic based on the specified method.
+        
         Args:
-            var (str): The variable to be used for computation.
+            var (str): The variable to be used for computation. Default is 'sithick' or 'siconc'.
             method (str): The method to compute sea ice metrics. Options are 'extent' or 'volume'.
 
         Kwargs:
             - threshold (float): The threshold value for which sea ice fraction is considered. Default is 0.15.
-            - var (str): The variable to be used for computation. Default is 'sithick' or 'siconc'.
+            - reader_kwargs (dict, optional): Additional keyword arguments to pass to the Reader.
 
         Returns:
             xr.DataArray or xr.Dataset: The computed sea ice metric. A Dataset is returned if multiple regions are requested.
@@ -136,15 +140,19 @@ class SeaIce(Diagnostic):
     def _compute_ts_bymethod(self, calc_std_freq: str = None, 
                              get_seasonal_cycle: bool = False,
                              ts_monthly: bool = False, ts_monthly_std: bool = False,
-                             ts_annual: bool = False,  ts_annual_std: bool = False):
-        """ Compute sea ice result by integrating data over specified regions.
+                             ts_annual: bool = False,  ts_annual_std: bool = False,
+                             reader_kwargs: dict = {}):
+        """ 
+        Compute sea ice result by integrating data over specified regions.
+        
         If a standard deviation calculation frequency (`calc_std_freq`) is provided, also 
         the std deviation of the result is computed.
         The seasonal cycle (monthly climatology) can be computed on values and std.
 
         Args:
             calc_std_freq (str, optional): 
-                The frequency for computing the standard deviation of sea ice result across time (i.e., 'monthly', 'annual') after the integration in space. 
+                The frequency for computing the standard deviation of sea ice result across 
+                time (i.e., 'monthly', 'annual') after the integration in space. 
                 If None, standard deviation is not computed. Default is None.
             get_seasonal_cycle (bool, optional):
                 If True, the output result (and standard deviation if computed) is converted into a 
@@ -160,7 +168,7 @@ class SeaIce(Diagnostic):
             - Standard deviation is computed across all years if `calc_std_freq` is provided.
         """
         # retrieve data with Diagnostic method
-        super().retrieve(var=self.var)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         # get the sea ice masked by method
         masked_data = self._mask_data_bymethod()
@@ -206,8 +214,7 @@ class SeaIce(Diagnostic):
 
                 regional_results_std.append(seaice_std_result)
 
-        # combine the result DataArrays into a single Dataset and keep as global attributes 
-        # only the attrs that are shared across all DataArrays
+        # combine the result DataArrays into one Dataset and keep only the attributes common
         self.result = xr.merge(regional_results, combine_attrs='drop_conflicts')
 
         # merge the standard deviation DataArrays if computed
@@ -216,20 +223,22 @@ class SeaIce(Diagnostic):
         # return a tuple if standard deviation was computed, otherwise just the result
         return (self.result, self.result_std) if calc_std_freq else self.result
 
-    def _compute_2d_bymethod(self, **kwargs):
-        """ This method computes sea ice climatology for each region.
+    def _compute_2d_bymethod(self, reader_kwargs: dict = {}, **kwargs):
+        """
+        This method computes 2D sea ice climatology for each region.
 
         Args:
+            reader_kwargs (dict, optional): Extra keyword arguments passed to the data reader.
             **kwargs: Additional keyword arguments.
                 - stat (str): The statistic to compute ('mean' or 'std'). Default is 'mean'.
                 - freq (str): The frequency for grouping the data ('monthly' or 'annual'). Default is 'monthly'.
         Returns:
-            list of xr.DataArray: A list containing the computed sea ice metrics for each region.
+            xr.Dataset: A dataset containing the computed 2D sea ice climatologies for all requested regions.
         """
         stat = kwargs.get('stat', 'mean')
         freq = kwargs.get('freq', 'monthly')
 
-        super().retrieve(var=self.var)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
         original_masked_data = self._mask_data_bymethod()
 
         regional_2d_results = []
@@ -252,14 +261,15 @@ class SeaIce(Diagnostic):
 
             regional_2d_results.append(seaice_2d_result)
 
-        # combine the result DataArrays into a single Dataset and keep as global attributes 
-        # only the attrs that are shared across all DataArrays
+        # combine the result DataArrays into one Dataset and keep only the attributes common
         self.result = xr.merge(regional_2d_results, combine_attrs='drop_conflicts')
 
         return self.result
 
     def _mask_data_bymethod(self):
-        """ Mask the data based on the specified method.
+        """
+        Mask the data based on the specified method.
+        
         The case with sea ice 'extent' is calculated by applying a threshold to the sea ice concentration variable
         and summing the masked data over the regional spatial dimension.
 
@@ -289,7 +299,8 @@ class SeaIce(Diagnostic):
         return method_masked_data
 
     def get_area_cells_and_coords(self, masked_data: xr.DataArray):
-        """ Get areacello and space coordinates
+        """
+        Get areacello and space coordinates
 
         Args:
             masked_data (xr.DataArray): The masked data to be checked if it is regridded or not
@@ -320,7 +331,8 @@ class SeaIce(Diagnostic):
         return areacello, space_coord
 
     def select_region_area_cell(self, areacello: xr.DataArray, region: str, drop: bool = True):
-        """ Select the area cells for a specific region based on the region definition.
+        """
+        Select the area cells for a specific region based on the region definition.
 
         Args:
             areacello (xr.DataArray): The area cells DataArray.
@@ -354,7 +366,8 @@ class SeaIce(Diagnostic):
         return areacello
     
     def integrate_seaice_masked_data(self, masked_data, region: str):
-        """ Integrate the masked data over the spatial dimension to compute sea ice metrics.
+        """
+        Integrate the masked data over the spatial dimension to compute sea ice metrics.
 
         Args:
             masked_data (xr.DataArray): The masked data to be integrated.
@@ -390,7 +403,8 @@ class SeaIce(Diagnostic):
         return seaice_integrated
 
     def _calc_time_stat(self, computed_data: xr.DataArray, freq: str = 'monthly', stat: str = 'std'):
-        """ Compute the standard deviation or mean of the data grouped by a specified time frequency (`monthly` or `annual`).
+        """
+        Compute the standard deviation or mean of the data grouped by a specified time frequency (`monthly` or `annual`).
 
         Args:
             computed_data (xarray.DataArray): 
@@ -430,7 +444,8 @@ class SeaIce(Diagnostic):
             return computed_data.groupby(freq_dict[freq]).mean('time')
 
     def _compute_seasonal_cycle(self, monthly_data):
-        """ Converts monthly data into a seasonal cycle by grouping over calendar months
+        """
+        Converts monthly data into a seasonal cycle by grouping over calendar months
         and computing the mean across the time dimension.
 
         Args:
@@ -456,7 +471,8 @@ class SeaIce(Diagnostic):
     
     def add_seaice_attrs(self, da_seaice_computed: xr.DataArray, region: str,
                          startdate: str=None, enddate: str=None, std_flag=False):
-        """ Adds metadata attributes to a computed sea ice DataArray. This function assigns descriptive attributes 
+        """
+        Adds metadata attributes to a computed sea ice DataArray. This function assigns descriptive attributes 
         to an xr.DataArray representing computed sea ice (extent or volume) for a specific region and time period.
 
         Args:
@@ -497,7 +513,8 @@ class SeaIce(Diagnostic):
     def save_netcdf(self, seaice_data, diagnostic: str, diagnostic_product: str = None,
                     rebuild: bool = True, output_file: str = None,
                     **kwargs):
-        """ Save the computed sea ice data to a NetCDF file.
+        """
+        Save the computed sea ice data to a NetCDF file.
 
         Args:
             seaice_data (xr.DataArray or xr.Dataset): The computed sea ice metric data.
@@ -509,4 +526,4 @@ class SeaIce(Diagnostic):
         """
         # Use parent method to handle saving, including metadata
         super().save_netcdf(seaice_data, diagnostic=diagnostic, diagnostic_product=diagnostic_product,
-                            outdir=self.outputdir, rebuild=rebuild, **kwargs)
+                            outputdir=self.outputdir, rebuild=rebuild, **kwargs)

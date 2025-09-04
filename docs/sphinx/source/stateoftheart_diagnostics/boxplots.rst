@@ -86,49 +86,9 @@ Additionally, the CLI can be run with the following optional arguments:
 Config file structure
 ^^^^^^^^^^^^^^^^^^^^^
 
-The configuration file ``config_boxplots`` is a YAML file that contains the following information:
-
-* ``datasets``: a list of models to analyse (defined by the catalog, model, exp, source arguments).
-
-.. code-block:: yaml
-
-    datasets:
-      - catalog: null
-        model: 'IFS-NEMO'
-        exp: 'historical-1990'
-        source: 'lra-r100-monthly'
-        startdate: null
-        enddate: null
-
-* ``references``: a list of reference datasets to use for the analysis.
-
-.. code-block:: yaml
-
-    references:
-      - catalog: obs
-        model: ERA5
-        exp: era5
-        source: monthly
-        regrid: null
-
-* ``output``: a block describing the output details. It contains:
-
-    * ``outputdir``: the output directory for the plots.
-    * ``rebuild``: boolean flag to enable rebuilding of plots.
-    * ``save_netcdf``: boolean flag to enable saving climatologies as NetCDF files.
-    * ``save_pdf``: boolean flag to enable saving plots in PDF format.
-    * ``save_png``: boolean flag to enable saving plots in PNG format.
-    * ``dpi``: resolution of the plots.
-
-.. code-block:: yaml
-
-    output:
-      outputdir: "/path/to/output"
-      rebuild: true
-      save_netcdf: true
-      save_pdf: true
-      save_png: true
-      dpi: 300
+The configuration file is a YAML file that contains the details on the dataset to analyse or use as reference, the output directory and the diagnostic settings.
+Most of the settings are common to all the diagnostics (see :ref:`diagnostics-configuration-files`).
+Here we describe only the specific settings for the boxplots diagnostic.
 
 * ``boxplots``: a block (nested in the ``diagnostics`` block) containing options for the Boxplots diagnostic.  
   Variable-specific parameters override the defaults.

@@ -17,7 +17,7 @@ def test_class_diagnostic(tmp_path):
     regrid = 'r100'
     startdate = '19000101'
     enddate = '19910101'
-    outdir = tmp_path
+    outputdir = tmp_path
 
     diag = Diagnostic(catalog=catalog, model=model, exp=exp, source=source,
                       regrid=regrid, startdate=startdate, enddate=enddate,
@@ -39,10 +39,10 @@ def test_class_diagnostic(tmp_path):
 
     diag.save_netcdf(data=data_sel, diagnostic='test',
                      diagnostic_product='save',
-                     outdir=outdir,
+                     outputdir=outputdir,
                      rebuild=True)
 
-    assert outdir.joinpath('netcdf/test.save.ci.ERA5.era5-hpz3.r1.nc').exists()
+    assert outputdir.joinpath('netcdf/test.save.ci.ERA5.era5-hpz3.r1.nc').exists()
     
     #test select_region
     region, diagnostic = None, None #testing when region is None

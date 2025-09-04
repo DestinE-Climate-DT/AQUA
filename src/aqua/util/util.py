@@ -447,19 +447,6 @@ def username():
         raise EnvironmentError("The 'USER' environment variable is not set.")
     return user
 
-
-def strlist_to_phrase(items: list[str]) -> str:
-    """ Convert a list of str to a english-consistent list.
-       ['A'] will return "A"
-       ['A','B'] will return "A and B"
-       ['A','B','C'] will return "A, B, and C"
-    """
-    if not items: return ""
-    if len(items) == 1: return items[0]
-    if len(items) == 2: return f"{items[0]} and {items[1]}"
-    return ", ".join(items[:-1]) + f", and {items[-1]}"
-
-
 class HiddenPrints:
     # from stackoverflow https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print#:~:text=If%20you%20don't%20want,the%20top%20of%20the%20file. # noqa
     def __enter__(self):

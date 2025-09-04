@@ -47,7 +47,7 @@ def test_performance_indices(common_setup):
     pi.run()
     outputsaver = OutputSaver(diagnostic='ecmean',
                     catalog=setup['catalog'], model=setup['model'], exp=setup["exp"],
-                    outdir=setup['outputdir'], loglevel=setup['loglevel'])
+                    outputdir=setup['outputdir'], loglevel=setup['loglevel'])
     yamlfile = outputsaver.generate_path(extension='yml', diagnostic_product='performance_indices')
     pdffile = outputsaver.generate_path(extension='pdf', diagnostic_product='performance_indices')
     pi.store(yamlfile=yamlfile)
@@ -69,7 +69,7 @@ def test_global_mean(common_setup):
     gm.run()
     outputsaver = OutputSaver(diagnostic='ecmean',
                     catalog=setup['catalog'], model=setup['model'], exp=setup["exp"],
-                    outdir=setup['outputdir'], loglevel=setup['loglevel'])
+                    outputdir=setup['outputdir'], loglevel=setup['loglevel'])
     yamlfile = outputsaver.generate_path(extension='yml', diagnostic_product='global_mean')
     pngfile = outputsaver.generate_path(extension='png', diagnostic_product='global_mean')
     gm.store(yamlfile=yamlfile)

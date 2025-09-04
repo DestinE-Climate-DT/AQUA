@@ -10,17 +10,7 @@ from collections import defaultdict
 from ruamel.yaml import YAML
 from ruamel.yaml.representer import RoundTripRepresenter
 from aqua.logger import log_configure
-
 import yaml  # This is needed to allow YAML override in intake
-
-
-class RepresentNone:
-    pass
-
-def represent_none(dumper, data):
-    return dumper.represent_scalar('tag:yaml.org,2002:null', 'null')
-
-RoundTripRepresenter.add_representer(RepresentNone, represent_none)
 
 
 def construct_yaml_merge(loader, node):
@@ -47,8 +37,8 @@ yaml.SafeLoader.add_constructor(
             construct_yaml_merge)
 
 
-def load_multi_yaml(folder_path=None, filenames=None,
-                    definitions=None, **kwargs):
+def load_multi_yaml(folder_path: str | None = None, filenames: list | None = None,
+                    definitions: str | dict | None = None, **kwargs):
     """
     Load and merge yaml files.
     If a filenames list of strings is provided, only the yaml files with
@@ -83,7 +73,7 @@ def load_multi_yaml(folder_path=None, filenames=None,
     return yaml_dict
 
 
-def load_yaml(infile, definitions=None, jinja=True):
+def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True):
     """
     Load yaml file with template substitution
 
@@ -140,6 +130,11 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
     # Initialize YAML object
     yaml = YAML(typ=typ)
 
+    yaml.representer.add_representer(
+        type(None),
+        lambda self, _: self.represent_scalar('tag:yaml.org,2002:null', 'null')
+    )
+
     # Check input
     if outfile is None:
         raise ValueError('ERROR: outfile not defined')
@@ -148,13 +143,12 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
 
     # Dump the dictionary
     with open(outfile, 'w', encoding='utf-8') as file:
-        cfg = {k: RepresentNone() if v is None else v for k, v in cfg.items()}
         yaml.dump(cfg, file)
 
 
-def _load_merge(folder_path=None, filenames=None,
-                definitions=None, merged_dict=None,
-                loglevel='WARNING'):
+def _load_merge(folder_path: str | None = None, filenames: list | None = None,
+                definitions: str | dict | None = None, merged_dict: dict | None = None,
+                loglevel: str = 'WARNING'):
     """
     Helper function for load_merge_yaml.
     Load and merge yaml files located in a given folder

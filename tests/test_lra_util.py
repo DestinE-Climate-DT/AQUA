@@ -1,7 +1,7 @@
 import os
 import pytest
 from aqua.lra_generator import lra_util
-from aqua import Reader
+from aqua.util import replace_intake_vars
 
 @pytest.fixture
 def tmp_directory(tmpdir):
@@ -63,4 +63,4 @@ def test_move_tmp_files(tmp_directory, output_directory):
 def test_replace_intake_vars():
 
     path = './AQUA_tests/models/paperino/pluto'
-    assert lra_util.replace_intake_vars(path, catalog='ci') == '{{ TEST_PATH }}/paperino/pluto'
+    assert replace_intake_vars(path, catalog='ci') == '{{ TEST_PATH }}/paperino/pluto'

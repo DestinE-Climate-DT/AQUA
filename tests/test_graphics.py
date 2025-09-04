@@ -208,8 +208,16 @@ class TestTimeseries:
 
         # Create ensemble mean and standard deviation (fake data for testing)
         ens_mon_mean = (t1_yearly + t2_yearly) / 2
-        ens_mon_std = ens_mon_mean.groupby('time.month').std(dim='time')
+        
+        # simply using the mean here, the function will plot: mean +/- 2xSTD
+        # NOTE: the STD is pointwise along time axis
+        #ens_mon_std = ens_mon_mean.groupby('time.month').std(dim='time') 
+        ens_mon_std = ens_mon_mean 
         ens_annual_mean = self.reader.timmean(ens_mon_mean, freq='YS', center_time=True)
+
+        # NOTE: Similarly, we will use annual mean as STD for testing purposes
+        # as done in the previous lines
+        #ens_annual_std = ens_annual_mean.std(dim='time')
         ens_annual_std = ens_annual_mean.std(dim='time')
 
         fig, ax = plot_timeseries(monthly_data=[self.t1, self.t2],

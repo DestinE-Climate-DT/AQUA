@@ -583,7 +583,7 @@ class Plot2DSeaIce:
             exp=data.attrs.get('AQUA_exp',''),
             model_ref=data_ref.attrs.get('AQUA_model','') if data_ref is not None else None,
             exp_ref=data_ref.attrs.get('AQUA_exp','') if data_ref is not None else None,
-            outdir=self.outputdir,
+            outputdir=self.outputdir,
             loglevel=self.loglevel
         )
         metadata = {"Description": description}

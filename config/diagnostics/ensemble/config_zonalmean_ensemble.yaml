@@ -2,30 +2,39 @@
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
 # as an example two Zonal mean
-models:
-  - model: 'IFS-NEMO'
+datasets:
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-zonalmean'
-  - model: 'IFS-NEMO'
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-zonalmean'
 
-outputdir: "./"
+setup:
+  loglevel: 'WARNING'
 
-# This is the variable that will be plotted from aqua-analysis output
+output:
+  outputdir: "./"
+  #rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
 
-region: 'arctic'
-variable: 'so'
-
-zonalmean_plot_params:
-  figure_size: [15,15]
-  plot_label: True
-  plot_std: True
-  unit:
-  pdf_save: True
-  mean_plot_title: 'Mean of Ensemble of Zonal average' 
-  std_plot_title:  'Standard deviation of Ensemble of Zonal average' 
-  cbar_label: 'temperature in K'
-  
-
+diagnostics:
+  ensemble:
+    run: true
+    diagnostic_name: 'EnsembleZonal'
+    variable: 'so'
+    region: 'arctic'
+    params:
+      default:
+    plot_params:
+      default:
+        figure_size: [10,8]
+        mean_title: 'Mean of Ensemble of Zonal-average of avg_so'
+        std_title: 'Standard deviation of Ensemble of Zonal-average of avg_so'
+        cbar_label: 'Time-mean sea water practical salinity g kg**-1/year'
 

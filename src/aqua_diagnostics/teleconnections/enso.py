@@ -50,7 +50,7 @@ class ENSO(BaseMixin):
                                   Default is an empty dictionary.
         """
         # Assign self.data, self.reader, self.catalog
-        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs, months_required=24)
 
         self.reader.timmean(self.data, freq='MS')
     

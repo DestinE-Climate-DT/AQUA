@@ -2,8 +2,8 @@ import os
 import xarray as xr
 from aqua.fixer import EvaluateFormula
 from aqua.logger import log_configure
-from aqua.util import ConfigPath
-from aqua.util import frequency_string_to_pandas, time_to_string
+from aqua.util import frequency_string_to_pandas, pandas_freq_to_string
+from aqua.util import time_to_string, strlist_to_phrase
 from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver
 
 xr.set_options(keep_attrs=True)
@@ -77,7 +77,7 @@ class BaseMixin(Diagnostic):
         self.std_annual = None
 
     def retrieve(self, var: str, formula: bool = False, long_name: str = None,
-                 units: str = None, standard_name: str = None, reader_kwargs: dict = {}):
+                 units: str = None, short_name: str = None, reader_kwargs: dict = {}):
         """
         Retrieve the data for the given variable.
 
@@ -86,22 +86,22 @@ class BaseMixin(Diagnostic):
             formula (bool): If True, the variable is a formula.
             long_name (str): The long name of the variable, if different from the variable name.
             units (str): The units of the variable, if different from the original units.
-            standard_name (str): The standard name of the variable, if different from the variable name.
+            short_name (str): The short name of the variable, if different from the variable name.
             reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
         """
         # If the user requires a formula the evaluation requires the retrieval
         # of all the variables
         if formula:
-            super().retrieve(reader_kwargs=reader_kwargs)
+            super().retrieve(reader_kwargs=reader_kwargs, months_required=2)
             self.logger.debug("Evaluating formula %s", var)
             self.data = EvaluateFormula(data=self.data, formula=var, long_name=long_name,
-                                        short_name=standard_name, units=units,
+                                        short_name=short_name, units=units,
                                         loglevel=self.loglevel).evaluate()
             if self.data is None:
                 raise ValueError(f'Error evaluating formula {var}. '
                                  'Check the variable names and the formula syntax.')
         else:
-            super().retrieve(var=var, reader_kwargs=reader_kwargs)
+            super().retrieve(var=var, reader_kwargs=reader_kwargs, months_required=2)
             if self.data is None:
                 raise ValueError(f'Variable {var} not found in the data. '
                                  'Check the variable name and the data source.')
@@ -120,13 +120,16 @@ class BaseMixin(Diagnostic):
             self._check_data(var, units)
         if long_name is not None:
             self.data.attrs['long_name'] = long_name
-        # We use the standard_name as the name of the variable
+        # We want to be sure that a long_name is always defined for description setup
+        elif self.data.attrs.get('long_name') is None:
+            self.data.attrs['long_name'] = var
+        # We use the short_name as the name of the variable
         # to be always used in plots
-        if standard_name is not None:
-            self.data.attrs['standard_name'] = standard_name
-            self.data.name = standard_name
+        if short_name is not None:
+            self.data.attrs['short_name'] = short_name
+            self.data.name = short_name
         else:
-            self.data.attrs['standard_name'] = var
+            self.data.attrs['short_name'] = var
 
     def compute_std(self, freq: str, exclude_incomplete: bool = True, center_time: bool = True,
                     box_brd: bool = True):
@@ -145,7 +148,7 @@ class BaseMixin(Diagnostic):
             raise ValueError('Frequency not provided')
 
         freq = frequency_string_to_pandas(freq)
-        str_freq = self._str_freq(freq)
+        str_freq = pandas_freq_to_string(freq)
         self.logger.info('Computing %s standard deviation', str_freq)
 
         freq_dict = {'hourly': {'data': self.hourly, 'groupdby': 'time.hour'},
@@ -183,7 +186,10 @@ class BaseMixin(Diagnostic):
             self.std_annual = data
 
     def save_netcdf(self, diagnostic_product: str, freq: str,
-                    outputdir: str = './', rebuild: bool = True):
+                    outputdir: str = './', rebuild: bool = True,
+                    create_catalog_entry: bool = False,
+                    dict_catalog_entry: dict = {'jinjalist': ['freq', 'realization', 'region'],
+                                                'wildcardlist': ['var']}):
         """
         Save the data to a netcdf file.
 
@@ -192,8 +198,10 @@ class BaseMixin(Diagnostic):
             freq (str): The frequency of the data.
             outputdir (str): The directory to save the data.
             rebuild (bool): If True, rebuild the data from the original files.
+            create_catalog_entry (bool): If True, create a catalog entry for the data. Default is False.
+            dict_catalog_entry (dict): A dictionary with catalog entry information. Default is {'jinjalist': ['freq', 'region', 'realization'], 'wildcardlist': ['var']}.
         """
-        str_freq = self._str_freq(freq)
+        str_freq = pandas_freq_to_string(freq)
 
         if str_freq == 'hourly':
             data = self.hourly if self.hourly is not None else self.logger.error('No hourly data available')
@@ -208,25 +216,27 @@ class BaseMixin(Diagnostic):
             data = self.annual if self.annual is not None else self.logger.error('No annual data available')
             data_std = self.std_annual if self.std_annual is not None else None
 
-        var = getattr(data, 'standard_name', None)
+        var = getattr(data, 'short_name', None)
         extra_keys = {'var': var, 'freq': str_freq}
         
         if data.name is None:
             data.name = var
 
-        if self.region is not None:
-            region = self.region.replace(' ', '').lower()
-            extra_keys.update({'region': region})
+        # In order to have a catalog entry we want to have a key region even in the global case
+        region = self.region.replace(' ', '').lower() if self.region is not None else 'global'
+        extra_keys.update({'region': region})
 
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
 
         super().save_netcdf(data=data, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
-                            outdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
+                            outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys,
+                            create_catalog_entry=create_catalog_entry, dict_catalog_entry=dict_catalog_entry)
         if data_std is not None:
             extra_keys.update({'std': 'std'})
             self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
+            #TODO: Check if the catalog entry generation is required for the std values
             super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
-                                outdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
+                                outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 
     def _check_data(self, var: str, units: str):
         """
@@ -237,27 +247,6 @@ class BaseMixin(Diagnostic):
             units (str): The units to be checked.
         """
         self.data = super()._check_data(data=self.data, var=var, units=units)
-
-    def _str_freq(self, freq: str):
-        """
-        Args:
-            freq (str): The frequency to be used.
-
-        Returns:
-            str_freq (str): The frequency as a string.
-        """
-        if freq in ['h', 'hourly']:
-            str_freq = 'hourly'
-        elif freq in ['D', 'daily']:
-            str_freq = 'daily'
-        elif freq in ['MS', 'ME', 'M', 'mon', 'monthly']:
-            str_freq = 'monthly'
-        elif freq in ['YS', 'YE', 'Y', 'annual']:
-            str_freq = 'annual'
-        else:
-            self.logger.error('Frequency %s not recognized', freq)
-
-        return str_freq
 
 
 class PlotBaseMixin():
@@ -276,6 +265,7 @@ class PlotBaseMixin():
         self.diagnostic_name = diagnostic_name
         log_name = 'Plot' + diagnostic_name.capitalize()
         self.logger = log_configure(log_level=loglevel, log_name=log_name)
+        # All these will be filled by the get_data_info() methods
         self.catalogs = None
         self.models = None
         self.exps = None
@@ -285,6 +275,9 @@ class PlotBaseMixin():
         self.std_startdate = None
         self.std_enddate = None
         self.region = None
+        self.short_name = None
+        self.long_name = None
+        self.units = None
 
     def set_data_labels(self):
         """
@@ -324,28 +317,25 @@ class PlotBaseMixin():
         self.logger.debug('Reference label: %s', ref_label)
         return ref_label
 
-    def set_title(self, region: str = None, var: str = None, units: str = None, diagnostic: str = None):
+    def set_title(self, diagnostic: str = None):
         """
-        Set the title for the plot.
+        Set the title for the plot. Uses short_name, long_name, and units attributes.
 
         Args:
-            region (str): Region to be used in the title.
-            var (str): Variable name to be used in the title.
-            units (str): Units of the variable to be used in the title.
             diagnostic (str): Diagnostic name to be used in the title.
 
         Returns:
             title (str): Title for the plot.
         """
         title = f'{diagnostic} '
-        if var is not None:
-            title += f'for {var} '
+        if self.short_name is not None:
+            title += f'for {self.short_name} '
 
-        if units is not None:
-            title += f'[{units}] '
+        if self.units is not None:
+            title += f'[{self.units}] '
 
-        if region is not None:
-            title += f'[{region}] '
+        if self.region is not None:
+            title += f'[{self.region}] '
 
         if self.len_data == 1:
             title += f'for {self.catalogs[0]} {self.models[0]} {self.exps[0]} '
@@ -353,7 +343,7 @@ class PlotBaseMixin():
         self.logger.debug('Title: %s', title)
         return title
 
-    def set_description(self, region: str = None, diagnostic: str = None):
+    def set_description(self, diagnostic: str = None):
         """
         Set the caption for the plot.
         The caption is extracted from the data arrays attributes and the
@@ -361,7 +351,6 @@ class PlotBaseMixin():
         The caption is stored as 'Description' in the metadata dictionary.
 
         Args:
-            region (str): Region to be used in the caption.
             diagnostic (str): Diagnostic name to be used in the caption.
 
         Returns:
@@ -369,11 +358,17 @@ class PlotBaseMixin():
         """
 
         description = f'{diagnostic} '
-        if region is not None:
-            description += f'for region {region} '
 
-        for i in range(self.len_data):
-            description += f'for {self.catalogs[i]} {self.models[i]} {self.exps[i]} '
+        description += f'of {self.long_name} '
+        if self.units is not None:
+            description += f'[{self.units}] '
+
+        if self.region is not None:
+            description += f'for region {self.region} '
+
+        description += 'for '
+        description += strlist_to_phrase(items=[f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(self.len_data)])
+        description += ' '
 
         for i in range(self.len_ref):
             if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
@@ -384,21 +379,20 @@ class PlotBaseMixin():
                 description += f'with reference {self.ref_models} {self.ref_exps} '
 
         if self.std_startdate is not None and self.std_enddate is not None:
-            description += f'with standard deviation from {self.std_startdate} to {self.std_enddate} '
+            description += f'with standard deviation from {self.std_startdate} to {self.std_enddate}.'
+            description += ' The shaded area represents 2 standard deviations.'
 
         self.logger.debug('Description: %s', description)
         return description
 
-    def save_plot(self, fig, var: str = None, description: str = None, region: str = None, rebuild: bool = True,
+    def save_plot(self, fig, description: str = None, rebuild: bool = True,
                   outputdir: str = './', dpi: int = 300, format: str = 'png', diagnostic_product: str = None):
         """
         Save the plot to a file.
 
         Args:
             fig (matplotlib.figure.Figure): Figure object.
-            var (str): Variable name to be used in the title and description.
             description (str): Description of the plot.
-            region (str): Region to be used in the title and description.
             rebuild (bool): If True, rebuild the plot even if it already exists.
             outputdir (str): Output directory to save the plot.
             dpi (int): Dots per inch for the plot.
@@ -414,16 +408,16 @@ class PlotBaseMixin():
                                   catalog_ref=list(self.ref_catalogs.values()) if isinstance(self.ref_catalogs, dict) else self.ref_catalogs,
                                   model_ref=list(self.ref_models.values()) if isinstance(self.ref_models, dict) else self.ref_models,
                                   exp_ref=list(self.ref_exps.values()) if isinstance(self.ref_exps, dict) else self.ref_exps,
-                                  outdir=outputdir,
+                                  outputdir=outputdir,
                                   loglevel=self.loglevel)
 
         metadata = {"Description": description, "dpi": dpi }
         extra_keys = {'diagnostic_product': diagnostic_product}
 
-        if var is not None:
-            extra_keys.update({'var': var})
-        if region is not None:
-            region = region.replace(' ', '').lower()
+        if self.short_name is not None:
+            extra_keys.update({'var': self.short_name})
+        if self.region is not None:
+            region = self.region.replace(' ', '').lower()
             extra_keys.update({'region': region})
 
         if format == 'png':

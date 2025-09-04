@@ -10,6 +10,7 @@ from .util import handle_pressure_level
 
 class PlotGlobalBiases: 
     def __init__(self, 
+                 diagnostic='globalbiases',
                  save_pdf=True, save_png=True, 
                  dpi=300, outputdir='./',
                  loglevel='WARNING'):
@@ -17,12 +18,14 @@ class PlotGlobalBiases:
         Initialize the PlotGlobalBiases class.
 
         Args:
+            diagnostic (str): Name of the diagnostic.
             save_pdf (bool): Whether to save the figure as PDF.
             save_png (bool): Whether to save the figure as PNG.
             dpi (int): Resolution of saved figures.
             outputdir (str): Output directory for saved plots.
             loglevel (str): Logging level.
         """
+        self.diagnostic = diagnostic
         self.save_pdf = save_pdf
         self.save_png = save_png
         self.dpi = dpi
@@ -49,13 +52,13 @@ class PlotGlobalBiases:
             format (str): Format to save the figure ('png' or 'pdf').
         """
         outputsaver = OutputSaver(
-            diagnostic='globalbiases',
+            diagnostic=self.diagnostic,
             catalog=data.catalog,
             model=data.model,
             exp=data.exp,
             model_ref=data_ref.model if data_ref else None,
             exp_ref=data_ref.exp if data_ref else None,
-            outdir=self.outputdir,
+            outputdir=self.outputdir,
             loglevel=self.loglevel
         )
 
@@ -218,11 +221,18 @@ class PlotGlobalBiases:
         season_list = ['DJF', 'MAM', 'JJA', 'SON']
         sym = vmin is None or vmax is None
 
+        title = (f"Seasonal bias of {data[var].attrs.get('long_name', var)} for {data.model} {data.exp}\n"
+                 f"relative to {data_ref.model} climatology"
+                 + (f" at {int(plev / 100)} hPa" if plev else ""))
+
         plot_kwargs = {
             'maps': [data[var].sel(season=season) - data_ref[var].sel(season=season) for season in season_list],
             'proj': get_projection(proj, **proj_params),
             'return_fig': True,
+            'title': title,
             'titles': season_list,
+            'titles_size': 16,
+            'figsize':(10, 8),
             'contour': True,
             'sym': sym,
             'cbar_label': cbar_label,

@@ -1,8 +1,6 @@
 """
 Module including time utilities for AQUA
 """
-
-import math
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -13,14 +11,20 @@ def frequency_string_to_pandas(freq):
     """
     Convert a string from the AQUA convention to
     the usual pandas frequency standard
-    """
 
+    Args:
+        freq (str): The frequency string to convert.
+
+    Returns:
+        str: The converted frequency string, pandas compliant.
+    """
     logger = log_configure('WARNING', 'frequency_string_to_pandas')
 
     trans = {
         'hourly': 'h',
         'daily': 'D',
         'weekly': 'W',
+        'seasonal': 'Q-NOV',
         'monthly': 'MS', #this implies start of the month
         'annual': 'YS', #this implies start of the year
         'yearly': 'YS', #this implies start of the year
@@ -43,34 +47,72 @@ def frequency_string_to_pandas(freq):
     if freq in ['M', 'ME', 'Y', 'YE']:
         logger.warning('You are using a pandas frequency pointing at the end of a period, this can behave unexpectedly if you have subdaily data')
 
-
     return new_freq
 
 
-def _xarray_timedelta_string(xdataset):
+def xarray_to_pandas_freq(xdataset: xr.Dataset | xr.DataArray):
     """
-    Given a Xarray Dataset, estimate the time frequency and convert
-    it as a Pandas frequency string
+    Given a Xarray Dataset or DataArray, estimate the time frequency
+    with the pandas method.
+    Important: the infer_freq method requires at least 3 time points.
+
+    Args:
+        xdataset (xr.Dataset | xr.DataArray): The input xarray object.
+
+    Returns:
+        str: The inferred time frequency as a string, pandas compliant.
     """
+    # Convert time coordinate to a pandas index
+    time_index = pd.DatetimeIndex(xdataset.time.values)
 
-    # to check if this is necessary
-    timedelta = pd.Timedelta(xdataset.time.diff('time').mean().values)
+    # Try to infer frequency
+    freq = pd.infer_freq(time_index)
 
-    hours = math.floor(timedelta.total_seconds() / 3600)
-    days = math.floor(hours / 24)
-    months = math.floor(days / 28)  # Minimum month has around 28 days
-    years = math.floor(days / 365)  # Assuming an average year has around 365 days
+    return freq
 
-    # print([hours, days, months, years])
 
-    if years >= 1:
-        return f"{years}Y"
-    elif months >= 1:
-        return f"{months}MS"
-    elif days >= 1:
-        return f"{days}D"
-    else:
-        return f"{hours}h"
+def pandas_freq_to_string(freq: str) -> str:
+    """
+    Convert a pandas frequency string to a more human-readable format.
+    It also supports already human-readable formats.
+
+    Args:
+        freq (str): The pandas frequency string.
+
+    Returns:
+        str: The human-readable format of the frequency.
+    """
+    trans = {
+        # Hourly
+        'H': 'hourly',
+        'h': 'hourly',
+        'hourly': 'hourly',
+        # Daily
+        'D': 'daily',
+        'd': 'daily',
+        'daily': 'daily',
+        # Weekly
+        'W': 'weekly',
+        'weekly': 'weekly',
+        # Seasonal
+        'Q-NOV': 'seasonal',
+        'Q': 'seasonal',
+        # Monthly
+        'MS': 'monthly',
+        'M': 'monthly',
+        'ME': 'monthly',
+        'mon': 'monthly',
+        'monthly': 'monthly',
+        # Annual
+        'YS': 'annual',
+        'Y': 'annual',
+        'YE': 'annual',
+        'yearly': 'annual',
+        'years': 'annual',
+        'annual': 'annual'
+    }
+
+    return trans.get(freq, freq)
 
 
 def _find_end_date(start_date, offset):
@@ -98,12 +140,13 @@ def _generate_expected_time_series(start_date, frequency, time_period):
 
 
 def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNING'):
-    """Support function for timmean().
+    """
+    Support function for timmean().
     Verify that all the chunks available in a dataset are complete given a
     fixed resample_frequency.
 
     Args:
-        xdataset: The original dataset before averagin
+        xdataset: The original dataset before averaging
         resample_frequency: the frequency on which we are planning to resample, based on pandas frequency
 
     Raise:
@@ -111,12 +154,12 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
 
     Returns:
         A Xarray DataArray binary, 1 for complete chunks and 0 for incomplete ones, to be used by timmean()
-        """
+    """
 
     logger = log_configure(loglevel, 'timmean_chunk_completeness')
 
     # get frequency of the dataset. Expected to be regular!
-    data_frequency = _xarray_timedelta_string(xdataset)
+    data_frequency = xarray_to_pandas_freq(xdataset)
 
     # convert offset
     pandas_period = to_offset(resample_frequency)
@@ -192,7 +235,16 @@ def time_to_string(time=None, format='%Y-%m-%d'):
 
 
 def int_month_name(month, abbreviated=False):
-    """Return month name from integer (1-12) if xarray functions cannot be used"""
+    """
+    Return month name from integer (1-12) if xarray functions cannot be used
+    
+    Args:
+        month (int): The month as an integer (1-12).
+        abbreviated (bool): Whether to return the abbreviated month name (default is False).
+
+    Returns:
+        str: The name of the month.
+    """
     name = ["January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December"][month - 1]
     return name[:3] if abbreviated else name

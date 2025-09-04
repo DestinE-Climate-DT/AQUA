@@ -82,51 +82,9 @@ Additionally the CLI can be run with the following optional arguments:
 Config file structure
 ---------------------
 
-The configuration file is a YAML file that contains the following information:
-
-* ``datasets``: a list of models to analyse (defined by the catalog, model, exp, source arguments)
-
-.. code-block:: yaml
-
-    datasets:
-      - catalog: climatedt-phase1
-        model: IFS-NEMO
-        exp: historical-1990
-        source: lra-r100-monthly
-        regrid: null
-      - catalog: climatedt-phase1
-        model: ICON
-        exp: historical-1990
-        source: lra-r100-monthly
-        regrid: null
-
-* ``references``: a list of reference datasets to use for the analysis.
-
-.. code-block:: yaml
-
-    references:
-      - catalog: obs
-        model: ERA5
-        exp: era5
-        source: monthly
-        regrid: null
-
-* ``output``: a block describing the details of the output. Is contains:
-
-    * ``outputdir``: the output directory for the plots.
-    * ``rebuild``: a boolean that enables the rebuilding of the plots.
-    * ``save_pdf``: a boolean that enables the saving of the plots in pdf format.
-    * ``save_png``: a boolean that enables the saving of the plots in png format.
-    * ``dpi``: the resolution of the plots.
-
-.. code-block:: yaml
-
-    output:
-      outputdir: "/path/to/output"
-      rebuild: true
-      save_pdf: true
-      save_png: true
-      dpi: 300
+The configuration file is a YAML file that contains the details on the dataset to analyse or use as reference, the output directory and the diagnostic settings.
+Most of the settings are common to all the diagnostics (see :ref:`diagnostics-configuration-files`).
+Here we describe only the specific settings for the teleconnections diagnostic.
 
 * ``teleconnections``: a block, nested in the ``diagnostics`` block, that contains the details required for the teleconnections.
     It allows to specify which teleconnections to run, the months window for the rolling mean, the seasons to consider, and the color bar range for the plots.

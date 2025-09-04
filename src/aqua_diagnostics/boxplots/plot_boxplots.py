@@ -9,7 +9,7 @@ from aqua.graphics import boxplot
 
 class PlotBoxplots: 
     def __init__(self, 
-                 diagnostic,
+                 diagnostic='boxplots',
                  save_pdf=True, save_png=True, 
                  dpi=300, outputdir='./',
                  loglevel='WARNING'):
@@ -63,7 +63,7 @@ class PlotBoxplots:
             exp=exp,
             model_ref=model_ref,
             exp_ref=exp_ref,
-            outdir=self.outputdir,
+            outputdir=self.outputdir,
             loglevel=self.loglevel
         )
 
