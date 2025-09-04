@@ -58,7 +58,7 @@ class Hovmoller(Diagnostic):
             loglevel=loglevel,
         )
         self.logger = log_configure(log_name="Hovmoller", log_level=loglevel)
-        # Initialize the results list. Elements of the list are dataset with different anomanly ref. 
+        # Initialize the results list. Elements of the list are dataset with different anomanly ref.
         self.processed_data_list = []
 
     def run(
@@ -92,7 +92,18 @@ class Hovmoller(Diagnostic):
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
         self.logger.info("Data retrieved successfully")
         # If a region is specified, apply area selection to self.data
-        super().select_region(region=region, diagnostic="ocean3d")
+        if region:
+            self.logger.info(f"Selecting region: {region} for diagnostic 'ocean3d'.")
+            res_dict = super()._select_region(
+                data=self.data, region=region, diagnostic="ocean3d", drop=True
+            )
+            self.region = res_dict["region"]
+            self.lat_limits = res_dict["lat_limits"]
+            self.lon_limits = res_dict["lon_limits"]
+        else:
+            self.region = "global"
+            self.lat_limits = [-90, 90]
+            self.lon_limits = [0, 360]
         self.stacked_data = self.compute_hovmoller(
             dim_mean=dim_mean, anomaly_ref=anomaly_ref
         )
@@ -124,10 +135,6 @@ class Hovmoller(Diagnostic):
             data = data - data.isel({dim: 0})
         else:
             raise ValueError("Invalid anomaly_ref: use 't0', 'tmean', or None")
-        data.attrs["AQUA_anomaly_ref"] = anomaly_ref
-        data.attrs["AQUA_cmap"] = "coolwarm"
-        type_str = f"anom_{anomaly_ref}"
-        data.attrs["AQUA_type"] = type_str
         return data
 
     def _get_standardise(self, data, dim="time"):
@@ -146,8 +153,6 @@ class Hovmoller(Diagnostic):
         data.attrs["units"] = "Stand. Units"
         data.attrs["AQUA_standardise"] = f"Standardised with {dim}"
         type_str = f"Std_{data.attrs.get('AQUA_type', 'full')}"
-        data.attrs["AQUA_type"] = type_str
-        data = data.expand_dims(dim={"type": [type_str]})
         return data
 
     def _get_std_anomaly(
@@ -188,9 +193,10 @@ class Hovmoller(Diagnostic):
 
         type = f"{Std}{anom}{anom_ref}"
         data.attrs["AQUA_ocean_drift_type"] = type
+        data.attrs["AQUA_region"] = self.region
         return data
 
-    def compute_hovmoller(self, dim_mean: str = None, anomaly_ref: str|list = None):
+    def compute_hovmoller(self, dim_mean: str = None, anomaly_ref: str | list = None):
         """
         Processes input data for drift analysis by applying various transformations
         and aggregations.
@@ -206,19 +212,45 @@ class Hovmoller(Diagnostic):
         """
         anomaly_ref = to_list(anomaly_ref)
         anomaly_ref.append(None)
-        
+
         if dim_mean is not None:
-            self.logger.debug(f"Computing mean over dimension: {dim_mean}")
-            self.data = self.data.mean(dim=dim_mean)
+            self.logger.debug(f"Computing fldmean over dimension: {dim_mean}")
+            self.data = self.reader.fldmean(
+                self.data,
+                dims=dim_mean,
+                lat_limits=self.lat_limits,
+                lon_limits=self.lon_limits,
+            )
+            # self.data = self.weighted_area(self.data)
+            # self.data = self.data.mean(dim=dim_mean)
+        # else:
+        #     self.data = self.res_dict['data']
+
 
         for standardise, anomaly_ref in product([False, True], anomaly_ref):
-            self.logger.info(
-                f"Processing data with standardise={standardise}, anomaly_ref={anomaly_ref}"
-            )
-            processed_data = self._get_std_anomaly(
-                self.data, anomaly_ref, standardise, dim="time"
-            )
-            self.processed_data_list.append(processed_data)
+            if not (standardise is True and anomaly_ref is None):
+                self.logger.info(
+                    f"Processing data with standardise={standardise}, anomaly_ref={anomaly_ref}"
+                )
+                processed_data = self._get_std_anomaly(
+                    self.data, anomaly_ref, standardise, dim="time"
+                )
+                self.processed_data_list.append(processed_data)
+        self.processed_data_list = sorted(self.processed_data_list, key=self.sort_key)
+
+    def sort_key(self, data):
+        type = data.attrs["AQUA_ocean_drift_type"]
+        if type == "full":
+            return (0, type)
+        elif type.startswith("anom"):
+            return (1, type)
+        elif type.startswith("std"):
+            return (2, type)
+
+    def weighted_area(self, data):
+        weights = xr.ufuncs.cos(xr.ufuncs.deg2rad(data.lat))
+        weighted_data = data.weighted(weights)
+        return weighted_data
 
     def save_netcdf(
         self,
@@ -246,5 +278,5 @@ class Hovmoller(Diagnostic):
                 diagnostic_product=f"{diagnostic_product}_{processed_data.attrs['AQUA_ocean_drift_type']}",
                 outputdir=outputdir,
                 rebuild=rebuild,
-                extra_keys={"region": region}
+                extra_keys={"region": region},
             )
