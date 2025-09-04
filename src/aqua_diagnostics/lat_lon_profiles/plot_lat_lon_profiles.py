@@ -14,7 +14,6 @@ class PlotLatLonProfiles():
     """
     def __init__(self, data=None, ref_data=None,
                  data_type='annual',
-                 std_data=None,
                  ref_std_data=None,
                  mean_type=None,
                  loglevel: str = 'WARNING'):
@@ -29,7 +28,6 @@ class PlotLatLonProfiles():
                 - List of seasonal data [DJF, MAM, JJA, SON] for seasonal plots
             ref_data: Reference data (structure matches data based on data_type)
             data_type (str): 'annual' for single/multi-line annual plots, 'seasonal' for 4-panel seasonal plots
-            std_data: Standard deviation data (structure matches data based on data_type)
             ref_std_data: Reference standard deviation data
             mean_type (str): The type of mean to compute ('zonal' or 'meridional')
             loglevel (str): Logging level. Default is 'WARNING'.
@@ -56,7 +54,7 @@ class PlotLatLonProfiles():
         else:
             raise ValueError(f"data_type must be 'annual' or 'seasonal', got '{data_type}'")
         
-        self.std_data = std_data
+        self.std_data = None
         self.ref_std_data = ref_std_data
         
         self.len_data, self.len_ref = self._check_data_length()
@@ -141,8 +139,8 @@ class PlotLatLonProfiles():
             self._set_defaults()
         
         # Handle std dates
-        self.std_startdate = getattr(self.std_data, 'std_startdate', None) if self.std_data else None
-        self.std_enddate = getattr(self.std_data, 'std_enddate', None) if self.std_data else None
+        self.std_startdate = None
+        self.std_enddate = None
 
     def _get_first_data_item(self):
         """Get the first data item based on data_type."""
@@ -367,9 +365,7 @@ class PlotLatLonProfiles():
             dpi=300, 
             format='png', 
             plot_type=None,              # Override data_type if needed
-            plot_std=False,
-            std_data=None,
-            ref_std_data=None):
+            plot_std=False):
         """
         Unified run method that handles all plotting scenarios.
         
@@ -383,8 +379,6 @@ class PlotLatLonProfiles():
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
             plot_type (str): Override data_type ('annual' or 'seasonal').
             plot_std (bool): Whether to plot standard deviation bands.
-            std_data (list): Standard deviation data for each season.
-            ref_std_data (list): Reference standard deviation data for each season.
         """
         self.logger.info('Running PlotLatLonProfiles')
         
@@ -410,7 +404,7 @@ class PlotLatLonProfiles():
         elif actual_plot_type == 'seasonal':
             # Single variable seasonal case
             return self._run_seasonal_single(variables[0], units_list[0], region, 
-                                        outputdir, rebuild, dpi, format, std_data, ref_std_data)
+                                        outputdir, rebuild, dpi, format)
         
         else:
             # annual single variable case
@@ -436,16 +430,14 @@ class PlotLatLonProfiles():
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
-    def _run_seasonal_single(self, var, units, region, outputdir, rebuild, dpi, format, std_data, ref_std_data):
+    def _run_seasonal_single(self, var, units, region, outputdir, rebuild, dpi, format):
         """Private method for seasonal single variable plotting."""
         data_labels = self.set_data_labels()
         description = self.set_description(region=region)
         title = self.set_title(region=region, var=var, units=units)
         
         fig, axs = self.plot_seasonal_lines(data_labels=data_labels, 
-                                            title=title, 
-                                            std_data=std_data, 
-                                            ref_std_data=ref_std_data)
+                                            title=title)
         
         region_short = region.replace(' ', '').lower() if region is not None else None
 
@@ -489,9 +481,7 @@ class PlotLatLonProfiles():
     def plot_seasonal_lines(self, 
                             data_labels=None, 
                             title=None, 
-                            style=None,
-                            std_data=None, 
-                            ref_std_data=None):
+                            style=None):
         """
         Plot seasonal means using plot_seasonal_lat_lon_profiles.
         Creates a 4-panel plot with DJF, MAM, JJA, SON only (no annual).
@@ -517,23 +507,17 @@ class PlotLatLonProfiles():
         seasonal_data_only = self.data[:4]
         seasonal_ref_only = self.ref_data[:4] if self.ref_data and len(self.ref_data) >= 4 else None
         
-        # Handle std data - use first 4 seasons if available
-        seasonal_std_only = None
-        if std_data:
-            seasonal_std_only = std_data[:4] if len(std_data) >= 4 else std_data
-        elif hasattr(self, 'std_seasonal_annual_data') and self.std_seasonal_annual_data:
-            seasonal_std_only = self.std_seasonal_annual_data[:4]
-        
+        # Handle ref std data if available
         seasonal_ref_std_only = None
-        if ref_std_data:
-            seasonal_ref_std_only = ref_std_data[:4] if len(ref_std_data) >= 4 else ref_std_data
+        if self.ref_std_data:
+            seasonal_ref_std_only = self.ref_std_data[:4] if len(self.ref_std_data) >= 4 else self.ref_std_data
         
         self.logger.debug(f'Plotting {len(seasonal_data_only)} seasons')
         
         return plot_seasonal_lat_lon_profiles(
             seasonal_data=seasonal_data_only,
             ref_data=seasonal_ref_only,
-            std_data=seasonal_std_only,
+            std_data=None,
             ref_std_data=seasonal_ref_std_only,
             data_labels=None,
             title=title,
