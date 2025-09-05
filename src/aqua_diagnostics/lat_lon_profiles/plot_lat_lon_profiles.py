@@ -133,15 +133,6 @@ class PlotLatLonProfiles():
         self.std_startdate = None
         self.std_enddate = None
 
-    def _get_first_data_item(self):
-        """Get the first data item based on data_type."""
-        if self.data_type == 'annual':
-            return self.data[0] if self.data else None
-        elif self.data_type == 'seasonal':
-            first_season = self.data[0]
-            return first_season[0] if isinstance(first_season, list) else first_season
-        return None
-
     def _set_defaults(self):
         """Set default values for metadata."""
         self.catalogs, self.models, self.exps = [], [], []
