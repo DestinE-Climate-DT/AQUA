@@ -69,29 +69,21 @@ class PlotLatLonProfiles():
         data_labels = []
         
         if self.data_type == 'annual':
-            # For annual plots, try to extract from each data item
-            for i, data_item in enumerate(self.data):
-                if data_item is not None and hasattr(data_item, 'AQUA_model') and hasattr(data_item, 'AQUA_exp'):
-                    label = f'{data_item.AQUA_model} {data_item.AQUA_exp}'
-                elif i < len(self.models) and i < len(self.exps):
-                    # Fallback to metadata from get_data_info()
+            # For annual plots, use self.models and self.exps for each dataset
+            for i in range(len(self.data)):
+                if i < len(self.models) and i < len(self.exps):
                     label = f'{self.models[i]} {self.exps[i]}'
                 else:
-                    # Last resort: generic label
+                    # Fallback to generic label if metadata not available
                     label = f'Dataset {i+1}'
                 data_labels.append(label)
         
         elif self.data_type == 'seasonal':
-            # For seasonal plots, use metadata from get_data_info()
+            # For seasonal plots, use the first model/exp (since it's one dataset)
             if len(self.models) > 0 and len(self.exps) > 0:
                 data_labels.append(f'{self.models[0]} {self.exps[0]}')
             else:
-                # Try to extract from first season first data item
-                first_data = self._get_first_data_item()
-                if first_data is not None and hasattr(first_data, 'AQUA_model') and hasattr(first_data, 'AQUA_exp'):
-                    data_labels.append(f'{first_data.AQUA_model} {first_data.AQUA_exp}')
-                else:
-                    data_labels.append('Dataset 1')
+                data_labels.append('Dataset 1')
         
         self.logger.debug('Data labels: %s', data_labels)
         return data_labels
