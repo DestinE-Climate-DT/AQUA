@@ -501,7 +501,7 @@ class PlotLatLonProfiles():
             ref_data=seasonal_ref_only,
             std_data=None,
             ref_std_data=seasonal_ref_std_only,
-            data_labels=data_labels,
+            data_labels=None,
             title=title,
             style=style,
             loglevel=self.loglevel
