@@ -54,7 +54,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: AQUA
       # The FDB docker image does not have git and other dependencies
@@ -67,7 +67,7 @@ jobs:
               git \
               gpg
       - name: Checkout Climate-DT-catalog repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog 
