@@ -66,24 +66,15 @@ class PlotLatLonProfiles():
             self.logger.warning('No data available for label generation')
             return []
         
+        # Use self.models and self.exps to create labels
         data_labels = []
+        num_labels = max(len(self.models), len(self.exps), 1)
         
-        if self.data_type == 'annual':
-            # For annual plots, use self.models and self.exps for each dataset
-            for i in range(len(self.data)):
-                if i < len(self.models) and i < len(self.exps):
-                    label = f'{self.models[i]} {self.exps[i]}'
-                else:
-                    # Fallback to generic label if metadata not available
-                    label = f'Dataset {i+1}'
-                data_labels.append(label)
-        
-        elif self.data_type == 'seasonal':
-            # For seasonal plots, use the first model/exp (since it's one dataset)
-            if len(self.models) > 0 and len(self.exps) > 0:
-                data_labels.append(f'{self.models[0]} {self.exps[0]}')
+        for i in range(num_labels):
+            if i < len(self.models) and i < len(self.exps):
+                data_labels.append(f'{self.models[i]} {self.exps[i]}')
             else:
-                data_labels.append('Dataset 1')
+                data_labels.append(f'Dataset {i+1}')
         
         self.logger.debug('Data labels: %s', data_labels)
         return data_labels
@@ -114,21 +105,29 @@ class PlotLatLonProfiles():
             self.logger.warning('No data available for metadata extraction')
             return self._set_defaults()
         
-        # Get first data item based on data_type
-        first_data = self._get_first_data_item()
+        # Get all data items to extract metadata from
+        data_items = []
+        if self.data_type == 'annual':
+            data_items = self.data
+        elif self.data_type == 'seasonal':
+            # For seasonal, use first season's data
+            first_season = self.data[0] if self.data else []
+            data_items = first_season if isinstance(first_season, list) else [first_season]
         
-        if first_data is not None and hasattr(first_data, 'AQUA_catalog'):
-            self.catalogs = [first_data.AQUA_catalog]
-            self.models = [first_data.AQUA_model]
-            self.exps = [first_data.AQUA_exp]
-            self.logger.debug(f'Metadata extracted: {self.models[0]} {self.exps[0]}')
-            
-            # Extract mean_type from data if not already set
-            if self.mean_type is None and hasattr(first_data, 'mean_type'):
+        # Extract metadata from all data items
+        for data_item in data_items:
+            if data_item is not None and hasattr(data_item, 'AQUA_catalog'):
+                self.catalogs.append(data_item.AQUA_catalog)
+                self.models.append(data_item.AQUA_model)
+                self.exps.append(data_item.AQUA_exp)
+        
+        # Set mean_type from first data item if not already set
+        if self.mean_type is None and data_items:
+            first_data = data_items[0]
+            if first_data is not None and hasattr(first_data, 'mean_type'):
                 self.mean_type = first_data.mean_type
-        else:
-            self.logger.warning('Data has no metadata attributes')
-            self._set_defaults()
+        
+        self.logger.debug(f'Extracted metadata for {len(self.models)} datasets: {list(zip(self.models, self.exps))}')
         
         # Handle std dates
         self.std_startdate = None
