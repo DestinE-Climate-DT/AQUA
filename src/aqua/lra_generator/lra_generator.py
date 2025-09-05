@@ -633,49 +633,55 @@ class LRAgenerator():
         """Write a single chunk of data - Xarray Dataset - to a specific file
         using dask if required and monitoring the progress"""
 
-        # update data attributes for history
+        # Update data attributes for history
         if self.frequency:
             log_history(
-                data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} through LRA generator')
+                data,
+                f"regridded from {self.reader.src_grid_name} to {self.resolution} "
+                f"and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} "
+                "through LRA generator",
+            )
         else:
-            log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator')
+            log_history(
+                data,
+                f"regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator",
+            )
 
         # File to be written
         if os.path.exists(outfile):
             os.remove(outfile)
             self.logger.warning('Overwriting file %s...', outfile)
 
-        self.logger.info('Writing file %s...', outfile)
+        self.logger.info("Computing to write file %s...", outfile)
 
-        # Write data to file, lazy evaluation
-        write_job = data.to_netcdf(outfile,
-                                   encoding={'time': self.time_encoding,
-                                             data.name: self.var_encoding},
-                                   compute=False)
-
+        # Compute + progress monitoring
         if self.dask:
-            # optional full stack dashboard to html
             if self.performance_reporting:
+                # Full Dask dashboard to HTML
                 filename = f"dask-{self.model}-{self.exp}-{self.source}-{self.nproc}.html"
                 with performance_report(filename=filename):
-                    w_job = write_job.persist()
-                    progress(w_job)
-                    del w_job
+                    job = data.persist()
+                    progress(job)
+                    job = job.compute()
             else:
-                # memory monitoring is always operating
+                # Memory monitoring always on
                 ms = MemorySampler()
-                with ms.sample('chunk'):
-                    w_job = write_job.persist()
-                    progress(w_job)
-                    del w_job
-                array_data = np.array(vars(ms)['samples']['chunk'])
+                with ms.sample("chunk"):
+                    job = data.persist()
+                    progress(job)
+                    job = job.compute()
+                array_data = np.array(ms.samples["chunk"])
                 avg_mem = np.mean(array_data[:, 1]) / 1e9
                 max_mem = np.max(array_data[:, 1]) / 1e9
-                self.logger.info('Avg memory used: %.2f GiB, Peak memory used: %.2f GiB', avg_mem, max_mem)
-
+                self.logger.info("Avg memory used: %.2f GiB, Peak memory used: %.2f GiB", avg_mem, max_mem)
         else:
             with ProgressBar():
-                write_job.compute()
+                job = data.compute()
 
-        del write_job
-        self.logger.info('Writing file %s successfull!', outfile)
+        # Final safe NetCDF write (serial, no dask)
+        job.to_netcdf(
+            outfile,
+            encoding={"time": self.time_encoding, data.name: self.var_encoding},
+        )
+        del job
+        self.logger.info('Writing file %s successful!', outfile)

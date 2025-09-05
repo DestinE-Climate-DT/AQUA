@@ -92,41 +92,36 @@ class TestLRA:
 
     def test_definitive_false(self, lra_arguments, tmp_path):
         """Test LRA generator with definitive=False."""
-        args = lra_arguments
         test = LRAgenerator(
-            catalog='ci', model=args["model"], exp=args["exp"], source=args["source"],
-            var=args["var"], outdir=args["outdir"], tmpdir=str(tmp_path),
+            catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', loglevel=LOGLEVEL
         )
 
         test.retrieve()
         test.generate_lra()
-        assert os.path.isdir(os.path.join(os.getcwd(), args["outdir"], LRAPATH))
-        shutil.rmtree(os.path.join(args["outdir"]))
+        assert os.path.isdir(os.path.join(os.getcwd(), lra_arguments["outdir"], LRAPATH))
+        shutil.rmtree(os.path.join(lra_arguments["outdir"]))
 
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, lra_arguments, tmp_path, nworkers):
-        """Test LRA generator with definitive=True."""
-        args = lra_arguments
         test = LRAgenerator(
-            catalog='ci', model=args["model"], exp=args["exp"], source=args["source"],
-            var=args["var"], outdir=args["outdir"], tmpdir=str(tmp_path),
+            catalog='ci', tmpdir=str(tmp_path), **lra_arguments, nproc=nworkers,
             resolution='r100', frequency='monthly', definitive=True,
-            loglevel=LOGLEVEL, nproc=nworkers
+            loglevel=LOGLEVEL
         )
 
         test.retrieve()
         test.data = test.data.sel(time="2020-01")
         test.generate_lra()
 
-        file_path = os.path.join(os.getcwd(), args["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc")
-        test.check_integrity(varname=args["var"])
+        file_path = os.path.join(os.getcwd(), lra_arguments["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc")
+        test.check_integrity(varname=lra_arguments["var"])
         assert os.path.isfile(file_path)
 
         file = xr.open_dataset(file_path)
         assert len(file.time) == 1
         assert pytest.approx(file['2t'][0, 1, 1].item()) == 248.0704
-        shutil.rmtree(os.path.join(args["outdir"]))
+        shutil.rmtree(os.path.join(lra_arguments["outdir"]))
 
     def test_regional_subset(self, lra_arguments, tmp_path):
         """Test LRA generator with regional subset."""
