@@ -13,6 +13,7 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Separation of concerns in LRA between dask-based computation and serial netcdf writing (#2212)
 - Refactor `grids-downloader.sh` script, now outputdir is a cli argument (#2209)
 - Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205)
 - Refactor of the `dump_yaml` utility function, now correctly handling `None` values as `null` (#2198)
