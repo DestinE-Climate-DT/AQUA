@@ -102,8 +102,7 @@ class PlotLatLonProfiles():
         self.catalogs, self.models, self.exps = [], [], []
         
         if not self.data or len(self.data) == 0:
-            self.logger.warning('No data available for metadata extraction')
-            return self._set_defaults()
+            raise ValueError("No data available for metadata extraction")
         
         # Get all data items to extract metadata from
         data_items = []
