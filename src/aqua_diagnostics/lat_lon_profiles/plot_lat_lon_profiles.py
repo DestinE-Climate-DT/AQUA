@@ -13,9 +13,9 @@ class PlotLatLonProfiles():
     temporal frequency, as temporal averaging is handled upstream.
     """
     def __init__(self, data=None, ref_data=None,
-                 data_type='standard',
-                 std_data=None,
+                 data_type='annual',
                  ref_std_data=None,
+                 mean_type=None,
                  loglevel: str = 'WARNING'):
         """
         Initialise the PlotLatLonProfiles class.
@@ -24,26 +24,27 @@ class PlotLatLonProfiles():
 
         Args:
             data: Can be either:
-                - List of temporally-averaged data arrays for standard plots
+                - List of temporally-averaged data arrays for annual plots
                 - List of seasonal data [DJF, MAM, JJA, SON] for seasonal plots
             ref_data: Reference data (structure matches data based on data_type)
-            data_type (str): 'standard' for single/multi-line plots, 'seasonal' for 4-panel seasonal plots
-            std_data: Standard deviation data (structure matches data based on data_type)
+            data_type (str): 'annual' for single/multi-line annual plots, 'seasonal' for 4-panel seasonal plots
             ref_std_data: Reference standard deviation data
+            mean_type (str): The type of mean to compute ('zonal' or 'meridional')
             loglevel (str): Logging level. Default is 'WARNING'.
             
         Note:
             data_type determines how 'data' is interpreted:
-            - 'standard': data should be list of DataArrays for single plot
+            - 'annual': data should be list of DataArrays for single plot
             - 'seasonal': data should be [DJF, MAM, JJA, SON] for 4-panel seasonal plots
         """
         self.loglevel = loglevel
         self.logger = log_configure(loglevel, 'PlotLatLonProfiles')
 
         self.data_type = data_type
+        self.mean_type = mean_type
 
         # Store data based on type
-        if data_type == 'standard':
+        if data_type == 'annual':
             self.data = to_list(data) if data is not None else []
             self.ref_data = ref_data
 
@@ -51,9 +52,9 @@ class PlotLatLonProfiles():
             self.data = data if data is not None else []  # Store seasonal data directly in unified interface
             self.ref_data = ref_data  # Store seasonal ref data directly
         else:
-            raise ValueError(f"data_type must be 'standard' or 'seasonal', got '{data_type}'")
+            raise ValueError(f"data_type must be 'annual' or 'seasonal', got '{data_type}'")
         
-        self.std_data = std_data
+        self.std_data = None
         self.ref_std_data = ref_std_data
         
         self.len_data, self.len_ref = self._check_data_length()
@@ -65,32 +66,15 @@ class PlotLatLonProfiles():
             self.logger.warning('No data available for label generation')
             return []
         
+        # Use self.models and self.exps to create labels
         data_labels = []
+        num_labels = max(len(self.models), len(self.exps), 1)
         
-        if self.data_type == 'standard':
-            # For standard plots, try to extract from each data item
-            for i, data_item in enumerate(self.data):
-                if data_item is not None and hasattr(data_item, 'AQUA_model') and hasattr(data_item, 'AQUA_exp'):
-                    label = f'{data_item.AQUA_model} {data_item.AQUA_exp}'
-                elif i < len(self.models) and i < len(self.exps):
-                    # Fallback to metadata from get_data_info()
-                    label = f'{self.models[i]} {self.exps[i]}'
-                else:
-                    # Last resort: generic label
-                    label = f'Dataset {i+1}'
-                data_labels.append(label)
-        
-        elif self.data_type == 'seasonal':
-            # For seasonal plots, use metadata from get_data_info()
-            if len(self.models) > 0 and len(self.exps) > 0:
-                data_labels.append(f'{self.models[0]} {self.exps[0]}')
+        for i in range(num_labels):
+            if i < len(self.models) and i < len(self.exps):
+                data_labels.append(f'{self.models[i]} {self.exps[i]}')
             else:
-                # Try to extract from first season first data item
-                first_data = self._get_first_data_item()
-                if first_data is not None and hasattr(first_data, 'AQUA_model') and hasattr(first_data, 'AQUA_exp'):
-                    data_labels.append(f'{first_data.AQUA_model} {first_data.AQUA_exp}')
-                else:
-                    data_labels.append('Dataset 1')
+                data_labels.append(f'Dataset {i+1}')
         
         self.logger.debug('Data labels: %s', data_labels)
         return data_labels
@@ -118,39 +102,37 @@ class PlotLatLonProfiles():
         self.catalogs, self.models, self.exps = [], [], []
         
         if not self.data or len(self.data) == 0:
-            self.logger.warning('No data available for metadata extraction')
-            return self._set_defaults()
+            raise ValueError("No data available for metadata extraction")
         
-        # Get first data item based on data_type
-        first_data = self._get_first_data_item()
+        # Get all data items to extract metadata from
+        data_items = []
+        if self.data_type == 'annual':
+            data_items = self.data
+        elif self.data_type == 'seasonal':
+            # For seasonal, use first season's data
+            first_season = self.data[0] if self.data else []
+            data_items = first_season if isinstance(first_season, list) else [first_season]
         
-        if first_data is not None and hasattr(first_data, 'AQUA_catalog'):
-            self.catalogs = [first_data.AQUA_catalog]
-            self.models = [first_data.AQUA_model]
-            self.exps = [first_data.AQUA_exp]
-            self.logger.debug(f'Metadata extracted: {self.models[0]} {self.exps[0]}')
-        else:
-            self.logger.warning('Data has no metadata attributes')
-            self._set_defaults()
+        # Extract metadata from all data items
+        for data_item in data_items:
+            if data_item is not None and hasattr(data_item, 'AQUA_catalog'):
+                self.catalogs.append(data_item.AQUA_catalog)
+                self.models.append(data_item.AQUA_model)
+                self.exps.append(data_item.AQUA_exp)
+        
+        # Set mean_type from first data item if not already set
+        if self.mean_type is None and data_items:
+            first_data = data_items[0]
+            if first_data is not None and hasattr(first_data, 'mean_type'):
+                self.mean_type = first_data.mean_type
+        
+        self.logger.debug(f'Extracted metadata for {len(self.models)} datasets: {list(zip(self.models, self.exps))}')
         
         # Handle std dates
-        self.std_startdate = getattr(self.std_data, 'std_startdate', None) if self.std_data else None
-        self.std_enddate = getattr(self.std_data, 'std_enddate', None) if self.std_data else None
+        self.std_startdate = None
+        self.std_enddate = None
 
-    def _get_first_data_item(self):
-        """Get the first data item based on data_type."""
-        if self.data_type == 'standard':
-            return self.data[0] if self.data else None
-        elif self.data_type == 'seasonal':
-            first_season = self.data[0]
-            return first_season[0] if isinstance(first_season, list) else first_season
-        return None
-
-    def _set_defaults(self):
-        """Set default values for metadata."""
-        self.catalogs, self.models, self.exps = [], [], []
-
-    def plot(self, data_labels=None, ref_label=None, title=None, clean_data=True):
+    def plot(self, data_labels=None, ref_label=None, title=None):
         """
         Unified plotting method that handles all plotting scenarios based on data_type.
         
@@ -158,7 +140,6 @@ class PlotLatLonProfiles():
             data_labels (list, optional): Labels for the data.
             ref_label (str, optional): Label for the reference data.  
             title (str, optional): Title for the plot.
-            clean_data (bool, optional): Whether to clean single-timestep dimensions. Default True.
             
         Returns:
             tuple: Matplotlib figure and axes objects.
@@ -170,14 +151,8 @@ class PlotLatLonProfiles():
             # For seasonal plots, delegate to the specialized seasonal method
             return self._plot_seasonal(data_labels=data_labels, title=title)
         
-        # For standard plots, handle data cleaning if requested
         data_to_plot = self.data
         ref_to_plot = self.ref_data
-        
-        if clean_data:
-            data_to_plot = self._clean_temporal_dims(self.data)
-            if self.ref_data is not None:
-                ref_to_plot = self._clean_temporal_dims([self.ref_data])[0]
         
         # Call the graphics function
         return plot_lat_lon_profiles(
@@ -191,42 +166,22 @@ class PlotLatLonProfiles():
             loglevel=self.loglevel
         )
 
-    def _clean_temporal_dims(self, data_list):
-        """
-        Clean single-timestep temporal dimensions from data.
-        
-        Args:
-            data_list (list): List of DataArrays to clean
-            
-        Returns:
-            list: List of cleaned DataArrays
-        """
-        cleaned_data = []
-        for i, data_item in enumerate(data_list):
-            if data_item is None:
-                cleaned_data.append(None)
-                continue
-            
-            # Check if has single time dimension that should be removed
-            if 'time' in data_item.dims and data_item.sizes.get('time', 0) == 1:
-                cleaned_item = data_item.isel(time=0, drop=True)
-                self.logger.debug(f"Removed single time dimension from data {i}")
-            else:
-                cleaned_item = data_item
-            
-            cleaned_data.append(cleaned_item)
-            self.logger.debug(f"Data {i}: shape={cleaned_item.shape}, dims={cleaned_item.dims}")
-        
-        return cleaned_data
-
     def _plot_seasonal(self, data_labels=None, title=None):
         """
         Private method for seasonal plotting (delegates to existing plot_seasonal_lines).
         """
         return self.plot_seasonal_lines(data_labels=data_labels, title=title)
     
-    def save_plot(self, fig, var: str = None, description: str = None, region: str = None, rebuild: bool = True,
-                outputdir: str = './', dpi: int = 300, format: str = 'png', diagnostic: str = None):
+    def save_plot(self, 
+                  fig, 
+                  var: str = None, 
+                  description: str = None, 
+                  region: str = None, 
+                  rebuild: bool = True,
+                  outputdir: str = './', 
+                  dpi: int = 300, 
+                  format: str = 'png', 
+                  diagnostic: str = None):
         """
         Save the plot to a file.
 
@@ -256,8 +211,12 @@ class PlotLatLonProfiles():
         if region: extra_keys['region'] = region.replace(' ', '').lower()
         
         # diagnostic_product must match the one used in OutputSaver
-        diagnostic_product = diagnostic or 'lat_lon_profiles'
-        
+        base_diagnostic = diagnostic or 'lat_lon_profiles'
+        if self.mean_type:
+            diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
+        else:
+            diagnostic_product = base_diagnostic
+            self.logger.warning("mean_type not available, filename will not distinguish between zonal/meridional profiles")        
         # Save based on format
         if format == 'png':
             outputsaver.save_png(fig, diagnostic_product, extra_keys=extra_keys, 
@@ -274,7 +233,7 @@ class PlotLatLonProfiles():
         """
         len_data = len(self.data) if self.data else 0
         
-        if self.data_type == 'standard':
+        if self.data_type == 'annual':
             len_ref = 1 if self.ref_data is not None else 0
         elif self.data_type == 'seasonal':
             len_ref = len(self.ref_data) if self.ref_data else 0
@@ -348,9 +307,7 @@ class PlotLatLonProfiles():
             dpi=300, 
             format='png', 
             plot_type=None,              # Override data_type if needed
-            plot_std=False,
-            std_data=None,
-            ref_std_data=None):
+            plot_std=False):
         """
         Unified run method that handles all plotting scenarios.
         
@@ -362,10 +319,8 @@ class PlotLatLonProfiles():
             rebuild (bool): If True, rebuild the plot even if it already exists.
             dpi (int): Dots per inch for the plot.
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
-            plot_type (str): Override data_type ('standard' or 'seasonal').
+            plot_type (str): Override data_type ('annual' or 'seasonal').
             plot_std (bool): Whether to plot standard deviation bands.
-            std_data (list): Standard deviation data for each season.
-            ref_std_data (list): Reference standard deviation data for each season.
         """
         self.logger.info('Running PlotLatLonProfiles')
         
@@ -391,15 +346,15 @@ class PlotLatLonProfiles():
         elif actual_plot_type == 'seasonal':
             # Single variable seasonal case
             return self._run_seasonal_single(variables[0], units_list[0], region, 
-                                        outputdir, rebuild, dpi, format, std_data, ref_std_data)
+                                        outputdir, rebuild, dpi, format)
         
         else:
-            # Standard single variable case
-            return self._run_standard_single(variables[0], units_list[0], region,
+            # annual single variable case
+            return self._run_annual_single(variables[0], units_list[0], region,
                                         outputdir, rebuild, dpi, format, plot_std)
 
-    def _run_standard_single(self, var, units, region, outputdir, rebuild, dpi, format, plot_std):
-        """Private method for standard single variable plotting."""
+    def _run_annual_single(self, var, units, region, outputdir, rebuild, dpi, format, plot_std):
+        """Private method for annual single variable plotting."""
         data_label = self.set_data_labels()
         ref_label = self.set_ref_label()
         description = self.set_description(region=region)
@@ -417,21 +372,24 @@ class PlotLatLonProfiles():
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
-    def _run_seasonal_single(self, var, units, region, outputdir, rebuild, dpi, format, std_data, ref_std_data):
+    def _run_seasonal_single(self, var, units, region, outputdir, rebuild, dpi, format):
         """Private method for seasonal single variable plotting."""
         data_labels = self.set_data_labels()
         description = self.set_description(region=region)
         title = self.set_title(region=region, var=var, units=units)
         
         fig, axs = self.plot_seasonal_lines(data_labels=data_labels, 
-                                            title=title, 
-                                            std_data=std_data, 
-                                            ref_std_data=ref_std_data)
+                                            title=title)
         
         region_short = region.replace(' ', '').lower() if region is not None else None
+
+        seasonal_diagnostic = 'lat_lon_profiles_seasonal'
+        if self.mean_type:
+            seasonal_diagnostic = f'lat_lon_profiles_seasonal_{self.mean_type}'
+
         self.save_plot(fig, var=var, description=description, region=region_short, 
                     rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
-                    diagnostic='lat_lon_profiles_seasonal')
+                    diagnostic=seasonal_diagnostic)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
@@ -450,7 +408,7 @@ class PlotLatLonProfiles():
             ref_data=self.ref_data,
             std_data=None,                     # Could be added later if needed
             ref_std_data=None,
-            titles=data_labels,
+            data_labels=data_labels,
             title=f"Multi-variable Seasonal Comparison: {', '.join(variables)}",
             loglevel=self.loglevel
         )
@@ -465,9 +423,7 @@ class PlotLatLonProfiles():
     def plot_seasonal_lines(self, 
                             data_labels=None, 
                             title=None, 
-                            style=None,
-                            std_data=None, 
-                            ref_std_data=None):
+                            style=None):
         """
         Plot seasonal means using plot_seasonal_lat_lon_profiles.
         Creates a 4-panel plot with DJF, MAM, JJA, SON only (no annual).
@@ -493,25 +449,19 @@ class PlotLatLonProfiles():
         seasonal_data_only = self.data[:4]
         seasonal_ref_only = self.ref_data[:4] if self.ref_data and len(self.ref_data) >= 4 else None
         
-        # Handle std data - use first 4 seasons if available
-        seasonal_std_only = None
-        if std_data:
-            seasonal_std_only = std_data[:4] if len(std_data) >= 4 else std_data
-        elif hasattr(self, 'std_seasonal_annual_data') and self.std_seasonal_annual_data:
-            seasonal_std_only = self.std_seasonal_annual_data[:4]
-        
+        # Handle ref std data if available
         seasonal_ref_std_only = None
-        if ref_std_data:
-            seasonal_ref_std_only = ref_std_data[:4] if len(ref_std_data) >= 4 else ref_std_data
+        if self.ref_std_data:
+            seasonal_ref_std_only = self.ref_std_data[:4] if len(self.ref_std_data) >= 4 else self.ref_std_data
         
         self.logger.debug(f'Plotting {len(seasonal_data_only)} seasons')
         
         return plot_seasonal_lat_lon_profiles(
             seasonal_data=seasonal_data_only,
             ref_data=seasonal_ref_only,
-            std_data=seasonal_std_only,
+            std_data=None,
             ref_std_data=seasonal_ref_std_only,
-            titles=None,
+            data_labels=None,
             title=title,
             style=style,
             loglevel=self.loglevel

@@ -11,24 +11,7 @@ class LatLonProfiles(Diagnostic):
 	It retrieves the data from the catalog, computes the mean and standard deviation
 	over the specified period and saves the results to netcdf files.
 	The class supports different frequencies (hourly, daily, monthly, annual) and
-	different types of means (zonal, meridional, global).
-
-	Args:
-	catalog (str): The catalog to be used for the retrieval of the data.
-	model (str): The model to be used for the retrieval of the data.
-	exp (str): The experiment to be used for the retrieval of the data.
-	source (str): The source to be used for the retrieval of the data.
-	regrid (str): The regridding method to be used for the retrieval of the data.
-	startdate (str): The start date of the data to be retrieved.
-	enddate (str): The end date of the data to be retrieved.
-	std_startdate (str): The start date of the standard deviation period.
-	std_enddate (str): The end date of the standard deviation period.
-	region (str): The region to be used for the retrieval of the data.
-	lon_limits (list): The longitude limits of the region.
-	lat_limits (list): The latitude limits of the region.
-	mean_type (str): The type of mean to compute ('zonal', 'meridional', 'global').
-	loglevel (str): The log level to be used for the logging.
-
+	different types of means (zonal or meridional).
 	"""    
 	def __init__(self, catalog: str = None, model: str = None,
 				 exp: str = None, source: str = None,
@@ -56,9 +39,8 @@ class LatLonProfiles(Diagnostic):
 			lon_limits (list): The longitude limits of the region.
 			lat_limits (list): The latitude limits of the region.
 			regions_file_path (str): The path to the regions file. Default is the AQUA config path.
-			mean_type (str): The type of mean to compute ('zonal', 'meridional', 'global').
+			mean_type (str): The type of mean to compute ('zonal' or 'meridional')
 			loglevel (str): The log level to be used for the logging.
-		
 		"""
 		# Initialize the Diagnostic class with the provided parameters
 		super().__init__(catalog=catalog, model=model, exp=exp, source=source, regrid=regrid,
@@ -164,10 +146,8 @@ class LatLonProfiles(Diagnostic):
 			dims = ['lon']  # Average over longitude, keep latitude
 		elif self.mean_type == 'meridional':
 			dims = ['lat']  # Average over latitude, keep longitude  
-		elif self.mean_type == 'global':
-			dims = ['lat', 'lon']  # Average over both
 		else:
-			dims = ['lat', 'lon']  # Default to global
+			raise ValueError(f'Mean type {self.mean_type} not recognized for std computation.')
 
 		# Start with monthly data for both seasonal and annual std calculations
 		data = self.data
@@ -222,7 +202,8 @@ class LatLonProfiles(Diagnostic):
 		if freq == 'seasonal':
 			seasons = ['DJF', 'MAM', 'JJA', 'SON']
 			for i, season_data in enumerate(data):
-				diagnostic_product = getattr(season_data, 'standard_name', 'unknown')
+				base_product = getattr(season_data, 'standard_name', 'unknown')
+				diagnostic_product = f"{base_product}_{self.mean_type}"
 				
 				extra_keys = {'freq': freq, 'season': seasons[i]}
 				if self.region is not None:
@@ -235,7 +216,8 @@ class LatLonProfiles(Diagnostic):
 									outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 		else:
 			# Handle annual data
-			diagnostic_product = getattr(data, 'standard_name', 'unknown')
+			base_product = getattr(data, 'standard_name', 'unknown')
+			diagnostic_product = f"{base_product}_{self.mean_type}"
 			
 			extra_keys = {'freq': freq}
 			if self.region is not None:
@@ -306,37 +288,34 @@ class LatLonProfiles(Diagnostic):
 			dims = ['lon']
 		elif self.mean_type == 'meridional':
 			dims = ['lat']
-		elif self.mean_type == 'global':
-			dims = ['lon', 'lat']
 		else:
-			self.logger.error('Mean type %s not recognized', self.mean_type)
 			raise ValueError('Mean type %s not recognized', self.mean_type)
 
 		self.logger.info('Computing %s mean', freq)
 		data = self.data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 		if len(data.time) == 0:
-			self.logger.error('No data available for the selected period %s - %s',
+			raise ValueError('No data available for the selected period %s - %s',
 							self.plt_startdate, self.plt_enddate)
-			raise ValueError(f'No data available for the selected period {self.plt_startdate} - {self.plt_enddate}')
 
 		if freq == 'seasonal':
-			monthly_data = self.reader.timmean(data, freq='monthly', 
-											exclude_incomplete=exclude_incomplete, 
-											center_time=center_time)
-			monthly_data = self.reader.fldmean(monthly_data, 
-											box_brd=box_brd, 
-											lon_limits=self.lon_limits, 
-											lat_limits=self.lat_limits,
-											dims=dims)
-			seasonal_dataset = self.reader.timmean(monthly_data, freq='seasonal')
-			seasonal_data = [seasonal_dataset.isel(time=i) for i in range(4)]
+			data = self.reader.fldmean(data, 
+							  		   box_brd=box_brd, 
+									   lon_limits=self.lon_limits, 
+									   lat_limits=self.lat_limits,
+									   dims=dims)
+			seasonal_dataset = self.reader.timmean(data, freq=freq)
+			seasonal_data = [seasonal_dataset.isel(time=i, drop=True) for i in range(4)]
 			if self.region is not None:
 				for season_data in seasonal_data:
 					season_data.attrs['AQUA_region'] = self.region
+			for season_data in seasonal_data:
+				season_data.attrs['mean_type'] = self.mean_type
 			self.seasonal = seasonal_data
 				
 		elif freq == 'annual':
 			annual_data = self.reader.timmean(data, freq=None)  # freq=None for total mean
+			if 'time' in annual_data.dims and annual_data.sizes.get('time', 0) == 1:
+				annual_data = annual_data.isel(time=0, drop=True)
 			annual_data = self.reader.fldmean(annual_data, 
 											box_brd=box_brd, 
 											lon_limits=self.lon_limits, 
@@ -344,6 +323,7 @@ class LatLonProfiles(Diagnostic):
 											dims=dims)
 			if self.region is not None:
 				annual_data.attrs['AQUA_region'] = self.region
+			annual_data.attrs['mean_type'] = self.mean_type
 			self.annual = annual_data
 
 	def run(self, var: str, formula: bool = False, long_name: str = None,
@@ -368,7 +348,7 @@ class LatLonProfiles(Diagnostic):
 				box_brd (bool): Whether to include the box boundaries.
 				outputdir (str): The output directory to save the results.
 				rebuild (bool): Whether to rebuild existing files.
-				mean_type (str): The type of mean to compute ('zonal', 'meridional', 'global').
+				mean_type (str): The type of mean to compute ('zonal' or 'meridional').
 			"""
 			self.logger.info('Running LatLonProfiles for %s', var)
 			
