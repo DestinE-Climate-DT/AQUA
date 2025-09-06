@@ -132,10 +132,6 @@ class PlotLatLonProfiles():
         self.std_startdate = None
         self.std_enddate = None
 
-    def _set_defaults(self):
-        """Set default values for metadata."""
-        self.catalogs, self.models, self.exps = [], [], []
-
     def plot(self, data_labels=None, ref_label=None, title=None, clean_data=True):
         """
         Unified plotting method that handles all plotting scenarios based on data_type.
