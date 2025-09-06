@@ -304,7 +304,7 @@ class LatLonProfiles(Diagnostic):
 									   lat_limits=self.lat_limits,
 									   dims=dims)
 			seasonal_dataset = self.reader.timmean(data, freq=freq)
-			seasonal_data = [seasonal_dataset.isel(time=i) for i in range(4)]
+			seasonal_data = [seasonal_dataset.isel(time=i, drop=True) for i in range(4)]
 			if self.region is not None:
 				for season_data in seasonal_data:
 					season_data.attrs['AQUA_region'] = self.region
@@ -314,6 +314,8 @@ class LatLonProfiles(Diagnostic):
 				
 		elif freq == 'annual':
 			annual_data = self.reader.timmean(data, freq=None)  # freq=None for total mean
+			if 'time' in annual_data.dims and annual_data.sizes.get('time', 0) == 1:
+				annual_data = annual_data.isel(time=0, drop=True)
 			annual_data = self.reader.fldmean(annual_data, 
 											box_brd=box_brd, 
 											lon_limits=self.lon_limits, 

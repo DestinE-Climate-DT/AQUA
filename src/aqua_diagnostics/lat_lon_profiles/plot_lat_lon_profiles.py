@@ -132,7 +132,7 @@ class PlotLatLonProfiles():
         self.std_startdate = None
         self.std_enddate = None
 
-    def plot(self, data_labels=None, ref_label=None, title=None, clean_data=True):
+    def plot(self, data_labels=None, ref_label=None, title=None):
         """
         Unified plotting method that handles all plotting scenarios based on data_type.
         
@@ -140,7 +140,6 @@ class PlotLatLonProfiles():
             data_labels (list, optional): Labels for the data.
             ref_label (str, optional): Label for the reference data.  
             title (str, optional): Title for the plot.
-            clean_data (bool, optional): Whether to clean single-timestep dimensions. Default True.
             
         Returns:
             tuple: Matplotlib figure and axes objects.
@@ -152,14 +151,8 @@ class PlotLatLonProfiles():
             # For seasonal plots, delegate to the specialized seasonal method
             return self._plot_seasonal(data_labels=data_labels, title=title)
         
-        # For annual plots, handle data cleaning if requested
         data_to_plot = self.data
         ref_to_plot = self.ref_data
-        
-        if clean_data:
-            data_to_plot = self._clean_temporal_dims(self.data)
-            if self.ref_data is not None:
-                ref_to_plot = self._clean_temporal_dims([self.ref_data])[0]
         
         # Call the graphics function
         return plot_lat_lon_profiles(
@@ -172,34 +165,6 @@ class PlotLatLonProfiles():
             title=title,
             loglevel=self.loglevel
         )
-
-    def _clean_temporal_dims(self, data_list):
-        """
-        Clean single-timestep temporal dimensions from data.
-        
-        Args:
-            data_list (list): List of DataArrays to clean
-            
-        Returns:
-            list: List of cleaned DataArrays
-        """
-        cleaned_data = []
-        for i, data_item in enumerate(data_list):
-            if data_item is None:
-                cleaned_data.append(None)
-                continue
-            
-            # Check if has single time dimension that should be removed
-            if 'time' in data_item.dims and data_item.sizes.get('time', 0) == 1:
-                cleaned_item = data_item.isel(time=0, drop=True)
-                self.logger.debug(f"Removed single time dimension from data {i}")
-            else:
-                cleaned_item = data_item
-            
-            cleaned_data.append(cleaned_item)
-            self.logger.debug(f"Data {i}: shape={cleaned_item.shape}, dims={cleaned_item.dims}")
-        
-        return cleaned_data
 
     def _plot_seasonal(self, data_labels=None, title=None):
         """
