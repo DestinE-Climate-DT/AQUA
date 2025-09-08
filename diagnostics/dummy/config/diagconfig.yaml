@@ -1,9 +1,0 @@
-# Config file for dummy diagnostics
-# This file is in YAML format
-# Adapt it to your needs
-
-# It may contains folder defaults
-outputfig: './figs'
-outputdir: './output'
-filename: 'dummy'
-custom_diagvar: 'I was read from config.yaml'
