@@ -100,7 +100,8 @@ class PlotLatLonProfiles():
     def get_data_info(self):
         """Extract metadata from data arrays based on data_type."""
         self.catalogs, self.models, self.exps = [], [], []
-        
+        self.region = None
+
         if not self.data or len(self.data) == 0:
             raise ValueError("No data available for metadata extraction")
         
@@ -119,6 +120,10 @@ class PlotLatLonProfiles():
                 self.catalogs.append(data_item.AQUA_catalog)
                 self.models.append(data_item.AQUA_model)
                 self.exps.append(data_item.AQUA_exp)
+
+                # Extract region if not already set
+                if self.region is None and hasattr(data_item, 'AQUA_region'):
+                    self.region = data_item.AQUA_region
         
         # Set mean_type from first data item if not already set
         if self.mean_type is None and data_items:
@@ -127,6 +132,7 @@ class PlotLatLonProfiles():
                 self.mean_type = first_data.mean_type
         
         self.logger.debug(f'Extracted metadata for {len(self.models)} datasets: {list(zip(self.models, self.exps))}')
+        self.logger.debug(f'Extracted region: {self.region}')
         
         # Handle std dates
         self.std_startdate = None
@@ -295,7 +301,6 @@ class PlotLatLonProfiles():
     def run(self, 
             var,                         # Can be str or list (required)
             units=None,                  # Can be str or list 
-            region=None, 
             outputdir='./',
             rebuild=True, 
             dpi=300, 
@@ -308,7 +313,6 @@ class PlotLatLonProfiles():
         Args:
             var (str or list): Variable name(s) to be plotted.
             units (str or list, optional): Units of the variable(s).
-            region (str): Region to be used in the title and description.
             outputdir (str): Output directory to save the plot.
             rebuild (bool): If True, rebuild the plot even if it already exists.
             dpi (int): Dots per inch for the plot.
@@ -317,7 +321,6 @@ class PlotLatLonProfiles():
             plot_std (bool): Whether to plot standard deviation bands.
         """
         self.logger.info('Running PlotLatLonProfiles')
-        
         # Normalize inputs
         variables = var if isinstance(var, list) else [var]
         if units is None:
@@ -339,20 +342,20 @@ class PlotLatLonProfiles():
         
         elif actual_plot_type == 'seasonal':
             # Single variable seasonal case
-            return self._run_seasonal_single(variables[0], units_list[0], region, 
+            return self._run_seasonal_single(variables[0], units_list[0], 
                                         outputdir, rebuild, dpi, format)
         
         else:
             # annual single variable case
-            return self._run_annual_single(variables[0], units_list[0], region,
+            return self._run_annual_single(variables[0], units_list[0],
                                         outputdir, rebuild, dpi, format, plot_std)
 
-    def _run_annual_single(self, var, units, region, outputdir, rebuild, dpi, format, plot_std):
+    def _run_annual_single(self, var, units, outputdir, rebuild, dpi, format, plot_std):
         """Private method for annual single variable plotting."""
         data_label = self.set_data_labels()
         ref_label = self.set_ref_label()
-        description = self.set_description(region=region)
-        title = self.set_title(region=region, var=var, units=units)
+        description = self.set_description(region=self.region)
+        title = self.set_title(region=self.region, var=var, units=units)
         
         if plot_std and (self.std_data is not None or self.ref_std_data is not None):
             title += " (±2σ)"
@@ -360,22 +363,22 @@ class PlotLatLonProfiles():
 
         fig, _ = self.plot(data_labels=data_label, ref_label=ref_label, title=title)
         
-        region_short = region.replace(' ', '').lower() if region is not None else None
+        region_short = self.region.replace(' ', '').lower() if self.region is not None else None
         self.save_plot(fig, var=var, description=description, region=region_short, rebuild=rebuild,
                     outputdir=outputdir, dpi=dpi, format=format, diagnostic='lat_lon_profiles')
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
-    def _run_seasonal_single(self, var, units, region, outputdir, rebuild, dpi, format):
+    def _run_seasonal_single(self, var, units, outputdir, rebuild, dpi, format):
         """Private method for seasonal single variable plotting."""
         data_labels = self.set_data_labels()
-        description = self.set_description(region=region)
-        title = self.set_title(region=region, var=var, units=units)
+        description = self.set_description(region=self.region)
+        title = self.set_title(region=self.region, var=var, units=units)
         
         fig, axs = self.plot_seasonal_lines(data_labels=data_labels, 
                                             title=title)
         
-        region_short = region.replace(' ', '').lower() if region is not None else None
+        region_short = self.region.replace(' ', '').lower() if self.region is not None else None
 
         seasonal_diagnostic = 'lat_lon_profiles_seasonal'
         if self.mean_type:
