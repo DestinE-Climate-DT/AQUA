@@ -149,7 +149,7 @@ class PlotLatLonProfiles():
         
         if self.data_type == 'seasonal':
             # For seasonal plots, delegate to the specialized seasonal method
-            return self._plot_seasonal(data_labels=data_labels, title=title)
+            return self.plot_seasonal_lines(data_labels=data_labels, title=title)
         
         data_to_plot = self.data
         ref_to_plot = self.ref_data
@@ -165,12 +165,6 @@ class PlotLatLonProfiles():
             title=title,
             loglevel=self.loglevel
         )
-
-    def _plot_seasonal(self, data_labels=None, title=None):
-        """
-        Private method for seasonal plotting (delegates to existing plot_seasonal_lines).
-        """
-        return self.plot_seasonal_lines(data_labels=data_labels, title=title)
     
     def save_plot(self, 
                   fig, 
