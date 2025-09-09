@@ -115,13 +115,13 @@ class LRAgenerator():
         self.exp = self._require_param(exp, "experiment")
         self.source = self._require_param(source, "source")
         self.var = self._require_param(var, "variable string or list.")
-        self.resolution = self._require_param(resolution, "resolution")
 
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
         self.loglevel = loglevel
 
         # save parameters
+        self.resolution = resolution
         self.frequency = frequency
         self.overwrite = overwrite
         self.exclude_incomplete = exclude_incomplete
@@ -563,8 +563,9 @@ class LRAgenerator():
                                             exclude_incomplete=self.exclude_incomplete)
 
         # regrid
-        temp_data = self.reader.regrid(temp_data)
-        temp_data = self._remove_regridded(temp_data)
+        if self.resolution:
+            temp_data = self.reader.regrid(temp_data)
+            temp_data = self._remove_regridded(temp_data)
 
         if self.region:
             temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
@@ -629,23 +630,44 @@ class LRAgenerator():
                 self._concat_var_year(var, year)
         del temp_data
 
+    def append_history(self, data):
+        """
+        Append comprehensive processing history to the data attributes
+               
+        Args:
+            data: xarray Dataset or DataArray to append history to
+            
+        Returns:
+            data: Input data with updated history attribute
+        """
+        history_list = ["LRA generator"]
+        
+        # Add regridding information
+        if self.resolution:
+            history_list.append(f"regridded from {self.reader.src_grid_name} to {self.resolution}")
+        if self.frequency and self.stat:
+            history_list.append(
+                f"resampled from frequency {self.reader.timemodule.orig_freq} to {self.frequency} "
+                f"using {self.stat} statistic")
+        if self.region and self.region_name:
+            region_info = f"regional selection applied ({self.region_name})"
+            history_list.append(region_info)
+        
+        # Build the complete sentence
+        if len(history_list) == 1:
+            history = history_list[0]
+        else:
+            history = history_list[0] + ": " + ", ".join(history_list[1:])
+
+        log_history(data, history)
+
+        return data
+
     def write_chunk(self, data, outfile):
         """Write a single chunk of data - Xarray Dataset - to a specific file
         using dask if required and monitoring the progress"""
 
-        # Update data attributes for history
-        if self.frequency:
-            log_history(
-                data,
-                f"regridded from {self.reader.src_grid_name} to {self.resolution} "
-                f"and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} "
-                "through LRA generator",
-            )
-        else:
-            log_history(
-                data,
-                f"regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator",
-            )
+        data = self.append_history(data)
 
         # File to be written
         if os.path.exists(outfile):

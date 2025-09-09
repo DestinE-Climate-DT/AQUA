@@ -13,11 +13,12 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
 - Split out plotting function for vertical profile and add contour option (#2190)
 - GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
 - Separation of concerns in LRA between dask-based computation and serial netcdf writing (#2212)
 - Refactor `grids-downloader.sh` script, now outputdir is a cli argument (#2209)
-- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205)
+- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205, #2218)
 - Refactor of the `dump_yaml` utility function, now correctly handling `None` values as `null` (#2198)
 - `Reader` will now turn off areas and grids capabilities when `src_grid_name` is `False` (#2198)
 - LRA and `OutputSaver` jinja-related duplicated methods are now merged (#2198)
