@@ -1,4 +1,4 @@
-# Custom Ubuntu 24.04 Docker image with recent FDB5, ECCODES, corresponding to bundle 7.0.2.8 for the DestinE project
+# Custom Ubuntu 24.04 Docker image with recent FDB5, ECCODES, for the DestinE ClimateDT project
 
 #-----IMPORTANT-----
 # # IMPORTANT: the filename of the docker is defined in the action, and include the name of the branch
@@ -7,8 +7,8 @@
 FROM ubuntu:24.04
 
 LABEL maintainer="jost.hardenberg@polito.it"
-LABEL version="0.5"
-LABEL description="Custom docker image based ion Ubuntu 24.04 with FDB5 and ECCODES for CA DestinE"
+LABEL version="0.6"
+LABEL description="Custom docker image based ion Ubuntu 24.04 with FDB5 and ECCODES for DestinE ClimateDT"
 
 #ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update
@@ -18,10 +18,10 @@ RUN apt -y install libaec-dev gfortran
 
 # DIR definitions
 ENV INSTALL_DIR=/usr/local
-ENV ECKIT_VER=1.29.1
+ENV ECKIT_VER=1.29.3
 ENV ECCODES_VER=2.41.0
-ENV METKIT_VER=1.12.4
-ENV FDB5_VER=5.15.15
+ENV METKIT_VER=1.13.1
+ENV FDB5_VER=5.17.3
 # mars client 7.0.2
 
 # ECBUILD
