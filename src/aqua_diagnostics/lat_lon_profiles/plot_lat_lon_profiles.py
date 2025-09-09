@@ -128,8 +128,8 @@ class PlotLatLonProfiles():
         # Set mean_type from first data item if not already set
         if self.mean_type is None and data_items:
             first_data = data_items[0]
-            if first_data is not None and hasattr(first_data, 'mean_type'):
-                self.mean_type = first_data.mean_type
+            if first_data is not None and hasattr(first_data, 'AQUA_mean_type'):
+                self.mean_type = first_data.AQUA_mean_type
         
         self.logger.debug(f'Extracted metadata for {len(self.models)} datasets: {list(zip(self.models, self.exps))}')
         self.logger.debug(f'Extracted region: {self.region}')
