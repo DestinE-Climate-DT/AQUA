@@ -7,6 +7,8 @@ If you just want to run a container with AQUA, check with others if there
 is already a version of the AQUA container deployed in a shared folder in
 your target HPC environment.
 
+Containers can also be built directly using GitHub actions.
+
 ## Dockerfiles
 
 The file `Dockerfile` is used to generate an image that contains:

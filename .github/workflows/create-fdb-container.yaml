@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME_FDB: ubuntu24.04-fdb5.15.15-eccodes2.41.0-aqua
+  IMAGE_NAME_FDB: ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
        contents: read
     steps:
       - name: "Check out code"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: "Log in to registry"
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }}  --password-stdin
       - name: "build fdb container"

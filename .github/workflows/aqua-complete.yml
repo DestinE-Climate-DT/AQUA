@@ -40,7 +40,7 @@ jobs:
     continue-on-error: false
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.15.15-eccodes2.41.0-aqua:aqua-base-container
+      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
       options: --user root
     permissions:
       contents: read
