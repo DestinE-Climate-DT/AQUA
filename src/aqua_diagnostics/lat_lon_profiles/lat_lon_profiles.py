@@ -309,7 +309,7 @@ class LatLonProfiles(Diagnostic):
 				for season_data in seasonal_data:
 					season_data.attrs['AQUA_region'] = self.region
 			for season_data in seasonal_data:
-				season_data.attrs['mean_type'] = self.mean_type
+				season_data.attrs['AQUA_mean_type'] = self.mean_type
 			self.seasonal = seasonal_data
 				
 		elif freq == 'annual':
@@ -323,7 +323,7 @@ class LatLonProfiles(Diagnostic):
 											dims=dims)
 			if self.region is not None:
 				annual_data.attrs['AQUA_region'] = self.region
-			annual_data.attrs['mean_type'] = self.mean_type
+			annual_data.attrs['AQUA_mean_type'] = self.mean_type
 			self.annual = annual_data
 
 	def run(self, var: str, formula: bool = False, long_name: str = None,
