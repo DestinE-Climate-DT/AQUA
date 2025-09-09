@@ -40,14 +40,13 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
-- LatLonProfiles: refinements for diagnostic classes (#2207)
 - Dummy: removed old diagnostic (#2210)
 - Diagnostic core: `retrieve` and `_retrieve` methods can take a `months_required` argument so that diagnostics can raise an error if insufficient months of data are available. (#2205)
 - Timeseries: introduction of the catalog entry capability, default in CLI (#2198)
 - Diagnostic core: introduction of the catalog entry capability and `self.realization` attribute (#2198)
 - Ensemble: Updating the ensemble module according the the issue #1925 (#2004)
 - Timeseries: refined title and description, more attributes used (#2193)
-- New LatLonProfiles diagnostic tool (#1934)
+- New LatLonProfiles diagnostic tool (#1934 and #2207)
 - Boxplots: add support for reader_kwargs (#2149)
 - Global Biases: add the `diagnostic_name` option in config file (#2159)
 - Gregory: refined the reference label generation (#2157)
