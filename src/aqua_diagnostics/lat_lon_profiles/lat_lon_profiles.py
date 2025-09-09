@@ -314,8 +314,6 @@ class LatLonProfiles(Diagnostic):
 				
 		elif freq == 'annual':
 			annual_data = self.reader.timmean(data, freq=None)  # freq=None for total mean
-			if 'time' in annual_data.dims and annual_data.sizes.get('time', 0) == 1:
-				annual_data = annual_data.isel(time=0, drop=True)
 			annual_data = self.reader.fldmean(annual_data, 
 											box_brd=box_brd, 
 											lon_limits=self.lon_limits, 

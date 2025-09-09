@@ -88,6 +88,10 @@ class TimStat():
             # use the kwargs to feed the time dimension to define the method and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
+            
+            # Ensure singleton time dimension is dropped when doing total mean/stat
+            if resample_freq is None and 'time' in out.dims and out.sizes.get('time', 0) == 1:
+                out = out.isel(time=0, drop=True)
         else:
             raise KeyError(f'{stat} is not a statistic supported by AQUA TimStat()')
 
