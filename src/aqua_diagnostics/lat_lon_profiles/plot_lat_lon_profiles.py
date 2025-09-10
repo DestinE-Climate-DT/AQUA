@@ -100,6 +100,8 @@ class PlotLatLonProfiles():
         """Extract metadata from data arrays based on data_type."""
         self.catalogs, self.models, self.exps = [], [], []
         self.region = None
+        self.short_name = None
+        self.standard_name = None
 
         if not self.data or len(self.data) == 0:
             raise ValueError("No data available for metadata extraction")
@@ -123,6 +125,12 @@ class PlotLatLonProfiles():
                 # Extract region if not already set
                 if self.region is None and hasattr(data_item, 'AQUA_region'):
                     self.region = data_item.AQUA_region
+
+                # Extract variable names if not already set
+                if self.short_name is None and hasattr(data_item, 'short_name'):
+                    self.short_name = data_item.short_name
+                if self.standard_name is None and hasattr(data_item, 'standard_name'):
+                    self.standard_name = data_item.standard_name
         
         # Set mean_type from first data item if not already set
         if self.mean_type is None and data_items:
@@ -172,9 +180,7 @@ class PlotLatLonProfiles():
     
     def save_plot(self, 
                   fig, 
-                  var: str = None, 
                   description: str = None, 
-                  region: str = None, 
                   rebuild: bool = True,
                   outputdir: str = './', 
                   dpi: int = 300, 
@@ -185,9 +191,7 @@ class PlotLatLonProfiles():
 
         Args:
             fig (matplotlib.figure.Figure): Figure object.
-            var (str): Variable name to be used in the title and description.
             description (str): Description of the plot.
-            region (str): Region to be used in the title and description.
             rebuild (bool): If True, rebuild the plot even if it already exists.
             outputdir (str): Output directory to save the plot.
             dpi (int): Dots per inch for the plot.
@@ -203,6 +207,10 @@ class PlotLatLonProfiles():
         outputsaver = OutputSaver(diagnostic='lat_lon_profiles', outputdir=outputdir,
                                 loglevel=self.loglevel, **metadata)
         
+        # Use class attributes
+        var = getattr(self, 'short_name', None) or getattr(self, 'standard_name', None)
+        region = self.region
+
         # Build extra_keys
         extra_keys = {}
         if var: extra_keys['var'] = var
@@ -362,8 +370,7 @@ class PlotLatLonProfiles():
 
         fig, _ = self.plot(data_labels=data_label, ref_label=ref_label, title=title)
         
-        region_short = self.region.replace(' ', '').lower() if self.region is not None else None
-        self.save_plot(fig, var=var, description=description, region=region_short, rebuild=rebuild,
+        self.save_plot(fig, description=description, rebuild=rebuild,
                     outputdir=outputdir, dpi=dpi, format=format, diagnostic='lat_lon_profiles')
         
         self.logger.info('PlotLatLonProfiles completed successfully')
@@ -377,15 +384,13 @@ class PlotLatLonProfiles():
         fig, axs = self.plot_seasonal_lines(data_labels=data_labels, 
                                             title=title)
         
-        region_short = self.region.replace(' ', '').lower() if self.region is not None else None
-
         seasonal_diagnostic = 'lat_lon_profiles_seasonal'
         if self.mean_type:
             seasonal_diagnostic = f'lat_lon_profiles_seasonal_{self.mean_type}'
 
-        self.save_plot(fig, var=var, description=description, region=region_short, 
-                    rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
-                    diagnostic=seasonal_diagnostic)
+        self.save_plot(fig, description=description, 
+                       rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
+                       diagnostic=seasonal_diagnostic)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
@@ -398,7 +403,7 @@ class PlotLatLonProfiles():
             label = f"{var_name} ({unit})" if unit else var_name
             data_labels.append(label)
         
-        # Use the existing seasonal plotting function
+        # Use the seasonal plotting function
         fig, axs = plot_seasonal_lat_lon_profiles(
             seasonal_data=self.data,                    # Should be [DJF, MAM, JJA, SON] structure
             ref_data=self.ref_data,
@@ -408,9 +413,9 @@ class PlotLatLonProfiles():
             loglevel=self.loglevel
         )
         
-        self.save_plot(fig, var='_'.join(variables), 
-                    description=f"Multi-variable seasonal comparison: {', '.join(variables)}",
-                    diagnostic='lat_lon_profiles_seasonal_multi')
+        self.save_plot(fig, 
+                       description=f"Multi-variable seasonal comparison: {', '.join(variables)}",
+                       diagnostic='lat_lon_profiles_seasonal_multi')
         
         self.logger.info('PlotLatLonProfiles completed successfully')
         return fig, axs
