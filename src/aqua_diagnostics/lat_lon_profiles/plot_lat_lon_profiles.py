@@ -142,8 +142,8 @@ class PlotLatLonProfiles():
         self.logger.debug(f'Extracted region: {self.region}')
         
         # Handle std dates
-        self.std_startdate = None
-        self.std_enddate = None
+        self.std_startdate = getattr(self.ref_std_data, 'std_startdate', None) if self.ref_std_data else None
+        self.std_enddate = getattr(self.ref_std_data, 'std_enddate', None) if self.ref_std_data else None
 
     def plot(self, data_labels=None, ref_label=None, title=None):
         """
@@ -300,8 +300,8 @@ class PlotLatLonProfiles():
             description += f'and {remaining} additional dataset(s) '
 
         if hasattr(self, 'std_startdate') and self.std_startdate is not None and hasattr(self, 'std_enddate') and self.std_enddate is not None:
-            description += f'with standard deviation from {self.std_startdate} to {self.std_enddate} '
-
+            description += f'with reference data standard deviation bands calculated from {self.std_startdate} to {self.std_enddate} '
+            
         self.logger.debug('Description: %s', description)
         return description
 
@@ -313,6 +313,7 @@ class PlotLatLonProfiles():
             dpi=300, 
             format='png', 
             plot_type=None,              # Override data_type if needed
+            ref_std_data=None,
             plot_std=False):
         """
         Unified run method that handles all plotting scenarios.
@@ -325,6 +326,7 @@ class PlotLatLonProfiles():
             dpi (int): Dots per inch for the plot.
             format (str): Format of the plot ('png' or 'pdf'). Default is 'png'.
             plot_type (str): Override data_type ('annual' or 'seasonal').
+            ref_std_data (list): Reference standard deviation data for each season.
             plot_std (bool): Whether to plot standard deviation bands.
         """
         self.logger.info('Running PlotLatLonProfiles')
@@ -350,7 +352,7 @@ class PlotLatLonProfiles():
         elif actual_plot_type == 'seasonal':
             # Single variable seasonal case
             return self._run_seasonal_single(variables[0], units_list[0], 
-                                        outputdir, rebuild, dpi, format)
+                                        outputdir, rebuild, dpi, format, ref_std_data)
         
         else:
             # annual single variable case
@@ -375,14 +377,15 @@ class PlotLatLonProfiles():
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
-    def _run_seasonal_single(self, var, units, outputdir, rebuild, dpi, format):
+    def _run_seasonal_single(self, var, units, outputdir, rebuild, dpi, format, ref_std_data):
         """Private method for seasonal single variable plotting."""
         data_labels = self.set_data_labels()
         description = self.set_description(region=self.region)
         title = self.set_title(region=self.region, var=var, units=units)
         
         fig, axs = self.plot_seasonal_lines(data_labels=data_labels, 
-                                            title=title)
+                                            title=title,
+                                            ref_std_data=ref_std_data)
         
         seasonal_diagnostic = 'lat_lon_profiles_seasonal'
         if self.mean_type:
@@ -423,7 +426,8 @@ class PlotLatLonProfiles():
     def plot_seasonal_lines(self, 
                             data_labels=None, 
                             title=None, 
-                            style=None):
+                            style=None,
+                            ref_std_data=None):
         """
         Plot seasonal means using plot_seasonal_lat_lon_profiles.
         Creates a 4-panel plot with DJF, MAM, JJA, SON only (no annual).
