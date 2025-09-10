@@ -142,8 +142,12 @@ class PlotLatLonProfiles():
         self.logger.debug(f'Extracted region: {self.region}')
         
         # Handle std dates
-        self.std_startdate = getattr(self.ref_std_data, 'std_startdate', None) if self.ref_std_data else None
-        self.std_enddate = getattr(self.ref_std_data, 'std_enddate', None) if self.ref_std_data else None
+        if self.ref_std_data is not None:
+            self.std_startdate = getattr(self.ref_std_data, 'std_startdate', None)
+            self.std_enddate = getattr(self.ref_std_data, 'std_enddate', None)
+        else:
+            self.std_startdate = None
+            self.std_enddate = None
 
     def plot(self, data_labels=None, ref_label=None, title=None):
         """
