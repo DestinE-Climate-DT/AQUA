@@ -8,13 +8,14 @@ from aqua.util import evaluate_colorbar_limits
 from .styles import ConfigStyle
 
 
-def plot_vertical_profile(data: xr.DataArray, var: str,
+def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_name: str = "plev", x_coord: str = "lat",
                           lev_min: Optional[float] = None,lev_max: Optional[float] = None,
                           vmin: Optional[float] = None, vmax: Optional[float] = None,
                           nlevels: int = 18, 
                           title: Optional[str] = None, style: Optional[str] = None,
                           logscale: bool = False,
+                          cbar: bool = True,
                           return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
                           fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                           ax_pos: Tuple[int, int, int] = (1, 1, 1),
@@ -74,7 +75,8 @@ def plot_vertical_profile(data: xr.DataArray, var: str,
     ax.set_xlabel("Latitude") if x_coord == "lat" else x_coord
     ax.set_ylabel("Pressure Level (Pa)" if lev_name == "plev" else lev_name)
     ax.invert_yaxis()
-    fig.colorbar(cax, ax=ax, label=f"{var} [{data.attrs.get('units', '')}]")
+    if cbar:
+        fig.colorbar(cax, ax=ax, label=f"{var} [{data.attrs.get('units', '')}]")
     ax.grid(True)
 
     if title:

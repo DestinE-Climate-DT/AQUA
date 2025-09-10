@@ -111,6 +111,7 @@ class Trends(Diagnostic):
             )
             trend_dict[var].attrs = data[var].attrs
         trend_data = xr.Dataset(trend_dict)
+        trend_data.attrs["AQUA_region"] = self.region
         self.logger.info("Trend value calculated")
         return trend_data
 

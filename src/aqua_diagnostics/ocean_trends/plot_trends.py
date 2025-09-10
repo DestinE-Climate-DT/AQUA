@@ -2,8 +2,8 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 
-# from .multiple_hovmoller import plot_multi_hovmoller
 from .multiple_map import plot_maps
+from .multivar_vertical_profiles import plot_multivars_vertical_profile
 
 xr.set_options(keep_attrs=True)
 
@@ -29,7 +29,7 @@ class PlotTrends:
         self.catalog = self.data[self.vars[0]].AQUA_catalog
         self.model = self.data[self.vars[0]].AQUA_model
         self.exp = self.data[self.vars[0]].AQUA_exp
-        self.region = self.data.region
+        self.region = self.data.attrs.get("AQUA_region", "global")
 
         self.outputsaver = OutputSaver(
             diagnostic=self.diagnostic,
@@ -68,12 +68,12 @@ class PlotTrends:
     def plot_zonal(self):
         # self.set_levels()
         self.set_data_list()
-        self.set_suptitle()
+        self.set_suptitle(plot_type='Zonal ')
         self.set_title()
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
-        fig = plot_maps(
+        fig = plot_multivars_vertical_profile(
             maps=self.data_list,
             nrows=self.nrows,
             ncols=self.ncols,
@@ -131,9 +131,11 @@ class PlotTrends:
                 data_var = self.data[var]
                 self.data_list.append(data_var)
 
-    def set_suptitle(self):
+    def set_suptitle(self, plot_type = None):
         """Set the title for the Hovmoller plot."""
-        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region}"
+        if plot_type is None:
+            plot_type = ""
+        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type}Trends"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
