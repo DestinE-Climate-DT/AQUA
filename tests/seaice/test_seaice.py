@@ -33,12 +33,12 @@ class TestSeaIce:
 
         # Invalid cases (Errors expected)
         ('wrong_method', 'antarctic',   None, None, 'siconc',   None, ValueError, "Invalid method"),
-        ('extent',       'weddell_sea', None, None, 'errorvar', None, (KeyError, NoDataError),   None),
-        ('volume',       'antarctic',   None, None, 'errorvar', None, (KeyError, NoDataError),   None),
+        ('extent',       'weddell_sea', None, None, 'errorvar', None, KeyError,   None),
+        ('volume',       'antarctic',   None, None, 'errorvar', None, KeyError,   None),
 
         # Invalid standard deviation cases
-        ('extent', 'weddell_sea', None, None, 'errorvar', None, (KeyError, NoDataError), None),
-        ('volume', 'antarctic',   None, None, 'errorvar', None, (KeyError, NoDataError), None)
+        ('extent', 'weddell_sea', None, None, 'errorvar', None, KeyError, None),
+        ('volume', 'antarctic',   None, None, 'errorvar', None, KeyError, None)
         ]
     )
     def test_seaice_compute_with_std(self, method, region, value, expected_units, variable,
@@ -171,7 +171,3 @@ class TestSeaIce:
         meanres = result_data.mean(skipna=True).values
 
         assert meanres == pytest.approx(value, rel=approx_rel, abs=abs_rel)
-
-
-
-

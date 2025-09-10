@@ -66,7 +66,7 @@ class TestGregory:
         data_labels = plt.set_data_labels()
         ref_label = plt.set_ref_label()
         fig = plt.plot(title=title, data_labels=data_labels, ref_label=ref_label)
-        description = plt.set_description()
+        _ = plt.set_description()
         plt.save_plot(fig, outputdir=tmp_path, diagnostic_product='gregory')
 
         filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.r1.multiref.png'

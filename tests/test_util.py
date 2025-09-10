@@ -7,6 +7,7 @@ import pandas as pd
 from aqua import Reader
 from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
 from aqua.util import format_realization, extract_attrs
+from aqua.util.string import strlist_to_phrase, lat_to_phrase
 
 @pytest.fixture
 def test_text():
@@ -160,6 +161,7 @@ def test_format_realization():
     assert format_realization("test") == "test"
     assert format_realization("") == "r1"
     assert format_realization(None) == "r1"
+    assert format_realization(["1", "2", "test", 3, None]) == ["r1", "r2", "test", "r3", "r1"]
 
 @pytest.mark.aqua
 def test_extract_attrs():
@@ -172,7 +174,34 @@ def test_extract_attrs():
     result = extract_attrs([ds_with_attr, ds_without_attr], "attr") 
     assert result == ["value1", None] # List of datasets
 
+@pytest.mark.aqua
+def test_strlist_to_phrase():
+    """Test the strlist_to_phrase function"""
+    # Test empty list
+    assert strlist_to_phrase([]) == ""
+    # Test single item
+    assert strlist_to_phrase(["A"]) == "A"
+    assert strlist_to_phrase(["Hello"]) == "Hello"
+    # Test two items
+    assert strlist_to_phrase(["A", "B"]) == "A and B"
+    assert strlist_to_phrase(["Hello", "World"]) == "Hello and World"
+    # Test more than three items
+    assert strlist_to_phrase(["A", "B", "C", "D"]) == "A, B, C and D"
+    assert strlist_to_phrase(["A", "B", "C", "D"], oxford_comma=True) == "A, B, C, and D"
+    # Test with mixed content
+    assert strlist_to_phrase(["Mod", "Exp", "Source"]) == "Mod, Exp and Source"
+    assert strlist_to_phrase(["Mod", "Exp", "Source"], oxford_comma=True) == "Mod, Exp, and Source"
 
+@pytest.mark.aqua
+def test_lat_to_phrase():
+    """Test the lat_to_phrase function"""
+    # Test northern latitudes
+    assert lat_to_phrase(90) == "90°N"
+    # Test southern latitudes
+    assert lat_to_phrase(-1) == "1°S"
+    # Test 0 latitude
+    assert lat_to_phrase(0) == "0°N"
+    
 # Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
 # def test_flip_time():
 #     """Test the flip_time function"""

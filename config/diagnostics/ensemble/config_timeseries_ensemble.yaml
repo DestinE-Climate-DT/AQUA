@@ -3,47 +3,58 @@
 # --model, --exp, --source, --outputdir, --catalog
 
 # This yaml file will only have either annual or monthly
-models_monthly:
-  - model: 'IFS-NEMO'
+datasets:
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-monthly'
-  - model: 'IFS-FESOM'
+  - catalog: null  
+    model: 'IFS-FESOM'
     exp: 'historical-1990'
-    source: 'aqua-timeseries-monthly'
-
-models_annual:
-  - model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'aqua-timeseries-annual'
-  - model: 'IFS-FESOM'
+    source: 'aqua-timeseries-monthly' 
+  - catalog: null
+    model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-annual'
+  - catalog: null
+    model: 'IFS-FESOM'
+    exp: 'historical-1990'
+    source: 'aqua-timeseries-annual'
 
-reference_model_monthly:  
-  - model: 'ERA5'
+# Reference
+references:
+  - catalog: null  
+    model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-monthly'
-
-reference_model_annual:  
-  - model: 'ERA5'
+  - catalog: null  
+    model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-annual'
 
+setup:
+  loglevel: 'WARNING'
 
-outputdir: "./"
+output:
+  outputdir: "./"
+  #rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  #dpi: 300
 
-# This is the variable that will be plotted as timeseries
-variable: '2t'
-
-timeseries_plot_params:
-  startdate: '1990-01-01'
-  enddate: '2000-12-31'
-  plot_std: True
-  plot_ensemble_members: False
-  ensemble_label: 'Multi-model'
-  ref_label: 'ERA5'
-  figure_size: [10,5]
-  label_ncol: 3
-  label_size: 7
-  pdf_save: True
-  units: 
+diagnostics:
+  ensemble:
+    run: true
+    diagnostic_name: 'EnsembleTimeseries'
+    variable: '2t'
+    params:
+      default:
+        startdate_data: "1990-01-01"
+        enddate_data: "2005-01-01"
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2005-01-01"
+    plot_params:
+      default:
+        title: "Multi-Model Ensemble Statistics"
+        plot_ensemble_members: False

@@ -11,7 +11,7 @@ import argparse
 import sys
 
 from aqua.logger import log_configure
-from aqua.util import get_arg, ConfigPath
+from aqua.util import get_arg
 from aqua.version import __version__ as aqua_version
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
@@ -50,13 +50,16 @@ if __name__ == '__main__':
     # Load the configuration file and then merge it with the command-line arguments,
     # overwriting the configuration file values with the command-line arguments.
     config_dict = load_diagnostic_config(diagnostic='seaice', config=args.config,
-                                         default_config='config/config_seaice.yaml',
+                                         default_config='config_seaice.yaml',
                                          loglevel=loglevel)
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
     logger.info("Loaded config_dict")
     
     # Set the loglevel to the config_file
     config_dict['setup']['loglevel'] = loglevel
+
+    # Load region dict through dummy method access
+    regions_dict = SeaIce(model='', exp='', source='')._load_regions_from_file(diagnostic='seaice')    
 
     regrid = get_arg(args, 'regrid', None)
 
@@ -74,14 +77,17 @@ if __name__ == '__main__':
     save_png  = config_dict['output'].get('save_png', True)
     dpi = config_dict['output'].get('dpi', 300)
 
+    # Use the top-level datasets
+    datasets = config_dict['datasets']
+
     # ============= Sea Ice diagnostic - Timeseries diagnostic ============
     # =====================================================================
-    if ('seaice_timeseries' in config_dict) and (config_dict['seaice_timeseries']['run']):
+    if ('seaice_timeseries' in config_dict['diagnostics'] and config_dict['diagnostics']['seaice_timeseries']['run']):
         
         # Initialise dict to store data to plot
         plot_ts_seaice = {}
 
-        conf_dict_ts = config_dict['seaice_timeseries']
+        conf_dict_ts = config_dict['diagnostics']['seaice_timeseries']
         logger.info("Executing Sea ice timeseries diagnostic for loaded config_dict.")
 
         # Initialize a list of len from the number of datasets
@@ -93,37 +99,29 @@ if __name__ == '__main__':
             startdate = conf_dict_ts['startdate']
             enddate   = conf_dict_ts['enddate']
             
-            # Loop over the model datasets
-            if 'datasets' in conf_dict_ts:
-                datasets = conf_dict_ts['datasets']
+            # Initialise monthly_models with the number of datasets
+            monthly_mod = [None] * len(datasets)
 
-                # Initialise monthly_models with the number of datasets
-                monthly_mod = [None] * len(datasets)
-
-                for i, dataset in enumerate(datasets):
-
-                    # Get the pre-defined varnames from each method 
-                    mod_var = (dataset['varname']).get(method)
-
-                    # Get specific stra-end date for dataset if provided in config
-                    if "monthly" in dataset['time']:
-                        # Integrate by method the model data and store them in a list.
-                        # Get specific start-enddate for dataset if provided in 
-                        # config or (if None) get entire available time (only for models)
-                        seaice = SeaIce(model=dataset['model'], 
-                                        exp=dataset['exp'], 
-                                        source=dataset['source'], 
-                                        regions=regions,
-                                        startdate=dataset.get('startdate', None), 
-                                        enddate=dataset.get('enddate', None), 
-                                        regrid=dataset.get('regrid', None),
-                                        outputdir=outputdir,
-                                        loglevel=config_dict['setup']['loglevel'])
-
-                        monthly_mod[i] = seaice.compute_seaice(method=method, var=mod_var, reader_kwargs=reader_kwargs)
-
-                    seaice.save_netcdf(monthly_mod[i], 'SeaIce', diagnostic_product=f"{dataset['source']}_{method}_timeseries")
+            for i, dataset in enumerate(datasets):
+                # Get the variable name for this method from the diagnostic configuration
+                mod_var = conf_dict_ts['varname'][method]
                 
+                # Integrate by method the model data and store them in a list.
+                seaice = SeaIce(model=dataset['model'], 
+                                exp=dataset['exp'], 
+                                source=dataset['source'], 
+                                regions=regions,
+                                startdate=dataset.get('startdate', None), 
+                                enddate=dataset.get('enddate', None), 
+                                regrid=dataset.get('regrid', None),
+                                outputdir=outputdir,
+                                loglevel=config_dict['setup']['loglevel'])
+
+                monthly_mod[i] = seaice.compute_seaice(method=method, var=mod_var, reader_kwargs=reader_kwargs)
+
+                seaice.save_netcdf(monthly_mod[i], 'seaice', diagnostic_product='timeseries', 
+                                   extra_keys={'method': method, 'source': dataset['source'], 'regions_domain': "_".join(regions)})
+            
                 # Update the dict
                 plot_ts_seaice['monthly_models'] = monthly_mod
             
@@ -145,9 +143,6 @@ if __name__ == '__main__':
                         logger.info(f"Skipping ref data {reference['model']}, {reference['exp']}, "
                                     f"{reference['source']} as it is not meant to operate for method: '{method}'")
                         continue
-                    
-                    # create dummy class to access its method 
-                    regions_dict = SeaIce(model='', exp='', source='')._load_regions_from_file(diagnostic='seaice')
 
                     domain_ref = reference.get('domain', None)
 
@@ -170,11 +165,13 @@ if __name__ == '__main__':
                         monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
                                                                                        calc_std_freq=calc_std_freq, reader_kwargs=reader_kwargs)
 
-                        seaice_ref.save_netcdf(monthly_std_ref[i], 'SeaIce', diagnostic_product=f"{reference['source']}_{method}_timeseries_std")
+                        seaice_ref.save_netcdf(monthly_std_ref[i], 'seaice', diagnostic_product='timeseries_std',
+                                               extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
                     else:
                         monthly_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), reader_kwargs=reader_kwargs)
                     
-                    seaice_ref.save_netcdf(monthly_ref[i], 'SeaIce', diagnostic_product=f"{reference['source']}_{method}_timeseries")
+                    seaice_ref.save_netcdf(monthly_ref[i], 'seaice', diagnostic_product='timeseries',
+                                           extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
                 
                 # Update the dict
                 plot_ts_seaice['monthly_ref'] = monthly_ref
@@ -196,12 +193,12 @@ if __name__ == '__main__':
 
     # ================ Sea Ice diagnostic - Seasonal Cycle ================
     # =====================================================================
-    if ('seaice_seasonal_cycle' in config_dict) and (config_dict['seaice_seasonal_cycle']['run']):
+    if ('seaice_seasonal_cycle' in config_dict['diagnostics'] and config_dict['diagnostics']['seaice_seasonal_cycle']['run']):
 
         # Initialise dict to store data to plot
         plot_ts_seaice = {}
 
-        conf_dict_ts = config_dict['seaice_seasonal_cycle']
+        conf_dict_ts = config_dict['diagnostics']['seaice_seasonal_cycle']
         logger.info("Executing Sea ice seasonal cycle diagnostic for loaded config_dict.")
 
         # Initialize a list of len from the number of datasets
@@ -212,41 +209,33 @@ if __name__ == '__main__':
             regions   = conf_dict_ts['regions']
             startdate = conf_dict_ts['startdate']
             enddate   = conf_dict_ts['enddate']
+
+            # Initialise monthly_models with the number of datasets
+            monthly_mod = [None] * len(datasets)
+
+            for i, dataset in enumerate(datasets):
+                # Get the variable name for this method from the diagnostic configuration
+                mod_var = conf_dict_ts['varname'][method]
+
+                # Integrate by method the model data and store them in a list.
+                seaice = SeaIce(model=dataset['model'], 
+                                exp=dataset['exp'], 
+                                source=dataset['source'], 
+                                regions=regions,
+                                startdate=dataset.get('startdate', None), 
+                                enddate=dataset.get('enddate', None), 
+                                regrid=dataset.get('regrid', None),
+                                outputdir=outputdir,
+                                loglevel=config_dict['setup']['loglevel'])
+
+                monthly_mod[i] = seaice.compute_seaice(method=method, var=mod_var, 
+                                                       get_seasonal_cycle=True, reader_kwargs=reader_kwargs)
+
+                seaice.save_netcdf(monthly_mod[i], 'seaice', diagnostic_product='seasonal_cycle', 
+                                   extra_keys={'method': method, 'source': dataset['source'], 'regions_domain': "_".join(regions)})
             
-            # Loop over the model datasets
-            if 'datasets' in conf_dict_ts:
-                datasets = conf_dict_ts['datasets']
-
-                # Initialise monthly_models with the number of datasets
-                monthly_mod = [None] * len(datasets)
-
-                for i, dataset in enumerate(datasets):
-
-                    # Get the pre-defined varnames from each method 
-                    mod_var = (dataset['varname']).get(method)
-
-                    # Get specific stra-end date for dataset if provided in config
-                    if "monthly" in dataset['time']:
-                        # Integrate by method the model data and store them in a list.
-                        # Get specific start-enddate for dataset if provided in 
-                        # config or (if None) get entire available time (only for models)
-                        seaice = SeaIce(model=dataset['model'], 
-                                        exp=dataset['exp'], 
-                                        source=dataset['source'], 
-                                        regions=regions,
-                                        startdate=dataset.get('startdate', None), 
-                                        enddate=dataset.get('enddate', None), 
-                                        regrid=dataset.get('regrid', None),
-                                        outputdir=outputdir,
-                                        loglevel=config_dict['setup']['loglevel'])
-
-                        monthly_mod[i] = seaice.compute_seaice(method=method, var=mod_var, 
-                                                               get_seasonal_cycle=True, reader_kwargs=reader_kwargs)
-
-                    seaice.save_netcdf(monthly_mod[i], 'SeaIce', diagnostic_product=f"{dataset['source']}_{method}_SeasCycle")
-                
-                # Update the dict
-                plot_ts_seaice['monthly_models'] = monthly_mod
+            # Update the dict
+            plot_ts_seaice['monthly_models'] = monthly_mod
             
             # Initialize a list of len from the number of references
             if 'references' in conf_dict_ts:
@@ -266,9 +255,6 @@ if __name__ == '__main__':
                         logger.info(f"Skipping ref data {reference['model']}, {reference['exp']}, "
                                     f"{reference['source']} as it is not meant to operate for method: '{method}'")
                         continue
-                    
-                    # create dummy class to access its method 
-                    regions_dict = SeaIce(model='', exp='', source='')._load_regions_from_file(diagnostic='seaice')
 
                     domain_ref = reference.get('domain', None)
 
@@ -291,13 +277,15 @@ if __name__ == '__main__':
                         monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
                                                                                        calc_std_freq=calc_std_freq, 
                                                                                        get_seasonal_cycle=True, reader_kwargs=reader_kwargs)
-                        seaice_ref.save_netcdf(monthly_std_ref[i], 'SeaIce', diagnostic_product=f"{reference['source']}_{method}_SeasCycle_std")
+                        seaice_ref.save_netcdf(monthly_std_ref[i], 'seaice', diagnostic_product='seasonal_cycle_std',
+                                               extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
                     else:
                         monthly_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
                                                                    get_seasonal_cycle=True, 
                                                                    reader_kwargs=reader_kwargs)
-                    
-                    seaice_ref.save_netcdf(monthly_ref[i], 'SeaIce', diagnostic_product=f"{reference['source']}_{method}_SeasCycle")
+                                                                   
+                    seaice_ref.save_netcdf(monthly_ref[i], 'seaice', diagnostic_product='seasonal_cycle',
+                                           extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
 
                 # Update the dict
                 plot_ts_seaice['monthly_ref'] = monthly_ref
@@ -319,9 +307,9 @@ if __name__ == '__main__':
 
     # ================ Sea Ice diagnostic - 2D Bias Maps ================
     # ===================================================================
-    if ('seaice_2d_bias' in config_dict) and (config_dict['seaice_2d_bias']['run']):
+    if ('seaice_2d_bias' in config_dict['diagnostics'] and config_dict['diagnostics']['seaice_2d_bias']['run']):
 
-        conf_dict_2d = config_dict['seaice_2d_bias']
+        conf_dict_2d = config_dict['diagnostics']['seaice_2d_bias']
         logger.info("Executing Sea ice 2D bias diagnostic for loaded config_dict.")
 
         # Get info
@@ -337,33 +325,31 @@ if __name__ == '__main__':
             # Initialise dict to store data to plot
             plot_bias_seaice = {}
 
-            # Loop over the model datasets
-            if 'datasets' in conf_dict_2d:
-                datasets = conf_dict_2d['datasets']
+            # Initialise monthly_models with the number of datasets
+            clims_mod = [None] * len(datasets)
 
-                # Initialise monthly_models with the number of datasets
-                clims_mod = [None] * len(datasets)
+            for i, dataset in enumerate(datasets):
+                # Get the variable name for this method from the diagnostic configuration
+                mod_var = conf_dict_2d['varname'][method]
 
-                for i, dataset in enumerate(datasets):
-                    
-                    mod_var = (dataset['varname']).get(method)
+                # Compute 2D sea ice data for the model
+                seaice = SeaIce(model=dataset['model'], exp=dataset['exp'], 
+                                source=dataset['source'], 
+                                regions=regions,
+                                startdate=dataset.get('startdate', None), 
+                                enddate=dataset.get('enddate', None), 
+                                regrid=dataset.get('regrid', None),
+                                outputdir=outputdir,
+                                loglevel=config_dict['setup']['loglevel'])
+                
+                # Compute 2D data for each region
+                clims_mod[i] = seaice.compute_seaice(method=method, var=mod_var, stat='mean', freq='monthly', reader_kwargs=reader_kwargs)
+                
+                seaice.save_netcdf(clims_mod[i], 'seaice', diagnostic_product='bias_2d',
+                                   extra_keys={'method': method, 'source':dataset['source'], 
+                                   'exp':dataset['exp'], 'regions_domain': "_".join(regions)})
 
-                    # Compute 2D sea ice data for the model
-                    seaice = SeaIce(model=dataset['model'], exp=dataset['exp'], 
-                                    source=dataset['source'], 
-                                    regions=regions,
-                                    startdate=dataset.get('startdate', None), 
-                                    enddate=dataset.get('enddate', None), 
-                                    regrid=dataset.get('regrid', None),
-                                    outputdir=outputdir,
-                                    loglevel=config_dict['setup']['loglevel'])
-                    
-                    # Compute 2D data for each region
-                    clims_mod[i] = seaice.compute_seaice(method=method, var=mod_var, stat='mean', freq='monthly', reader_kwargs=reader_kwargs)
-                    
-                    seaice.save_netcdf(clims_mod[i], 'SeaIce', diagnostic_product=f"{dataset['exp']}_{dataset['source']}_{method}_2d")
-
-                plot_bias_seaice['models'] = clims_mod
+            plot_bias_seaice['models'] = clims_mod
             
             # Initialize a list of len from the number of references
             if 'references' in conf_dict_2d:
@@ -379,9 +365,6 @@ if __name__ == '__main__':
                         logger.info(f"Skipping ref data {reference['model']}, {reference['exp']}, "
                                     f"{reference['source']} as it is not meant to operate for method: '{method}'")
                         continue
-
-                    # create dummy class to access its method 
-                    regions_dict = SeaIce(model='', exp='', source='')._load_regions_from_file(diagnostic='seaice')
 
                     domain_ref = reference.get('domain', None)
 
@@ -403,7 +386,9 @@ if __name__ == '__main__':
                     clims_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
                                                              stat='mean', freq='monthly', reader_kwargs=reader_kwargs)
                     
-                    seaice.save_netcdf(clims_ref[i], 'SeaIce', diagnostic_product=f"{reference['exp']}_{reference['source']}_{method}_2d")
+                    seaice_ref.save_netcdf(clims_ref[i], 'seaice', diagnostic_product='bias_2d',
+                                           extra_keys={'method': method, 'source':reference['source'], 
+                                           'exp':reference['exp'], 'regions_domain': "_".join(regs_indomain)})
 
                 plot_bias_seaice['ref'] = clims_ref
 

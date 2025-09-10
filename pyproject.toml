@@ -13,7 +13,8 @@ authors = [ # AQUA core team reported here
     {name = "Silvia Caprioli", email = "silvia.caprioli@polito.it"},
     {name = "Jost von Hardenberg", email = "jost.hardenberg@polito.it"},
     {name = "Natalia Nazarova", email = "natalia.nazarova@polito.it"},
-    {name = "Supriyo Ghosh", email = "supriyo.ghosh@bsc.es"}
+    {name = "Supriyo Ghosh", email = "supriyo.ghosh@bsc.es"},
+    {name = "Maqsood Mubarak Rajput", email = "maqsoodmubarak.rajput@awi.de"}
 ]
 description = "AQUA; a model evaluation framework for high-resolution climate model simulations"
 readme = "README.md"
@@ -62,7 +63,7 @@ dependencies = [
     "fastparquet",
     "ECmean4==0.1.15",
     "pyfdb==0.1.2",
-    "gsv-interface==2.12.0",
+    "gsv-interface==2.13.1",
     "zarr"
 ]
 

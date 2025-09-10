@@ -7,25 +7,30 @@ Class Overview
 The ``OutputSaver`` class is designed to manage output file naming conventions for scientific data.
 It supports generating filenames for various file types (e.g., NetCDF, PDF, PNG) with metadata integration to enhance data management and traceability.
 The class ensures consistent and descriptive filenames, facilitating better data organization and reproducibility.
+It also allows for the generation of a catalog entry, to store the resulting NetCDF files in the AQUA catalog.
 
 Attributes
 ----------
 
 - **diagnostic** (*str*): Name of the diagnostic.
-- **catalog** (*str*): Catalog name (e.g., ``lumi-phase2``).
-- **model** (*str*): Model name (e.g., ``IFS-NEMO``).
-- **exp** (*str*): Experiment name (e.g., ``historical``).
-- **catalog_ref** (*str*, optional): Reference catalog name.
-- **model_ref** (*str*, optional): Reference model name.
-- **exp_ref** (*str*, optional): Reference experiment name.
+- **catalog** (*str* or *list*): Catalog name (e.g., ``lumi-phase2``).
+- **model** (*str* or *list*): Model name (e.g., ``IFS-NEMO``).
+- **exp** (*str* or *list*): Experiment name (e.g., ``historical``).
+- **realization** (*str* or *list*): Realization name (default is ``r1``).
+- **catalog_ref** (*str* or *list*, optional): Reference catalog name.
+- **model_ref** (*str* or *list*, optional): Reference model name.
+- **exp_ref** (*str* or *list*, optional): Reference experiment name.
 - **outdir** (*str*, optional): Output directory where files will be saved. Defaults to the current directory.
-- **rebuild** (*bool*, optional): Flag indicating whether to rebuild existing files. If set to ``True``, existing files with the same name will be overwritten. Defaults to ``True``.
 - **loglevel** (*str*, optional): Logging level for the class's logger. Defaults to ``WARNING``.
 
 .. note::
     The ``OutputSaver`` class automatically includes the current date and time when saving files as metadata.
     This ensures each file has a timestamp indicating when it was generated.
     The version of the AQUA package is also included in the metadata for traceability.
+
+.. note::
+    The ``OutputSaver`` should be initialized with the single-model info when storing NetCDF files,
+    while with all the involved models and reference when storing plots.
 
 Example Usage
 -------------
@@ -43,7 +48,7 @@ The following example demonstrates how to initialize the ``OutputSaver`` class:
     outputsaver = OutputSaver(diagnostic='dummy', 
                               catalog='climatedt-phase1', model='IFS-NEMO', exp='historical-1990', 
                               catalog_ref='obs', model_ref='ERA5', exp_ref='era5',
-                              outdir='.', rebuild=True, loglevel='DEBUG')
+                              outdir='.', loglevel='DEBUG')
 
 Generating a Filename
 ^^^^^^^^^^^^^^^^^^^^^
@@ -161,3 +166,17 @@ Complete information about the datasets is preserved in the output file's metada
 
     filename = outputsaver.generate_name(diagnostic_product='test')
     # Output: 'dummy.test.multimodel.obs.ERA5.era5'
+
+Creating a catalog entry
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``save_netcdf`` method allows for the creation of a catalog entry for the saved NetCDF file.
+This entry is created in the same experiment file of the input dataset.
+
+In order to enable the catalog entry creation, the method should include as arguments:
+
+- ``create_catalog_entry`` (*bool*, optional): Set as ``True`` to create a catalog entry for the saved NetCDF file.
+- ``dict_catalog_entry`` (*dict*, optional): A dictionary containing the catalog entry information.
+  The catalog can specify a ``jinjalist`` (by default ``['freq', 'stat', 'region', 'realization']``) and a ``wildcardlist`` (by default ``['var']``).
+  For each matching ``extra_keys``, the code will create an intake parameter for the first list and a wildcard for the second.
+  This allows for catalog entry which can access the relevant NetCDF files when used with the ``Reader``.

@@ -65,6 +65,7 @@ if __name__ == '__main__':
     save_pdf = config_dict['output'].get('save_pdf', True)
     save_png = config_dict['output'].get('save_png', True)
     dpi = config_dict['output'].get('dpi', 300)
+    create_catalog_entry = config_dict['output'].get('create_catalog_entry', True)
 
     # Timeseries diagnostic
     if 'timeseries' in config_dict['diagnostics']:
@@ -83,7 +84,7 @@ if __name__ == '__main__':
 
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
-                                    'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
+                                    'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
                                     'center_time': center_time, 'reader_kwargs': reader_kwargs}
 
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             logger.debug(f"Dataset args: {dataset_args}")
                             ts[i] = Timeseries(**init_args, **dataset_args)
-                            ts[i].run(**run_args)
+                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].startdate for i in range(len(ts))])
@@ -117,9 +118,9 @@ if __name__ == '__main__':
                                                 'std_startdate': var_config.get('std_startdate'),
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
-                                logger.warning(f"Reference args: {reference_args}")
+                                logger.info(f"Reference args: {reference_args}")
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
-                                ts_ref[i].run(**run_args, std=True)
+                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False)
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -135,14 +136,14 @@ if __name__ == '__main__':
                             data_label = plot_ts.set_data_labels()
                             ref_label = plot_ts.set_ref_label()
                             description = plot_ts.set_description()
-                            title = plot_ts.set_title(var=var, units=var_config.get('units'))
+                            title = plot_ts.set_title()
                             fig, _ = plot_ts.plot_timeseries(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='pdf')
                             if save_png:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='png')
                     except Exception as e:
                         logger.error(f"Error running Timeseries diagnostic for variable {var} in region {region if region else 'global'}: {e}")
@@ -160,7 +161,7 @@ if __name__ == '__main__':
 
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
-                                    'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
+                                    'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
                                     'center_time': center_time, 'reader_kwargs': reader_kwargs}
 
@@ -172,7 +173,7 @@ if __name__ == '__main__':
                                             'exp': dataset['exp'], 'source': dataset['source'],
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             ts[i] = Timeseries(**init_args, **dataset_args)
-                            ts[i].run(**run_args)
+                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].plt_startdate for i in range(len(ts))])
@@ -191,7 +192,7 @@ if __name__ == '__main__':
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
-                                ts_ref[i].run(**run_args, std=True)
+                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False)
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -208,14 +209,14 @@ if __name__ == '__main__':
                             data_label = plot_ts.set_data_labels()
                             ref_label = plot_ts.set_ref_label()
                             description = plot_ts.set_description()
-                            title = plot_ts.set_title(var=var, units=var_config.get('units'))
+                            title = plot_ts.set_title()
                             fig, _ = plot_ts.plot_timeseries(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='pdf')
                             if save_png:
-                                plot_ts.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_ts.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='png')
                     except Exception as e:
                         logger.error(f"Error running Timeseries diagnostic for variable {var} in region {region if region else 'global'}: {e}")
@@ -237,7 +238,7 @@ if __name__ == '__main__':
 
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
-                                    'units': var_config.get('units'), 'standard_name': var_config.get('standard_name'),
+                                    'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
 
                         # Initialize a list of len from the number of datasets
@@ -249,7 +250,7 @@ if __name__ == '__main__':
                                             'exp': dataset['exp'], 'source': dataset['source'],
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             sc[i] = SeasonalCycles(**init_args, **dataset_args)
-                            sc[i].run(**run_args)
+                            sc[i].run(**run_args, create_catalog_entry=create_catalog_entry)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([sc[i].startdate for i in range(len(sc))])
@@ -268,7 +269,7 @@ if __name__ == '__main__':
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 sc_ref[i] = SeasonalCycles(**init_args, **reference_args)
-                                sc_ref[i].run(**run_args, std=True)
+                                sc_ref[i].run(**run_args, std=True, create_catalog_entry=False)
 
                         # Plot the seasonal cycles
                         if save_pdf or save_png:
@@ -281,14 +282,14 @@ if __name__ == '__main__':
                             data_label = plot_sc.set_data_labels()
                             ref_label = plot_sc.set_ref_label()
                             description = plot_sc.set_description()
-                            title = plot_sc.set_title(var=var, units=var_config.get('units'))
+                            title = plot_sc.set_title()
                             fig, _ = plot_sc.plot_seasonalcycles(data_labels=data_label, ref_label=ref_label, title=title)
 
                             if save_pdf:
-                                plot_sc.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_sc.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='pdf')
                             if save_png:
-                                plot_sc.save_plot(fig, var=var, description=description, region=region, outputdir=outputdir,
+                                plot_sc.save_plot(fig, description=description, outputdir=outputdir,
                                                 dpi=dpi, rebuild=rebuild, format='png')
                 except Exception as e:
                     logger.error(f"Error running SeasonalCycles diagnostic for variable {var} in region {region if region else 'global'}: {e}")

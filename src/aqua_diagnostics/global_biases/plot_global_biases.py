@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
-from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
+from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps, plot_vertical_profile_diff
 from aqua.util import get_projection
 from .util import handle_pressure_level
 
@@ -278,49 +278,32 @@ class PlotGlobalBiases:
         """
         self.logger.info('Plotting vertical biases for variable: %s', var)
 
-        bias = data[var] - data_ref[var]
-        # Determine pressure level bounds if not provided
-        if plev_min is None:
-            plev_min = bias['plev'].min().item()
-        if plev_max is None:
-            plev_max = bias['plev'].max().item()
-        # Slice pressure levels 
-        mask = (bias['plev'] >= plev_min) & (bias['plev'] <= plev_max)
-        bias = bias.sel(plev=bias['plev'].where(mask, drop=True))
-
-        # Ensure reasonable number of levels
-        nlevels = max(2, int(nlevels))
-
-        zonal_bias = bias.mean(dim='lon')
-        # Determine colorbar limits if not provided
-        if vmin is None or vmax is None:
-            vmin, vmax = float(zonal_bias.min()), float(zonal_bias.max())
-            if vmin * vmax < 0:
-                vmax = max(abs(vmin), abs(vmax))
-                vmin = -vmax
-
-        levels = np.linspace(vmin, vmax, nlevels)
         title = (
             f"Vertical bias of {data[var].attrs.get('long_name', var)} for {data.model} {data.exp}\n"
             f"relative to {data_ref.model} climatology\n"
         )
 
-        fig, ax = plt.subplots(figsize=(10, 8))
-        cax = ax.contourf(
-            zonal_bias['lat'], zonal_bias['plev'], zonal_bias,
-            cmap='RdBu_r', levels=levels, extend='both'
-        )
-        ax.set_title(title)
-        ax.set_yscale('log')
-        ax.set_ylabel('Pressure Level (Pa)')
-        ax.set_xlabel('Latitude')
-        ax.invert_yaxis()
-        fig.colorbar(cax, ax=ax, label=f'{var} [{data[var].attrs.get("units", "")}]')
-        ax.grid(True)
-
         description = (
             f"Vertical bias plot of {data[var].attrs.get('long_name', var)} across pressure levels from {data.startdate} to {data.enddate} "
             f"for the {data.model} model, experiment {data.exp}, with {data_ref.model} used as reference data."
+        )
+
+        fig, ax = plot_vertical_profile_diff(
+            data=data[var].mean(dim='lon'),
+            data_ref=data_ref[var].mean(dim='lon'),
+            var=var,
+            plev_min=plev_min,
+            plev_max=plev_max,
+            vmin=vmin,
+            vmax=vmax,
+            vmin_contour=vmin,
+            vmax_contour=vmax,
+            logscale=True,
+            add_contour=True, 
+            nlevels=nlevels,
+            title=title,
+            return_fig=True,
+            loglevel=self.loglevel
         )
 
         if self.save_pdf:

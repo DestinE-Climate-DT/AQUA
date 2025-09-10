@@ -12,7 +12,6 @@ import argparse
 import jinja2
 from aqua.util import load_yaml, dump_yaml, get_arg, ConfigPath
 from aqua.logger import log_configure
-from aqua.lra_generator.lra_util import replace_intake_vars
 
 from ruamel.yaml import YAML
 yaml = YAML()
@@ -158,7 +157,7 @@ class AquaFDBGenerator:
             },
             "monthly": {
                 'time': None,
-                'chunks': 'D' if levtype == 'o3d' else 'MS',
+                'chunks': 'MS',
                 'savefreq': "MS"
             }
         }

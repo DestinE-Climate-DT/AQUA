@@ -27,6 +27,7 @@ output:
   rebuild: true
   save_pdf: true
   save_png: true
+  create_catalog_entry: true
   dpi: 300
 
 diagnostics:
@@ -55,10 +56,10 @@ diagnostics:
         std_startdate: '19900101'
         std_enddate: '20201231'
       tnlwrf+tnswrf:
-        standard_name: "net_top_radiation"
+        short_name: "net_top_radiation"
         long_name: "Net top radiation"
       tprate:
-        standard_name: "tprate"
+        short_name: "tprate"
         long_name: "Precipitation"
         units: "mm/day"
         regions: ['tropics', 'europe']

@@ -20,8 +20,8 @@ from aqua.util import create_folder, generate_random_string
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
-from aqua.util import area_selection
-from .lra_util import move_tmp_files, list_lra_files_complete, replace_intake_vars
+from aqua.util import area_selection, replace_intake_vars
+from .lra_util import move_tmp_files, list_lra_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
 
 
@@ -115,13 +115,13 @@ class LRAgenerator():
         self.exp = self._require_param(exp, "experiment")
         self.source = self._require_param(source, "source")
         self.var = self._require_param(var, "variable string or list.")
-        self.resolution = self._require_param(resolution, "resolution")
 
         # General settings
         self.logger = log_configure(loglevel, 'lra_generator')
         self.loglevel = loglevel
 
         # save parameters
+        self.resolution = resolution
         self.frequency = frequency
         self.overwrite = overwrite
         self.exclude_incomplete = exclude_incomplete
@@ -563,8 +563,9 @@ class LRAgenerator():
                                             exclude_incomplete=self.exclude_incomplete)
 
         # regrid
-        temp_data = self.reader.regrid(temp_data)
-        temp_data = self._remove_regridded(temp_data)
+        if self.resolution:
+            temp_data = self.reader.regrid(temp_data)
+            temp_data = self._remove_regridded(temp_data)
 
         if self.region:
             temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
@@ -629,53 +630,80 @@ class LRAgenerator():
                 self._concat_var_year(var, year)
         del temp_data
 
+    def append_history(self, data):
+        """
+        Append comprehensive processing history to the data attributes
+               
+        Args:
+            data: xarray Dataset or DataArray to append history to
+            
+        Returns:
+            data: Input data with updated history attribute
+        """
+        history_list = ["LRA generator"]
+        
+        # Add regridding information
+        if self.resolution:
+            history_list.append(f"regridded from {self.reader.src_grid_name} to {self.resolution}")
+        if self.frequency and self.stat:
+            history_list.append(
+                f"resampled from frequency {self.reader.timemodule.orig_freq} to {self.frequency} "
+                f"using {self.stat} statistic")
+        if self.region and self.region_name:
+            region_info = f"regional selection applied ({self.region_name})"
+            history_list.append(region_info)
+        
+        # Build the complete sentence
+        if len(history_list) == 1:
+            history = history_list[0]
+        else:
+            history = history_list[0] + ": " + ", ".join(history_list[1:])
+
+        log_history(data, history)
+
+        return data
+
     def write_chunk(self, data, outfile):
         """Write a single chunk of data - Xarray Dataset - to a specific file
         using dask if required and monitoring the progress"""
 
-        # update data attributes for history
-        if self.frequency:
-            log_history(
-                data, f'regridded from {self.reader.src_grid_name} to {self.resolution} and from frequency {self.reader.timemodule.orig_freq} to {self.frequency} through LRA generator')
-        else:
-            log_history(data, f'regridded from {self.reader.src_grid_name} to {self.resolution} through LRA generator')
+        data = self.append_history(data)
 
         # File to be written
         if os.path.exists(outfile):
             os.remove(outfile)
             self.logger.warning('Overwriting file %s...', outfile)
 
-        self.logger.info('Writing file %s...', outfile)
+        self.logger.info("Computing to write file %s...", outfile)
 
-        # Write data to file, lazy evaluation
-        write_job = data.to_netcdf(outfile,
-                                   encoding={'time': self.time_encoding,
-                                             data.name: self.var_encoding},
-                                   compute=False)
-
+        # Compute + progress monitoring
         if self.dask:
-            # optional full stack dashboard to html
             if self.performance_reporting:
+                # Full Dask dashboard to HTML
                 filename = f"dask-{self.model}-{self.exp}-{self.source}-{self.nproc}.html"
                 with performance_report(filename=filename):
-                    w_job = write_job.persist()
-                    progress(w_job)
-                    del w_job
+                    job = data.persist()
+                    progress(job)
+                    job = job.compute()
             else:
-                # memory monitoring is always operating
+                # Memory monitoring always on
                 ms = MemorySampler()
-                with ms.sample('chunk'):
-                    w_job = write_job.persist()
-                    progress(w_job)
-                    del w_job
-                array_data = np.array(vars(ms)['samples']['chunk'])
+                with ms.sample("chunk"):
+                    job = data.persist()
+                    progress(job)
+                    job = job.compute()
+                array_data = np.array(ms.samples["chunk"])
                 avg_mem = np.mean(array_data[:, 1]) / 1e9
                 max_mem = np.max(array_data[:, 1]) / 1e9
-                self.logger.info('Avg memory used: %.2f GiB, Peak memory used: %.2f GiB', avg_mem, max_mem)
-
+                self.logger.info("Avg memory used: %.2f GiB, Peak memory used: %.2f GiB", avg_mem, max_mem)
         else:
             with ProgressBar():
-                write_job.compute()
+                job = data.compute()
 
-        del write_job
-        self.logger.info('Writing file %s successfull!', outfile)
+        # Final safe NetCDF write (serial, no dask)
+        job.to_netcdf(
+            outfile,
+            encoding={"time": self.time_encoding, data.name: self.var_encoding},
+        )
+        del job
+        self.logger.info('Writing file %s successful!', outfile)

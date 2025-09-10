@@ -6,6 +6,13 @@ diagnostic_config = {
             'target_path': 'diagnostics/global_biases/cli'
         },
     ],
+    'lat_lon_profiles': [
+        {
+            'config_file': 'regions.yaml',
+            'source_path': 'config/diagnostics/lat_lon_profiles/definitions',
+            'target_path': 'diagnostics/lat_lon_profiles/definitions'
+        },
+    ],
     'ecmean': [
         {
             'config_file': 'ecmean_config_climatedt.yaml',
@@ -118,7 +125,7 @@ diagnostic_config = {
         {
             'config_file': 'config_seaice.yaml',
             'source_path': 'config/diagnostics/seaice',
-            'target_path': 'diagnostics/seaice/config'
+            'target_path': 'diagnostics/seaice'
         }
     ],
     'ssh': [
@@ -178,6 +185,22 @@ diagnostic_config = {
             'source_path': 'diagnostics/tropical_rainfall/cli',
             'target_path': 'diagnostics/tropical_rainfall/cli'
         }
-    ]
-    # Add other diagnostic configurations here
+    ],
+    'ensemble': [
+        {
+            'config_file': 'config_global_2D_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        },
+        {
+            'config_file': 'config_timeseries_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        },
+        {
+            'config_file': 'config_zonalmean_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        }
+    ],  # Add other diagnostic configurations here
 }

@@ -25,8 +25,7 @@ class TimStat():
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False):
-        
-        """"
+        """
         Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
         parameter. The frequency can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object. The statistic can be
         'mean', 'std', 'max', 'min'. The output is a new xarray dataset with the time dimension resampled to the desired
@@ -41,9 +40,8 @@ class TimStat():
             center_time (bool): If True, center the time axis of the output data.
 
         Returns:
-            xarray.Dataset: Output data the required statistic computed at the desired frequency.
+            xarray.Dataset: Output data with the required statistic computed at the desired frequency.
         """
-
         if stat not in self.AVAILABLE_STATS:
             raise KeyError(f'{stat} is not a statistic supported by AQUA')
 
@@ -154,4 +152,3 @@ class TimStat():
                               pd.to_datetime(avg_data['time']) + offset)
         
         return avg_data
-    

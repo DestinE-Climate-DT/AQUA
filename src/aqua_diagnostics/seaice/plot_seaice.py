@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt
 from aqua.diagnostics.core import OutputSaver
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure, log_history
+from aqua.graphics import plot_timeseries, plot_seasonalcycle, ConfigStyle
 from aqua.util import ConfigPath
-from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from collections import defaultdict
 from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type
 
@@ -64,6 +64,7 @@ class PlotSeaIce:
             loglevel (str, optional): 
                 Logging level for debugging and information messages. Defaults to 'WARNING'.
         """
+
         # logging setup
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='PlotSeaIce')
@@ -150,8 +151,8 @@ class PlotSeaIce:
             data arrays corresponding to that keyword
         
         Args:
-            **kwargs: A dictionary of keyword arguments, where each str_data is
-                      linked to the kwargs in plot_timeseries() and each value is a list of xr.Dataset objects.
+            **kwargs (dict): Keyword arguments, where each str_data is linked to 
+                the kwargs in plot_timeseries() and each value is a list of xr.Dataset objects.
         
         Returns:
             dict: A nested dict containing the repacked data arrays.
@@ -198,8 +199,10 @@ class PlotSeaIce:
     def _gen_str_from_attributes(self, datain: xr.DataArray | None) -> str:
         """
         Generate a string from the attributes of the input data.
+
         Args:
             datain (xr.DataArray): The data array to generate a string from.
+
         Returns:
             str: The string generated from the attributes of the input data.
         """
@@ -218,11 +221,13 @@ class PlotSeaIce:
     def _gen_labelname(self, datain: xr.DataArray | list[xr.DataArray] | None) -> str | list[str] | None:
         """Extract 'model', 'exp', 'source', and 'catalog' from attributes in input data and 
            generate a label or list of labels for each xr.dataArray to be used in the legend plot. 
+
         Args:
             datain (xr.DataArray | list[xr.DataArray] | None):
                 - A single xr.DataArray: Generates a label from its attributes.
                 - A list of xr.DataArray: Generates a list of labels for each data array.
                 - None: Returns None.
+
         Returns:
             str | list[str] | None:
                 - A single string if datain is a single xarray.DataArray.
@@ -238,9 +243,11 @@ class PlotSeaIce:
 
     def _getdata_fromdict(self, data_dict: dict, dkey: str) -> xr.DataArray | list[xr.DataArray] | None:
         """Retrieves data from a dictionary and returns either None, a single DataArray or a list of them
+
         Args:
             data_dict (dict): Dictionary containing the data (list of xr.DataArray or single xr.DataArray or None)
             dkey (str): The key to retrieve data from data_dict
+
         Returns:
             - A single xr.DataArray if the list contains only one element (reference data case)
             - A list of xr.DataArray if multiple elements are found (model data case)
@@ -357,18 +364,21 @@ class PlotSeaIce:
                                                                                self.region_str, self.model_labels_str,
                                                                                self.ref_label_str, self.std_label_str)
 
-    def regions_type_plotter(self, region_dict, **kwargs):
+    def regions_type_plotter(self, region_dict, style, **kwargs):
         """
         Loops over each region in region_dict and plots data either as a timeseries or a seasonal cycle
         depending on plot_type attribute.
         
         Args:
-            region_dict : dict. Dictionary of regions and their associated data.
-            **kwargs : dict. Additional keyword arguments passed on to the underlying plotting function.
+            region_dict (dict): Dictionary of regions and their associated data.
+            style (str): Graphic style of the plot.
+            **kwargs (dict): Additional keyword arguments passed on to the underlying plotting function.
         
         Returns:
             (fig, axes) : tuple. The figure and axes objects.
         """
+        ConfigStyle(style=style, loglevel=self.loglevel)
+        
         self.num_regions = len(region_dict)
 
         fig_height = 6 if self.plot_type == 'seasonal_cycle' else 10
@@ -408,6 +418,7 @@ class PlotSeaIce:
                                           std_annual_data=annual_std,
                                           data_labels=self.data_labels,
                                           ref_label=self.ref_label,
+                                          style=style,
                                           fig=fig,
                                           ax=ax,
                                           **kwargs)
@@ -418,6 +429,7 @@ class PlotSeaIce:
                                              std_data=monthly_std,
                                              data_labels=self.data_labels,
                                              ref_label=self.ref_label,
+                                             style=style,
                                              fig=fig,
                                              ax=ax,
                                              **kwargs)
@@ -430,7 +442,7 @@ class PlotSeaIce:
 
         return fig, axes
 
-    def plot_seaice(self, plot_type='timeseries', save_pdf=True, save_png=True, **kwargs):
+    def plot_seaice(self, plot_type='timeseries', save_pdf=True, save_png=True, style=None, **kwargs):
         """
         Plot sea ice data for each region, either as timeseries or seasonal cycle.
         
@@ -439,7 +451,8 @@ class PlotSeaIce:
                 `'timeseries'` or `'seasonal_cycle'`. Defaults to `'timeseries'`.
             save_pdf (bool, optional): Whether to save the figure as a PDF. Defaults to True.
             save_png (bool, optional): Whether to save the figure as a PNG. Defaults to True.
-            **kwargs: Additional keyword arguments passed to the region-specific plotting function 
+            style (str, optional): Override the plotting style. Default to None (which will get the style from config file or fallback to'aqua').
+            **kwargs: Additional keyword arguments passed to the region-specific plotting function.
         """
         self.plot_type = plot_type
 
@@ -457,7 +470,7 @@ class PlotSeaIce:
             self.logger.info(f"Processing method: {self.method}")
 
             # plot per-region using loop on the same fig
-            fig, axes = self.regions_type_plotter(region_dict, **kwargs)
+            fig, axes = self.regions_type_plotter(region_dict, style, **kwargs)
             
             plt.tight_layout()
             self.logger.info(f"Plotting of all regions for method '{self.method}' completed")
@@ -482,12 +495,18 @@ class PlotSeaIce:
             region_dict (dict, optional): Dictionary of regions plotted. Used to generate output filename. Defaults to None.
         """
         if save_png or save_pdf:
-            self.logger.debug(f"Saving figure as format(s): {', '.join(fmt for fmt, flag in [('PNG', save_png), 
-                                                                                             ('PDF', save_pdf)] 
-                                                                                             if flag)}")
+            self.logger.debug(f"Saving figure as format(s): {', '.join(fmt for fmt, flag in [('PNG', save_png), ('PDF', save_pdf)] if flag)}")
             output_saver = OutputSaver(diagnostic='seaice', catalog=self.catalog, model=self.model, exp=self.exp,
                                         loglevel=self.loglevel, outputdir=self.outputdir)
 
-            product = f"{self.plot_type}_{self.method}_{'_'.join(region_dict.keys())}"
-            if save_pdf: output_saver.save_pdf(fig=fig, diagnostic_product=product, metadata=metadata, rebuild=self.rebuild)
-            if save_png: output_saver.save_png(fig=fig, diagnostic_product=product, metadata=metadata, rebuild=self.rebuild)
+            diagnostic_product = self.plot_type
+            
+            extra_keys = {'method': self.method,
+                          'regions': '_'.join(region_dict.keys())}
+            
+            if save_pdf: 
+                output_saver.save_pdf(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,
+                                      rebuild=self.rebuild, extra_keys=extra_keys)
+            if save_png: 
+                output_saver.save_png(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,
+                                      rebuild=self.rebuild, extra_keys=extra_keys)

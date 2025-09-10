@@ -66,6 +66,7 @@ fixer_name:
 
   # NEMO fixes
   ec-earth4-nemo-ice:
+    convention: eccodes
     coords:
       time:
         source: time_counter
@@ -82,6 +83,7 @@ fixer_name:
         source: sithic
 
   ec-earth4-nemo:
+    convention: eccodes
     dims:
       time:
         source: time_counter

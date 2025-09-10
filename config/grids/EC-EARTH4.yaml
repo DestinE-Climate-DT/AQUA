@@ -1,6 +1,8 @@
 grids:
   tl255:
     path: '{{ grids }}/IFS/tl255_grid.nc'
+  tl159:
+    path: '{{ grids }}/IFS/tl159_grid.nc'
   tl63:
     path: '{{ grids }}/IFS/tl63_grid.nc'
   

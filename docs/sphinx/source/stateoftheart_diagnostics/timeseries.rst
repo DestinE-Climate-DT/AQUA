@@ -67,66 +67,14 @@ The diagnostic can be run from the command line interface (CLI) by running the f
 Three configuration files are provided and run when executing the aqua-analysis (see :ref:`aqua_analysis`).
 Two configuration files are for atmospheric and oceanic timeseries and gregory plots, and the third one is for the seasonal cycles.
 
-Additionally the CLI can be run with the following optional arguments:
-
-- ``--config``, ``-c``: Path to the configuration file.
-- ``--nworkers``, ``-n``: Number of workers to use for parallel processing.
-- ``--cluster``: Cluster to use for parallel processing. By default a local cluster is used.
-- ``--loglevel``, ``-l``: Logging level. Default is ``WARNING``.
-- ``--catalog``: Catalog to use for the analysis. It can be defined in the config file.
-- ``--model``: Model to analyse. It can be defined in the config file.
-- ``--exp``: Experiment to analyse. It can be defined in the config file.
-- ``--source``: Source to analyse. It can be defined in the config file.
-- ``--outputdir``: Output directory for the plots.
+Additionally CLI arguments are described in the :ref:`diagnostics-cli-arguments` section.
 
 Config file structure
 ---------------------
 
-The configuration file is a YAML file that contains the following information:
-
-* ``datasets``: a list of models to analyse (defined by the catalog, model, exp, source arguments)
-
-.. code-block:: yaml
-
-    datasets:
-      - catalog: climatedt-phase1
-        model: IFS-NEMO
-        exp: historical-1990
-        source: lra-r100-monthly
-        regrid: null
-      - catalog: climatedt-phase1
-        model: ICON
-        exp: historical-1990
-        source: lra-r100-monthly
-        regrid: null
-
-* ``references``: a list of reference datasets to use for the analysis.
-
-.. code-block:: yaml
-
-    references:
-      - catalog: obs
-        model: ERA5
-        exp: era5
-        source: monthly
-        regrid: null
-
-* ``output``: a block describing the details of the output. Is contains:
-
-    * ``outputdir``: the output directory for the plots.
-    * ``rebuild``: a boolean that enables the rebuilding of the plots.
-    * ``save_pdf``: a boolean that enables the saving of the plots in pdf format.
-    * ``save_png``: a boolean that enables the saving of the plots in png format.
-    * ``dpi``: the resolution of the plots.
-
-.. code-block:: yaml
-
-    output:
-      outputdir: "/path/to/output"
-      rebuild: true
-      save_pdf: true
-      save_png: true
-      dpi: 300
+The configuration file is a YAML file that contains the details on the dataset to analyse or use as reference, the output directory and the diagnostic settings.
+Most of the settings are common to all the diagnostics (see :ref:`diagnostics-configuration-files`).
+Here we describe only the specific settings for the time series diagnostic.
 
 * ``timeseries``: a block, nested in the ``diagnostics`` block, that contains the details required for the time series.
   The parameters specific to a single variable are merged with the default parameters, giving priority to the specific ones.
@@ -136,6 +84,7 @@ The configuration file is a YAML file that contains the following information:
     diagnostics:
       timeseries:
         run: true # to enable the time series
+        diagnostic_name: 'atmosphere'
         variables: ['2t', 'tprate']
         formulae: ['tnlwrf+tnswrf']
         params:
@@ -147,11 +96,11 @@ The configuration file is a YAML file that contains the following information:
             std_startdate: '1990-01-01'
             std_enddate: '2020-12-31'
           tnlwrf+tnswrf:
-            standard_name: "net_top_radiation"
+            short_name: "net_top_radiation"
             long_name: "Net top radiation"
           tprate:
             units: 'mm/day'
-            standard_name: 'tprate'
+            short_name: 'tprate'
             long_name: 'Total precipitation rate'
             regions: ['tropics', 'europe'] # regions to plot the time series other than global
 
@@ -164,6 +113,7 @@ The configuration file is a YAML file that contains the following information:
     diagnostics:
       seasonalcycle:
         run: true # to enable the seasonal cycle
+        diagnostic_name: 'atmosphere'
         variables: ['2t', 'tprate']
         params:
           default:
