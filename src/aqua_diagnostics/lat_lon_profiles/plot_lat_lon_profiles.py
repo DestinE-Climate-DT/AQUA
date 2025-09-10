@@ -213,8 +213,9 @@ class PlotLatLonProfiles():
         if self.mean_type:
             diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
         else:
-            diagnostic_product = base_diagnostic
-            self.logger.warning("mean_type not available, filename will not distinguish between zonal/meridional profiles")        
+            diagnostic_product = f"{base_diagnostic}_zonal"
+            self.logger.warning("mean_type not available in data attributes. "
+                                "Using 'zonal' as fallback to match LatLonProfiles default. ")       
         # Save based on format
         if format == 'png':
             outputsaver.save_png(fig, diagnostic_product, extra_keys=extra_keys, 

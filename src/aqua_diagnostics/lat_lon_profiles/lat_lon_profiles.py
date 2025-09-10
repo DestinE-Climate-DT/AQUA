@@ -346,7 +346,6 @@ class LatLonProfiles(Diagnostic):
 				box_brd (bool): Whether to include the box boundaries.
 				outputdir (str): The output directory to save the results.
 				rebuild (bool): Whether to rebuild existing files.
-				mean_type (str): The type of mean to compute ('zonal' or 'meridional').
 			"""
 			self.logger.info('Running LatLonProfiles for %s', var)
 			
@@ -354,9 +353,6 @@ class LatLonProfiles(Diagnostic):
 			self.retrieve(var=var, formula=formula, long_name=long_name, 
 						  units=units, standard_name=standard_name)
 			
-			# Set mean_type if provided
-			if mean_type is not None:
-				self.mean_type = mean_type
 			self.logger.info('Mean type set to %s', self.mean_type)
 			
             # Check if data is valid
