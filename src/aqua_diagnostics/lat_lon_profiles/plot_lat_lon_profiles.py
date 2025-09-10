@@ -54,7 +54,6 @@ class PlotLatLonProfiles():
         else:
             raise ValueError(f"data_type must be 'annual' or 'seasonal', got '{data_type}'")
         
-        self.std_data = None
         self.ref_std_data = ref_std_data
         
         self.len_data, self.len_ref = self._check_data_length()
@@ -164,7 +163,6 @@ class PlotLatLonProfiles():
         return plot_lat_lon_profiles(
             data=data_to_plot,
             ref_data=ref_to_plot,
-            std_data=self.std_data,
             ref_std_data=self.ref_std_data,
             data_labels=data_labels,
             ref_label=ref_label,
@@ -357,7 +355,7 @@ class PlotLatLonProfiles():
         description = self.set_description(region=self.region)
         title = self.set_title(region=self.region, var=var, units=units)
         
-        if plot_std and (self.std_data is not None or self.ref_std_data is not None):
+        if plot_std and (self.ref_std_data is not None):
             title += " (±2σ)"
             description += " with standard deviation bands"
 
@@ -403,7 +401,6 @@ class PlotLatLonProfiles():
         fig, axs = plot_seasonal_lat_lon_profiles(
             seasonal_data=self.data,                    # Should be [DJF, MAM, JJA, SON] structure
             ref_data=self.ref_data,
-            std_data=None,                     # Could be added later if needed
             ref_std_data=None,
             data_labels=data_labels,
             title=f"Multi-variable Seasonal Comparison: {', '.join(variables)}",
@@ -429,7 +426,6 @@ class PlotLatLonProfiles():
             data_labels (list): List of data labels.
             title (str): Title of the plot.
             style (str): Plotting style.
-            std_data (list): Standard deviation data for each season.
             ref_std_data (list): Reference standard deviation data for each season.
 
         Returns:
@@ -456,7 +452,6 @@ class PlotLatLonProfiles():
         return plot_seasonal_lat_lon_profiles(
             seasonal_data=seasonal_data_only,
             ref_data=seasonal_ref_only,
-            std_data=None,
             ref_std_data=seasonal_ref_std_only,
             data_labels=None,
             title=title,
