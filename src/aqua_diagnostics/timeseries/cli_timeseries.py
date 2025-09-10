@@ -110,7 +110,6 @@ if __name__ == '__main__':
 
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
-                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             ts_ref = [None] * len(config_dict['references'])
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
@@ -186,7 +185,6 @@ if __name__ == '__main__':
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             ts_ref = [None] * len(config_dict['references'])
-                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
@@ -265,7 +263,6 @@ if __name__ == '__main__':
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             sc_ref = [None] * len(config_dict['references'])
-                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
@@ -332,7 +329,6 @@ if __name__ == '__main__':
                     greg[i].run(**run_args, **model_args, reader_kwargs=dataset.get('reader_kwargs', {}))
 
                 if config_dict['diagnostics']['gregory']['std']:
-                    run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                     # t2m:
                     dataset_args = {**config_dict['diagnostics']['gregory']['t2m_ref'],
                                     'regrid': regrid,
