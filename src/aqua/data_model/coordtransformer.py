@@ -240,6 +240,9 @@ class CoordTransformer():
         if 'units' not in data[tgt_coord['name']].attrs:
             self.logger.warning("%s unit not found in data. Disabling unit conversion.", tgt_coord['name'])
             return data
+        # fix for coordinates with spaced units that is not read by metpy
+        if src_coord['units'].lower() in ['degree north', 'degree east']:
+            src_coord['units'] = src_coord['units'].replace(" ", "_").lower()
         if src_coord['units'] != tgt_coord['units']:
             self.logger.info("Converting units of coordinate %s from %s to %s",
                             src_coord['name'], src_coord['units'], tgt_coord['units'])
