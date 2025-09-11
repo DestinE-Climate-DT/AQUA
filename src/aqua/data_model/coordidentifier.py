@@ -193,8 +193,8 @@ class CoordIdentifier():
             return True
         if coord.attrs.get("standard_name") == "latitude":
             return True
-        if coord.attrs.get("axis") == "Y":
-            return True
+        #if coord.attrs.get("axis") == "Y":
+        #    return True
         if coord.attrs.get("units") == "degrees_north":
             return True
         return False
@@ -208,8 +208,8 @@ class CoordIdentifier():
             return True
         if coord.attrs.get("standard_name") == "longitude":
             return True
-        if coord.attrs.get("axis") == "X":
-            return True
+        #if coord.attrs.get("axis") == "X":
+        #    return True
         if coord.attrs.get("units") == "degrees_east":
             return True
         return False
