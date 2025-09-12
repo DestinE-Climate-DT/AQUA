@@ -190,7 +190,7 @@ def plot_multivars_vertical_profile(
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 15, y=1.1)
+        fig.suptitle(title, fontsize=ncols * 12, y=1.1)
 
     if return_fig:
         return fig
