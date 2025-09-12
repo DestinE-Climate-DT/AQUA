@@ -122,6 +122,7 @@ def plot_maps(
             title=titles[i] if titles is not None else None,
             cmap=cmap,
             cbar=False,
+            add_land=True,
             transform_first=transform_first,
             return_fig=True,
             cyclic_lon=cyclic_lon,

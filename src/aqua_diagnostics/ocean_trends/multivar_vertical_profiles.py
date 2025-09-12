@@ -119,6 +119,8 @@ def plot_multivars_vertical_profile(
             vmax=vmax,
             nlevels=nlevels,
             title=titles[i] if titles is not None else None,
+            grid=False,
+            add_land=True,
             cmap=cmap,
             cbar=False,
             transform_first=transform_first,
