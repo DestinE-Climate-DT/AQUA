@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+Hotfixes:
+- Ocean3d: Fix for weighted mean calculation (#2242)
+
 ## [v0.13.7]
 
 - Pinning specific version of dask/xarray/numpy (#1974)

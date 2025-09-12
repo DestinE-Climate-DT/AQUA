@@ -246,7 +246,7 @@ def weighted_area_mean(data, region=None, lat_s: float = None, lat_n: float = No
     # weighted_data = data.weighted(np.cos(np.deg2rad(data.lat)))
     weights = xr.ufuncs.cos(xr.ufuncs.deg2rad(data.lat))
     weighted_data = data.weighted(weights)
-    wgted_mean = weighted_data.mean("lat").mean("lon")
+    wgted_mean = weighted_data.mean(["lat", "lon"])
     logger.debug(wgted_mean)   
     return wgted_mean
 
