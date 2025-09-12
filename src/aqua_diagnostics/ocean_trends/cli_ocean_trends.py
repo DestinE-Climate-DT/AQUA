@@ -96,3 +96,10 @@ if __name__ == '__main__':
                 loglevel=loglevel
             )
             trends_plot.plot_multilevel()
+            
+            zonal_trend_plot = PlotTrends(
+                data=data_trends.trend_coef.mean('lon')),
+                outputdir=outputdir,
+                loglevel=loglevel
+            )
+            zonal_trend_plot.plot_zonal()
