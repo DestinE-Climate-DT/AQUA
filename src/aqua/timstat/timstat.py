@@ -88,19 +88,17 @@ class TimStat():
             # use the kwargs to feed the time dimension to define the method and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
-            
-            # Ensure singleton time dimension is dropped when doing total mean/stat
-            if resample_freq is None and 'time' in out.dims and out.sizes.get('time', 0) == 1:
-                out = out.isel(time=0, drop=True)
         else:
             raise KeyError(f'{stat} is not a statistic supported by AQUA TimStat()')
 
-        if exclude_incomplete:
+        if exclude_incomplete and freq not in [None, 'seasonal']:
             self.logger.info('Checking if incomplete chunks has been produced...')
             boolean_mask = check_chunk_completeness(data,
                                                     resample_frequency=resample_freq,
                                                     loglevel=self.loglevel)
             out = out.where(boolean_mask, drop=True)
+        elif exclude_incomplete and freq in ['seasonal']:
+            self.logger.warning('Excluding incomplete chunks is not supported for seasonal averaging, skipping this option...')
 
         # Set time:
         # if not center_time as the first timestamp of each month/day according to the sampling frequency
