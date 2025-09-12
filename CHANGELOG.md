@@ -13,7 +13,14 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
-- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205)
+- Locking of catalog yaml when modified (#2238)
+- Bugfix in Diagnostic class related to parsing realization (#2226)
+- Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
+- Split out plotting function for vertical profile and add contour option (#2190)
+- GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
+- Separation of concerns in LRA between dask-based computation and serial netcdf writing (#2212)
+- Refactor `grids-downloader.sh` script, now outputdir is a cli argument (#2209)
+- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205,#2218)
 - Refactor of the `dump_yaml` utility function, now correctly handling `None` values as `null` (#2198)
 - `Reader` will now turn off areas and grids capabilities when `src_grid_name` is `False` (#2198)
 - LRA and `OutputSaver` jinja-related duplicated methods are now merged (#2198)
@@ -36,6 +43,8 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Updated grouping file for dashboard (#2241)
+- Dummy: removed old diagnostic (#2210)
 - Diagnostic core: `retrieve` and `_retrieve` methods can take a `months_required` argument so that diagnostics can raise an error if insufficient months of data are available. (#2205)
 - Timeseries: introduction of the catalog entry capability, default in CLI (#2198)
 - Diagnostic core: introduction of the catalog entry capability and `self.realization` attribute (#2198)
@@ -50,7 +59,7 @@ AQUA diagnostics complete list:
 - Timeseries: fix lazy calculation of seasonal cycles (#2143)
 - Boxplots: fix output dir (#2136) 
 - Boxplots: add tests and update docs (#2129)
-- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165, #2171, #2178)
+- Seaice: refactored diagnostic with cli and added bias plot with custom projections (#1684, #2140, #2165, #2171, #2178, #2185, #2221)
 - Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
 - Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)

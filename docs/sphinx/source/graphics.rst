@@ -110,6 +110,42 @@ This code will produce a single figure with four different map projections, all 
     :width: 100%
     :alt: Example subplot with different Cartopy map projections
 
+
+
+Vertical profiles
+^^^^^^^^^^^^^^^^^
+Two functions called ``plot_vertical_profile()`` and ``plot_vertical_profile_diff()`` are provided with many options to customize the plot.
+The first function is used to plot a single vertical profile, while the second one is used to compare two vertical profiles by plotting the difference between them.
+The functions take as input xarray.DataArrays with vertical profiles of a variable. If no other option is provided, will adapt colorbar, title and labels to the attributes
+of the input DataArray. The vertical profiles can be plotted with a logarithmic scale for the x-axis and with contour lines from the main dataset overlaid on the difference plot.
+The vertical levels and the horizontal coordinate can be specified through the ``lev_name`` and ``x_coord`` arguments.
+
+In the following example we plot the vertical profile of specific humidity from the first timestep of IFS-NEMO historical-1990:
+
+.. code-block:: python
+    from aqua import Reader
+    from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
+
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly") 
+    data = reader.retrieve()
+    data = data['q'].isel(time=1).mean('lon')
+    plot_vertical_profile(data=data, var='q', lev_name='plev', x_coord='lat', vmin=-0.002, vmax=0.002, logscale=True)
+
+    reader = Reader(model="ERA5", exp="era5", source="monthly") 
+    data_ref = reader.retrieve()
+    data_ref = data_ref['q'].isel(time=1).mean('lon')
+    plot_vertical_profile_diff(data=data, data_ref=data_ref, var='q', lev_name='plev', x_coord='lat',
+                               vmin=-0.002, vmax=0.002, 
+                               vmin_contour=-0.002, vmax_contour=0.002, 
+                               logscale=True, add_contour=True)
+
+This will produce the following plot:
+
+.. figure:: figures/vertical_profile.png
+    :align: center
+    :width: 100%
+
+
 Time series
 ^^^^^^^^^^^
 

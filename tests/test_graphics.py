@@ -3,6 +3,7 @@ import os
 import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
+from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
 
@@ -138,6 +139,60 @@ class TestMaps:
             plot_maps_diff(maps="test", maps_ref="test")
 
 
+@pytest.mark.graphics
+class TestVerticalProfiles:
+    """Basic tests for the Vertical Profile functions"""
+
+    def setup_method(self):
+        """Setup method to retrieve data for testing"""
+        model = 'ERA5'
+        exp = 'era5-hpz3'
+        source = 'monthly'
+        self.reader = Reader(model=model, exp=exp, source=source, regrid='r100')
+        self.data = self.reader.retrieve(['q'])
+        self.data = self.reader.regrid(self.data)
+
+
+    def test_plot_vertical_profile(self, tmp_path):
+        """Test the plot_vertical_profile function"""
+        fig, ax = plot_vertical_profile(data=self.data['q'].isel(time=0).mean('lon'),
+                                        var='q',
+                                        vmin=-0.002,
+                                        vmax=0.002,
+                                        nlevels=8,
+                                        return_fig=True,
+                                        loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_vertical_profile.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_vertical_profile.png')
+
+    def test_plot_vertical_profile_diff(self, tmp_path):
+        """Test the plot_vertical_profile_diff function"""
+        fig, ax = plot_vertical_profile_diff(data=self.data['q'].isel(time=0).mean('lon'),
+                                            data_ref=self.data['q'].isel(time=1).mean('lon'),
+                                            var='q',
+                                            vmin=-0.002,
+                                            vmax=0.002,
+                                            vmin_contour=-0.002,
+                                            vmax_contour=0.002,
+                                            add_contour=True,
+                                            nlevels=8,
+                                            return_fig=True,
+                                            loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_vertical_profile_diff.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_vertical_profile_diff.png')
+        
 @pytest.mark.graphics
 class TestTimeseries:
     """Basic tests for the Timeseries functions"""

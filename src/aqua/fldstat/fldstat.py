@@ -195,7 +195,7 @@ class FldStat():
                 data_coord = data[coord]
 
                 # verify coordinates has the same sizes
-                if len(to_list(area_coord)) != len(to_list(data_coord)):
+                if area_coord.size != data_coord.size:
                     raise ValueError(f"{coord} has a mismatch in length!")
 
                 # Fast check if coordinates are already aligned
