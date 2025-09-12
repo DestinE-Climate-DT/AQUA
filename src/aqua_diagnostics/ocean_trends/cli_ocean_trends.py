@@ -98,7 +98,8 @@ if __name__ == '__main__':
             trends_plot.plot_multilevel()
             
             zonal_trend_plot = PlotTrends(
-                data=data_trends.trend_coef.mean('lon')),
+                data=data_trends.trend_coef.mean('lon'),
+                diagnostic='ocean_zonal_mean_trends',
                 outputdir=outputdir,
                 loglevel=loglevel
             )
