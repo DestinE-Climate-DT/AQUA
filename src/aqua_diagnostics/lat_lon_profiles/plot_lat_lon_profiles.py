@@ -1,4 +1,3 @@
-import xarray as xr
 from aqua.graphics import plot_seasonal_lat_lon_profiles
 from aqua.logger import log_configure
 from aqua.util import to_list
@@ -13,9 +12,8 @@ class PlotLatLonProfiles():
     temporal frequency, as temporal averaging is handled upstream.
     """
     def __init__(self, data=None, ref_data=None,
-                 data_type='annual',
+                 data_type='longterm',
                  ref_std_data=None,
-                 mean_type=None,
                  loglevel: str = 'WARNING'):
         """
         Initialise the PlotLatLonProfiles class.
@@ -27,21 +25,20 @@ class PlotLatLonProfiles():
                 - List of temporally-averaged data arrays for annual plots
                 - List of seasonal data [DJF, MAM, JJA, SON] for seasonal plots
             ref_data: Reference data (structure matches data based on data_type)
-            data_type (str): 'annual' for single/multi-line annual plots, 'seasonal' for 4-panel seasonal plots
+            data_type (str): 'longterm' for single/multi-line longterm plots, 'seasonal' for 4-panel seasonal plots
             ref_std_data: Reference standard deviation data
             mean_type (str): The type of mean to compute ('zonal' or 'meridional')
             loglevel (str): Logging level. Default is 'WARNING'.
             
         Note:
             data_type determines how 'data' is interpreted:
-            - 'annual': data should be list of DataArrays for single plot
+            - 'longterm': data should be list of DataArrays for single plot
             - 'seasonal': data should be [DJF, MAM, JJA, SON] for 4-panel seasonal plots
         """
         self.loglevel = loglevel
         self.logger = log_configure(loglevel, 'PlotLatLonProfiles')
 
         self.data_type = data_type
-        self.mean_type = mean_type
 
         # Store data based on type
         if data_type == 'annual':
@@ -102,13 +99,14 @@ class PlotLatLonProfiles():
         self.region = None
         self.short_name = None
         self.standard_name = None
+        self.mean_type = None
 
         if not self.data or len(self.data) == 0:
             raise ValueError("No data available for metadata extraction")
         
         # Get all data items to extract metadata from
         data_items = []
-        if self.data_type == 'annual':
+        if self.data_type == 'longterm':
             data_items = self.data
         elif self.data_type == 'seasonal':
             # For seasonal, use first season's data
@@ -133,10 +131,9 @@ class PlotLatLonProfiles():
                     self.standard_name = data_item.standard_name
         
         # Set mean_type from first data item if not already set
-        if self.mean_type is None and data_items:
-            first_data = data_items[0]
-            if first_data is not None and hasattr(first_data, 'AQUA_mean_type'):
-                self.mean_type = first_data.AQUA_mean_type
+        first_data = data_items[0]
+        if first_data is not None and hasattr(first_data, 'AQUA_mean_type'):
+            self.mean_type = first_data.AQUA_mean_type
         
         self.logger.debug(f'Extracted metadata for {len(self.models)} datasets: {list(zip(self.models, self.exps))}')
         self.logger.debug(f'Extracted region: {self.region}')
@@ -182,8 +179,7 @@ class PlotLatLonProfiles():
             loglevel=self.loglevel
         )
     
-    def save_plot(self, 
-                  fig, 
+    def save_plot(self, fig, 
                   description: str = None, 
                   rebuild: bool = True,
                   outputdir: str = './', 
@@ -231,10 +227,10 @@ class PlotLatLonProfiles():
         # Save based on format
         if format == 'png':
             outputsaver.save_png(fig, diagnostic_product, extra_keys=extra_keys, 
-                            metadata={'Description': description, 'dpi': dpi})
+                            metadata={'Description': description, 'dpi': dpi}, rebuild=rebuild)
         else:
             outputsaver.save_pdf(fig, diagnostic_product, extra_keys=extra_keys, 
-                            metadata={'Description': description, 'dpi': dpi})
+                            metadata={'Description': description, 'dpi': dpi}, rebuild=rebuild)
 
     def _check_data_length(self):
         """
