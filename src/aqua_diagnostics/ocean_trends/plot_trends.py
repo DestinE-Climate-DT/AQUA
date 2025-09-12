@@ -40,8 +40,11 @@ class PlotTrends:
             loglevel=self.loglevel,
         )
 
-    def plot_multilevel(self):
-        self.set_levels()
+    def plot_multilevel(self,
+                        levels = None):
+        if levels is None:
+            self.levels = [10, 100, 500, 1000, 3000, 5000]
+        self.logger.debug(f"Levels set to: {self.levels}")
         self.set_data_list()
         self.set_suptitle()
         self.set_title()
@@ -107,9 +110,6 @@ class PlotTrends:
                     else:
                         self.ytext.append(None)
 
-    def set_levels(self):
-        self.levels = [50, 100]
-        self.logger.debug(f"Levels set to: {self.levels}")
 
     def set_data_list(self):
         self.data_list = []
