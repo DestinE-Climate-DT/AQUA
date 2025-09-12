@@ -113,7 +113,7 @@ if __name__ == '__main__':
                                 regions=regions,
                                 startdate=dataset.get('startdate', None), 
                                 enddate=dataset.get('enddate', None), 
-                                regrid=dataset.get('regrid', None),
+                                regrid=regrid or dataset.get('regrid', None),
                                 outputdir=outputdir,
                                 loglevel=config_dict['setup']['loglevel'])
 
@@ -157,7 +157,7 @@ if __name__ == '__main__':
                                         regions=regs_indomain,
                                         startdate=reference.get('startdate', startdate), # Get specific start-end date for dataset if provided in config
                                         enddate=reference.get('enddate', enddate), 
-                                        regrid=reference.get('regrid', None),
+                                        regrid=regrid or reference.get('regrid', None),
                                         outputdir=outputdir,
                                         loglevel=config_dict['setup']['loglevel'])
 
@@ -224,7 +224,7 @@ if __name__ == '__main__':
                                 regions=regions,
                                 startdate=dataset.get('startdate', None), 
                                 enddate=dataset.get('enddate', None), 
-                                regrid=dataset.get('regrid', None),
+                                regrid=regrid or dataset.get('regrid', None),
                                 outputdir=outputdir,
                                 loglevel=config_dict['setup']['loglevel'])
 
@@ -269,7 +269,7 @@ if __name__ == '__main__':
                                         regions=regs_indomain,
                                         startdate=reference.get('startdate', startdate), # Get specific start-end date for reference if provided in config
                                         enddate=reference.get('enddate', enddate), 
-                                        regrid=reference.get('regrid', None),
+                                        regrid=regrid or reference.get('regrid', None),
                                         outputdir=outputdir,
                                         loglevel=config_dict['setup']['loglevel'])
 
@@ -338,7 +338,7 @@ if __name__ == '__main__':
                                 regions=regions,
                                 startdate=dataset.get('startdate', None), 
                                 enddate=dataset.get('enddate', None), 
-                                regrid=dataset.get('regrid', None),
+                                regrid=regrid or dataset.get('regrid', None),
                                 outputdir=outputdir,
                                 loglevel=config_dict['setup']['loglevel'])
                 
@@ -379,7 +379,7 @@ if __name__ == '__main__':
                                         regions=regs_indomain,
                                         startdate=reference.get('startdate', startdate),
                                         enddate=reference.get('enddate', enddate),
-                                        regrid=reference.get('regrid', None),
+                                        regrid=regrid or reference.get('regrid', None),
                                         outputdir=outputdir,
                                         loglevel=config_dict['setup']['loglevel'])
 

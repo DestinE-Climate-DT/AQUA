@@ -131,6 +131,7 @@ if __name__ == '__main__':
                                         'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
                                         'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
                                         'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                                        'diagnostic_name': diagnostic_name,
                                         'loglevel': loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
                             data_label = plot_ts.set_data_labels()

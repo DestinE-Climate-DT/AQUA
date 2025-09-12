@@ -18,7 +18,7 @@ AQUA core complete list:
 - GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
 - Separation of concerns in LRA between dask-based computation and serial netcdf writing (#2212)
 - Refactor `grids-downloader.sh` script, now outputdir is a cli argument (#2209)
-- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205, #2218)
+- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205,#2218)
 - Refactor of the `dump_yaml` utility function, now correctly handling `None` values as `null` (#2198)
 - `Reader` will now turn off areas and grids capabilities when `src_grid_name` is `False` (#2198)
 - LRA and `OutputSaver` jinja-related duplicated methods are now merged (#2198)
@@ -41,6 +41,10 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Diagnostic core: Locking of catalog yaml when modified (#2238)
+- Timeseries: fix output figure to use diagnostic name (#2240)
+- Diagnostic core: bugfix in Diagnostic class related to parsing realization (#2226)
+- Updated grouping file for dashboard (#2241)
 - Dummy: removed old diagnostic (#2210)
 - Diagnostic core: `retrieve` and `_retrieve` methods can take a `months_required` argument so that diagnostics can raise an error if insufficient months of data are available. (#2205)
 - Timeseries: introduction of the catalog entry capability, default in CLI (#2198)
@@ -56,7 +60,7 @@ AQUA diagnostics complete list:
 - Timeseries: fix lazy calculation of seasonal cycles (#2143)
 - Boxplots: fix output dir (#2136) 
 - Boxplots: add tests and update docs (#2129)
-- Seaice: refactored diagnostic with cli and added bias plot with custom projections (#1684, #2140, #2165, #2171, #2178, #2185)
+- Seaice: refactored diagnostic with cli and added bias plot with custom projections (#1684, #2140, #2165, #2171, #2178, #2185, #2221)
 - Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
 - Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
