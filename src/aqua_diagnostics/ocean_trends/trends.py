@@ -106,10 +106,10 @@ class Trends(Diagnostic):
         trend_dict = {}
         for var in data.data_vars:
             self.logger.debug("Adjusting trend for variable: %s", var)
+            trend_data[var].attrs = data[var].attrs
             trend_dict[var] = self.adjust_trend_for_time_frequency(
                 trend_data[var], data, loglevel=loglevel
             )
-            trend_dict[var].attrs = data[var].attrs
         trend_data = xr.Dataset(trend_dict)
         trend_data.attrs["AQUA_region"] = self.region
         self.logger.info("Trend value calculated")
