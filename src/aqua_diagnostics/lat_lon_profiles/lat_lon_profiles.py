@@ -1,9 +1,7 @@
-import xarray as xr
-
 from aqua.logger import log_configure
 from aqua.util import to_list, time_to_string
 from aqua.fixer import EvaluateFormula
-from aqua.diagnostics.core import Diagnostic, start_end_dates, OutputSaver              
+from aqua.diagnostics.core import Diagnostic, start_end_dates              
 
 class LatLonProfiles(Diagnostic):
 	"""
