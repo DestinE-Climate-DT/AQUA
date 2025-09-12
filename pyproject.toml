@@ -63,7 +63,7 @@ dependencies = [
     "kerchunk",
     "fastparquet",
     "pyfdb@git+https://github.com/ecmwf/pyfdb.git@0.0.3",
-    "ECmean4>=0.1.12",
+    "ECmean4==0.1.12",
     "gsv-interface@git+https://oauth2:pXj19aBDApiBPs1YgwuZ@earth.bsc.es/gitlab/digital-twins/de_340-2/gsv_interface.git@v2.9.6"
 ]
 
