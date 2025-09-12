@@ -68,7 +68,7 @@ class PlotTrends:
     def plot_zonal(self):
         # self.set_levels()
         self.set_data_list()
-        self.set_suptitle(plot_type='Zonal ')
+        self.set_suptitle(plot_type='Zonal mean ')
         self.set_title()
         self.set_description()
         self.set_ytext()
