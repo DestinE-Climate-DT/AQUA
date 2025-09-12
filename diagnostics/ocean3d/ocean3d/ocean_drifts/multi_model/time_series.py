@@ -19,7 +19,7 @@ class time_series:
     def _calculate_time_series(self):
         self.data_time_series = {}
         for data_name in self.data_dict:
-            self.data_dict[data_name] = self.data_dict[data_name].mean("lat").mean("lon")
+            self.data_dict[data_name] = self.data_dict[data_name].mean(["lat", "lon"])
             self.data_time_series[data_name], self.type, cmap  = data_process_by_type(
                 data=self.data_dict[data_name], anomaly=True, standardise=True, anomaly_ref='t0', loglevel=self.loglevel)
             
