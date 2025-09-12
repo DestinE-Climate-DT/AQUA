@@ -6,7 +6,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.util import evaluate_colorbar_limits
 from .styles import ConfigStyle
-
+import cartopy.feature as cfeature
 
 def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_name: str = "plev", x_coord: str = "lat",
@@ -15,6 +15,8 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           nlevels: int = 18, 
                           title: Optional[str] = None, style: Optional[str] = None,
                           logscale: bool = False,
+                          grid: bool = True,
+                          add_land: bool = False,
                           cbar: bool = True,
                           return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
                           fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
@@ -36,6 +38,8 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
         title: Plot title.
         style: Plot style (default aqua style).
         logscale: Use log scale for y-axis if True.
+        grid: If True, display grid lines on the plot.
+        add_land: If True, shade land areas in the background.
         return_fig: If True, return (fig, ax).
         figsize: Figure size.
         fig, ax: Optional figure/axes to plot on.
@@ -77,7 +81,12 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
     ax.invert_yaxis()
     if cbar:
         fig.colorbar(cax, ax=ax, label=f"{var} [{data.attrs.get('units', '')}]")
-    ax.grid(True)
+    if grid:
+        ax.grid(True)
+
+    if add_land:
+        logger.debug("Adding land")
+        ax.set_facecolor(color='grey')
 
     if title:
         logger.debug("Setting title to %s", title)
