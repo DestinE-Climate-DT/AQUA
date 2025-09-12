@@ -76,7 +76,8 @@ class LatLonProfiles(Diagnostic):
 		self.mean_type = mean_type
 
 	def retrieve(self, var: str, formula: bool = False, long_name: str = None, 
-					units: str = None, standard_name: str = None):
+				 units: str = None, standard_name: str = None,
+				 reader_kwargs: dict = {}):
 		"""
 		Retrieve the data for the specified variable and apply any formula if required.
 
@@ -86,12 +87,13 @@ class LatLonProfiles(Diagnostic):
 			long_name (str): The long name of the variable.
 			units (str): The units of the variable.
 			standard_name (str): The standard name of the variable.
+			reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
 		"""
 		self.logger.info('Retrieving data for variable %s', var)
 		# If the user requires a formula the evaluation requires the retrieval
         # of all the variables
 		if formula:
-			super().retrieve()
+			super().retrieve(reader_kwargs=reader_kwargs, months_required=12)
 			self.logger.debug("Evaluating formula %s", var)
 			self.data = EvaluateFormula(data=self.data, formula=var, long_name=long_name,
 										short_name=standard_name, units=units,
@@ -100,7 +102,7 @@ class LatLonProfiles(Diagnostic):
 				raise ValueError(f'Error evaluating formula {var}. '
 									'Check the variable names and the formula syntax.')
 		else:
-			super().retrieve(var=var)
+			super().retrieve(var=var, reader_kwargs=reader_kwargs, months_required=12)
 			if self.data is None:
 				raise ValueError(f'Variable {var} not found in the data. '
 									'Check the variable name and the data source.')
@@ -321,7 +323,8 @@ class LatLonProfiles(Diagnostic):
 			units: str = None, standard_name: str = None, std: bool = False,
 			freq: list = ['seasonal', 'longterm'],
 			exclude_incomplete: bool = True, center_time: bool = True,
-			box_brd: bool = True, outputdir: str = './', rebuild: bool = True):
+			box_brd: bool = True, outputdir: str = './', rebuild: bool = True,
+			reader_kwargs: dict = {}):
 			"""
 			Run all the steps necessary for the computation of the LatLonProfiles.
 
@@ -338,13 +341,15 @@ class LatLonProfiles(Diagnostic):
 				box_brd (bool): Whether to include the box boundaries.
 				outputdir (str): The output directory to save the results.
 				rebuild (bool): Whether to rebuild existing files.
+				reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
 			"""
 			self.logger.info('Running LatLonProfiles for %s', var)
 			
 			# Retrieve the data
 			self.retrieve(var=var, formula=formula, long_name=long_name, 
-						  units=units, standard_name=standard_name)
-			
+						  units=units, standard_name=standard_name,
+						  reader_kwargs=reader_kwargs)
+
 			self.logger.info('Mean type set to %s', self.mean_type)
 			
             # Check if data is valid
