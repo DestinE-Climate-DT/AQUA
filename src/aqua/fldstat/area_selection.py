@@ -19,12 +19,12 @@ class AreaSelection:
         """
         self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
 
-    def area_selection(self, data: xr.Dataset | xr.DataArray,
-                       lon: list | None = None, lat: list | None = None,
-                       box_brd: bool = True, drop: bool = False,
-                       lat_name: str = "lat", lon_name: str = "lon",
-                       default_coords: dict = {"lat_min": -90, "lat_max": 90,
-                                               "lon_min": 0, "lon_max": 360}) -> xr.Dataset | xr.DataArray:
+    def select_area(self, data: xr.Dataset | xr.DataArray,
+                    lon: list | None = None, lat: list | None = None,
+                    box_brd: bool = True, drop: bool = False,
+                    lat_name: str = "lat", lon_name: str = "lon",
+                    default_coords: dict = {"lat_min": -90, "lat_max": 90,
+                                            "lon_min": 0, "lon_max": 360}) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
 

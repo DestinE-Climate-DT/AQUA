@@ -128,8 +128,8 @@ class FldStat():
         self.area = self.align_area_coordinates(data)
 
         if lon_limits is not None or lat_limits is not None:
-            data = self.area_selection.area_selection(data, lon=lon_limits, lat=lat_limits,
-                                                      **kwargs)
+            data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
+                                                   **kwargs)
 
         # cleaning coordinates which have "multiple" coordinates in their own definition
         # grid_area = self._clean_spourious_coords(grid_area, name = "area")
@@ -147,6 +147,21 @@ class FldStat():
             log_history(out, f"Spatially reduced by fld{stat} from {self.grid_name} grid")
 
         return out
+    
+    def select_area(self, data: xr.Dataset | xr.DataArray,
+                    lon: list | None = None, lat: list | None = None,
+                    box_brd: bool = True, drop: bool = False,
+                    lat_name: str = "lat", lon_name: str = "lon",
+                    default_coords: dict = {"lat_min": -90, "lat_max": 90,
+                                            "lon_min": 0, "lon_max": 360}) -> xr.Dataset | xr.DataArray:
+        """
+        Select a specific area from the dataset based on longitude and latitude ranges.
+        Wrapper for AreaSelection.select_area method.
+        """
+        return self.area_selection.select_area(data, lon=lon, lat=lat,
+                                                box_brd=box_brd, drop=drop,
+                                                lat_name=lat_name, lon_name=lon_name,
+                                                default_coords=default_coords)
 
     def align_area_dimensions(self, data):
         """
