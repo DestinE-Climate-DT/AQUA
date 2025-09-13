@@ -6,6 +6,10 @@ from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
 from aqua.util import area_selection
+from .area_selection import AreaSelection
+
+# set default options for xarray
+xr.set_options(keep_attrs=True)
 
 
 class FldStat():
@@ -25,7 +29,6 @@ class FldStat():
             grid_name (str, optional): The name of the grid, used for logging history.
             loglevel (str, optional): The logging level.
         """
-
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name='FldStat')
         self.area = area
@@ -42,6 +45,9 @@ class FldStat():
             raise ValueError("Area must be an xarray DataArray or Dataset.")
 
         self.grid_name = grid_name
+
+        # Initialize area selection
+        self.area_selection = AreaSelection(loglevel=loglevel)
 
     def fldmean(self, data, **kwargs):
         """
@@ -122,8 +128,8 @@ class FldStat():
         self.area = self.align_area_coordinates(data)
 
         if lon_limits is not None or lat_limits is not None:
-            data = area_selection(data, lon=lon_limits, lat=lat_limits,
-                                  loglevel=self.loglevel, **kwargs)
+            data = self.area_selection.area_selection(data, lon=lon_limits, lat=lat_limits,
+                                                      **kwargs)
 
         # cleaning coordinates which have "multiple" coordinates in their own definition
         # grid_area = self._clean_spourious_coords(grid_area, name = "area")
