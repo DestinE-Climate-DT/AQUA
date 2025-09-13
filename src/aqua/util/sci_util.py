@@ -34,6 +34,47 @@ def lon_to_180(lon: float) -> float:
     return lon - 360 if lon > 180 else lon
 
 
+def check_coordinates(lon: list | None, lat: list | None,
+                           default_coords: dict) -> tuple[list, list]:
+        """
+        Validate and normalize latitude/longitude ranges.
+
+        Returns:
+            tuple: (lon_range, lat_range) with values mapped to default system.
+        """
+        # --- Latitude ---
+        # Populate with maximum extent if no Latitude is provided
+        if lat is None:
+            lat = [default_coords["lat_min"], default_coords["lat_max"]]
+        # Swap if values are inverted
+        elif lat[0] > lat[1]:
+            lat = [lat[1], lat[0]]
+        # Check that values are within the maximum range
+        if lat[0] < default_coords["lat_min"] or lat[1] > default_coords["lat_max"]:
+            raise ValueError(f"Latitude must be within {default_coords['lat_min']} and {default_coords['lat_max']}")
+        # If the two latitudes are equal raise an error
+        if lat[0] == lat[1]:
+            raise ValueError(f"Both latitude values are equal: {lat[0]}, please provide a valid range.")
+
+        # --- Longitude ---
+        # Populate with maximum extent if no Longitude is provided
+        if lon is None:
+            lon = [default_coords["lon_min"], default_coords["lon_max"]]
+        else:
+            # Normalize according to coordinate system
+            if default_coords["lon_min"] == 0 and default_coords["lon_max"] == 360:
+                lon = [lon_to_360(l) for l in lon]
+            elif default_coords["lon_min"] == -180 and default_coords["lon_max"] == 180:
+                lon = [lon_to_180(l) for l in lon]
+            else:
+                raise ValueError("Unsupported default longitude system.")
+        # If the two longitudes are equal raise an error
+        if lon[0] == lon[1]:
+            raise ValueError(f"Longitude: {lon[0]} == {lon[1]}, please provide a valid range.")
+
+        return lon, lat
+
+
 def select_season(xr_data, season: str):
     """
     Select a season from a xarray.DataArray or xarray.Dataset.

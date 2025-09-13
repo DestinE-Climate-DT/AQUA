@@ -11,8 +11,8 @@ from .graphics import apply_circular_window
 from .graphics import get_nside, get_npix, healpix_resample
 from .projections import get_projection
 from .realizations import format_realization, DEFAULT_REALIZATION
-from .sci_util import lon_to_180, lon_to_360
-from .sci_util import area_selection, check_coordinates, select_season, merge_attrs
+from .sci_util import lon_to_180, lon_to_360, check_coordinates
+from .sci_util import select_season, merge_attrs
 from .string import strlist_to_phrase, lat_to_phrase
 from .util import generate_random_string, get_arg, create_folder, to_list
 from .util import file_is_complete, files_exist, find_vert_coord
@@ -34,8 +34,8 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'get_nside', 'get_npix', 'healpix_resample',
            'get_projection',
            'format_realization', 'DEFAULT_REALIZATION',
-           'lon_to_180', 'lon_to_360',
-           'area_selection', 'check_coordinates', 'select_season', 'merge_attrs',
+           'lon_to_180', 'lon_to_360', 'check_coordinates',
+           'select_season', 'merge_attrs',
            'strlist_to_phrase', 'lat_to_phrase',
            'generate_random_string', 'get_arg', 'create_folder', 'to_list',
            'file_is_complete', 'files_exist', 'find_vert_coord',
