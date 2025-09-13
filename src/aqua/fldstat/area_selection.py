@@ -11,6 +11,12 @@ class AreaSelection:
     """Class to select an area from an xarray Dataset."""
 
     def __init__(self, loglevel: str = "WARNING"):
+        """
+        Initialize the AreaSelection.
+
+        Args:
+            loglevel (str, optional): The logging level. Default is "WARNING".
+        """
         self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
 
     def area_selection(self, data: xr.Dataset | xr.DataArray,
