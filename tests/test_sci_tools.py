@@ -2,7 +2,8 @@ import pytest
 
 import xarray as xr
 import numpy as np
-from aqua.util import area_selection, select_season
+from aqua.fldstat import AreaSelection
+from aqua.util import select_season
 
 loglevel = 'DEBUG'
 
@@ -21,8 +22,9 @@ def test_valid_selection_no_brd(sample_data):
     """Test with valid latitude and longitude ranges, no box_brd"""
     lat_range = [10, 30]
     lon_range = [45, 55]
-    result = area_selection(sample_data, lat=lat_range, lon=lon_range,
-                            box_brd=False, loglevel=loglevel)
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data,
+                                                          lat=lat_range, lon=lon_range,
+                                                          box_brd=False)
 
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
@@ -34,8 +36,9 @@ def test_valid_selection(sample_data):
     """Test with valid latitude and longitude ranges"""
     lat_range = [15, 25]
     lon_range = [45, 55]
-    result = area_selection(sample_data, lat=lat_range, lon=lon_range,
-                            box_brd=True, loglevel=loglevel)
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data,
+                                                          lat=lat_range, lon=lon_range,
+                                                          box_brd=True)
 
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
@@ -46,8 +49,8 @@ def test_valid_selection(sample_data):
 def test_missing_lat_lon(sample_data):
     """Test when both lat and lon are None, should raise a ValueError"""
     with pytest.raises(ValueError):
-        area_selection(sample_data, lat=None, lon=None, box_brd=True,
-                       loglevel=loglevel)
+        AreaSelection(loglevel=loglevel).select_area(sample_data, lat=None, lon=None, box_brd=True)
+
 
 
 @pytest.mark.aqua
@@ -61,20 +64,20 @@ def test_missing_lat_lon_coords():
                                     dims=['lat', 'lon'])
 
     with pytest.raises(KeyError):
-        area_selection(data_missing_lat, lat=[15, 25], lon=[45, 55],
-                       box_brd=True, loglevel=loglevel)
+        AreaSelection(loglevel=loglevel).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55],
+                                                      box_brd=True)
 
     with pytest.raises(KeyError):
-        area_selection(data_missing_lon, lat=[15, 25], lon=[45, 55],
-                       box_brd=True, loglevel=loglevel)
+        AreaSelection(loglevel=loglevel).select_area(data_missing_lon, lat=[15, 25], lon=[45, 55],
+                                                      box_brd=True)
 
 
 @pytest.mark.aqua
 def test_missing_data():
     """Test with missing data, should raise a ValueError"""
     with pytest.raises(ValueError):
-        area_selection(None, lat=[15, 25], lon=[45, 55],
-                       box_brd=True, loglevel=loglevel)
+        AreaSelection(loglevel=loglevel).select_area(None, lat=[15, 25], lon=[45, 55],
+                                                      box_brd=True)
 
 
 @pytest.mark.aqua
