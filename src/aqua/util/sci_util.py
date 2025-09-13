@@ -184,37 +184,33 @@ def check_coordinates(lon=None, lat=None,
 
     return lon, lat
 
-
-def _lon_180_to_360(lon: float):
+def lon_to_360(lon: float) -> float:
     """
-    Convert longitude [-180,180] to [0,360] range.
-    If lon is already in [0,360] range, it is returned as is.
+    Convert longitude from [-180,180] (or any value) to [0,360].
 
     Args:
         lon (float): longitude coordinate
 
     Returns:
-        lon (float): converted longitude
+        float: converted longitude
     """
-    if lon < 0:
-        lon = 360 + lon
-    return lon
+    lon = lon % 360
+    return 0.0 if lon == 360 else lon
 
 
-def _lon_360_to_180(lon: float):
+def lon_to_180(lon: float) -> float:
     """
-    Convert longitude [0,360] to [-180,180] range.
-    If lon is already in [-180,180] range, it is returned as is.
+    Convert longitude from [0,360] (or any value) to [-180,180].
 
     Args:
         lon (float): longitude coordinate
 
     Returns:
-        lon (float): converted longitude
+        float: converted longitude
     """
-    if lon > 180:
-        lon = - 360 + lon
-    return lon
+    lon = lon % 360
+    return lon - 360 if lon > 180 else lon
+
 
 def select_season(xr_data, season: str):
     """
