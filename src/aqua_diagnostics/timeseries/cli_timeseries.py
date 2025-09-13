@@ -54,6 +54,7 @@ if __name__ == '__main__':
     regrid = get_arg(args, 'regrid', None)
     logger.info(f"Regrid option is set to {regrid}")
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None
     if realization:
         reader_kwargs = {'realization': realization}
     else:
@@ -86,7 +87,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time, 'reader_kwargs': reader_kwargs}
+                                    'center_time': center_time}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -97,7 +98,8 @@ if __name__ == '__main__':
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             logger.debug(f"Dataset args: {dataset_args}")
                             ts[i] = Timeseries(**init_args, **dataset_args)
-                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry)
+                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry,
+                                      reader_kwargs=dataset.get('reader_kwargs', reader_kwargs))
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].startdate for i in range(len(ts))])
@@ -108,7 +110,6 @@ if __name__ == '__main__':
 
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
-                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             ts_ref = [None] * len(config_dict['references'])
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
@@ -120,7 +121,8 @@ if __name__ == '__main__':
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 logger.info(f"Reference args: {reference_args}")
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
-                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False)
+                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False,
+                                              reader_kwargs=reference.get('reader_kwargs', {}))
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -164,7 +166,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time, 'reader_kwargs': reader_kwargs}
+                                    'center_time': center_time}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -174,7 +176,8 @@ if __name__ == '__main__':
                                             'exp': dataset['exp'], 'source': dataset['source'],
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             ts[i] = Timeseries(**init_args, **dataset_args)
-                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry)
+                            ts[i].run(**run_args, create_catalog_entry=create_catalog_entry,
+                                      reader_kwargs=dataset.get('reader_kwargs', reader_kwargs))
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].plt_startdate for i in range(len(ts))])
@@ -183,7 +186,6 @@ if __name__ == '__main__':
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             ts_ref = [None] * len(config_dict['references'])
-                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
@@ -193,7 +195,8 @@ if __name__ == '__main__':
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
-                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False)
+                                ts_ref[i].run(**run_args, std=True, create_catalog_entry=False,
+                                              reader_kwargs=reference.get('reader_kwargs', {}))
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -240,7 +243,7 @@ if __name__ == '__main__':
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
-                                    'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
+                                    'outputdir': outputdir, 'rebuild': rebuild}
 
                         # Initialize a list of len from the number of datasets
                         sc = [None] * len(config_dict['datasets'])
@@ -251,7 +254,8 @@ if __name__ == '__main__':
                                             'exp': dataset['exp'], 'source': dataset['source'],
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             sc[i] = SeasonalCycles(**init_args, **dataset_args)
-                            sc[i].run(**run_args, create_catalog_entry=create_catalog_entry)
+                            sc[i].run(**run_args, create_catalog_entry=create_catalog_entry,
+                                      reader_kwargs=dataset.get('reader_kwargs', reader_kwargs))
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([sc[i].startdate for i in range(len(sc))])
@@ -260,7 +264,6 @@ if __name__ == '__main__':
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             sc_ref = [None] * len(config_dict['references'])
-                            run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
@@ -270,7 +273,8 @@ if __name__ == '__main__':
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 sc_ref[i] = SeasonalCycles(**init_args, **reference_args)
-                                sc_ref[i].run(**run_args, std=True, create_catalog_entry=False)
+                                sc_ref[i].run(**run_args, std=True, create_catalog_entry=False,
+                                              reader_kwargs=reference.get('reader_kwargs', {}))
 
                         # Plot the seasonal cycles
                         if save_pdf or save_png:
@@ -311,7 +315,7 @@ if __name__ == '__main__':
                 run_args = {'freq': freq, 't2m_name': config_dict['diagnostics']['gregory'].get('t2m_name', '2t'),
                             'net_toa_name': config_dict['diagnostics']['gregory'].get('net_toa_name', 'tnlwrf+tnswrf'),
                             'exclude_incomplete': config_dict['diagnostics']['gregory'].get('exclude_incomplete', True),
-                            'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
+                            'outputdir': outputdir, 'rebuild': rebuild}
 
                 # Initialize a list of len from the number of datasets
                 greg = [None] * len(config_dict['datasets'])
@@ -323,10 +327,9 @@ if __name__ == '__main__':
                                     'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
 
                     greg[i] = Gregory(**init_args, **dataset_args)
-                    greg[i].run(**run_args, **model_args)
+                    greg[i].run(**run_args, **model_args, reader_kwargs=dataset.get('reader_kwargs', {}))
 
                 if config_dict['diagnostics']['gregory']['std']:
-                    run_args.pop('reader_kwargs')  # Remove reader_kwargs from run_args for references
                     # t2m:
                     dataset_args = {**config_dict['diagnostics']['gregory']['t2m_ref'],
                                     'regrid': regrid,

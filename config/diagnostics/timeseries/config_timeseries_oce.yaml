@@ -8,6 +8,7 @@ datasets:
     exp: null
     source: 'lra-r100-monthly'
     regrid: null
+    reader_kwargs: null # it can be a dictionary with reader kwargs
   # Possible second/third/fourth datasets here, no present by default
   # - catalog: 'obs'
   #   model: 'ERA5'
