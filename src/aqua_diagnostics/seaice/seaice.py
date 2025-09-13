@@ -361,7 +361,7 @@ class SeaIce(Diagnostic):
 
         # regional selection with lat-lon: use default dict to set dynamic lon bounds found above, and set lat from -90 to 90
         res_dict = self._select_region(areacello, region=region, diagnostic="seaice", drop=drop,
-                                       default={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
+                                       default_coords={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
         areacello = res_dict['data']
 
         return areacello
