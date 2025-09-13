@@ -463,6 +463,12 @@ class Reader():
             return self.tgt_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
         return self.src_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
 
+    def select_area(self, data, lon_limits=None, lat_limits=None, **kwargs):
+        """Select a specific area from the dataset based on longitude and latitude ranges."""
+        if self._check_if_regridded(data):
+            return self.tgt_fldstat.select_area(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
+        return self.src_fldstat.select_area(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
+
     def set_default(self):
         """Sets this reader as the default for the accessor."""
 
