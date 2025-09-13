@@ -5,7 +5,6 @@ import numpy as np
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection
 from .area_selection import AreaSelection
 
 # set default options for xarray
