@@ -19,8 +19,7 @@ from aqua.reader import Reader
 from aqua.util import create_folder, generate_random_string
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
-from aqua.util import create_zarr_reference
-from aqua.util import area_selection, replace_intake_vars
+from aqua.util import create_zarr_reference, replace_intake_vars
 from .lra_util import move_tmp_files, list_lra_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
 
@@ -568,7 +567,7 @@ class LRAgenerator():
             temp_data = self._remove_regridded(temp_data)
 
         if self.region:
-            temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
+            temp_data = self.reader.select_area(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
 
         # Splitting data into yearly files
         years = sorted(set(temp_data.time.dt.year.values))
