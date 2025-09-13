@@ -157,6 +157,9 @@ class FldStat():
         Select a specific area from the dataset based on longitude and latitude ranges.
         Wrapper for AreaSelection.select_area method.
         """
+        # TODO: The lat_name and lon_name are at the actual stage in the
+        # select_area method arguments. However it is possible to foresee
+        # that we may want to automatically detect the names
         return self.area_selection.select_area(data, lon=lon, lat=lat,
                                                 box_brd=box_brd, drop=drop,
                                                 lat_name=lat_name, lon_name=lon_name,
