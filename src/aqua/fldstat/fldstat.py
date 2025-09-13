@@ -5,7 +5,7 @@ import numpy as np
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection, to_list
+from aqua.util import area_selection
 
 
 class FldStat():
@@ -43,7 +43,6 @@ class FldStat():
 
         self.grid_name = grid_name
 
-
     def fldmean(self, data, **kwargs):
         """
         Perform a weighted global average. Builds on fldstat.
@@ -80,7 +79,6 @@ class FldStat():
         Returns:
             The value of the averaged field
         """
-        
         if stat not in ["mean"]:
             raise ValueError(f"Statistic {stat} not supported, only 'mean' is supported.")
 
@@ -211,4 +209,3 @@ class FldStat():
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
     
         return self.area
-
