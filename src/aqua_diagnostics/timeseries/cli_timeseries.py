@@ -57,7 +57,7 @@ if __name__ == '__main__':
     if realization:
         reader_kwargs = {'realization': realization}
     else:
-        reader_kwargs = {}
+        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
