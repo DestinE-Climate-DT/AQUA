@@ -1,4 +1,5 @@
 import xarray as xr
+from typeguard import typechecked
 from aqua.logger import log_configure, log_history
 from aqua.util import check_coordinates
 
@@ -19,6 +20,7 @@ class AreaSelection:
         """
         self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
 
+    @typechecked
     def select_area(self, data: xr.Dataset | xr.DataArray,
                     lon: list | None = None, lat: list | None = None,
                     box_brd: bool = True, drop: bool = False,
