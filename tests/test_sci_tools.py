@@ -2,6 +2,7 @@ import pytest
 
 import xarray as xr
 import numpy as np
+from typeguard import TypeCheckError
 from aqua.fldstat import AreaSelection
 from aqua.util import select_season
 
@@ -47,10 +48,10 @@ def test_valid_selection(sample_data):
 
 @pytest.mark.aqua
 def test_missing_lat_lon(sample_data):
-    """Test when both lat and lon are None, should raise a ValueError"""
-    with pytest.raises(ValueError):
-        AreaSelection(loglevel=loglevel).select_area(sample_data, lat=None, lon=None, box_brd=True)
-
+    """Test when both lat and lon are None, the sample_data is returned"""
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data, lat=None, lon=None, box_brd=True)
+    assert result is not None
+    assert result.equals(sample_data)
 
 
 @pytest.mark.aqua
@@ -74,9 +75,13 @@ def test_missing_lat_lon_coords():
 
 @pytest.mark.aqua
 def test_missing_data():
-    """Test with missing data, should raise a ValueError"""
-    with pytest.raises(ValueError):
-        AreaSelection(loglevel=loglevel).select_area(None, lat=[15, 25], lon=[45, 55],
+    """Test with missing data or wrong type"""
+    with pytest.raises(TypeError):
+        AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55],
+                                                      box_brd=True)
+        
+    with pytest.raises(TypeCheckError):
+        AreaSelection(loglevel=loglevel).select_area('invalid_data', lat=[15, 25], lon=[45, 55],
                                                       box_brd=True)
 
 
