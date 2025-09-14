@@ -1,0 +1,14 @@
+fixer_name:
+    fesom-eerie-v1-2d:
+        delete:
+            - depth
+        data_model: false
+        convention: eccodes
+        vars:
+        # FESOM wrote avg_tos and avg_thetao with degC and having K as unit name
+            tos:
+                src_units: degC
+            thetao:
+                src_units: degC
+            delete:
+                - depth

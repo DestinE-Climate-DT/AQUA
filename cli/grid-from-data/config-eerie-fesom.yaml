@@ -1,0 +1,12 @@
+# These are needed for the AQUA retrieve
+model: IFS-FESOM
+exp: eerie-fesom-historical-1950
+source: 3D_monthly_fesom_0.25deg
+var: avg_so
+
+# These are extra info:
+# model name for saving the grid
+model_name: fesom
+3d: True # 2d or 3d
+# target folder for the grid generated
+tgt: /work/ab0995/a270260/aqua_eerie_grid
