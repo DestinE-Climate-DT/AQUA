@@ -14,7 +14,7 @@ from aqua import Reader, util, logger
 from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
 from aqua.util import create_folder, coord_names
 import pandas as pd
-from aqua.util import area_selection
+from aqua.fldstat import AreaSelection
 from aqua import Reader, plot_single_map
 
 
@@ -262,9 +262,9 @@ class sshVariability():
             
             lon_lim = config.get("region_selection_limits", {}).get("lon_lim")
             lat_lim = config.get("region_selection_limits", {}).get("lat_lim")
-    
-            ssh_sel = area_selection(data, lon=lon_lim, lat=lat_lim, drop=True)
-                
+
+            ssh_sel = AreaSelection().select_area(data=data, lon=lon_lim, lat=lat_lim, drop=True)
+
             ax = fig.add_subplot(len(ssh_data_dict), 1, i)  # Use the current value of i
 
             save_path = os.path.join(self.create_output_directory(config), fig_format)

@@ -1,220 +1,77 @@
 """Module for scientific utility functions."""
 import xarray as xr
-from aqua.logger import log_configure, log_history
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
 
-def area_selection(data=None, lat=None, lon=None,
-                   box_brd=True, drop=False,
-                   **kwargs):
+def lon_to_360(lon: float) -> float:
     """
-        Extract a custom area from a DataArray.
-        Sets other coordinates to NaN.
-        Works on coordinates from 0 to 360, but converts different requests
-
-        Args:
-            data (xarray.DataArray 
-                  or xarray.DataSet): input data to be selected
-            lat (list, opt):          latitude coordinates
-            lon (list, opt):          longitude coordinates
-            box_brd (bool,opt):       choose if coordinates are comprised or not.
-                                      Default is True
-            drop (bool, opt):         drop coordinates not in the selected area.
-                                      Default is False
-
-        Keyword Args:
-            - loglevel (str, opt): logging level (default: 'warning')
-
-        Returns:
-            (xarray.DataSet):  data on a custom surface
-
-        Raises:
-            ValueError: if data is None
-            KeyError:   if 'lon' or 'lat' are not in the coordinates
-            ValueError: if lat and lon are both None
-    """
-    
-    if data is None:
-        raise ValueError('data cannot be None')
-
-    # adding safety check since this works only with lon/lat
-    if "lon" not in data.coords or "lat" not in data.coords:
-        raise KeyError('Cannot find lon and lat in the coordinates, cannot perform area selection')
-
-    if lat is None and lon is None:
-        raise ValueError('lat and lon cannot be both None')
-
-    lon, lat = check_coordinates(lon=lon, lat=lat, **kwargs)
-
-    # Selection based on box_brd
-    if box_brd:
-        lat_condition = (data.lat >= lat[0]) & (data.lat <= lat[1])
-        # across Greenwich
-        if lon[0] > lon[1]:
-            lon_condition = (
-                (data.lon >= lon[0]) & (data.lon <= 360)
-            ) | (
-                (data.lon >= 0) & (data.lon <= lon[1])
-            )
-        else:
-            lon_condition = (data.lon >= lon[0]) & (data.lon <= lon[1])
-    else:
-        lat_condition = (data.lat > lat[0]) & (data.lat < lat[1])
-        # across Greenwich
-        if lon[0] > lon[1]:
-            lon_condition = (
-                (data.lon > lon[0]) & (data.lon < 360)
-            ) | (
-                (data.lon > 0) & (data.lon < lon[1])
-            )
-        else:
-            lon_condition = (data.lon > lon[0]) & (data.lon < lon[1])
-
-    data = data.where(lat_condition & lon_condition, drop=drop)
-
-    data = log_history(data, f"Area selection: lat={lat}, lon={lon}")
-
-    return data
-
-
-def check_coordinates(lon=None, lat=None,
-                      default={"lat_min": -90,
-                               "lat_max": 90,
-                               "lon_min": 0,
-                               "lon_max": 360},
-                      loglevel='WARNING'):
-    """
-        Check if coordinates are valid.
-        If not, try to convert them to a valid format.
-        Raises an error if coordinates are not valid.
-
-        Args:
-            lat (list, opt):          latitude coordinates
-            lon (list, opt):          longitude coordinates
-            default (dict, opt):      default coordinates system
-            loglevel (str, opt):      logging level. Default is 'WARNING'.
-
-        Returns:
-            (list, list):  latitude and longitude coordinates
-    """
-    logger = log_configure(log_level=loglevel, log_name='Check coordinates')
-
-    logger.debug('Input coordinates: lat=%s, lon=%s', lon, lat)
-    logger.debug('Default coordinates: %s', default)
-
-    if lat is None and lon is None:
-        raise ValueError('lat and lon cannot be both None')
-
-    if lat:
-        lat_min, lat_max = lat
-
-        if lat_min is None and lat_max is None:
-            logger.info('lat_min and lat_max are None, setting them to default values')
-            lat_min = default["lat_min"]
-            lat_max = default["lat_max"]
-
-        if lat_min > lat_max:
-            # Swap values
-            lat = [lat_max, lat_min]
-            lat_min, lat_max = lat
-
-        if lat_min < default["lat_min"]:
-            raise ValueError(f'lat_min cannot be lower than {default["lat_min"]}')
-        if lat_max > default["lat_max"]:
-            raise ValueError(f'lat_max cannot be higher than {default["lat_max"]}')
-
-        lat = [lat_min, lat_max]
-
-    if lon:
-        lon_min, lon_max = lon
-
-        if lon_min is None and lon_max is None:
-            logger.info('lon_min and lon_max are None, setting them to default values')
-            lon_min = default["lon_min"]
-            lon_max = default["lon_max"]
-        # if lon_min > lon_max:
-        #     # Swap values
-        #     lon = [lon_max, lon_min]
-        #     lon_min, lon_max = lon
-
-        logger.debug('lon_min=%s, lon_max=%s', lon_min, lon_max)
-
-        if lon_min == 0 and lon_max == 360:
-            logger.debug('Convert manually since conversion will give the same values twice')
-            lon_min = default["lon_min"]
-            lon_max = default["lon_max"]
-        else:
-            if default["lon_min"] == 0 and default["lon_max"] == 360:
-                logger.debug('Convert to [0,360] range')
-                lon_min = _lon_180_to_360(lon_min)
-                lon_max = _lon_180_to_360(lon_max)
-                logger.debug('lon_min=%s, lon_max=%s', lon_min, lon_max)
-            elif default["lon_min"] == -180 and default["lon_max"] == 180:
-                logger.debug('Convert to [-180,180] range')
-                lon_min = _lon_360_to_180(lon_min)
-                lon_max = _lon_360_to_180(lon_max)
-            else:
-                raise ValueError('Invalid default coordinates system')
-
-            if lon_min < default["lon_min"]:
-                raise ValueError(f'lon_min cannot be lower than {default["lon_min"]}')
-            if lon_max > default["lon_max"]:
-                raise ValueError(f'lon_max cannot be higher than {default["lon_max"]}')
-
-        lon = [lon_min, lon_max]
-
-    # If lat or lon are None, set them to default values
-    if lat is None:
-        lat = [default["lat_min"], default["lat_max"]]
-    if lon is None:
-        lon = [default["lon_min"], default["lon_max"]]
-
-    # If lat min and max are the same, set them to default values
-    # same for lon
-    if lat[0] == lat[1]:
-        lat = [default["lat_min"], default["lat_max"]]
-        logger.warning('lat_min and lat_max are the same, setting them to default values')
-    if lon[0] == lon[1]:
-        lon = [default["lon_min"], default["lon_max"]]
-        logger.warning('lon_min and lon_max are the same, setting them to default values')
-
-    logger.debug('Output coordinates: lat=%s, lon=%s', lat, lon)
-
-    return lon, lat
-
-
-def _lon_180_to_360(lon: float):
-    """
-    Convert longitude [-180,180] to [0,360] range.
-    If lon is already in [0,360] range, it is returned as is.
+    Convert longitude from [-180,180] (or any value) to [0,360].
 
     Args:
         lon (float): longitude coordinate
 
     Returns:
-        lon (float): converted longitude
+        float: converted longitude
     """
-    if lon < 0:
-        lon = 360 + lon
-    return lon
+    return 360 if lon == 360 else lon % 360
 
 
-def _lon_360_to_180(lon: float):
+def lon_to_180(lon: float) -> float:
     """
-    Convert longitude [0,360] to [-180,180] range.
-    If lon is already in [-180,180] range, it is returned as is.
+    Convert longitude from [0,360] (or any value) to [-180,180].
 
     Args:
         lon (float): longitude coordinate
 
     Returns:
-        lon (float): converted longitude
+        float: converted longitude
     """
-    if lon > 180:
-        lon = - 360 + lon
-    return lon
+    if lon == -180:
+        return -180
+    lon = lon % 360
+    return lon - 360 if lon > 180 else lon
+
+
+def check_coordinates(lon: list | None, lat: list | None,
+                           default_coords: dict) -> tuple[list, list]:
+        """
+        Validate and normalize latitude/longitude ranges.
+
+        Returns:
+            tuple: (lon_range, lat_range) with values mapped to default system.
+        """
+        # --- Latitude ---
+        # Populate with maximum extent if no Latitude is provided
+        if lat is None:
+            lat = [default_coords["lat_min"], default_coords["lat_max"]]
+        # Swap if values are inverted
+        elif lat[0] > lat[1]:
+            lat = [lat[1], lat[0]]
+        # If the two latitudes are equal raise an error
+        elif lat[0] == lat[1]:
+            raise ValueError(f"Both latitude values are equal: {lat[0]}, please provide a valid range.")
+        # Check that values are within the maximum range
+        if lat[0] < default_coords["lat_min"] or lat[1] > default_coords["lat_max"]:
+            raise ValueError(f"Latitude must be within {default_coords['lat_min']} and {default_coords['lat_max']}")
+
+        # --- Longitude ---
+        # Populate with maximum extent if no Longitude is provided
+        if lon is None or (lon[0] == 0 and lon[1] == 360) or (lon[0] == -180 and lon[1] == 180):
+            lon = [default_coords["lon_min"], default_coords["lon_max"]]
+        # If the two longitudes are equal raise an error
+        elif lon[0] == lon[1]:
+            raise ValueError(f"Longitude: {lon[0]} == {lon[1]}, please provide a valid range.")
+        else:
+            # Normalize according to coordinate system
+            if default_coords["lon_min"] == 0 and default_coords["lon_max"] == 360:
+                lon = [lon_to_360(l) for l in lon]
+            elif default_coords["lon_min"] == -180 and default_coords["lon_max"] == 180:
+                lon = [lon_to_180(l) for l in lon]
+
+        return lon, lat
+
 
 def select_season(xr_data, season: str):
     """
