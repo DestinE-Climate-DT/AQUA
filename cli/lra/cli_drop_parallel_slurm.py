@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
-AQUA wrapper for LRA CLI to submit parallel slurm job based on EACH variable
+AQUA wrapper for DROP CLI to submit parallel slurm job based on EACH variable
 Use with caution, it can submit tens of sbatch jobs!
 '''
 
@@ -23,7 +23,7 @@ def is_job_running(job_name, username):
     # Parse the output to check if the job name is in the list
     return job_name in output
 
-def load_jinja_template(template_file='aqua_lra.j2'):
+def load_jinja_template(template_file='aqua_drop.j2'):
     """
     Load a Jinja2 template.
 
@@ -46,7 +46,7 @@ def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_fil
                   dependency=None, singularity=None):
     
     """
-    Submit a sbatch script for the LRA CLI with basic options
+    Submit a sbatch script for the DROP CLI with basic options
 
     args:
         model: model to be processed
@@ -68,7 +68,7 @@ def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_fil
 
     # create identifier for each model-exp-source-var tuple
     job_name = "_".join([model, exp, source, varname])
-    full_job_name = 'lra-generator_' + job_name
+    full_job_name = 'drop_' + job_name
     log_dir = 'log'
 
     # bit complicated way to get the AQUA main path
@@ -78,8 +78,8 @@ def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_fil
         'job_name': full_job_name,
         'username': slurm_dict.get('username', 'padavini'),
         'partition': slurm_dict.get('partition', 'debug'),
-        'log_output': f'{log_dir}/overnight-lra_{job_name}_%j.out',
-        'log_error': f'{log_dir}/overnight-lra_{job_name}_%j.err',
+        'log_output': f'{log_dir}/overnight-drop_{job_name}_%j.out',
+        'log_error': f'{log_dir}/overnight-drop_{job_name}_%j.err',
         'account': slurm_dict.get('account', 'project_465000454'),
         'nodes': str(slurm_dict.get('nodes', 1)),
         'ntasks_per_node': str(slurm_dict.get('ntasks_per_node', workers)),
@@ -138,7 +138,7 @@ def parse_arguments(arguments):
     Parse command line arguments
     """
 
-    parser = argparse.ArgumentParser(description='AQUA LRA parallel SLURM generator')
+    parser = argparse.ArgumentParser(description='AQUA DROP parallel SLURM')
     parser.add_argument('-c', '--config', type=str,
                         help='AQUA yaml configuration file', required=True)
     parser.add_argument('-s', '--singularity', action="store_true",

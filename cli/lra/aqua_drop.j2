@@ -19,8 +19,8 @@ unset SINGULARITY_BIND  # Lumi specific fix for singularity
 {% endif %}
 bash {{ aqua }}/cli/aqua-container/load-aqua-container.sh {{ machine }} <<EOF
 #!/bin/bash
-aqua lra -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
+aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
 EOF
 {% else %}
-aqua lra -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
+aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
 {% endif %}
