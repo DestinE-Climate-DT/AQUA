@@ -19,7 +19,7 @@ from aqua.util.util import HiddenPrints, to_list
 from aqua.cli.parser import parse_arguments
 from aqua.cli.diagnostic_config import diagnostic_config
 from aqua.cli.analysis import analysis_execute
-from aqua.cli.lra import lra_execute
+from AQUA.src.aqua.cli.drop import drop_execute
 from aqua.cli.catgen import catgen_execute
 from aqua.cli.builder import builder_execute
 
@@ -68,7 +68,7 @@ class AquaConsole():
                 'build': self.grids_build
             },
             'analysis': self.analysis,
-            'lra': self.lra,
+            'drop': self.drop,
             'catgen': self.catgen
         }
 
@@ -843,16 +843,16 @@ class AquaConsole():
         print('Running the AQUA analysis')
         analysis_execute(args)
 
-    def lra(self, args):
+    def drop(self, args):
         """
-        Run the Low Resolution Archive generator
+        Run the Data Reduction OPerator
         
         Args:
             args (argparse.Namespace): arguments from the command line
         """
 
-        print('Running the Low Resolution Archive generator')
-        lra_execute(args)
+        print('Running the Data Reduction OPerator')
+        drop_execute(args)
 
     def catgen(self, args):
         """
