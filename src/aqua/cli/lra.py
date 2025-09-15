@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 '''
 AQUA regridding tool to create low resolution archive.
-Make use of aqua.LRA_Generator class to perform the regridding.
+Make use of aqua.DROP class to perform the regridding.
 Functionality can be controlled through CLI options and
 a configuration yaml file.
 '''
 
 import sys
 import argparse
-from aqua import LRAgenerator
+from aqua import DROP
 from aqua.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
 
@@ -23,7 +23,7 @@ def lra_parser(parser = None):
     """
 
     if parser is None:
-        parser = argparse.ArgumentParser(description='AQUA LRA generator')
+        parser = argparse.ArgumentParser(description='AQUA DROP')
     
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
@@ -64,9 +64,9 @@ def lra_parser(parser = None):
     #return parser.parse_args(arguments)
     return parser
 
-def lra_execute(args):
+def drop_execute(args):
     """
-    Executing the LRA by parsing the arguments and configuring the machinery
+    Executing the DROP by parsing the arguments and configuring the machinery
     """
 
         # to check if GSV is available and return the version
@@ -125,7 +125,7 @@ def lra_execute(args):
     default_workers = get_arg(args, 'workers', 1)
     
 
-    lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
+    drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
             region=region, stat=stat,
@@ -133,7 +133,7 @@ def lra_execute(args):
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
-def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
+def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
             region=None, stat='mean',
             definitive=False, overwrite=False,
             rebuild=False, monitoring=False,
@@ -200,8 +200,8 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                         # disabling rebuild if we are not in the first realization and first varname
                         if varname != varnames[0] or realization != loop_realizations[0]:
                             rebuild = False
-                        # init the LRA
-                        lra = LRAgenerator(catalog=catalog, model=model, exp=exp, source=source,
+                        # init the DROP
+                        drop = DROP(catalog=catalog, model=model, exp=exp, source=source,
                                         var=varname, resolution=resolution,
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir,
@@ -217,22 +217,22 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                         
                         if not only_catalog:
                             # check that your LRA is not already there (it will not work in streaming mode)
-                            lra.check_integrity(varname)
+                            drop.check_integrity(varname)
 
                             # retrieve and generate
-                            lra.retrieve()
-                            lra.generate_lra()
+                            drop.retrieve()
+                            drop.generate_lra()
 
             # create the catalog once the loop is over
-            lra.create_catalog_entry()
+            drop.create_catalog_entry()
             if do_zarr:
-                lra.create_zarr_entry(verify=verify_zarr)
+                drop.create_zarr_entry(verify=verify_zarr)
 
-    print('CLI LRA run completed. Have yourself a tasty pint of beer!')
+    print('CLI DROP run completed. Have yourself a tasty pint of beer!')
 
 # if you want to execute the script from terminal without the aqua entry point
 if __name__ == '__main__':
 
     args = lra_parser().parse_args(sys.argv[1:])
-    lra_execute(args)
+    drop_execute(args)
    
