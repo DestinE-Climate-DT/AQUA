@@ -1,5 +1,5 @@
 """
-LRA class for glob
+DROP class for glob
 """
 
 import os
@@ -38,7 +38,7 @@ VAR_ENCODING = {
 }
 
 
-class LRAgenerator():
+class DROP():
     """
     Class to generate LRA data at required frequency/resolution
     """
@@ -64,7 +64,7 @@ class LRAgenerator():
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
                  **kwargs):
         """
-        Initialize the LRA_Generator class
+        Initialize the DROP class
 
         Args:
             catalog (string):        The catalog you want to reader. If None, guessed by the reader.
@@ -74,7 +74,7 @@ class LRAgenerator():
             var (str, list):         Variable(s) to be processed and archived
                                      in LRA.
             resolution (string):     The target resolution for the LRA. If None,
-                                        no regridding is performed.
+                                     no regridding is performed.
             frequency (string,opt):  The target frequency for averaging the
                                      LRA, if no frequency is specified,
                                      no time average is performed
@@ -117,7 +117,7 @@ class LRAgenerator():
         self.var = self._require_param(var, "variable string or list.")
 
         # General settings
-        self.logger = log_configure(loglevel, 'lra_generator')
+        self.logger = log_configure(loglevel, 'DROP')
         self.loglevel = loglevel
 
         # save parameters
@@ -148,7 +148,7 @@ class LRAgenerator():
             self.tmpdir = os.path.join(outdir, 'tmp')
         else:
             self.tmpdir = tmpdir
-        self.tmpdir = os.path.join(self.tmpdir, f'LRA_{generate_random_string(10)}')
+        self.tmpdir = os.path.join(self.tmpdir, f'DROP_{generate_random_string(10)}')
 
         # set up compacting method for concatenation
         self.compact = compact
@@ -210,7 +210,7 @@ class LRAgenerator():
 
     def _issue_info_warning(self):
         """
-        Print information about the LRA generator settings
+        Print information about the DROP settings
         """
 
         if not self.frequency:
@@ -231,7 +231,7 @@ class LRAgenerator():
             self.logger.info('Running dask.distributed with %s workers', self.nproc)
 
         if self.rebuild:
-            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
+            self.logger.info('rebuild=True! DROP will rebuild weights and areas!')
 
         self.logger.info('Variable(s) to be processed: %s', self.var)
         self.logger.info('Fixing data: %s', self.fix)
@@ -327,7 +327,6 @@ class LRAgenerator():
         """
         Create an entry in the catalog for the LRA
         """
-
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
@@ -358,7 +357,6 @@ class LRAgenerator():
         Args:
             verify: open the LRA source and verify it can be read by the reader
         """
-
         full_dict, partial_dict = list_lra_files_complete(self.outdir)
 
         # extra zarr only directory
@@ -640,7 +638,7 @@ class LRAgenerator():
         Returns:
             data: Input data with updated history attribute
         """
-        history_list = ["LRA generator"]
+        history_list = ["DROP"]
         
         # Add regridding information
         if self.resolution:
