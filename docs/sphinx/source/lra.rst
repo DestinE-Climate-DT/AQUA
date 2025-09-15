@@ -14,8 +14,8 @@ Basic Concepts
 --------------
 
 The LRA is basically a wrapper of the functionalities included in AQUA, combining the regridding, fixing
-and time averaging capabilities. A specific class ``LRAgenerator`` has been developed, using ``dask`` in order to exploit parallel
-computations, and can be investigated in a the `LRA generator notebook <https://github.com/oloapinivad/AQUA/blob/main/notebooks/lra_generator/lra_generator.ipynb>`_.
+and time averaging capabilities. A specific class ``DROP`` ((Data Reduction OPerator)) has been developed, using ``dask`` in order to exploit parallel
+computations, and is devoted to generate the LRA. It can be investigated in a the `DROP notebook <https://github.com/oloapinivad/AQUA/blob/main/notebooks/drop/drop.ipynb>`_.
 
 Access to the LRA
 -----------------
@@ -43,7 +43,7 @@ Generation of the LRA
 ---------------------
 
 Given the character of the computation required, the standard approach is to use the LRA through a command line 
-interface (CLI) which is available from the console with the subcommand ``aqua lra``
+interface (CLI) which is available from the console with the subcommand ``aqua drop``
 
 The configuration of the CLI is done via a YAML file that can be build from the ``lra_config.tmpl``, available in the ``.aqua/templates/lra`` folder after the installation.
 This includes the target resolution, the target frequency, the name and the boundaries of a possible subselection, the temporary directory and the directory where you want to store the obtained LRA.
@@ -62,7 +62,7 @@ Usage
 
 .. code-block:: python
 
-    aqua lra <options>
+    aqua drop <options>
 
 Options: 
 
@@ -125,7 +125,7 @@ A basic example usage can thus be:
 
 .. code-block:: python
 
-    aqua lra -c lra_config.yaml -d -w 4
+    aqua drop -c lra_config.yaml -d -w 4
 
 .. warning ::
 
@@ -141,7 +141,7 @@ Parallel LRA tool
 ^^^^^^^^^^^^^^^^^
 
 Building the LRA can be an heavy task, which requires a lot of memory and thus cannot be easily parallized in the same job.
-To this end, an extra script for parallel execution is also provided. Using `cli_lra_parallel_slurm.py` it is possible to submit to SLURM multiple jobs,
+To this end, an extra script for parallel execution is also provided. Using `cli_drop_parallel_slurm.py` it is possible to submit to SLURM multiple jobs,
 one for each of the variables to be processed. It builts on jinja2 replacement from a typical slurm script `aqua_lra.j2`. 
 For now it is configured only to be run on LUMI but further development should allow for larger portability.
 
