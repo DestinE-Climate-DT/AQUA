@@ -21,7 +21,7 @@ from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
 from aqua.util import area_selection, replace_intake_vars
-from .lra_util import move_tmp_files, list_lra_files_complete
+from .drop_util import move_tmp_files, list_lra_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
 
 
