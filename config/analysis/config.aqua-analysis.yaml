@@ -119,6 +119,7 @@ diagnostics:
     script_path: "ecmean/cli_ecmean.py"
     nworkers: 4
     nocluster: true  # ECmean does not use the global dask cluster
+    source_oce: true  # if a --source_oce argument was passed use it
     config: "${AQUA_CONFIG}/diagnostics/ecmean/config_ecmean_cli.yaml"
   ocean3d_drift:
     script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"

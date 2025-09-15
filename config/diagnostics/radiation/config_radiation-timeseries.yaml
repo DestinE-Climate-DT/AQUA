@@ -35,6 +35,7 @@ diagnostics:
     diagnostic_name: 'radiation'
     variables: ['tnlwrf', 'tnswrf']
     formulae: ['tnlwrf+tnswrf']
+    center_time: true
     params:
       default:
         hourly: False
