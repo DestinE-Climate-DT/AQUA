@@ -13,6 +13,7 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Rename LRA to DROP (Data Reduction OPerator) ([#2234](https://github.com/DestinE-Climate-DT/AQUA/issues/2234))
 - Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
 - Split out plotting function for vertical profile and add contour option (#2190)
 - GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
