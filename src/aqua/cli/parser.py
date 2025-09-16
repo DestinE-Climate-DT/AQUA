@@ -7,7 +7,7 @@ import argparse
 from aqua import __version__ as version
 from aqua import __path__ as pypath
 from aqua.cli.analysis import analysis_parser
-from aqua.cli.lra import lra_parser
+from AQUA.src.aqua.cli.drop import drop_parser
 from aqua.cli.catgen import catgen_parser
 from aqua.cli.builder import builder_parser
 
@@ -42,8 +42,8 @@ def parse_arguments():
     analysis_subparser = subparsers.add_parser("analysis", description="Run AQUA diagnostics")
     analysis_subparser = analysis_parser(parser=analysis_subparser)
 
-    lra_subparser = subparsers.add_parser("lra", description="Low Resolution Archive generator")
-    lra_subparser = lra_parser(parser=lra_subparser)
+    drop_subparser = subparsers.add_parser("drop", description="DROP")
+    drop_subparser = drop_parser(parser=drop_subparser)
  
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
     catgen_subparser = catgen_parser(parser=catgen_subparser)
