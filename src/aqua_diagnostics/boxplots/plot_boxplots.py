@@ -83,7 +83,7 @@ class PlotBoxplots:
             raise ValueError(f'Unsupported format: {format}. Use "png" or "pdf".')
 
 
-    def plot_boxplots(self, data, data_ref=None, var=None, title=None):
+    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, title=None):
         """
         Plot boxplots for specified variables in the dataset.
 
@@ -91,6 +91,7 @@ class PlotBoxplots:
             data (xarray.Dataset or list of xarray.Dataset): Input dataset(s) containing the fldmeans of the variables to plot.
             data_ref (xarray.Dataset or list of xarray.Dataset, optional): Reference dataset(s) for comparison.
             var (str or list of str): Variable name(s) to plot. If None, uses all variables in the dataset.
+            anomalies (bool): Whether to plot anomalies instead of absolute values.
             title (str, optional): Title for the plot. If None, a default title will be generated.
         """
 
@@ -104,11 +105,25 @@ class PlotBoxplots:
         dataset_info = ', '.join(f'{m} (experiment {e})' for m, e in zip(model_names, exp_names))
         description = f"Boxplot of ({', '.join(var) if isinstance(var, list) else var}) for: {dataset_info}"
 
+        base_vars = []
         long_names = []
-        for var_name in to_list(var):
-            var_name = var_name[1:] if var_name.startswith('-') else var_name
-            long_name = extract_attrs(fldmeans[0][var_name], 'long_name')
-            long_names.append(long_name if long_name else var_name)
+        for v in to_list(var):
+            base_var = v.lstrip('-')
+            base_vars.append(base_var)
+            long_name = extract_attrs(fldmeans[0][base_var], 'long_name')
+            long_names.append(long_name or base_var)
+
+        # Compute anomalies relative to reference
+        if anomalies and data_ref:
+            ref = data_ref[0]  # assume single reference dataset
+            abs_medians\ = []
+            for ds in fieldmeans:
+                fldmeans = ds - ref.mean(dim='time') 
+                median_val = fldmeans.median(dim='time').compute()
+                abs_medians.append(median_val)
+
+            self.logger.info("Plotted anomalies relative to reference mean")
+
 
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var,
                          variable_names=long_names, title=title, loglevel=self.loglevel)
