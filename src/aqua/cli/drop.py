@@ -14,7 +14,7 @@ from aqua.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
 
 
-def lra_parser(parser = None):
+def drop_parser(parser = None):
     """
     Parse command line arguments for the LRA CLI
 
@@ -233,6 +233,6 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
 # if you want to execute the script from terminal without the aqua entry point
 if __name__ == '__main__':
 
-    args = lra_parser().parse_args(sys.argv[1:])
+    args = drop_parser().parse_args(sys.argv[1:])
     drop_execute(args)
    
