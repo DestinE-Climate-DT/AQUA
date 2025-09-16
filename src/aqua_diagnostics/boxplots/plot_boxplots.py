@@ -116,17 +116,14 @@ class PlotBoxplots:
         # Compute anomalies relative to reference
         if anomalies and data_ref:
             ref = data_ref[0]  # assume single reference dataset
-            abs_medians\ = []
-            for ds in fieldmeans:
-                fldmeans = ds - ref.mean(dim='time') 
-                median_val = fldmeans.median(dim='time').compute()
-                abs_medians.append(median_val)
+            fldmeans = [ds - ref.mean('time') for ds in fldmeans]
 
             self.logger.info("Plotted anomalies relative to reference mean")
-
+            
 
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var,
                          variable_names=long_names, title=title, loglevel=self.loglevel)
+
         
         if self.save_pdf:
             self._save_figure(fig, data, data_ref, var, format='pdf')
