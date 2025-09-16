@@ -51,7 +51,7 @@ def test_move_tmp_files(tmp_directory, output_directory):
     with open(tmp_file2, 'w') as f:
         f.write('Temporary file 2')
 
-    lra_util.move_tmp_files(tmp_directory, output_directory)
+    drop_util.move_tmp_files(tmp_directory, output_directory)
 
     #assert not os.path.exists(tmp_file1)
     #assert not os.path.exists(tmp_file2)
