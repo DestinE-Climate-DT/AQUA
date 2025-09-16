@@ -38,7 +38,7 @@ for variable in avg_sos avg_tos ; do
         varsource="avg_so"
     fi
 
-    log_message INFO "Creating ${variable} files from ${varsource} files for ${model} ${exp} LRA."
+    log_message INFO "Creating ${variable} files from ${varsource} files for ${model} ${exp} using DROP."
 
     for file in ${varsource}_*.nc ; do
         # Extract the filename without the extension
