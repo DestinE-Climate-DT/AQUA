@@ -3,9 +3,9 @@ import shutil
 import pytest
 import xarray as xr
 import pandas as pd
-from aqua import LRAgenerator, Reader
-from aqua.lra_generator.output_path_builder import OutputPathBuilder
-from aqua.lra_generator.catalog_entry_builder import CatalogEntryBuilder   
+from aqua import DROP, Reader
+from aqua.drop.output_path_builder import OutputPathBuilder
+from aqua.drop.catalog_entry_builder import CatalogEntryBuilder   
 
 LOGLEVEL = "DEBUG"
 LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
@@ -14,7 +14,7 @@ LRAPATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
 
 @pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "lra_test"}])
 def lra_arguments(request):
-    """Provides LRA generator arguments as a dictionary."""
+    """Provides DROP arguments as a dictionary."""
     return request.param
 
 
@@ -89,8 +89,8 @@ class TestLRA:
     """Class containing LRA tests."""
 
     def test_definitive_false(self, lra_arguments, tmp_path):
-        """Test LRA generator with definitive=False."""
-        test = LRAgenerator(
+        """Test DROP with definitive=False."""
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', loglevel=LOGLEVEL
         )
@@ -102,7 +102,7 @@ class TestLRA:
 
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, lra_arguments, tmp_path, nworkers):
-        test = LRAgenerator(
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             nproc=nworkers, resolution='r100', frequency='monthly', 
             definitive=True, loglevel=LOGLEVEL
@@ -122,10 +122,10 @@ class TestLRA:
         shutil.rmtree(os.path.join(lra_arguments["outdir"]))
 
     def test_regional_subset(self, lra_arguments, tmp_path):
-        """Test LRA generator with regional subset."""
+        """Test DROP with regional subset."""
         region = {'name': 'europe', 'lon': [-10, 30], 'lat': [35, 70]}
 
-        test = LRAgenerator(
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='daily', definitive=True,
             loglevel=LOGLEVEL, region=region
@@ -144,8 +144,8 @@ class TestLRA:
         shutil.rmtree(os.path.join(lra_arguments["outdir"]))
 
     def test_zarr_entry(self, lra_arguments, tmp_path):
-        """Test LRA generator with Zarr archive creation."""
-        test = LRAgenerator(
+        """Test DROP with Zarr archive creation."""
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', nproc=1,
             loglevel=LOGLEVEL, definitive=True
@@ -166,7 +166,7 @@ class TestLRA:
 
     def test_dask_overwrite(self, lra_arguments, tmp_path):
         """Test LRA generator with overwrite=True and Dask initialization."""
-        test = LRAgenerator(
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', nproc=4,
             loglevel=LOGLEVEL, definitive=True, overwrite=True
@@ -179,7 +179,7 @@ class TestLRA:
 
     def test_exclude_incomplete(self, lra_arguments, tmp_path):
         """Test LRA generator's exclude_incomplete option."""
-        test = LRAgenerator(
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', definitive=True,
             loglevel=LOGLEVEL, exclude_incomplete=True
@@ -205,7 +205,7 @@ class TestLRA:
         frequency = 'monthly'
         year = 2022
 
-        test = LRAgenerator(
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )
@@ -229,7 +229,7 @@ class TestLRA:
         frequency = 'monthly'
         year = 2022
 
-        test = LRAgenerator(
+        test = DROP(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path), compact="cdo",
             resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )
