@@ -42,7 +42,7 @@ def parse_arguments():
     analysis_subparser = subparsers.add_parser("analysis", description="Run AQUA diagnostics")
     analysis_subparser = analysis_parser(parser=analysis_subparser)
 
-    drop_subparser = subparsers.add_parser("drop", description="DROP")
+    drop_subparser = subparsers.add_parser("drop", description="Data Reduction OPerator")
     drop_subparser = drop_parser(parser=drop_subparser)
  
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
