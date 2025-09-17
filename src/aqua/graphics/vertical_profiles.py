@@ -117,18 +117,28 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
     Optionally add contour lines of the reference data.
 
     Args:
-        data, data_ref: DataArrays to compare.
-        var: Variable name for labeling purposes.
-        lev_name: Name of the vertical levels.
-        x_coord: Name of the horizontal coordinate.
-        vmin, vmax: Limits for the difference plot.
-        vmin_contour, vmax_contour: Limits for contour plot.
-        sym_contour: If True, contour limits symmetric around zero.
-        add_contour: If True, overlay contour lines from reference data.
-        lev_min, lev_max: Range of vertical levels to plot.
-        nlevels: Number of contour levels.
-        title: Plot title.
-        return_fig: If True, return (fig, ax).
+        data (xr.DataArray): Dataset to plot.
+        data_ref (xr.DataArray): DataArrays to compare. A contour of this will be added if add_contour is True.
+        var (str): Variable name for labeling purposes.
+        lev_name (str): Name of the vertical levels. Default is 'plev'.
+        x_coord (str): Name of the horizontal coordinate.
+        lev_min (float, optional): Minimum vertical level to plot.
+        lev_max (float, optional): Maximum vertical level to plot.
+        vmin (float, optional): Minimum colorbar limit.
+        vmax (float, optional): Maximum colorbar limit.
+        vmin_contour (float, optional): Minimum contour limit.
+        vmax_contour (float, optional): Maximum contour limit.
+        sym_contour (bool, optional): If True, contour limits symmetric around zero.
+        add_contour (bool, optional): If True, overlay contour lines from reference data.
+        nlevels (int, optional): Number of contour levels.
+        title (str, optional): Plot title.
+        style (str, optional): Plot style (default aqua style).
+        return_fig (bool, optional): If True, return (fig, ax).
+        fig (plt.Figure, optional): Optional figure to plot on.
+        ax (plt.Axes, optional): Optional axes to plot on.
+        ax_pos (Tuple[int, int, int], optional): Position of subplot.
+        loglevel (str, optional): Logging level.
+        **kwargs: Additional arguments passed to plot_vertical_profile.
     """
 
     logger = log_configure(loglevel, "plot_vertical_profile_diff")
