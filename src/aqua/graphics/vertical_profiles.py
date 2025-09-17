@@ -8,6 +8,7 @@ from aqua.util import evaluate_colorbar_limits
 from .styles import ConfigStyle
 import cartopy.feature as cfeature
 
+
 def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_name: str = "plev", x_coord: str = "lat",
                           lev_min: Optional[float] = None,lev_max: Optional[float] = None,
@@ -21,33 +22,34 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
                           fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                           ax_pos: Tuple[int, int, int] = (1, 1, 1),
-                          loglevel: str = "WARNING",
-                          **kwargs):
+                          loglevel: str = "WARNING"):
     """
     Plots a zonal mean vertical profile.
 
     Args:
         data: DataArray to plot.
-        lev_name: Name of the vertical levels (default 'plev').
-        x_coord: Name of the horizontal coordinate (default 'lat').
-        var: Variable name for labeling purposes.
-        lev_min, lev_max: Range of vertical levels to plot.
-        vmin, vmax: Colorbar limits.
-        nlevels: Number of contour levels.
-        lev_name: Name of the vertical levels (default 'plev').
-        title: Plot title.
-        style: Plot style (default aqua style).
-        logscale: Use log scale for y-axis if True.
-        grid: If True, display grid lines on the plot.
-        add_land: If True, shade land areas in the background.
-        return_fig: If True, return (fig, ax).
-        figsize: Figure size.
-        fig, ax: Optional figure/axes to plot on.
-        ax_pos: Position of subplot.
-        loglevel: Logging level.
+        var (str): Variable name for labeling purposes.
+        lev_name (str): Name of the vertical levels (default 'plev').
+        x_coord (str): Name of the horizontal coordinate (default 'lat').
+        lev_min (float, optional): Minimum vertical level to plot.
+        lev_max (float, optional): Maximum vertical level to plot.
+        vmin (float, optional): Minimum colorbar limit.
+        vmax (float, optional): Maximum colorbar limit.
+        nlevels (int): Number of contour levels.
+        title (str, optional): Plot title.
+        style (str, optional): Plot style (default aqua style).
+        logscale (bool, optional): Use log scale for y-axis if True.
+        grid (bool, optional): If True, display grid lines on the plot.
+        add_land (bool, optional): If True, shade land areas in the background.
+        return_fig (bool, optional): If True, return (fig, ax).
+        figsize (Tuple[int, int], optional): Figure size.
+        fig (plt.Figure, optional): Optional figure to plot on.
+        ax (plt.Axes, optional): Optional axes to plot on.
+        ax_pos (Tuple[int, int, int], optional): Position of subplot.
+        loglevel (str, optional): Logging level.
     """
-
     logger = log_configure(loglevel, "plot_vertical_profile")
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # Select vertical levels
     lev_min = lev_min or data[lev_name].min().item()
