@@ -53,13 +53,10 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', config_dict['datasets'][0]['model'])
     exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
     source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
-    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}")
-    
+    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}")
 
     regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
     logger.info(f"Regrid option is set to {regrid}")
-
-    
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -104,3 +101,7 @@ if __name__ == '__main__':
                 loglevel=loglevel
             )
             zonal_trend_plot.plot_zonal()
+
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+
+    logger.info("OceanTrends diagnostic completed.")

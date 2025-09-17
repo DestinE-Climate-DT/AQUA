@@ -109,3 +109,7 @@ if __name__ == '__main__':
                     rebuild=rebuild, save_pdf=save_pdf,
                     save_png=save_png, dpi=dpi
                 )
+
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+
+    logger.info("OceanDrift diagnostic completed.")
