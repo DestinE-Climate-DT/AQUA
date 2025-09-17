@@ -37,7 +37,7 @@ diagnostics:
         - _time_series_indian_ocean
         - _time_series_pacific_ocean
         - _time_series_southern_ocean
-    Ocean 3D, Hovmöller: _hovmoller_plot
+    Ocean 3D, Hovmoeller: ocean3d.hovmoller, _hovmoller_plot
     Ocean 3D, trends: [zonal_mean_trend, multilevel_t_s_trend]
     Ocean 3D, stratification: _stratification_
     Ocean 3D, mixed layer depth: MLD_
