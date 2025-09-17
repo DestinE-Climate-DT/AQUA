@@ -8,6 +8,7 @@ import yaml
 import json
 import argparse
 import logging
+from fnmatch import fnmatch
 from pypdf import PdfReader
 
 # Get a logger instance
@@ -185,9 +186,9 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         grouping = {}
         for key, val in diagnostics.items():
             if isinstance(val, list):
-                grouping[key] = [fn for fn in filename_list for v in val if v in fn]
+                grouping[key] = [fn for fn in filename_list for v in val if fnmatch(fn, f"*{v}*")]
             else:
-                grouping[key] = [fn for fn in filename_list if val in fn]
+                grouping[key] = [fn for fn in filename_list if fnmatch(fn, f"*{val}*")]
 
         # Add other diagnostics to the grouping
         diagnostics_vals = []
@@ -197,7 +198,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             elif isinstance(val, list):
                 diagnostics_vals.extend(val)
 
-        other_group = [fn for fn in filename_list if all(val not in fn for val in diagnostics_vals)]
+        other_group = [fn for fn in filename_list if all(not fnmatch(fn, f"*{val}*") for val in diagnostics_vals)]
         if other_group:
             grouping["Other diagnostics"] = other_group
 

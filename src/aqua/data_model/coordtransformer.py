@@ -41,7 +41,7 @@ class CoordTransformer():
         if not isinstance(data, (xr.Dataset, xr.DataArray)):
             raise TypeError("data must be an Xarray Dataset or DataArray object.")
         self.loglevel = loglevel
-        self.logger = log_configure(self.loglevel, 'CoordTransator')
+        self.logger = log_configure(self.loglevel, 'CoordTransformer')
 
         self.data = data
 
