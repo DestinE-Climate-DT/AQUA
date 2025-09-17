@@ -83,7 +83,7 @@ class PlotBoxplots:
             raise ValueError(f'Unsupported format: {format}. Use "png" or "pdf".')
 
 
-    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, title=None):
+    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, ref_number=0, title=None):
         """
         Plot boxplots for specified variables in the dataset.
 
@@ -92,6 +92,7 @@ class PlotBoxplots:
             data_ref (xarray.Dataset or list of xarray.Dataset, optional): Reference dataset(s) for comparison.
             var (str or list of str): Variable name(s) to plot. If None, uses all variables in the dataset.
             anomalies (bool): Whether to plot anomalies instead of absolute values.
+            ref_number (int): Position of reference dataset in data_ref list to use when plotting anomalies.
             title (str, optional): Title for the plot. If None, a default title will be generated.
         """
 
@@ -115,16 +116,13 @@ class PlotBoxplots:
 
         # Compute anomalies relative to reference
         if anomalies and data_ref:
-            ref = data_ref[0]  # assume single reference dataset
+            self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
+            ref = data_ref[ref_number] 
             fldmeans = [ds - ref.mean('time') for ds in fldmeans]
-
-            self.logger.info("Plotted anomalies relative to reference mean")
-            
 
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var,
                          variable_names=long_names, title=title, loglevel=self.loglevel)
 
-        
         if self.save_pdf:
             self._save_figure(fig, data, data_ref, var, format='pdf')
         if self.save_png:
