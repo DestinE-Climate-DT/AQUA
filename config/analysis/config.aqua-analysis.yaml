@@ -122,9 +122,15 @@ diagnostics:
     source_oce: true  # if a --source_oce argument was passed use it
     config: "${AQUA_CONFIG}/diagnostics/ecmean/config_ecmean_cli.yaml"
   ocean3d_drift:
-    script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"
+    script_path: "ocean_drift/cli_ocean_drift.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.drift.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/ocean3d/config_ocean_drift.yaml"
+
+# ocean3d_drift:
+# script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"
+# nworkers: 8
+# config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.drift.yaml"
+
   ocean3d_circulation:
     script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"
     nworkers: 4
