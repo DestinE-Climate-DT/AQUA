@@ -3,6 +3,7 @@ import numpy as np
 from aqua.util import to_list, extract_attrs
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
+import matplotlib as plt
 
 from aqua.graphics import boxplot
 
@@ -117,13 +118,51 @@ class PlotBoxplots:
         # Compute anomalies relative to reference
         if anomalies and data_ref:
             self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
+            
+            abs_medians = []
+            for ds in fldmeans:
+                median_ds = ds.load().median(dim='time')  # scalari per tutte le variabili
+                medians_dict = {v: median_ds[v].item() for v in median_ds.data_vars}
+                abs_medians.append(medians_dict)
+
             ref = data_ref[ref_number] 
             fldmeans = [ds - ref.mean('time') for ds in fldmeans]
 
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var,
-                         variable_names=long_names, title=title, loglevel=self.loglevel)
+                    variable_names=long_names, title=title, loglevel=self.loglevel)
+        
+        if anomalies and data_ref and abs_medians:
+            n_vars = len(base_vars)
+            n_datasets = len(abs_medians)
+
+            # seaborn di solito posiziona le box in blocchi → possiamo ricostruire le x
+            for dataset_idx in range(n_datasets):
+                for var_idx, base_var in enumerate(base_vars):
+                    # calcolo posizione x della box (dataset_idx + var_idx)
+                    box_index = dataset_idx * n_vars + var_idx
+                    try:
+                        patch = [p for p in ax.patches if isinstance(p, plt.patches.PathPatch)][box_index]
+                    except IndexError:
+                        continue  # non c’è quella box
+
+                    x = patch.get_path().vertices[:, 0].mean() + 0.05
+
+                    # valori
+                    medians_dict = abs_medians[dataset_idx]
+                    if base_var in medians_dict:
+                        abs_val = medians_dict[base_var]  # mediana assoluta
+                        anom_val = fldmeans[dataset_idx][base_var].median(dim="time").item()
+
+                        ax.text(
+                            x, anom_val, f"{abs_val:.2f}",
+                            ha='center', va='bottom',
+                            color='black', fontweight='bold'
+                        )
+
 
         if self.save_pdf:
             self._save_figure(fig, data, data_ref, var, format='pdf')
         if self.save_png:
             self._save_figure(fig, data, data_ref, var, format='png')
+
+
