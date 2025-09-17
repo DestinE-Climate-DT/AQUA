@@ -53,10 +53,13 @@ if __name__ == '__main__':
     model = get_arg(args, 'model', config_dict['datasets'][0]['model'])
     exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
     source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
-    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}")
-
     regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
-    logger.info(f"Regrid option is set to {regrid}")
+    realization = get_arg(args, 'realization', None)
+    if realization:
+        reader_kwargs = {'realization': realization}
+    else:
+        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
+    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -69,38 +72,49 @@ if __name__ == '__main__':
         trends_config = config_dict['diagnostics']['ocean_trends']['multilevel']
         logger.info(f"Ocean Trends diagnostic is set to {trends_config['run']}")
         if trends_config['run']:
-            region = trends_config.get('region', None)
+            regions = trends_config.get('region', None)
+            diagnostic_name = trends_config.get('diagnostic_name', 'ocean_trends')
             var = trends_config.get('var', None)
             dim_mean = trends_config.get('dim_mean', None) 
-            data_trends = Trends(
-                catalog= catalog,
-                model=model,
-                exp=exp,
-                source=source,
-                regrid=regrid,
-                loglevel=loglevel
-            )
-            data_trends.run(
-                region=region,
-                var=var,
-                # dim_mean=dim_mean,
-                outputdir=outputdir,
-                rebuild=rebuild,
-            )
-            trends_plot = PlotTrends(
-                data=data_trends.trend_coef,
-                outputdir=outputdir,
-                loglevel=loglevel
-            )
-            trends_plot.plot_multilevel()
-            
-            zonal_trend_plot = PlotTrends(
-                data=data_trends.trend_coef.mean('lon'),
-                diagnostic='ocean_zonal_mean_trends',
-                outputdir=outputdir,
-                loglevel=loglevel
-            )
-            zonal_trend_plot.plot_zonal()
+            # Add the global region if not present
+            if regions != [None]:
+                regions.append(None)
+            for region in regions:
+                logger.info(f"Processing region: {region}")
+
+                try:
+                    data_trends = Trends(
+                        diagnostic_name=diagnostic_name,
+                        catalog=catalog,
+                        model=model,
+                        exp=exp,
+                        source=source,
+                        regrid=regrid,
+                        loglevel=loglevel
+                    )
+                    data_trends.run(
+                        region=region,
+                        var=var,
+                        # dim_mean=dim_mean,
+                        outputdir=outputdir,
+                        rebuild=rebuild,
+                    )
+                    trends_plot = PlotTrends(
+                        data=data_trends.trend_coef,
+                        outputdir=outputdir,
+                        loglevel=loglevel
+                    )
+                    trends_plot.plot_multilevel()
+                    
+                    zonal_trend_plot = PlotTrends(
+                        data=data_trends.trend_coef.mean('lon'),
+                        diagnostic='ocean_zonal_mean_trends',
+                        outputdir=outputdir,
+                        loglevel=loglevel
+                    )
+                    zonal_trend_plot.plot_zonal()
+                except Exception as e:
+                    logger.error(f"Error processing region {region}: {e}")
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
