@@ -140,8 +140,8 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
         loglevel (str, optional): Logging level.
         **kwargs: Additional arguments passed to plot_vertical_profile.
     """
-
     logger = log_configure(loglevel, "plot_vertical_profile_diff")
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # Difference
     diff = data - data_ref
