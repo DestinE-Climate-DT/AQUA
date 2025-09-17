@@ -74,41 +74,44 @@ if __name__ == '__main__':
         if hovmoller_config['run']:
             regions = to_list(hovmoller_config.get('regions', None))
             diagnostic_name = hovmoller_config.get('diagnostic_name', 'ocean_drift')
+            var = hovmoller_config.get('var', None)
+            dim_mean = hovmoller_config.get('dim_mean', ['lat', 'lon'])
             # Add the global region if not present
             if regions != [None]:
                 regions.append(None)
             for region in regions:
                 logger.info(f"Processing region: {region}")
-                var = hovmoller_config.get('var', None)
-                dim_mean = hovmoller_config.get('dim_mean', ['lat', 'lon'])
-                data_hovmoller = Hovmoller(
-                    diagnostic_name=diagnostic_name,
-                    catalog=catalog,
-                    model=model,
-                    exp=exp,
-                    source=source,
-                    regrid=regrid,
-                    loglevel=loglevel
-                )
-                data_hovmoller.run(
-                    region=region,
-                    var=var,
-                    dim_mean=dim_mean,
-                    anomaly_ref= "t0",
-                    outputdir=outputdir,
-                    reader_kwargs=reader_kwargs,
-                    rebuild=rebuild
-                )
-                hov_plot = PlotHovmoller(
-                    diagnostic_name=diagnostic_name,
-                    data=data_hovmoller.processed_data_list,
-                    outputdir=outputdir,
-                    loglevel=loglevel
-                )
-                hov_plot.plot_hovmoller(
-                    rebuild=rebuild, save_pdf=save_pdf,
-                    save_png=save_png, dpi=dpi
-                )
+                try:
+                    data_hovmoller = Hovmoller(
+                        diagnostic_name=diagnostic_name,
+                        catalog=catalog,
+                        model=model,
+                        exp=exp,
+                        source=source,
+                        regrid=regrid,
+                        loglevel=loglevel
+                    )
+                    data_hovmoller.run(
+                        region=region,
+                        var=var,
+                        dim_mean=dim_mean,
+                        anomaly_ref= "t0",
+                        outputdir=outputdir,
+                        reader_kwargs=reader_kwargs,
+                        rebuild=rebuild
+                    )
+                    hov_plot = PlotHovmoller(
+                        diagnostic_name=diagnostic_name,
+                        data=data_hovmoller.processed_data_list,
+                        outputdir=outputdir,
+                        loglevel=loglevel
+                    )
+                    hov_plot.plot_hovmoller(
+                        rebuild=rebuild, save_pdf=save_pdf,
+                        save_png=save_png, dpi=dpi
+                    )
+                except Exception as e:
+                    logger.error(f"Error processing region {region}: {e}")
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
