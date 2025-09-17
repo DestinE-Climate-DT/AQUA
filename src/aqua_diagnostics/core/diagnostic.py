@@ -68,7 +68,7 @@ class Diagnostic():
                                                               reader_kwargs=reader_kwargs, months_required=months_required,
                                                               loglevel=self.logger.level)
 
-        self.realization = self.reader.kwargs['realization'] if 'realization' in reader_kwargs else DEFAULT_REALIZATION
+        self.realization = reader_kwargs['realization'] if 'realization' in reader_kwargs else DEFAULT_REALIZATION
 
         if self.regrid is not None:
             self.logger.info(f'Regridded data to {self.regrid} grid')

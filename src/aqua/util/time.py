@@ -25,7 +25,7 @@ def frequency_string_to_pandas(freq):
         'hourly': 'h',
         'daily': 'D',
         'weekly': 'W',
-        'seasonal': 'Q-NOV',
+        'seasonal': 'QS-DEC',
         'monthly': 'MS', #this implies start of the month
         'annual': 'YS', #this implies start of the year
         'yearly': 'YS', #this implies start of the year

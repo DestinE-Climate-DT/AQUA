@@ -9,6 +9,7 @@ import xarray as xr
 
 from aqua.util import create_folder, evaluate_colorbar_limits
 from aqua.logger import log_configure
+from .styles import ConfigStyle
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
@@ -17,73 +18,81 @@ xr.set_options(keep_attrs=True)
 def plot_hovmoller(data: xr.DataArray,
                    invert_axis=False,
                    invert_time=False,
+                   invert_space_coord=False,
                    sym=False,
-                   contour=True, save=False,
+                   style=None,
+                   contour=True,
                    dim='lon', figsize=(8, 13),
                    vmin=None, vmax=None, cmap='PuOr_r', # defaul map for MJO
-                   nlevels=8, cbar_label=None,
-                   outputdir='.', filename='hovmoller.pdf',
-                   display=True, return_fig=False,
+                   title = None,
+                   box_text=True,
+                   cbar: bool = True,
+                   text: list | str = None,
+                   nlevels=8,
+                   cbar_label=None,
+                   cbar_orientation: str = 'horizontal',
+                   return_fig=False,
+                   fig: plt.Figure = None, ax: plt.Axes = None,
+                   ax_pos: tuple = (1, 1, 1),
                    loglevel: str = "WARNING",
-                   **kwargs):
-    """"
-    Plot a hovmoller diagram of a DataArray.
+                   ):
+    """
+    Plot a hovmoller diagram for a given xarray DataArray.
 
     Args:
-        data (xr.DataArray):    xr.DataArray to be plot
-        invert_axis (bool,opt): enable or disable axis inversion,
-                                default is False
-        invert_time (bool,opt): enable or disable time inversion,
-                                if False, time will increase with
-                                the increasing axis direction.
-        sym (bool,opt):         center the cbar around zero,
-                                default is False
-        contour (bool,opt):     True for contour plot, False for pcolormesh,
-                                default is True
-        save (bool,opt):        save the figure, default is False
-        dim (str,opt):          dimension to be averaged over,
-                                default is 'lon'
-        figsize (tuple,opt):    figure size, default is (11, 8.5)
-        vmin (float,opt):       minimum value for the colorbar
-        vmax (float,opt):       maximum value for the colorbar
-        cmap (str,opt):         colormap, default is 'RdBu_r'
-        nlevels (int,opt):      number of contour levels, default is 8
-        cbar_label (str,opt):   colorbar label, default is None
-        outputdir (str,opt):    output directory, default is '.'
-        filename (str,opt):     output filename, default is 'hovmoller.png'
-        show_dim_values (bool,opt): show the values of the dimension
-                                    over which the mean was taken (round them to int)
-                                    Default is True
-        display (bool, optional):   If True, display the figure. Defaults to True.
-        return_fig (bool, optional): If True, return the figure (fig, ax). Defaults to False.
-        loglevel (str,opt):     log level for the logger,
-                                default is 'WARNING'
-
-    Keyword Args:
-        format (str, optional):      Format of the figure. Defaults to 'pdf'.
-        dpi (int, optional):         Dots per inch. Defaults to 100 for pcolormesh
-                                     and 300 for contour plots.
+        data (xr.DataArray): The data to be plotted.
+        invert_axis (bool): If True, the x-axis will be inverted.
+        invert_time (bool): If True, the direction time axis will be inverted.
+        invert_space_coord (bool): If True, the space coordinate axis will be inverted.
+        sym (bool): If True, the color limits will be symmetric around zero.
+        style (str): The style to be used for the plot. Default is None, which uses the default AQUA style.
+        contour (bool): If True, contours will be plotted. If False, pcolormesh will be used.
+        dim (str): The dimension to be averaged over. Default is 'lon'.
+        figsize (tuple): Size of the figure. Default is (8, 13).
+        vmin (float): Minimum value for the color limits. If None, it will be evaluated from the data.
+        vmax (float): Maximum value for the color limits. If None, it will be evaluated from the data.
+        cmap (str): Colormap to be used for the plot. Default is 'PuOr_r'.
+        title (str): Title for the plot. If None, no title will be set.
+        box_text (bool): If True, a box with the min and max values of the dimension will be added to the plot.
+        cbar (bool): If True, a colorbar will be added to the plot.
+        text (list | str): Text to be added to the plot. If None, no text will be added.
+        nlevels (int): Number of contour levels. Default is 8.
+        cbar_label (str): Label for the colorbar. If None, it will be generated from the data attributes.
+        cbar_orientation (str): Orientation of the colorbar. Default is 'horizontal'.
+        return_fig (bool): If True, the figure and axes will be returned. Default is False.
+        fig (plt.Figure): Matplotlib figure object to plot on. If None, a new figure will be created.
+        ax (plt.Axes): Matplotlib axes object to plot on. If None, a new axes will be created.
+        ax_pos (tuple): Position of the axes in the figure. Default is (1, 1, 1), which means a single subplot.
+        loglevel (str): Logging level. Default is "WARNING".
 
     Returns:
-        fig, ax: tuple with the figure and axes
+        plt.Figure: The matplotlib figure object containing the hovmoller plot.
+        plt.Axes: The matplotlib axes object containing the hovmoller plot.
     """
     logger = log_configure(log_level=loglevel, log_name='Hovmoller')
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # Check if data is a DataArray
     if not isinstance(data, xr.DataArray):
         raise TypeError('Data is not a DataArray')
 
-    # Evaluate the mean over the dimension to be averaged over
-    logger.info('Averaging over dimension: {}'.format(dim))
-    dim_min = data.coords[dim].min()
-    dim_max = data.coords[dim].max()
-    dim_min = np.round(dim_min, 0)
-    dim_max = np.round(dim_max, 0)
+    if dim:
+        # Evaluate the mean over the dimension to be averaged over
+        logger.info('Averaging over dimension: {}'.format(dim))
+        dim_min = data.coords[dim].min()
+        dim_max = data.coords[dim].max()
+        dim_min = np.round(dim_min, 0)
+        dim_max = np.round(dim_max, 0)
 
-    data_mean = data.mean(dim=dim)
+        data_mean = data.mean(dim=dim)
+    else:
+        data_mean = data
 
     # Create figure and axes
-    fig, ax = plt.subplots(figsize=figsize)
+    if fig is None:
+        fig = plt.figure(figsize=figsize)
+    if ax is None:
+        ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2])
 
     # Plot the data
     if invert_axis:
@@ -94,6 +103,8 @@ def plot_hovmoller(data: xr.DataArray,
         ax.set_ylabel('time')
         if invert_time:
             plt.gca().invert_yaxis()
+        if invert_space_coord:
+            plt.gca().invert_xaxis()
     else:
         x = data_mean.coords['time']
         y = data_mean.coords[data_mean.dims[-1]]
@@ -101,6 +112,8 @@ def plot_hovmoller(data: xr.DataArray,
         ax.set_ylabel(data_mean.dims[-1])
         if invert_time:
             plt.gca().invert_xaxis()
+        if invert_space_coord:
+            plt.gca().invert_yaxis()
 
     if vmin is None or vmax is None:
         vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
@@ -135,70 +148,54 @@ def plot_hovmoller(data: xr.DataArray,
             im = ax.pcolormesh(x, y, data_mean.T, cmap=cmap,
                                vmin=vmin, vmax=vmax)
 
-    # Adjust the location of the subplots on the page to make room for the colorbar
-    fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
-                        wspace=0.1, hspace=0.5)
-
-    # Add a colorbar axis at the bottom of the graph
-    cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.02])
-
-    # Add min and max values of the dim on the top right corner
-    ax.text(0.99, 0.99, f'{dim} = {dim_min:.2f} to {dim_max:.2f}',
-            verticalalignment='top', horizontalalignment='right',
-            transform=ax.transAxes, fontsize=12,
-            bbox=dict(facecolor='white', alpha=0.5))
-
-    # cbar label
-    if cbar_label is None:
-        try:
-            var_name = data_mean.short_name
-        except AttributeError:
+    if cbar is True:
+        # Adjust the location of the subplots on the page to make room for the colorbar
+        fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95,
+                            wspace=0.1, hspace=0.5)
+        box = ax.get_position()
+        cbar_ax = fig.add_axes([
+            box.x0 - 0.01 + box.width + 0.01,  # a small gap to the right
+            box.y0,                     # same vertical start
+            0.015,                      # narrow width
+            box.height                  # same height
+        ])
+        # cbar label
+        if cbar_label is None:
             try:
-                var_name = data_mean.long_name
+                var_name = data_mean.short_name
             except AttributeError:
-                var_name = None
-        # Add units
-        try:
-            units = data_mean.units
-        except AttributeError:
-            units = None
-        if var_name is not None and units is not None:
-            cbar_label = '{} [{}]'.format(var_name, units)
-        elif var_name is not None:
-            cbar_label = var_name
-        else:
-            cbar_label = None
-            logger.warning('Could not find a label for the colorbar')
+                try:
+                    var_name = data_mean.long_name
+                except AttributeError:
+                    var_name = None
+            # Add units
+            try:
+                units = data_mean.units
+            except AttributeError:
+                units = None
+            if var_name is not None and units is not None:
+                cbar_label = '{} [{}]'.format(var_name, units)
+            elif var_name is not None:
+                cbar_label = var_name
+            else:
+                cbar_label = None
+                logger.warning('Could not find a label for the colorbar')
 
-    fig.colorbar(im, cax=cbar_ax, orientation='horizontal',
-                 label=cbar_label)
+        fig.colorbar(im, cax=cbar_ax, orientation=cbar_orientation,
+                label=cbar_label)
 
-    # Save the figure
-    if save:
-        logger.debug("Saving figure to %s", outputdir)
-        create_folder(outputdir, loglevel=loglevel)
-        plot_format = kwargs.get('format', 'pdf')
-        if filename.endswith(plot_format):
-            logger.debug("Format already set in the filename")
-        else:
-            filename = f"{filename}.{plot_format}"
-        logger.debug("Setting filename to %s", filename)
+    if box_text:
+        # Add min and max values of the dim on the top right corner
+        ax.text(0.99, 0.99, f'{dim} = {dim_min:.2f} to {dim_max:.2f}',
+                verticalalignment='top', horizontalalignment='right',
+                transform=ax.transAxes, fontsize=12,
+                bbox=dict(facecolor='white', alpha=0.5))
+    if text:
+        logger.debug("Adding text in the plot: %s", text)
+        ax.text(-0.3, 0.33, text, fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
 
-        logger.info("Saving figure as %s/%s", outputdir, filename)
-        if contour:
-            dpi = kwargs.get('dpi', 300)
-        else:
-            dpi = kwargs.get('dpi', 100)
-            if dpi == 100:
-                logger.info("Setting dpi to 100 by default, use dpi kwarg to change it")
-
-        logger.info('Saving figure to {}/{}'.format(outputdir, filename))
-        fig.savefig('{}/{}'.format(outputdir, filename),
-                    dpi=dpi, bbox_inches='tight')
-
-    if display is False and not return_fig:
-        logger.debug("Display is set to False, closing figure")
-        plt.close(fig)
+    if title:    
+        ax.set_title(title, fontsize=20)
 
     if return_fig:
         logger.debug("Returning figure and axes")
