@@ -93,7 +93,12 @@ diagnostic_config = {
             'source_path': 'diagnostics/ocean3d/cli',
             'target_path': 'diagnostics/ocean3d/cli'
         },
-            {
+        {
+            'config_file': 'config_ocean_trends.yaml',
+            'source_path': 'config/diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d'
+        },
+        {
             'config_file': 'config_ocean_drift.yaml',
             'source_path': 'config/diagnostics/ocean3d',
             'target_path': 'diagnostics/ocean3d'
