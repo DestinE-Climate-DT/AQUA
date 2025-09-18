@@ -72,4 +72,8 @@ def compute_mld_cont(rho, loglevel="WARNING"):
     mld = xr.ufuncs.fmin(mld, depth)
     mld = mld.rename({"rho": "mld"})
     logger.info("MLD computation completed and variable renamed.")
+    # adding important attributes
+    aqua_dict = {key: rho.rho.attrs[key] for key in rho.rho.attrs.keys() if key.startswith("AQUA")}
+    mld.mld.attrs.update(aqua_dict)
+
     return mld
