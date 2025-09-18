@@ -131,27 +131,29 @@ class PlotBoxplots:
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var,
                     variable_names=long_names, title=title, loglevel=self.loglevel)
         
-        if anomalies and data_ref and abs_medians:
+        if anomalies and data_ref:
+
+            # Annotate absolute median values on the boxplots
             n_vars = len(base_vars)
             n_datasets = len(abs_medians)
 
-            # seaborn di solito posiziona le box in blocchi → possiamo ricostruire le x
             for dataset_idx in range(n_datasets):
-                for var_idx, base_var in enumerate(base_vars):
-                    # calcolo posizione x della box (dataset_idx + var_idx)
+                for var_idx, v in enumerate(var):
                     box_index = dataset_idx * n_vars + var_idx
                     try:
                         patch = [p for p in ax.patches if isinstance(p, plt.patches.PathPatch)][box_index]
                     except IndexError:
-                        continue  # non c’è quella box
+                        continue  
 
                     x = patch.get_path().vertices[:, 0].mean() + 0.05
+                    base_var = v.lstrip('-')
 
-                    # valori
                     medians_dict = abs_medians[dataset_idx]
                     if base_var in medians_dict:
-                        abs_val = medians_dict[base_var]  # mediana assoluta
+                        abs_val = medians_dict[base_var] # absolute median value
                         anom_val = fldmeans[dataset_idx][base_var].median(dim="time").item()
+                        if v.startswith('-'): 
+                            anom_val = -anom_val
 
                         ax.text(
                             x, anom_val, f"{abs_val:.2f}",
