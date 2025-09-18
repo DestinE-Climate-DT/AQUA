@@ -173,6 +173,7 @@ class Stratification(Diagnostic):
             self.data = self.data.groupby(f"time.{self.climatology}").mean("time")
         elif self.climatology == "total":
             self.data = self.data.mean("time", keep_attrs=True)
+        self.data.attrs["AQUA_stratification_climatology"] = self.climatology
         self.logger.debug(
             f"{self.climatology.capitalize()} climatology computed successfully."
         )
@@ -208,6 +209,8 @@ class Stratification(Diagnostic):
         rho = compute_rho(self.data["so"], self.data["thetao"], 0)
         self.data["rho"] = rho - 1000  # Convert to kg/m^3
         self.logger.debug("Added 'rho' (potential density anomaly) to dataset.")
+
+        
 
     def compute_mld(self):
         """
