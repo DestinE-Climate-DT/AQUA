@@ -87,6 +87,7 @@ Here we describe only the specific settings for the time series diagnostic.
         diagnostic_name: 'atmosphere'
         variables: ['2t', 'tprate']
         formulae: ['tnlwrf+tnswrf']
+        center_time: true # center the time axis of the time series
         params:
           default:
             hourly: false # Frequency to enable
@@ -115,6 +116,7 @@ Here we describe only the specific settings for the time series diagnostic.
         run: true # to enable the seasonal cycle
         diagnostic_name: 'atmosphere'
         variables: ['2t', 'tprate']
+        center_time: true # center the time axis of the seasonal cycle
         params:
           default:
             std_startdate: '1990-01-01'
