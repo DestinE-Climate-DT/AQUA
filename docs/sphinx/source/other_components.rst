@@ -123,6 +123,19 @@ Some extra options are available:
                   It will fail if not appropriate bounds are used for the classes. Can be only used if the ``density`` flag is ``False``.
                   It will force a computation of the histogram and a numpy array will be returned.
 
+The ``histogram()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
+class, so that it is easy to compute histograms on time-resampled data:
+    
+.. code-block:: python
+
+    hist = reader.histogram(data['t2m'], freq="1D", bins=100, range=(250, 350), units='K')
+
+or
+
+.. code-block:: python
+
+    hist = data['t2m'].aqua.histogram(freq="1D", bins=100, range=(250, 350), units='K')
+
 
 .. _time-selection:
 
