@@ -1,40 +1,42 @@
 # experiment
 dataset:
-  model: "IFS-NEMO"
-  exp: "historical-1990"
-  source2d: "hourly-hpz10-atm2d" #"2D_1h_native"
-  source3d: "hourly-hpz10-atm3d" #"3D_1h_native"
+  model: "ERA5"
+  exp: "era5"
+  source2d: "6hrs" #"2D_1h_native"
+  source3d: "6hrs" #"3D_1h_native"
 
 # folders for regridded data, temprorary and stored high res data
 paths: 
-  tmpdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/tmpdir"
-  fulldir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/fulldir"
-  plotdir: "/pfs/lustrep3/projappl/project_465000454/pghinassi/tc_analysis/Figures/"
+  tmpdir: "/work/users/jost/aqua/tc/tc_analysis/tmpdir"
+  fulldir: "/work/users/jost/aqua/tc/tc_analysis/fulldir"
+  plotdir: "/work/users/jost/aqua/tc/tc_analysis/Figures/"
 
 # log level
 setup:
-  loglevel: 'WARNING'
+  loglevel: 'debug'
 
 # grid on which operate
 grids:
   lowgrid: 'r100'
-  highgrid: 'r010'
+  highgrid: 'r025'
 
 # variables to stored 
 varlist: ['msl', '10u', '10v', 'tprate']
 
 # temporal definition (date format: YYYYMMDD)
 time: 
-  startdate: '19900701'
-  enddate: '19911231'
+  startdate: '20150801'
+  enddate: '20151001'
   frequency: '6h'
 
 stream:
-  streamstep: "10D" # n of days for streaming (check reader args options, IMPORTANT: must be specified in days, "D")
+  # streamstep: "10D"
+  streamstep: "1D" # n of days for streaming (check reader args options, IMPORTANT: must be specified in days, "D")
 
 # detect nodes options
 detect:
-  boxdim: 10    # dimension of lat/lon box to save data in the vicinity of the TCs centres (in degrees)
+  boxdim: 10  # dimension of lat/lon box to save data in the vicinity of the TCs centres (in degrees)
+  write_fullres: false  # Option to write zoom-in full resolution data
 
 # stich nodes options
 stitch:
@@ -43,5 +45,5 @@ stitch:
 
 # path to orography in case file (in case var is not found in the catalog)
 orography:
-  file_path: "/users/pghinass/orography/IFS-NEMO/historical-1990/"
-  file_name: "orography_r100.nc"
+  file_path: "/work/users/jost/aqua/data/ERA5/6hr/"
+  file_name: "orog_ERA5.nc"

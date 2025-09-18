@@ -40,7 +40,7 @@ class StitchNodes():
             self.prepare_stitch_nodes(block, dates_freq, dates_ext)
             self.run_stitch_nodes(maxgap='6h')
             self.reorder_tracks()
-            self.store_stitch_nodes(block, dates_freq)
+            self.store_stitch_nodes(block, dates_freq, write_fullres=self.write_fullres)
             toc = time()
             self.logger.info(
                 'StitchNodes done in {:.4f} seconds'.format(toc - tic))
@@ -101,10 +101,13 @@ class StitchNodes():
         """
 
         # create list of file paths to include in glob pattern
+        unique_dates = pd.Index(dates_ext).strftime('%Y%m%d').unique()
         file_paths = [os.path.join(
-            self.paths['tmpdir'], f"tempest_output_{date}T??.txt") for date in dates_ext.strftime('%Y%m%d')]
+            self.paths['tmpdir'], f"tempest_output_{date}T??.txt") for date in unique_dates]
+        
         # use glob to get list of filenames that match the pattern
         filenames = []
+              
         for file_path in file_paths:
             filenames.extend(sorted(glob(file_path)))
 
@@ -148,7 +151,10 @@ class StitchNodes():
                 f'--maxgap {maxgap} --threshold wind,>=,10.0,10;lat,<=,50.0,10;lat,>=,-50.0,10'
             self.logger.info(stitch_string)
 
-        subprocess.run(stitch_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        if self.loglevel.upper() == 'DEBUG':
+            subprocess.run(stitch_string.split())
+        else:
+            subprocess.run(stitch_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         
         self.logger.warning(f'Tracked into {self.track_file}!')
 
