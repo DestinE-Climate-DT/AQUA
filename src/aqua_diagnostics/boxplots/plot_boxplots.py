@@ -133,6 +133,8 @@ class PlotBoxplots:
         
         if anomalies and data_ref:
 
+            ax.set_ylabel("Anomalies with respect to observation mean (W/m2)")
+
             # Annotate absolute median values on the boxplots
             n_vars = len(base_vars)
             n_datasets = len(abs_medians)
