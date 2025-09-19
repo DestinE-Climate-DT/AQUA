@@ -110,6 +110,24 @@ class FixerDataModel:
                         log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by fixer")
                     else:
                         self.logger.warning("Coordinate %s not found", coord)
+        # By Maqsood
+        # Addition only for EERIE IFS-FESOM 2D data where there is an extra coordinate of 'depth'
+        # Somehow the fixers are not working and I am unable to drop the 'depth' in 2D data.
+        # Following is a hardcoded fixer
+
+        drop_coords = self.fixes.get("drop_coords", None)
+        self.logger.info("Coordinates to be dropped %s", drop_coords) 
+        if drop_coords:
+            _coords = list(drop_coords.keys())
+            self.logger.debug("Coordinates to be dropped: %s", _coords)
+            
+            for _coord in _coords:
+                if _coord in data.coords: 
+                    data = data.isel({_coord : 0}, drop=True)
+ 
+        #if "depth" in data.coords and data.dims["depth"] == 1:   
+        #    self.logger.info("Hard coded: 'Depth' coordinates to be dropped in 2D case")
+        #    data =  data.isel(depth=0,drop=True) 
 
         return data
     

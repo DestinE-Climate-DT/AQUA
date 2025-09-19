@@ -1,0 +1,150 @@
+#This include the option for the regridding
+target:
+  resolution: r100
+  frequency: monthly
+  catalog: levante-eerie
+
+paths:
+  #outdir: /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA
+  outdir: /scratch/a/a270260/EERIRE/IFS-FESOM-hist-1950
+  tmpdir: /scratch/a/a270260/EERIRE/IFS-FESOM-hist-1950-tmp
+
+
+options:
+# Set to True if lra-r100-monthly-zarr should be created and checked
+  zarr: False
+  verify_zarr: False
+  loglevel: INFO
+
+slurm:
+  partition: compute
+  username: a270260
+  account: ab0995
+  time: 06:00:00
+  mem: 256GB
+
+data:
+  IFS-FESOM:
+    eerie-fesom-historical-1950:
+      #2D_daily_fesom_0.25deg:
+      #  workers: 16
+      #  #workers: 1
+      #  vars: ['avg_mlotst030', 'avg_mlotst125', 'avg_siconc', 'avg_sigrowth', 'avg_sisnthick', 'avg_sithick', 'avg_siue', 'avg_sivn', 'avg_sos', 'avg_tos', 'avg_zos']
+      #2D_monthly_fesom_0.25deg:
+      #  workers: 16
+      #  #workers: 1
+      #  vars: ['avg_mlotst030', 'avg_mlotst125', 'avg_siconc', 'avg_sigrowth', 'avg_sisnthick', 'avg_sithick', 'avg_siue', 'avg_sivn', 'avg_sos', 'avg_tos', 'avg_zos']
+      3D_daily_fesom_0.25deg:
+        workers: 16
+        #workers: 1
+        vars: ['avg_so']
+        #vars: ['avg_so', 'avg_thetao', 'avg_uoe', 'avg_von', 'avg_wo']
+      #3D_monthly_fesom_0.25deg:
+      #  workers: 16
+      #  #workers: 1
+      #  vars: ['avg_so', 'avg_thetao', 'avg_uoe', 'avg_von', 'avg_wo']
+
+  # IFS-NEMO:
+  #   control-1990:
+  #     hourly-hpz10-atm2d:
+  #       workers: 16
+  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+  #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+  #     hourly-hpz10-atm3d:
+  #       workers: 6
+  #       vars: ['q', 't', 'u', 'v']
+  #     daily-hpz10-oce2d:
+  #       workers: 12
+  #       vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
+  #     daily-hpz10-oce3d:
+  #       workers: 3
+  #       vars: ['thetao', 'so']
+    # a1al:
+    #   hourly-hpz7-atm2d:
+    #     workers: 24
+    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+    #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+    #   hourly-hpz7-atm3d:
+    #     workers: 16
+    #     vars: ['q', 't', 'u', 'v']
+    #   daily-hpz7-oce2d:
+    #     workers: 32
+    #     vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
+    #   daily-hpz7-oce3d:
+    #     workers: 16
+    #     vars: ['thetao', 'so']
+    # a16z:
+    #   hourly-hpz7-atm2d:
+    #     workers: 24
+    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+    #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+    #   hourly-hpz7-atm3d:
+    #     workers: 16
+    #     vars: ['q', 't', 'u', 'v']
+    #   daily-hpz7-oce2d:
+    #     workers: 32
+    #     vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
+    #   daily-hpz7-oce3d:
+    #     workers: 16
+    #     vars: ['thetao', 'so']
+    # a18j:
+    #   hourly-hpz7-atm2d:
+    #     workers: 24
+    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+    #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+    #   hourly-hpz7-atm3d:
+    #     workers: 16
+    #     vars: ['q', 't', 'u', 'v']
+    #   daily-hpz7-oce2d:
+    #     workers: 32
+    #     vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
+    #   daily-hpz7-oce3d:
+    #     workers: 16
+    #     vars: ['thetao', 'so']
+          #    hs3l-historical-1990:
+          #      monthly-hpz7-atm2d:
+          #        workers: 24
+          #        vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+          #          'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+          #      monthly-hpz7-atm3d:
+          #        workers: 16
+          #        vars: ['q', 't', 'u', 'v']
+          #    hs3l-control-1990:
+          #      monthly-hpz7-atm2d:
+          #        workers: 24
+          #      vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+          #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+          #      monthly-hpz7-atm3d:
+          #     workers: 16
+          #  vars: ['q', 't', 'u', 'v']
+
+  # IFS-FESOM:
+  #   story-2017-control:
+  #     hourly-hpz7-atm2d:
+  #       workers: 24
+  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+  #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+  #     hourly-hpz7-atm3d:
+  #       workers: 16
+  #       vars: ['q', 't', 'u', 'v']
+  #     daily-hpz7-oce2d:
+  #       workers: 32
+  #       vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
+  #     daily-hpz7-oce3d:
+  #       workers: 16
+  #       vars: ['thetao', 'so']
+
+  #   story-2017-T2K:
+  #     hourly-hpz7-atm2d:
+  #       workers: 24
+  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
+  #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
+  #     hourly-hpz7-atm3d:
+  #       workers: 16
+  #       vars: ['q', 't', 'u', 'v']
+  #     daily-hpz7-oce2d:
+  #       workers: 32
+  #       vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
+  #     daily-hpz7-oce3d:
+  #       workers: 16
+  #       vars: ['thetao', 'so']

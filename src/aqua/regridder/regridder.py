@@ -89,7 +89,9 @@ class Regridder():
 
         # this not used but can be shipped back to the reader
         self.src_horizontal_dims = self.src_grid_dict.get('space_coord', None)
+        #self.logger.info('HACK HERE !!!!!')
         self.src_vertical_dim = list(self.src_grid_path.keys())
+        #self.src_vertical_dim = ['2d']
         self.tgt_horizontal_dims = None
         self.error = None
 
@@ -128,6 +130,7 @@ class Regridder():
         self.tgt_grid_area = None
 
         # configure the masked fields
+        #self.logger.info("Commmented this out by Maqsood only to test")
         self.masked_attrs, self.masked_vars = self.configure_masked_fields(self.src_grid_dict)
 
         self.logger.info("Grid name: %s", self.src_grid_name)
@@ -173,12 +176,12 @@ class Regridder():
             self.src_horizontal_dims = gridtypes[0].horizontal_dims
         self.logger.debug("Horizontal dimensions guessed from data: %s", self.src_horizontal_dims)
 
-        # This should be not necessary since vertical coordinate is always provided
-        # if we have not them from the dictionary, get it from the file
-        # if not self.src_vertical_dim:
+        ## This should be not necessary since vertical coordinate is always provided
+        ## if we have not them from the dictionary, get it from the file
+        #if not self.src_vertical_dim:
         #    # get all vertical grid available
         #    self.src_vertical_dim = [getattr(gridtype, "vertical_dim") for gridtype in gridtypes]
-        # self.logger.debug("Vertical dimensions guessed from data: %s", self.src_vertical_dim)
+        #self.logger.debug("Vertical dimensions guessed from data: %s", self.src_vertical_dim)
 
         # if the path is missing, use the data to init smmregrid
         if not self.src_grid_path:
@@ -378,6 +381,7 @@ class Regridder():
                 loglevel=self.loglevel
             )
 
+
     def _area_filename(self, tgt_grid_name, reader_kwargs):
         """"
         Generate the area filename.
@@ -516,6 +520,7 @@ class Regridder():
 
         shared_vars = {}
         # TODO: masked vars based on attributes are still missing
+        self.logger.info("Comment this part by Maqsood only to test")
         if self.masked_vars:
             shared_vars[DEFAULT_DIMENSION_MASK] = self.masked_vars
             self.logger.debug("Variables for coordinate %s: %s",
@@ -534,6 +539,8 @@ class Regridder():
                 self.logger.debug("Variables for dimension %s: %s",
                                   gridtype.vertical_dim, variables)
                 shared_vars[gridtype.vertical_dim] = [var for var in variables if var not in masked_vars]
+                #self.logger.info("Hard coded value of depth here.")
+                #shared_vars[gridtype.vertical_dim] = 'depth'
             else:
                 shared_vars[DEFAULT_DIMENSION] = [var for var in variables if var not in masked_vars]
                 self.logger.debug("Variables for dimensions %s: %s",
@@ -560,15 +567,25 @@ class Regridder():
         else:
             raise ValueError("Data must be an xarray Dataset or DataArray.")
 
+        # This is only for test (Maqsood)
+        #if isinstance(data, xr.Dataset):
+        #    data = data.map(self._expand_dims, vertical_dims=['2d'])
+        #elif isinstance(data, xr.DataArray):
+        #    data = self._expand_dims(data, vertical_dims=['2d'])
+        #else:
+        #    raise ValueError("Data must be an xarray Dataset or DataArray.")
+
+
         # get which variables share the same dimensions
         shared_vars = self._group_shared_dims(data)
 
         # compact regridding on all dataset with map
         if isinstance(data, xr.Dataset):
             data = data.map(self._apply_regrid, shared_vars=shared_vars)
+            #self.logger.info(" HERE $$$$$$$$$$$$$$$$$$$$ %s", data)
         elif isinstance(data, xr.DataArray):
             data = self._apply_regrid(data, shared_vars)
-
+            #self.logger.info(" THERE $$$$$$$$$$$$$$$$$$$$ %s", data)
         return data
 
     def _apply_regrid(self, data, shared_vars):
@@ -583,7 +600,7 @@ class Regridder():
                     self.logger.error("Regridder for vertical coordinate %s not found.", vertical)
                     self.logger.error("Cannot regrid variable %s", data.name)
                     continue
-                # TODO: if smmregridder is not found, we can call the weights method to generate on the fly
+                #TODO: if smmregridder is not found, we can call the weights method to generate on the fly
                 return self.smmregridder[vertical].regrid(data)
         return data
 

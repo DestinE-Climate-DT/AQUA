@@ -170,9 +170,15 @@ grids:
   # 
   # EERIE FESOM 
   eerie-fesom-0.25deg-2d:
-    cdo_options: "--force"
+    #cdo_options: "--force"
     path: '/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-2d.nc'
+    space_coord: ["lon", "lat"]
   eerie-fesom-0.25deg-3d:
-    cdo_options: "--force"
-    path: '/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d.nc'
-      #level: '{{ grids }}/avg_so_remapped_20141222.nc'
+    #cdo_options: "--force"
+    path:  #'/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d.nc' #'/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d-depth.nc' # '/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d-levels.nc' #'/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d.nc' 
+        lev: '/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d.nc'
+        #depth: '/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d-depth.nc'
+        #lev: '/work/ab0995/a270260/aqua_eerie_grid/eerie-fesom-0.25deg-3d.nc'
+    space_coord: ["lon", "lat"]
+    #vert_coord: "lev" 
+    vert_coord: ['lev']

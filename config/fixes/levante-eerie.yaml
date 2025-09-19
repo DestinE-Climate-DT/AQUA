@@ -1,0 +1,46 @@
+fixer_name:
+    fesom-eerie-2d:
+        #convention: eccodes
+        vars:
+        # FESOM wrote avg_tos and avg_thetao with degC and having K as unit name
+            avg_tos:
+                src_units: degC
+            avg_thetao:
+                src_units: degC
+        #coords:
+        #    lev:
+        #        source: depth
+        #        attributes:
+        #                long_name: lev
+        #dims:
+        #    lev:
+        #        source: depth
+        #        attributes:
+        #        long_name: depth
+        drop_coords:
+             depth:
+                 source : depth
+             lev:
+                 source : lev
+
+    fesom-eerie-3d:
+        #convention: eccodes
+        vars:
+        # FESOM wrote avg_tos and avg_thetao with degC and having K as unit name
+            avg_tos:
+                src_units: degC
+            avg_thetao:
+                src_units: degC
+        coords:
+            lev:
+                source: depth
+                attributes:
+                        long_name: depth
+        dims:
+            lev:
+                source: depth
+                attributes:
+                long_name: depth
+        #drop_coords:
+        #        - depth
+            

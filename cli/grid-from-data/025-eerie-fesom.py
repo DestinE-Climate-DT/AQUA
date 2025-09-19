@@ -27,7 +27,7 @@ def parse_arguments(args):
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='multiIO-from-nemo')
+    logger = log_configure(log_level=loglevel, log_name='config-eerie-fesom')
 
     file = get_arg(args, 'config', 'config-eerie-fesom.yaml')
     logger.info('Reading configuration from %s', file)
