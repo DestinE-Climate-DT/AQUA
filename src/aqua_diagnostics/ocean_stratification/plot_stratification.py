@@ -14,6 +14,7 @@ class PlotStratification:
         self,
         data: xr.Dataset,
         obs: xr.Dataset = None,
+        clim_time: str = "January",
         diagnostic: str = "ocean_stratification",
         outputdir: str = ".",
         rebuild: bool = True,
@@ -21,6 +22,7 @@ class PlotStratification:
     ):
         self.data = data
         self.obs = obs
+        self.clim_time = clim_time
 
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "PlotStratification")
@@ -87,7 +89,6 @@ class PlotStratification:
                     else:
                         self.ytext.append(None)
 
-
     def set_data_map_list(self):
         self.data_map_list = []
         for data in self.data_list:
@@ -113,8 +114,9 @@ class PlotStratification:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"Climatology of "
-        # self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type}Trends"
+        clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
+        # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"MLD {clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -124,12 +126,14 @@ class PlotStratification:
         """
         self.title_list = []
         for j in range(len(self.data_map_list)):
+            attrs = self.data_map_list[j].attrs
             for i, var in enumerate(self.vars):
-                if j == 0:
-                    title = f"{var} ({self.data[var].attrs.get('units')})"
-                    self.title_list.append(title)
-                else:
-                    self.title_list.append(" ")
+                # if j == 0:
+                    # title = f"{var} ({self.data[var].attrs.get('units')})"
+                title = f"{attrs.get('AQUA_catalog')} {attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
+                self.title_list.append(title)
+                # else:
+                #     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):

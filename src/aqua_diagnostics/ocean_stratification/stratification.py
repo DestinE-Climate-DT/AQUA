@@ -1,3 +1,4 @@
+import calendar
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
@@ -169,9 +170,23 @@ class Stratification(Diagnostic):
         None
         """
         self.logger.debug(f"Computing {self.climatology} climatology.")
-        if self.climatology in ["month", "year", "season"]:
-            self.data = self.data.groupby(f"time.{self.climatology}").mean("time")
-        elif self.climatology == "total":
+        month_list = list(calendar.month_name)[1:]
+        season_list = ["DJF", "MAM", "JJA", "SON"]
+        month_season_list = month_list + season_list
+
+        if self.climatology in month_season_list:
+            self.clim_type = "month"
+        else:
+            self.clim_type = None
+
+        if self.clim_type:
+            if self.clim_type in ["month", "year", "season"]:
+                self.data = self.data.groupby(f"time.{self.clim_type}").mean("time")
+                self.data = self.data.rename({f"{self.clim_type}": "time"})
+                if self.clim_type == "month":
+                    self.data = self.data.assign_coords(time=[calendar.month_name[m] for m in self.data["time"].values])
+                self.data = self.data.sel(time=self.climatology)
+        elif self.climatology == "Total":
             self.data = self.data.mean("time", keep_attrs=True)
         self.data.attrs["AQUA_stratification_climatology"] = self.climatology
         self.logger.debug(
