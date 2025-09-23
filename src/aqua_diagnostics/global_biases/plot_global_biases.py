@@ -112,6 +112,7 @@ class PlotGlobalBiases:
             data[var],
             return_fig=True,
             title=title,
+            title_size=18,
             vmin=vmin,
             vmax=vmax,
             proj=proj,
@@ -170,6 +171,7 @@ class PlotGlobalBiases:
             return_fig=True,
             contour=True, 
             title=title,
+            title_size=18,
             sym=sym,
             proj=proj,
             vmin_fill=vmin, 
@@ -181,10 +183,11 @@ class PlotGlobalBiases:
         ax.set_ylabel("Latitude")
 
         description = (
-            f"Spatial map of total bias of {data[var].attrs.get('long_name', var)}"
+            f"Spatial map of global bias of {data[var].attrs.get('long_name', var)}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
-            f" from {data.startdate} to {data.enddate} "
-            f"for the {data.model} model, experiment {data.exp}, with {data_ref.model} used as reference data."
+            f"from {data.startdate} to {data.enddate}"
+            f"for the {data.model} model, experiment {data.exp}, with {data_ref.model}"
+            f"from {data_ref.startdate} to {data_ref.enddate} used as reference data."
         )
 
         if self.save_pdf:
@@ -230,6 +233,7 @@ class PlotGlobalBiases:
             'proj': get_projection(proj, **proj_params),
             'return_fig': True,
             'title': title,
+            'title_size': 18,
             'titles': season_list,
             'titles_size': 16,
             'figsize':(10, 8),
@@ -251,7 +255,8 @@ class PlotGlobalBiases:
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
             f"for the {data.model} model, experiment {data.exp}, "
             f"using {data_ref.model} as reference data. "
-            f"The bias is computed for each season over the period from {data.startdate} to {data.enddate}."
+            f"The bias is computed for each season over the period from {data.startdate} to {data.enddate} for the model " 
+            f"and from {data_ref.startdate} to {data_ref.enddate} for the reference data."
         )
 
         if self.save_pdf:
@@ -285,7 +290,8 @@ class PlotGlobalBiases:
 
         description = (
             f"Vertical bias plot of {data[var].attrs.get('long_name', var)} across pressure levels from {data.startdate} to {data.enddate} "
-            f"for the {data.model} model, experiment {data.exp}, with {data_ref.model} used as reference data."
+            f"for the {data.model} model, experiment {data.exp}, with {data_ref.model} from {data_ref.startdate} to {data_ref.enddate}"
+            f"used as reference data."
         )
 
         fig, ax = plot_vertical_profile_diff(
@@ -302,6 +308,7 @@ class PlotGlobalBiases:
             add_contour=True, 
             nlevels=nlevels,
             title=title,
+            title_size=18,
             return_fig=True,
             loglevel=self.loglevel
         )
