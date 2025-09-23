@@ -1,66 +1,262 @@
-Sea ice extent
-==============
-
+Sea ice 
+=======
 
 Description
 -----------
 
-The sea ice extent (SIE) is defined as the areal integral of all ocean grid cells that contain at least 15% of sea ice concentration (SIC).
-This threshold-based definition has its drawbacks (it is subjective, it is not as physical as sea ice area,
-it is not linear under time averaging) but has the advantage to be practical, as it corresponds to the surface enclosed by the sea ice edge.
+The Sea Ice diagnostic is a set of tools to compute and plot time series, seasonal cycles and 2D spatial maps of sea ice metrics.
+The diagnostic supports analysis of sea ice extent, volume, fraction, and thickness.
+Time series and seasonal cycles can be computed over a specific region of the Northern or Southern Hemisphere.
+Default regions are the Arctic and the Antarctic regions, but it is possible to select other regions and custom regions can be 
+defined in the configuration file.
 
-Further details on the definition can be gound on the National Snow and Ice Data Center (NSIDC) `website <https://nsidc.org/learn/ask-scientist/what-difference-between-sea-ice-area-and-extent#:~:text=Sea%20ice%20area%20is%20the,15%20percent%20sea%20ice%20cover>`_.
+Classes
+-------
 
-As an index resulting from a spatial integral, the same SIE can be obtained from different SIC distributions.
-Therefore, for model evaluation, it is generally recommended to compute SIE over specific regions to exclude the possibility of error compensations.
+There is one class that process and analyse the sea ice data, allowing to save the result as NetCDF files:
 
-Structure
+* **SeaIce**: a class that computes the sea ice extent, volume, fraction, and thickness metrics.  
+  The class handles data retrieval, regional selection, integration, and statistical analysis internally 
+  for a single model or reference data.
+  It supports time series analysis and seasonal cycle computation with optional standard deviation calculations:
+  - The methods ``extent`` and ``volume`` are supported for time series analysis, which computes the **integrated values** over specified regions, 
+  producing time series data. The method *extent* computes the area of ocean cells with at least 15% sea ice 
+  concentration (the `threshold` can be tuned in the configuration file). The method *volume* computes the integrated sea ice thickness.
+
+  The methods ``fraction`` and ``thickness`` are supported for 2D spatial analysis, which computes the 2D monthly climatology maps over specified regions, 
+  producing 2D spatial maps respectively for sea ice fraction (0-1) and sea ice thickness (meters).
+
+There are other two classes to produce the plots, which support a comparison between multiple models against a reference dataset.
+These classes can accept a `xarray.DataArray`, a `xarray.Dataset`, or a list of `xarray.Dataset` with a collection of sea ice variables 
+defined per region and calculation method.
+
+* **PlotSeaIce**: a class that produces time series and seasonal cycle plots.
+* **Plot2DSeaIce**: a class that produces the plots for the 2D spatial maps and biases for climatological maps over the months.
+
+.. note::
+
+    The ``extent`` and ``volume`` *methods* produce time series data, while ``fraction`` and ``thickness`` *methods* produce 2D spatial maps.
+
+File structure
+--------------
+
+* The diagnostic is located in the ``src/aqua_diagnostics/seaice`` directory, which contains both the source code and the command line interface (CLI) script `cli_seaice.py`.
+* The default configuration file is located in the ``config/diagnostics/seaice/config_seaice.yaml`` file.
+* The regional definitions are defined in the ``config/diagnostics/seaice/definitions/regions.yaml`` file.
+* Notebooks are available in the ``notebooks/diagnostics/seaice`` directory and contain examples of how to use the diagnostic.
+
+Input variables and datasets
+----------------------------
+The classes support the following variables, although the `Fixer` class can convert the acceptable 
+different variable names into the following accepted variables:
+* ``siconc`` (sea ice concentration, GRIB parameter id 31)
+* ``sithick`` (sea ice thickness, GRIB parameter id 32)
+* ``sivol`` (sea ice volume, GRIB parameter id 33)
+
+The diagnostic supports comparison with reference datasets, with OSI-SAF being the default observational reference for sea ice concentration.
+Custom reference datasets can be configured through the configuration file.
+
+Basic usage
 -----------
 
-The sea ice extent diagnostic follows a class structure and consists of the files:
+The basic usage of this diagnostic is explained with a working example in the notebook provided in the ``notebooks/diagnostics/seaice`` directory.  
+A basic structure of the analysis is the following:
 
-* ``seaice_class.py``: a python file in which the SeaIceExtent class constructor and the other class methods are included;
-* ``regions.yml``: a yaml file with the definitions of regions where SIE can be calculated
-* ``notebooks/seaice.ipynb``: an ipython notebook which uses the ``seaice_class`` class and its methods;
-* ``README.md``: a readme file which contains some technical information on how to install the sea ice diagnostic and its environment. 
+**For Time Series Analysis:**
 
-Input variables
----------------
+.. code-block:: python
 
-* ``ci`` (sea ice concentration, GRIB paramid 31)
-* usual model-specific invariants (latitude, longitude, grid cell areas)
+    from aqua.diagnostics import SeaIce, PlotSeaIce
 
-Output 
-------
+    # Compute sea ice extent (time series calculation)
+    si = SeaIce(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly', loglevel="DEBUG")
+    result = si.compute_seaice(method='extent', var='siconc')
+    
+    # Plot time series
+    psi = PlotSeaIce(monthly_models=result, loglevel='DEBUG')
+    psi.plot_seaice(plot_type='timeseries', save_pdf=True, save_png=True)
 
-The script produces ``figSIE.pdf`` and ``figSIE.png``,  two figures showing the full seasonal cycles of sea
-ice extent in the specified regions for the available time of integrations.
+**For 2D Spatial Analysis:**
 
-The script also produces as many NetCDF files as there were items provided in the ``mySetups`` list.
-Each NetCDF file has the time series of sea ice extent recorded for the various regions.
+.. code-block:: python
 
-Methods used
-------------
+    from aqua.diagnostics import SeaIce, Plot2DSeaIce
 
-Examples from the seaIce class contained in the seaice_class.py file:
+    # Compute sea ice fraction (2D maps calculation)
+    si = SeaIce(model='IFS-NEMO', exp='historical-1990', source='lra-r100-monthly', loglevel="DEBUG")
+    result = si.compute_seaice(method='fraction', var='siconc', stat='mean', freq='monthly')
+    
+    # Plot 2D maps
+    psi_2d = Plot2DSeaIce(models=result, loglevel='DEBUG')
+    psi_2d.plot_2d_seaice(plot_type='var', method='fraction', months=[3,9], 
+                          projkw={'projname': 'orthographic'}, save_pdf=True, save_png=True)
 
-* ``computeExtent``: method to retrieve the data and compute the sea ice extent of the retrieved data. 
-* ``plotExtent``: method to plot the sea ice extent time series.
-* ``createNetCDF``: method to create a NetCDF file with the sea ice extent time series.
+.. note::
 
+    The user can also define the start and end date of the analysis and the reference dataset.  
+    If not specified otherwise, plots will be saved in PNG and PDF format in the current working directory.
 
-Observations
-------------
+CLI usage
+---------
 
-OSI-SAF osi-450. See Lavergne et al. (2019)
+The diagnostic can be run from the command line interface (CLI) by running the following command:
 
+.. code-block:: bash
 
-References
-----------
+    cd $AQUA/src/aqua_diagnostics/seaice
+    python cli_seaice.py --config <path_to_config_file>
 
-* Lavergne, T., Sørensen, A. M., Kern, S., Tonboe, R., Notz, D., Aaboe, S., Bell, L., Dybkjær, G., Eastwood, S., Gabarro, C., Heygster, G., Killie, M. A., Brandt Kreiner, M., Lavelle, J., Saldo, R., Sandven, S., & Pedersen, L. T. (2019). Version 2 of the EUMETSAT OSI SAF and ESA CCI sea-ice concentration climate data records. The Cryosphere, 13(1), 49–78. https://doi.org/10.5194/tc-13-49-2019
+Additionally, the CLI can be run with the following optional arguments:
 
+* ``--config``, ``-c``: Path to the configuration file. Default is ``config/diagnostics/seaice/config_seaice.yaml`` in the AQUA root directory.
+* ``--nworkers``, ``-n``: Number of workers to use for parallel processing.
+* ``--cluster``: Cluster to use for parallel processing. By default a local cluster is used.
+* ``--loglevel``, ``-l``: Logging level. Default is ``WARNING``.
+* ``--catalog``: Catalog to use for the analysis. Can be defined in the config file.
+* ``--model``: Model to analyse. Can be defined in the config file.
+* ``--exp``: Experiment to analyse. Can be defined in the config file.
+* ``--source``: Source to analyse. Can be defined in the config file.
+* ``--outputdir``: Output directory for the plots.
+* ``--proj``: Projection type for 2D plots. Choices are 'orthographic' or 'azimuthal_equidistant'. Default is 'orthographic'.
 
+Config file structure 
+----------------------
+
+The configuration file is a YAML file that contains the details on the dataset to analyse or use as reference, 
+the output directory and the diagnostic settings.
+Most of the settings are common to all the diagnostics (see :ref:`diagnostics-configuration-files`).
+Here we describe only the specific settings for the sea ice diagnostic.
+
+The sea ice configuration file is organized into several main sections:
+
+**Dataset Configuration:**
+.. code-block:: yaml
+
+    datasets:
+      - catalog: null              # mandatory as null
+        model: 'IFS-NEMO'          # mandatory
+        exp: 'historical-1990'     # mandatory
+        source: 'lra-r100-monthly' # mandatory
+        regrid: null               # if the diagnostic supports it
+
+**Reference Datasets:**
+.. code-block:: yaml
+
+    references:
+      # ---- Extent in NH ----
+      - &ref_osi_nh
+        catalog: 'obs'             # mandatory
+        model: 'OSI-SAF'           # mandatory
+        exp: 'osi-450'             # mandatory
+        source: 'nh-monthly'       # mandatory
+        regrid: 'r100'
+        domain: "nh"
+
+The reference datasets are defined using YAML anchors (``&ref_osi_nh``) and can be reused across different diagnostic blocks. Each reference dataset specifies:
+- ``catalog``: Data catalog identifier
+- ``model``: Reference model name (e.g., OSI-SAF, PSC)
+- ``exp``: Experiment identifier
+- ``source``: Data source specification
+- ``regrid``: Regridding target resolution
+- ``domain``: Geographic domain (nh=Northern Hemisphere, sh=Southern Hemisphere)
+
+**Diagnostic Blocks:**
+
+Each diagnostic block in CLI ``config_seaice.yaml``: 
+- ``seaice_timeseries``
+- ``seaice_seasonal_cycle``
+- ``seaice_2d_bias``
+
+contains the following parameters:
+
+.. code-block:: yaml
+
+    seaice_timeseries:
+      run: true
+      methods: ["extent", "volume"]  # Methods to compute
+      regions: ['arctic','antarctic'] # Regions to analyze
+      startdate: '1991-01-01'        # Analysis start date
+      enddate: '2000-01-01'          # Analysis end date
+      calc_ref_std: true             # Calculate reference standard deviation
+      ref_std_freq: 'monthly'        # Standard deviation frequency
+      varname:                       # Variable mapping for each method
+        extent: 'siconc'
+        volume: 'sithick'
+        fraction: 'siconc'
+        thickness: 'sithick'
+
+**Method-specific variable mapping:**
+- ``extent`` and ``fraction``: Use ``siconc`` as variable name (sea ice concentration)
+- ``volume`` and ``thickness``: Use ``sithick`` as variable name (sea ice thickness)
+
+**Reference dataset assignment:**
+Each diagnostic block includes a ``references`` section that assigns specific reference datasets to methods:
+
+.. code-block:: yaml
+
+    references:
+      - <<: *ref_osi_nh
+        use_for_method: "extent"    # Use this reference for extent analysis
+        varname: "siconc"
+      - <<: *ref_psc_nh
+        use_for_method: "volume"    # Use this reference for volume analysis
+        varname: "sivol"
+
+**2D Bias Configuration:**
+The ``seaice_2d_bias`` block includes additional parameters for spatial analysis:
+
+.. code-block:: yaml
+
+    seaice_2d_bias:
+      months: [3, 9]                # Months to plot (March and September)
+      projections:                  # Map projection options
+        orthographic:
+          projname: "orthographic"
+          projpars:
+            central_longitude: 0.0
+            central_latitude: "max_lat_signed"
+        extent_regions:             # Geographic extent for each region
+          Arctic: [-180, 180, 50, 90]
+          Antarctic: [-180, 180, -50, -90]
+
+**Output Configuration:**
+.. code-block:: yaml
+
+    output:
+      outputdir: "./"               # Output directory
+      rebuild: true                 # Overwrite existing files
+      save_netcdf: true             # Save NetCDF files
+      save_pdf: true                # Save PDF plots
+      save_png: true                # Save PNG plots
+      dpi: 300                      # Plot resolution
+
+.. note::
+
+    The configuration file uses YAML anchors (``&ref_osi_nh``) and references (``<<: *ref_osi_nh``) to avoid duplication. 
+    This allows the same reference dataset definition to be reused across different diagnostic blocks with method-specific assignments.
+
+CLI processing
+--------------
+
+The CLI uses separate diagnostic blocks for different types of analysis:
+
+* ``seaice_timeseries``: for time series analysis of extent and volume
+* ``seaice_seasonal_cycle``: for seasonal cycle analysis of extent and volume
+* ``seaice_2d_bias``: for 2D spatial analysis of fraction and thickness biases
+
+The input parameters can be overridden during the CLI call.
+
+Outputs
+-------
+
+After the analysis, the diagnostic can produce the following outputs:
+* **NetCDF files**: Time series, seasonal cycle or 2D spatial climatology maps saved in NetCDF format for further analysis.
+
+All plots can be performed and then saved in both PDF and PNG formats with comprehensive metadata describing the plot:
+* **Time series plots**: Monthly and annual time series of sea ice extent and volume for specified regions.
+* **Seasonal cycle plots**: Monthly climatology of sea ice metrics with optional standard deviation bands.
+* **2D spatial maps**: Climatological maps of sea ice fraction and thickness for specific months and regions.
+* **Bias maps**: Spatial differences between model and reference sea ice data for specific months and regions.
 
 Example Plot(s)
 ---------------
@@ -68,6 +264,21 @@ Example Plot(s)
 .. figure:: figures/figSIE.png
     :width: 10cm
 
+Observations (Reference data)
+-----------------------------
+
+Default model is IFS-NEMO, experiment is historical-1990, source is lra-r100-monthly.
+
+Details on the reference datasets, are available on the website of the Ocean and Sea Ice Satellite 
+Application Facility (OSI-SAF) `here <https://osi-saf.eumetsat.int/>`_.
+An updated version of the reference datasets is available in AQUA catalog: OSI-SAF osi-450-a1 (1978 - 2022) and OSI-SAF osi-430 (2022 - 2025). 
+
+* Lavergne, T., Sørensen, A. M., Kern, S., Tonboe, R., Notz, D., Aaboe, S., Bell, L., Dybkjær, G., Eastwood, S., Gabarro, C., Heygster, G., Killie, M. A., Brandt Kreiner, M., Lavelle, J., Saldo, R., Sandven, S., & Pedersen, L. T. (2019). Version 2 of the EUMETSAT OSI SAF and ESA CCI sea-ice concentration climate data records. The Cryosphere, 13(1), 49–78. https://doi.org/10.5194/tc-13-49-2019
+
+See also:
+
+* Knowles, K., E. G. Njoku, R. Armstrong, and M. J. Brodzik. 2000. Nimbus-7 SMMR Pathfinder Daily EASE-Grid Brightness Temperatures, Version 1. [Indicate subset used]. Boulder, Colorado USA.
+NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/36SLCSCZU7N6. [Date Accessed].
 
 Available demo notebooks
 ------------------------
@@ -76,12 +287,17 @@ Notebooks are stored in diagnostics/seaice/notebooks
 
 * `seaice.ipynb <https://github.com/oloapinivad/AQUA/blob/main/diagnostics/seaice/notebooks/seaice.ipynb>`_
 
+Authors and contributors
+------------------------
+
+This diagnostic is maintained by Emanuele Tovazzi (@tovaz92, emanueletovazzi [at] cnr.it), member of the AQUA team.
+Contributions are welcome — please open an issue or a pull request. For questions or suggestions, contact the AQUA team or the maintainers.
 
 Detailed API
 ------------
-This section provides a detailed reference for the Application Programming Interface (API) of the "seaice" diagnostic, produced from the diagnostic function docstrings.
+This section provides a detailed reference for the Application Programming Interface (API) of the Seaice diagnostic, produced from the diagnostic function docstrings.
 
-.. automodule:: seaice
+.. automodule:: aqua.diagnostics.seaice
     :members:
     :undoc-members:
     :show-inheritance:
