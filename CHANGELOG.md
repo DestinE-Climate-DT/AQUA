@@ -42,6 +42,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Global Biases: address formatting issues in plots (#2272)
 - Add `source_oce` option for ECmean to aqua anlysis (#2246)
 - Add missing center time option to seasonalcycles (#2247)
 - Teleconnections: adapted MJO to the new Hovmoller graphical function (#1969)
