@@ -1,6 +1,7 @@
 """
 Module including time utilities for AQUA
 """
+import math
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -24,7 +25,7 @@ def frequency_string_to_pandas(freq):
         'hourly': 'h',
         'daily': 'D',
         'weekly': 'W',
-        'seasonal': 'Q-NOV',
+        'seasonal': 'QS-DEC',
         'monthly': 'MS', #this implies start of the month
         'annual': 'YS', #this implies start of the year
         'yearly': 'YS', #this implies start of the year
@@ -52,9 +53,8 @@ def frequency_string_to_pandas(freq):
 
 def xarray_to_pandas_freq(xdataset: xr.Dataset | xr.DataArray):
     """
-    Given a Xarray Dataset or DataArray, estimate the time frequency
-    with the pandas method.
-    Important: the infer_freq method requires at least 3 time points.
+    Given a Xarray Dataset, estimate the time frequency and convert
+    it as a Pandas frequency string
 
     Args:
         xdataset (xr.Dataset | xr.DataArray): The input xarray object.
@@ -62,13 +62,24 @@ def xarray_to_pandas_freq(xdataset: xr.Dataset | xr.DataArray):
     Returns:
         str: The inferred time frequency as a string, pandas compliant.
     """
-    # Convert time coordinate to a pandas index
-    time_index = pd.DatetimeIndex(xdataset.time.values)
+    # to check if this is necessary
+    timedelta = pd.Timedelta(xdataset.time.diff('time').mean().values)
 
-    # Try to infer frequency
-    freq = pd.infer_freq(time_index)
+    hours = math.floor(timedelta.total_seconds() / 3600)
+    days = math.floor(hours / 24)
+    months = math.floor(days / 28)  # Minimum month has around 28 days
+    years = math.floor(days / 365)  # Assuming an average year has around 365 days
 
-    return freq
+    # print([hours, days, months, years])
+
+    if years >= 1:
+        return f"{years}Y"
+    elif months >= 1:
+        return f"{months}MS"
+    elif days >= 1:
+        return f"{days}D"
+    else:
+        return f"{hours}h"
 
 
 def pandas_freq_to_string(freq: str) -> str:
@@ -86,10 +97,12 @@ def pandas_freq_to_string(freq: str) -> str:
         # Hourly
         'H': 'hourly',
         'h': 'hourly',
+        '1h': 'hourly',
         'hourly': 'hourly',
         # Daily
         'D': 'daily',
         'd': 'daily',
+        '1D': 'daily',
         'daily': 'daily',
         # Weekly
         'W': 'weekly',
@@ -98,12 +111,14 @@ def pandas_freq_to_string(freq: str) -> str:
         'Q-NOV': 'seasonal',
         'Q': 'seasonal',
         # Monthly
+        '1MS': 'monthly',
         'MS': 'monthly',
         'M': 'monthly',
         'ME': 'monthly',
         'mon': 'monthly',
         'monthly': 'monthly',
         # Annual
+        '1Y': 'annual',
         'YS': 'annual',
         'Y': 'annual',
         'YE': 'annual',

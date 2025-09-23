@@ -309,46 +309,32 @@ class TestHovmoller:
 
     def test_plot_hovmoller(self, tmp_path):
         """Test the plot_hovmoller function"""
-        fig, ax = plot_hovmoller(data=self.data,
-                                 return_fig=True,
-                                 outputdir=tmp_path,
-                                 save=True,
-                                 loglevel=loglevel)
-
-        assert fig is not None
-        assert ax is not None
-        assert os.path.exists(tmp_path / 'hovmoller.pdf')
-
         fig2, ax2 = plot_hovmoller(data=self.data,
                                    return_fig=True,
-                                   outputdir=tmp_path,
-                                   filename='test_hovmoller2.png',
-                                   format='png',
                                    cmap='RdBu_r',
-                                   save=True,
                                    invert_axis=True,
                                    invert_time=True,
                                    cbar_label='test-label',
                                    nlevels=10,
                                    sym=True,
-                                   dpi=300,
                                    loglevel=loglevel)
 
         assert fig2 is not None
         assert ax2 is not None
+
+        fig2.savefig(tmp_path / 'test_hovmoller2.png')
         assert os.path.exists(tmp_path / 'test_hovmoller2.png')
 
-        plot_hovmoller(data=self.data,
-                       return_fig=False,
-                       contour=False,
-                       outputdir=tmp_path,
-                       filename='test_hovmoller3',
-                       format='png',
-                       cmap='RdBu_r',
-                       save=True,
-                       invert_time=True,
-                       dpi=300,
-                       loglevel=loglevel)
+        fig, _ = plot_hovmoller(data=self.data,
+                                 return_fig=True,
+                                 contour=False,
+                                 cmap='RdBu_r',
+                                 invert_time=True,
+                                 loglevel=loglevel)
+
+        assert fig is not None
+
+        fig.savefig(tmp_path / 'test_hovmoller3.png')
 
         assert os.path.exists(tmp_path / 'test_hovmoller3.png')
 

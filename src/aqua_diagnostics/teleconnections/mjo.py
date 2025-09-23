@@ -1,7 +1,7 @@
 import xarray as xr
 from aqua.graphics import plot_hovmoller
 from aqua.logger import log_configure
-from aqua.util import area_selection, to_list
+from aqua.util import area_selection
 from aqua.diagnostics.core import OutputSaver
 from .base import BaseMixin
 
@@ -143,9 +143,8 @@ class PlotMJO():
                                  invert_axis=invert_axis,
                                  invert_time=invert_time,
                                  nlevels=nlevels,
-                                 cmap=cmap,
+                                 cmap=cmap, return_fig=True,
                                  vmin=vmin, vmax=vmax,
-                                 display=False, return_fig=True,
                                  loglevel=self.loglevel)
         
         return fig

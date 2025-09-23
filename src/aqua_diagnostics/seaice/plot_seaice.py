@@ -495,9 +495,7 @@ class PlotSeaIce:
             region_dict (dict, optional): Dictionary of regions plotted. Used to generate output filename. Defaults to None.
         """
         if save_png or save_pdf:
-            self.logger.debug(f"Saving figure as format(s): {', '.join(fmt for fmt, flag in [('PNG', save_png), 
-                                                                                             ('PDF', save_pdf)] 
-                                                                                             if flag)}")
+            self.logger.debug(f"Saving figure as format(s): {', '.join(fmt for fmt, flag in [('PNG', save_png), ('PDF', save_pdf)] if flag)}")
             output_saver = OutputSaver(diagnostic='seaice', catalog=self.catalog, model=self.model, exp=self.exp,
                                         loglevel=self.loglevel, outputdir=self.outputdir)
 

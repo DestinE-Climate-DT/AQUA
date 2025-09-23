@@ -96,7 +96,8 @@ class SeaIce(Diagnostic):
         invalid_regions = [reg for reg in selected_regions if reg not in region_definitions]
         
         if invalid_regions:
-            raise ValueError(f"Invalid region name(s): [{', '.join(f'{i}' for i in invalid_regions)}]. "
+            invalid_regions_str = ', '.join(str(i) for i in invalid_regions)
+            raise ValueError(f"Invalid region name(s): [{invalid_regions_str}]. "
                              f"Please check regions names are lower case or the region file at: '{regions_file}'.")
 
         self.regions = selected_regions
@@ -488,7 +489,7 @@ class SeaIce(Diagnostic):
         """
         ensure_istype(da_seaice_computed, xr.DataArray, logger=self.logger)
 
-        # set attributes: 'method','unit'   
+        # set attributes: 'method','unit'  
         units_dict = {"extent": "million km^2",
                       "volume": "thousands km^3",
                       "fraction": "[0-1]",
@@ -501,7 +502,7 @@ class SeaIce(Diagnostic):
 
         da_seaice_computed.attrs["long_name"] = (f"{'Std ' if std_flag else ''}Sea ice {self.method} "
                                                  f"{'integrated ' if self.method in ['extent', 'volume'] else ''}"
-                                                 f"over {da_seaice_computed.attrs["AQUA_region"]}")
+                                                 f"over {da_seaice_computed.attrs['AQUA_region']}")
         da_seaice_computed.attrs["standard_name"] = f"{region}_{'std_' if std_flag else ''}sea_ice_{self.method}"
         da_seaice_computed.attrs["AQUA_method"] = f"{self.method}"
         if startdate is not None: da_seaice_computed.attrs["AQUA_startdate"] = f"{startdate}"

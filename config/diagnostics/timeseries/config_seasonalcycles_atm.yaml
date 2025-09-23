@@ -45,6 +45,7 @@ diagnostics:
                  'tnlwrf', #Mean top net long-wave radiation flux
                  'tnswrf' #Mean top net short-wave radiation flux
                  ]
+    center_time: true
     params:
       default:
         std_startdate: '19900101'

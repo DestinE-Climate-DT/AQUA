@@ -91,12 +91,14 @@ class TimStat():
         else:
             raise KeyError(f'{stat} is not a statistic supported by AQUA TimStat()')
 
-        if exclude_incomplete:
+        if exclude_incomplete and freq not in [None, 'seasonal']:
             self.logger.info('Checking if incomplete chunks has been produced...')
             boolean_mask = check_chunk_completeness(data,
                                                     resample_frequency=resample_freq,
                                                     loglevel=self.loglevel)
             out = out.where(boolean_mask, drop=True)
+        elif exclude_incomplete and freq in ['seasonal']:
+            self.logger.warning('Excluding incomplete chunks is not supported for seasonal averaging, skipping this option...')
 
         # Set time:
         # if not center_time as the first timestamp of each month/day according to the sampling frequency

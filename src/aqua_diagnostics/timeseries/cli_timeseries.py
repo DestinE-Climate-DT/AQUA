@@ -57,7 +57,7 @@ if __name__ == '__main__':
     if realization:
         reader_kwargs = {'realization': realization}
     else:
-        reader_kwargs = {}
+        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -131,6 +131,7 @@ if __name__ == '__main__':
                                         'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
                                         'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
                                         'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                                        'diagnostic_name': diagnostic_name,
                                         'loglevel': loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
                             data_label = plot_ts.set_data_labels()
@@ -227,6 +228,7 @@ if __name__ == '__main__':
             logger.info("SeasonalCycles diagnostic is enabled.")
 
             diagnostic_name = config_dict['diagnostics']['seasonalcycles'].get('diagnostic_name', 'seasonalcycles')
+            center_time = config_dict['diagnostics']['seasonalcycles'].get('center_time', True)
 
             for var in config_dict['diagnostics']['seasonalcycles'].get('variables', []):
                 try:
@@ -239,7 +241,8 @@ if __name__ == '__main__':
                         init_args = {'region': region, 'loglevel': loglevel, 'diagnostic_name': diagnostic_name}
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
-                                    'outputdir': outputdir, 'rebuild': rebuild, 'reader_kwargs': reader_kwargs}
+                                    'outputdir': outputdir, 'rebuild': rebuild, 'center_time': center_time,
+                                    'reader_kwargs': reader_kwargs}
 
                         # Initialize a list of len from the number of datasets
                         sc = [None] * len(config_dict['datasets'])
