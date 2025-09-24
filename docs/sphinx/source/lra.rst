@@ -142,7 +142,7 @@ Parallel LRA tool
 
 Building the LRA can be an heavy task, which requires a lot of memory and thus cannot be easily parallized in the same job.
 To this end, an extra script for parallel execution is also provided. Using `cli_drop_parallel_slurm.py` it is possible to submit to SLURM multiple jobs,
-one for each of the variables to be processed. It builts on jinja2 replacement from a typical slurm script `aqua_lra.j2`. 
+one for each of the variables to be processed. It builts on jinja2 replacement from a typical slurm script `aqua_drop.j2`. 
 For now it is configured only to be run on LUMI but further development should allow for larger portability.
 
 A basic example usage can thus be: 
