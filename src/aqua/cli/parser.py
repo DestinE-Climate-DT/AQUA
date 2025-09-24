@@ -7,7 +7,7 @@ import argparse
 from aqua import __version__ as version
 from aqua import __path__ as pypath
 from aqua.cli.analysis import analysis_parser
-from AQUA.src.aqua.cli.drop import drop_parser
+from aqua.cli.drop import drop_parser
 from aqua.cli.catgen import catgen_parser
 from aqua.cli.builder import builder_parser
 
