@@ -13,6 +13,7 @@ def boxplot(fldmeans: list[xr.Dataset],
             model_names: list[str],
             variables: list[str],
             variable_names: list[str] = None,
+            add_mean_line: bool = True,
             title: str = None,
             style: str = None,
             loglevel: str = 'WARNING'):
@@ -25,6 +26,7 @@ def boxplot(fldmeans: list[xr.Dataset],
         model_names (list of str): Names corresponding to each fldmean dataset.
         variables (list of str): Variable names to be plotted (as in the fldmean Datasets).
         variable_names (list of str, optional): Display names for the variables.
+        add_mean_line (bool, optional): Whether to add dashed lines for means.
         title (str, optional): Title for the plot.
         style (str, optional): Style to apply to the plot.
         loglevel (str): Logging level, unused but kept for compatibility.
@@ -91,45 +93,46 @@ def boxplot(fldmeans: list[xr.Dataset],
     )
 
     # --- Add dashed mean lines for each box ---
-    means = df.groupby(['Variables', 'Models'])['Values'].mean().unstack(fill_value=np.nan)
+    if add_mean_line:
+        means = df.groupby(['Variables', 'Models'])['Values'].mean().unstack(fill_value=np.nan)
 
-    n_vars = len(order)
-    n_hues = len(hue_order)
-    total_box_width = 0.8  # same width passed to sns.boxplot
-    if n_hues > 0:
-        single_box_width = total_box_width / n_hues
-    else:
-        single_box_width = total_box_width
-    # Offsets for multiple models per variable
-    offsets = np.linspace(
-        -total_box_width/2 + single_box_width/2,
-        total_box_width/2 - single_box_width/2,
-        n_hues
-    )
+        n_vars = len(order)
+        n_hues = len(hue_order)
+        total_box_width = 0.8  # same width passed to sns.boxplot
+        if n_hues > 0:
+            single_box_width = total_box_width / n_hues
+        else:
+            single_box_width = total_box_width
+        # Offsets for multiple models per variable
+        offsets = np.linspace(
+            -total_box_width/2 + single_box_width/2,
+            total_box_width/2 - single_box_width/2,
+            n_hues
+        )
 
-    palette = sns.color_palette()
+        palette = sns.color_palette()
 
-    for i, var in enumerate(order):
-        for j, model in enumerate(hue_order):
-            if model not in means.columns or var not in means.index:
-                continue
-            mean_val = means.loc[var, model]
-            if np.isnan(mean_val):
-                continue
-            x_center = i + offsets[j]
-            x_left = x_center - single_box_width / 2
-            x_right = x_center + single_box_width / 2
+        for i, var in enumerate(order):
+            for j, model in enumerate(hue_order):
+                if model not in means.columns or var not in means.index:
+                    continue
+                mean_val = means.loc[var, model]
+                if np.isnan(mean_val):
+                    continue
+                x_center = i + offsets[j]
+                x_left = x_center - single_box_width / 2
+                x_right = x_center + single_box_width / 2
 
-            # Darken the base color inline
-            base_color = palette[j % len(palette)]
-            rgb = np.array(mcolors.to_rgb(base_color))
-            darker = tuple(rgb * 0.7)  # 0.7 = 30% darker
+                # Darken the base color inline
+                base_color = palette[j % len(palette)]
+                rgb = np.array(mcolors.to_rgb(base_color))
+                darker = tuple(rgb * 0.7)  # 0.7 = 30% darker
 
-            ax.hlines(
-                mean_val, x_left, x_right,
-                colors=[darker],
-                linestyles='--', linewidth=2.5, zorder=5
-            )
+                ax.hlines(
+                    mean_val, x_left, x_right,
+                    colors=[darker],
+                    linestyles='--', linewidth=2.5, zorder=5
+                )
 
     # Title and labels
     if title:

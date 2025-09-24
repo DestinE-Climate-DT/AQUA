@@ -84,7 +84,7 @@ class PlotBoxplots:
             raise ValueError(f'Unsupported format: {format}. Use "png" or "pdf".')
 
 
-    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, ref_number=0, title=None):
+    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, add_mean_line=False, ref_number=0, title=None):
         """
         Plot boxplots for specified variables in the dataset.
 
@@ -93,6 +93,7 @@ class PlotBoxplots:
             data_ref (xarray.Dataset or list of xarray.Dataset, optional): Reference dataset(s) for comparison.
             var (str or list of str): Variable name(s) to plot. If None, uses all variables in the dataset.
             anomalies (bool): Whether to plot anomalies instead of absolute values.
+            add_mean_line (bool): Whether to add dashed lines for means.
             ref_number (int): Position of reference dataset in data_ref list to use when plotting anomalies.
             title (str, optional): Title for the plot. If None, a default title will be generated.
         """
@@ -118,50 +119,51 @@ class PlotBoxplots:
         # Compute anomalies relative to reference
         if anomalies and data_ref:
             self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
-            
-            abs_medians = []
-            for ds in fldmeans:
-                median_ds = ds.load().median(dim='time')  # scalari per tutte le variabili
-                medians_dict = {v: median_ds[v].item() for v in median_ds.data_vars}
-                abs_medians.append(medians_dict)
+
+        abs_means = []
+        for ds in fldmeans:
+            mean_ds = ds.load().mean(dim='time')
+            means_dict = {v: mean_ds[v].item() for v in mean_ds.data_vars}
+            abs_means.append(means_dict)
 
             ref = data_ref[ref_number] 
             fldmeans = [ds - ref.mean('time') for ds in fldmeans]
 
-        fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var,
-                    variable_names=long_names, title=title, loglevel=self.loglevel)
-        
-        if anomalies and data_ref:
+        # Plot boxplot 
+        fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var, variable_names=long_names, title=title, 
+                          add_mean_line=add_mean_line, loglevel=self.loglevel)
 
+        if anomalies and data_ref:
             ax.set_ylabel("Anomalies with respect to observation mean (W/m2)")
 
-            # Annotate absolute median values on the boxplots
-            n_vars = len(base_vars)
-            n_datasets = len(abs_medians)
+            if add_mean_line:
+                # Annotate absolute median values on the boxplots
+                n_vars = len(base_vars)
+                n_datasets = len(abs_means)
 
-            for dataset_idx in range(n_datasets):
-                for var_idx, v in enumerate(var):
-                    box_index = dataset_idx * n_vars + var_idx
-                    try:
-                        patch = [p for p in ax.patches if isinstance(p, plt.patches.PathPatch)][box_index]
-                    except IndexError:
-                        continue  
+                for dataset_idx in range(n_datasets):
+                    for var_idx, v in enumerate(var):
+                        box_index = dataset_idx * n_vars + var_idx
+                        try:
+                            patch = [p for p in ax.patches if isinstance(p, plt.patches.PathPatch)][box_index]
+                        except IndexError:
+                            continue  
 
-                    x = patch.get_path().vertices[:, 0].mean() + 0.05
-                    base_var = v.lstrip('-')
+                        x = patch.get_path().vertices[:, 0].mean() + 0.05
+                        base_var = v.lstrip('-')
 
-                    medians_dict = abs_medians[dataset_idx]
-                    if base_var in medians_dict:
-                        abs_val = medians_dict[base_var] # absolute median value
-                        anom_val = fldmeans[dataset_idx][base_var].median(dim="time").item()
-                        if v.startswith('-'): 
-                            anom_val = -anom_val
+                        means_dict = abs_means[dataset_idx]
+                        if base_var in means_dict:
+                            abs_val = means_dict[base_var]  # absolute mean value
+                            anom_val = fldmeans[dataset_idx][base_var].mean(dim="time")
+                            if v.startswith('-'): 
+                                anom_val = -anom_val
 
-                        ax.text(
-                            x, anom_val, f"{abs_val:.2f}",
-                            ha='center', va='bottom',
-                            color='black', fontweight='bold'
-                        )
+                            ax.text(
+                                x, anom_val, f"{abs_val:.2f}",
+                                ha='center', va='bottom',
+                                color='black', fontweight='bold'
+                            )
 
 
         if self.save_pdf:
