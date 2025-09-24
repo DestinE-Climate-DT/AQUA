@@ -117,15 +117,15 @@ class PlotBoxplots:
             long_names.append(long_name or base_var)
 
         # Compute anomalies relative to reference
-        if anomalies and data_ref:
-            self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
 
         abs_means = []
         for ds in fldmeans:
             mean_ds = ds.load().mean(dim='time')
             means_dict = {v: mean_ds[v].item() for v in mean_ds.data_vars}
             abs_means.append(means_dict)
-
+        
+        if anomalies and data_ref:
+            self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
             ref = data_ref[ref_number] 
             fldmeans = [ds - ref.mean('time') for ds in fldmeans]
 
