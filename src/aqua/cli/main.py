@@ -19,7 +19,7 @@ from aqua.util.util import HiddenPrints, to_list
 from aqua.cli.parser import parse_arguments
 from aqua.cli.diagnostic_config import diagnostic_config
 from aqua.cli.analysis import analysis_execute
-from AQUA.src.aqua.cli.drop import drop_execute
+from aqua.cli.drop import drop_execute
 from aqua.cli.catgen import catgen_execute
 from aqua.cli.builder import builder_execute
 
