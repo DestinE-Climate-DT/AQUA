@@ -3,7 +3,7 @@ import shutil
 import pytest
 import xarray as xr
 import pandas as pd
-from aqua import DROP, Reader
+from aqua import Drop, Reader
 from aqua.drop.output_path_builder import OutputPathBuilder
 from aqua.drop.catalog_entry_builder import CatalogEntryBuilder   
 
@@ -90,7 +90,7 @@ class TestLRA:
 
     def test_definitive_false(self, lra_arguments, tmp_path):
         """Test DROP with definitive=False."""
-        test = DROP(
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', loglevel=LOGLEVEL
         )
@@ -102,7 +102,7 @@ class TestLRA:
 
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, lra_arguments, tmp_path, nworkers):
-        test = DROP(
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             nproc=nworkers, resolution='r100', frequency='monthly', 
             definitive=True, loglevel=LOGLEVEL
@@ -125,7 +125,7 @@ class TestLRA:
         """Test DROP with regional subset."""
         region = {'name': 'europe', 'lon': [-10, 30], 'lat': [35, 70]}
 
-        test = DROP(
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='daily', definitive=True,
             loglevel=LOGLEVEL, region=region
@@ -145,7 +145,7 @@ class TestLRA:
 
     def test_zarr_entry(self, lra_arguments, tmp_path):
         """Test DROP with Zarr archive creation."""
-        test = DROP(
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', nproc=1,
             loglevel=LOGLEVEL, definitive=True
@@ -165,8 +165,8 @@ class TestLRA:
         shutil.rmtree(os.path.join(lra_arguments["outdir"]))
 
     def test_dask_overwrite(self, lra_arguments, tmp_path):
-        """Test LRA generator with overwrite=True and Dask initialization."""
-        test = DROP(
+        """Test DROP with overwrite=True and Dask initialization."""
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', nproc=4,
             loglevel=LOGLEVEL, definitive=True, overwrite=True
@@ -178,8 +178,8 @@ class TestLRA:
         shutil.rmtree(os.path.join(lra_arguments["outdir"]))
 
     def test_exclude_incomplete(self, lra_arguments, tmp_path):
-        """Test LRA generator's exclude_incomplete option."""
-        test = DROP(
+        """Test DROP's exclude_incomplete option."""
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', definitive=True,
             loglevel=LOGLEVEL, exclude_incomplete=True
@@ -205,7 +205,7 @@ class TestLRA:
         frequency = 'monthly'
         year = 2022
 
-        test = DROP(
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path),
             resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )
@@ -229,7 +229,7 @@ class TestLRA:
         frequency = 'monthly'
         year = 2022
 
-        test = DROP(
+        test = Drop(
             catalog='ci', **lra_arguments, tmpdir=str(tmp_path), compact="cdo",
             resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )

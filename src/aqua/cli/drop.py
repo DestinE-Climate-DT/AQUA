@@ -9,7 +9,7 @@ a configuration yaml file.
 
 import sys
 import argparse
-from aqua import DROP
+from aqua import Drop
 from aqua.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
 
@@ -201,7 +201,7 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
                         if varname != varnames[0] or realization != loop_realizations[0]:
                             rebuild = False
                         # init the DROP
-                        drop = DROP(catalog=catalog, model=model, exp=exp, source=source,
+                        drop = Drop(catalog=catalog, model=model, exp=exp, source=source,
                                         var=varname, resolution=resolution,
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir,

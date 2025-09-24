@@ -38,7 +38,7 @@ VAR_ENCODING = {
 }
 
 
-class DROP():
+class Drop():
     """
     Class to generate LRA data at required frequency/resolution
     """
