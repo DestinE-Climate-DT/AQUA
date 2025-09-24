@@ -89,12 +89,12 @@ from glob import glob
 #     return entry_name
 
 
-def list_lra_files_complete(path):
+def list_drop_files_complete(path):
     """
-    List LRA files in the specified path based on the given parameters.
+    List DROP-generated files in the specified path based on the given parameters.
 
     Args:
-        path (str): The base path where the LRA files are located.
+        path (str): The base path where the DROP-generated files are located.
 
     Returns:
         A dictionary containing the netcdf files for a each LRA variable

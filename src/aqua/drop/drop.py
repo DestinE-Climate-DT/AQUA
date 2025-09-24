@@ -21,7 +21,7 @@ from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
 from aqua.util import create_zarr_reference
 from aqua.util import area_selection, replace_intake_vars
-from .drop_util import move_tmp_files, list_lra_files_complete
+from .drop_util import move_tmp_files, list_drop_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
 
 
@@ -357,7 +357,7 @@ class Drop():
         Args:
             verify: open the LRA source and verify it can be read by the reader
         """
-        full_dict, partial_dict = list_lra_files_complete(self.outdir)
+        full_dict, partial_dict = list_drop_files_complete(self.outdir)
 
         # extra zarr only directory
         zarrdir = os.path.join(self.outdir, 'zarr')
