@@ -1,0 +1,13 @@
+grids:
+  fesom-0.25deg-r25s-2d:
+    path: /work/bb1153/b382075/aqua/grids/fesom_0.25deg_r25s_2d.nc
+    space_coord:
+    - lon
+    - lat
+  fesom-0.25deg-r25s-3d-lev:
+    path:
+      lev: /work/bb1153/b382075/aqua/grids/fesom_0.25deg_r25s_3d_lev.nc
+    space_coord:
+    - lon
+    - lat
+    vert_coord: lev
