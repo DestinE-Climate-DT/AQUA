@@ -3,7 +3,7 @@ grids:
     path:  
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
-    vert_coord: ["2d", "2dm"]
+    
     masked: 
       vars: ["2t"] # for testing purposes
   tco79-nn:

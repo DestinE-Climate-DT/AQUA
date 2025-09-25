@@ -8,7 +8,7 @@ grids:
     path:  
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
-    vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this
+      # If the case is more complex than simply "2d" we need to specify this
     masked: 
       vars: ["ci", "sst"]
   tco399:
@@ -17,7 +17,7 @@ grids:
       2dm: '{{ grids }}/IFS/tco399_grid_masked.nc'
     # space_coord: ["cell"] # levante
     # space_coord: ["ncells"] # lumi and mafalda
-    vert_coord: ["2d", "2dm"]  # If the case is more complex than simply "2d" we need to specify this
+      # If the case is more complex than simply "2d" we need to specify this
     masked: 
       vars: ["ci", "sst"]
   tco1279:
@@ -26,7 +26,7 @@ grids:
       2dm: '{{ grids }}/IFS/tco1279_grid_masked.nc'
     masked: 
       vars: ["ci", "sst"]
-    vert_coord: ["2d", "2dm"]
+    
     # space_coord: ["value"] # levante
     # space_coord: ["ncells"] # lumi
   tco2559:
@@ -35,7 +35,7 @@ grids:
       2dm: '{{ grids }}/IFS/tco2559_grid_masked.nc'
     masked: 
       vars: ["ci", "sst"]
-    vert_coord: ["2d", "2dm"]
+    
     # space_coord: ["value"]
   tco3999: 
     path: '{{ grids }}/IFS/tco3999_grid.nc'
@@ -47,7 +47,7 @@ grids:
     space_coord: ["lon", "lat"]
   ifs-healpix:
     space_coord: ["ncells"]
-    vert_coord: ["2d"]
+    
     path: '{{ grids }}/HealPix_old/ifs_hpx10.nc'
 
 # IFS multIO grids
@@ -58,13 +58,13 @@ grids:
 # this is used in nextgems but should not be required in the future
   multio-r025s-unstructured:
     space_coord: ["value"]
-    vert_coord: ["2d"]
+    
     path: '{{ grids }}/IFS/ifs-multiIO-r025s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r025s.nc'
     cellareas_var: cell_area
   multio-r100s-unstructured:
     space_coord: ["value"]
-    vert_coord: ["2d"]
+    
     path: '{{ grids }}/IFS/ifs-multiIO-r100s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r100s.nc'
     cellareas_var: cell_area

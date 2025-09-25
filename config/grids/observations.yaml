@@ -24,7 +24,7 @@ grids:
     masked: 
       vars: ["SSTK", "sst", "tos"]
     space_coord: ["lon", "lat"]
-    vert_coord: ["2d", "2dm"]
+    
 
   # OSI-SAF
   osi-saf-nh:
