@@ -8,7 +8,6 @@ grids:
     path:  
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
-      # If the case is more complex than simply "2d" we need to specify this
     masked: 
       vars: ["ci", "sst"]
   tco399:
@@ -17,7 +16,6 @@ grids:
       2dm: '{{ grids }}/IFS/tco399_grid_masked.nc'
     # space_coord: ["cell"] # levante
     # space_coord: ["ncells"] # lumi and mafalda
-      # If the case is more complex than simply "2d" we need to specify this
     masked: 
       vars: ["ci", "sst"]
   tco1279:
@@ -35,7 +33,6 @@ grids:
       2dm: '{{ grids }}/IFS/tco2559_grid_masked.nc'
     masked: 
       vars: ["ci", "sst"]
-    
     # space_coord: ["value"]
   tco3999: 
     path: '{{ grids }}/IFS/tco3999_grid.nc'
@@ -47,7 +44,6 @@ grids:
     space_coord: ["lon", "lat"]
   ifs-healpix:
     space_coord: ["ncells"]
-    
     path: '{{ grids }}/HealPix_old/ifs_hpx10.nc'
 
 # IFS multIO grids
