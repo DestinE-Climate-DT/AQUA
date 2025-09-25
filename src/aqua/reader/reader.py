@@ -277,7 +277,7 @@ class Reader():
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
 
-        # generate destination areas, expost them and the associated space coordinates
+        # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
             if self.fix:
@@ -285,7 +285,7 @@ class Reader():
                 self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
-        # activste time statistics
+        # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
 
     def retrieve(self, var=None, level=None,

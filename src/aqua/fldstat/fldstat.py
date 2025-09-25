@@ -44,6 +44,12 @@ class FldStat():
         self.grid_name = grid_name
 
 
+    @property
+    def AVAILABLE_FLDSTATS(self):
+        """Return the list of available statistics."""
+        return ['mean', 'std', 'max', 'min', 'sum', 'integral']
+
+
     def fldmean(self, data, **kwargs):
         """
         Perform a weighted global average. Builds on fldstat.
@@ -143,6 +149,18 @@ class FldStat():
             log_history(out, f"Spatially reduced by fld{stat} from {self.grid_name} grid")
 
         return out
+
+    def fldstat_new(self, data: xr.DataArray | xr.Dataset,
+                stat: str = "mean",
+                lon_limits: list | None = None, lat_limits: list | None = None,
+                dims: list | None = None,
+                **kwargs):
+
+        if stat not in self.AVAILABLE_FLDSTATS:
+            raise ValueError(f"Statistic {stat} not supported, only {self.AVAILABLE_FLDSTATS} are supported.")
+
+        if not isinstance(data, (xr.DataArray, xr.Dataset)):
+            raise ValueError("Data must be an xarray DataArray or Dataset.")
 
     def align_area_dimensions(self, data):
         """
