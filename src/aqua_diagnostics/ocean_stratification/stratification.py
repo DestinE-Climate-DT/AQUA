@@ -45,6 +45,7 @@ class Stratification(Diagnostic):
         regrid: str = None,
         startdate: str = None,
         enddate: str = None,
+        diagnostic_name: str = "oceandrift",
         loglevel: str = "WARNING",
     ):
         super().__init__(
@@ -58,6 +59,7 @@ class Stratification(Diagnostic):
             loglevel=loglevel,
         )
         self.logger = log_configure(log_name="Stratification", log_level=loglevel)
+        self.diagnostic_name = diagnostic_name
 
     def run(
         self,
@@ -111,7 +113,7 @@ class Stratification(Diagnostic):
             f"Variables retrieved: {var}, region: {region}, dim_mean: {dim_mean}"
         )
         if region:
-            self.logger.info(f"Selecting region: {region} for diagnostic 'ocean3d'.")
+            self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
             res_dict = super()._select_region(data=self.data,
                 region=region, diagnostic="ocean3d",
                 drop=True
@@ -271,7 +273,7 @@ class Stratification(Diagnostic):
         )
         super().save_netcdf(
             data=self.data,
-            diagnostic=diagnostic,
+            diagnostic=self.diagnostic_name,
             diagnostic_product=f"{diagnostic_product}",
             outputdir=outputdir,
             rebuild=rebuild,

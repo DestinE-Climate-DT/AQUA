@@ -15,9 +15,8 @@ class PlotStratification:
         data: xr.Dataset,
         obs: xr.Dataset = None,
         clim_time: str = "January",
-        diagnostic: str = "ocean_stratification",
+        diagnostic_name: str = "ocean_stratification",
         outputdir: str = ".",
-        rebuild: bool = True,
         loglevel: str = "WARNING",
     ):
         self.data = data
@@ -27,7 +26,7 @@ class PlotStratification:
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "PlotStratification")
 
-        self.diagnostic = diagnostic
+        self.diagnostic = diagnostic_name
         self.vars = list(self.data.data_vars)
         self.logger.debug("Variables in data: %s", self.vars)
 
@@ -45,7 +44,8 @@ class PlotStratification:
             loglevel=self.loglevel,
         )
 
-    def plot_mld(self):
+    def plot_mld(self, rebuild: bool = True, save_pdf: bool = True,
+                       save_png: bool = True, dpi: int = 300):
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_data_map_list()
         self.set_suptitle()
@@ -65,8 +65,10 @@ class PlotStratification:
         )
         self.save_plot(
             fig,
-            diagnostic_product=self.diagnostic,
+            rebuild=rebuild,
+            dpi=dpi,
             format='pdf',
+            diagnostic_product=self.diagnostic,
             metadata=self.description
         )
 
