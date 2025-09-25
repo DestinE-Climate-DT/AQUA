@@ -16,10 +16,10 @@ from aqua import __version__ as version
 
 def drop_parser(parser = None):
     """
-    Parse command line arguments for the LRA CLI
+    Parse command line arguments for the DROP CLI
 
     Args:
-        Optional part to be extended with LRA options
+        Optional part to be extended with DROP options
     """
 
     if parser is None:
@@ -40,7 +40,7 @@ def drop_parser(parser = None):
     parser.add_argument('--monitoring', action="store_true",
                         help='enable the dask performance monitoring. Will run a single chunk')
     parser.add_argument('--only-catalog', action="store_true",
-                        help='To not run the LRA but simply create the catalog entries for netcdf and zarr')
+                        help='To not run DROP but simply create the catalog entries for netcdf and zarr')
     parser.add_argument('--catalog', type=str,
                         help='catalog to be processed. Use with coherence with --model, -exp and --source')
     parser.add_argument('-m', '--model', type=str,
@@ -80,7 +80,7 @@ def drop_execute(args):
 
     print('AQUA version is: ' + version)
 
-    file = get_arg(args, 'config', 'lra_config.yaml')
+    file = get_arg(args, 'config', 'drop_config.yaml')
     print('Reading configuration yaml file..')
 
     # basic from configuration
@@ -140,7 +140,7 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
             default_workers=1, do_zarr=False, verify_zarr=False,
             only_catalog=False):
     """
-    Running the default LRA from CLI, looping on all the configuration model/exp/source/var combination
+    Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
     Optional feature for each source can be defined as `zoom`, `workers` and `realizations`
     Options for dry run and overwriting, as well as monitoring and zarr creation, are available
 
