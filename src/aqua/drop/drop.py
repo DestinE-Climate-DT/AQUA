@@ -391,8 +391,9 @@ class Drop():
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # define the entry name
-        entry_name = self.catbuilder.create_entry_name() + '-zarr'
+        # define the entry name - zarr entries never have lra- prefix
+        base_name = f'{self.catbuilder.resolution}-{self.catbuilder.frequency}'
+        entry_name = base_name + '-zarr'
         self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
         sgn = self._define_source_grid_name()
 
