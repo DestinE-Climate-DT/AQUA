@@ -3,7 +3,6 @@ grids:
     path:  
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
-    
     masked: 
       vars: ["2t"] # for testing purposes
   tco79-nn:
@@ -20,8 +19,6 @@ grids:
     path:
       nz1: '{{ grids }}/FESOM/pi_fesom_mask_nz1.nc'
       nz: '{{ grids }}/FESOM/pi_fesom_mask_nz.nc'
-    #space_coord: [x]
-    vert_coord: [nz1, nz]
     cdo_extra:
     - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
   # ICON
@@ -30,11 +27,9 @@ grids:
     cdo_options: --force
   test-r2b0:
     path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc
-    #space_coord: [cell]
   test-eORCA1-3d:
     path: 
       level: '{{ grids }}/NEMO/test-eorca1_3D.nc'
-    #vert_coord: ["level"]
     cdo_extra: 
       - -selname,dummy
   # Healpix
@@ -59,5 +54,4 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom_hpz3_nested_oce_level.nc'
     space_coord: ['cells']
-    vert_coord: ['level']
     cdo_options: '--force'
