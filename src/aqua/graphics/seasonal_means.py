@@ -6,7 +6,6 @@ from .lat_lon_profiles import plot_lat_lon_profiles
             
 def plot_seasonal_lat_lon_profiles(seasonal_data,
                                    ref_data=None,
-                                   std_data=None,
                                    ref_std_data=None,
                                    style: str = None,
                                    loglevel='WARNING',
@@ -37,7 +36,6 @@ def plot_seasonal_lat_lon_profiles(seasonal_data,
             JJA = June-July-August (Summer)
             SON = September-October-November (Autumn)
         ref_data (list, optional): Reference data for each season, same structure as seasonal_data.
-        std_data (list, optional): Standard deviation data for each season, same structure as seasonal_data.
         ref_std_data (list, optional): Reference standard deviation data for each season.
         style (str, optional): Style configuration for the plot.
         loglevel (str): Logging level.
@@ -64,18 +62,6 @@ def plot_seasonal_lat_lon_profiles(seasonal_data,
                 raise ValueError(f"Season {i} contains non-DataArray elements")
         elif not isinstance(season_data, xr.DataArray):
             raise ValueError(f"Season {i} must be DataArray or list of DataArrays")
-    
-    # Validate std_data if provided
-    if std_data is not None:
-        computed_std_data = []
-        for s in std_data:
-            if s is not None and hasattr(s, 'compute'):
-                computed_std_data.append(s.compute())
-            else:
-                computed_std_data.append(s)
-        std_data = computed_std_data
-    else:
-        std_data = [None] * 4
 
     # Validate ref_std_data if provided
     if ref_std_data is not None:
@@ -96,29 +82,19 @@ def plot_seasonal_lat_lon_profiles(seasonal_data,
     # Plot the 4 seasonal subplots
     for i, ax in enumerate(axs):
         season_data = seasonal_data[i]
-        season_title = data_labels[i] if data_labels and i < len(data_labels) else season_names[i]        
+        season_title = season_names[i]
         season_ref_data = ref_data[i] if ref_data is not None and i < len(ref_data) else None
-        season_std_data = std_data[i] if std_data is not None and i < len(std_data) else None
         season_ref_std_data = ref_std_data[i] if ref_std_data is not None and i < len(ref_std_data) else None
         
-        #ref_label handling
-        season_ref_label = None
-        if season_ref_data is not None:
-            if ref_label is not None:
-                season_ref_label = ref_label
-            else:
-                # automatically generate label from attributes if available
-                season_ref_label = (f"{season_ref_data.attrs.get('AQUA_model', 'Reference')} "
-                                    f"{season_ref_data.attrs.get('AQUA_exp', 'Data')}")
             
         _, _ = plot_lat_lon_profiles(data=season_data,
-                            ref_data=season_ref_data,
-                            std_data=season_std_data,
-                            ref_std_data=season_ref_std_data,
-                            ref_label=season_ref_label,
-                            fig=fig, ax=ax,
-                            loglevel=loglevel)
-        
+                                     ref_data=season_ref_data,
+                                     ref_std_data=season_ref_std_data,
+                                     ref_label=ref_label,
+                                     data_labels=data_labels,
+                                     fig=fig, ax=ax,
+                                     loglevel=loglevel)
+
         ax.set_title(season_title)
         ax.grid(True, linestyle='--', alpha=0.7)
         
@@ -131,6 +107,8 @@ def plot_seasonal_lat_lon_profiles(seasonal_data,
     # Add overall title if provided
     if title:
         fig.suptitle(title, fontsize=14, fontweight='bold', y=0.98)
-    
+
+    fig.tight_layout()
+
     return fig, axs
     

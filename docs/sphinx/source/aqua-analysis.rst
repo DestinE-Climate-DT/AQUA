@@ -51,6 +51,10 @@ so that the script can be used in a batch job or in a workflow. These override c
 
     The source to use.
 
+.. option:: --source_oce <source_oce>
+
+    Additional ocean source to use for diagnostics accepting it (currently only ECmean).
+
 .. option:: -f <config>, --config <source>
 
     The config file to use.
@@ -157,5 +161,7 @@ The diagnostics are specified as a dictionary with the following keys:
 - ``nworkers``: the number of workers to use for this diagnostic.
 - ``script_path``: the relative path to the diagnostic script with respect to ``script_path_base``. 
 - ``config``: the configuration file for the diagnostic.
+- ``nocluster``: a boolean flag to disable the use of the global dask cluster for this diagnostic (used by ECmean)
+- ``source_oce``: a boolean flag to pass the additional ocean source to the diagnostic (currently only ECmean). Defaults to False.
 - ``extra``: a string with extra arguments to pass to the diagnostic script.
 - ``outname``: the name of the output folder if different from the diagnostic name.

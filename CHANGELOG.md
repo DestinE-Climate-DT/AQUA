@@ -13,13 +13,13 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
-- Bugfix in Diagnostic class related to parsing realization (#2226)
+- Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
 - Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
 - Split out plotting function for vertical profile and add contour option (#2190)
 - GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
 - Separation of concerns in LRA between dask-based computation and serial netcdf writing (#2212)
 - Refactor `grids-downloader.sh` script, now outputdir is a cli argument (#2209)
-- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205, #2218)
+- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205,#2218)
 - Refactor of the `dump_yaml` utility function, now correctly handling `None` values as `null` (#2198)
 - `Reader` will now turn off areas and grids capabilities when `src_grid_name` is `False` (#2198)
 - LRA and `OutputSaver` jinja-related duplicated methods are now merged (#2198)
@@ -42,13 +42,21 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Add `source_oce` option for ECmean to aqua anlysis (#2246)
+- Add missing center time option to seasonalcycles (#2247)
+- Teleconnections: adapted MJO to the new Hovmoller graphical function (#1969)
+- Ocean Drift: Hovmoller multiplot class and complete diagnostic cli (#1969)
+- Diagnostic core: Locking of catalog yaml when modified (#2238)
+- Timeseries: fix output figure to use diagnostic name (#2240)
+- Diagnostic core: bugfix in Diagnostic class related to parsing realization (#2226)
+- Updated grouping file for dashboard (#2241)
 - Dummy: removed old diagnostic (#2210)
 - Diagnostic core: `retrieve` and `_retrieve` methods can take a `months_required` argument so that diagnostics can raise an error if insufficient months of data are available. (#2205)
 - Timeseries: introduction of the catalog entry capability, default in CLI (#2198)
 - Diagnostic core: introduction of the catalog entry capability and `self.realization` attribute (#2198)
 - Ensemble: Updating the ensemble module according the the issue #1925 (#2004)
 - Timeseries: refined title and description, more attributes used (#2193)
-- New LatLonProfiles diagnostic tool (#1934)
+- New LatLonProfiles diagnostic tool (#1934 and #2207)
 - Boxplots: add support for reader_kwargs (#2149)
 - Global Biases: add the `diagnostic_name` option in config file (#2159)
 - Gregory: refined the reference label generation (#2157)
