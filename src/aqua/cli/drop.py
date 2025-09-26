@@ -57,9 +57,9 @@ def drop_parser(parser = None):
     parser.add_argument('--stat', type=str,
                         help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std'].")
     parser.add_argument('--frequency', type=str,
-                        help="Frequency of the LRA. Can be anything in the AQUA frequency.")
+                        help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
-                        help="Resolution of the LRA. Can be anything in the AQUA resolution.")
+                        help="Resolution of the DROP output. Can be anything in the AQUA resolution.")
 
     #return parser.parse_args(arguments)
     return parser
@@ -148,8 +148,8 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
         args: argparse arguments
         config: configuration dictionary
         catalog: catalog to be processed
-        resolution: resolution of the LRA
-        frequency: frequency of the LRA
+        resolution: resolution of the DROP output
+        frequency: frequency of the DROP output
         fix: fixer option
         outdir: output directory
         tmpdir: temporary directory
@@ -216,12 +216,12 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
 
                         
                         if not only_catalog:
-                            # check that your LRA is not already there (it will not work in streaming mode)
+                            # check that your DROP output is not already there (it will not work in streaming mode)
                             drop.check_integrity(varname)
 
                             # retrieve and generate
                             drop.retrieve()
-                            drop.generate_lra()
+                            drop.drop_generator()
 
             # create the catalog once the loop is over
             drop.create_catalog_entry()

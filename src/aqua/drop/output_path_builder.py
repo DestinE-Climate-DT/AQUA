@@ -1,5 +1,5 @@
 """
-LRA Output Path Builder
+DROP Output Path Builder
 """
 
 import os
@@ -9,7 +9,7 @@ from aqua.util import format_realization
 
 class OutputPathBuilder:
     """
-    Class to build output paths for LRA data files.
+    Class to build output paths for DROP data files.
     """
 
     def __init__(self, catalog: str, model: str, exp: str,
