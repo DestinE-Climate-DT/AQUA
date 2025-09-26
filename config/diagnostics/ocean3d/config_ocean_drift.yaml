@@ -7,8 +7,8 @@ datasets:
     model: FESOM
     exp: hpz3
     source: monthly-3d
-    regrid: r100
-    # reader_kwargs: {}
+    regrid: null
+    reader_kwargs: null
 
 output:
   outputdir: "./"
