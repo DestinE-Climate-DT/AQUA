@@ -424,7 +424,6 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
         masked:   # This is the attribute used to distinguish variables which should go into the masked category
             component: ocean
         space_coord: ["cell"]
-        vert_coord: ["depth_half", "depth_full"]
 
 
     tco1279:
@@ -432,7 +431,6 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
             2d: '{{grids}}/IFS/tco1279_grid.nc'
             2dm: '{{grids}}/IFS/tco1279_grid_masked.nc'
         masked_vars: ["ci", "sst"]
-        vert_coord: ["2d", "2dm"]
 
 .. note::
 
@@ -445,15 +443,13 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 - ``path``: Path to the grid data file, can be a single file if the grid is 2d,
   but can include multiple files as a function of the grid used.
   ``2d`` refers to the default grids, ``2dm`` to the grid for masked variables,
-  any other key refers to specific 3d vertical structure (see ``vert_coord``)
+  any other key refers to specific 3d vertical masked structures, as ``depth_full``, ``depth_half``, ``level``, etc.
 - ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
   Since AQUA v0.4 there is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 - ``masked``: (if applicable): Keys to define variables which are masked.
   When using this, the code will search for an attribute to make the distinction (``component: ocean`` in this case).
   In alternative, if you want to apply masking only on a group of variables, you can defined ``vars: [var1, var2]``.
   In all the cases, the ``2dm`` grid will be applied to the data.
-- ``vert_coords``: (if applicable): Vertical coordinate options for the grid.
-  Specific for oceanic models where interpolation is changing at each depth level.
 - ``cdo_extra``: (if applicable): Additional CDO command to be used to process the files defined in ``path``.
 - ``cdo_options``: (if applicable): Additional CDO options to be used to process the files defined in ``path``.
 - ``cellareas``, ``cellareas_var``: (if applicable): Optional path and variable name where to specify a file to retrieve

@@ -11,7 +11,6 @@ grids:
       2d: '{{ grids }}/EN4/en4-grid.nc'
       lev: '{{ grids }}/EN4/en4-grid.nc'
     space_coord: ["lon", "lat"]
-    vert_coord: ["lev"]
 
   # ERA5
   era5-n320:
@@ -45,7 +44,6 @@ grids:
   woa:
     path:
       depth: '{{ grids }}/WOA18/grid-woa18.nc'
-    vert_coord: depth
     space_coord: ["lon", "lat"]
 
   # PSC
@@ -65,6 +63,5 @@ grids:
   # WAGHC
   waghc:
     space_coord: ["lon", "lat"]
-    vert_coord: ["depth"]
     path:
       depth: '{{ grids }}/WAGHC/grid-waghc.nc'
