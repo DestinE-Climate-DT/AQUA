@@ -54,13 +54,11 @@ grids:
 # this is used in nextgems but should not be required in the future
   multio-r025s-unstructured:
     space_coord: ["value"]
-    
     path: '{{ grids }}/IFS/ifs-multiIO-r025s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r025s.nc'
     cellareas_var: cell_area
   multio-r100s-unstructured:
     space_coord: ["value"]
-    
     path: '{{ grids }}/IFS/ifs-multiIO-r100s.nc'
     cellareas: '{{ grids }}/IFS/cell_area_ifs-multiIO-r100s.nc'
     cellareas_var: cell_area
