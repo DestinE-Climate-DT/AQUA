@@ -132,9 +132,14 @@ jobs:
           aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           EOF
-      - name: Clone DVC repo, pull data and move to the right folder
+      - name: CCheckout DVC repo
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/aqua-dvc
+          path: aqua-dvc
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull DVC data and move to the right folder
         run: |
-          git clone git@github.com:DestinE-Climate-DT/aqua-dvc.git
           cd aqua-dvc
           git checkout main
           dvc pull -r data-tests
