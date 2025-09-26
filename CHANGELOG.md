@@ -13,6 +13,7 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)
 - Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
 - Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
 - Split out plotting function for vertical profile and add contour option (#2190)
