@@ -121,10 +121,23 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
-      - name: Download and set up tests
+      - name: Install DVC s3
         run: |
-          cd AQUA
-          ./download_data_for_tests.sh
+          python -m pip install "dvc[s3]"
+      - name: Configure AWS credentials for DVC
+        run: |
+          mkdir -p $HOME/.aws
+          cat >$HOME/.aws/credentials << EOF
+          [default]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
+      - name: Clone DVC repo and pull data
+        run: |
+          git clone git@github.com:DestinE-Climate-DT/aqua-dvc.git
+          cd aqua-dvc
+          git checkout main
+          dvc pull -r data-tests
       - name: Set up FDB
         run: |
           export
