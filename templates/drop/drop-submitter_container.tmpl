@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=debug
-#SBATCH --job-name=lra
+#SBATCH --job-name=drop
 #SBATCH --output=%j.out
 #SBATCH --error=%j.err
 #SBATCH --account=project_465000454
@@ -39,15 +39,15 @@ singularity exec   \
 $AQUA_container  \
 bash -c \
 '
-cd /users/caprioli/AQUA/cli/lra
-aqua lra --config ifs-nemo-test.yaml -w $WORKERS -d -l INFO
+cd /users/caprioli/AQUA/cli/drop
+aqua drop --config ifs-nemo-test.yaml -w $WORKERS -d -l INFO
 '
 
 # run the Python script
 # -c to specify the configuration file
 # -f to use the fixer on data
-# -d to perform a dry run (to check generated lra)
-# -o to overwrite existing lra
+# -d to perform a dry run (to check generated DROP output)
+# -o to overwrite existing drop files
 # -l to set the log level (default is WARNING)
 
 
