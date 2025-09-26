@@ -40,7 +40,7 @@ VAR_ENCODING = {
 
 class Drop():
     """
-    Class to generate LRA data at required frequency/resolution
+    Class to generate DROP outputs at required frequency/resolution
     """
 
     @property
@@ -71,15 +71,14 @@ class Drop():
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
-            var (str, list):         Variable(s) to be processed and archived
-                                     in LRA.
-            resolution (string):     The target resolution for the LRA. If None,
+            var (str, list):         Variable(s) to be processed and archived.
+            resolution (string):     The target resolution for the DROP output. If None,
                                      no regridding is performed.
             frequency (string,opt):  The target frequency for averaging the
-                                     LRA, if no frequency is specified,
+                                     DROP output, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
-            outdir (string):         Where the LRA is stored.
+            outdir (string):         Where the DROP output is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
@@ -91,8 +90,7 @@ class Drop():
                                      meaning 'global'.
                                      Requires 'name' (str), 'lon' (list) and 'lat' (list)
             drop (bool, opt):        Drop the missing values in the region selection.
-            overwrite (bool, opt):   True to overwrite existing files in LRA,
-                                     default is False
+            overwrite (bool, opt):   True to overwrite existing files, default is False
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
                                      operations, default is False
@@ -174,7 +172,7 @@ class Drop():
         # add the performance report
         self.performance_reporting = performance_reporting
 
-        # Create LRA folders
+        # Create output folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
 
@@ -282,11 +280,11 @@ class Drop():
 
         self.logger.debug(self.data)
 
-    def generate_lra(self):
+    def drop_generator(self):
         """
-        Generate LRA data
+        Generate DROP output
         """
-        self.logger.info('Generating LRA data...')
+        self.logger.info('Generating DROP output...')
 
         # Set up dask cluster
         self._set_dask()
@@ -307,7 +305,7 @@ class Drop():
         self._close_dask()
         self._remove_tmpdir()
 
-        self.logger.info('Finished generating LRA data.')
+        self.logger.info('Finished generating DROP output.')
 
     def _define_source_grid_name(self):
         """"
@@ -325,7 +323,7 @@ class Drop():
 
     def create_catalog_entry(self):
         """
-        Create an entry in the catalog for the LRA
+        Create an entry in the catalog for DROP
         """
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
@@ -352,10 +350,10 @@ class Drop():
 
     def create_zarr_entry(self, verify=True):
         """
-        Create a Zarr entry in the catalog for the LRA
+        Create a Zarr entry in the catalog for DROP
 
         Args:
-            verify: open the LRA source and verify it can be read by the reader
+            verify: open the DROP source and verify it can be read by the reader
         """
         full_dict, partial_dict = list_drop_files_complete(self.outdir)
 
@@ -366,7 +364,7 @@ class Drop():
         # this dictionary based structure is an overkill but guarantee flexibility
         urlpath = []
         for key, value in full_dict.items():
-            jsonfile = os.path.join(zarrdir, f'lra-yearly-{key}.json')
+            jsonfile = os.path.join(zarrdir, f'drop-yearly-{key}.json')
             self.logger.debug('Creating zarr files for full files %s', key)
             if value:
                 jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
@@ -374,7 +372,7 @@ class Drop():
                     urlpath = urlpath + [f'reference::{jsonfile}']
 
         for key, value in partial_dict.items():
-            jsonfile = os.path.join(zarrdir, f'lra-monthly-{key}.json')
+            jsonfile = os.path.join(zarrdir, f'drop-monthly-{key}.json')
             self.logger.debug('Creating zarr files for partial files %s', key)
             if value:
                 jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
@@ -419,7 +417,7 @@ class Drop():
                 _ = reader.retrieve()
                 self.logger.info('Zarr entry successfully created!!!')
             except (KeyError, ValueError) as e:
-                self.logger.error('Cannot load zarr LRA with error --> %s', e)
+                self.logger.error('Cannot load zarr DROP with error --> %s', e)
                 self.logger.error('Zarr source is not accessible by the Reader likely due to irregular amount of NetCDF file')
                 self.logger.error('To avoid issues in the catalog, the entry will be removed')
                 self.logger.error('In case you want to keep it, please run with verify=False')
@@ -511,7 +509,7 @@ class Drop():
         return filename
 
     def check_integrity(self, varname):
-        """To check if the LRA entry is fine before running"""
+        """To check if the DROP entry is fine before running"""
 
         yearfiles = self.get_filename(varname)
         yearfiles = glob.glob(yearfiles)
