@@ -56,6 +56,7 @@ class Trends(Diagnostic):
         region: str = None,
         var: list = ["thetao", "so"],
         dim_mean: type = None,
+        reader_kwargs: dict = {}
     ):
         """Run the trend analysis workflow.
 
@@ -65,9 +66,10 @@ class Trends(Diagnostic):
             region (str, optional): Geographical region for analysis.
             var (list, optional): List of variable names to analyze. Default is ['thetao', 'so'].
             dim_mean (str or list, optional): Dimension(s) over which to compute the mean. Default is None.
+            reader_kwargs (dict, optional): Additional keyword arguments for the data reader. Default is {}.
         """
         self.logger.info("Starting trend analysis workflow")
-        super().retrieve(var=var)
+        super().retrieve(var=var, reader_kwargs=reader_kwargs)
 
         # If a region is specified, apply area selection to self.data
         if region:
