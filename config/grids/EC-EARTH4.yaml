@@ -35,3 +35,13 @@ grids:
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_eORCA1_T.nc'
     cellareas_var: areat
     regrid_method: 'bil'
+
+  PALEORCA2-ece-pd: # Present days LSM
+    path:
+        2d: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_sfc_grid_T-pd.nc'
+        deptht: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_3d_grid_T_level-pd.nc'
+    space_coord: ["x_grid_T", "y_grid_T"]
+    vert_coord: ["deptht"]
+    cellareas: '{{ grids }}/EC-EARTH4/cellarea_PALEORCA2_T-pd.nc'
+    cellareas_var: areat
+    regrid_method: 'bil'
