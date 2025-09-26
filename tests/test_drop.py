@@ -8,11 +8,11 @@ from aqua.drop.output_path_builder import OutputPathBuilder
 from aqua.drop.catalog_entry_builder import CatalogEntryBuilder   
 
 LOGLEVEL = "DEBUG"
-LRAPATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
-LRAPATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
+DROP_PATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
+DROP_PATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
 
 
-@pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "lra_test"}])
+@pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "drop_test"}])
 def drop_arguments(request):
     """Provides DROP arguments as a dictionary."""
     return request.param
@@ -44,8 +44,8 @@ class TestOutputPathBuilder:
             var=drop_arguments['var'], year=2020, month=1)
 
         if not expected:
-            lrapath = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
-            expected = os.path.join(os.getcwd(), drop_arguments["outdir"], lrapath,
+            DROP_PATH = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
+            expected = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH,
                                          f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
         else:
             expected = os.path.join(os.getcwd(), drop_arguments["outdir"], expected)
@@ -91,8 +91,8 @@ class TestCatalogEntryBuilder:
 
 
 @pytest.mark.aqua
-class TestLRA:
-    """Class containing LRA tests."""
+class TestDROP:
+    """Class containing DROP tests."""
 
     def test_definitive_false(self, drop_arguments, tmp_path):
         """Test DROP with definitive=False."""
@@ -102,8 +102,8 @@ class TestLRA:
         )
 
         test.retrieve()
-        test.generate_lra()
-        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], LRAPATH))
+        test.drop_generator()
+        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     @pytest.mark.parametrize("nworkers", [1, 2])
@@ -116,9 +116,9 @@ class TestLRA:
 
         test.retrieve()
         test.data = test.data.sel(time="2020-01")
-        test.generate_lra()
+        test.drop_generator()
 
-        file_path = os.path.join(os.getcwd(), drop_arguments["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc")
+        file_path = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc")
         test.check_integrity(varname=drop_arguments["var"])
         assert os.path.isfile(file_path)
 
@@ -139,9 +139,9 @@ class TestLRA:
 
         test.retrieve()
         test.data = test.data.sel(time="2020-01-20")
-        test.generate_lra()
+        test.drop_generator()
 
-        file_path = os.path.join(os.getcwd(), drop_arguments["outdir"], LRAPATH_DAILY, "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc")
+        file_path = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH_DAILY, "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc")
         assert os.path.isfile(file_path), "File not found: {}".format(file_path)
 
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
@@ -158,12 +158,12 @@ class TestLRA:
         )
 
         test.retrieve()
-        test.generate_lra()
+        test.drop_generator()
         test.create_catalog_entry()
         test.create_zarr_entry()
 
         reader1 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source='lra-r100-monthly')
-        reader2 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source='lra-r100-monthly-zarr')
+        reader2 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source='r100-monthly-zarr')
 
         data1 = reader1.retrieve()
         data2 = reader2.retrieve()
@@ -179,8 +179,8 @@ class TestLRA:
         )
 
         test.retrieve()
-        test.generate_lra()
-        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], LRAPATH))
+        test.drop_generator()
+        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_exclude_incomplete(self, drop_arguments, tmp_path):
@@ -192,10 +192,10 @@ class TestLRA:
         )
 
         test.retrieve()
-        test.generate_lra()
+        test.drop_generator()
 
-        missing_file = os.path.join(os.getcwd(), drop_arguments["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc")
-        existing_file = os.path.join(os.getcwd(), drop_arguments["outdir"], LRAPATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc")
+        missing_file = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc")
+        existing_file = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc")
 
         assert not os.path.exists(missing_file)
         assert os.path.exists(existing_file)
