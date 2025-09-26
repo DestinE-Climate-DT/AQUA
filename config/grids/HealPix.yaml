@@ -49,6 +49,7 @@ grids:
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz10_nested_atm.nc'
 
+
   hpz0-ring: 
     space_coord: ["ncells"]
     cdo_options: "--force"
