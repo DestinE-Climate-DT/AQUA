@@ -36,7 +36,7 @@ grids:
     cellareas_var: areat
     regrid_method: 'bil'
 
-  PALEORCA2-ece-pd: # Present days LSM
+  PALEORCA2-pd-ece: # Present days LSM
     path:
         2d: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_sfc_grid_T-pd.nc'
         deptht: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_3d_grid_T_level-pd.nc'
@@ -46,7 +46,7 @@ grids:
     cellareas_var: areat
     regrid_method: 'bil'
 
-  PALEORCA2-ece-eo: # Eocene LSM
+  PALEORCA2-eo-ece: # Eocene LSM
     path:
         2d: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_sfc_grid_T-eo.nc'
         deptht: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_3d_grid_T_level-eo.nc'
