@@ -53,9 +53,12 @@ class CatalogEntryBuilder():
         """
         Create an entry name for the LRA
         """
-
-        entry_name = f'lra-{self.resolution}-{self.frequency}'
-        self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
+        # Default LRA entry keeps the 'lra-' prefix
+        if self.resolution == 'r100' and self.frequency == 'monthly':
+            entry_name = f'lra-{self.resolution}-{self.frequency}'
+        else:
+            # All other entries drop the 'lra-' prefix
+            entry_name = f'{self.resolution}-{self.frequency}'
 
         return entry_name
 
