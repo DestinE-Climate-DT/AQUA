@@ -68,7 +68,7 @@ class Trends(Diagnostic):
         """
         self.logger.info("Starting trend analysis workflow")
         super().retrieve(var=var)
-        self.logger.debug("Retrieved variables: %s", var)
+
         # If a region is specified, apply area selection to self.data
         if region:
             self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
@@ -93,9 +93,9 @@ class Trends(Diagnostic):
             self.data = res_dict.get("data", self.data)
 
         self.logger.info("Computing trend coefficients")
-        self.trend_coef = self.compute_trend(data=self.data, loglevel=self.loglevel)
+        self.trend_coef = self.compute_trend(data=self.data)
         self.logger.info("Saving results to NetCDF")
-        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=region)
+        self.save_netcdf(outputdir=outputdir, rebuild=rebuild)
         self.logger.info("Trend analysis workflow completed")
 
     def adjust_trend_for_time_frequency(self, trend, y_array):
