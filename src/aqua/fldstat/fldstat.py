@@ -46,22 +46,23 @@ class FldStat():
 
     @property
     def AVAILABLE_FLDSTATS(self):
-        """Return the list of available statistics."""
-        return ['mean', 'std', 'max', 'min', 'sum', 'integral']
+        """Return available field statistics."""
+        return {"custom":   ['integral'],
+                "standard": ['mean', 'std', 'max', 'min', 'sum']}
 
+    # TODO: remove this method once ready
+    # def fldmean(self, data, **kwargs):
+    #     """
+    #     Perform a weighted global average. Builds on fldstat.
 
-    def fldmean(self, data, **kwargs):
-        """
-        Perform a weighted global average. Builds on fldstat.
+    #     Args:
+    #         data (xr.DataArray or xarray.DataDataset):  the input data
+    #         **kwargs: additional arguments passed to fldstat
 
-        Args:
-            data (xr.DataArray or xarray.DataDataset):  the input data
-            **kwargs: additional arguments passed to fldstat
-
-        Returns:
-            the value of the averaged field
-        """
-        return self.fldstat(data, stat="mean", **kwargs)
+    #     Returns:
+    #         the value of the averaged field
+    #     """
+    #     return self.fldstat(data, stat="mean", **kwargs)
 
     def fldstat(self, data: xr.DataArray | xr.Dataset,
                 stat: str = "mean",
@@ -78,6 +79,7 @@ class FldStat():
             lon_limits (list, optional):  the longitude limits of the subset
             lat_limits (list, optional):  the latitude limits of the subset
             dims (list, optional):  the dimensions to average over, if not provided, horizontal_dims are used
+            **kwargs: additional arguments passed to fldstat
 
         Kwargs:
             - box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
@@ -86,9 +88,9 @@ class FldStat():
         Returns:
             The value of the averaged field
         """
-        
-        if stat not in ["mean"]:
-            raise ValueError(f"Statistic {stat} not supported, only 'mean' is supported.")
+        if stat not in [s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]:
+            raise ValueError(f"Statistic {stat} not supported by AQUA FldStat(), only "
+                             f"{[s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]} are supported.")
 
         if not isinstance(data, (xr.DataArray, xr.Dataset)):
             raise ValueError("Data must be an xarray DataArray or Dataset.")
@@ -112,13 +114,12 @@ class FldStat():
             for dim in dims:
                 if dim not in self.horizontal_dims:
                     raise ValueError(f"Dimension {dim} not found in horizontal dimensions: {self.horizontal_dims}")
- 
         
         #if area is not provided, return the raw mean
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
             # compact call, equivalent of "out = data.mean()"
-            if stat in ["mean"]:
+            if stat in self.AVAILABLE_FLDSTATS["standard"]:
                 self.logger.info("Computing unweighted %s on %s dimensions", stat, self.horizontal_dims)
                 log_history(data, f"Unweighted {stat} computed on {self.horizontal_dims} dimensions")
                 return getattr(data, stat)(dim=self.horizontal_dims)
@@ -138,29 +139,40 @@ class FldStat():
         # data = self._clean_spourious_coords(data, name = "data")
 
         # compact call, equivalent of "out = weighted_data.mean()""
-        if stat in ["mean"]:
-            weighted_data = data.weighted(weights=self.area.fillna(0))
+        self.logger.info("Computing area-weighted %s on %s dimensions", stat, dims)
+        weights=self.area.fillna(0)
 
-            self.logger.info("Computing area-weighted %s on %s dimensions", stat, dims)
-                
+        if stat == 'std':
+            out = self.weighted_std(data, weights=weights, dim=dims)
+        elif stat == 'integral':
+            raise NotImplementedError("Integral is not implemented yet") # TODO: implement it
+        else:
+            weighted_data = data.weighted(weights=weights)
             out = getattr(weighted_data, stat)(dim=dims)
-
+        
         if self.grid_name is not None:
             log_history(out, f"Spatially reduced by fld{stat} from {self.grid_name} grid")
 
         return out
 
-    def fldstat_new(self, data: xr.DataArray | xr.Dataset,
-                stat: str = "mean",
-                lon_limits: list | None = None, lat_limits: list | None = None,
-                dims: list | None = None,
-                **kwargs):
+    def weighted_std(self, da: xr.DataArray, 
+                     weights: xr.DataArray, 
+                     dim: str | None = None) -> xr.DataArray:
+        """
+        Compute the weighted standard deviation of the data.
 
-        if stat not in self.AVAILABLE_FLDSTATS:
-            raise ValueError(f"Statistic {stat} not supported, only {self.AVAILABLE_FLDSTATS} are supported.")
+        Args:
+            da (xr.DataArray): The input data.
+            weights (xr.DataArray): The weights.
+            dim (str, optional): The dimension to compute the standard deviation over.
 
-        if not isinstance(data, (xr.DataArray, xr.Dataset)):
-            raise ValueError("Data must be an xarray DataArray or Dataset.")
+        Returns:
+            xr.DataArray: The weighted standard deviation of the data.
+        """
+        weighted_mean = da.weighted(weights=weights).mean(dim=dim)
+        variance = ((weights * (da - weighted_mean)**2).sum(dim=dim) /
+                    weights.sum(dim=dim))
+        return np.sqrt(variance)
 
     def align_area_dimensions(self, data):
         """

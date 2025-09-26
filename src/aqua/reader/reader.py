@@ -200,6 +200,8 @@ class Reader():
             )
         self.tgt_fldstat = None
         if regrid:
+            if not areas:
+                raise ValueError("Regridding requires info on areas. If regrid=True, set areas=True. Areas can usually be generated with smmregrid.")
             self.tgt_fldstat = FldStat(
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
@@ -456,12 +458,12 @@ class Reader():
         data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
         return data
     
-    def fldmean(self, data, lon_limits=None, lat_limits=None, **kwargs):
-        """Fldmean average on the data. If regridded, it will use the target grid areas."""
+    # def fldmean(self, data, lon_limits=None, lat_limits=None, **kwargs):
+    #     """Fldmean average on the data. If regridded, it will use the target grid areas."""
 
-        if self._check_if_regridded(data):
-            return self.tgt_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
-        return self.src_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
+    #     if self._check_if_regridded(data):
+    #         return self.tgt_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
+    #     return self.src_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
 
     def set_default(self):
         """Sets this reader as the default for the accessor."""
@@ -965,10 +967,58 @@ class Reader():
             data = data.isel({t: 0 for t in minimal_time})
         return data
 
+    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, **kwargs):
+        """
+        Field statistic wrapper which is calling the fldstat module from FldStat class. 
+        This method is exposing and providing field functions as Reader class 
+        methods through the wrapper accessors.
+
+        Args:
+            data (xr.DataArray or xarray.Dataset):  the input data
+            stat (str):  the statistical function to be applied
+            lon_limits (list, optional):  the longitude limits of the subset
+            lat_limits (list, optional):  the latitude limits of the subset
+            dims (list, optional):  the dimensions to average over
+            **kwargs: additional arguments passed to fldstat
+        """
+        # Handle regridding logic - use appropriate fldstat module
+        if self._check_if_regridded(data):
+            data = self.tgt_fldstat.fldstat(
+                data, stat=stat,
+                lon_limits=lon_limits, lat_limits=lat_limits,
+                dims=dims, **kwargs)
+        else:
+            data = self.src_fldstat.fldstat(
+                data, stat=stat,
+                lon_limits=lon_limits, lat_limits=lat_limits,
+                dims=dims, **kwargs)
+        
+        data.aqua.set_default(self)
+        return data
+    
+    # Field stats wrapper. If regridded, uses the target grid areas.
+    def fldmean(self, data, **kwargs):
+        return self.fldstat(data, stat='mean', **kwargs)
+
+    def fldmax(self, data, **kwargs):
+        return self.fldstat(data, stat='max', **kwargs)
+    
+    def fldmin(self, data, **kwargs):
+        return self.fldstat(data, stat='min', **kwargs)
+    
+    def fldstd(self, data, **kwargs):
+        return self.fldstat(data, stat='std', **kwargs)
+    
+    def fldsum(self, data, **kwargs):
+        return self.fldstat(data, stat='sum', **kwargs)
+
+
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
              time_bounds=False, center_time=False):
         """
-        Time averaging wrapper which is calling the timstat module
+        Time statistic wrapper which is calling the timstat module from TimStat class. 
+        This method is exposing and providing time functions as Reader class 
+        methods through the wrapper accessors.
 
         Args:
             data (xr.DataArray or xarray.Dataset):  the input data
@@ -978,7 +1028,6 @@ class Reader():
             time_bounds (bool):  produce time bounds after averaging
             center_time (bool):  center time for averaging
         """
-
         data = self.timemodule.timstat(
             data, stat=stat, freq=freq,
             exclude_incomplete=exclude_incomplete,
@@ -994,20 +1043,18 @@ class Reader():
         return self.timstat(data, stat='max', **kwargs)
     
     def timmin(self, data, **kwargs):
-       return self.timstat(data, stat='min', **kwargs)
+        return self.timstat(data, stat='min', **kwargs)
     
     def timstd(self, data, **kwargs):
-       return self.timstat(data, stat='std', **kwargs)
+        return self.timstat(data, stat='std', **kwargs)
     
     def timsum(self, data, **kwargs):
-       return self.timstat(data, stat='sum', **kwargs)
+        return self.timstat(data, stat='sum', **kwargs)
 
     def histogram(self, data, **kwargs):
         """ Wrapper for the histogram function. """
-
         return histogram(data, **kwargs)
-
-
+    
 def units_extra_definition():
     """Add units to the pint registry"""
 
