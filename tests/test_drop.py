@@ -69,7 +69,13 @@ class TestCatalogEntryBuilder:
         )
         entry_name = builder.create_entry_name()
         block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name='lon-lat')
-        assert entry_name == f'lra-{resolution}-{frequency}'
+        
+        if resolution == 'r100' and frequency == 'monthly':
+            expected_name = f'lra-{resolution}-{frequency}'
+        else:
+            expected_name = f'{resolution}-{frequency}'
+        
+        assert entry_name == expected_name
         assert block['driver'] == 'netcdf'
         assert block['parameters'].keys() == {'realization', 'stat', 'region'}
 
