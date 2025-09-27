@@ -57,8 +57,8 @@ def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_fil
         slurm_dict: dictionary with slurm optiosn
         yaml_file: config file for submission
         workers: dask workers
-        definitive: produce the LRA
-        overwrite: overwrite the LRA
+        definitive: produce the DROP output
+        overwrite: overwrite the existing DROP output
         dependency: jobid on which dependency of slurm is built
         singularity: Run with the available AQUA container
 
@@ -146,7 +146,7 @@ def parse_arguments(arguments):
     parser.add_argument('-d', '--definitive', action="store_true",
                         help='definitive run with files creation')
     parser.add_argument('-o', '--overwrite', action="store_true",
-                        help='overwrite existing LRA files')
+                        help='overwrite existing DROP output files')
     parser.add_argument('-w', '--workers', type=str,
                         help='number of dask workers. Default is 8')
     parser.add_argument('-p', '--parallel', type=str,
