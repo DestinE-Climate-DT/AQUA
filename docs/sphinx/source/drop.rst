@@ -66,13 +66,12 @@ DROP automatically generates catalog source names following a consistent pattern
   - ``r25-monthly`` (0.25° resolution, monthly frequency)
 
 **Default LRA source:**
-- ``lra-r100-monthly`` maintains the ``lra-`` prefix for backward compatibility
+- ``lra-r100-monthly`` maintains the ``lra-`` prefix
 
 **Zarr variants:**
 All sources have corresponding Zarr reference versions with ``-zarr`` suffix:
 - ``r100-monthly-zarr``
 - ``r100-daily-zarr``
-- ``lra-r100-monthly-zarr``
 
 **Resolution codes:**
 - ``r100`` = 1° (100km approximately)
@@ -201,7 +200,7 @@ Options:
 
 .. option:: --only-catalog
 
-    Will generate/update only the catalog entry for the LRA, without running the code for generating the LRA itself
+    Will generate/update only the catalog entry for DROP, without running the code for generating DROP output itself
 
 .. option:: --rebuild
 
@@ -214,15 +213,15 @@ Options:
 
 .. option:: --frequency
 
-    Frequency of the LRA (default: as the original data)
+    Frequency of the DROP output (default: as the original data)
 
 .. option:: --resolution
 
-    Resolution of the LRA (default: as the original data)
+    Resolution of the DROP output (default: as the original data)
 
 .. option:: --realization
 
-    Which realization (e.g. ensemble member) to use for the LRA (default: 'r1')
+    Which realization (e.g. ensemble member) to use for the DROP output (default: 'r1')
 
 **Examples:**
 

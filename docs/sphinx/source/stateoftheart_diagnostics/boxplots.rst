@@ -6,7 +6,8 @@ Description
 
 The **Boxplots** diagnostic computes and visualizes boxplots of spatial field means 
 from climate model datasets, for one or multiple variables, over a specified time period.
-The diagnostic is designed with a class that analyzes a single model and generates the NetCDF files with the field means, and another class that produces the plots.
+The diagnostic is designed with a class that analyzes a single model and generates the NetCDF 
+files with the field means, and another class that produces the plots.
 
 Classes
 -------
@@ -21,17 +22,24 @@ There is one class for the analysis and one for the plotting:
 File structure
 --------------
 
-* The diagnostic is located in the ``src/aqua_diagnostics/boxplots`` directory, which contains both the source code and the command line interface (CLI) script.
-* The configuration files are located in the ``config/diagnostics/boxplots`` directory and contain the default configuration for the diagnostic.
-* Notebooks are available in the ``notebooks/diagnostics/boxplots`` directory and contain examples of how to use the diagnostic.
+* The diagnostic is located in the ``src/aqua_diagnostics/boxplots`` directory, which contains 
+both the source code and the command line interface (CLI) script.
+* The configuration files are located in the ``config/diagnostics/boxplots`` directory and contain 
+the default configuration for the diagnostic.
+* Notebooks are available in the ``notebooks/diagnostics/boxplots`` directory and contain examples 
+of how to use the diagnostic.
 
 Input variables and datasets
 ----------------------------
 
-The diagnostic can be used with any dataset that contains spatial fields. Multimodel datasets can be analyzed,
-and the diagnostic can be configured to compare against multiple reference datasets.
-All analyzed variables should share the same units to ensure meaningful comparisons; otherwise, the diagnostic will raise an error.
-The diagnostic is designed to work with data from the Low Resolution Archive (LRA) of the AQUA project, which provides monthly data at a 1x1 degree resolution.  
+The diagnostic can be used with any dataset that contains spatial fields. Multimodel datasets 
+can be analyzed, and the diagnostic can be configured to compare against multiple reference 
+datasets.
+All analyzed variables should share the same units to ensure meaningful comparisons; otherwise, 
+the diagnostic will raise an error.
+The diagnostic is designed to work with data from the Data Reduction OPerator (DROP) of the AQUA 
+project which, in this case, provides monthly data at a 1x1 degree resolution (Low Resolution 
+Archive, LRA).  
 A higher resolution is not necessary for this diagnostic.
 
 Basic usage
