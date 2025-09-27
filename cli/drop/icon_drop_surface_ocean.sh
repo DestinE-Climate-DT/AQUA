@@ -24,8 +24,8 @@ exp="historical-1990"
 for variable in avg_sos avg_tos ; do
 
 
-    LRA_folder="/projappl/project_465000454/data/AQUA/LRA"
-    source_folder="${LRA_folder}/${model}/${exp}/r100/monthly"
+    DROP_folder="/projappl/project_465000454/data/AQUA/DROP"
+    source_folder="${DROP_folder}/${model}/${exp}/r100/monthly"
 
     log_message INFO "Source folder: ${source_folder}"
 
