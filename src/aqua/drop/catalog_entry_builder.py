@@ -51,9 +51,9 @@ class CatalogEntryBuilder():
 
     def create_entry_name(self):
         """
-        Create an entry name for the LRA
+        Create an entry name for the DROP outputs
         """
-        # Default LRA entry keeps the 'lra-' prefix
+        # Default LRA-100-monthly entry keeps the 'lra-' prefix
         if self.resolution == 'r100' and self.frequency == 'monthly':
             entry_name = f'lra-{self.resolution}-{self.frequency}'
         else:
