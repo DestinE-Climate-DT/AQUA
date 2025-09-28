@@ -52,6 +52,21 @@ DROP's flexible architecture enables various data processing tasks:
 DROP can be explored in the `DROP notebook <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/drop/drop.ipynb>`_.
 
 
+The Low Resolution Archive (LRA) Context
+----------------------------------------
+
+The Low Resolution Archive is a key use case for DROP. The LRA is an intermediate layer 
+of data reduction that simplifies analysis of extreme high-resolution data by providing:
+
+- Monthly data at coarse resolution
+- Fast access for climate model assessment
+- Reduced storage and computational requirements
+
+.. note ::
+
+    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg 
+    resolution) and at ``monthly`` frequency. The corresponding catalog entry name is 
+    ``lra-r100-monthly``.
 
 Source Naming Convention
 ------------------------
@@ -81,23 +96,6 @@ All sources have corresponding Zarr reference versions with ``-zarr`` suffix:
 **Frequency options:**
 - ``monthly``, ``daily``, ``3hourly``, etc.
 - Any valid AQUA frequency specification
-
-
-The Low Resolution Archive (LRA) Context
-----------------------------------------
-
-The Low Resolution Archive is a key use case for DROP. The LRA is an intermediate layer 
-of data reduction that simplifies analysis of extreme high-resolution data by providing:
-
-- Monthly data at coarse resolution
-- Fast access for climate model assessment
-- Reduced storage and computational requirements
-
-.. note ::
-
-    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg 
-    resolution) and at ``monthly`` frequency. The corresponding catalog entry name is 
-    ``lra-r100-monthly``.
 
 
 Accessing DROP-generated data
