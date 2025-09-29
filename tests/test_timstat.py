@@ -2,6 +2,7 @@
 import pytest
 import numpy as np
 from aqua import Reader
+from aqua.histogram import histogram
 
 loglevel = "DEBUG"
 
@@ -130,3 +131,22 @@ class TestTimmean():
         with pytest.raises(ValueError, match=r'Time dimension not found in the input data. Cannot compute timstd statistic'):
             avg = reader.timstat(single, stat='std', freq='monthly')
 
+    def test_timstat_histogram(self, reader):
+        """Test histogram through timstat"""
+
+        data = reader.retrieve(var='2t')
+        #test passing a string
+        hist1 = reader.timstat(data['2t'], freq='monthly', stat='histogram', bins=100, range=(250,330), exclude_incomplete=True)
+        # timhist passes a function
+        hist2 = reader.timhist(data['2t'], freq='monthly', bins=100, range=(250,330), exclude_incomplete=True)
+        hist3 = reader.timstat(data['2t'], freq='monthly', stat=histogram,bins=100, range=(250,330), exclude_incomplete=True)
+
+        assert hist1['center_of_bin'].shape == hist2['center_of_bin'].shape
+        assert hist1['center_of_bin'].shape == hist3['center_of_bin'].shape
+        assert hist1.isel(time=2).sum().values == hist2.isel(time=2).sum().values
+        assert hist2.isel(time=2).sum().values == hist3.isel(time=2).sum().values
+
+        hist1 = reader.timhist(data['2t'], bins=100, range=(250,330))
+        hist2 = reader.histogram(data['2t'], bins=100, range=(250,330))
+
+        assert hist1.sum().values == hist2.sum().values
