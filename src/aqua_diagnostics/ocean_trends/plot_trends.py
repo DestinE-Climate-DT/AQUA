@@ -116,7 +116,9 @@ class PlotTrends:
             titles=self.title_list,
             cbar_number='separate',
             ytext=self.ytext,
-            return_fig=True
+            return_fig=True,
+            sym=True,
+            loglevel=self.loglevel
         )
         for format in formats:
             self.save_plot(
