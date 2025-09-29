@@ -2,23 +2,18 @@
 Module to plot multiple maps
 
 """
-
 from aqua.graphics import plot_vertical_profile
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from aqua.logger import log_configure
-from aqua.util import plot_box, evaluate_colorbar_limits, cbar_get_label, generate_colorbar_ticks
+from aqua.util import plot_box, evaluate_colorbar_limits, cbar_get_label
 from aqua.graphics.styles import ConfigStyle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def plot_multivars_vertical_profile(
-    maps: list,
-    contour: bool = True,
+    maps: list[xr.DataArray],
     sym: bool = False,
-    proj: ccrs.Projection = ccrs.Robinson(),
-    extent: list = None,
     style=None,
     figsize: tuple = None,
     ncols: int = None,
@@ -28,14 +23,12 @@ def plot_multivars_vertical_profile(
     nlevels: int = 11,
     title: str = None,
     titles: list = None,
-    cmap="RdBu_r",
+    cmap: str = "RdBu_r",
     cbar_number: str = "single",
     cbar_label: str = None,
-    transform_first=False,
-    cyclic_lon=True,
-    return_fig=False,
-    ytext=None,
-    loglevel="WARNING",
+    return_fig: bool = False,
+    ytext: list = None,
+    loglevel: str = "WARNING",
     **kwargs,
 ):
     """
@@ -73,15 +66,15 @@ def plot_multivars_vertical_profile(
     """
     logger = log_configure(loglevel, "plot_maps")
     ConfigStyle(style=style, loglevel=loglevel)
+
     if maps is None or any(not isinstance(data_map, xr.DataArray) for data_map in maps):
         raise ValueError("Maps should be a list of xarray.DataArray")
     else:
         logger.debug("Loading maps")
         maps = [data_map.load(keep_attrs=True) for data_map in maps]
 
-    logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
-
-    # Generate the figure
+    # Generate the figure, if the number of rows and columns is not provided,
+    # try to make a square figure with a reasonable aspect ratio
     if not nrows and not ncols:
         nrows, ncols = plot_box(len(maps))
     figsize = figsize if figsize is not None else (ncols * 6, nrows * 5 + 1)
@@ -94,7 +87,7 @@ def plot_multivars_vertical_profile(
         if vmin is None or vmax is None or sym:
             vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
 
-    logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
+        logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
 
     if cbar_number == 'single':
         cbar = True
@@ -113,7 +106,6 @@ def plot_multivars_vertical_profile(
         logger.debug("Plotting map %d", i)
         fig, ax = plot_vertical_profile(
             data=maps[i],
-            # var='thetao',
             lev_name='level',
             vmin=vmin,
             vmax=vmax,
@@ -121,11 +113,8 @@ def plot_multivars_vertical_profile(
             title=titles[i] if titles is not None else None,
             grid=False,
             add_land=True,
-            cmap=cmap,
             cbar=False,
-            transform_first=transform_first,
             return_fig=True,
-            # cyclic_lon=cyclic_lon,
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
