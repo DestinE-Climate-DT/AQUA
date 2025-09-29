@@ -998,18 +998,33 @@ class Reader():
     
     # Field stats wrapper. If regridded, uses the target grid areas.
     def fldmean(self, data, **kwargs):
+        """
+        Field mean wrapper which is calling the fldstat module.
+        """
         return self.fldstat(data, stat='mean', **kwargs)
 
     def fldmax(self, data, **kwargs):
+        """
+        Field max wrapper which is calling the fldstat module.
+        """
         return self.fldstat(data, stat='max', **kwargs)
     
     def fldmin(self, data, **kwargs):
+        """
+        Field min wrapper which is calling the fldstat module.
+        """
         return self.fldstat(data, stat='min', **kwargs)
     
     def fldstd(self, data, **kwargs):
+        """
+        Field standard deviation wrapper which is calling the fldstat module.
+        """
         return self.fldstat(data, stat='std', **kwargs)
     
     def fldsum(self, data, **kwargs):
+        """
+        Field sum wrapper which is calling the fldstat module.
+        """
         return self.fldstat(data, stat='sum', **kwargs)
 
 

@@ -142,9 +142,7 @@ class FldStat():
         self.logger.info("Computing area-weighted %s on %s dimensions", stat, dims)
         weights=self.area.fillna(0)
 
-        if stat == 'std':
-            out = self.weighted_std(data, weights=weights, dim=dims)
-        elif stat == 'integral':
+        if stat == 'integral':
             raise NotImplementedError("Integral is not implemented yet") # TODO: implement it
         else:
             weighted_data = data.weighted(weights=weights)
@@ -154,25 +152,6 @@ class FldStat():
             log_history(out, f"Spatially reduced by fld{stat} from {self.grid_name} grid")
 
         return out
-
-    def weighted_std(self, da: xr.DataArray, 
-                     weights: xr.DataArray, 
-                     dim: str | None = None) -> xr.DataArray:
-        """
-        Compute the weighted standard deviation of the data.
-
-        Args:
-            da (xr.DataArray): The input data.
-            weights (xr.DataArray): The weights.
-            dim (str, optional): The dimension to compute the standard deviation over.
-
-        Returns:
-            xr.DataArray: The weighted standard deviation of the data.
-        """
-        weighted_mean = da.weighted(weights=weights).mean(dim=dim)
-        variance = ((weights * (da - weighted_mean)**2).sum(dim=dim) /
-                    weights.sum(dim=dim))
-        return np.sqrt(variance)
 
     def align_area_dimensions(self, data):
         """
