@@ -13,6 +13,8 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+
+- Histogram (or any callable function) possible through TimStat. New timhist method (#2263)
 - Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
 - Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
 - Split out plotting function for vertical profile and add contour option (#2190)
@@ -42,6 +44,8 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Timeseries: fix for annual only plots (#2279)
+- Timeseries: add `reader_kwargs` option to pass extra arguments to the Reader and ensemble support (#2222, #2279)
 - Add `source_oce` option for ECmean to aqua anlysis (#2246)
 - Add missing center time option to seasonalcycles (#2247)
 - Teleconnections: adapted MJO to the new Hovmoller graphical function (#1969)
