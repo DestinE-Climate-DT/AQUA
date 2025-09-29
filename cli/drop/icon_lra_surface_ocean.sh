@@ -24,8 +24,8 @@ exp="historical-1990"
 for variable in avg_sos avg_tos ; do
 
 
-    DROP_folder="/projappl/project_465000454/data/AQUA/DROP"
-    source_folder="${DROP_folder}/${model}/${exp}/r100/monthly"
+    LRA_folder="/projappl/project_465000454/data/AQUA/LRA"
+    source_folder="${LRA_folder}/${model}/${exp}/r100/monthly"
 
     log_message INFO "Source folder: ${source_folder}"
 
@@ -38,7 +38,7 @@ for variable in avg_sos avg_tos ; do
         varsource="avg_so"
     fi
 
-    log_message INFO "Creating ${variable} files from ${varsource} files for ${model} ${exp} using DROP."
+    log_message INFO "Creating ${variable} files from ${varsource} files for ${model} ${exp} with the LRA."
 
     for file in ${varsource}_*.nc ; do
         # Extract the filename without the extension
