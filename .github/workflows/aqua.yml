@@ -142,7 +142,7 @@ jobs:
         run: |
           cd aqua-dvc
           git checkout main
-          dvc pull -r data-tests/*
+          dvc pull -R data-tests/*
           mkdir -p ../AQUA/AQUA_tests
           mv data-tests/* ../AQUA/AQUA_tests
       - name: Set up FDB
