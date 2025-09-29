@@ -136,7 +136,7 @@ def plot_maps(
             elif ax.images:
                 mappable = ax.images[-1]
             else:
-                logger.warning("No mappable object found for subplot (%d, %d)", j, i)
+                logger.warning("No mappable object found for subplot %d", i)
                 continue
             
             # Update mappable normalization and cmap
