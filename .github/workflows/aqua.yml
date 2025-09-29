@@ -87,6 +87,12 @@ jobs:
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio
           cd data-portfolio
           git checkout tags/v2.0.0
+      - name: Checkout DVC repo
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/aqua-dvc
+          path: aqua-dvc
+          token: ${{ secrets.AQUA_DVC_PAT }}
       - name: List Workspace Contents
         run: |
           echo "Current Directory: $PWD"
@@ -132,12 +138,6 @@ jobs:
           aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           EOF
-      - name: CCheckout DVC repo
-        uses: actions/checkout@v5
-        with:
-          repository: DestinE-Climate-DT/aqua-dvc
-          path: aqua-dvc
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull DVC data and move to the right folder
         run: |
           cd aqua-dvc
