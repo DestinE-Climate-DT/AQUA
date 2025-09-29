@@ -72,7 +72,7 @@ if __name__ == '__main__':
         trends_config = config_dict['diagnostics']['ocean_trends']['multilevel']
         logger.info(f"Ocean Trends diagnostic is set to {trends_config['run']}")
         if trends_config['run']:
-            regions = trends_config.get('region', None)
+            regions = trends_config.get('regions', [None])
             diagnostic_name = trends_config.get('diagnostic_name', 'ocean_trends')
             var = trends_config.get('var', None)
             dim_mean = trends_config.get('dim_mean', None) 
