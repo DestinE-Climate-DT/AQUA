@@ -4,10 +4,14 @@ DROP - Data Reduction OPerator
 ===============================================
 
 DROP (Data Reduction OPerator) is a comprehensive tool within the AQUA framework designed 
-to extract, process, and organize data from any dataset, with particular focus on climate 
-data reduction and archival.
+to extract, process, and organize data from any climate dataset.
 
+.. warning ::
 
+    Starting from AQUA v0.18, DROP is replacing Lor Resolution Archive (LRA) in most of the 
+    terminology, since DROP is a more generic tool that deals with many more options other
+    than just LRA. However, LRA is still a key use case for DROP (see below).
+    
 What is DROP?
 -------------
 
@@ -55,12 +59,10 @@ DROP can be explored in the `DROP notebook <https://github.com/DestinE-Climate-D
 The Low Resolution Archive (LRA) Context
 ----------------------------------------
 
-The Low Resolution Archive is a key use case for DROP. The LRA is an intermediate layer 
-of data reduction that simplifies analysis of extreme high-resolution data by providing:
+The Low Resolution Archive is a key use case for DROP. The LRA is an intermediate layer of data
+reduction that simplifies analysis of extreme high-resolution data by providing monthly data 1 
+degree resolution, permitting reduced storage and computational requirements.
 
-- Monthly data at coarse resolution
-- Fast access for climate model assessment
-- Reduced storage and computational requirements
 
 .. note ::
 
@@ -81,7 +83,7 @@ DROP automatically generates catalog source names following a consistent pattern
   - ``r25-monthly`` (0.25° resolution, monthly frequency)
 
 **Default LRA source:**
-- ``lra-r100-monthly`` maintains the ``lra-`` prefix
+- ``lra-r100-monthly``
 
 **Zarr variants:**
 All sources have corresponding Zarr reference versions with ``-zarr`` suffix:
