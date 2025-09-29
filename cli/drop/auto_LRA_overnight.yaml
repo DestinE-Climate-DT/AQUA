@@ -5,8 +5,8 @@ target:
   catalog: lumi-phase2
 
 paths:
-  #outdir: /pfs/lustrep3/projappl/project_465000454/data/AQUA/DROP
-  outdir: /pfs/lustrep3/appl/local/climatedt/data/AQUA/DROP/
+  #outdir: /pfs/lustrep3/projappl/project_465000454/data/AQUA/LRA
+  outdir: /pfs/lustrep3/appl/local/climatedt/data/AQUA/LRA/
   tmpdir: /pfs/lustrep3/projappl/project_465000454/padavini/tmp
 
 
