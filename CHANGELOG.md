@@ -13,6 +13,9 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+
+- Histogram (or any callable function) possible through TimStat. New timhist method (#2263)
+- Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
 - Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
 - Split out plotting function for vertical profile and add contour option (#2190)
 - GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
@@ -41,6 +44,10 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Timeseries: fix for annual only plots (#2279)
+- Timeseries: add `reader_kwargs` option to pass extra arguments to the Reader and ensemble support (#2222, #2279)
+- Add `source_oce` option for ECmean to aqua anlysis (#2246)
+- Add missing center time option to seasonalcycles (#2247)
 - Teleconnections: adapted MJO to the new Hovmoller graphical function (#1969)
 - Ocean Drift: Hovmoller multiplot class and complete diagnostic cli (#1969)
 - Diagnostic core: Locking of catalog yaml when modified (#2238)
@@ -53,7 +60,7 @@ AQUA diagnostics complete list:
 - Diagnostic core: introduction of the catalog entry capability and `self.realization` attribute (#2198)
 - Ensemble: Updating the ensemble module according the the issue #1925 (#2004)
 - Timeseries: refined title and description, more attributes used (#2193)
-- New LatLonProfiles diagnostic tool (#1934)
+- New LatLonProfiles diagnostic tool (#1934 and #2207)
 - Boxplots: add support for reader_kwargs (#2149)
 - Global Biases: add the `diagnostic_name` option in config file (#2159)
 - Gregory: refined the reference label generation (#2157)

@@ -31,6 +31,24 @@ Some extra options are available:
     Otherwise, the time coordinate will be the first timestamp of the time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
 
+The ``timhist()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
+class, so that it is easy to compute histograms on time-resampled data:
+    
+.. code-block:: python
+
+    hist = reader.timhist(data['t2m'], freq="1D", bins=100, range=(250, 350), units='K')
+
+or
+
+.. code-block:: python
+
+    hist = data['t2m'].aqua.timhist(freq="1D", bins=100, range=(250, 350), units='K')
+
+When no time frequency information is provided, this method operates on the full time series, 
+providing results identical to the ``histogram()`` method.
+See the ``histogram()`` section below for more details on the available options.
+
+
 Detrend
 -------
 
@@ -122,6 +140,19 @@ Some extra options are available:
 - ``check=True``: this will perform a test to verify that the sum of the counts is equal to the number of elements in the input data. 
                   It will fail if not appropriate bounds are used for the classes. Can be only used if the ``density`` flag is ``False``.
                   It will force a computation of the histogram and a numpy array will be returned.
+
+The ``histogram()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
+class, so that it is easy to compute histograms over the full dataset:
+    
+.. code-block:: python
+
+    hist = reader.histogram(data['t2m'], bins=100, range=(250, 350))
+
+or
+
+.. code-block:: python
+
+    hist = data['t2m'].aqua.histogram( bins=100, range=(250, 350))
 
 
 .. _time-selection:
