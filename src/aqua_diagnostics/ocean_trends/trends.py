@@ -81,6 +81,7 @@ class Trends(Diagnostic):
             self.lon_limits = res_dict["lon_limits"]
             self.region = res_dict["region"]
         else:
+            self.logger.debug("No region specified, using global data")
             self.region = 'global'
             self.lat_limits = None
             self.lon_limits = None
@@ -92,7 +93,7 @@ class Trends(Diagnostic):
             self.data = self.reader.fldmean(self.data, dim=dim_mean,
                                             lat=self.lat_limits, lon=self.lon_limits)
         else:
-            self.data = res_dict.get("data", self.data)
+            self.data = res_dict.get("data", self.data) if 'res_dict' in locals() else self.data
 
         self.logger.info("Computing trend coefficients")
         self.trend_coef = self.compute_trend(data=self.data)
