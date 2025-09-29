@@ -19,7 +19,7 @@ __all__ = ["NAO", "ENSO", "MJO",
            "EnsembleZonal", "PlotEnsembleTimeseries", 
            "PlotEnsembleLatLon", "PlotEnsembleZonal",
            "retrieve_merge_ensemble_data",
-           "GlobalMean", "PerformanceIndices"]
+           "GlobalMean", "PerformanceIndices",
            "Boxplots", "PlotBoxplots",
            "EnsembleTimeseries", "EnsembleLatLon", "EnsembleZonal",
            "GlobalMean", "PerformanceIndices", "SeaIce", "PlotSeaIce", "Plot2DSeaIce"]

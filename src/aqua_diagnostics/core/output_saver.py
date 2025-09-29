@@ -387,9 +387,6 @@ class OutputSaver:
         self.logger.debug("Available metadata: %s", metadata)
         return metadata
 
-<<<<<<< HEAD
-=======
-
     def _create_catalog_entry(self, filepath, metadata, jinjalist=None, wildcardlist=None):
         """
         Creates an entry in the catalog
@@ -558,4 +555,3 @@ class OutputSaver:
                 path = path.replace(replacepath, "{{ " + name + " }}")
 
         return path
->>>>>>> main

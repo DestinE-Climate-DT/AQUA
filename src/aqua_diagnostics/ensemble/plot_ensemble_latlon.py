@@ -42,7 +42,7 @@ class PlotEnsembleLatLon(BaseMixin):
         cbar_label=None,
         units=None,
         outputdir="./",
-        log_level: str = "WARNING",
+        loglevel: str = "WARNING",
     ):
         """
         Args:
@@ -88,7 +88,7 @@ class PlotEnsembleLatLon(BaseMixin):
         self.dataset_std = dataset_std
 
         self.outputdir = outputdir 
-        self.log_level = log_level
+        self.loglevel = loglevel
 
         self.figure = None
         self.dpi = dpi
@@ -115,7 +115,7 @@ class PlotEnsembleLatLon(BaseMixin):
             self.cbar_label = self.var + " in " + self.units
 
         super().__init__(
-            log_level=self.log_level,
+            loglevel=self.loglevel,
             diagnostic_product=self.diagnostic_product,
             catalog_list=self.catalog_list,
             model_list=self.model_list,

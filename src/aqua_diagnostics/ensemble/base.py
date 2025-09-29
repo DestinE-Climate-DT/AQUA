@@ -53,7 +53,7 @@ class BaseMixin(Diagnostic):
             outputdir (str): String input for output path. Default is './'
             loglevel (str): Default is set to "WARNING"
         """
-        self.log_level = loglevel
+        self.loglevel = loglevel
         self.logger = log_configure(log_name="BaseMixin", log_level=loglevel)
         self.logger.info("Initializing the BaseMixin class")
 
@@ -236,8 +236,8 @@ class BaseMixin(Diagnostic):
             exp=self.exp,
             model_ref=self.ref_model,
             exp_ref=self.ref_exp,
-            outdir=self.outputdir,
-            loglevel=self.log_level,
+            outputdir=self.outputdir,
+            loglevel=self.loglevel,
         )
 
         metadata = {"Description": description}
@@ -270,8 +270,8 @@ class BaseMixin(Diagnostic):
             exp=self.exp,
             model_ref=self.ref_model,
             exp_ref=self.ref_exp,
-            outdir=self.outputdir,
-            loglevel=self.log_level,
+            outputdir=self.outputdir,
+            loglevel=self.loglevel,
         )
         if description is None:
             description = self.diagnostic_name + " " + self.diagnostic_product + " for " + self.catalog + " and " + self.model + " with " + self.model_list + " " + self.exp + " " + self.region
@@ -313,8 +313,8 @@ class BaseMixin(Diagnostic):
                 exp=self.exp,
                 model_ref=self.ref_model,
                 exp_ref=self.ref_exp,
-                outdir=self.outputdir,
-                loglevel=self.log_level,
+                outputdir=self.outputdir,
+                loglevel=self.loglevel,
             )
             if description is None:
                 description = self.diagnostic_name + " " + self.diagnostic_product + " for " + self.catalog + " and " + self.model + " with " + self.model_list + " " + self.exp + " " + self.region

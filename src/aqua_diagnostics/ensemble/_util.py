@@ -14,20 +14,17 @@ from aqua.logger import log_configure
 
 def retrieve_merge_ensemble_data(
     variable: str = None,
+    region: str = None,
     ens_dim: str = "ensemble",
-    #model_names: list[str] = None,
+    model_names: list[str] = None,
     data_path_list: list[str] = None,
     catalog_list: list[str] = None,
     model_list: list[str] = None,
     exp_list: list[str] = None,
     source_list: list[str] = None,
-    realization: list[str] = None,
-    region: str = None,
-    lon_limt: float = None,
-    lat_lim: float = None,
     startdate: str = None,
     enddate: str = None,
-    loglevel: str = "WARNING",
+    log_level: str = "WARNING",
 ):
     """
     Retrieves, merges, and slices datasets based on specified models, experiments,
@@ -46,7 +43,7 @@ def retrieve_merge_ensemble_data(
 
         In the case a):
             data_path_list (list of str): list of paths for data to be loaded by xarray.
-            model_list (list): Assign names to the variable lists. It is IMPORTANT
+            model_names (list): Assign names to the variable lists. It is IMPORTANT
                 to assign names when calculating multi-model mean. This variable list
                 will assign a name to each memeber.
 
@@ -72,7 +69,7 @@ def retrieve_merge_ensemble_data(
             xarray.Dataset: The merged dataset containing data from all specified models,
                 experiments, and sources, concatenated along `ens_dim` along with model name.
     """
-    logger = log_configure(log_name="ensemble", log_level=loglevel)
+    logger = log_configure(log_name="retrieve_merge_ensemble_data", log_level=log_level)
     logger.info("Loading and merging the ensemble dataset")
 
     # in case if the list of paths of netcdf dataset is given
@@ -85,76 +82,35 @@ def retrieve_merge_ensemble_data(
 
     # Method (a): To load and merge the dataset via file paths
     if data_path_list is not None:
-        if model_list is not None:
-            model_counts = dict(Counter(model_list))
-        if model_list is None or len(model_counts.keys()) <= 1:
+        if model_names is not None:
+            model_counts = dict(Counter(model_names))
+        if model_names is None or len(model_counts.keys()) <= 1:
             logger.info("Single model ensemble memebers are given")
-            if model_list is None:
-                logger.info("No model name is given. Assigning it to realization_i.")
-                model_list = ['model'] * len(data_path_list)
+            if model_names is None:
+                logger.info("No model name is given. Assigning it to model_name.")
+                model_names = ["model_name"] * len(data_path_list)
         else:
             logger.info("Multi-model ensemble members are given")
 
-        # Common ensemble dimension names to look for
-        possible_ens_dims = ["member", "realization", "r", "ensemble", "ens"]
+        # Work on it
+        #for i, f in enumerate(data_path_list):
+        #    # load and assign new dimensions, namely ensemble and model name
+        #    tmp_dataset = xr.open_dataset(
+        #        f, drop_variables=[var for var in xr.open_dataset(f).data_vars if var != variable]
+        #    ).expand_dims({ens_dim: [i]})
+        #    # append to the temporary list
+        #    tmp_dataset_list.append(tmp_dataset)
 
-        # Peek at first file
-        with xr.open_dataset(data_path_list[0]) as ds:
-            if ens_dim is None:
-                for d in possible_ens_dims:
-                    if d in ds.dims:
-                        ens_dim = d
-                        break
-            if (len(data_path_list) == 1):
-                print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-                # If ensemble dim is found, just return the combined dataset
-                if ens_dim in ds.dims:
-                    ens_dataset = xr.open_mfdataset(
-                        data_path_list,
-                        combine="by_coords",
-                        drop_variables=[var for var in ds.data_vars if var != variable]
-                    )
-                    ens_dataset.attrs["model"] = model_list
-
-                    if "time" in ens_dataset.dims:
-                        if startdate is not None and enddate is not None:
-                            ens_dataset = ens_dataset.sel(time=slice(startdate, enddate))
-                    else:
-                        tmp_min_date_list.append(pd.to_datetime(tmp_dataset.time.values[0]))
-                        tmp_max_date_list.append(pd.to_datetime(tmp_dataset.time.values[-1]))
-
-                    if tmp_min_date_list and tmp_max_date_list:
-                        common_startdate = max(tmp_min_date_list)
-                        common_enddate = min(tmp_max_date_list)
-                    if "time" in ens_dataset.dims:
-                        if startdate is not None and enddate is not None:
-                            common_startdate = startdate
-                            common_enddate = enddate
-                        logger.info("Finished loading the ensemble timeseries datasets")
-                        ens_dataset.attrs["description"] = f"Dataset with {ens_dim} for ensemble statistics"
-                        #ens_dataset.attrs["model names"] = model_names
-                        return ens_dataset.sel(time=slice(common_startdate, common_enddate))
-
-                    return ens_dataset
-
-        for i, f in enumerate(data_path_list):
-            # load and assign new dimensions, namely ensemble and model name
-            tmp_dataset = xr.open_dataset(
-                f, drop_variables=[var for var in xr.open_dataset(f).data_vars if var != variable]
-            ).expand_dims({ens_dim: [i]})
-            # append to the temporary list
-            tmp_dataset_list.append(tmp_dataset)
-
-            # Check if the given data is a timeseries
-            # if yes, then compute common startdate and enddate.
-            if "time" in tmp_dataset.dims:
-                if startdate is not None and enddate is not None:
-                    tmp_dataset = tmp_dataset.sel(time=slice(startdate, enddate))
-                else:
-                    tmp_min_date_list.append(pd.to_datetime(tmp_dataset.time.values[0]))
-                    tmp_max_date_list.append(pd.to_datetime(tmp_dataset.time.values[-1]))
-        ens_dataset = xr.concat(tmp_dataset_list, dim=ens_dim)
-        ens_dataset = ens_dataset.assign_coords(model=(ens_dim, model_list))
+        #    # Check if the given data is a timeseries
+        #    # if yes, then compute common startdate and enddate.
+        #    if "time" in tmp_dataset.dims:
+        #        if startdate is not None and enddate is not None:
+        #            tmp_dataset = tmp_dataset.sel(time=slice(startdate, enddate))
+        #        else:
+        #            tmp_min_date_list.append(pd.to_datetime(tmp_dataset.time.values[0]))
+        #            tmp_max_date_list.append(pd.to_datetime(tmp_dataset.time.values[-1]))
+        #ens_dataset = xr.concat(tmp_dataset_list, dim=ens_dim)
+        #ens_dataset = ens_dataset.assign_coords(model=(ens_dim, model_names))
 
         for i, f in enumerate(data_path_list):
             ens_dataset = xr.open_dataset(
@@ -163,7 +119,8 @@ def retrieve_merge_ensemble_data(
     # else if check the models, exps and sources are given from the catalog in the forms of lists
     # then use the AQUA.Reader class to load the data
     elif model_list is not None and exp_list is not None and source_list is not None:
-        if len(np.unique(model_list)) <= 1:
+        model_names = model_list
+        if len(np.unique(model_names)) <= 1:
             logger.info("Single model ensemble memebers are given")
         else:
             logger.info("Multi-model ensemble members are given")
@@ -227,7 +184,7 @@ def retrieve_merge_ensemble_data(
 
         # concatenate along the ensemble dimension
         ens_dataset = xr.concat(tmp_dataset_list, dim=ens_dim)
-        ens_dataset = ens_dataset.assign_coords(model=(ens_dim, model_list))
+        ens_dataset = ens_dataset.assign_coords(model=(ens_dim, model_names))
         # delete tmp varaibles
         del tmp_reader, tmp_dataset_expended
     else:
@@ -248,18 +205,18 @@ def retrieve_merge_ensemble_data(
             common_enddate = enddate
         logger.info("Finished loading the ensemble timeseries datasets")
         ens_dataset.attrs["description"] = f"Dataset merged along {ens_dim} for ensemble statistics"
-        ens_dataset.attrs["model"] = model_list
+        ens_dataset.attrs["model names"] = model_names
         return ens_dataset.sel(time=slice(common_startdate, common_enddate))
     else:
         # the ensemble dataset is not a timeseries
         logger.info("Finished loading the ensemble datasets")
         ens_dataset.attrs["description"] = f"Dataset merged along {ens_dim} for ensemble statistics"
-        ens_dataset.attrs["model"] = model_list
+        ens_dataset.attrs["model names"] = model_names
         return ens_dataset
 
 
 def compute_statistics(
-    variable: str = None, ds: xr.Dataset = None, ens_dim: str = "ensemble", loglevel="WARNING"
+    variable: str = None, ds: xr.Dataset = None, ens_dim: str = "ensemble", log_level="WARNING"
 ):
     """
     A function to compute mean and STD. Moreover, it can also perform weighted mean and STD.
@@ -274,7 +231,7 @@ def compute_statistics(
            returns xarray.Dataset weighted_mean and weighted_std
     """
 
-    logger = log_configure(log_name="compute_statistics", log_level=loglevel)
+    logger = log_configure(log_name="compute_statistics", log_level=log_level)
     logger.info("Computing statistics of the ensemble dataset")
 
     if ds is None:
@@ -293,9 +250,8 @@ def compute_statistics(
             # each ensmble member is named with the model name
             # in the multi-model ensemble
             # Step 1: Count how many ensembles each model has
-
             counts = ds["model"].to_series().value_counts().to_dict()
-            
+
             # Step 2: Create weights per ensemble member using the model label
             weights = xr.DataArray(
                 [counts[model] for model in ds["model"].values],
