@@ -42,8 +42,7 @@ jobs:
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
       # github token: this is a personal access token (PAT) with read access to the repository.
       # It is used to download the AQUA catalog and is available also to dependabot.
-      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }} 
-
+      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }}
 
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
@@ -63,10 +62,23 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
+      # checkout the AQUA code, the Climate-DT-catalog and the aqua-dvc repository
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           path: AQUA
+      - name: Checkout Climate-DT-catalog repository
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/Climate-DT-catalog
+          path: Climate-DT-catalog
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
+      - name: Checkout DVC repo
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/aqua-dvc
+          path: aqua-dvc
+          token: ${{ secrets.AQUA_DVC_PAT }}
       # The FDB docker image does not have git and other dependencies
       - name: Install GH Actions dependencies
         run: |
@@ -77,26 +89,16 @@ jobs:
               git \
               gpg 
           # gpg is for codecov
-      - name: Checkout Climate-DT-catalog repository
-        uses: actions/checkout@v5
-        with:
-          repository: DestinE-Climate-DT/Climate-DT-catalog
-          path: Climate-DT-catalog
+      # clone the BSC data portfolio repository
       - name: Clone GitLab data-portfolio repository
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio
           cd data-portfolio
           git checkout tags/v2.0.0
-      - name: Checkout DVC repo
-        uses: actions/checkout@v5
-        with:
-          repository: DestinE-Climate-DT/aqua-dvc
-          path: aqua-dvc
-          token: ${{ secrets.AQUA_DVC_PAT }}
-      - name: List Workspace Contents
-        run: |
-          echo "Current Directory: $PWD"
-          ls -l
+      # - name: List Workspace Contents
+      #   run: |
+      #     echo "Current Directory: $PWD"
+      #     ls -l
       - name: Set up Micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
@@ -110,9 +112,9 @@ jobs:
               - conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
-      - name: List Pip packages
-        run: |
-          pip freeze
+      # - name: List Pip packages
+      #   run: |
+      #     pip freeze
       - name: Install Flake8
         run: |
           python -m pip install flake8
