@@ -6,7 +6,6 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.util import evaluate_colorbar_limits
 from .styles import ConfigStyle
-import cartopy.feature as cfeature
 
 
 def plot_vertical_profile(data: xr.DataArray, var: str= None,
