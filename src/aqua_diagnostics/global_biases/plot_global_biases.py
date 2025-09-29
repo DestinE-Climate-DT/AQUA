@@ -24,6 +24,7 @@ class PlotGlobalBiases:
             save_png (bool): Whether to save the figure as PNG.
             dpi (int): Resolution of saved figures.
             outputdir (str): Output directory for saved plots.
+            cmap (str): Colormap to use for the plots.
             loglevel (str): Logging level.
         """
         self.diagnostic = diagnostic
