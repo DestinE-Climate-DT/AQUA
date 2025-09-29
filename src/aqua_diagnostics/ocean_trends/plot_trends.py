@@ -12,27 +12,36 @@ class PlotTrends:
     def __init__(
         self,
         data: xr.Dataset,
-        diagnostic: str = "ocean_trends",
+        diagnostic_name: str = "trends",
         outputdir: str = ".",
         rebuild: bool = True,
         loglevel: str = "WARNING",
     ):
-        self.data = data
-
+        """Class to plot trends from xarray Dataset.
+    
+        Args:
+            data (xr.Dataset): Input xarray Dataset containing trend data.
+            diagnostic_name (str, optional): Name of the diagnostic for filenames. Defaults to "trends".
+            outputdir (str, optional): Directory to save output plots. Defaults to ".".
+            rebuild (bool, optional): Whether to rebuild output files. Defaults to True.
+            loglevel (str, optional): Logging level. Default is "WARNING".
+        """
         self.loglevel = loglevel
-        self.logger = log_configure(self.loglevel, "PlotHovmoller")
+        self.logger = log_configure(self.loglevel, "PlotTrends")
 
-        self.diagnostic = diagnostic
+        self.data = data
+        self.diagnostic_name = diagnostic_name
+        self.outputdir = outputdir
+        self.rebuild = rebuild
+
         self.vars = list(self.data.data_vars)
         self.logger.debug("Variables in data: %s", self.vars)
 
-        self.catalog = self.data[self.vars[0]].AQUA_catalog
-        self.model = self.data[self.vars[0]].AQUA_model
-        self.exp = self.data[self.vars[0]].AQUA_exp
-        self.region = self.data.attrs.get("AQUA_region", "global")
+        # Initialize metadata attributes
+        self._get_info()
 
         self.outputsaver = OutputSaver(
-            diagnostic=self.diagnostic,
+            diagnostic=self.diagnostic_name,
             catalog=self.catalog,
             model=self.model,
             exp=self.exp,
@@ -41,14 +50,23 @@ class PlotTrends:
         )
 
     def plot_multilevel(self,
-                        levels = None):
+                        levels = None,
+                        formats: list = ['pdf'],
+                        dpi: int = 300):
+        """Plot multi-level maps of trends.
+        
+        Args:
+            levels (list, optional): List of depth levels to plot. Defaults to None.
+            formats (list, optional): List of output formats. Defaults to ['pdf'].
+        """
+        product = 'multi_level'
         if levels is None:
             self.levels = [10, 100, 500, 1000, 3000, 5000]
         self.logger.debug(f"Levels set to: {self.levels}")
         self.set_data_list()
         self.set_suptitle()
         self.set_title()
-        self.set_description()
+        self.set_description(product=product)
         self.set_ytext()
         self.set_nrowcol()
         fig = plot_maps(
@@ -59,21 +77,35 @@ class PlotTrends:
             titles=self.title_list,
             cbar_number='separate',
             ytext=self.ytext,
-            return_fig=True
+            return_fig=True,
+            sym=True,
+            loglevel=self.loglevel
         )
-        self.save_plot(
-            fig,
-            diagnostic_product=self.diagnostic,
-            format='pdf',
-            metadata=self.description
-        )
+        for format in formats:
+            self.save_plot(
+                fig,
+                diagnostic_product=product,
+                format=format,
+                metadata=self.description,
+                rebuild=self.rebuild,
+                dpi=dpi
+            )
 
-    def plot_zonal(self):
-        # self.set_levels()
+    def plot_zonal(self,
+                   formats: list = ['pdf'],
+                   dpi: int = 300):
+        """
+        Plot zonal mean vertical profiles of trends.
+        
+        Args:
+            formats (list, optional): List of output formats. Defaults to ['pdf'].
+            dpi (int, optional): Dots per inch for the output figure. Defaults to 300.
+        """
+        product = 'zonal_mean'
         self.set_data_list()
         self.set_suptitle(plot_type='Zonal mean ')
         self.set_title()
-        self.set_description()
+        self.set_description(product=product)
         self.set_ytext()
         self.set_nrowcol()
         fig = plot_multivars_vertical_profile(
@@ -86,11 +118,14 @@ class PlotTrends:
             ytext=self.ytext,
             return_fig=True
         )
-        self.save_plot(
-            fig,
-            diagnostic_product=self.diagnostic,
-            format='pdf',
-            metadata=self.description
+        for format in formats:
+            self.save_plot(
+                fig,
+                diagnostic_product=product,
+                format=format,
+                metadata=self.description,
+                rebuild=self.rebuild,
+                dpi=dpi
         )
 
     def set_nrowcol(self):
@@ -110,8 +145,8 @@ class PlotTrends:
                     else:
                         self.ytext.append(None)
 
-
     def set_data_list(self):
+        """Prepare the list of data arrays to plot."""
         self.data_list = []
         if hasattr(self, "levels") and self.levels:
             self.data = self.data.interp(level=self.levels)
@@ -121,6 +156,10 @@ class PlotTrends:
                         data_level_var = self.data[var].isel(level=-1)
                     else:
                         data_level_var = self.data[var].sel(level=level)
+
+                    if data_level_var.isnull().all():
+                        self.logger.warning(f"All values are NaN for {var} at {level}m")
+                        continue
 
                     data_level_var.attrs["long_name"] = (
                         f"{data_level_var.attrs.get('long_name', var)} at {level}m"
@@ -132,7 +171,7 @@ class PlotTrends:
                 self.data_list.append(data_var)
 
     def set_suptitle(self, plot_type = None):
-        """Set the title for the Hovmoller plot."""
+        """Set the title for the plot."""
         if plot_type is None:
             plot_type = ""
         self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type}Trends"
@@ -140,7 +179,7 @@ class PlotTrends:
 
     def set_title(self):
         """
-        Set the title for the Hovmoller plot.
+        Set the title for the plot.
         This method can be extended to set specific titles based on the data.
         """
         self.title_list = []
@@ -153,10 +192,16 @@ class PlotTrends:
                     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
-    def set_description(self):
+    def set_description(self, product: str):
+        """
+        Set the description metadata for the plot.
+
+        Args:
+            product (str): The type of product being plotted.
+        """
         self.description = {}
         self.description["description"] = {
-            f"Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
+            f"{product} {self.region} region of {self.catalog} {self.model} {self.exp}"
         }
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
@@ -183,3 +228,10 @@ class PlotTrends:
             result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                           extra_keys=extra_keys, metadata=metadata)
         self.logger.info(f"Figure saved as {result}")
+
+    def _get_info(self):
+        """Extract model, catalog, exp, region from data attributes."""
+        self.catalog = self.data[self.vars[0]].AQUA_catalog
+        self.model = self.data[self.vars[0]].AQUA_model
+        self.exp = self.data[self.vars[0]].AQUA_exp
+        self.region = self.data.attrs.get("AQUA_region", "global")

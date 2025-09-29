@@ -2,7 +2,6 @@
 Module to plot multiple maps
 
 """
-
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
@@ -89,10 +88,8 @@ def plot_maps(
 
     fig = plt.figure(figsize=figsize)
 
-    if cbar_number == 'single':
-        # Evaluate min and max values for the common colorbar
-        if vmin is None or vmax is None or sym:
-            vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
+    if (vmin is None or vmax is None) and sym:
+        vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
 
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
 
@@ -107,9 +104,6 @@ def plot_maps(
     )
     
     for i in range(len(maps)):
-        if cbar_number == 'separate':
-            vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
-
         logger.debug("Plotting map %d", i)
         fig, ax = plot_single_map(
             data=maps[i],
@@ -118,6 +112,7 @@ def plot_maps(
             extent=extent,
             vmin=vmin,
             vmax=vmax,
+            sym=sym if vmin is not None and vmax is not None else False,
             nlevels=nlevels,
             title=titles[i] if titles is not None else None,
             cmap=cmap,
@@ -129,7 +124,7 @@ def plot_maps(
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
-            **kwargs,
+            **kwargs
         )
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
@@ -168,8 +163,6 @@ def plot_maps(
 
         cbar_label = cbar_get_label(data=maps[0], cbar_label=cbar_label, loglevel=loglevel)
         logger.debug("Setting colorbar label to %s", cbar_label)
-
-        
 
         # Add the colorbar
         mappable = ax.collections[0]
