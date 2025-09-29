@@ -20,7 +20,7 @@ def plot_multivars_vertical_profile(
     nrows: int = None,
     vmin: float = None,
     vmax: float = None,
-    nlevels: int = 11,
+    nlevels: int = 12,
     title: str = None,
     titles: list = None,
     cmap: str = "RdBu_r",
