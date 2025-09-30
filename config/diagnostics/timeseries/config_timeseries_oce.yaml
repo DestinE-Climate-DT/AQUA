@@ -18,9 +18,9 @@ datasets:
 
 references:
   - catalog: 'obs'
-    model: 'ERA5'
-    exp: 'era5'
-    source: 'monthly'
+    model: 'ESA-CCI-L4'
+    exp: 'v3.0.1'
+    source: 'r100-monthly'
     regrid: null
 
 output:

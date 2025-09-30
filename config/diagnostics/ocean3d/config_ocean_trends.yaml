@@ -19,10 +19,10 @@ output:
   dpi: 300
 
 diagnostics:
-  ocean_drift:
-    hovmoller:
+  ocean_trends:
+    multilevel:
       diagnostic_name: 'ocean3d'
       run: true
       var: ['thetao', 'so']
-      regions: ['io', 'sss']
-      dim_mean: ['lat', 'lon']
+      regions: ['io', 'ao', 'so', 'arc_o', 'po', 'go']
+      # dim_mean: ['lat']
