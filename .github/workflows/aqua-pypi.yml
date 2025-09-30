@@ -1,0 +1,150 @@
+name: AQUA tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # NOTE: We must take care with the shell value here. We have steps
+    #       with mutiline YAML strings.
+    #       These get converted into shell scripts.
+    #       If execute as ``bash -l fail_first_command.sh``
+    #       then it would fail the first command but run the second
+    #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
+    #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
+    #       We removed the noprofile and norc so we have pytest set by Conda in our PATH.
+    # NOTE2: login should be kept becuse the action micromamba/setup-micromamba
+    #        writes the environment activation script in the .bashrc file.
+    shell: bash -l -eo pipefail {0}
+jobs:
+  aqua_pypi:
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      GRID_DEFINITION_PATH: /tmp
+      # This is needed for the FDB tests.
+      FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
+      # github token: this is a personal access token (PAT) with read access to the repository.
+      # It is used to download the AQUA catalog and is available also to dependabot.
+      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }} 
+
+    runs-on: ubuntu-latest
+    # This option applies to the individual job of a matrix.
+    continue-on-error: false
+    container:
+      # To run FDB tests we need to use a Docker image with FDB installed.
+      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
+      options: --user root
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    strategy:
+      # This option applies to all jobs in the matrix.
+      # If true, the entire matrix will stop running when one of the jobs fails.
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          path: AQUA
+      # The FDB docker image does not have git and other dependencies
+      - name: Install GH Actions dependencies
+        run: |
+          # Ubuntu dependencies (Git, curl, ...)
+          apt-get update && \
+            apt-get install -y \
+              curl \
+              git \
+              gpg 
+          # gpg is for codecov
+      - name: Checkout Climate-DT-catalog repository
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/Climate-DT-catalog
+          path: Climate-DT-catalog
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
+      - name: Clone GitLab data-portfolio repository
+        run: |
+          git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio
+          cd data-portfolio
+          git checkout tags/v2.0.0
+      - name: List Workspace Contents
+        run: |
+          echo "Current Directory: $PWD"
+          ls -l
+      - name: Set up Micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          micromamba-version: 'latest'
+          environment-file: AQUA/dev-environment.yml
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          condarc: |
+            channels:
+              - conda-forge
+          create-args: >-
+            python=${{ matrix.python-version }}
+      - name: Upgrade pip/setuptools/wheel
+        run: python -m pip install --upgrade pip setuptools wheel
+      - name: Install aqua from pypi
+        run: |
+          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple aqua-climate
+      - name: Download and set up tests
+        run: |
+          cd AQUA
+          ./download_data_for_tests.sh
+      - name: Set up FDB
+        run: |
+          export
+          # FDB for GSV
+          rm -rf /app/
+          ls -l *
+          cp -r ./AQUA/AQUA_tests/fdb/ /app/
+          cat /app/etc/fdb/config.yaml
+          mkdir -pv /app/localroot/
+          cd /app/
+          fdb-write sample_test_data.grib
+          fdb-write sample_test_data_d1.grib
+          ls -l /app/localroot
+          # The fdb-list command is a good smoke test.
+          fdb-list class=ea,expver=0001
+          # But the fdb-read using a request is more like what pyfdb does.
+          # When it fails, the test.grib file will have 0 (zero) messages.
+          fdb-read sample_test_data_fdb_request test.grib
+          grib_dump test.grib
+      - name: Set up AQUA
+        run: |
+          # Initialize the AQUA catalog in the $HOME/.aqua folder
+          aqua -vv install github
+          # Add the climatedt-phase1 catalog (for polytope testing)
+          aqua -vv add climatedt-phase1
+          # Add the ci/cd catalog
+          aqua -vv add ci
+          # Double check the catalogs
+          aqua -vv list
+          # add default paths to the config
+          cat >> $HOME/.aqua/config-aqua.yaml <<EOF
+          paths:
+              grids: ./AQUA_tests/grids
+              weights: ./AQUA_tests/weights
+              areas: ./AQUA_tests/weights
+          EOF
+          # Set up polytope secrets
+          cat >$HOME/.polytopeapirc << EOF
+          {
+            "user_key": "${{ secrets.POLYTOPE_KEY }}"
+          }
+          EOF
+      - name: Run tests
+        run: |
+          # Produce the XML report
+          cd AQUA
+          # produce a xml report and a junit report to be used by codecov. Please notice other options are set in pyproject.toml
+          pytest -m "aqua or slow or gsv or graphics or catgen or diagnostics or ensemble"
