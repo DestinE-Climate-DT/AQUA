@@ -2,7 +2,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 
-from .multiple_map import plot_maps
+from .multiple_maps import plot_maps
 from .multivar_vertical_profiles import plot_multivars_vertical_profile
 
 xr.set_options(keep_attrs=True)
@@ -64,10 +64,11 @@ class PlotTrends:
             self.levels = [10, 100, 500, 1000, 3000, 5000]
         self.logger.debug(f"Levels set to: {self.levels}")
         self.set_data_list()
-        self.set_suptitle()
+        self.set_suptitle(plot_type='Multi-level')
         self.set_title()
         self.set_description(product=product)
         self.set_ytext()
+        self.set_cbar_labels()
         self.set_nrowcol()
         fig = plot_maps(
             maps=self.data_list,
@@ -75,7 +76,7 @@ class PlotTrends:
             ncols=self.ncols,
             title=self.suptitle,
             titles=self.title_list,
-            cbar_number='separate',
+            cbar_labels=self.cbar_labels,
             ytext=self.ytext,
             return_fig=True,
             sym=True,
@@ -102,10 +103,11 @@ class PlotTrends:
         """
         product = 'zonal_mean'
         self.set_data_list()
-        self.set_suptitle(plot_type='Zonal mean ')
+        self.set_suptitle(plot_type='Zonal mean')
         self.set_title()
         self.set_description(product=product)
         self.set_ytext()
+        self.set_cbar_labels()
         self.set_nrowcol()
         fig = plot_multivars_vertical_profile(
             maps=self.data_list,
@@ -113,7 +115,7 @@ class PlotTrends:
             ncols=self.ncols,
             title=self.suptitle,
             titles=self.title_list,
-            cbar_number='separate',
+            cbar_labels=self.cbar_labels,
             ytext=self.ytext,
             return_fig=True,
             sym=True,
@@ -136,6 +138,7 @@ class PlotTrends:
         self.ncols = len(self.vars)
 
     def set_ytext(self):
+        """Set the y-axis text for the multi-level plots."""
         self.ytext = []
         if hasattr(self, "levels") and self.levels:
             for level in self.levels:
@@ -159,7 +162,8 @@ class PlotTrends:
 
                     if data_level_var.isnull().all():
                         self.logger.warning(f"All values are NaN for {var} at {level}m")
-                        continue
+                        self.levels.pop(self.levels.index(level))
+                        break
 
                     data_level_var.attrs["long_name"] = (
                         f"{data_level_var.attrs.get('long_name', var)} at {level}m"
@@ -174,7 +178,7 @@ class PlotTrends:
         """Set the title for the plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type}Trends"
+        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type} Trends"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -184,13 +188,25 @@ class PlotTrends:
         """
         self.title_list = []
         for j in range(len(self.data_list)):
-            for i, var in enumerate(self.vars):
+            for var in self.vars:
                 if j == 0:
-                    title = f"{var} ({self.data[var].attrs.get('units')})"
+                    title = f"{self.data[var].attrs.get('long_name', var)} ({self.data[var].attrs.get('units')})"
                     self.title_list.append(title)
                 else:
                     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
+    
+    def set_cbar_labels(self):
+        """
+        Set the colorbar labels for the plot.
+        This method can be extended to set specific colorbar labels based on the data.
+        """
+        self.cbar_labels = []
+        for _ in range(len(self.data_list)):
+            for var in self.vars:
+                cbar_label = f"{self.data[var].attrs.get('short_name', var)} ({self.data[var].attrs.get('units')})"
+                self.cbar_labels.append(cbar_label)
+        self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
     def set_description(self, product: str):
         """
@@ -201,7 +217,7 @@ class PlotTrends:
         """
         self.description = f"{product} {self.region} region of {self.catalog} {self.model} {self.exp}"
 
-    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = {},
+    def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},
                   rebuild: bool = True,
                   dpi: int = 300, format: str = 'png'):
         """
@@ -209,7 +225,7 @@ class PlotTrends:
 
         Args:
             fig (matplotlib.figure.Figure): The figure to be saved.
-            diagnostic_product (str): The name of the diagnostic product. Default is None.
+            diagnostic_product (str): The name of the diagnostic product.
             extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is {}.
             rebuild (bool): If True, the output files will be rebuilt. Default is True.
             dpi (int): The dpi of the figure. Default is 300.
