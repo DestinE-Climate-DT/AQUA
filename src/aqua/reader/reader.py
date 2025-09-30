@@ -966,7 +966,7 @@ class Reader():
         return data
 
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
-             time_bounds=False, center_time=False):
+             time_bounds=False, center_time=False, **kwargs):
         """
         Time averaging wrapper which is calling the timstat module
 
@@ -977,36 +977,59 @@ class Reader():
             exclude_incomplete (bool):  exclude incomplete time averages
             time_bounds (bool):  produce time bounds after averaging
             center_time (bool):  center time for averaging
+            kwargs:  additional arguments to be passed to the statistical function
         """
 
         data = self.timemodule.timstat(
             data, stat=stat, freq=freq,
             exclude_incomplete=exclude_incomplete,
             time_bounds=time_bounds,
-            center_time=center_time)
+            center_time=center_time, **kwargs)
         data.aqua.set_default(self) #accessor linking
         return data
     
     def timmean(self, data, **kwargs):
+        """
+        Time mean wrapper which is calling the timstat module.
+        """
         return self.timstat(data, stat='mean', **kwargs)
 
     def timmax(self, data, **kwargs):
+        """
+        Time max wrapper which is calling the timstat module.
+        """
         return self.timstat(data, stat='max', **kwargs)
     
     def timmin(self, data, **kwargs):
+       """
+       Time min wrapper which is calling the timstat module.
+       """
        return self.timstat(data, stat='min', **kwargs)
     
     def timstd(self, data, **kwargs):
+       """
+       Time standard deviation wrapper which is calling the timstat module.
+       """
        return self.timstat(data, stat='std', **kwargs)
     
     def timsum(self, data, **kwargs):
-       return self.timstat(data, stat='sum', **kwargs)
+        """
+        Time sum wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat='sum', **kwargs)
+
+    def timhist(self, data, **kwargs):
+        """
+        Wrapper for the histogram function, with added timstat functionality.
+        It accepts arguments of timstat to resample in time before computing the histogram.
+        """
+        return self.timstat(data, stat=histogram, **kwargs)
 
     def histogram(self, data, **kwargs):
-        """ Wrapper for the histogram function. """
-
+        """
+        Wrapper for the histogram function
+        """
         return histogram(data, **kwargs)
-
 
 def units_extra_definition():
     """Add units to the pint registry"""

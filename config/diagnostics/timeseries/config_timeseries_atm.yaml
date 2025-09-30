@@ -8,6 +8,7 @@ datasets:
     exp: null
     source: 'lra-r100-monthly'
     regrid: null
+    reader_kwargs: null # it can be a dictionary with reader kwargs
   # Possible second/third/fourth datasets here, no present by default
   # - catalog: 'obs'
   #   model: 'ERA5'
@@ -75,5 +76,5 @@ diagnostics:
     std_startdate: '19900101'
     std_enddate: '20201231'
     # Gregory needs 2 datasets and do not care about the references block above
-    t2m_ref: {'catalog': 'obs', 'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}
+    t2m_ref: {'catalog': 'obs', 'model': 'BERKELEY-EARTH', 'exp': 'aqua-filled', 'source': 'r100-monthly'}
     net_toa_ref: {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}
