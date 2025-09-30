@@ -1,4 +1,5 @@
 from aqua.logger import log_configure
+from tests.test_fixer import data
 import xarray as xr
 
 
@@ -22,6 +23,22 @@ def convert_so(so):
     return abs_so
 
 
+def convertkelvin_to_celsius(varname):
+    """
+    Convert temperature from Kelvin to Celsius.
+
+    Args:
+        data (xarray.Dataset): The input xarray dataset.
+        varname (str): name of the temperature variable in the dataset.
+
+    Returns:
+        xarray.Dataset: xarray dataset with the temperature variable converted to Celsius.
+    """
+    if varname.attrs.get('units', '').lower() in ['k', 'kelvin']:
+        varname = varname - 273.15
+        varname.attrs['units'] = '°C'
+    return varname
+
 def convert_thetao(abs_so, thetao):
     """
     Convert potential temperature to conservative temperature.
@@ -40,6 +57,7 @@ def convert_thetao(abs_so, thetao):
         Uses an approximation based on TEOS-10.
         Reference: http://www.teos-10.org/pubs/gsw/html/gsw_CT_from_pt.html
     """
+    thetao = convertkelvin_to_celsius(thetao)
     x = xr.ufuncs.sqrt(0.0248826675584615 * abs_so)
     y = thetao * 0.025e0
     enthalpy = (
