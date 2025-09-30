@@ -44,6 +44,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
 - Global Biases: fix location of config file for cli (#2284)
 - Timeseries: fix for annual only plots (#2279)
 - Timeseries: add `reader_kwargs` option to pass extra arguments to the Reader and ensemble support (#2222, #2279)
@@ -169,7 +170,6 @@ AQUA core complete list:
 - Use scientific notation in multiple maps plotting to avoid label overlapping (#1953)
 
 AQUA diagnostics complete list:
-- Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
 - Diagnostic core: a `diagnostic_name` is now available in the configuration file to override the default name (#2000)
 - Ecmean, GlobalBiases, Teleconnections: regrid functionality correctly working in cli (#2006)
 - Diagnostic core: updated docs for `OutputSaver` (#2010)
