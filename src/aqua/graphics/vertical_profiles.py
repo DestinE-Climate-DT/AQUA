@@ -13,7 +13,8 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_min: Optional[float] = None,lev_max: Optional[float] = None,
                           vmin: Optional[float] = None, vmax: Optional[float] = None,
                           nlevels: int = 18, 
-                          title: Optional[str] = None, style: Optional[str] = None,
+                          title: Optional[str] = None, title_size: Optional[int] = 16,
+                          style: Optional[str] = None,
                           logscale: bool = False,
                           grid: bool = True,
                           add_land: bool = False,
@@ -37,6 +38,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
         vmax (float, optional): Maximum colorbar limit.
         nlevels (int): Number of contour levels. Default is 18.
         title (str, optional): Plot title.
+        title_size (int, optional): Title font size. Default is 16.
         style (str, optional): Plot style (default aqua style).
         logscale (bool, optional): Use log scale for y-axis if True.
         grid (bool, optional): If True, display grid lines on the plot.
@@ -95,7 +97,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title)
+        ax.set_title(title, fontsize=title_size)
 
     if return_fig:
         logger.debug("Returning figure and axes")
@@ -110,7 +112,8 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
                                vmin_contour: Optional[float] = None, vmax_contour: Optional[float] = None,
                                sym_contour: bool = False, add_contour: bool = False,
                                nlevels: int = 18,
-                               title: Optional[str] = None, style: Optional[str] = None,
+                               title: Optional[str] = None, title_size: Optional[int] = 16,
+                               style: Optional[str] = None,
                                return_fig: bool = False, fig: Optional[plt.Figure] = None,
                                ax: Optional[plt.Axes] = None, ax_pos: Tuple[int, int, int] = (1, 1, 1),
                                loglevel: str = "WARNING",
@@ -135,6 +138,7 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
         add_contour (bool, optional): If True, overlay contour lines from reference data.
         nlevels (int, optional): Number of contour levels.
         title (str, optional): Plot title.
+        title_size (int, optional): Title font size. Default is 16.
         style (str, optional): Plot style (default aqua style).
         return_fig (bool, optional): If True, return (fig, ax).
         fig (plt.Figure, optional): Optional figure to plot on.
@@ -151,7 +155,7 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
 
     fig, ax = plot_vertical_profile(
         diff, var=var, lev_min=lev_min, lev_max=lev_max,
-        vmin=vmin, vmax=vmax, nlevels=nlevels, title=title,
+        vmin=vmin, vmax=vmax, nlevels=nlevels,
         style=style, return_fig=True, fig=fig, ax=ax, ax_pos=ax_pos,
         loglevel=loglevel, **kwargs)
 
@@ -172,7 +176,7 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title)
+        ax.set_title(title, fontsize=title_size)
 
     if return_fig:
         logger.debug("Returning figure and axes")
