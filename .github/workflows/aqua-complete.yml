@@ -78,7 +78,8 @@ jobs:
             apt-get install -y \
               curl \
               git \
-              gpg
+              gpg \
+              rsync
       - name: Clone GitLab data-portfolio repository
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio

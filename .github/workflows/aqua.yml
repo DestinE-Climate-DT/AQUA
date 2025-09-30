@@ -87,7 +87,8 @@ jobs:
             apt-get install -y \
               curl \
               git \
-              gpg 
+              gpg \
+              rsync
           # gpg is for codecov
       # clone the BSC data portfolio repository
       - name: Clone GitLab data-portfolio repository
