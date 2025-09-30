@@ -1,10 +1,11 @@
 import calendar
+from diagnostics.ocean3d.ocean3d.ocean_circulation.ocean_circulation import convert_variables
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
 from .compute_mld import compute_mld_cont
 from .compute_rho import compute_rho
-from .convert_variables import convert_so, convert_thetao
+from .convert_variables import convert_so, convert_thetao, convertkelvin_to_celsius 
 xr.set_options(keep_attrs=True)
 
 
@@ -109,6 +110,7 @@ class Stratification(Diagnostic):
         self.climatology = climatology
         self.logger.info("Starting stratification diagnostic run.")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
+        self.data = self.data.compute()
         self.logger.debug(
             f"Variables retrieved: {var}, region: {region}, dim_mean: {dim_mean}"
         )
@@ -128,6 +130,7 @@ class Stratification(Diagnostic):
         if mld:
             self.logger.info("Computing mixed layer depth (MLD).")
             self.compute_mld()
+        self.compute_climatology(climatology=self.climatology)
         self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=region)
         self.logger.info("Stratification diagnostic saved to netCDF file.")
 
@@ -143,8 +146,7 @@ class Stratification(Diagnostic):
         None
         """
         self.logger.debug("Starting computation of climatology and density.")
-        self.compute_climatology(climatology=self.climatology)
-        self.compute_rho()
+        self.calculate_rho()
         self.logger.debug("Stratification computation completed successfully.")
 
     def compute_climatology(self, climatology: str = "season"):
@@ -179,7 +181,7 @@ class Stratification(Diagnostic):
         if self.climatology in month_season_list:
             self.clim_type = "month"
         else:
-            self.clim_type = None
+            self.clim_type = "Total"
 
         if self.clim_type:
             if self.clim_type in ["month", "year", "season"]:
@@ -195,7 +197,7 @@ class Stratification(Diagnostic):
             f"{self.climatology.capitalize()} climatology computed successfully."
         )
 
-    def compute_rho(self):
+    def calculate_rho(self):
         """
         Convert variables to absolute salinity and conservative temperature, then compute potential density.
 
@@ -215,7 +217,7 @@ class Stratification(Diagnostic):
         # Convert potential temperature to conservative temperature
         cons_thetao = convert_thetao(abs_so, self.data['thetao'])
         self.logger.debug("Potential temperature converted to conservative temperature.")
-
+        
         # Update the dataset with converted variables
         self.data["thetao"] = cons_thetao
         self.data["so"] = abs_so
