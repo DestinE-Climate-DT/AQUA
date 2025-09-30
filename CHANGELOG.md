@@ -45,6 +45,8 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - Global Biases: allow GlobalBias to take color palette as argument (#2283)
+- Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
+- Global Biases: address formatting issues in plots (#2272)
 - Global Biases: fix location of config file for cli (#2284)
 - Timeseries: fix for annual only plots (#2279)
 - Timeseries: add `reader_kwargs` option to pass extra arguments to the Reader and ensemble support (#2222, #2279)
