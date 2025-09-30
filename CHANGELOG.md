@@ -44,6 +44,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
 - Global Biases: address formatting issues in plots (#2272)
 - Global Biases: fix location of config file for cli (#2284)
 - Timeseries: fix for annual only plots (#2279)
