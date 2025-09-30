@@ -44,6 +44,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Global Biases: fix location of config file for cli (#2284)
 - Timeseries: fix for annual only plots (#2279)
 - Timeseries: add `reader_kwargs` option to pass extra arguments to the Reader and ensemble support (#2222, #2279)
 - Add `source_oce` option for ECmean to aqua anlysis (#2246)
