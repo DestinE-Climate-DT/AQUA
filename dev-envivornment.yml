@@ -1,0 +1,20 @@
+name: aqua-test
+channels:
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - python>=3.10,<3.13
+  - cdo>=2.5.0
+  - eccodes==2.41.0
+  - pandas
+  - pip
+  - hdf5
+  - tempest-extremes
+  - xesmf
+  - intake-esm
+  - imagemagick
+  - cartopy==0.24.1
+
+  # need to manually install 
+  #python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple aqua-climate

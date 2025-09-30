@@ -36,3 +36,6 @@ coverage/
 
 # diagnostic specific
 diagnostics/ecmean/ECmean4
+
+# build
+dist/*
