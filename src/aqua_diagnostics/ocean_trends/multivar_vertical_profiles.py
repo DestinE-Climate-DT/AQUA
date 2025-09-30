@@ -24,8 +24,7 @@ def plot_multivars_vertical_profile(
     title: str = None,
     titles: list = None,
     cmap: str = "RdBu_r",
-    cbar_number: str = "single",
-    cbar_label: str = None,
+    cbar_labels: list = None,
     return_fig: bool = False,
     ytext: list = None,
     loglevel: str = "WARNING",
@@ -51,7 +50,7 @@ def plot_multivars_vertical_profile(
         title (str,opt):      super title for the figure
         titles (list,opt):    list of titles for the maps
         cmap (str,opt):       colormap, default is 'RdBu_r'
-        cbar_label (str,opt): colorbar label
+        cbar_labels (list,opt): colorbar labels
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool,opt): add cyclic longitude, default is True
         return_fig (bool,opt): return the figure, default is False
@@ -82,26 +81,13 @@ def plot_multivars_vertical_profile(
 
     fig = plt.figure(figsize=figsize)
 
-    if cbar_number == 'single':
-        # Evaluate min and max values for the common colorbar
-        if vmin is None or vmax is None or sym:
-            vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
-
-        logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
-
-    if cbar_number == 'single':
-        cbar = True
-    if cbar_number == 'separate':
-        cbar = False
-
     # Adjust the location of the subplots on the page to make room for the colorbar
     fig.subplots_adjust(
         bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.3, hspace=0.8
     )
     
     for i in range(len(maps)):
-        if cbar_number == 'separate':
-            vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
+        vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
 
         logger.debug("Plotting map %d", i)
         fig, ax = plot_vertical_profile(
@@ -123,58 +109,26 @@ def plot_multivars_vertical_profile(
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
             ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
-        if cbar_number == 'separate':
-            # Retrieve last plotted object for colorbar (QuadMesh or ContourSet)
-            if ax.collections:
-                mappable = ax.collections[-1]
-            elif ax.images:
-                mappable = ax.images[-1]
-            else:
-                logger.warning("No mappable object found for subplot %d", i)
-                continue
-            
-            # Update mappable normalization and cmap
-            mappable.set_norm(plt.Normalize(vmin=vmin, vmax=vmax))
-            mappable.set_cmap(cmap)
 
-            # Attach colorbar
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="5%", pad=0.15, axes_class=plt.Axes)
-            cbar = fig.colorbar(mappable, cax=cax, orientation="vertical")
-
-            # cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
-            # cbar_ticks = generate_colorbar_ticks(vmin=vmin,
-            #                                     vmax=vmax, 
-            #                                     sym=sym,
-            #                                     nlevels=nlevels,
-            #                                     ticks_rounding=cbar_ticks_rounding,
-            #                                     loglevel=loglevel)
-            # cbar.set_ticks(cbar_ticks)
-
-    if cbar_number == 'single':
-        # Add a colorbar axis at the bottom of the graph
-        cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
-
-        cbar_label = cbar_get_label(data=maps[0], cbar_label=cbar_label, loglevel=loglevel)
-        logger.debug("Setting colorbar label to %s", cbar_label)
-
-        
-
-        # Add the colorbar
-        mappable = ax.collections[0]
-        if cbar == True:
-            cbar = fig.colorbar(
-                mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label
-        )
-
-        # Make the colorbar ticks symmetrical if sym=True
-        if sym:
-            logger.debug("Setting colorbar ticks to be symmetrical")
-            cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
+        # Retrieve last plotted object for colorbar (QuadMesh or ContourSet)
+        if ax.collections:
+            mappable = ax.collections[-1]
+        elif ax.images:
+            mappable = ax.images[-1]
         else:
-            cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+            logger.warning("No mappable object found for subplot %d", i)
+            continue
+        
+        # Update mappable normalization and cmap
+        mappable.set_norm(plt.Normalize(vmin=vmin, vmax=vmax))
+        mappable.set_cmap(cmap)
 
-        cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
+        # Attach colorbar
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.15, axes_class=plt.Axes)
+        cbar = fig.colorbar(mappable, cax=cax, orientation="vertical")
+        if cbar_labels and i < len(cbar_labels):
+            cbar.set_label(cbar_labels[i], fontsize=12)
 
     # Add a super title
     if title:

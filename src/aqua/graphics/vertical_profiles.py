@@ -18,6 +18,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           grid: bool = True,
                           add_land: bool = False,
                           cbar: bool = True,
+                          cbar_label: Optional[str] = None,
                           return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
                           fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                           ax_pos: Tuple[int, int, int] = (1, 1, 1),
@@ -34,12 +35,14 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
         lev_max (float, optional): Maximum vertical level to plot.
         vmin (float, optional): Minimum colorbar limit.
         vmax (float, optional): Maximum colorbar limit.
-        nlevels (int): Number of contour levels.
+        nlevels (int): Number of contour levels. Default is 18.
         title (str, optional): Plot title.
         style (str, optional): Plot style (default aqua style).
         logscale (bool, optional): Use log scale for y-axis if True.
         grid (bool, optional): If True, display grid lines on the plot.
         add_land (bool, optional): If True, shade land areas in the background.
+        cbar (bool, optional): If True, display colorbar.
+        cbar_label (str, optional): Label for the colorbar. Generated from data if None.
         return_fig (bool, optional): If True, return (fig, ax).
         figsize (Tuple[int, int], optional): Figure size.
         fig (plt.Figure, optional): Optional figure to plot on.
@@ -81,7 +84,8 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
     ax.set_ylabel("Pressure Level (Pa)" if lev_name == "plev" else lev_name)
     ax.invert_yaxis()
     if cbar:
-        fig.colorbar(cax, ax=ax, label=f"{var} [{data.attrs.get('units', '')}]")
+        cbar_label = cbar_label or f"{var} [{data.attrs.get('units', '')}]"
+        fig.colorbar(cax, ax=ax, label=cbar_label)
     if grid:
         ax.grid(True)
 
