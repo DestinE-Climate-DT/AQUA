@@ -8,6 +8,7 @@ datasets:
     exp: null
     source: 'lra-r100-monthly'
     regrid: null
+    reader_kwargs: null # it can be a dictionary with reader kwargs
   # Possible second/third/fourth datasets here, no present by default
   # - catalog: 'obs'
   #   model: 'ERA5'
@@ -17,9 +18,9 @@ datasets:
 
 references:
   - catalog: 'obs'
-    model: 'ERA5'
-    exp: 'era5'
-    source: 'monthly'
+    model: 'ESA-CCI-L4'
+    exp: 'v3.0.1'
+    source: 'r100-monthly'
     regrid: null
 
 output:

@@ -8,41 +8,50 @@ from aqua.util import evaluate_colorbar_limits
 from .styles import ConfigStyle
 
 
-def plot_vertical_profile(data: xr.DataArray, var: str,
+def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_name: str = "plev", x_coord: str = "lat",
                           lev_min: Optional[float] = None,lev_max: Optional[float] = None,
                           vmin: Optional[float] = None, vmax: Optional[float] = None,
                           nlevels: int = 18, 
                           title: Optional[str] = None, style: Optional[str] = None,
                           logscale: bool = False,
+                          grid: bool = True,
+                          add_land: bool = False,
+                          cbar: bool = True,
+                          cbar_label: Optional[str] = None,
                           return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
                           fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                           ax_pos: Tuple[int, int, int] = (1, 1, 1),
-                          loglevel: str = "WARNING",
-                          **kwargs):
+                          loglevel: str = "WARNING"):
     """
     Plots a zonal mean vertical profile.
 
     Args:
         data: DataArray to plot.
-        lev_name: Name of the vertical levels (default 'plev').
-        x_coord: Name of the horizontal coordinate (default 'lat').
-        var: Variable name for labeling purposes.
-        lev_min, lev_max: Range of vertical levels to plot.
-        vmin, vmax: Colorbar limits.
-        nlevels: Number of contour levels.
-        lev_name: Name of the vertical levels (default 'plev').
-        title: Plot title.
-        style: Plot style (default aqua style).
-        logscale: Use log scale for y-axis if True.
-        return_fig: If True, return (fig, ax).
-        figsize: Figure size.
-        fig, ax: Optional figure/axes to plot on.
-        ax_pos: Position of subplot.
-        loglevel: Logging level.
+        var (str): Variable name for labeling purposes.
+        lev_name (str): Name of the vertical levels (default 'plev').
+        x_coord (str): Name of the horizontal coordinate (default 'lat').
+        lev_min (float, optional): Minimum vertical level to plot.
+        lev_max (float, optional): Maximum vertical level to plot.
+        vmin (float, optional): Minimum colorbar limit.
+        vmax (float, optional): Maximum colorbar limit.
+        nlevels (int): Number of contour levels. Default is 18.
+        title (str, optional): Plot title.
+        style (str, optional): Plot style (default aqua style).
+        logscale (bool, optional): Use log scale for y-axis if True.
+        grid (bool, optional): If True, display grid lines on the plot.
+        add_land (bool, optional): If True, shade land areas in the background.
+        cbar (bool, optional): If True, display colorbar.
+        cbar_label (str, optional): Label for the colorbar. Generated from data if None.
+        return_fig (bool, optional): If True, return (fig, ax).
+        figsize (Tuple[int, int], optional): Figure size.
+        fig (plt.Figure, optional): Optional figure to plot on.
+        ax (plt.Axes, optional): Optional axes to plot on.
+        ax_pos (Tuple[int, int, int], optional): Position of subplot.
+        loglevel (str, optional): Logging level.
     """
-
     logger = log_configure(loglevel, "plot_vertical_profile")
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # Select vertical levels
     lev_min = lev_min or data[lev_name].min().item()
@@ -74,8 +83,15 @@ def plot_vertical_profile(data: xr.DataArray, var: str,
     ax.set_xlabel("Latitude") if x_coord == "lat" else x_coord
     ax.set_ylabel("Pressure Level (Pa)" if lev_name == "plev" else lev_name)
     ax.invert_yaxis()
-    fig.colorbar(cax, ax=ax, label=f"{var} [{data.attrs.get('units', '')}]")
-    ax.grid(True)
+    if cbar:
+        cbar_label = cbar_label or f"{var} [{data.attrs.get('units', '')}]"
+        fig.colorbar(cax, ax=ax, label=cbar_label)
+    if grid:
+        ax.grid(True)
+
+    if add_land:
+        logger.debug("Adding land")
+        ax.set_facecolor(color='grey')
 
     if title:
         logger.debug("Setting title to %s", title)
@@ -104,21 +120,31 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
     Optionally add contour lines of the reference data.
 
     Args:
-        data, data_ref: DataArrays to compare.
-        var: Variable name for labeling purposes.
-        lev_name: Name of the vertical levels.
-        x_coord: Name of the horizontal coordinate.
-        vmin, vmax: Limits for the difference plot.
-        vmin_contour, vmax_contour: Limits for contour plot.
-        sym_contour: If True, contour limits symmetric around zero.
-        add_contour: If True, overlay contour lines from reference data.
-        lev_min, lev_max: Range of vertical levels to plot.
-        nlevels: Number of contour levels.
-        title: Plot title.
-        return_fig: If True, return (fig, ax).
+        data (xr.DataArray): Dataset to plot.
+        data_ref (xr.DataArray): DataArrays to compare. A contour of this will be added if add_contour is True.
+        var (str): Variable name for labeling purposes.
+        lev_name (str): Name of the vertical levels. Default is 'plev'.
+        x_coord (str): Name of the horizontal coordinate.
+        lev_min (float, optional): Minimum vertical level to plot.
+        lev_max (float, optional): Maximum vertical level to plot.
+        vmin (float, optional): Minimum colorbar limit.
+        vmax (float, optional): Maximum colorbar limit.
+        vmin_contour (float, optional): Minimum contour limit.
+        vmax_contour (float, optional): Maximum contour limit.
+        sym_contour (bool, optional): If True, contour limits symmetric around zero.
+        add_contour (bool, optional): If True, overlay contour lines from reference data.
+        nlevels (int, optional): Number of contour levels.
+        title (str, optional): Plot title.
+        style (str, optional): Plot style (default aqua style).
+        return_fig (bool, optional): If True, return (fig, ax).
+        fig (plt.Figure, optional): Optional figure to plot on.
+        ax (plt.Axes, optional): Optional axes to plot on.
+        ax_pos (Tuple[int, int, int], optional): Position of subplot.
+        loglevel (str, optional): Logging level.
+        **kwargs: Additional arguments passed to plot_vertical_profile.
     """
-
     logger = log_configure(loglevel, "plot_vertical_profile_diff")
+    ConfigStyle(style=style, loglevel=loglevel)
 
     # Difference
     diff = data - data_ref
