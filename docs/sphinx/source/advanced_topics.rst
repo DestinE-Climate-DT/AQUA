@@ -151,6 +151,24 @@ This is done with the ``aqua add`` command.
     This command will create a symbolic link to the new catalog in the ``$AQUA/config/catalogs`` directory.
     See the :ref:`aqua-add` section for more information.
 
+
+.. _aqua-dvc:
+
+Access to `aqua-dvc` data for developers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+From September 2025, AQUA data used in the catalogs is stored and versioned using DVC (Data Version Control). 
+A private GitHub repository [aqua-dvc](https://github.com/DestinE-Climate-DT/aqua-dvc) contains the DVC data and provides
+a readme with instructions to set up access to the data.
+This new infrastructure relies on a remote storage (AWS S3) provided by DKRZ and will be the standard in the future for all AQUA data.
+
+.. note::
+    Access to `aqua-dvc` repository is primarily intended for developers and requres access credentials.
+
+Currently CI/CD tests are configured to use DVC data with a series of ad-hoc tokens.
+
+`aqua-dvc` also contains a subset of aqua-related observations that can be used for model evaluation and the grids for aqua
+
 Download of grids
 ^^^^^^^^^^^^^^^^^
 
@@ -158,6 +176,11 @@ Grids used in AQUA are stored and available on Swift storage, powered by DKRZ.
 A command line tool is available to download the grids from Swift on your machine.
 
 Please refer to the section :ref:`grids-downloader` for more details.
+
+.. warning::
+
+    Grids are now versioned using DVC and are available in the `aqua-dvc` repository.
+    
 
 .. _FDB_dask:
 
