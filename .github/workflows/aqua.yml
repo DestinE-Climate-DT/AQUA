@@ -87,8 +87,7 @@ jobs:
             apt-get install -y \
               curl \
               git \
-              gpg \
-              rsync
+              gpg
           # gpg is for codecov
       # clone the BSC data portfolio repository
       - name: Clone GitLab data-portfolio repository
@@ -147,10 +146,8 @@ jobs:
           git checkout main
           dvc pull -R data-tests/*
           mkdir -p ../AQUA/AQUA_tests
-          # Link NetCDF and YAML files and preserve directory structure with rsync
-          rsync -av --prune-empty-dirs \
-            --include='*/' --include='*.nc' --include='*.yaml' --exclude='*' \
-            data-tests/ ../AQUA/AQUA_tests/
+          # Move the entire data-tests folder contents into AQUA_tests
+          mv data-tests/* ../AQUA/AQUA_tests
       - name: Set up FDB
         run: |
           export
