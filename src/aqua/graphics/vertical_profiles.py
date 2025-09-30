@@ -19,6 +19,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           grid: bool = True,
                           add_land: bool = False,
                           cbar: bool = True,
+                          cmap: str = "RdBu_r",
                           cbar_label: Optional[str] = None,
                           return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
                           fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
@@ -44,6 +45,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
         grid (bool, optional): If True, display grid lines on the plot.
         add_land (bool, optional): If True, shade land areas in the background.
         cbar (bool, optional): If True, display colorbar.
+        cmap (str, optional): Colormap to use (default 'RdBu_r').
         cbar_label (str, optional): Label for the colorbar. Generated from data if None.
         return_fig (bool, optional): If True, return (fig, ax).
         figsize (Tuple[int, int], optional): Figure size.
@@ -79,7 +81,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
 
     # Plot
     cax = ax.contourf(data[x_coord], data[lev_name], data,
-                      cmap="RdBu_r", levels=levels, extend="both")
+                      cmap=cmap, levels=levels, extend="both")
     if logscale:
         ax.set_yscale("log")
     ax.set_xlabel("Latitude") if x_coord == "lat" else x_coord
