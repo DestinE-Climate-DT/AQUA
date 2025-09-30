@@ -138,3 +138,35 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
         data_fixed = data_to_fix
 
     return data_fixed
+
+
+def multiply_units(unit1: str, unit2: str, normalise_units=True, 
+                   to_base_units=False, loglevel: str = 'WARNING') -> str:
+    """
+    Multiply two unit strings together using metpy.
+    
+    This is useful when combining physical quantities. For example, integrating 
+    a field in meters (e.g. sea ice thickness) over an area in m**2 (e.g. areacello), 
+    resulting in m**3 (e.g. sea ice volume)).
+    
+    Args:
+        unit1 (str): First unit string (e.g., 'm')
+        unit2 (str): Second unit string (e.g., 'm2')
+        normalise_units (bool): If True, normalize the units. Default is True.
+        to_base_units (bool): If True, convert the units to base units. Default is True.
+        loglevel (str): Log level for the logger. Default is 'WARNING'.
+    
+    Returns:
+        str: The multiplied unit string (e.g., 'm**3')
+        
+    Example:
+        >>> multiply_units('m', 'm2')
+        'm**3'
+    """
+    unit1 = normalize_units(unit1, loglevel) if normalise_units else unit1
+    unit2 = normalize_units(unit2, loglevel) if normalise_units else unit2
+    
+    result = units(unit1) * units(unit2)
+    
+    result = result.to_base_units() if to_base_units else result
+    return str(result.units)
