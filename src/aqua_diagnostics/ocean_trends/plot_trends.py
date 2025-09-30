@@ -201,10 +201,7 @@ class PlotTrends:
         Args:
             product (str): The type of product being plotted.
         """
-        self.description = {}
-        self.description["description"] = {
-            f"{product} {self.region} region of {self.catalog} {self.model} {self.exp}"
-        }
+        self.description = f"{product} {self.region} region of {self.catalog} {self.model} {self.exp}"
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,
