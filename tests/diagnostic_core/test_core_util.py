@@ -72,7 +72,8 @@ def test_load_diagnostic_config():
                                      default_config='config_timeseries_atm.yaml',
                                      config=args.config, loglevel=loglevel)
 
-    assert ts_dict['datasets'] == [{'catalog': None, 'exp': None, 'model': None, 'source': 'lra-r100-monthly', 'regrid': None}]
+    assert ts_dict['datasets'] == [{'catalog': None, 'exp': None, 'model': None, 'source': 'lra-r100-monthly',
+                                    'regrid': None, 'reader_kwargs': None}]
 
 
 @pytest.mark.aqua
