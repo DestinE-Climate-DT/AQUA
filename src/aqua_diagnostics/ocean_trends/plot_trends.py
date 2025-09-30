@@ -79,7 +79,6 @@ class PlotTrends:
             cbar_labels=self.cbar_labels,
             ytext=self.ytext,
             return_fig=True,
-            sym=True,
             loglevel=self.loglevel
         )
         for format in formats:
