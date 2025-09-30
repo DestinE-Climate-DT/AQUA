@@ -86,7 +86,6 @@ class PlotTrends:
                 fig,
                 diagnostic_product=product,
                 format=format,
-                metadata=self.description,
                 rebuild=self.rebuild,
                 dpi=dpi
             )
@@ -125,7 +124,6 @@ class PlotTrends:
                 fig,
                 diagnostic_product=product,
                 format=format,
-                metadata=self.description,
                 rebuild=self.rebuild,
                 dpi=dpi
         )
@@ -203,23 +201,23 @@ class PlotTrends:
         """
         self.description = f"{product} {self.region} region of {self.catalog} {self.model} {self.exp}"
 
-    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = {},
                   rebuild: bool = True,
-                  dpi: int = 300, format: str = 'png', metadata: dict = None):
+                  dpi: int = 300, format: str = 'png'):
         """
         Save the plot to a file.
 
         Args:
             fig (matplotlib.figure.Figure): The figure to be saved.
             diagnostic_product (str): The name of the diagnostic product. Default is None.
-            extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is None.
+            extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is {}.
             rebuild (bool): If True, the output files will be rebuilt. Default is True.
             dpi (int): The dpi of the figure. Default is 300.
             format (str): The format of the figure. Default is 'png'.
-            metadata (dict): The metadata to be used for the figure. Default is None.
-                             They will be complemented with the metadata from the outputsaver.
-                             We usually want to add here the description of the figure.
         """
+        metadata = {"description": self.description}
+        extra_keys.update({"region": self.region})
+
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                           extra_keys=extra_keys, metadata=metadata, dpi=dpi)
