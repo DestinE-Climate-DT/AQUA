@@ -141,7 +141,7 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
 
 
 def multiply_units(unit1: str, unit2: str, normalise_units=True, 
-                   to_base_units=False, loglevel: str = 'WARNING') -> str:
+                   to_base_units=True, loglevel: str = 'WARNING') -> str:
     """
     Multiply two unit strings together using metpy.
     
