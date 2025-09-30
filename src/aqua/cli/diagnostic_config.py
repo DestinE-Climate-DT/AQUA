@@ -3,7 +3,7 @@ diagnostic_config = {
         {
             'config_file': 'config_global_biases.yaml',
             'source_path': 'config/diagnostics/global_biases',
-            'target_path': 'diagnostics/global_biases/cli'
+            'target_path': 'diagnostics/global_biases'
         },
     ],
     'lat_lon_profiles': [
@@ -108,17 +108,17 @@ diagnostic_config = {
         {
             'config_file': 'config_radiation-boxplots.yaml',
             'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation/cli'
+            'target_path': 'diagnostics/radiation'
         },
         {
             'config_file': 'config_radiation-biases.yaml',
             'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation/cli'
+            'target_path': 'diagnostics/radiation'
         },
         {
             'config_file': 'config_radiation-timeseries.yaml',
             'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation/cli'
+            'target_path': 'diagnostics/radiation'
         },
     ],
     'seaice': [
