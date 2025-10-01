@@ -1,0 +1,25 @@
+datasets:
+  - catalog: null
+    model: FESOM
+    exp: hpz3
+    source: monthly-3d
+    regrid: r100
+    # reader_kwargs: {}
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  ocean_stratification:
+    stratification:
+      diagnostic_name: 'stratification'
+      run: true
+      var: ['thetao', 'so']
+      regions: ['io', 'sss']
+      climatology: 'Total'
+      # dim_mean: ['lat', 'lon']

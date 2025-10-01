@@ -1,9 +1,10 @@
+import calendar
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
 from .compute_mld import compute_mld_cont
 from .compute_rho import compute_rho
-from .convert_variables import convert_so, convert_thetao
+from .convert_variables import convert_so, convert_thetao, convertkelvin_to_celsius 
 xr.set_options(keep_attrs=True)
 
 
@@ -44,6 +45,7 @@ class Stratification(Diagnostic):
         regrid: str = None,
         startdate: str = None,
         enddate: str = None,
+        diagnostic_name: str = "oceandrift",
         loglevel: str = "WARNING",
     ):
         super().__init__(
@@ -57,6 +59,7 @@ class Stratification(Diagnostic):
             loglevel=loglevel,
         )
         self.logger = log_configure(log_name="Stratification", log_level=loglevel)
+        self.diagnostic_name = diagnostic_name
 
     def run(
         self,
@@ -106,11 +109,12 @@ class Stratification(Diagnostic):
         self.climatology = climatology
         self.logger.info("Starting stratification diagnostic run.")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
+        self.data = self.data.compute()
         self.logger.debug(
             f"Variables retrieved: {var}, region: {region}, dim_mean: {dim_mean}"
         )
         if region:
-            self.logger.info(f"Selecting region: {region} for diagnostic 'ocean3d'.")
+            self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
             res_dict = super()._select_region(data=self.data,
                 region=region, diagnostic="ocean3d",
                 drop=True
@@ -125,6 +129,7 @@ class Stratification(Diagnostic):
         if mld:
             self.logger.info("Computing mixed layer depth (MLD).")
             self.compute_mld()
+        self.compute_climatology(climatology=self.climatology)
         self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=region)
         self.logger.info("Stratification diagnostic saved to netCDF file.")
 
@@ -140,8 +145,7 @@ class Stratification(Diagnostic):
         None
         """
         self.logger.debug("Starting computation of climatology and density.")
-        self.compute_climatology(climatology=self.climatology)
-        self.compute_rho()
+        self.calculate_rho()
         self.logger.debug("Stratification computation completed successfully.")
 
     def compute_climatology(self, climatology: str = "season"):
@@ -169,15 +173,30 @@ class Stratification(Diagnostic):
         None
         """
         self.logger.debug(f"Computing {self.climatology} climatology.")
-        if self.climatology in ["month", "year", "season"]:
-            self.data = self.data.groupby(f"time.{self.climatology}").mean("time")
-        elif self.climatology == "total":
+        month_list = list(calendar.month_name)[1:]
+        season_list = ["DJF", "MAM", "JJA", "SON"]
+        month_season_list = month_list + season_list
+
+        if self.climatology in month_season_list:
+            self.clim_type = "month"
+        else:
+            self.clim_type = "Total"
+
+        if self.clim_type:
+            if self.clim_type in ["month", "year", "season"]:
+                self.data = self.data.groupby(f"time.{self.clim_type}").mean("time")
+                self.data = self.data.rename({f"{self.clim_type}": "time"})
+                if self.clim_type == "month":
+                    self.data = self.data.assign_coords(time=[calendar.month_name[m] for m in self.data["time"].values])
+                self.data = self.data.sel(time=self.climatology)
+        elif self.climatology == "Total":
             self.data = self.data.mean("time", keep_attrs=True)
+        self.data.attrs["AQUA_stratification_climatology"] = self.climatology
         self.logger.debug(
             f"{self.climatology.capitalize()} climatology computed successfully."
         )
 
-    def compute_rho(self):
+    def calculate_rho(self):
         """
         Convert variables to absolute salinity and conservative temperature, then compute potential density.
 
@@ -197,7 +216,7 @@ class Stratification(Diagnostic):
         # Convert potential temperature to conservative temperature
         cons_thetao = convert_thetao(abs_so, self.data['thetao'])
         self.logger.debug("Potential temperature converted to conservative temperature.")
-
+        
         # Update the dataset with converted variables
         self.data["thetao"] = cons_thetao
         self.data["so"] = abs_so
@@ -208,6 +227,8 @@ class Stratification(Diagnostic):
         rho = compute_rho(self.data["so"], self.data["thetao"], 0)
         self.data["rho"] = rho - 1000  # Convert to kg/m^3
         self.logger.debug("Added 'rho' (potential density anomaly) to dataset.")
+
+        
 
     def compute_mld(self):
         """
@@ -253,7 +274,7 @@ class Stratification(Diagnostic):
         )
         super().save_netcdf(
             data=self.data,
-            diagnostic=diagnostic,
+            diagnostic=self.diagnostic_name,
             diagnostic_product=f"{diagnostic_product}",
             outputdir=outputdir,
             rebuild=rebuild,
