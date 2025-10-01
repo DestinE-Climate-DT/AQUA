@@ -1,5 +1,4 @@
 import calendar
-from diagnostics.ocean3d.ocean3d.ocean_circulation.ocean_circulation import convert_variables
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
