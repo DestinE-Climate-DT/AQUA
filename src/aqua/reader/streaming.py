@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-#from aqua.logger import log_configure
+from aqua.logger import log_configure
 from aqua.util import frequency_string_to_pandas
 from aqua.util import extract_literal_and_numeric
 
@@ -39,7 +39,7 @@ class Streaming():
         """
 
         # define the internal logger
-        # self.logger = log_configure(log_level=loglevel, log_name='Streaming')
+        self.logger = log_configure(log_level=loglevel, log_name='Streaming')
         self.startdate = startdate
         self.enddate = enddate
         self.aggregation = aggregation
@@ -111,6 +111,7 @@ class Streaming():
             timechunks = self.stream_chunk(data, startdate=startdate, enddate=enddate, aggregation=aggregation)
 
         if self.idx >= len(timechunks):  # we have consumed all the data
+            self.logger.info("End of data reached")
             return None
         else:
             date1 = timechunks.first()[self.idx]
