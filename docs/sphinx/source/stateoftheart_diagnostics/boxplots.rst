@@ -118,7 +118,9 @@ Output
 
 The diagnostic produces a single plot:
 
-* A boxplot showing the distribution of the field means for each variable across the specified models and reference datasets.  
+* A boxplot showing the distribution of the field means for each variable across the specified models and reference datasets. 
+  If reference datasets are provided and the ``anomalies`` option is set to ``True``, the boxplot will show anomalies with respect to the mean of the selected reference dataset. 
+  With the ``add_mean_line`` option set to ``True``, dashed lines indicating the absolute mean values will be added to the boxplots.
   Plots are saved in both PDF and PNG format.
 
 Example plots
@@ -129,6 +131,13 @@ Example plots
    :width: 100%
    
    Box plot showing the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to ERA5 and CERES climatologies
+
+.. figure:: figures/radiation_boxplot_anomalies.png
+   :align: center
+   :width: 100%
+
+    Box plot showing the anomalies of the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to the ERA5 climatology.
+    The dashed lines indicates the absolute mean values.
 
 Available demo notebooks
 ------------------------
