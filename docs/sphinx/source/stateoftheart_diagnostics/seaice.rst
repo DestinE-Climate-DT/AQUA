@@ -22,7 +22,7 @@ There is one class that process and analyse the sea ice data, allowing to save t
 
   - The methods supported for time series analysis which computes the **integrated values** over specified regions are:  
 
-    - **extent**: computes the area of ocean cells with at least 15% sea ice concentration (the ``threshold`` can be tuned in the configuration file).   
+    - **extent**: computes the area of ocean cells with at least 15% sea ice concentration (the ``threshold`` can be tuned in the configuration file).  
 
     - **volume**: computes the integrated sea ice thickness.  
 
@@ -33,8 +33,7 @@ There is one class that process and analyse the sea ice data, allowing to save t
     - **thickness**: produces the 2D monthly climatology maps of sea ice thickness (meters).  
 
 There are other two classes to produce the plots, which support a comparison between multiple models against a reference dataset.  
-These classes can accept a `xarray.DataArray`, a `xarray.Dataset`, or a list of `xarray.Dataset` with a collection of sea ice variables 
-defined per region and calculation method.  
+These classes can accept a `xarray.DataArray`, a `xarray.Dataset`, or a list of `xarray.Dataset` with a collection of sea ice variables defined per region and calculation method.  
 
 * **PlotSeaIce**: a class that produces time series and seasonal cycle plots.  
 * **Plot2DSeaIce**: a class that produces the plots for the 2D spatial maps and biases for climatological maps over the months.  
