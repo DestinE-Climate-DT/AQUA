@@ -72,6 +72,8 @@ which are automatically resampled to a regular lon-lat grid.
     Example of a ``plot_single_map_diff()`` output done with the :ref:`teleconnections`.
     The map shows the correlation for the ENSO teleconnection between ICON historical run and ERA5 reanalysis.
 
+.. _graphics-projections:
+
 Projections and custom maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
