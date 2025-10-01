@@ -1,5 +1,4 @@
 from aqua.logger import log_configure
-from tests.test_fixer import data
 import xarray as xr
 
 
