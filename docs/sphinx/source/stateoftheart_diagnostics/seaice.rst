@@ -16,8 +16,7 @@ Classes
 There is one class that process and analyse the sea ice data, allowing to save the result as NetCDF files:  
 
 * **SeaIce**: a class that computes the sea ice ``extent``, ``volume``, ``fraction``, and ``thickness`` metrics.  
-  The class handles data retrieval, regional selection, integration, and statistical analysis internally 
-  for a single model or reference data.  
+  The class handles data retrieval, regional selection, integration, and statistical analysis internally for a single model or reference data.  
   It supports time series analysis and seasonal cycle computation with optional standard deviation calculations.
 
   - The methods supported for time series analysis which computes the **integrated values** over specified regions are:  
@@ -36,6 +35,7 @@ There are other two classes to produce the plots, which support a comparison bet
 These classes can accept a `xarray.DataArray`, a `xarray.Dataset`, or a list of `xarray.Dataset` with a collection of sea ice variables defined per region and calculation method.  
 
 * **PlotSeaIce**: a class that produces time series and seasonal cycle plots.  
+
 * **Plot2DSeaIce**: a class that produces the plots for the 2D spatial maps and biases for climatological maps over the months.  
 
 .. note::
@@ -232,7 +232,7 @@ The ``seaice_2d_bias`` block includes additional parameters for spatial analysis
           Arctic: [-180, 180, 50, 90]
           Antarctic: [-180, 180, -50, -90]
 
-``projections`` can be tuned to the user according to the section 'Projections and custom maps' in :ref:`_graphic-tools`  
+``projections`` can be tuned to the user according to the section 'Projections and custom maps' in :ref:`_graphic-tools`.  
 
 **Output Configuration:**  
 
