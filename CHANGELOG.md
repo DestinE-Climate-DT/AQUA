@@ -13,7 +13,7 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
-
+- Area selection is now a separate class, `AreaSelection` in the `aqua.fldstat` module (#2245)
 - Histogram (or any callable function) possible through TimStat. New timhist method (#2263)
 - Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
 - Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)

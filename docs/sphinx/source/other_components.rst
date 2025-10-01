@@ -77,6 +77,21 @@ It is also possible to evaluate the coefficients of the fit by calling the ``tre
 This will call the ``coeffs()`` method of the ``Trender()`` class, which is used internally by the ``detrend()`` method.
 A ``dataarray`` with the coefficients will be returned, with the same dimensions as the original data.
 
+Spatial Selection
+-----------------
+
+The ``AreaSelection()`` class, part of the ``aqua.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits.
+The ``select_area()`` method can be used to perform the selection on a DataArray or Dataset.
+It is possible to consider or drop the limits of the selection by setting the ``box_brd`` flag to ``True`` or ``False`` respectively.
+It is also possible to drop the NaN values after the selection by setting the ``drop`` flag to ``True``.
+The class is nested into the ``Reader()`` class, so it is possible to call the ``select_area()`` method directly from the reader instance or as aqua accessor.
+
+.. warning::
+    In order to apply an area selection the data Xarray must include ``lon`` and ``lat`` as coordinates.
+    It can work also on unstructured grids, but information on coordinates must be available.
+    If the dataset does not include these coordinates, this can be achieved with the fixer
+    described in the :ref:`fixer` section.
+
 Spatial Averaging
 -----------------
 
@@ -93,18 +108,13 @@ For example, if we run the following commands:
 
 we get a time series of the global average ``tprate``.
 
-It is also possible to apply a regional section to the domain before performing the averaging:
+It is also possible to apply a regional section to the domain before performing the averaging.
+This will internally use the ``AreaSelection()`` class described above.
 
 .. code-block:: python
 
     tprate = data.tprate
     global_mean = reader.fldmean(tprate, lon_limits=[-50, 50], lat_limits=[-10,20])
-
-.. warning::
-    In order to apply an area selection the data Xarray must include ``lon`` and ``lat`` as coordinates.
-    It can work also on unstructured grids, but information on coordinates must be available.
-    If the dataset does not include these coordinates, this can be achieved with the fixer
-    described in the :ref:`fixer` section.
 
 .. note::
     So far only the `mean` statistics is available, but other statistics are planned to be implemented in the future.
