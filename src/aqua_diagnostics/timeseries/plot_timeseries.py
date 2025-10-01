@@ -49,12 +49,16 @@ class PlotTimeseries(PlotBaseMixin):
             if data is not None:
                 self.logger.warning('Hourly and daily data are not yet supported, they will be ignored')
 
-        # self.hourly_data = to_list(hourly_data)
-        # self.daily_data = to_list(daily_data)
-        self.monthly_data = to_list(monthly_data) if monthly_data is not None else None
-        self.annual_data = to_list(annual_data) if annual_data is not None else None
+        # Here we want to work with this logic: whatever is provided will be returned as a list
+        # if there is at least one data array, otherwise None, to avoid issues in the if checks
 
-        # TODO: support ref list
+        # self.hourly_data = self._check_data_provided(hourly_data)
+        # self.daily_data = self._check_data_provided(daily_data)
+        self.monthly_data = self._check_data_provided(monthly_data)
+        self.annual_data = self._check_data_provided(annual_data)
+
+        # TODO: support ref list.
+        # When the support will be introduced, change accordingly to the logic above
         # self.ref_hourly_data = to_list(ref_hourly_data)
         # self.ref_daily_data = to_list(ref_daily_data)
         self.ref_monthly_data = to_list(ref_monthly_data)[0] if ref_monthly_data is not None else None
@@ -237,3 +241,13 @@ class PlotTimeseries(PlotBaseMixin):
         #             raise ValueError('Standard deviation monthly and annual data list must have the same length as reference data')
 
         return data_length, ref_length
+    
+    def _check_data_provided(self, data):
+        """
+        If data are None or empty list, return a None, 
+        otherwise return the data as a list.
+        """
+        if data is not None and not (isinstance(data, list) and all(d is None for d in data)):
+            return to_list(data)
+        else:
+            return None

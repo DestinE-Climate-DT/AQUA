@@ -145,7 +145,7 @@ Here we describe only the specific settings for the global biases diagnostic.
                 short_name: "tnr"
                 long_name: "Top net radiation"
 
-* ``plot_params``: defines colorbar limits and projection parameters for each variable.  
+* ``plot_params``: defines colorbar palette and limits and projection parameters for each variable.  
   The default parameters are used if not specified for a specific variable.
   Refer to 'src/aqua/util/projections.py' for available projections.
 
@@ -156,6 +156,7 @@ Here we describe only the specific settings for the global biases diagnostic.
             projection: 'robinson'
             projection_params: {}
         2t:
+            cmap: 'RdBu_r'
             vmin: -15
             vmax: 15
         msl:
