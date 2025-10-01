@@ -24,7 +24,7 @@ reduction platform.
 DROP Capabilities
 ----------------------------
 
-DROP's flexible architecture enables various data processing tasks:
+DROP's architecture enables various data processing tasks:
 
 **Temporal Processing:**
 - Custom frequency resampling (any frequency to any frequency)
@@ -37,15 +37,10 @@ DROP's flexible architecture enables various data processing tasks:
 - Support for both regular and irregular grids
 
 **Data Management:**
-- Automatic catalog entry generation
+- Automatic catalog entry generation for DROP-generated outputs
 - Zarr reference creation for faster access
 - Parallel processing with configurable workers
 - Memory-efficient chunked processing
-
-**Quality Control:**
-- Data fixing and validation
-- Integrity checking of output files
-- Performance monitoring and reporting
 
 **Example use cases:**
 - Extract daily European data from global monthly archives
@@ -95,9 +90,22 @@ All sources have corresponding Zarr reference versions with ``-zarr`` suffix:
 - ``r25`` = 0.25° (25km approximately)
 - ``native`` = original model grid
 
-**Frequency options:**
-- ``monthly``, ``daily``, ``3hourly``, etc.
-- Any valid AQUA frequency specification
+**Parameter-based access:**
+Different processing options can be accessed via Reader kwargs:
+
+.. code-block:: python
+
+    # Access specific statistics (if generated)
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", 
+                   source="r100-monthly", stat="std")
+    
+    # Access regional data (if generated) 
+    reader = Reader(model="IFS-NEMO", exp="historical-1990",
+                   source="r100-monthly", region="europe")
+    
+    # Access specific ensemble realizations
+    reader = Reader(model="IFS-NEMO", exp="historical-1990",
+                   source="r100-monthly", realization="r2")
 
 
 Accessing DROP-generated data
@@ -111,6 +119,24 @@ interface using the automatically created catalog sources.
     from aqua import Reader
     reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly")
     data = reader.retrieve()
+
+**Advanced access patterns:**
+
+.. code-block:: python
+
+    # Access standard deviation instead of mean
+    reader = Reader(model="ERA5", exp="era5", source="r100-monthly", stat="std")
+    std_data = reader.retrieve()
+    
+    # Access regional European data
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", 
+                   source="r25-daily", region="europe")
+    eu_data = reader.retrieve()
+    
+    # Access specific ensemble member
+    reader = Reader(model="IFS-NEMO", exp="historical-1990",
+                   source="r100-daily", realization="r3")
+    member_data = reader.retrieve()
 
 **Zarr access for faster performance:**
 
