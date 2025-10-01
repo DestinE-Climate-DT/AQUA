@@ -51,6 +51,7 @@ diagnostics:
       2t:
         vmin: -15
         vmax: 15
+        cmap: 'RdBu_r'
       msl:
         vmin: -1000
         vmax: 1000

@@ -31,6 +31,7 @@ class TestBoxplots:
         pdf = os.path.join(self.tmp_path, 'pdf', f'test.boxplot.ci.ERA5.era5-hpz3.r1.ERA5.era5-hpz3.tnlwrf_tnswrf.pdf')
         assert os.path.exists(pdf)
 
+        self.plotbp.plot_boxplots(data=self.bp.fldmeans, data_ref=self.bp.fldmeans, var=self.var, anomalies=True, add_mean_line=True)
         png = os.path.join(self.tmp_path, 'png', f'test.boxplot.ci.ERA5.era5-hpz3.r1.ERA5.era5-hpz3.tnlwrf_tnswrf.png')
         assert os.path.exists(png)
 
