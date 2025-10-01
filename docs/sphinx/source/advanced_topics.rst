@@ -159,15 +159,15 @@ Access to `aqua-dvc` data for developers
 
 From September 2025, AQUA data used in the catalogs is stored and versioned using DVC (Data Version Control). 
 A private GitHub repository [aqua-dvc](https://github.com/DestinE-Climate-DT/aqua-dvc) contains the DVC data and provides
-a readme with instructions to set up access to the data.
-This new infrastructure relies on a remote storage (AWS S3) provided by DKRZ and will be the standard in the future for all AQUA data.
+a README.md with instructions to set up access to the data.
+This new infrastructure relies on a remote storage (AWS S3) provided by DKRZ and will be the standard in the future for all AQUA support data.
 
 .. note::
-    Access to `aqua-dvc` repository is primarily intended for developers and requres access credentials.
+    Access to `aqua-dvc` repository is primarily intended for developers and requires specific access credentials.
 
-Currently CI/CD tests are configured to use DVC data with a series of ad-hoc tokens.
+Currently CI/CD tests are configured to use DVC data with ad-hoc tokens and AWS credentials.
 
-`aqua-dvc` also contains a subset of aqua-related observations that can be used for model evaluation and the grids for aqua
+`aqua-dvc` also contains 1) a subset of aqua-related observations that can be used for model evaluation and 2) the grids used in AQUA.
 
 Download of grids
 ^^^^^^^^^^^^^^^^^
