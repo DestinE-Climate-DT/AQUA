@@ -10,7 +10,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/nemo-eORCA1_hpz5_nested_oce_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-eORCA025-hpz7-nested:
     cdo_options: --force
     space_coord: [ncells]
@@ -20,7 +19,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/nemo-eORCA025_hpz7_nested_oce_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-eORCA12-hpz7-nested:
     cdo_options: --force
     space_coord: [ncells]
@@ -30,7 +28,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/nemo-eORCA12_hpz7_nested_oce_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-eORCA12-hpz10-nested:
     cdo_options: --force
     space_coord: [ncells]
@@ -40,7 +37,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/nemo-eORCA12_hpz10_nested_oce_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   # NEMO v3: These are grids for DestinE O-25.1 cycle.
   # Interpolation to HealPix is now conservative and this
   # produced a change in the land sea mask, so all the grids
@@ -54,7 +50,6 @@ grids:
     path:
       level: '{{ grids }}/NEMO/nemo-eORCA12_hpz10_nested_oce_level_v3.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-eORCA12-hpz9-nested-v3:
     cdo_options: --force
     space_coord: [ncells]
@@ -64,7 +59,6 @@ grids:
     path:
       level: '{{ grids }}/NEMO/nemo-eORCA12_hpz9_nested_oce_level_v3.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-eORCA12-hpz7-nested-v3:
     cdo_options: --force
     space_coord: [ncells]
@@ -74,7 +68,6 @@ grids:
     path:
       level: '{{ grids }}/NEMO/nemo-eORCA12_hpz7_nested_oce_level_v3.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-eORCA1-hpz5-nested-v3:
     cdo_options: --force
     space_coord: [ncells]
@@ -84,7 +77,6 @@ grids:
     path:
       level: '{{ grids }}/NEMO/nemo-eORCA1_hpz5_nested_oce_level_v3.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   # Grids from the multiIO r360x181 conservative interpolation from eORCA025
   nemo-eORCA025-r100s-v3:
     path: '{{ grids }}/NEMO/nemo-eORCA025-r100s_v3.nc'
@@ -100,42 +92,35 @@ grids:
     path:
       level: '{{ grids }}/NEMO/eORCA1_mesh_3d_grid_T_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   eORCA1-3d-height:
     path:
       height: '{{ grids }}/NEMO/eORCA1_mesh_3d_grid_T_level.nc'
     space_coord: [ncells]
-    vert_coord: [height]
   eORCA025-2d:
     path: '{{ grids }}/NEMO/eORCA025_mesh_sfc_grid_T.nc'
   eORCA025-3d-level:
     path:
       level: '{{ grids }}/NEMO/eORCA025_mesh_3d_grid_T_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   eORCA025-3d-height:
     path:
       height: '{{ grids }}/NEMO/eORCA025_mesh_3d_grid_T_level.nc'
     space_coord: [ncells]
-    vert_coord: [height]
   eORCA12-2d:
     path: '{{ grids }}/NEMO/eORCA12_mesh_sfc_grid_T.nc'
   eORCA12-3d-level:
     path:
       level: '{{ grids }}/NEMO/eORCA12_mesh_3d_grid_T_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   eORCA12-3d-height:
     path:
       height: '{{ grids }}/NEMO/eORCA12_mesh_3d_grid_T_level.nc'
     space_coord: [ncells]
-    vert_coord: [height]
   nemo-healpix:
     path:
       2d: '{{ grids }}/HealPix_old/nemo_hpx10_oce_2d.nc'
       level: '{{ grids }}/HealPix_old/nemo_hpx10_oce_level.nc'
     space_coord: [ncells]
-    vert_coord: [level]
   nemo-multiIO-r025:
     path: '{{ grids }}/lonlat/nemo-multiIO-r025.nc'
   nemo-multiIO-r025-3d:
