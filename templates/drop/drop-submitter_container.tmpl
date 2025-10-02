@@ -39,7 +39,7 @@ singularity exec   \
 $AQUA_container  \
 bash -c \
 '
-cd /users/caprioli/AQUA/cli/drop
+cd $AQUA/cli/drop
 aqua drop --config ifs-nemo-test.yaml -w $WORKERS -d -l INFO
 '
 
