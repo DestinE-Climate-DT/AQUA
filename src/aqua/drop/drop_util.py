@@ -1,4 +1,4 @@
-"""Utility module for DROP/OPA"""
+"""Utility module for DROP"""
 
 import os
 import shutil

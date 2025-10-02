@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 '''
 AQUA regridding tool to create low resolution archive.
-Make use of aqua.DROP class to perform the regridding.
+Make use of aqua.Drop class to perform the regridding.
 Functionality can be controlled through CLI options and
 a configuration yaml file.
 '''

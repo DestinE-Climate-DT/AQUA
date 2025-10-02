@@ -1,7 +1,18 @@
 """
-DROP class for glob
-"""
+DROP (Data Reduction OPerator) class
 
+This class provides comprehensive data processing capabilities for climate datasets,
+including regridding, temporal averaging, regional extraction, and archiving.
+It handles multiple file formats and uses Dask for parallel processing of large datasets.
+
+Main features:
+- Regridding to arbitrary resolutions
+- Temporal resampling with various statistics (mean, std, max, min)
+- Regional data extraction
+- Automatic catalog entry generation
+- Parallel processing with Dask
+- Memory-efficient chunked processing
+"""
 import os
 from time import time
 import subprocess
