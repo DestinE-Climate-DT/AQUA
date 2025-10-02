@@ -232,7 +232,7 @@ The ``seaice_2d_bias`` block includes additional parameters for spatial analysis
           Arctic: [-180, 180, 50, 90]
           Antarctic: [-180, 180, -50, -90]
 
-``projections`` can be tuned to the user according to the section 'Projections and custom maps' in :ref:`_graphic-tools`.  
+``projections`` can be tuned to the user according to the section 'Projections and custom maps' in :ref:`graphic-tools`.  
 
 **Output Configuration:**  
 

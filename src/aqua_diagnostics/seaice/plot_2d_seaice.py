@@ -27,13 +27,6 @@ class Plot2DSeaIce:
         rebuild (bool): Whether to rebuild the plots if they already exist.
         dpi (int): Dots per inch for the saved figures.
         loglevel (str): Logging level for the logger. Default is 'WARNING'.
-
-    Methods:
-        plot_2d_seaice: Main method to plot sea ice data and biases.
-
-    Private Methods:
-        _plot_bias_map: Plot sea ice variable biases (e.g. 'fraction' or 'thickness').
-        _plot_var_map: Plot sea ice variable only with horizontal colorbar (e.g. 'fraction' or 'thickness').
     """
     def __init__(self,
                  ref=None, models=None, 
