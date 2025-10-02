@@ -44,6 +44,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Seaice: added documentation and updated notebooks (#2249)
 - Seaice: update varname for PIOMAS and GIOMAS from sivol to sithick after updating the data in `obs` catalog (#2290)
 - Global Biases: allow GlobalBias to take color palette as argument (#2283)
 - Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
