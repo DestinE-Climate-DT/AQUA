@@ -211,7 +211,7 @@ class TestFldStatWrappers():
     def data(self, reader):
         return reader.retrieve()
 
-    def test_fldmean_wrapper(self, reader, data):
+    def test_fldmean(self, reader, data):
         """Test fldmean wrapper method"""
         avg = reader.fldmean(data['2t'])
         assert avg.shape == (2,)  # time dimension preserved
