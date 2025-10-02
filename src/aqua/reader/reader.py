@@ -1027,6 +1027,18 @@ class Reader():
         """
         return self.fldstat(data, stat='sum', **kwargs)
 
+    def fldintg(self, data, **kwargs):
+        """
+        Field integral wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='integral', **kwargs)
+    
+    def fldarea(self, data, **kwargs):
+        """
+        Field area wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='areasum', **kwargs)
+
 
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
              time_bounds=False, center_time=False, **kwargs):
