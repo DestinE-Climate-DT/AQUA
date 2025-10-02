@@ -130,6 +130,9 @@ class FldStat():
             out = self.integrate_over_area(data, self.area, dims)
         elif stat == 'areasum':
             out = self.sum_area(data, self.area, dims)
+        elif stat in ['max', 'min']:
+            # max/min are not supported by weighted arrays, use unweighted calculation
+            out = getattr(data, stat)(dim=dims)
         else:
             weighted_data = data.weighted(weights=self.area.fillna(0))
             out = getattr(weighted_data, stat)(dim=dims)
