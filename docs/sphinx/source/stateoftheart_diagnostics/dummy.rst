@@ -1,3 +1,5 @@
+:orphan:
+
 Dummy
 ================
 
@@ -104,7 +106,7 @@ Detailed API
 This section provides a detailed reference for the Application Programming Interface (API) of the "dummy" diagnostic,
 produced from the diagnostic function docstrings.
 
-.. automodule:: dummy
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. .. automodule:: dummy
+..     :members:
+..     :undoc-members:
+..     :show-inheritance:
