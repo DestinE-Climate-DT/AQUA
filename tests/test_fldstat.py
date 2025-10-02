@@ -41,7 +41,7 @@ class TestFldModule():
 class TestFldmean():
     """Test class for fldmean"""
 
-    @pytest.mark.parametrize(('source,value,shape'),
+    @pytest.mark.parametrize(('source, value, shape'),
                              [('short', 285.75920, 2),
                              ('short_nn', 285.75920, 2),
                              ('long', 285.86724, 20)])
@@ -198,3 +198,67 @@ class TestFldStatDims():
         
         with pytest.raises(ValueError, match="dims must be a list of dimension names."):
             fldmodule.fldstat(data['t'], stat='mean', dims='cell')
+
+@pytest.mark.aqua
+class TestFldStatWrappers():
+    """Test class for fldstat wrapper methods"""
+
+    @pytest.fixture
+    def reader(self):
+        return Reader(model="IFS", exp="test-tco79", source='short', loglevel=LOGLEVEL)
+
+    @pytest.fixture
+    def data(self, reader):
+        return reader.retrieve()
+
+    def test_fldmean_wrapper(self, reader, data):
+        """Test fldmean wrapper method"""
+        avg = reader.fldmean(data['2t'])
+        assert avg.shape == (2,)  # time dimension preserved
+        assert avg[1] == pytest.approx(285.75920)
+
+    def test_fldmax(self, reader, data):
+        """Test fldmax wrapper method"""
+        maxval = reader.fldmax(data['2t'])
+        assert maxval.shape == (2,)  
+        # max should be greater than or equal to mean
+        avg = reader.fldmean(data['2t'])
+        assert maxval[0] >= avg[0]
+
+    def test_fldmin(self, reader, data):
+        """Test fldmin wrapper method"""
+        minval = reader.fldmin(data['2t'])
+        assert minval.shape == (2,)  
+        # min should be less than or equal to max
+        maxval = reader.fldmax(data['2t'])
+        assert minval[0] <= maxval[0]
+
+    def test_fldstd(self, reader, data):
+        """Test fldstd wrapper method"""
+        stdval = reader.fldstd(data['2t'])
+        assert stdval.shape == (2,)  
+        assert stdval[1].values == pytest.approx(15.6998)
+
+    def test_fldsum(self, reader, data):
+        """Test fldsum wrapper method"""
+        sumval = reader.fldsum(data['2t'])
+        assert sumval.shape == (2,)  
+        assert sumval[1].values == pytest.approx(1.4572956e+17)
+
+    def test_fldstat_compare(self, reader, data):
+        """Test that wrapper methods give consistent results"""
+        data_var = data['2t']
+        
+        # Compare wrapper methods with generic fldstat
+        mean_wrapper = reader.fldmean(data_var)
+        mean_generic = reader.fldstat(data_var, stat='mean')
+        
+        max_wrapper = reader.fldmax(data_var)
+        max_generic = reader.fldstat(data_var, stat='max')
+        
+        assert mean_wrapper.equals(mean_generic)
+        assert max_wrapper.equals(max_generic)
+        
+        # Test logical relationships
+        assert (reader.fldmin(data_var) <= reader.fldmean(data_var)).all()
+        assert (reader.fldmean(data_var) <= reader.fldmax(data_var)).all()
