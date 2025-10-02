@@ -17,9 +17,9 @@ class TestFldModule():
                         source='short', regrid='r100', rebuild=True)
         data = reader.retrieve()
         fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
-        assert fldmodule.fldmean(data)['2t'].size == 2
+        assert fldmodule.fldstat(data, stat='mean')['2t'].size == 2
         fldmodule = FldStat(loglevel=LOGLEVEL)
-        assert fldmodule.fldmean(data)['2t'].size == 2
+        assert fldmodule.fldstat(data, stat='mean')['2t'].size == 2
 
     def test_fldmean_from_data_selection(self):
         """test Fldmean class native from data with reversed lat"""
@@ -30,7 +30,7 @@ class TestFldModule():
         reverted = data.reindex({'lat': list(reversed(data.coords['lat']))})
         reverted = reverted.isel(time=slice(0, 3))
         fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
-        assert fldmodule.fldmean(reverted)['2t'].size == 3
+        assert fldmodule.fldstat(reverted, stat='mean')['2t'].size == 3
 
     def test_fldmean_raise(self):
         """test Fldmean class raise error if no area provided"""
@@ -149,7 +149,7 @@ class TestFldStatDims():
         fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
         
         # Test with explicit horizontal dims (should be ['cell'] for ICON)
-        result = fldmodule.fldmean(data['t'], dims=['cell'])
+        result = fldmodule.fldstat(data['t'], stat='mean', dims=['cell'])
         assert result.shape == (2, 90)  # time, height levels
         assert result.values[1, 1] == pytest.approx(214.4841)  # Same value as existing test
 
@@ -160,7 +160,7 @@ class TestFldStatDims():
         fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
         
         # Test averaging over only spatial dimension, keeping height
-        result = fldmodule.fldmean(data['t'], dims=['cell'])
+        result = fldmodule.fldstat(data['t'], stat='mean', dims=['cell'])
         # Should preserve height dimension but average over space
         assert 'level_full' in result.dims
         assert 'cell' not in result.dims
@@ -174,7 +174,7 @@ class TestFldStatDims():
         
         # Test invalid dimension
         with pytest.raises(ValueError, match="Dimension invalid_dim not found in horizontal dimensions"):
-            fldmodule.fldmean(data['t'], dims=['invalid_dim'])
+            fldmodule.fldstat(data['t'], stat='mean', dims=['invalid_dim'])
 
     def test_fldmean_dims_default_vs_explicit_icon(self):
         """Test that default and explicit dims give same results on ICON"""
@@ -183,8 +183,8 @@ class TestFldStatDims():
         fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
         
         # Compare default behavior with explicit dims
-        result_default = fldmodule.fldmean(data['t'])
-        result_explicit = fldmodule.fldmean(data['t'], dims=['cell'])
+        result_default = fldmodule.fldstat(data['t'], stat='mean')
+        result_explicit = fldmodule.fldstat(data['t'], stat='mean', dims=['cell'])
         
         # Results should be identical
         assert result_default.equals(result_explicit)
@@ -197,4 +197,4 @@ class TestFldStatDims():
         fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
         
         with pytest.raises(ValueError, match="dims must be a list of dimension names."):
-            fldmodule.fldmean(data['t'], dims='cell')
+            fldmodule.fldstat(data['t'], stat='mean', dims='cell')
