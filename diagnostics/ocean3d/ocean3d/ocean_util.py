@@ -288,7 +288,7 @@ def split_time_equally(data, loglevel= "WARNING"):
     return [data, data_1, data_2]
 
 
-def load_obs_data(model='EN4', exp='en4', source='monthly', loglevel= "WARNING"):
+def load_obs_data(model='EN4', exp='v4.2.2', source='monthly', loglevel= "WARNING"):
     """
     Load observational data for ocean temperature and salinity.
 
@@ -309,6 +309,7 @@ def load_obs_data(model='EN4', exp='en4', source='monthly', loglevel= "WARNING")
 
     den4 = reader.retrieve()
     # We standardise the name for the vertical dimension
+    # is this needed? currently when retrieving EN4 we get lev as vertical dimension, no?
     den4 = den4.rename({find_vert_coord(den4)[0]: "lev"}).resample(time="MS").mean()
     # den4 = check_variable_name(den4).resample(time="MS").mean()
     # den4 = den4[["thetao", "so"]].resample(time="MS").mean()

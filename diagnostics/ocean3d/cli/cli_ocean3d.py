@@ -132,7 +132,7 @@ class Ocean3DCLI:
         if self.config["ocean_circulation"]:
             if self.config["compare_model"]== True:
                 self.logger.info("Loading Observation data")
-                obs_reader = Reader("EN4", "en4", "monthly", loglevel=self.loglevel, regrid=regrid)
+                obs_reader = Reader("EN4", "v4.2.2", "monthly", loglevel=self.loglevel, regrid=regrid)
                 self.data["obs_data"] = obs_reader.retrieve()
                 if regrid:
                     self.data["obs_data"] = obs_reader.regrid(self.data["obs_data"])
