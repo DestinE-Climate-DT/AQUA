@@ -1,4 +1,3 @@
-import xarray as xr
 from aqua.graphics import plot_timeseries
 from aqua.util import to_list
 from .base import PlotBaseMixin

@@ -162,6 +162,9 @@ class BaseMixin(Diagnostic):
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
         data = data.sel(time=slice(self.std_startdate, self.std_enddate))
+        if self.std_startdate is None or self.std_enddate is None:
+            self.std_startdate = data.time.min().values
+            self.std_enddate = data.time.max().values
         if freq_dict[str_freq]['groupdby'] is not None:
             data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
         else:  # For annual data, we compute the std over all years
@@ -361,7 +364,8 @@ class PlotBaseMixin():
 
         description += f'of {self.long_name} '
         if self.units is not None:
-            description += f'[{self.units}] '
+            units = self.units.replace("**", r"\*\*")
+            description += f'[{units}] '
 
         if self.region is not None:
             description += f'for region {self.region} '

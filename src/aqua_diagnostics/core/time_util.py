@@ -27,8 +27,8 @@ def start_end_dates(startdate=None, enddate=None,
     start_std = pd.Timestamp(start_std) if start_std else None
     end_std = pd.Timestamp(end_std) if end_std else None
 
-    start_retrieve = min(filter(None, [startdate, start_std])) if any([startdate, start_std]) else None
-    end_retrieve = max(filter(None, [enddate, end_std])) if any([enddate, end_std]) else None
+    start_retrieve = min (filter(None, [startdate, start_std])) if startdate else None
+    end_retrieve = max (filter(None, [enddate, end_std])) if enddate else None
 
     return start_retrieve, end_retrieve
 
