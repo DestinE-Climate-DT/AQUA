@@ -8,6 +8,7 @@ from aqua import Reader
 from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
 from aqua.util import format_realization, extract_attrs
 from aqua.util.string import strlist_to_phrase, lat_to_phrase
+from aqua.util.units import multiply_units
 
 @pytest.fixture
 def test_text():
@@ -211,3 +212,29 @@ def test_lat_to_phrase():
 #     flipped_data = flip_time(data)
 #     assert flipped_data.time.values[0] == 9
 #     assert flipped_data.time.values[-1] == 0
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("unit1, unit2, expected", [
+    ("m", "m2", "meter ** 3"),                         # Basic area × length = volume
+    ("m", "m", "meter ** 2"),                          # Length × length = area
+    ("kg", "m/s2", "kilogram * meter / second ** 2"),  # Mass × acceleration = force
+    ("m/s", "s", "meter"),                             # Velocity × time = distance
+    ("1", "m", "meter"),                               # Dimensionless × length
+    ("kg/m3", "m3", "kilogram"),                       # Density × volume = mass
+])
+def test_multiply_units(unit1, unit2, expected):
+    """Test the multiply_units function with various unit combinations"""
+    result = multiply_units(unit1, unit2)
+    assert result == expected
+
+@pytest.mark.aqua
+def test_multiply_units_no_base_conversion():
+    """Test multiply_units without converting to base units"""
+    result = multiply_units("km", "km", to_base_units=False)
+    assert result == "kilometer ** 2"
+
+@pytest.mark.aqua
+def test_multiply_units_no_normalization():
+    """Test multiply_units without normalization"""
+    result = multiply_units("m", "m", normalise_units=False)
+    assert result == "meter ** 2"

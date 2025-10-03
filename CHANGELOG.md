@@ -13,6 +13,7 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Allow `Reader()` to access standard and custom `fldstat` methods provided by `FldStat()` (#2277)
 - CI/CD data now is read from aqua-dvc repository (#8370)
 - Histogram (or any callable function) possible through TimStat. New timhist method (#2263)
 - Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
