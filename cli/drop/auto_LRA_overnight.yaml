@@ -11,7 +11,7 @@ paths:
 
 
 options:
-# Set to True if lra-r100-monthly-zarr should be created and checked
+# Set to True if r100-monthly-zarr should be created and checked
   zarr: False
   verify_zarr: False
   loglevel: INFO

@@ -24,7 +24,7 @@ workers=8
 # run the Python script
 # -c to specify the configuration file
 # -f to use the fixer on data
-# -d to perform a dry run (to check generated lra)
-# -o to overwrite existing lra
+# -d to perform a dry run (to check generated DROP files)
+# -o to overwrite existing DROP files
 # -l to set the log level (default is WARNING)
-aqua lra --config config_lra.yml -w ${workers} -d -l INFO
+aqua drop --config config_drop.yml -w ${workers} -d -l INFO

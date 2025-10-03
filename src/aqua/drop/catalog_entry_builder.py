@@ -1,4 +1,4 @@
-"""Class to create a catalog entry for the LRA"""
+"""Class to create a catalog entry for DROP"""
 
 from aqua.logger import log_configure
 from aqua.util import format_realization
@@ -7,7 +7,7 @@ from aqua.util import replace_intake_vars, replace_urlpath_jinja
 
 
 class CatalogEntryBuilder():
-    """Class to create a catalog entry for the LRA"""
+    """Class to create a catalog entry for DROP"""
 
     def __init__(self, catalog, model, exp, resolution,
                  realization=None, frequency=None, stat=None,
@@ -51,17 +51,20 @@ class CatalogEntryBuilder():
 
     def create_entry_name(self):
         """
-        Create an entry name for the LRA
+        Create an entry name for the DROP outputs
         """
-
-        entry_name = f'lra-{self.resolution}-{self.frequency}'
-        self.logger.info('Creating catalog entry %s %s %s', self.model, self.exp, entry_name)
+        # Default LRA-100-monthly entry keeps the 'lra-' prefix
+        if self.resolution == 'r100' and self.frequency == 'monthly':
+            entry_name = f'lra-{self.resolution}-{self.frequency}'
+        else:
+            # All other entries drop the 'lra-' prefix
+            entry_name = f'{self.resolution}-{self.frequency}'
 
         return entry_name
 
     def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name='lon-lat'):
         """
-        Create an entry in the catalog for the LRA
+        Create an entry in the catalog for DROP
 
         Args:
             basedir (str): Base directory for the output files.
@@ -83,7 +86,7 @@ class CatalogEntryBuilder():
             # if the entry is not there, define the block to be uploaded into the catalog
             catblock = {
                 'driver': driver,
-                'description': f'AQUA {driver} LRA data {self.frequency} at {self.resolution}',
+                'description': f'AQUA {driver} DROP-generated data {self.frequency} at {self.resolution}',
                 'args': {
                     'urlpath': urlpath,
                     'chunks': {},
