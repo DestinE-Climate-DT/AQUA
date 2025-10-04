@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 # For setuptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 [project]
-name = "aqua"
+name = "aqua-climate"
 dynamic = ["version"]
 authors = [ # AQUA core team reported here
     {name = "The AQUA team", email = "p.davini@isac.cnr.it"},
