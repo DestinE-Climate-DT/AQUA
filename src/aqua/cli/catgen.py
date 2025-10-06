@@ -307,7 +307,8 @@ class AquaFDBGenerator:
         forcing_map = {
             'hist': 'historical',
             'cont': 'control',
-            'SSP3-7.0': 'ssp370'
+            'SSP3-7.0': 'ssp370',
+            'Tplus2.0K': 'tplus2K'
         }
 
         forcing = self.config.get('forcing') or self.get_value_from_map(self.config['experiment'], forcing_map, 'experiment')

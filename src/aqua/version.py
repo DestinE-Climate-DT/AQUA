@@ -1,3 +1,3 @@
 """Module where to define the version of the package."""
 
-__version__ = '0.13.8'
+__version__ = '0.13.9'
