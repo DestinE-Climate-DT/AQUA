@@ -7,22 +7,26 @@ from metpy.units import units
 from aqua.util import to_list
 from aqua.logger import log_configure
 from .styles import ConfigStyle
+from matplotlib import colors as mcolors
 
 def boxplot(fldmeans: list[xr.Dataset],
             model_names: list[str],
             variables: list[str],
             variable_names: list[str] = None,
+            add_mean_line: bool = True,
             title: str = None,
             style: str = None,
             loglevel: str = 'WARNING'):
     """
     Generate a boxplot of precomputed field-mean values for multiple variables and models.
+    A dashed horizontal line is added to indicate the mean for each box (slightly darker than box color).
 
     Args:
         fldmeans (list of xarray.Dataset): Precomputed fldmean() for each model.
         model_names (list of str): Names corresponding to each fldmean dataset.
         variables (list of str): Variable names to be plotted (as in the fldmean Datasets).
         variable_names (list of str, optional): Display names for the variables.
+        add_mean_line (bool, optional): Whether to add dashed lines for means.
         title (str, optional): Title for the plot.
         style (str, optional): Style to apply to the plot.
         loglevel (str): Logging level, unused but kept for compatibility.
@@ -44,7 +48,6 @@ def boxplot(fldmeans: list[xr.Dataset],
     else:
         labels = {v: v for v in variables}
 
-    # Gather data
     records = []
     unit_sets = {}
 
@@ -76,21 +79,71 @@ def boxplot(fldmeans: list[xr.Dataset],
 
     df = pd.DataFrame.from_records(records)
 
-
-    # Plot
+    # Create figure
     fig, ax = plt.subplots(figsize=(12, 8))
-    sns.boxplot(data=df, x='Variables', y='Values', hue='Models', ax=ax)
 
+    # Explicit order for variables and models
+    order = [labels[v] for v in variables]
+    hue_order = list(model_names)
+
+    # Plot the boxplots
+    sns.boxplot(
+        data=df, x='Variables', y='Values', hue='Models',
+        order=order, hue_order=hue_order, width=0.8, ax=ax
+    )
+
+    # --- Add dashed mean lines for each box ---
+    if add_mean_line:
+        means = df.groupby(['Variables', 'Models'])['Values'].mean().unstack(fill_value=np.nan)
+
+        n_vars = len(order)
+        n_hues = len(hue_order)
+        total_box_width = 0.8  # same width passed to sns.boxplot
+        if n_hues > 0:
+            single_box_width = total_box_width / n_hues
+        else:
+            single_box_width = total_box_width
+        # Offsets for multiple models per variable
+        offsets = np.linspace(
+            -total_box_width/2 + single_box_width/2,
+            total_box_width/2 - single_box_width/2,
+            n_hues
+        )
+
+        palette = sns.color_palette()
+
+        for i, var in enumerate(order):
+            for j, model in enumerate(hue_order):
+                if model not in means.columns or var not in means.index:
+                    continue
+                mean_val = means.loc[var, model]
+                if np.isnan(mean_val):
+                    continue
+                x_center = i + offsets[j]
+                x_left = x_center - single_box_width / 2
+                x_right = x_center + single_box_width / 2
+
+                # Darken the base color inline
+                base_color = palette[j % len(palette)]
+                rgb = np.array(mcolors.to_rgb(base_color))
+                darker = tuple(rgb * 0.7)  # 0.7 = 30% darker
+
+                ax.hlines(
+                    mean_val, x_left, x_right,
+                    colors=[darker],
+                    linestyles='--', linewidth=2.5, zorder=5
+                )
+
+    # Title and labels
     if title:
         ax.set_title(title, fontsize=fontsize + 4)
     else:
         vars_str = ', '.join(labels[v] for v in variables)
         models_str = ', '.join(model_names)
-        ax.set_title(f'Boxplot of {vars_str}\nAcross Models: {models_str}', fontsize=fontsize + 2)
-
+        ax.set_title(f'Boxplot of {vars_str}', fontsize=fontsize + 2)
     ax.set_xlabel('Variables', fontsize=fontsize)
 
-    # Determine y-axis label based on units
+    # Y-axis label from units
     global_units_found = set().union(*unit_sets.values())
     if len(global_units_found) == 1:
         first_var = variables[0][1:] if variables[0].startswith('-') else variables[0]
@@ -103,5 +156,4 @@ def boxplot(fldmeans: list[xr.Dataset],
     ax.legend(loc='upper right', fontsize=fontsize)
     ax.grid(True)
     fig.tight_layout()
-
     return fig, ax

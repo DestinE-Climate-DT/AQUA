@@ -58,7 +58,7 @@ if __name__ == '__main__':
     if realization:
         reader_kwargs = {'realization': realization}
     else:
-        reader_kwargs = config_dict['datasets'][0]['reader_kwargs'] or {}
+        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -99,7 +99,7 @@ if __name__ == '__main__':
                             logger.debug(f"Dataset args: {dataset_args}")
                             ts[i] = Timeseries(**init_args, **dataset_args)
                             ts[i].run(**run_args, create_catalog_entry=create_catalog_entry,
-                                      reader_kwargs=dataset['reader_kwargs'] or reader_kwargs)
+                                      reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].startdate for i in range(len(ts))])
@@ -122,7 +122,7 @@ if __name__ == '__main__':
                                 logger.info(f"Reference args: {reference_args}")
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
                                 ts_ref[i].run(**run_args, std=True, create_catalog_entry=False,
-                                              reader_kwargs=reference['reader_kwargs'] or {})
+                                              reader_kwargs=reference.get('reader_kwargs') or {})
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             ts[i] = Timeseries(**init_args, **dataset_args)
                             ts[i].run(**run_args, create_catalog_entry=create_catalog_entry,
-                                      reader_kwargs=dataset['reader_kwargs'] or reader_kwargs)
+                                      reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([ts[i].plt_startdate for i in range(len(ts))])
@@ -196,7 +196,7 @@ if __name__ == '__main__':
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
                                 ts_ref[i].run(**run_args, std=True, create_catalog_entry=False,
-                                              reader_kwargs=reference['reader_kwargs'] or {})
+                                              reader_kwargs=reference.get('reader_kwargs') or {})
 
                         # Plot the timeseries
                         if save_pdf or save_png:
@@ -256,7 +256,7 @@ if __name__ == '__main__':
                                             'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                             sc[i] = SeasonalCycles(**init_args, **dataset_args)
                             sc[i].run(**run_args, create_catalog_entry=create_catalog_entry,
-                                      reader_kwargs=dataset['reader_kwargs'] or reader_kwargs)
+                                      reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
                         startdate = min([sc[i].startdate for i in range(len(sc))])
@@ -275,7 +275,7 @@ if __name__ == '__main__':
                                                 'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                                 sc_ref[i] = SeasonalCycles(**init_args, **reference_args)
                                 sc_ref[i].run(**run_args, std=True, create_catalog_entry=False,
-                                              reader_kwargs=reference['reader_kwargs'] or {})
+                                              reader_kwargs=reference.get('reader_kwargs') or {})
 
                         # Plot the seasonal cycles
                         if save_pdf or save_png:
@@ -328,7 +328,7 @@ if __name__ == '__main__':
                                     'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
 
                     greg[i] = Gregory(**init_args, **dataset_args)
-                    greg[i].run(**run_args, **model_args, reader_kwargs=dataset['reader_kwargs'] or reader_kwargs)
+                    greg[i].run(**run_args, **model_args, reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                 if config_dict['diagnostics']['gregory']['std']:
                     # t2m:

@@ -65,8 +65,9 @@ diagnostics:
         units: "mm/day"
         regions: ['tropics', 'europe']
   
+  # NB: this is currently disabled, and run by radiation
   gregory:
-    run: false # Run by the Radiation by default
+    run: false 
     diagnostic_name: 'timeseries'
     t2m: '2t'
     net_toa_name: 'tnlwrf+tnswrf'
@@ -76,5 +77,5 @@ diagnostics:
     std_startdate: '19900101'
     std_enddate: '20201231'
     # Gregory needs 2 datasets and do not care about the references block above
-    t2m_ref: {'catalog': 'obs', 'model': 'ERA5', 'exp': 'era5', 'source': 'monthly'}
+    t2m_ref: {'catalog': 'obs', 'model': 'BERKELEY-EARTH', 'exp': 'aqua-filled', 'source': 'r100-monthly'}
     net_toa_ref: {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}

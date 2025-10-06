@@ -2,9 +2,11 @@
 import pandas as pd
 import xarray as xr
 import numpy as np
+from functools import partial
 from aqua.util import check_chunk_completeness, frequency_string_to_pandas
 from aqua.util import extract_literal_and_numeric
 from aqua.logger import log_history, log_configure
+from aqua.histogram import histogram
 
 
 class TimStat():
@@ -21,30 +23,39 @@ class TimStat():
     @property
     def AVAILABLE_STATS(self):
         """Return the list of available statistics."""
-        return ['mean', 'std', 'max', 'min', 'sum']
+        return ['mean', 'std', 'max', 'min', 'sum', 'histogram']
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
-                time_bounds=False, center_time=False):
+                time_bounds=False, center_time=False, func_kwargs={}, **kwargs):
         """
         Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
         parameter. The frequency can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object. The statistic can be
-        'mean', 'std', 'max', 'min'. The output is a new xarray dataset with the time dimension resampled to the desired
+        'mean', 'std', 'max', 'min' or 'histogram'. The output is a new xarray dataset with the time dimension resampled to the desired
         frequency and the statistic computed over the time window.
 
         Args: 
             data (xarray.Dataset): Input data to compute the statistic on.
-            stat (str): Statistic to compute. Can be 'mean', 'std', 'max', 'min'.
+            stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'histogram'] or a custom function.
             freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object.
             exclude_incomplete (bool): If True, exclude incomplete chunks from the output.
             time_bounds (bool): If True, add time bounds to the output data.
             center_time (bool): If True, center the time axis of the output data.
+            func_kwargs (dict): Additional keyword arguments to pass to the custom function if stat is callable.
+            kwargs (dict): Additional keyword arguments to pass to the statistic function.
 
         Returns:
             xarray.Dataset: Output data with the required statistic computed at the desired frequency.
         """
-        if stat not in self.AVAILABLE_STATS:
+
+        if isinstance(stat, str) and stat not in self.AVAILABLE_STATS:
             raise KeyError(f'{stat} is not a statistic supported by AQUA')
 
+        if not isinstance(stat, str) and not callable(stat):
+            raise TypeError('stat must be a string or a callable function')
+        
+        if stat == 'histogram':  # convert to callable function
+            stat = histogram
+        
         resample_freq = frequency_string_to_pandas(freq)
 
         # disabling all options if total averaging is selected
@@ -83,13 +94,17 @@ class TimStat():
             resample_data = data
 
         # compact call, equivalent of "out = resample_data.mean()""
-        if stat in self.AVAILABLE_STATS:
+        if isinstance(stat, str):  # we already checked if it is one of the allowable stats
             self.logger.info(f'Resampling to %s frequency and computing {stat}...', str(resample_freq))
             # use the kwargs to feed the time dimension to define the method and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
-        else:
-            raise KeyError(f'{stat} is not a statistic supported by AQUA TimStat()')
+        else:  # we can safely assume that it is a callable function now
+            self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
+            if resample_freq is not None:
+                out = resample_data.apply(partial(stat, **func_kwargs, **kwargs))
+            else:
+                out = stat(resample_data, **func_kwargs, **kwargs)
 
         if exclude_incomplete and freq not in [None, 'seasonal']:
             self.logger.info('Checking if incomplete chunks has been produced...')
