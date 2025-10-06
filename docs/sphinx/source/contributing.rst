@@ -82,6 +82,10 @@ To run the test suite, navigate to the root directory of the project and run the
 
     ./download_data_for_tests.sh
 
+.. warning::
+    Since September 2025, AQUA data used in the tests is stored and versioned using DVC (Data Version Control).
+    The current script still point to the older archive on SWIFT but it will be deprecated in the near future.
+
 This will download the data needed for the tests and change the catalog name in the ``config/config-aqua.yaml`` to ``ci``. 
 Remember to change it to your catalog name after the tests are finished.
 

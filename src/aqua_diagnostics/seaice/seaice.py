@@ -11,10 +11,12 @@ xr.set_options(keep_attrs=True)
 
 class SeaIce(Diagnostic):
     """ 
-    Class for seaice objects.
+    Sea ice diagnostic class for computing and analyzing sea ice metrics.
     
-    This class provides methods to compute sea ice extent and volume over specified regions.
-    It also allows for the integration of masked data and the calculation of standard deviations.
+    This class provides methods to compute sea ice extent (million km²), volume (thousand km³), 
+    fraction ([0-1]) and thickness (m) over specified regions (e.g., Arctic, Antarctic). 
+    It supports both time series (integrated), with options for computing standard deviations, 
+    seasonal cycles, and 2D monthly climatologies.
 
     Args:
         model   (str): The model name.
@@ -22,29 +24,16 @@ class SeaIce(Diagnostic):
         source  (str): The data source.
         catalog (str, optional): The catalog name.
         regrid  (str, optional): The regrid option.
-        startdate (str, optional): The start date for the data.
-        enddate   (str, optional): The end date for the data.
+        startdate (str, optional): The start date for the data (format: "YYYY-MM-DD").
+        enddate   (str, optional): The end date for the data (format: "YYYY-MM-DD").
         std_startdate (str, optional): Start date for standard deviation.
         std_enddate   (str, optional): End date for standard deviation.
-        regions     (list, optional): A list of regions to analyze. Default is ['arctic', 'antarctic'].
-        regions_file (str, optional): The path to the regions definition file.
-        outputdir (str, optional): The output directory.
+        threshold (float, optional): Threshold for sea ice concentration over extent (default: 0.15; 15% conc).
+        regions     (list, optional): A list of regions to analyze. Default: ['arctic', 'antarctic'].
+        regions_file (str, optional): Path to YAML file defining regions definition file.
+        outputdir (str, optional): The output directory (default: './').
         regions_definition (dict): The loaded regions definition from the YAML file.
-        loglevel     (str, optional): The logging level. Default is 'WARNING'.
-
-    Methods:
-        load_regions(regions_file=None, regions=None):
-            Loads region definitions from a .yaml configuration file and sets the regions.
-        add_seaice_attrs(da_seaice_computed: xr.DataArray, region: str,
-                         startdate: str=None, enddate: str=None, std_flag=False):
-            Set attributes for seaice_computed.
-        integrate_seaice_masked_data(masked_data, region: str):
-            Integrate the masked data over the spatial dimension to compute sea ice metrics.
-        get_area_cells_and_coords()
-        _calc_time_stat(computed_data: xr.DataArray, stat: str = 'std', freq: str = 'monthly'):
-            Compute the standard deviation or mean of the data, grouped by ('monthly' or 'annual') frequency.
-        compute_seaice(method, var, *args, **kwargs):
-            Execute the seaice diagnostic based on the specified method. 
+        loglevel     (str, optional): The logging level. Defaults to 'WARNING'.
     """
 
     def __init__(self, model: str, exp: str, source: str,        
@@ -56,8 +45,7 @@ class SeaIce(Diagnostic):
                  regions=['arctic', 'antarctic'],
                  regions_file=None,
                  outputdir: str = './',
-                 loglevel: str = 'WARNING'
-                 ):
+                 loglevel: str = 'WARNING'):
 
         self.outputdir = outputdir
         super().__init__(model=model, exp=exp, source=source,
@@ -415,6 +403,7 @@ class SeaIce(Diagnostic):
                 - 'annual'  (computes std per year)
             stat (str, optional): 
                 The statistic to compute. Must be one of ('std', 'mean'). Default is 'std'.
+
         Returns:
             xarray.DataArray: A DataArray containing the computed time statistic.
         """

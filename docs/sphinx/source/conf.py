@@ -25,6 +25,8 @@ templates_path = ["_templates"]
 autoclass_content = 'both'
 exclude_patterns = []
 
+# Mock imports for modules that are not available during docs build, can be expanded
+autodoc_mock_imports = ["dummy"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
