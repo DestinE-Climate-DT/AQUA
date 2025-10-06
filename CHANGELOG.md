@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+## [v0.13.9]
+
+Hotfixes:
+- Added catgen support for storyline experiments (#2305)
+
 ## [v0.13.8]
 
 Hotfixes:
@@ -863,7 +868,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.8...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.9...HEAD
+[v0.13.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.8...v0.13.9
 [v0.13.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.7...v0.13.8
 [v0.13.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.6...v0.13.7
 [v0.13.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.5...v0.13.6
