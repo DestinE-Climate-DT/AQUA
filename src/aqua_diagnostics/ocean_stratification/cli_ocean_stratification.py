@@ -60,6 +60,19 @@ if __name__ == '__main__':
     else:
         reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
+    if config_dict['references']:
+        references = config_dict['references']
+        logger.info(f"References found: {references}")
+        catalog_ref = references[0].get('catalog', None)
+        model_ref = references[0].get('model', None)
+        exp_ref = references[0].get('exp', None)
+        source_ref = references[0].get('source', None)
+        regrid_ref = references[0].get('regrid', None)
+        # realization_ref = references[0].get('realization', None)
+        # if realization_ref:
+        #     reader_kwargs_ref = {'realization': realization_ref}
+        # else:
+        #     reader_kwargs_ref = config_dict['references'][0].get('reader_kwargs', {})
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -80,7 +93,9 @@ if __name__ == '__main__':
                 logger.info(f"Processing region: {region}")
                 var = stratification_config.get('var', None)
                 dim_mean = stratification_config.get('dim_mean', ['lat', 'lon'])
-                data_stratification= Stratification(
+                # Stratification instance
+                # Model data
+                model_stratification= Stratification(
                     diagnostic_name=diagnostic_name,
                     catalog=catalog,
                     model=model,
@@ -89,7 +104,7 @@ if __name__ == '__main__':
                     regrid=regrid,
                     loglevel=loglevel
                 )
-                data_stratification.run(
+                model_stratification.run(
                     region=region,
                     var=var,
                     # dim_mean=dim_mean,
@@ -99,10 +114,34 @@ if __name__ == '__main__':
                     reader_kwargs=reader_kwargs,
                     rebuild=rebuild,
                 )
-
+                # Reference data
+                if references:
+                    if model_ref and exp_ref and source_ref:
+                        logger.info(f"Processing reference data for model: {model_ref}, exp: {exp_ref}, source: {source_ref}")
+                        obs_stratification= Stratification(
+                            diagnostic_name=diagnostic_name,
+                            catalog=catalog_ref,
+                            model=model_ref,
+                            exp=exp_ref,
+                            source=source_ref,
+                            regrid=regrid_ref,
+                            loglevel=loglevel
+                        )
+                        obs_stratification.run(
+                            region=region,
+                            var=var,
+                            # dim_mean=dim_mean,
+                            mld=True,
+                            climatology=climatology,
+                            outputdir=outputdir,
+                            rebuild=rebuild,
+                        )
+                    else:
+                        obs_stratification = None
+                # Plotting
                 strat_plot = PlotStratification(
-                    data=data_stratification.data[["mld"]],
-                    obs=data_stratification.data[["mld"]],
+                    data=model_stratification.data[["mld"]],
+                    obs=obs_stratification.data[["mld"]],
                     diagnostic_name=diagnostic_name,
                     outputdir=outputdir,
                     loglevel=loglevel

@@ -6,6 +6,13 @@ datasets:
     regrid: r100
     # reader_kwargs: {}
 
+references:
+  - catalog: null
+    model: 'FESOM'
+    exp: 'hpz3'
+    source: 'monthly-3d'
+    regrid: null
+
 output:
   outputdir: "./"
   rebuild: true
@@ -20,6 +27,6 @@ diagnostics:
       diagnostic_name: 'stratification'
       run: true
       var: ['thetao', 'so']
-      regions: ['io', 'sss']
-      climatology: 'Total'
+      regions: ['ls']
+      climatology: 'January'
       # dim_mean: ['lat', 'lon']
