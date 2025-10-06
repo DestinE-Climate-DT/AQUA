@@ -3,44 +3,46 @@ log_name: ssh_logger
 check_complete_timespan_data: False
 check_complete_timespan_models: False
 enter_aviso_dates_manually: False
-difference_plots: False
-region_selection: False
-fig_format: png
-contours: 0  # Number of contours for the contour plot. If not set (or 0) then pcolormesh is used
+difference_plots: True
+region_selection: True
+fig_format: pdf
+# Number of contours for the contour plot. If not set (or 0) then pcolormesh is used
+# contours is recommended for pdf plots, pcolormesh for png plots
+contours: 21
 
 # Models for which sea surface height (SSH) variability is to be evaluated.
 models:
-  - name: ICON
-    experiment: ssp370
-    source: daily-hpz10-oce2d
-    regrid: r010
-    variable: zos
-    zoom: 10
-    timespan: ['2020-01-01', '2020-03-30']
+  #- name: ICON
+  #  experiment: ssp370
+  #  source: daily-hpz10-oce2d
+  #  regrid: r005
+  #  variable: zos
+  #  zoom: 10
+  #  timespan: ['2020-01-20', '2025-05-30']
 # #    timespan: ['2020-01-01', '2020-12-31']
 
-  # - name: IFS-NEMO
-  #   experiment: ssp370
-  #   source: daily-hpz10-oce2d
-  #   regrid: r005
-  #   variable: zos
-  #   zoom: 10
-  #   timespan: ['2020-01-20', '2025-05-30']
+  - name: IFS-FESOM
+    experiment: ssp370
+    source: lra-r100-monthly
+    regrid: r100
+    variable: zos
+    #zoom: 7
+    timespan: ['2021-01-01', '2021-01-03']
     
-  # - name: IFS-FESOM
-  #   experiment: story-2017-historical
-  #   source: hourly-hpz7-oce2d
-  #   regrid: r005
-  #   variable: zos
-  #   zoom: 7
-  #   timespan: ['2017-01-21', '2017-12-31']
+  #- name: IFS-FESOM
+  #  experiment: story-2017-historical
+  #  source: hourly-hpz7-oce2d
+  #  regrid: r005
+  #  variable: zos
+  #  zoom: 7
+  #  timespan: ['2017-01-21', '2017-01-31']
 
 # This is the model against which other models are compared.
 base_model: 
   { name: AVISO,
     experiment: ssh-L4,
     source: daily,
-    regrid: r010
+    regrid: r100
   }
 
 # ONLY FOR ICON: Flags for northern and southern boundaries to mask out specific latitudes.
@@ -51,8 +53,8 @@ northern_boundary_latitude: 70
 southern_boundary_latitude: -62
 
 # As default one timespan for all models will be set but this can be overwritten for each model by entering the timespan in the individual model configurations. This timespan will be applied to the AVISO observation data.
-timespan: {start: '1993-01-01', end: '1999-06-23'}
-#timespan: {start: '2020-01-21', end: '2021-07-22'}
+#timespan: {start: '1993-01-01', end: '1999-06-23'}
+timespan: {start: '2020-01-21', end: '2020-01-25'}
 
 region name : Agulhas
 region_selection_limits:
@@ -68,7 +70,7 @@ subplot_options:
   } 
   
 # Please specify the path to the directory where the outputs should be saved. If output directory/ folder does not exist, another directory called output will be created in your current working directory.
-output_directory: /projappl/project_465000454/sunnyjal/AQUA/diagnostics/ssh/output/
+output_directory: /scratch/project_465000454/maqsood/
 
 
 # This is the current dask configuration which works for the inputs above. It could be adjusted based on the system this application is run.
