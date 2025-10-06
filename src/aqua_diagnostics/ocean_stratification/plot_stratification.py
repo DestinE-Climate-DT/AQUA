@@ -2,6 +2,8 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import cartopy.crs as ccrs
+from aqua.util import cbar_get_label
+import math
 
 from .mld_profiles import plot_maps
 # from .multivar_vertical_profiles import plot_multivars_vertical_profile
@@ -54,6 +56,8 @@ class PlotStratification:
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
+        self.set_cbar_labels(var= 'mld')
+        self.set_cbar_limits()
         fig = plot_maps(
             maps=self.data_map_list,
             nrows=self.nrows,
@@ -61,9 +65,16 @@ class PlotStratification:
             proj=ccrs.PlateCarree(),
             title=self.suptitle,
             titles=self.title_list,
-            cbar_number='separate',
+            cbar_number='single',
+            cbar_label=self.cbar_label,
+            figsize=(9 * self.ncols, 8 * self.nrows),
+            cmap='jet',
             ytext=self.ytext,
-            return_fig=True
+            return_fig=True,
+            vmax=self.clev2,
+            vmin=self.clev1,
+            nlevels=self.nlevels,
+            sym=True
         )
         self.save_plot(
             fig,
@@ -114,6 +125,35 @@ class PlotStratification:
                 for var in self.vars:
                     data_var = data[var]
                     self.data_map_list.append(data_var)
+
+    def set_cbar_labels(self, var: str = None):
+        self.cbar_label = cbar_get_label(data=self.data[var], cbar_label=None, loglevel=self.loglevel)
+
+    def _round_up(self, value):
+        if value % 100 == 0:
+            return value  # Already a multiple of 100
+        elif value % 100 <= 50:
+            return math.ceil(value / 50) * 50  # Round up to next 50
+        else:
+            return math.ceil(value / 100) * 100  # Round up to next 100
+
+    def set_cbar_limits(self):
+        clev1 = 0.0
+        if self.obs:
+            clev2 = max(self.obs["mld"].max(), self.obs["mld"].max())
+        else: 
+            clev2 = self.data["mld"].max()
+        clev2 = self._round_up(clev2)
+        if clev2 < 200:
+            nlevels = 10
+        elif clev2 > 1500:
+            nlevels = 100
+        else:
+            nlevels = 50
+        self.nlevels = nlevels
+        self.clev1 = clev1
+        self.clev2 = clev2
+
 
     def set_suptitle(self, plot_type = None):
         """Set the title for the MLD plot."""

@@ -82,4 +82,7 @@ def compute_mld_cont(rho, loglevel="WARNING"):
     aqua_dict = {key: rho.rho.attrs[key] for key in rho.rho.attrs.keys() if key.startswith("AQUA")}
     mld.mld.attrs.update(aqua_dict)
 
+    mld.mld.attrs["long_name"] = "Mixed Layer Depth"
+    mld.mld.attrs["standard_name"] = "ocean_mixed_layer_depth"
+    # mld.mld.attrs["units"] = "m"
     return mld

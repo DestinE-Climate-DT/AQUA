@@ -229,6 +229,9 @@ class Stratification(Diagnostic):
         self.logger.debug("Computing potential density at reference pressure 0 dbar.")
         rho = compute_rho(self.data["so"], self.data["thetao"], 0)
         self.data["rho"] = rho - 1000  # Convert to kg/m^3
+        self.data["rho"].attrs["long_name"] = "Potential Density"
+        self.data["rho"].attrs["units"] = "kg/m^3"
+        self.data["rho"].attrs["standard_name"] = "sea_water_potential_density"
         self.logger.debug("Added 'rho' (potential density anomaly) to dataset.")
 
         
