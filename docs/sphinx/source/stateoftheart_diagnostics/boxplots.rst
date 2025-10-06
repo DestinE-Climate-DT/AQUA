@@ -128,8 +128,7 @@ Example plots
    :align: center
    :width: 100%
 
-    Box plot showing the anomalies of the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to the ERA5 climatology.
-    The dashed lines indicates the absolute mean values.
+   Box plot showing the anomalies of the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to the ERA5 climatology. The dashed lines indicates the absolute mean values.
 
 Available demo notebooks
 ------------------------

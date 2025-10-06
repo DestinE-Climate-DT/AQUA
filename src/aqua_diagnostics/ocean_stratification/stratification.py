@@ -4,7 +4,7 @@ from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
 from .compute_mld import compute_mld_cont
 from .compute_rho import compute_rho
-from .convert_variables import convert_so, convert_thetao, convertkelvin_to_celsius 
+from .convert_variables import convert_so, convert_thetao 
 xr.set_options(keep_attrs=True)
 
 
@@ -109,7 +109,8 @@ class Stratification(Diagnostic):
         self.climatology = climatology
         self.logger.info("Starting stratification diagnostic run.")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
-        self.data = self.data.compute()
+        if 'lev' in self.data.dims:
+            self.data = self.data.rename({'lev':'level'})
         self.logger.debug(
             f"Variables retrieved: {var}, region: {region}, dim_mean: {dim_mean}"
         )
