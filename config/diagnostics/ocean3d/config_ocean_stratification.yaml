@@ -1,17 +1,17 @@
 datasets:
-  - catalog: null
-    model: FESOM
-    exp: hpz3
-    source: monthly-3d
+  - catalog: mn5-phase2
+    model: IFS-NEMO
+    exp: control-1990-freeze
+    source: lra-r100-monthly
     regrid: r100
     # reader_kwargs: {}
 
 references:
-  - catalog: null
-    model: 'FESOM'
-    exp: 'hpz3'
-    source: 'monthly-3d'
-    regrid: null
+  - catalog: obs
+    model: EN4
+    exp: en4
+    source: monthly
+    regrid: r100
 
 output:
   outputdir: "./"
