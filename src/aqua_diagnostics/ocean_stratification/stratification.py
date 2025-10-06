@@ -109,6 +109,8 @@ class Stratification(Diagnostic):
         self.climatology = climatology
         self.logger.info("Starting stratification diagnostic run.")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
+        data_thetao = super()._check_data(data=self.data['thetao'], var='thetao', units='degreeC')
+        self.data['thetao'] = data_thetao
         if 'lev' in self.data.dims:
             self.data = self.data.rename({'lev':'level'})
         self.logger.debug(
@@ -279,6 +281,6 @@ class Stratification(Diagnostic):
             diagnostic_product=f"{diagnostic_product}",
             outputdir=outputdir,
             rebuild=rebuild,
-            extra_keys={"region": region},
+            extra_keys={"region": region.replace(' ','_')},
         )
         self.logger.info("NetCDF file saved successfully.")

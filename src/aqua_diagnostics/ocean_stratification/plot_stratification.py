@@ -1,6 +1,7 @@
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
+import cartopy.crs as ccrs
 
 from .mld_profiles import plot_maps
 # from .multivar_vertical_profiles import plot_multivars_vertical_profile
@@ -57,6 +58,7 @@ class PlotStratification:
             maps=self.data_map_list,
             nrows=self.nrows,
             ncols=self.ncols,
+            proj=ccrs.PlateCarree(),
             title=self.suptitle,
             titles=self.title_list,
             cbar_number='separate',
@@ -69,7 +71,8 @@ class PlotStratification:
             dpi=dpi,
             format='pdf',
             diagnostic_product=self.diagnostic,
-            metadata=self.description
+            metadata=self.description,
+            extra_keys={"region": self.region.replace(' ','_')},
         )
 
     def set_nrowcol(self):

@@ -17,7 +17,7 @@ def plot_maps(
     maps: list,
     contour: bool = True,
     sym: bool = False,
-    proj: ccrs.Projection = ccrs.Robinson(),
+    proj: ccrs.Projection = ccrs.PlateCarree(),
     extent: list = None,
     style=None,
     figsize: tuple = None,
