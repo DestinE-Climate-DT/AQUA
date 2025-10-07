@@ -36,7 +36,7 @@ diagnostics:
       seasons: ['DJF']
       cbar_range: [-5, 5]
     ENSO:
-      run: false
+      run: true
       diagnostic_name: 'enso'
       months_window: 3
       seasons: ['annual']

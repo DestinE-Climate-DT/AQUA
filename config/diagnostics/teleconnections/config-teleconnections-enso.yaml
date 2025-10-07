@@ -29,12 +29,6 @@ output:
 
 diagnostics:
   teleconnections:
-    NAO:
-      run: false
-      diagnostic_name: 'nao'
-      months_window: 3
-      seasons: ['DJF']
-      cbar_range: [-5, 5]
     ENSO:
       run: true
       diagnostic_name: 'enso'
