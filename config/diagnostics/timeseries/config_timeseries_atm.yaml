@@ -65,8 +65,9 @@ diagnostics:
         units: "mm/day"
         regions: ['tropics', 'europe']
   
+  # NB: this is currently disabled, and run by radiation
   gregory:
-    run: false # Run by the Radiation by default
+    run: false 
     diagnostic_name: 'timeseries'
     t2m: '2t'
     net_toa_name: 'tnlwrf+tnswrf'

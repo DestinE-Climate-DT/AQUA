@@ -14,6 +14,9 @@ Workflow modifications:
 
 AQUA core complete list:
 - Rename LRA to DROP (Data Reduction OPerator) (#2234)
+- Added graphical function for vertical profile plotting (#2314)
+- Added catgen support for storyline experiments (#2308)
+- Pin maximum version of xarray (#2303)
 - CI/CD data now is read from aqua-dvc repository (#8370)
 - Histogram (or any callable function) possible through TimStat. New timhist method (#2263)
 - Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
@@ -45,6 +48,8 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Timeseries: update SeasonalCycles caption (#2299)
+- Seaice: added documentation and updated notebooks (#2249)
 - Seaice: update varname for PIOMAS and GIOMAS from sivol to sithick after updating the data in `obs` catalog (#2290)
 - Global Biases: allow GlobalBias to take color palette as argument (#2283)
 - Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
