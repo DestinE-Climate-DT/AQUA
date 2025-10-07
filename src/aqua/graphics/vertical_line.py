@@ -1,26 +1,25 @@
 from typing import Optional, Tuple
 import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
 from aqua.util import to_list
 from aqua.logger import log_configure
 from .styles import ConfigStyle
 
 
-def plot_vertical_line(data: xr.DataArray | list[xr.DataArray],
-                       ref_data: xr.DataArray = None,
-                       lev_name: str = "plev",
-                       lev_min: Optional[float] = None, lev_max: Optional[float] = None,
-                       labels: Optional[list[str]] = None,
-                       ref_label: Optional[str] = None,
-                       title: Optional[str] = None, title_size: Optional[int] = 16,
-                       style: Optional[str] = None,
-                       logscale: bool = False,
-                       invert_yaxis: bool = True,
-                       return_fig: bool = True, figsize: Tuple[int, int] = (10, 8),
-                       fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                       ax_pos: Tuple[int, int, int] = (1, 1, 1),
-                       loglevel: str = "WARNING"):
+def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
+                        ref_data: xr.DataArray = None,
+                        lev_name: str = "plev",
+                        lev_min: Optional[float] = None, lev_max: Optional[float] = None,
+                        labels: Optional[list[str]] = None,
+                        ref_label: Optional[str] = None,
+                        title: Optional[str] = None, title_size: Optional[int] = 16,
+                        style: Optional[str] = None,
+                        logscale: bool = False,
+                        invert_yaxis: bool = True,
+                        return_fig: bool = True, figsize: Tuple[int, int] = (10, 8),
+                        fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
+                        ax_pos: Tuple[int, int, int] = (1, 1, 1),
+                        loglevel: str = "WARNING"):
     """
     Plots a vertical line plot.
 
