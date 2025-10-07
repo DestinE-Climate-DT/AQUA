@@ -188,15 +188,15 @@ def plot_maps(
                                                 ticks_rounding=cbar_ticks_rounding,
                                                 max_ticks=10,
                                                 loglevel=loglevel)
-            cbar.set_ticks([vmin, vmax])
-            # cbar.set_ticks(cbar_ticks)
+            # cbar.set_ticks([vmin, vmax])
+            cbar.set_ticks(cbar_ticks)
 
-        # Make the colorbar ticks symmetrical if sym=True
-        if sym:
-            logger.debug("Setting colorbar ticks to be symmetrical")
-            cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
-        else:
-            cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
+        # # Make the colorbar ticks symmetrical if sym=True
+        # if sym:
+        #     logger.debug("Setting colorbar ticks to be symmetrical")
+        #     cbar.set_ticks(np.linspace(-vmax, vmax, nlevels + 1))
+        # else:
+        #     cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
         cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
 
