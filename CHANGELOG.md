@@ -14,6 +14,7 @@ Workflow modifications:
 
 AQUA core complete list:
 - Rename LRA to DROP (Data Reduction OPerator) via the `Drop()` class (#2234)
+- Area selection is now a separate class, `AreaSelection` in the `aqua.fldstat` module (#2245)
 - Added graphical function for vertical profile plotting (#2314, #2316)
 - Added catgen support for storyline experiments (#2308)
 - Pin maximum version of xarray (#2303)
