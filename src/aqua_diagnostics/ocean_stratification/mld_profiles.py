@@ -133,7 +133,7 @@ def plot_maps(
             **kwargs,
         )
         ax.set_facecolor('lightgray')
-        
+
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
             ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
@@ -166,6 +166,7 @@ def plot_maps(
             # cbar.set_ticks(cbar_ticks)
 
     if cbar_number == 'single':
+
         # Add a colorbar axis at the bottom of the graph
         cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
 
@@ -180,6 +181,7 @@ def plot_maps(
             cbar = fig.colorbar(
                 mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label
         )
+            cbar.set_ticks([vmin, vmax])  # Only show min and max
 
         # Make the colorbar ticks symmetrical if sym=True
         if sym:
