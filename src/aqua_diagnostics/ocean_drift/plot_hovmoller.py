@@ -2,6 +2,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 from .multiple_hovmoller import plot_multi_hovmoller
+from .multiple_timeseries import plot_multi_timeseries
 
 xr.set_options(keep_attrs=True)
 
@@ -74,13 +75,53 @@ class PlotHovmoller:
             cmap=self.cmap,
             text=self.texts
         )
-        extra_keys = {'region': self.region.replace(" ", "_").lower()}
         if save_pdf:
-            self.outputsaver.save_pdf(fig, diagnostic_product="hovmoller", metadata=self.description,
-                                      rebuild=rebuild, extra_keys=extra_keys)
+            format= 'pdf'
         if save_png:
-            self.outputsaver.save_png(fig, diagnostic_product="hovmoller", metadata=self.description,
-                                      rebuild=rebuild, dpi=dpi, extra_keys=extra_keys)
+            format= 'png'
+
+        self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
+                       rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
+        
+    def plot_timeseries(self, rebuild: bool = True, save_pdf: bool = True,
+                       save_png: bool = True, dpi: int = 300):
+        """
+        Plot the timeseries for the given data.
+        This method sets the title, description, vmax, vmin, and texts for the plot.
+        It then calls the `plot_multi_timeseries` function to create the plot and
+        saves it using the `OutputSaver`.
+
+        Args:
+            rebuild (bool): Whether to rebuild the output, default is True
+            save_pdf (bool): Whether to save the plot as a PDF, default is True
+            save_png (bool): Whether to save the plot as a PNG, default is True
+        """
+        self.set_suptitle()
+        self.set_title()
+        self.set_description()
+        self.set_data_type()
+        self.set_texts()
+        self.set_vmax_vmin()
+        self.logger.debug("Plotting Timeseries for variables: %s", self.vars)
+        fig = plot_multi_timeseries(
+            maps=self.data,
+            variables=self.vars,
+            loglevel=self.loglevel,
+            title=self.suptitle,
+            titles=self.title_list,
+            vmax=self.vmax,
+            vmin=self.vmin,
+            cmap=self.cmap,
+            text=self.texts
+        )
+        if save_pdf:
+            format= 'pdf'
+        if save_png:
+            format= 'png'
+
+        self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
+                       rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
+        
 
     def set_suptitle(self):
         """Set the suptitle for the Hovmoller plot."""
@@ -102,7 +143,8 @@ class PlotHovmoller:
 
     def set_description(self):
         """Set the description for the Hovmoller plot."""
-        self.description = f'Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}'
+        self.description = {}
+        self.description["description"] = {f'Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}'}
 
     def set_vmax_vmin(self):
         """
@@ -165,3 +207,28 @@ class PlotHovmoller:
                 else:
                     self.texts.append(None)
         self.logger.debug("Texts set to: %s", self.texts)
+    
+    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+                  rebuild: bool = True,
+                  dpi: int = 300, format: str = 'png', metadata: dict = None):
+        """
+        Save the plot to a file.
+
+        Args:
+            fig (matplotlib.figure.Figure): The figure to be saved.
+            diagnostic_product (str): The name of the diagnostic product. Default is None.
+            extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is None.
+            rebuild (bool): If True, the output files will be rebuilt. Default is True.
+            dpi (int): The dpi of the figure. Default is 300.
+            format (str): The format of the figure. Default is 'png'.
+            metadata (dict): The metadata to be used for the figure. Default is None.
+                             They will be complemented with the metadata from the outputsaver.
+                             We usually want to add here the description of the figure.
+        """
+        if format == 'png':
+            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                          extra_keys=extra_keys, metadata=metadata, dpi=dpi)
+        elif format == 'pdf':
+            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                          extra_keys=extra_keys, metadata=metadata)
+        self.logger.info(f"Figure saved as {result}")
