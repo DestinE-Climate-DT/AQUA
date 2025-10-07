@@ -25,6 +25,7 @@ from .multiple_maps import plot_maps, plot_maps_diff
 from .vertical_profiles import plot_vertical_profile, plot_vertical_profile_diff
 from .lat_lon_profiles import plot_lat_lon_profiles
 from .seasonal_means import plot_seasonal_lat_lon_profiles
+from .vertical_line import plot_vertical_line
 
 
 __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
@@ -36,7 +37,8 @@ __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
            "plot_maps", "plot_maps_diff",
            "plot_vertical_profile", "plot_vertical_profile_diff",
            "plot_lat_lon_profiles",
-           "plot_seasonal_lat_lon_profiles"]
+           "plot_seasonal_lat_lon_profiles",
+           "plot_vertical_line"]
 
 
 def activate_style(style: str = None,
