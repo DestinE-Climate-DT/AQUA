@@ -6,7 +6,7 @@ datasets:
   - catalog: null
     model: null
     exp: null
-    source: 'lra-r100-monthly'
+    source: null
     regrid: null
     reader_kwargs: null # it can be a dictionary with reader kwargs
   # Possible second/third/fourth datasets here, no present by default
@@ -16,6 +16,7 @@ datasets:
   #   source: 'monthly'
   #   regrid: r100
 
+# At the moment we only support one reference dataset for plots
 references:
   - catalog: 'obs'
     model: 'ERA5'
@@ -34,7 +35,7 @@ output:
 diagnostics:
   timeseries:
     run: true
-    diagnostic_name: 'atmosphere'
+    diagnostic_name: 'timeseries'
     variables: ['2t', 'ie', 'msl', 'tprate',
                 'tcc', 'lcc', 'mcc', 'hcc',
                 'slhtf', #Mean surface latent heat flux
@@ -65,9 +66,30 @@ diagnostics:
         units: "mm/day"
         regions: ['tropics', 'europe']
   
-  # NB: this is currently disabled, and run by radiation
+  seasonalcycles:
+    run: true
+    diagnostic_name: 'atmosphere'
+    variables: ['2t', 'tprate', 'ie', 'msl',
+                 'tcc', 'lcc', 'mcc', 'hcc',
+                 'slhtf', #Mean surface latent heat flux
+                 'ishf', #Mean surface sensible heat flux
+                 'sdswrf', #Mean surface downward short-wave radiation flux
+                 'sdlwrf', #Mean surface downward long-wave radiation flux
+                 'snswrf', #Mean surface net short-wave radiation flux
+                 'snlwrf', #Mean surface net long-wave radiation flux
+                 'tnlwrf', #Mean top net long-wave radiation flux
+                 'tnswrf' #Mean top net short-wave radiation flux
+                 ]
+    center_time: true
+    params:
+      default:
+        std_startdate: '19900101'
+        std_enddate: '20201231'
+      tprate:
+        units: "mm/day"
+
   gregory:
-    run: false 
+    run: true 
     diagnostic_name: 'timeseries'
     t2m: '2t'
     net_toa_name: 'tnlwrf+tnswrf'
