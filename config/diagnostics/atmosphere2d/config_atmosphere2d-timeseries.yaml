@@ -35,7 +35,7 @@ diagnostics:
   timeseries:
     run: true
     diagnostic_name: 'atmosphere2d'
-    variables: ['2t', 'msl', 'tprate', 'tcc']
+    variables: ['2t', 'msl','tcc']
     center_time: true
     params:
       default:

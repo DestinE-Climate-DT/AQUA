@@ -28,7 +28,7 @@ diagnostics:
   globalbiases:
     run: true
     diagnostic_name: 'atmosphere2d'
-    variables: ['tprate', '2t', 'msl', 'tos']
+    variables: ['2t', 'msl', 'tcc']
     params:
       default:
         seasons: true
