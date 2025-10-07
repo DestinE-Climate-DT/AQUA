@@ -22,27 +22,31 @@ reduction platform.
 
 
 DROP Capabilities
-----------------------------
+-----------------
 
 DROP's architecture enables various data processing tasks:
 
 **Temporal Processing:**
+
 - Custom frequency resampling (any frequency to any frequency)
 - Multiple statistics: mean, std, max, min
 - Handling of incomplete time chunks
 
 **Spatial Processing:**
+
 - Regridding to any supported resolution or native grid
 - Regional data extraction with configurable boundaries  
 - Support for both regular and irregular grids
 
 **Data Management:**
+
 - Automatic catalog entry generation for DROP-generated outputs
 - Zarr reference creation for faster access
 - Parallel processing with configurable workers
 - Memory-efficient chunked processing
 
 **Example use cases:**
+
 - Extract daily European data from global monthly archives
 - Convert model output from native grid to regular 0.25° grid
 - Create statistical summaries (std, max, min) instead of just means
@@ -71,21 +75,26 @@ Source Naming Convention
 DROP automatically generates catalog source names following a consistent pattern:
 
 **Standard naming format:**
+
 - **Pattern**: ``{resolution}-{frequency}``
-- **Examples**: 
+- **Examples**:
+
   - ``r100-monthly`` (1° resolution, monthly frequency)
   - ``r100-daily`` (1° resolution, daily frequency)
   - ``r25-monthly`` (0.25° resolution, monthly frequency)
 
 **Default LRA source:**
+
 - ``lra-r100-monthly``
 
 **Zarr variants:**
 All sources have corresponding Zarr reference versions with ``-zarr`` suffix:
+
 - ``r100-monthly-zarr``
 - ``r100-daily-zarr``
 
 **Resolution codes:**
+
 - ``r100`` = 1° (100km approximately)
 - ``r25`` = 0.25° (25km approximately)
 - ``native`` = original model grid
@@ -140,7 +149,7 @@ interface using the automatically created catalog sources.
 
 **Zarr access for faster performance:**
 
-Since version v0.11, you can access data using Zarr reference files for improved performance:
+You can access data using Zarr reference files for improved performance, when available:
 
 .. code-block:: python
 
@@ -152,7 +161,7 @@ Since version v0.11, you can access data using Zarr reference files for improved
     The specific source names depend on the resolution and frequency you configured when 
     running DROP. See the "Source Naming Convention" section above for details.
 
-.. note ::
+.. warning ::
     Zarr reference access is experimental and may not work with all experiment configurations.
 
 Using DROP to process data
@@ -181,9 +190,10 @@ Key configuration options include:
 - ``stat``: statistic to compute (``mean``, ``std``, ``max``, ``min``)
 - ``region``: spatial subsetting configuration
 
-.. caution::
+.. warning::
     Catalog detection is automatic, but specify the catalog name explicitly in the configuration 
     file if you have identically named triplets in different catalogs.
+
 Usage
 ^^^^^
 
@@ -191,10 +201,7 @@ Usage
 
     aqua drop <options>
 
-Options: 
-
-.. note ::
-    These options override the ones available in the configuration file. 
+**Options:** these override the configuration file options.
 
 .. option:: -c CONFIG, --config CONFIG
 
@@ -271,6 +278,7 @@ Generate daily data at 0.25° resolution with 8 workers:
     is a limiting factor, so that unless you have very fat node it is unlikely you can use more than 16 workers.
 
 **Output:**
+
 After processing, new catalog entries are automatically created following the naming 
 convention described above, allowing immediate access to your processed data.
 
@@ -293,4 +301,5 @@ larger portability.
 A ``-s`` option to call the run via container instead of using the local installation.
 
 .. warning ::
-    Use with caution - this script rapidly submits tens of job to the SLURM scheduler!
+
+    Use with caution. This script rapidly submits tens of jobs to the SLURM scheduler!

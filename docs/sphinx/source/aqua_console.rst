@@ -386,7 +386,7 @@ The following options are available for ``aqua grids build``:
 .. _aqua-drop:
 
 aqua drop -c <config_file> <drop-options>
----------------------------------------
+-----------------------------------------
 
 This subcommand launch DROP (Data Reduction OPerator).
 For full description of the DROP functionalities, please refer to the :ref:`drop` section.

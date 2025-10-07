@@ -23,11 +23,11 @@ File structure
 --------------
 
 * The diagnostic is located in the ``src/aqua_diagnostics/boxplots`` directory, which contains 
-both the source code and the command line interface (CLI) script.
+  both the source code and the command line interface (CLI) script.
 * The configuration files are located in the ``config/diagnostics/boxplots`` directory and contain 
-the default configuration for the diagnostic.
+  the default configuration for the diagnostic.
 * Notebooks are available in the ``notebooks/diagnostics/boxplots`` directory and contain examples 
-of how to use the diagnostic.
+  of how to use the diagnostic.
 
 Input variables and datasets
 ----------------------------
@@ -136,8 +136,8 @@ Example plots
    :align: center
    :width: 100%
 
-    Box plot showing the anomalies of the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to the ERA5 climatology.
-    The dashed lines indicates the absolute mean values.
+   Box plot showing the anomalies of the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to the ERA5 climatology.
+   The dashed lines indicates the absolute mean values.
 
 Available demo notebooks
 ------------------------

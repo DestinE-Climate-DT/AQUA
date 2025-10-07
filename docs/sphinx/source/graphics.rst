@@ -123,6 +123,7 @@ The vertical levels and the horizontal coordinate can be specified through the `
 In the following example we plot the vertical profile of specific humidity from the first timestep of IFS-NEMO historical-1990:
 
 .. code-block:: python
+
     from aqua import Reader
     from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 
