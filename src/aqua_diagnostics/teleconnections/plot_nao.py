@@ -1,8 +1,5 @@
-import numpy as np
 import xarray as xr
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-import matplotlib.path as mpath
 from cartopy.crs import NorthPolarStereo
 from aqua.logger import log_configure
 from aqua.graphics import indexes_plot, plot_single_map, plot_single_map_diff
@@ -46,7 +43,7 @@ class PlotNAO(PlotBaseMixin):
     def plot_maps(self, maps=None, ref_maps=None, statistic: str = None, vmin: float = None, vmax: float = None,
                   vmin_diff: float = None, vmax_diff: float = None, **kwargs):
         """
-        Plot the maps for the ENSO products.
+        Plot the maps for the NAO products.
 
         Args:
             maps (list): List of maps to plot.
@@ -85,13 +82,6 @@ class PlotNAO(PlotBaseMixin):
         fig = plt.figure(figsize=(11, 8.5))
         ax = fig.add_subplot(111, projection=proj)
 
-        # Plot details
-        proj = NorthPolarStereo(central_longitude=-20.0)
-        extent = [-180, 180, 10, 90]
-
-        fig = plt.figure(figsize=(11, 8.5))
-        ax = fig.add_subplot(111, projection=proj)
-
         ax = apply_circular_window(ax, extent=extent)
 
         # Case 1: no reference maps
@@ -115,7 +105,7 @@ class PlotNAO(PlotBaseMixin):
 
             # Case 2a: both maps and ref_maps are only one (we consider only both lists of one or both xarrays)
             if isinstance(maps, xr.DataArray) and isinstance(ref_maps, xr.DataArray):
-                title = f"ENSO {maps.AQUA_model} {maps.AQUA_exp} {statistic} map ({var}) compared to {ref_maps.AQUA_model} {ref_maps.AQUA_exp}"
+                title = f"NAO {maps.AQUA_model} {maps.AQUA_exp} {statistic} map ({var}) compared to {ref_maps.AQUA_model} {ref_maps.AQUA_exp}"
                 if hasattr(maps, 'AQUA_season'):
                     title += f" ({maps.AQUA_season})"
                 fig, _ = plot_single_map_diff(data=maps, data_ref=ref_maps,
