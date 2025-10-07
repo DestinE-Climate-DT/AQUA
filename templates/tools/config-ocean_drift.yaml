@@ -1,0 +1,28 @@
+# Template according to #1613
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
+    reader_kwargs: null
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  ocean_drift:
+    hovmoller:
+      diagnostic_name: 'ocean3d'
+      run: true
+      var: ['thetao', 'so']
+      regions: ['io', 'sss']
+      dim_mean: ['lat', 'lon']

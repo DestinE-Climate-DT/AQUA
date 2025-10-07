@@ -4,7 +4,7 @@
 # --model, --exp, --source, --outputdir, --catalog
 datasets:
   - catalog: null
-    model: FESOM
+    model: null
     exp: hpz3
     source: monthly-3d
     regrid: null
@@ -25,4 +25,3 @@ diagnostics:
       run: true
       var: ['thetao', 'so']
       regions: ['io', 'ao', 'so', 'arc_o', 'po', 'go']
-      # dim_mean: ['lat']
