@@ -156,14 +156,14 @@ def plot_maps(
             cax = divider.append_axes("right", size="5%", pad=0.15, axes_class=plt.Axes)
             cbar = fig.colorbar(mappable, cax=cax, orientation="vertical")
 
-            # cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
-            # cbar_ticks = generate_colorbar_ticks(vmin=vmin,
-            #                                     vmax=vmax, 
-            #                                     sym=sym,
-            #                                     nlevels=nlevels,
-            #                                     ticks_rounding=cbar_ticks_rounding,
-            #                                     loglevel=loglevel)
-            # cbar.set_ticks(cbar_ticks)
+            cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
+            cbar_ticks = generate_colorbar_ticks(vmin=vmin,
+                                                vmax=vmax, 
+                                                sym=sym,
+                                                nlevels=nlevels,
+                                                ticks_rounding=cbar_ticks_rounding,
+                                                loglevel=loglevel)
+            cbar.set_ticks(cbar_ticks)
     if cbar_number == 'single':
 
         # Add a colorbar axis at the bottom of the graph
@@ -173,14 +173,23 @@ def plot_maps(
         logger.debug("Setting colorbar label to %s", cbar_label)
 
         
-
         # Add the colorbar
         mappable = ax.collections[0]
         if cbar == True:
             cbar = fig.colorbar(
                 mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label
         )
-            cbar.set_ticks([vmin, vmax])  # Only show min and max
+            # cbar.set_ticks([vmin, vmax])  # Only show min and max
+            cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
+            cbar_ticks = generate_colorbar_ticks(vmin=vmin,
+                                                vmax=vmax, 
+                                                sym=sym,
+                                                nlevels=nlevels,
+                                                ticks_rounding=cbar_ticks_rounding,
+                                                max_ticks=10,
+                                                loglevel=loglevel)
+            cbar.set_ticks([vmin, vmax])
+            # cbar.set_ticks(cbar_ticks)
 
         # Make the colorbar ticks symmetrical if sym=True
         if sym:
