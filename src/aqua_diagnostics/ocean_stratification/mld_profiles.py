@@ -164,7 +164,6 @@ def plot_maps(
             #                                     ticks_rounding=cbar_ticks_rounding,
             #                                     loglevel=loglevel)
             # cbar.set_ticks(cbar_ticks)
-
     if cbar_number == 'single':
 
         # Add a colorbar axis at the bottom of the graph

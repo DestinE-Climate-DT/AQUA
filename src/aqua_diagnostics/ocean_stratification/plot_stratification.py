@@ -71,8 +71,8 @@ class PlotStratification:
             cmap='jet',
             ytext=self.ytext,
             return_fig=True,
-            vmax=self.clev2,
-            vmin=self.clev1,
+            vmax=self.vmax,
+            vmin=self.vmin,
             nlevels=self.nlevels,
             sym=True
         )
@@ -138,21 +138,20 @@ class PlotStratification:
             return math.ceil(value / 100) * 100  # Round up to next 100
 
     def set_cbar_limits(self):
-        clev1 = 0.0
+        self.vmin = 0.0
         if self.obs:
-            clev2 = max(self.obs["mld"].max(), self.obs["mld"].max())
+            self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
         else: 
-            clev2 = self.data["mld"].max()
-        clev2 = self._round_up(clev2)
-        if clev2 < 200:
+            self.vmax = self.data["mld"].max()
+        self.vmax = self._round_up(self.vmax)
+        if self.vmax < 200:
             nlevels = 10
-        elif clev2 > 1500:
+        elif self.vmax > 1500:
             nlevels = 100
         else:
             nlevels = 50
         self.nlevels = nlevels
-        self.clev1 = clev1
-        self.clev2 = clev2
+        self.logger.debug(f"Colorbar limits set to vmin: {self.vmin}, vmax: {self.vmax}, nlevels: {self.nlevels}")
 
 
     def set_suptitle(self, plot_type = None):
