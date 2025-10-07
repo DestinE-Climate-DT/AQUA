@@ -13,6 +13,7 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Added graphical function for vertical profile plotting (#2314)
 - Added catgen support for storyline experiments (#2308)
 - Pin maximum version of xarray (#2303)
 - CI/CD data now is read from aqua-dvc repository (#8370)
