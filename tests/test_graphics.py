@@ -6,6 +6,7 @@ from aqua.graphics import plot_single_map, plot_single_map_diff
 from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
+from aqua.graphics import plot_vertical_lines
 
 loglevel = "DEBUG"
 
@@ -342,3 +343,36 @@ class TestHovmoller:
 
         with pytest.raises(TypeError):
             plot_hovmoller(data='test')
+
+
+@pytest.mark.graphics
+class TestVerticalLines:
+    """Basic tests for the Vertical Line functions"""
+
+    def setup_method(self):
+        """Setup method to retrieve data for testing"""
+        model = 'ERA5'
+        exp = 'era5-hpz3'
+        source = 'monthly'
+        self.reader = Reader(model=model, exp=exp, source=source)
+        self.data = self.reader.retrieve(['q'])['q'].isel(time=0, cells=0)
+
+    def test_plot_vertical_lines(self, tmp_path):
+        """Test the plot_vertical_lines function"""
+        fig, ax = plot_vertical_lines(data=self.data,
+                                      ref_data=self.data * 0.8,
+                                      lev_name='plev',
+                                      labels=['test'],
+                                      ref_label='ref',
+                                      title='Test vertical line',
+                                      return_fig=True,
+                                      invert_yaxis=True,
+                                      loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_vertical_lines.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_vertical_lines.png')
