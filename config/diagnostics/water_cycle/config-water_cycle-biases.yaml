@@ -1,0 +1,59 @@
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
+
+references:
+  - catalog: 'obs'
+    model: 'MSWEP'
+    exp: null
+    source: null
+    regrid: 'r100'
+  
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  globalbiases:
+    run: true
+    diagnostic_name: 'water_cycle'
+    variables: ['tprate']
+    formulae: ['ie-tprate']
+    params:
+      default:
+        plev: null # Level plot for 2D bias map if variable 3d
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: false     # Vertical profile if variable 3d
+        startdate_data: null
+        enddate_data: null
+        startdate_obs: "2000-01-01"
+        enddate_obs: "2020-12-31"
+      ie-tprate:
+        standard_name: "e-tprate"
+        long_name: "Evaporation - Precipitation"
+        units: "mm/day"
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
+    plot_params: 
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      tprate:
+        vmin: -8
+        vmax: 8
+      ie-tprate:
+        vmin: -5
+        vmax: 5
