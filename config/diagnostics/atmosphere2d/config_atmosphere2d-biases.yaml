@@ -1,0 +1,62 @@
+# Currently, the diagnostic supports comparing one dataset against one reference dataset at a time.
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: null
+
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  globalbiases:
+    run: true
+    diagnostic_name: 'atmosphere2d'
+    variables: ['tprate', '2t', 'msl', 'tos']
+    params:
+      default:
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: false     # Vertical profile if variable 3d
+        startdate_data: null
+        enddate_data: null
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2020-12-31"
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
+
+    plot_params:
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      2t:
+        vmin: -15
+        vmax: 15
+        cmap: 'RdBu_r'
+      msl:
+        vmin: -1000
+        vmax: 1000
+      tnlwrf:
+        vmin: -40
+        vmax: 40
+      tprate:
+        vmin: -8
+        vmax: 8
