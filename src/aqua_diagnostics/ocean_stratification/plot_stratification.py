@@ -7,7 +7,6 @@ import math
 
 from .mld_profiles import plot_maps
 # from .multivar_vertical_profiles import plot_multivars_vertical_profile
-from aqua import plot_maps
 
 xr.set_options(keep_attrs=True)
 
@@ -74,7 +73,7 @@ class PlotStratification:
             vmax=self.vmax,
             vmin=self.vmin,
             nlevels=self.nlevels,
-            sym=True
+            sym=False
         )
         self.save_plot(
             fig,
