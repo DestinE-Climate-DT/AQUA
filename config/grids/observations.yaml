@@ -41,6 +41,20 @@ grids:
     cellareas_var: areacello
     regrid_method: 'bil'
 
+  osi-saf-nh-aqua:
+    path: '{{ grids }}/OSI-SAF/grid_osi-saf-aqua_nh.nc'
+    space_coord: ['xc', 'yc']
+    cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc'
+    cellareas_var: areacello
+    regrid_method: 'bil'
+
+  osi-saf-sh-aqua:
+    path: '{{ grids }}/OSI-SAF/grid_osi-saf-aqua_sh.nc'
+    space_coord: ['xc', 'yc']
+    cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc'
+    cellareas_var: areacello
+    regrid_method: 'bil'
+
   # WOA
   woa:
     path:
