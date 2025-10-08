@@ -152,7 +152,7 @@ class FldStat():
                     box_brd: bool = True, drop: bool = False,
                     lat_name: str = "lat", lon_name: str = "lon",
                     default_coords: dict = {"lat_min": -90, "lat_max": 90,
-                                            "lon_min": 0, "lon_max": 360}) -> xr.Dataset | xr.DataArray:
+                                            "lon_min": 0, "lon_max": 360}, **kwargs) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
         Wrapper for AreaSelection.select_area method.
@@ -163,7 +163,8 @@ class FldStat():
         return self.area_selection.select_area(data, lon=lon, lat=lat,
                                                 box_brd=box_brd, drop=drop,
                                                 lat_name=lat_name, lon_name=lon_name,
-                                                default_coords=default_coords)
+                                                default_coords=default_coords,
+                                                **kwargs)
 
     def align_area_dimensions(self, data):
         """
