@@ -5,12 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.18.0):
+Unreleased in the current development version (target v0.19.0):
+
+AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.18.0]
+
+Main changes: 
+1. LRA generator is renamed to DROP (Data Reduction OPerator)
+2. `aqua analysis` is now an entry point replacing the `aqua_analysis.py` script
+3. Timstat module is now extended to support custom function
+4. Introduction of new LatLonProfiles diagnostic 
+5. Completely refactored diagnostics: Sea Ice, radiation, Ocean drift and Ocean stratification
+
 Removed:
 -  removed old OutputSaver (#2146) 
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
+- `aqua lra` entry point is renamed to `aqua drop`.
+- DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
 - Rename LRA to DROP (Data Reduction OPerator) via the `Drop()` class (#2234)
@@ -98,7 +114,7 @@ Main changes are:
 Removed:
 -  removed Reader.info() method (#2076) 
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `machine` and `author` are mandatory fields in the catalog generator config file.
 - Data portfolio required is v2.0.0, no API changes are involved in this change.
 - Add possibility to change the 'default' realization in Catalog Generator config file.
@@ -150,7 +166,7 @@ AQUA diagnostics complete list:
 Removed:
 - Removed source or experiment specific fixes; only the `fixer_name` is now supported.
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - Due to a bug in Singularity, `--no-mount /etc/localtime` has to be implemented into the AQUA container call 
 - `push_analysis.sh` now updates and pushes to LUMI-O the file `experiments.yaml`, which is used by the 
   dashboard to know which experiments to list. The file is downloaded from the object store, updated and 
@@ -209,7 +225,7 @@ Main changes are:
 Removed:
 - `aqua.slurm` has been removed.
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes. As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
 
 AQUA core complete list:
@@ -254,7 +270,7 @@ Removed:
 - Support for python==3.9 has been dropped.
 - Generators option from the Reader has been removed.
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `aqua_analysis.py`: all the config files are used from the `AQUA_CONFIG` folder. This allows individual run modification kept in the `AQUA_CONFIG` folder for reproducibility.
 - `makes_contents.py`: can now take a config file as an argument to generate the `content.yaml` file.
 - `push_analysis.sh`: now has an option to rsync the figures to a specified location. Extra flags have been added (see Dashboard section in the documentation).
