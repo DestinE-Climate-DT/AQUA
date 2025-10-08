@@ -108,6 +108,12 @@ jobs:
               - conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
+      - name: List Conda packages
+        run: |
+          cd AQUA
+          # Save the conda packages visible in the current environment to a file for debugging
+          micromamba list -n aqua > AQUA/micromamba_list.txt || conda list > AQUA/micromamba_list.txt || true
+          echo "Saved micromamba list to AQUA/micromamba_list.txt"
       - name: List Pip packages
         run: |
           # Save the pip packages visible in the current environment to a file for debugging
@@ -194,9 +200,6 @@ jobs:
           cd AQUA
           # produce a xml report and a junit report to be used by codecov. Please notice other options are set in pyproject.toml
           pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or catgen or diagnostics or ensemble" 2>&1 | tee aqua_pytest.log
-      - name: Display coverage.xml contents
-        if: ${{ github.actor != 'dependabot[bot]' }}
-        run: cat AQUA/coverage.xml
       - name: Upload coverage reports to Codecov
         if: ${{ github.actor != 'dependabot[bot]' && !cancelled() }}
         uses: codecov/codecov-action@v5
@@ -220,6 +223,7 @@ jobs:
             AQUA/coverage.xml
             AQUA/.pytest_cache
             AQUA/aqua_pytest.log
+            AQUA/micromamba_list.txt
             AQUA/pip_freeze.txt
           # Don't fail the job if some files are missing
           if-no-files-found: ignore
