@@ -98,7 +98,9 @@ class PlotHovmoller:
             save_pdf (bool): Whether to save the plot as a PDF, default is True
             save_png (bool): Whether to save the plot as a PNG, default is True
         """
-        self.levels = levels if levels else [0, 100, 200]
+        # self.levels = levels if levels else [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
+        self.levels = levels if levels else [0, 100, 500, 1000]
+        self.set_data_for_levels()
         self.set_suptitle()
         self.set_title()
         self.set_description()
@@ -123,12 +125,32 @@ class PlotHovmoller:
         if save_png:
             format= 'png'
 
-        self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
+        self.save_plot(fig, diagnostic_product="timeseries", metadata=self.description,
                        rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
         
     def set_levels(self):
         self.levels = []
 
+    def set_data_for_levels(self):
+        """
+        Set the data for the specified levels.
+        This method extracts the data at the specified levels from the original data.
+        """
+        self.logger.debug("Setting data for levels: %s", self.levels)
+        new_data_list = []
+        for _, data in enumerate(self.data):
+            new_data_level_list = []
+            for level in self.levels:
+                self.logger.debug("Extracting data for level: %s", level)
+                # Interpolate the data to the specified levels
+                if level == 0:
+                    new_data = data.isel(level=0)
+                else: 
+                    new_data = data.interp(level=level, method='nearest')
+                new_data_level_list.append(new_data)
+            merged_data = xr.concat(new_data_level_list, dim='level')
+            new_data_list.append(merged_data)
+        self.data = new_data_list
 
     def set_suptitle(self):
         """Set the suptitle for the Hovmoller plot."""
@@ -143,7 +165,10 @@ class PlotHovmoller:
         self.title_list = []
         for j in range(len(self.data)):
             for _, var in enumerate(self.vars):
-                title = f"{var} ({self.data[j][var].attrs.get('units')})"
+                if j == 0:
+                    title = f"{var} ({self.data[j][var].attrs.get('units')})"
+                else:
+                    title = None
                 self.title_list.append(title)
         self.logger.debug("Title list set to: %s", self.title_list)
 
