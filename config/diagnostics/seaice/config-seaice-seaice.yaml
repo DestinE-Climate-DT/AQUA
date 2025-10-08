@@ -19,7 +19,7 @@ references:
   - &ref_osi_nh
     catalog: 'obs'             # mandatory
     model: 'OSI-SAF'           # mandatory
-    exp: 'osi-450'             # mandatory
+    exp: 'osi-saf-aqua'             # mandatory
     source: 'nh-monthly'       # mandatory
     regrid: 'r100'
     domain: "nh"
@@ -28,7 +28,7 @@ references:
   - &ref_osi_sh
     catalog: 'obs'             # mandatory
     model: 'OSI-SAF'           # mandatory
-    exp: 'osi-450'             # mandatory
+    exp: 'osi-saf-aqua'             # mandatory
     source: 'sh-monthly'       # mandatory
     regrid: 'r100'
     domain: "sh"

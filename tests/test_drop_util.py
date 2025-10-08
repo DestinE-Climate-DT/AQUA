@@ -1,6 +1,6 @@
 import os
 import pytest
-from aqua.lra_generator import lra_util
+from aqua.drop import drop_util
 from aqua.util import replace_intake_vars
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def lra_arguments(request):
 #     fixer_name = 'fixer'
 #     frequency = 'monthly'
 #     loglevel = 'WARNING'
-#     entry_name = lra_util.opa_catalog_entry(datadir=tmp_directory, model=model, exp=exp, 
+#     entry_name = drop_util.opa_catalog_entry(datadir=tmp_directory, model=model, exp=exp, 
 #                                             source=source, fixer_name=fixer_name, frequency=frequency, 
 #                                             loglevel=loglevel, catalog='ci')
 
@@ -51,7 +51,7 @@ def test_move_tmp_files(tmp_directory, output_directory):
     with open(tmp_file2, 'w') as f:
         f.write('Temporary file 2')
 
-    lra_util.move_tmp_files(tmp_directory, output_directory)
+    drop_util.move_tmp_files(tmp_directory, output_directory)
 
     #assert not os.path.exists(tmp_file1)
     #assert not os.path.exists(tmp_file2)
