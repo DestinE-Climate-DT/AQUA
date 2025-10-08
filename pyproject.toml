@@ -58,6 +58,7 @@ dependencies = [
     "smmregrid==0.1.3",
     #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
     "sparse",
+    "typeguard",
     "xarray>=2025.01.2,<2025.09.1", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
     "kerchunk",
     "h5py>=3.12.1", #specific github pin to avoid installation of binaries

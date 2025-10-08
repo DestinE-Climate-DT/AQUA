@@ -205,9 +205,9 @@ class TestAquaConsole():
             run_aqua(['remove', 'pippo'])
             assert excinfo.value.code == 1
 
-        # create a test for LRA
-        with pytest.raises(ValueError, match="ERROR: lra_config.yaml not found: you need to have this configuration file!"):
-            run_aqua(['lra'])
+        # create a test for DROP
+        with pytest.raises(ValueError, match="ERROR: drop_config.yaml not found: you need to have this configuration file!"):
+            run_aqua(['drop'])
 
         # create a test for catgen
         with pytest.raises(ValueError, match="ERROR: config.yaml not found: you need to have this configuration file!"):
@@ -228,8 +228,8 @@ class TestAquaConsole():
         run_aqua_console_with_input(['uninstall'], 'yes')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
-    def test_console_lra(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input): 
-        """Test for running the LRA via the console"""
+    def test_console_drop(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input): 
+        """Test for running DROP via the console"""
 
         mydir = str(tmpdir)
         set_home(mydir)
@@ -239,15 +239,15 @@ class TestAquaConsole():
         run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
         # create fake config file
-        lratest = os.path.join(mydir, 'faketrip.yaml')
-        dump_yaml(lratest,{
+        drop_test = os.path.join(mydir, 'faketrip.yaml')
+        dump_yaml(drop_test,{
                 'target': {
                     'resolution': 'r200',
                     'frequency': 'monthly',
                     'catalog': 'ci'
                 },
                 'paths': {
-                    'outdir': os.path.join(mydir, 'lra_test'),
+                    'outdir': os.path.join(mydir, 'drop_test'),
                     'tmpdir': os.path.join(mydir, 'tmp')
                 },
                 'options': {
@@ -263,15 +263,15 @@ class TestAquaConsole():
             }
         )
 
-        # run the LRA and verify that at least one file exist
-        run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild'])
-        path = os.path.join(os.path.join(mydir, 'lra_test'),
+        # run DROP and verify that at least one file exist
+        run_aqua(['drop', '--config', drop_test, '-w', '1', '-d', '--rebuild'])
+        path = os.path.join(os.path.join(mydir, 'drop_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/mean/global/2t_ci_IFS_test-tco79_r1_r200_monthly_mean_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
 
-        # run the LRA with a different stat and verify that at least one file exist
-        run_aqua(['lra', '--config', lratest, '-w', '1', '-d', '--rebuild', '--stat', 'min'])
-        path = os.path.join(os.path.join(mydir, 'lra_test'),
+        # run DROP with a different stat and verify that at least one file exist
+        run_aqua(['drop', '--config', drop_test, '-w', '1', '-d', '--rebuild', '--stat', 'min'])
+        path = os.path.join(os.path.join(mydir, 'drop_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
         

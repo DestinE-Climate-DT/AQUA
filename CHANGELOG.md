@@ -13,6 +13,10 @@ Workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
 
 AQUA core complete list:
+- Rename LRA to DROP (Data Reduction OPerator) via the `Drop()` class (#2234)
+- Add updated grids conformal to OSI-SAF v3 (#2317)
+- Area selection is now a separate class, `AreaSelection` in the `aqua.fldstat` module (#2245)
+- Added graphical function for vertical profile plotting (#2314, #2316)
 - Added catgen support for storyline experiments (#2308)
 - Pin maximum version of xarray (#2303)
 - CI/CD data now is read from aqua-dvc repository (#8370)
@@ -46,6 +50,8 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Timeseries: fix title and description generation (#2311)
+- Timeseries: update SeasonalCycles caption (#2299)
 - Seaice: added documentation and updated notebooks (#2249)
 - Seaice: update varname for PIOMAS and GIOMAS from sivol to sithick after updating the data in `obs` catalog (#2290)
 - Global Biases: allow GlobalBias to take color palette as argument (#2283)

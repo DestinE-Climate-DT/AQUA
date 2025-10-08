@@ -30,9 +30,9 @@ class AquaAccessor:
         """Plot contour or pcolormesh map of a single variable."""
         aqua.graphics.plot_single_map(self._obj, **kwargs)
 
-    def area_selection(self, **kwargs):
-        """Extract a custom area from a DataArray."""
-        return aqua.util.area_selection(self._obj, **kwargs)
+    def select_area(self, **kwargs):
+        """Extract a custom area"""
+        return self.instance.select_area(self._obj, **kwargs)
 
     def regrid(self, **kwargs):
         """Perform regridding of the input dataset."""

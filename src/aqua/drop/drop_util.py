@@ -1,4 +1,4 @@
-"""Utility module for LRA/OPA"""
+"""Utility module for DROP"""
 
 import os
 import shutil
@@ -13,7 +13,7 @@ from glob import glob
 #                       loglevel='WARNING'):
 #     """
 #     Create an entry in the AQUA catalog based on the presence of output from OPA in datadir
-#     to be used by the LRA generator in both source and regrid yaml
+#     to be used by DROP in both source and regrid yaml
 
 #     Args:
 #         datadir (str): path to the directory containing the data
@@ -89,15 +89,15 @@ from glob import glob
 #     return entry_name
 
 
-def list_lra_files_complete(path):
+def list_drop_files_complete(path):
     """
-    List LRA files in the specified path based on the given parameters.
+    List DROP-generated files in the specified path based on the given parameters.
 
     Args:
-        path (str): The base path where the LRA files are located.
+        path (str): The base path where the DROP-generated files are located.
 
     Returns:
-        A dictionary containing the netcdf files for a each LRA variable
+        A dictionary containing the netcdf files for a each DROP variable
     """
 
     yearly_dict = {}
@@ -111,12 +111,12 @@ def list_lra_files_complete(path):
 
 
 # NOT USED AT THE MOMENT
-# def list_lra_files_vars(path):
+# def list_drop_files_vars(path):
 #     """
-#     List LRA files in the specified path based on the given parameters.
+#     List DROP files in the specified path based on the given parameters.
 
 #     Args:
-#         path (str): The base path where the LRA files are located.
+#         path (str): The base path where the DROP files are located.
 
 
 #     """
