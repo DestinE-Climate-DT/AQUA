@@ -125,4 +125,7 @@ class CatalogEntryBuilder():
             catblock = replace_urlpath_jinja(catblock, self.stat, 'stat')
             self.logger.debug("Urlpath after replacing stat: %s", catblock['args']['urlpath'])
 
+            # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
+            catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))
+
         return catblock
