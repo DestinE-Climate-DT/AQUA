@@ -68,8 +68,7 @@ def plot_multi_timeseries(
     fig = plt.figure(figsize=figsize)
     spec = fig.add_gridspec(nrows=nrows, ncols=ncols, wspace=0.4, hspace=0.5)
 
-    data_labels=[["0m", "10m", "20m"],None, None, None, None, None, None, None, None]
-
+    data_labels=[[str(x) for x in levels],None, None, None, None, None, None, None, None]
 
     for j in range(nrows):
         for i, var in enumerate(variables):
@@ -78,7 +77,7 @@ def plot_multi_timeseries(
             logger.debug("Creating subplot for variable %s at (%d, %d)", var, j, i)
 
             fig, ax = plot_timeseries(
-                [maps[j][var].sel(level=level, method='nearest') for level in levels],
+                [maps[j][var].sel(level=level) for level in maps[j][var].level],
                 data_labels = data_labels[k], # "30m", "40m", "50m", "60m", "70m", "80m"],
 
                 # box_text=False,
