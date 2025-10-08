@@ -216,6 +216,11 @@ class TestFldStatWrappers():
         avg = reader.fldmean(data['2t'])
         assert avg.shape == (2,)  # time dimension preserved
         assert avg[1] == pytest.approx(285.75920)
+        avg_st = reader.fldstat(data['2t'], stat='mean')
+        assert avg.shape == (2,)
+        assert avg[1] == pytest.approx(285.75920)
+        assert avg_st.shape == (2,)
+        assert avg_st[1] == pytest.approx(285.75920)
 
     def test_fldmax(self, reader, data):
         """Test fldmax wrapper method"""
@@ -231,7 +236,6 @@ class TestFldStatWrappers():
         minval = reader.fldmin(data['2t'])
         assert minval.shape == (2,)  
         assert minval[1].values == pytest.approx(232.79393)
-        # min should be less than or equal to max
         maxval = reader.fldmax(data['2t'])
         assert minval[0] <= maxval[0]
 

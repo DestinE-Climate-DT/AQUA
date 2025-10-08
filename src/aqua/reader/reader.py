@@ -201,7 +201,8 @@ class Reader():
         self.tgt_fldstat = None
         if regrid:
             if not areas:
-                raise ValueError("Regridding requires info on areas. If regrid=True, set areas=True. Areas can usually be generated with smmregrid.")
+                self.logger.warning("Regridding requires info on areas. As areas can usually be generated with smmregrid, setting areas to 'True'")
+                areas = True
             self.tgt_fldstat = FldStat(
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel

@@ -6,6 +6,7 @@ from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
 from aqua.util import to_list, multiply_units
+
 from .area_selection import AreaSelection
 
 # set default options for xarray
@@ -167,7 +168,9 @@ class FldStat():
                                                 lat_name=lat_name, lon_name=lon_name,
                                                 default_coords=default_coords)
 
-    def integrate_over_area(self, data, areacell, dims):
+    def integrate_over_area(self, data: xr.Dataset | xr.DataArray, 
+                            areacell: xr.DataArray, 
+                            dims: list):
         """
         Compute the integral of the data over the area.
 
@@ -199,7 +202,9 @@ class FldStat():
         
         return area_weighted_integral
 
-    def sum_area(self, data, areacell, dims):
+    def sum_area(self, data: xr.Dataset | xr.DataArray, 
+                 areacell: xr.DataArray, 
+                 dims: list):
         """
         Compute the sum of area cells where masked data is not null.
         
@@ -223,7 +228,7 @@ class FldStat():
             log_history(summed_area, f"Area summed from {self.grid_name} grid")
         return summed_area
 
-    def align_area_dimensions(self, data):
+    def align_area_dimensions(self, data: xr.Dataset | xr.DataArray):
         """
         Align the area dimensions with the data dimensions.
         If the area and data have different number of horizontal dimensions, try to rename them.
@@ -253,10 +258,9 @@ class FldStat():
         # create a dictionary for renaming matching dimensions have the same length
         matching_dims = {a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims) if self.area.sizes[a] == data.sizes[d]}
         self.logger.info("Area dimensions has been renamed with %s",  matching_dims)
-        
         return self.area.rename(matching_dims)
 
-    def align_area_coordinates(self, data):
+    def align_area_coordinates(self, data: xr.Dataset | xr.DataArray):
         """
         Check if the coordinates of the area and data are aligned.
         If they are not aligned, try to flip the coordinates.

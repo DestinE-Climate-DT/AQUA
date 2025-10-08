@@ -99,7 +99,7 @@ Statistical operations can be area-weighted if the class is initialiased with an
 The class is nested into the ``Reader()``, which computes/load the areas of the corresponding source at the initialization.
 Thus when calling for example ``reader.fldmean()`` method area-weighted spatial averaging will be performed.
 The class ``FldStat()`` is nested into the reader, and its method are exposed so that is sufficient
-to use `fldstat(data, stat=statname)` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``; 
+to use ``fldstat(data, stat=statname)`` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``; 
 Otherwise the relative sibilings can be called ``fldmean()``, ``fldmin()``, ``fldmax()``, ``fldsum()``, ``fldstd()``, ``fldintg()``, ``fldarea()``. 
 For example, if we run the following commands:
 
