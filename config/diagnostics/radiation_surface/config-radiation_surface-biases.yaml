@@ -1,0 +1,50 @@
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
+
+references:
+  - catalog: 'obs'
+    model: 'CERES'
+    exp: 'ebaf-toa41'
+    source: 'monthly'
+    regrid: 'r100'
+  
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  globalbiases:
+    run: true
+    diagnostic_name: 'radiation'
+    variables: ['snlwrf', 'snswrf']
+    params:
+      default:
+        plev: null # Level plot for 2D bias map if variable 3d
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: false     # Vertical profile if variable 3d
+        startdate_data: null
+        enddate_data: null
+        startdate_obs: "2000-01-01"
+        enddate_obs: "2020-12-31"
+    plot_params: 
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      snlwrf:
+        vmin: -30
+        vmax: 30
+      snswrf:
+        vmin: -30
+        vmax: 30
