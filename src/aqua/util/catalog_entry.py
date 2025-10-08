@@ -54,9 +54,9 @@ def replace_urlpath_jinja(block: dict, value: str, name: str, default: str | Non
     # this loop is a bit tricky but is made to ensure that the right value is replaced
     # it works on multiple urlpath (list) or single urlpath (str)
     urlpath = to_list(block['args']['urlpath'])
-    for u in urlpath:
+    for i, _ in enumerate(urlpath):
         for character in ['_', '/', '.']:
-            u = u.replace(character + value + character, character + "{{" + name + "}}" + character)
+            urlpath[i] = urlpath[i].replace(character + value + character, character + "{{" + name + "}}" + character)
     block['args']['urlpath'] = urlpath if len(urlpath) > 1 else urlpath[0]
 
     # add the parameter to the parameters block
