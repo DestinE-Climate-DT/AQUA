@@ -29,6 +29,8 @@ ClimateDT workflow modifications:
 - DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
+- Actions now upload artifacts with test results and environment specifications (#2323)
+- Pin for pydantic<2.12.0 (#2323)
 - Rename LRA to DROP (Data Reduction OPerator) via the `Drop()` class (#2234)
 - Add updated grids conformal to OSI-SAF v3 (#2317)
 - Area selection is now a separate class, `AreaSelection` in the `aqua.fldstat` module (#2245)
