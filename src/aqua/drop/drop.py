@@ -502,36 +502,52 @@ class Drop():
         """
 
         infiles = self.get_filename(var, year, month='??')
+        tmp_infiles = self.get_filename(var, year, month='*', tmp=True)
+
         if len(glob.glob(infiles)) == 12:
 
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
-
+            tmp_outfile = self.get_filename(var, year, tmp=True)
+            
+            # move monthly files to tmp: this is done for safety reason 
+            # in order to avoid issues if something goes wrong during the concatenation
+            # and remnant of monthly files are left in the output directory
+            infiles_list = sorted(glob.glob(infiles))
+            for infiles in infiles_list:
+                shutil.move(infiles, self.tmpdir)
+            
             # clean older file
+            if os.path.exists(tmp_outfile):
+                os.remove(tmp_outfile)
             if os.path.exists(outfile):
                 os.remove(outfile)
 
+            # concatnation of monthly files with CDO or Xarray
             if self.compact == 'cdo':
-                infiles_list = sorted(glob.glob(infiles))
+                infiles_list = sorted(glob.glob(tmp_infiles))
                 command = [
                     'cdo',
                     *self.cdo_options,
                     'cat',
                     *infiles_list,
-                    outfile
+                    tmp_outfile
                 ]
                 self.logger.debug("Using CDO command: %s", command)
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
             else:
                 # these XarrayDatasets are made of a single variable
                 self.logger.debug("Using xarray to concatenate files")
-                xfield = xr.open_mfdataset(infiles)
+                xfield = xr.open_mfdataset(tmp_infiles)
                 name = list(xfield.data_vars)[0]
-                xfield.to_netcdf(outfile,
+                xfield.to_netcdf(tmp_outfile,
                                  encoding={'time': self.time_encoding, name: self.var_encoding})
 
+            # move back the yearly file
+            shutil.move(tmp_outfile, outfile)
+
             # clean of monthly files
-            for infile in glob.glob(infiles):
+            for infile in glob.glob(tmp_infiles):
                 self.logger.info('Cleaning %s...', infile)
                 os.remove(infile)
 
