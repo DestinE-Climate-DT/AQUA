@@ -110,7 +110,9 @@ jobs:
             python=${{ matrix.python-version }}
       - name: List Pip packages
         run: |
-          pip freeze
+          # Save the pip packages visible in the current environment to a file for debugging
+          python -m pip freeze > AQUA/pip_freeze.txt || pip freeze > AQUA/pip_freeze.txt || true
+          echo "Saved pip freeze to AQUA/pip_freeze.txt"
       - name: Install Flake8
         run: |
           python -m pip install flake8
@@ -207,7 +209,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: AQUA/junit.xml
-
+      
       - name: Upload test artifacts (coverage, pytest cache, logs)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -218,5 +220,8 @@ jobs:
             AQUA/coverage.xml
             AQUA/.pytest_cache
             AQUA/aqua_pytest.log
+            AQUA/pip_freeze.txt
           # Don't fail the job if some files are missing
           if-no-files-found: ignore
+
+
