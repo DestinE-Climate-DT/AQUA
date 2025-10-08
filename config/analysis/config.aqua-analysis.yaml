@@ -39,97 +39,98 @@ cluster:  # options for dask cluster (this works well on lumi)
     threads: 1  # per worker
     memory_limit: 7GiB  # per worker
 
+# List of available CLI tools (diagnostics)
+cli:
+  - biases: "global_biases/cli_global_biases.py"
+  - boxplots: "boxplots/cli_boxplots.py"
+  - ecmean: "ecmean/cli_ecmean.py"
+  - enso: "teleconnections/cli_teleconnections.py"
+  - nao: "teleconnections/cli_teleconnections.py"
+  - drift: "ocean_drift/cli_ocean_drift.py"
+  - trends: "ocean_trends/cli_ocean_trends.py"
+  - seaice: "seaice/cli_seaice.py"
+  - stratification: "ocean_stratification/cli_ocean_stratification.py"
+  - teleconnections: "teleconnections/cli_teleconnections.py"
+  - timeseries: "timeseries/cli_timeseries.py"
+  - tropical_rainfall: "../../diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py"
+
+# List of diagnostics
+# Each diagnostic is composed by a list of cli tools (see above).
+# Each diagnostic tool (cli) can have the following options (all optional):
+#    nworkers: the number of workers to use for the diagnostic if a global dask cluster is not used. Default is 1.
+#              Notice: these are still provided mostly for testing the local cluster option,
+#                      using a global cluster (not using this option) is the new default.
+#    config: the configuration file for the diagnostic tool.
+#    extra: extra command line arguments to pass to the diagnostic script.
+#    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default is false (needed for ECmean)
 diagnostics:
+  run:
+    - climate_metrics
+    - atmosphere
+    - ocean2d
+    - radiation
+    - teleconnections
+    - water_cycle
+    - ocean3d
+    - seaice
 
-  run: [  "global_biases",
-          "timeseries_atm", "timeseries_oce", 
-          "seasonal_cycles",
-          "radiation-boxplots", 
-          "radiation-timeseries", 
-          "radiation-biases", 
-          "tropical_rainfall", 
-          "teleconnections_atm", "teleconnections_oce",
-          "ecmean", 
-          "seaice",
-          "ocean3d_circulation", "ocean3d_drift"
-       ]
-
-  # List of diagnostics
-
-  # Each diagnostic can have the following options (all optional):
-  #    nworkers: the number of workers to use for the diagnostic if a global dask cluster is not used. Default is 1.
-  #              Notice: these are still provided mostly for testing the local cluster option, using a global cluster (not using this option) is the new default.
-  #    config: the configuration file for the diagnostic.
-  #    extra: extra command line arguments to pass to the diagnostic script.
-  #    outname: the name of the output directory for the diagnostic. Default is the diagnostic name itself.
-  #    script_path: the location of the script to run the diagnostic.
-  #                 Default script_path is "$script_path_base/$diagnostic/cli/cli_${diagnostic}.py"
-  #    nocluster: boolean, if set to true, the diagnostic will not use the global dask cluster. Default is false (needed for ECmean)
-
-  global_biases:
-    nworkers: 16
-    script_path: "global_biases/cli_global_biases.py"
-    config: "${AQUA_CONFIG}/diagnostics/global_biases/config_global_biases.yaml"
-  timeseries_atm:
-    script_path: "timeseries/cli_timeseries.py"
-    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_atm.yaml"
-    nworkers: 16
-    outname: timeseries
-  timeseries_oce:
-    script_path: "timeseries/cli_timeseries.py"
-    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_oce.yaml"
-    nworkers: 8
-    outname: timeseries
-  seasonal_cycles:
-    script_path: "timeseries/cli_timeseries.py"
-    nworkers: 16
-    config: "${AQUA_CONFIG}/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
-    outname: timeseries
-  radiation-biases:
-    script_path: "global_biases/cli_global_biases.py"
-    nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/radiation/config_radiation-biases.yaml"
-    outname: radiation
-  radiation-boxplots:
-    script_path: "boxplots/cli_boxplots.py"
-    nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/radiation/config_radiation-boxplots.yaml"
-    outname: radiation
-  radiation-timeseries:
-    script_path: "timeseries/cli_timeseries.py"
-    nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/radiation/config_radiation-timeseries.yaml"
-    outname: radiation
-  teleconnections_atm:
-    script_path: "teleconnections/cli_teleconnections.py"
-    nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/teleconnections/config_teleconnections_atm.yaml"
-    outname: teleconnections
-  teleconnections_oce:
-    script_path: "teleconnections/cli_teleconnections.py"
-    nworkers: 4
-    config: "${AQUA_CONFIG}/diagnostics/teleconnections/config_teleconnections_oce.yaml"
-    outname: teleconnections
-  tropical_rainfall:
-    script_path: "../../diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py"
-    nworkers: 16
-    config: "${AQUA_CONFIG}/diagnostics/tropical_rainfall/cli/cli_config_trop_rainfall.yml"
-    extra: "--regrid=r100 --freq=M --xmax=75 --bufferdir=${OUTPUT}/tropical_rainfall/"
-  ecmean:
-    script_path: "ecmean/cli_ecmean.py"
-    nworkers: 4
-    nocluster: true  # ECmean does not use the global dask cluster
-    source_oce: true  # if a --source_oce argument was passed use it
-    config: "${AQUA_CONFIG}/diagnostics/ecmean/config_ecmean_cli.yaml"
-  ocean3d_drift:
-    script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"
-    nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.drift.yaml"
-  ocean3d_circulation:
-    script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"
-    nworkers: 4
-    config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config.circulation.yaml"
+  atmosphere2d:
+    biases:
+      config: "${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-biases.yaml"
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-timeseries.yaml"
+  atmosphere3d:
+    biases:
+      config: "${AQUA_CONFIG}/diagnostics/atmosphere3d/config-atmosphere3d-biases.yaml"
+  climate_metrics:
+    ecmean:
+      config: "${AQUA_CONFIG}/diagnostics/climate_metrics/config-climate_metrics-ecmean.yaml"
+      nocluster: true  # ECmean does not use the global dask cluster
+      source_oce: true
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/climate_metrics/config-climate_metrics-timeseries.yaml"
+  ocean2d:
+    biases:
+      config: "${AQUA_CONFIG}/diagnostics/ocean2d/config-ocean2d-biases.yaml"
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/ocean2d/config-ocean2d-timeseries.yaml"
+  ocean3d:
+    drift:
+      config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config-ocean3d-drift.yaml"
+    # stratification:
+    #   config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config-ocean3d-stratification.yaml"
+    trends:
+      config: "${AQUA_CONFIG}/diagnostics/ocean3d/cli/config-ocean3d-trends.yaml"
+  radiation-surface:
+    biases:
+      config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-biases.yaml"
+    boxplots:
+      config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-boxplots.yaml"
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-timeseries.yaml"
+  radiation-toa:
+    biases:
+      config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-biases.yaml"
+    boxplots:
+      config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-boxplots.yaml"
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-timeseries.yaml"
   seaice:
-    script_path: "seaice/cli_seaice.py"
-    nworkers: 4
-    config: "${AQUA_CONFIG}/diagnostics/seaice/config_seaice.yaml"
+    seaice:
+      config: "${AQUA_CONFIG}/diagnostics/seaice/config-seaice-seaice.yaml"
+  teleconnections:
+    enso:
+      config: "${AQUA_CONFIG}/diagnostics/teleconnections/config-teleconnections-enso.yaml"
+    nao:
+      config: "${AQUA_CONFIG}/diagnostics/teleconnections/config-teleconnections-nao.yaml"
+  water_cycle:
+    biases:
+      config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-biases.yaml"
+    # diurnal_cycle:
+    #   config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-diurnal_cycle.yaml"
+    # lat_lon_profiles:
+    #   config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-lat_lon_profiles.yaml"
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-timeseries.yaml"
+    tropical_rainfall:
+      config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-tropical_rainfall.yaml"
