@@ -77,8 +77,8 @@ if __name__ == '__main__':
             var = hovmoller_config.get('var', None)
             dim_mean = hovmoller_config.get('dim_mean', ['lat', 'lon'])
             # Add the global region if not present
-            if regions != [None]:
-                regions.append(None)
+            # if regions != [None]:
+            #     regions.append(None)
             for region in regions:
                 logger.info(f"Processing region: {region}")
                 try:
@@ -97,7 +97,7 @@ if __name__ == '__main__':
                         dim_mean=dim_mean,
                         anomaly_ref= "t0",
                         outputdir=outputdir,
-                        reader_kwargs=reader_kwargs,
+                        # reader_kwargs=reader_kwargs,
                         rebuild=rebuild
                     )
                     hov_plot = PlotHovmoller(
@@ -106,10 +106,10 @@ if __name__ == '__main__':
                         outputdir=outputdir,
                         loglevel=loglevel
                     )
-                    hov_plot.plot_hovmoller(
-                        rebuild=rebuild, save_pdf=save_pdf,
-                        save_png=save_png, dpi=dpi
-                    )
+                    # hov_plot.plot_hovmoller(
+                    #     rebuild=rebuild, save_pdf=save_pdf,
+                    #     save_png=save_png, dpi=dpi
+                    # )
                     hov_plot.plot_timeseries(
                         rebuild=rebuild, save_pdf=save_pdf,
                         save_png=save_png, dpi=dpi
