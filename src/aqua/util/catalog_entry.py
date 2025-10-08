@@ -27,7 +27,7 @@ def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     return path
 
 
-def replace_urlpath_jinja(block: dict, value: str, name: str, default: None) -> dict:
+def replace_urlpath_jinja(block: dict, value: str, name: str, default: str | None = None) -> dict:
     """
     Replace the urlpath in the catalog entry with the given jinja parameter and
     add the parameter to the parameters block
@@ -37,6 +37,9 @@ def replace_urlpath_jinja(block: dict, value: str, name: str, default: None) -> 
         value (str): The value to replace in the urlpath (e.g., 'r1', 'global', 'mean')
         name (str): The name of the parameter to add to the parameters block
                     and to be used in the urlpath (e.g., 'realization', 'region', 'stat')
+        default(optional, str): The default value for the parameter. If the value is equal to the default,
+                 no parameter is created and the urlpath is not modified.
+        
 
     Returns:
         dict: The updated catalog entry block
