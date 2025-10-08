@@ -8,7 +8,7 @@ var: avg_so
 # model name for saving the grid
 model_name: fesom
 
-#3d: True # 2d or 3d
+3d: True # 2d or 3d
 # target folder for the grid generated
 tmp: /work/ab0995/a270260/aqua_eerie_grid/tmp
 tgt: /work/bb1153/b382075/aqua/grids
