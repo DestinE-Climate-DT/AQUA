@@ -19,7 +19,7 @@ references:
     enddate: '2020-12-31'
   - catalog: obs
     model: 'CERES'
-    exp: 'ebaf-toa41'
+    exp: 'ebaf-sfc41'
     source: 'monthly'
     regrid: 'r100'
     startdate: '2000-01-01'
