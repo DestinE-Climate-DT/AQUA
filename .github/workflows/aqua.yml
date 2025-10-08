@@ -110,7 +110,6 @@ jobs:
             python=${{ matrix.python-version }}
       - name: List Conda packages
         run: |
-          cd AQUA
           # Save the conda packages visible in the current environment to a file for debugging
           micromamba list -n aqua > AQUA/micromamba_list.txt || conda list > AQUA/micromamba_list.txt || true
           echo "Saved micromamba list to AQUA/micromamba_list.txt"
