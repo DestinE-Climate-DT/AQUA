@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 variables = group.get('vars', [])
                 plot_kwargs = {k: v for k, v in group.items() if k != 'vars'}
 
-                logger.info(f"Running boxplots for {vars_} with options {group_kwargs}")
+                logger.info(f"Running boxplots for {variables} with options {plot_kwargs}")
 
                 fldmeans = []
                 for dataset in datasets:
