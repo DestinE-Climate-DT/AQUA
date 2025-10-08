@@ -5,7 +5,11 @@ import numpy as np
 from smmregrid import GridInspector
 
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection, to_list, multiply_units
+from aqua.util import to_list, multiply_units
+from .area_selection import AreaSelection
+
+# set default options for xarray
+xr.set_options(keep_attrs=True)
 
 
 class FldStat():
@@ -25,7 +29,6 @@ class FldStat():
             grid_name (str, optional): The name of the grid, used for logging history.
             loglevel (str, optional): The logging level.
         """
-
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name='FldStat')
         self.area = area
@@ -42,6 +45,9 @@ class FldStat():
             raise ValueError("Area must be an xarray DataArray or Dataset.")
 
         self.grid_name = grid_name
+        
+        # Initialize area selection
+        self.area_selection = AreaSelection(loglevel=loglevel)
 
     @property
     def AVAILABLE_FLDSTATS(self):
@@ -73,6 +79,7 @@ class FldStat():
         Returns:
             The value of the averaged field
         """
+
         if stat not in [s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]:
             raise ValueError(f"Statistic {stat} not supported by AQUA FldStat(), only "
                              f"{[s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]} are supported.")
@@ -116,8 +123,8 @@ class FldStat():
         self.area = self.align_area_coordinates(data)
 
         if lon_limits is not None or lat_limits is not None:
-            data = area_selection(data, lon=lon_limits, lat=lat_limits,
-                                  loglevel=self.loglevel, **kwargs)
+            data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
+                                                   **kwargs)
 
         # cleaning coordinates which have "multiple" coordinates in their own definition
         # grid_area = self._clean_spourious_coords(grid_area, name = "area")
@@ -141,6 +148,24 @@ class FldStat():
             log_history(out, f"From grid '{self.grid_name}'. Computed field stat '{stat}'")
 
         return out
+    
+    def select_area(self, data: xr.Dataset | xr.DataArray,
+                    lon: list | None = None, lat: list | None = None,
+                    box_brd: bool = True, drop: bool = False,
+                    lat_name: str = "lat", lon_name: str = "lon",
+                    default_coords: dict = {"lat_min": -90, "lat_max": 90,
+                                            "lon_min": 0, "lon_max": 360}) -> xr.Dataset | xr.DataArray:
+        """
+        Select a specific area from the dataset based on longitude and latitude ranges.
+        Wrapper for AreaSelection.select_area method.
+        """
+        # TODO: The lat_name and lon_name are at the actual stage in the
+        # select_area method arguments. However it is possible to foresee
+        # that we may want to automatically detect the names
+        return self.area_selection.select_area(data, lon=lon, lat=lat,
+                                                box_brd=box_brd, drop=drop,
+                                                lat_name=lat_name, lon_name=lon_name,
+                                                default_coords=default_coords)
 
     def integrate_over_area(self, data, areacell, dims):
         """
@@ -266,4 +291,3 @@ class FldStat():
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
     
         return self.area
-

@@ -8,7 +8,7 @@ from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
 from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, get_projection, plot_box, to_list
-from aqua.util import evaluate_colorbar_limits, set_map_title
+from aqua.util import evaluate_colorbar_limits, set_map_title, time_to_string
 from aqua.util import generate_colorbar_ticks, int_month_name, apply_circular_window
 from .util import extract_dates, _check_list_regions_type
 
@@ -207,9 +207,9 @@ class Plot2DSeaIce:
             f"Spatial map and total bias of the sea ice {monmod.attrs.get('AQUA_method', '')} climatology "
             f"in the {monmod.attrs.get('AQUA_region', 'geographic')} region. "
             f"The model data is {monmod.attrs.get('AQUA_model')} with experiment {monmod.attrs.get('AQUA_exp')} "
-            f"spanning from {monmod.attrs.get('AQUA_startdate', '')} to {monmod.attrs.get('AQUA_enddate', '')}. "
+            f"spanning from {time_to_string(monmod.attrs.get('AQUA_startdate', ''))} to {time_to_string(monmod.attrs.get('AQUA_enddate', ''))}. "
             f"The reference dataset is {monref.attrs.get('AQUA_model')} with experiment {monref.attrs.get('AQUA_exp')} "
-            f"spanning from {monref.attrs.get('AQUA_startdate', '')} to {monref.attrs.get('AQUA_enddate', '')}. "
+            f"spanning from {time_to_string(monref.attrs.get('AQUA_startdate', ''))} to {time_to_string(monref.attrs.get('AQUA_enddate', ''))}. "
             f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
             )
         self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
@@ -284,7 +284,7 @@ class Plot2DSeaIce:
             f"Spatial map of the sea ice {mondat.attrs.get('AQUA_method','')} climatology "
             f"for the {mondat.attrs.get('AQUA_model','')} model, experiment {mondat.attrs.get('AQUA_exp','')} "
             f"over {mondat.attrs.get('AQUA_region', 'geographic')} region "
-            f"from {mondat.attrs.get('AQUA_startdate','')} to {mondat.attrs.get('AQUA_enddate','')}. "
+            f"from {time_to_string(mondat.attrs.get('AQUA_startdate',''))} to {time_to_string(mondat.attrs.get('AQUA_enddate',''))}. "
             f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' and self.plot_ref_contour else ''}"
         )
         self._save_plots(fig=fig, data=mondat, data_ref=None, 
