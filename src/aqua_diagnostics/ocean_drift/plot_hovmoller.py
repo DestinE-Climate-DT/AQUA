@@ -83,8 +83,10 @@ class PlotHovmoller:
         self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
                        rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
         
-    def plot_timeseries(self, rebuild: bool = True, save_pdf: bool = True,
-                       save_png: bool = True, dpi: int = 300):
+    def plot_timeseries(self,
+                        levels: list = None,
+                        rebuild: bool = True, save_pdf: bool = True,
+                        save_png: bool = True, dpi: int = 300):
         """
         Plot the timeseries for the given data.
         This method sets the title, description, vmax, vmin, and texts for the plot.
@@ -96,6 +98,7 @@ class PlotHovmoller:
             save_pdf (bool): Whether to save the plot as a PDF, default is True
             save_png (bool): Whether to save the plot as a PNG, default is True
         """
+        self.levels = levels if levels else [0, 100, 200]
         self.set_suptitle()
         self.set_title()
         self.set_description()
@@ -105,6 +108,7 @@ class PlotHovmoller:
         self.logger.debug("Plotting Timeseries for variables: %s", self.vars)
         fig = plot_multi_timeseries(
             maps=self.data,
+            levels=self.levels,
             variables=self.vars,
             loglevel=self.loglevel,
             title=self.suptitle,
@@ -122,6 +126,9 @@ class PlotHovmoller:
         self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
                        rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
         
+    def set_levels(self):
+        self.levels = []
+
 
     def set_suptitle(self):
         """Set the suptitle for the Hovmoller plot."""

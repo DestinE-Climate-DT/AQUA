@@ -110,6 +110,10 @@ if __name__ == '__main__':
                         rebuild=rebuild, save_pdf=save_pdf,
                         save_png=save_png, dpi=dpi
                     )
+                    hov_plot.plot_timeseries(
+                        rebuild=rebuild, save_pdf=save_pdf,
+                        save_png=save_png, dpi=dpi
+                    )
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
 

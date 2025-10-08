@@ -15,22 +15,15 @@ from aqua.util import cbar_get_label, evaluate_colorbar_limits, plot_box
 
 def plot_multi_timeseries(
     maps: list,
-    contour: bool = True,
-    sym: bool = False,
+    levels: list = None,
     figsize: tuple = None,
     variables: list = None,
-    invert_space_coord=True,
     fig: plt.Figure = None,
     ax: plt.Axes = None,
     style=None,
-    vmin: list[float] = None,
-    vmax: list[float] = None,
     text: list[float] = None,
-    nlevels: int = 20,
     title: str = None,
     titles: list[str] = None,
-    cmap: list[str] = None,
-    cbar_label: list[str] = None,
     return_fig=True,
     loglevel="WARNING",
     **kwargs,
@@ -85,16 +78,7 @@ def plot_multi_timeseries(
             logger.debug("Creating subplot for variable %s at (%d, %d)", var, j, i)
 
             fig, ax = plot_timeseries(
-                [maps[j][var].isel(level=0),
-                maps[j][var].isel(level=1),
-                maps[j][var].isel(level=2),
-                # maps[j][var].isel(level=3),
-                # maps[j][var].isel(level=4),
-                # maps[j][var].isel(level=5),
-                # maps[j][var].isel(level=6),
-                # maps[j][var].isel(level=7),
-                # maps[j][var].isel(level=8),
-                ],
+                [maps[j][var].sel(level=level, method='nearest') for level in levels],
                 data_labels = data_labels[k], # "30m", "40m", "50m", "60m", "70m", "80m"],
 
                 # box_text=False,
