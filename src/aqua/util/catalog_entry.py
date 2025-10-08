@@ -1,4 +1,5 @@
 from .config import ConfigPath
+from .util import to_list
 
 def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     """
@@ -26,7 +27,7 @@ def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     return path
 
 
-def replace_urlpath_jinja(block: dict, value: str, name: str) -> dict:
+def replace_urlpath_jinja(block: dict, value: str, name: str, default: None) -> dict:
     """
     Replace the urlpath in the catalog entry with the given jinja parameter and
     add the parameter to the parameters block
@@ -42,11 +43,20 @@ def replace_urlpath_jinja(block: dict, value: str, name: str) -> dict:
     """
     if not value:
         return block
+    
+    # return if the value is the default one, no need to create a parameter
+    if default is not None and value == default:
+        return block
 
     # this loop is a bit tricky but is made to ensure that the right value is replaced
-    for character in ['_', '/', '.']:
-        block['args']['urlpath'] = block['args']['urlpath'].replace(
-            character + value + character, character + "{{" + name + "}}" + character)
+    # it works on multiple urlpath (list) or single urlpath (str)
+    urlpath = to_list(block['args']['urlpath'])
+    for u in urlpath:
+        for character in ['_', '/', '.']:
+            u = u.replace(character + value + character, character + "{{" + name + "}}" + character)
+    block['args']['urlpath'] = urlpath if len(urlpath) > 1 else urlpath[0]
+
+    # add the parameter to the parameters block
     if 'parameters' not in block:
         block['parameters'] = {}
     if name not in block['parameters']:

@@ -62,6 +62,7 @@ class Drop():
                  catalog=None, model=None, exp=None, source=None,
                  var=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
+                 startdate=None, enddate=None,
                  outdir=None, tmpdir=None, nproc=1,
                  loglevel=None,
                  region=None, drop=False,
@@ -88,6 +89,10 @@ class Drop():
                                      DROP output, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
+            startdate (string,opt): Start date for the data to be processed,
+                                     format YYYYMMDD, default is None
+            enddate (string,opt):   End date for the data to be processed,
+                                     format YYYYMMDD, default is None
             outdir (string):         Where the DROP output is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
@@ -138,6 +143,11 @@ class Drop():
         self.rebuild = rebuild
         self.kwargs = kwargs
         self.fix = fix
+
+        # configure start date and end date
+        self.startdate = startdate
+        self.enddate = enddate
+        self._validate_date(startdate, enddate)
 
         # configure statistics
         self.stat = stat
@@ -216,10 +226,28 @@ class Drop():
             return param
         raise KeyError(msg or f"Please specify {name}.")
 
+    @staticmethod
+    def _validate_date(startdate, enddate):
+        """Validate date format for startdate and enddate"""
+        if startdate is not None:
+            try:
+                pd.to_datetime(startdate, format='%Y-%m-%d')
+            except ValueError:
+                raise ValueError('startdate must be in YYYY-MM-DD format')
+        if enddate is not None:
+            try:
+                pd.to_datetime(enddate, format='%Y-%m-%d')
+            except ValueError:
+                raise ValueError('enddate must be in YYYY-MM-DD format')
+
     def _issue_info_warning(self):
         """
         Print information about the DROP settings
         """
+
+        if self.startdate is not None or self.enddate is not None:
+            self.logger.info('startdate is %s, enddate is %s', self.startdate, self.enddate)
+            self.logger.info('startdate or enddate are set, please be sure to process one experiment at the time.')
 
         if not self.frequency:
             self.logger.info('Frequency not specified, no time averaging will be performed.')
@@ -286,7 +314,7 @@ class Drop():
             self.catalog = self.reader.catalog
 
         self.logger.info('Retrieving data...')
-        self.data = self.reader.retrieve(var=self.var)
+        self.data = self.reader.retrieve(var=self.var, startdate=self.startdate, enddate=self.enddate)
 
         self.logger.debug(self.data)
 
