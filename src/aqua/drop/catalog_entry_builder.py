@@ -119,7 +119,10 @@ class CatalogEntryBuilder():
 
             # TODO: add kwargs in form of key-value pairs to be added to the intake jinja strings
             catblock = replace_urlpath_jinja(catblock, self.realization, 'realization')
+            self.logger.debug("Urlpath after replacing realization: %s", catblock['args']['urlpath'])
             catblock = replace_urlpath_jinja(catblock, self.region, 'region')
+            self.logger.debug("Urlpath after replacing region: %s", catblock['args']['urlpath'])
             catblock = replace_urlpath_jinja(catblock, self.stat, 'stat')
+            self.logger.debug("Urlpath after replacing stat: %s", catblock['args']['urlpath'])
 
         return catblock
