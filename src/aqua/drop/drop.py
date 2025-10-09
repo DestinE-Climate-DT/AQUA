@@ -501,55 +501,49 @@ class Drop():
         from the same year
         """
 
-        infiles = self.get_filename(var, year, month='??')
-        tmp_infiles = self.get_filename(var, year, month='*', tmp=True)
+        infiles_pattern = self.get_filename(var, year, month='??')
+        monthly_files = sorted(glob.glob(infiles_pattern))
 
-        if len(glob.glob(infiles)) == 12:
-
+        if len(monthly_files) == 12:
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
             tmp_outfile = self.get_filename(var, year, tmp=True)
             
-            # move monthly files to tmp: this is done for safety reason 
-            # in order to avoid issues if something goes wrong during the concatenation
-            # and remnant of monthly files are left in the output directory
-            infiles_list = sorted(glob.glob(infiles))
-            for infiles in infiles_list:
-                shutil.move(infiles, self.tmpdir)
+            # Move monthly files to tmp for safety
+            for monthly_file in monthly_files:
+                shutil.move(monthly_file, self.tmpdir)
             
-            # clean older file
-            if os.path.exists(tmp_outfile):
-                os.remove(tmp_outfile)
-            if os.path.exists(outfile):
-                os.remove(outfile)
+            # Clean any existing output files
+            for f in [tmp_outfile, outfile]:
+                if os.path.exists(f):
+                    os.remove(f)
 
-            # concatnation of monthly files with CDO or Xarray
+            # Get the moved files in tmpdir - they keep the same basename
+            tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
+
+            # Concatenation with CDO or Xarray
             if self.compact == 'cdo':
-                infiles_list = sorted(glob.glob(tmp_infiles))
                 command = [
                     'cdo',
                     *self.cdo_options,
                     'cat',
-                    *infiles_list,
+                    *tmp_monthly_files,
                     tmp_outfile
                 ]
                 self.logger.debug("Using CDO command: %s", command)
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
             else:
-                # these XarrayDatasets are made of a single variable
                 self.logger.debug("Using xarray to concatenate files")
-                xfield = xr.open_mfdataset(tmp_infiles)
+                xfield = xr.open_mfdataset(tmp_monthly_files, combine='by_coords', parallel=True)
                 name = list(xfield.data_vars)[0]
                 xfield.to_netcdf(tmp_outfile,
                                  encoding={'time': self.time_encoding, name: self.var_encoding})
 
-            # move back the yearly file
+            # Move back the yearly file and cleanup
             shutil.move(tmp_outfile, outfile)
-
-            # clean of monthly files
-            for infile in glob.glob(tmp_infiles):
-                self.logger.info('Cleaning %s...', infile)
-                os.remove(infile)
+            for tmp_file in tmp_monthly_files:
+                self.logger.info('Cleaning %s...', tmp_file)
+                os.remove(tmp_file)
 
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
