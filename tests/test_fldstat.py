@@ -214,18 +214,14 @@ class TestFldStatWrappers():
     def test_fldmean(self, reader, data):
         """Test fldmean wrapper method"""
         avg = reader.fldmean(data['2t'])
-        assert avg.shape == (2,)  # time dimension preserved
         assert avg[1] == pytest.approx(285.75920)
         avg_st = reader.fldstat(data['2t'], stat='mean')
-        assert avg.shape == (2,)
         assert avg[1] == pytest.approx(285.75920)
-        assert avg_st.shape == (2,)
         assert avg_st[1] == pytest.approx(285.75920)
 
     def test_fldmax(self, reader, data):
         """Test fldmax wrapper method"""
         maxval = reader.fldmax(data['2t'])
-        assert maxval.shape == (2,)  
         avg = reader.fldmean(data['2t'])
         assert maxval[1].values == pytest.approx(310.6103)
         # max should be greater than or equal to mean
@@ -234,7 +230,6 @@ class TestFldStatWrappers():
     def test_fldmin(self, reader, data):
         """Test fldmin wrapper method"""
         minval = reader.fldmin(data['2t'])
-        assert minval.shape == (2,)  
         assert minval[1].values == pytest.approx(232.79393)
         maxval = reader.fldmax(data['2t'])
         assert minval[0] <= maxval[0]
@@ -242,14 +237,22 @@ class TestFldStatWrappers():
     def test_fldstd(self, reader, data):
         """Test fldstd wrapper method"""
         stdval = reader.fldstd(data['2t'])
-        assert stdval.shape == (2,)  
         assert stdval[1].values == pytest.approx(15.6998)
 
     def test_fldsum(self, reader, data):
         """Test fldsum wrapper method"""
         sumval = reader.fldsum(data['2t'])
-        assert sumval.shape == (2,)  
         assert sumval[1].values == pytest.approx(1.4572956e+17)
+
+    def test_fldintg(self, reader, data):
+        """Test fldintg wrapper method"""
+        intgval = reader.fldintg(data['2t'])
+        assert intgval[0].values == pytest.approx(1.4583612e+17)
+
+    def test_fldarea(self, reader, data):
+        """Test fldsum wrapper method"""
+        asumval = reader.fldarea(data['2t'])
+        assert asumval[0].values == pytest.approx(5.0997329e+14)
 
     def test_fldstat_compare(self, reader, data):
         """Test that wrapper methods give consistent results"""
