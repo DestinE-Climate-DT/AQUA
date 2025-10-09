@@ -2,28 +2,28 @@
 # -*- coding: utf-8 -*-
 '''
 AQUA regridding tool to create low resolution archive.
-Make use of aqua.LRA_Generator class to perform the regridding.
+Make use of aqua.Drop class to perform the regridding.
 Functionality can be controlled through CLI options and
 a configuration yaml file.
 '''
 
 import sys
 import argparse
-from aqua import LRAgenerator
+from aqua import Drop
 from aqua.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
 
 
-def lra_parser(parser = None):
+def drop_parser(parser = None):
     """
-    Parse command line arguments for the LRA CLI
+    Parse command line arguments for the DROP CLI
 
     Args:
-        Optional part to be extended with LRA options
+        Optional part to be extended with DROP options
     """
 
     if parser is None:
-        parser = argparse.ArgumentParser(description='AQUA LRA generator')
+        parser = argparse.ArgumentParser(description='AQUA DROP')
     
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
@@ -40,7 +40,7 @@ def lra_parser(parser = None):
     parser.add_argument('--monitoring', action="store_true",
                         help='enable the dask performance monitoring. Will run a single chunk')
     parser.add_argument('--only-catalog', action="store_true",
-                        help='To not run the LRA but simply create the catalog entries for netcdf and zarr')
+                        help='To not run DROP but simply create the catalog entries for netcdf and zarr')
     parser.add_argument('--catalog', type=str,
                         help='catalog to be processed. Use with coherence with --model, -exp and --source')
     parser.add_argument('-m', '--model', type=str,
@@ -57,16 +57,16 @@ def lra_parser(parser = None):
     parser.add_argument('--stat', type=str,
                         help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std'].")
     parser.add_argument('--frequency', type=str,
-                        help="Frequency of the LRA. Can be anything in the AQUA frequency.")
+                        help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
-                        help="Resolution of the LRA. Can be anything in the AQUA resolution.")
+                        help="Resolution of the DROP output. Can be anything in the AQUA resolution.")
 
     #return parser.parse_args(arguments)
     return parser
 
-def lra_execute(args):
+def drop_execute(args):
     """
-    Executing the LRA by parsing the arguments and configuring the machinery
+    Executing the DROP by parsing the arguments and configuring the machinery
     """
 
         # to check if GSV is available and return the version
@@ -80,7 +80,7 @@ def lra_execute(args):
 
     print('AQUA version is: ' + version)
 
-    file = get_arg(args, 'config', 'lra_config.yaml')
+    file = get_arg(args, 'config', 'drop_config.yaml')
     print('Reading configuration yaml file..')
 
     # basic from configuration
@@ -125,7 +125,7 @@ def lra_execute(args):
     default_workers = get_arg(args, 'workers', 1)
     
 
-    lra_cli(args=args, config=config, catalog=catalog, resolution=resolution,
+    drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
             region=region, stat=stat,
@@ -133,14 +133,14 @@ def lra_execute(args):
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
-def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
+def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
             region=None, stat='mean',
             definitive=False, overwrite=False,
             rebuild=False, monitoring=False,
             default_workers=1, do_zarr=False, verify_zarr=False,
             only_catalog=False):
     """
-    Running the default LRA from CLI, looping on all the configuration model/exp/source/var combination
+    Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
     Optional feature for each source can be defined as `zoom`, `workers` and `realizations`
     Options for dry run and overwriting, as well as monitoring and zarr creation, are available
 
@@ -148,8 +148,8 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
         args: argparse arguments
         config: configuration dictionary
         catalog: catalog to be processed
-        resolution: resolution of the LRA
-        frequency: frequency of the LRA
+        resolution: resolution of the DROP output
+        frequency: frequency of the DROP output
         fix: fixer option
         outdir: output directory
         tmpdir: temporary directory
@@ -200,8 +200,8 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
                         # disabling rebuild if we are not in the first realization and first varname
                         if varname != varnames[0] or realization != loop_realizations[0]:
                             rebuild = False
-                        # init the LRA
-                        lra = LRAgenerator(catalog=catalog, model=model, exp=exp, source=source,
+                        # init the DROP
+                        drop = Drop(catalog=catalog, model=model, exp=exp, source=source,
                                         var=varname, resolution=resolution,
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir,
@@ -216,23 +216,23 @@ def lra_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, l
 
                         
                         if not only_catalog:
-                            # check that your LRA is not already there (it will not work in streaming mode)
-                            lra.check_integrity(varname)
+                            # check that your DROP output is not already there (it will not work in streaming mode)
+                            drop.check_integrity(varname)
 
                             # retrieve and generate
-                            lra.retrieve()
-                            lra.generate_lra()
+                            drop.retrieve()
+                            drop.drop_generator()
 
             # create the catalog once the loop is over
-            lra.create_catalog_entry()
+            drop.create_catalog_entry()
             if do_zarr:
-                lra.create_zarr_entry(verify=verify_zarr)
+                drop.create_zarr_entry(verify=verify_zarr)
 
-    print('CLI LRA run completed. Have yourself a tasty pint of beer!')
+    print('CLI DROP run completed. Have yourself a tasty pint of beer!')
 
 # if you want to execute the script from terminal without the aqua entry point
 if __name__ == '__main__':
 
-    args = lra_parser().parse_args(sys.argv[1:])
-    lra_execute(args)
+    args = drop_parser().parse_args(sys.argv[1:])
+    drop_execute(args)
    

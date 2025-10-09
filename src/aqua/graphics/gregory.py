@@ -213,7 +213,7 @@ def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
         t2m_mean = t2m_annual_ref.mean(dim='time')
         net_toa_mean = net_toa_annual_ref.mean(dim='time')
         ax.axhspan(net_toa_mean - net_toa_std, net_toa_mean + net_toa_std,
-                   color="lightgreen", alpha=0.3, label=r"$\sigma$ band")
+                   color="lightgreen", alpha=0.3, label=r"1 $\sigma$ band")
         ax.axvspan(t2m_mean - t2m_std, t2m_mean + t2m_std,
                    color="lightgreen", alpha=0.3)
 
