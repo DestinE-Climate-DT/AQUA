@@ -172,3 +172,19 @@ class TestEvaluateFormula:
         original_values = (data['2t'].isel(time=0) - 273.15).mean()
         expected_values = convert.isel(time=0).mean()
         assert np.allclose(original_values.values, expected_values.values)
+
+    def test_complex_formula(self, data):
+        formula = "((2t - 273.15)^2)/2 +  (tprate / 1000)"
+        convert = EvaluateFormula(
+            data=data, formula=formula,
+            units='Celsius^2 * hPa',
+            short_name="complex_calc",
+            long_name='Complex calculation').evaluate()
+
+        assert convert.attrs['short_name'] == 'complex_calc'
+        assert convert.attrs['long_name'] == 'Complex calculation'
+        assert convert.attrs['units'] == 'Celsius^2 * hPa'
+
+        original_values = (((data['2t'].isel(time=0) - 273.15)**2)/2 + (data['tprate'].isel(time=0) / 1000)).mean()
+        expected_values = convert.isel(time=0).mean()
+        assert np.allclose(original_values.values, expected_values.values)
