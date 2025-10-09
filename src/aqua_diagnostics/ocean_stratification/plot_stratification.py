@@ -46,7 +46,7 @@ class PlotStratification:
             loglevel=self.loglevel,
         )
 
-    def plot_mld(self, rebuild: bool = True, save_pdf: bool = True,
+    def plot_stratification(self, rebuild: bool = True, save_pdf: bool = True,
                        save_png: bool = True, dpi: int = 300):
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_data_map_list()
@@ -75,6 +75,37 @@ class PlotStratification:
             nlevels=self.nlevels,
             sym=False
         )
+
+    def plot_mld(self, rebuild: bool = True, save_pdf: bool = True,
+                   save_png: bool = True, dpi: int = 300):
+        self.data_list = [self.data, self.obs] if self.obs else [self.data]
+        self.set_data_map_list()
+        self.set_suptitle()
+        self.set_title()
+        self.set_description()
+        self.set_ytext()
+        self.set_nrowcol()
+        self.set_cbar_labels(var= 'mld')
+        self.set_cbar_limits()
+        fig = plot_maps(
+            maps=self.data_map_list,
+            nrows=self.nrows,
+            ncols=self.ncols,
+            proj=ccrs.PlateCarree(),
+            title=self.suptitle,
+            titles=self.title_list,
+            cbar_number='single',
+            cbar_label=self.cbar_label,
+            figsize=(9 * self.ncols, 8 * self.nrows),
+            cmap='jet',
+            ytext=self.ytext,
+            return_fig=True,
+            vmax=self.vmax,
+            vmin=self.vmin,
+            nlevels=self.nlevels,
+            sym=False
+        )
+
         self.save_plot(
             fig,
             rebuild=rebuild,
