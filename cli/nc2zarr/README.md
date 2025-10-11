@@ -10,7 +10,7 @@ We provide the `install.sh` script to this end (please edit the target directory
 To use the tool you will then need to add the path to this directory `$OUTDIR` to your path with 
 `export path=$OUTDIR:$PATH` (see the `setnc2zarr.sh` script for an example).
 
-# Usage
+## Usage
 
 Once installed, a simple configuration file can be used. For example the enclosed `era5_monthly.yml` can be used to convert ERA5 data on lumi (edit the paths if needed):
 
@@ -24,4 +24,8 @@ The sample configuration file contains `overwrite: false` to avoid overwriting t
 The option `multi_file: true` activates dask for the tool and seems in general more efficient.
 
 The enclosed job script `nc2zarr_era5.job` shows an example of how to run it on lumi.
+
+## Notes
+
+Chunking is an aspect to pay attention to before creating a zarr. Please inspect the current chunking of your data. For AQUA the best option is to have no chunking in space and to chunk along other dimensions (time, levels), possibly with a step of 1. The sample configuration file provided here implements this. In some cases it has been better (e.g. MSWEP), to reduce the workload of the tool, to first rechunk the data using cdo and afterward produce the zarr.
 
