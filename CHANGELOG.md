@@ -30,6 +30,7 @@ ClimateDT workflow modifications:
 - DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
+- nc2zarr installation and sample for zarr conversion (#2332)
 - Allow `Reader()` to access standard and custom `fldstat` methods provided by `FldStat()` (#2277)
 - Actions now upload artifacts with test results and environment specifications (#2323)
 - Pin for pydantic<2.12.0 (#2323)
