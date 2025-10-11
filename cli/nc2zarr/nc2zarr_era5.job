@@ -3,8 +3,9 @@
 #SBATCH --partition=small
 #SBATCH --account=project_462000911
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=4
 #SBATCH --time=24:00:00
+#SBATCH --mem=128G
 #SBATCH --error=/pfs/lustrep3/projappl/project_465000454/jvonhar/log/nc2zarr_era5_%j.err
 #SBATCH --output=/pfs/lustrep3/projappl/project_465000454/jvonhar/log/nc2zarr_era5_%j.out
 
