@@ -11,6 +11,7 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - Gregory: more detailed description and plot labels (#2306)
+- Radiation: using CERES ebaf42 instead of ebaf41 (#2333)
 
 ## [v0.18.0]
 
