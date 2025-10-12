@@ -8,7 +8,7 @@ datasets:
 references:
   - catalog: 'obs'
     model: 'CERES'
-    exp: 'ebaf-toa41'
+    exp: 'ebaf-toa42'
     source: 'monthly'
     regrid: 'r100'
   
