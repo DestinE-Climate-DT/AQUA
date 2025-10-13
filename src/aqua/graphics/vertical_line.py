@@ -70,7 +70,7 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
     if logscale:
         ax.set_yscale("log")
 
-    ax.set_ylim(lev_max, lev_min)
+    # ax.set_ylim(lev_max, lev_min)
     units = data[0][lev_name].attrs.get("units", "")
     var_name = data[0].long_name or data[0].short_name
     var_units = data[0].attrs.get("units", "")
