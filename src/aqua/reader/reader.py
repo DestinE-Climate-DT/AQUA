@@ -347,14 +347,14 @@ class Reader():
         ffdb = False
         # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-            data = self.reader_esm(self.esmcat, loadvar)
+            data = self.reader_esm(self.esmcat, loadvar, startdate=startdate, enddate=enddate)
         # If this is an fdb entry
         elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=True, level=level)
             ffdb = True  # These data have been read from fdb
         else:
-            data = self.reader_intake(self.esmcat, var, loadvar)
+            data = self.reader_intake(self.esmcat, var, loadvar, startdate=startdate, enddate=enddate)
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -695,7 +695,7 @@ class Reader():
         return final
 
 
-    def reader_esm(self, esmcat, var):
+    def reader_esm(self, esmcat, var, startdate=None, enddate=None):
         """Reads intake-esm entry. Returns a dataset."""
         cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
         query = esmcat.metadata['query']
@@ -710,7 +710,15 @@ class Reader():
                                       # use_cftime=True)
                                       progressbar=False
                                       )
-        return list(data.values())[0]
+
+        data = list(data.values())[0]
+
+        if 'time' in data.coords:
+            if startdate or enddate:
+                self.logger.debug(f'Filtering time: {startdate} to {enddate}')
+                data = data.sel(time=slice(startdate, enddate))
+
+        return data
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
@@ -857,7 +865,7 @@ class Reader():
 
         return data
 
-    def reader_intake(self, esmcat, var, loadvar, keep="first"):
+    def reader_intake(self, esmcat, var, loadvar, keep="first", startdate=None, enddate=None):
         """
         Read regular intake entry. Returns dataset.
 
@@ -876,6 +884,13 @@ class Reader():
             esmcat.xarray_kwargs.update({'decode_times': coder})
 
         data = esmcat.to_dask()
+
+        if 'time' in data.coords and (startdate or enddate):
+            if startdate:
+                data = data.sel(time=slice(startdate, None))
+            if enddate:
+                data = data.sel(time=slice(None, enddate))
+            self.logger.debug(f'Applied time filtering: {startdate} to {enddate}')
 
         if loadvar:
             loadvar = to_list(loadvar)
@@ -928,7 +943,8 @@ class Reader():
         """
         Retrieve data without any additional processing.
         Making use of GridInspector, provide a sample data which has minimum
-        size by subselecting along variables and time dimensions 
+        size by subselecting along variables and time dimensions.
+        Uses Reader's startdate/enddate if set, otherwise retrieves first timestep only.
 
         Args:
             *args: arguments to be passed to retrieve
@@ -941,10 +957,20 @@ class Reader():
             self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
             return self.sample_data
 
+        use_startdate = self.startdate if self.startdate else None
+        use_enddate = self.enddate if self.enddate else None
+
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, streaming=False,
-                                   startdate=None, enddate=None, preproc=None):
+        with self._temporary_attrs(aggregation=None, chunks=None, 
+                                   fix=False, streaming=False,
+                                   startdate=use_startdate, 
+                                   enddate=use_enddate, 
+                                   preproc=None):
             self.logger.debug('Getting sample data through _retrieve_plain()...')
+
+            if use_startdate or use_enddate:
+                self.logger.debug(f'Using date range: {use_startdate} to {use_enddate}')
+                
             data = self.retrieve(history=False, *args, **kwargs)
 
         self.sample_data = self._grid_inspector(data)
