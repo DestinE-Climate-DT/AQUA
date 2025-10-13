@@ -6,7 +6,7 @@ from aqua.util import cbar_get_label
 import math
 
 from .mld_profiles import plot_maps
-# from .multivar_vertical_profiles import plot_multivars_vertical_profile
+from .multiple_vertical_line import plot_multi_vertical_lines
 
 xr.set_options(keep_attrs=True)
 
@@ -49,62 +49,27 @@ class PlotStratification:
     def plot_stratification(self, rebuild: bool = True, save_pdf: bool = True,
                        save_png: bool = True, dpi: int = 300):
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
-        self.set_data_map_list()
+        self.set_data_list()
         self.set_suptitle()
         self.set_title()
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
-        self.set_cbar_labels(var= 'mld')
-        self.set_cbar_limits()
-        fig = plot_maps(
-            maps=self.data_map_list,
+        self.set_cbar_labels(var= 'rho')
+        self.set_label_line_plot()
+        fig = plot_multi_vertical_lines(
+            maps=self.data_list,
             nrows=self.nrows,
             ncols=self.ncols,
-            proj=ccrs.PlateCarree(),
+            variables=self.vars,
+            data_label=self.data_label,
+            obs_label=self.obs_label if self.obs else None,
             title=self.suptitle,
-            titles=self.title_list,
-            cbar_number='single',
-            cbar_label=self.cbar_label,
-            figsize=(9 * self.ncols, 8 * self.nrows),
-            cmap='jet',
-            ytext=self.ytext,
+            figsize=(4 * self.ncols, 10 * self.nrows),
             return_fig=True,
-            vmax=self.vmax,
-            vmin=self.vmin,
-            nlevels=self.nlevels,
-            sym=False
+            loglevel=self.loglevel,
         )
 
-    def plot_mld(self, rebuild: bool = True, save_pdf: bool = True,
-                   save_png: bool = True, dpi: int = 300):
-        self.data_list = [self.data, self.obs] if self.obs else [self.data]
-        self.set_data_map_list()
-        self.set_suptitle()
-        self.set_title()
-        self.set_description()
-        self.set_ytext()
-        self.set_nrowcol()
-        self.set_cbar_labels(var= 'mld')
-        self.set_cbar_limits()
-        fig = plot_maps(
-            maps=self.data_map_list,
-            nrows=self.nrows,
-            ncols=self.ncols,
-            proj=ccrs.PlateCarree(),
-            title=self.suptitle,
-            titles=self.title_list,
-            cbar_number='single',
-            cbar_label=self.cbar_label,
-            figsize=(9 * self.ncols, 8 * self.nrows),
-            cmap='jet',
-            ytext=self.ytext,
-            return_fig=True,
-            vmax=self.vmax,
-            vmin=self.vmin,
-            nlevels=self.nlevels,
-            sym=False
-        )
 
         self.save_plot(
             fig,
@@ -135,26 +100,18 @@ class PlotStratification:
                     else:
                         self.ytext.append(None)
 
-    def set_data_map_list(self):
-        self.data_map_list = []
-        for data in self.data_list:
-            if hasattr(self, "levels") and self.levels:
-                data = data.interp(level=self.levels)
-                for level in self.levels:
-                    for var in self.vars:
-                        if level == 0:
-                            data_level_var = data[var].isel(level=-1)
-                        else:
-                            data_level_var = data[var].sel(level=level)
-
-                        data_level_var.attrs["long_name"] = (
-                            f"{data_level_var.attrs.get('long_name', var)} at {level}m"
-                        )
-                        self.data_map_list.append(data_level_var)
-            else:
-                for var in self.vars:
-                    data_var = data[var]
-                    self.data_map_list.append(data_var)
+    def set_label_line_plot(self):
+        self.data_label = 'Model'
+        if self.obs:
+            self.obs_label = 'Obs'
+    def set_data_list(self):
+        self.data_list = [self.data]
+        if self.obs:
+            self.obs_data_list = [self.obs]
+        # for data in self.data:
+        #     for var in self.vars:
+        #         data_var = data[[var]]
+        #         self.data_list.append(data_var)
 
     def set_cbar_labels(self, var: str = None):
         self.cbar_label = cbar_get_label(data=self.data[var], cbar_label=None, loglevel=self.loglevel)
@@ -199,8 +156,8 @@ class PlotStratification:
         This method can be extended to set specific titles based on the data.
         """
         self.title_list = []
-        for j in range(len(self.data_map_list)):
-            attrs = self.data_map_list[j].attrs
+        for j in range(len(self.data_list)):
+            attrs = self.data_list[j].attrs
             for i, var in enumerate(self.vars):
                 # if j == 0:
                     # title = f"{var} ({self.data[var].attrs.get('units')})"
