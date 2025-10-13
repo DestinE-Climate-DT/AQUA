@@ -1,7 +1,3 @@
-"""
-Module to plot multiple Hovmoller data.
-This function is custom for the Ocean Drift diagnostics in AQUA.
-"""
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
@@ -25,38 +21,32 @@ def plot_multi_vertical_lines(
     style=None,
     text: list[float] = None,
     title: str = None,
-    titles: list[str] = None,
     return_fig=True,
     loglevel="WARNING",
     **kwargs,
 ):
     """
-    Plot multiple hovmoller diagrams in a grid layout.
+    Plot multiple vertical line profiles in a grid layout.
 
     Args:
         maps (list): List of xarray datasets containing the data to be plotted.
-        contour (bool): Whether to plot contours. Default is True.
-        sym (bool): Whether to use symmetric color limits. Default is False.
-        figsize (tuple): Size of the figure. Default is None, which will be set based on the number of variables and datasets.
-        variables (list): List of variable names to be plotted. If None, all variables in the datasets will be used.
-        invert_space_coord (bool): Whether to invert the space coordinate. Default is True.
-        fig (plt.Figure): Matplotlib figure object to plot on. If None, a new figure will be created.
-        ax (plt.Axes): Matplotlib axes object to plot on. If None, a new axes will be created.
-        style (str): Style to be used for the plot. Default is None. This will use the default AQUA style.
-        vmin (list[float]): List of minimum values for color limits for each variable.
-        vmax (list[float]): List of maximum values for color limits for each variable.
-        text (list[float]): List of text values to be displayed on the plot for each variable.
-        nlevels (int): Number of contour levels. Default is 20.
-        title (str): Title for the entire figure. Default is None.
-        titles (list[str]): List of titles for each subplot. If None, no titles will be set.
-        cmap (list[str]): List of colormaps for each variable. If None, the default colormap will be used.
-        cbar_label (list[str]): List of colorbar labels for each subplot. If None, labels will be generated based on the variable names.
-        return_fig (bool): Whether to return the figure object. Default is True.
-        loglevel (str): Logging level. Default is "WARNING".
-        **kwargs: Additional keyword arguments to be passed to the plotting function.
-    
+        nrows (int): Number of rows in the subplot grid.
+        ncols (int): Number of columns in the subplot grid.
+        figsize (tuple, optional): Size of the figure (width, height). If None, it is set automatically.
+        data_label (str, optional): Label for the main data lines.
+        obs_label (str, optional): Label for the reference or observational lines.
+        variables (list, optional): List of variable names to plot from each dataset.
+        fig (plt.Figure, optional): Matplotlib Figure to plot on. If None, a new figure is created.
+        ax (plt.Axes, optional): Matplotlib Axes to plot on. If None, new axes are created.
+        style (str, optional): Plot style to use (default is AQUA style).
+        text (list, optional): List of text annotations for each subplot.
+        title (str, optional): Title for the entire figure.
+        return_fig (bool, optional): If True, return the matplotlib Figure object.
+        loglevel (str, optional): Logging level for the function.
+        **kwargs: Additional keyword arguments passed to the plotting function.
+
     Returns:
-        plt.Figure: The matplotlib figure object containing the hovmoller plots.
+        matplotlib.figure.Figure or None: The matplotlib Figure object if return_fig is True, otherwise None.
     """
     logger = log_configure(loglevel, "plot_multi_hovmoller")
     ConfigStyle(style=style, loglevel=loglevel)
