@@ -102,7 +102,6 @@ def drop_execute(args):
     stat = config['target'].get('stat', 'mean')
     startdate = config['target'].get('startdate', None)
     enddate = config['target'].get('enddate', None)
-    print(f'Start date from config is {startdate}, enddate is {enddate}')
     
     # assig paths
     paths = config['paths']
