@@ -7,10 +7,12 @@ datasets:
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-zonalmean'
+    realization: null
   - catalog: null
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-zonalmean'
+    realization: null
 
 setup:
   loglevel: 'WARNING'

@@ -11,22 +11,25 @@ from aqua import Reader
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure
 
+# reader_retrieve_and_merge
+# merge_ensemble_data
+# load_merged_data
 
-def retrieve_merge_ensemble_data(
+def reader_retrieve_and_merge(
     variable: str = None,
     ens_dim: str = "ensemble",
-    #model_names: list[str] = None,
-    data_path_list: list[str] = None,
     catalog_list: list[str] = None,
     model_list: list[str] = None,
     exp_list: list[str] = None,
     source_list: list[str] = None,
-    realization: list[str] = None,
+    realization: dict[str, list[str]] = None,
     region: str = None,
-    lon_limt: float = None,
-    lat_lim: float = None,
+    lon_limits: float = None,
+    lat_limits: float = None,
     startdate: str = None,
     enddate: str = None,
+    areas: bool = False,
+    fix: bool = False,
     loglevel: str = "WARNING",
 ):
     """
@@ -37,32 +40,23 @@ def retrieve_merge_ensemble_data(
     and sources, combines the datasets along the specified "ensemble" dimension along with their indices, and slices
     the merged dataset to the given start and end dates. The ens_dim can given any customized name for the ensemble dimension.
 
-    There are following two ways to load the datasets with function.
-    a) with xarray.open_dataset
-    b) with AQUA Reader class
+    This function loads the data via the AQUA Reader class
 
     Args:
         variable (str): The variable to retrieve data. Defaults to None.
-
-        In the case a):
-            data_path_list (list of str): list of paths for data to be loaded by xarray.
-            model_list (list): Assign names to the variable lists. It is IMPORTANT
-                to assign names when calculating multi-model mean. This variable list
-                will assign a name to each memeber.
-
-        In the case b):
-            region (str): This variable is specific to the Zonal averages. Defaults to None.
-            catalog_list (list): A list of AQUA catalog. Default to None.
-            model_list (list): A list of model names. Each model corresponds to an
-                experiment and source in the `exps` and `sources` lists, respectively.
-                Defaults to None.
-            exp_list (list): A list of experiment names. Each experiment corresponds
-                to a model and source in the `models` and `sources` lists, respectively.
-                Defaults to None.
-            source_list (list): A list of data source names. Each source corresponds
-                to a model and experiment in the `models` and `exps` lists, respectively.
-                Defaults to None.
-
+        region (str): This variable is specific to the Zonal averages. Defaults to None.
+        catalog_list (list): A list of AQUA catalog. Default to None.
+        model_list (list): A list of model names. Each model corresponds to an
+            experiment and source in the `exps` and `sources` lists, respectively.
+            Defaults to None.
+        exp_list (list): A list of experiment names. Each experiment corresponds
+            to a model and source in the `models` and `sources` lists, respectively.
+            Defaults to None.
+        source_list (list): A list of data source names. Each source corresponds
+            to a model and experiment in the `models` and `exps` lists, respectively.
+            Defaults to None.
+        # NOTE: here one can pass a dictionay of realizations of multiple models. Default is 'None'.
+        realization: dict[str, list[str]] = None, 
         Specific to the timeseries datasets:
             startdate (str or datetime): The start date for slicing the merged dataset.
                 If None is provided, the ensemble members are merged w.r.t to their time-interval. Defaults to None.
@@ -72,269 +66,352 @@ def retrieve_merge_ensemble_data(
             xarray.Dataset: The merged dataset containing data from all specified models,
                 experiments, and sources, concatenated along `ens_dim` along with model name.
     """
-    logger = log_configure(log_name="ensemble", log_level=loglevel)
-    logger.info("Loading and merging the ensemble dataset")
+    logger = log_configure(log_name="reader_retrieve_and_merge", log_level=loglevel)
+    logger.info("Loading and merging the ensemble dataset using the Reader class")
+    
 
-    # in case if the list of paths of netcdf dataset is given
-    # then load via xarray.open_dataset function
-    # return ensemble dataset with with ensemble dimension ens_dim with individual indexes
-    # temporary list to append the datasets and later concat the list to merged dataset along ens_dim
-    tmp_dataset_list = []
-    tmp_min_date_list = []
-    tmp_max_date_list = []
+    if not all([catalog_list, model_list, exp_list, source_list]):
+        raise ValueError("catalog_list, model_list, exp_list, and source_list must all be provided.")
 
-    # Method (a): To load and merge the dataset via file paths
-    if data_path_list is not None:
-        if model_list is not None:
-            model_counts = dict(Counter(model_list))
-        if model_list is None or len(model_counts.keys()) <= 1:
-            logger.info("Single model ensemble memebers are given")
-            if model_list is None:
-                logger.info("No model name is given. Assigning it to realization_i.")
-                model_list = ['model'] * len(data_path_list)
-        else:
-            logger.info("Multi-model ensemble members are given")
+    all_datasets = []
 
-        # Common ensemble dimension names to look for
-        possible_ens_dims = ["member", "realization", "r", "ensemble", "ens"]
+    # --- Loop through each (catalog, model, exp, source) combination ---
+    for cat_i, model_i, exp_i, src_i in zip(catalog_list, model_list, exp_list, source_list):
+        logger.info(f"Processing: catalog={cat_i}, model={model_i}, exp={exp_i}, source={src_i}")
 
-        # Peek at first file
-        with xr.open_dataset(data_path_list[0]) as ds:
-            if ens_dim is None:
-                for d in possible_ens_dims:
-                    if d in ds.dims:
-                        ens_dim = d
-                        break
-            if (len(data_path_list) == 1):
-                print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-                # If ensemble dim is found, just return the combined dataset
-                if ens_dim in ds.dims:
-                    ens_dataset = xr.open_mfdataset(
-                        data_path_list,
-                        combine="by_coords",
-                        drop_variables=[var for var in ds.data_vars if var != variable]
-                    )
-                    ens_dataset.attrs["model"] = model_list
+        # Get realizations and set default to ['r1'] if not provided
+        reals = ["r1"] if realization is None else realization.get(model_i, ["r1"])
 
-                    if "time" in ens_dataset.dims:
-                        if startdate is not None and enddate is not None:
-                            ens_dataset = ens_dataset.sel(time=slice(startdate, enddate))
+        model_ds_list = []
+
+        for r in reals:
+            try:
+                # Retrieve the data using AQUA Reader
+                reader = Reader(
+                    catalog=cat_i,
+                    model=model_i,
+                    exp=exp_i,
+                    source=src_i,
+                    realization=r_i,
+                    region=region,
+                    areas=areas,
+                    fix=fix,
+                )
+
+                ds = reader.retrieve(var=variable)
+                logger.info(f"Loaded {variable} for {model}, {exp}, realization={r}")
+
+                # Spatial selection
+                if lon_limits and lat_limits:
+                    if "lon" in ds.dims and "lat" in ds.dims:
+                        ds = ds.sel(lon=slice(*lon_limits), lat=slice(*lat_limits))
                     else:
-                        tmp_min_date_list.append(pd.to_datetime(tmp_dataset.time.values[0]))
-                        tmp_max_date_list.append(pd.to_datetime(tmp_dataset.time.values[-1]))
+                        logger.debug(f"Dataset for {model}-{r} has no lon/lat dims, skipping spatial subset.")
 
-                    if tmp_min_date_list and tmp_max_date_list:
-                        common_startdate = max(tmp_min_date_list)
-                        common_enddate = min(tmp_max_date_list)
-                    if "time" in ens_dataset.dims:
-                        if startdate is not None and enddate is not None:
-                            common_startdate = startdate
-                            common_enddate = enddate
-                        logger.info("Finished loading the ensemble timeseries datasets")
-                        ens_dataset.attrs["description"] = f"Dataset with {ens_dim} for ensemble statistics"
-                        #ens_dataset.attrs["model names"] = model_names
-                        return ens_dataset.sel(time=slice(common_startdate, common_enddate))
+                # Temporal selection (only if time dimension exists)
+                if "time" in ds.dims and (startdate or enddate):
+                    ds = ds.sel(time=slice(startdate, enddate))
+                elif "time" not in ds.dims and (startdate or enddate):
+                    logger.debug(f"Dataset for {model}-{r} has no time dimension.")
 
-                    return ens_dataset
+                # Add ensemble label
+                ens_label = f"{model}_{exp}_{r}"
+                ds = ds.expand_dims({ens_dim: [ens_label]})
 
-        for i, f in enumerate(data_path_list):
-            # load and assign new dimensions, namely ensemble and model name
-            tmp_dataset = xr.open_dataset(
-                f, drop_variables=[var for var in xr.open_dataset(f).data_vars if var != variable]
-            ).expand_dims({ens_dim: [i]})
-            # append to the temporary list
-            tmp_dataset_list.append(tmp_dataset)
+                model_ds_list.append(ds)
 
-            # Check if the given data is a timeseries
-            # if yes, then compute common startdate and enddate.
-            if "time" in tmp_dataset.dims:
-                if startdate is not None and enddate is not None:
-                    tmp_dataset = tmp_dataset.sel(time=slice(startdate, enddate))
-                else:
-                    tmp_min_date_list.append(pd.to_datetime(tmp_dataset.time.values[0]))
-                    tmp_max_date_list.append(pd.to_datetime(tmp_dataset.time.values[-1]))
-        ens_dataset = xr.concat(tmp_dataset_list, dim=ens_dim)
-        ens_dataset = ens_dataset.assign_coords(model=(ens_dim, model_list))
+            except Exception as e:
+                logger.warning(f"Skipping {model}-{exp}-{r} due to error: {e}")
+                continue
 
-        for i, f in enumerate(data_path_list):
-            ens_dataset = xr.open_dataset(
-                   f, drop_variables=[var for var in xr.open_dataset(f).data_vars if var != variable])
-    # Method (b):
-    # else if check the models, exps and sources are given from the catalog in the forms of lists
-    # then use the AQUA.Reader class to load the data
-    elif model_list is not None and exp_list is not None and source_list is not None:
-        if len(np.unique(model_list)) <= 1:
-            logger.info("Single model ensemble memebers are given")
-        else:
-            logger.info("Multi-model ensemble members are given")
+        if not model_ds_list:
+            logger.warning(f"No realizations loaded for {model} ({exp}). Skipping...")
+            continue
 
-        # if Catalog is not Null
-        if catalog_list is not None:
-            for i, model in enumerate(model_list):
-                # check if region variable is defined
-                if region is not None:
-                    tmp_reader = Reader(
-                        catalog=catalog_list[i],
-                        model=model,
-                        exp=exp_list[i],
-                        source=source_list[i],
-                        areas=False,
-                        region=region,
-                    )
-                # if region variable is not defined
-                else:
-                    tmp_reader = Reader(
-                        catalog=catalog_list[i],
-                        model=model,
-                        exp=exp_list[i],
-                        source=source_list[i],
-                        areas=False,
-                    )
-                tmp_dataset = tmp_reader.retrieve(var=variable)
-                tmp_dataset_expended = tmp_dataset.expand_dims(ensemble=[i])
-                tmp_dataset_list.append(tmp_dataset_expended)
-        # if Catalog is Null
-        else:
-            for i, model in enumerate(model_list):
-                # check if region variable is defined
-                if region is not None:
-                    tmp_reader = Reader(
-                        model=model,
-                        exp=exp_list[i],
-                        source=source_list[i],
-                        areas=False,
-                        region=region,
-                    )
-                # if region variable is not defined
-                else:
-                    tmp_reader = Reader(
-                        model=model,
-                        exp=exp_list[i],
-                        source=source_list[i],
-                        areas=False,
-                    )
-                tmp_dataset = tmp_reader.retrieve(var=variable)
-                tmp_dataset_expended = tmp_dataset.expand_dims(ensemble=[i])
-                tmp_dataset_list.append(tmp_dataset_expended)
-        # check if the given data is timeseries
-        # if yes, compute common startdate and enddate
-        if "time" in tmp_dataset.dims:
-            if startdate is not None and enddate is not None:
-                tmp_dataset = tmp_dataset.sel(time=slice(startdate, enddate))
-            else:
-                tmp_min_date_list.append(pd.to_datetime(tmp_dataset.time.values[0]))
-                tmp_max_date_list.append(pd.to_datetime(tmp_dataset.time.values[-1]))
+        # Concatenate realizations for this model
+        model_ens = xr.concat(model_ds_list, dim=ens_dim)
+        all_datasets.append(model_ens)
 
-        # concatenate along the ensemble dimension
-        ens_dataset = xr.concat(tmp_dataset_list, dim=ens_dim)
-        ens_dataset = ens_dataset.assign_coords(model=(ens_dim, model_list))
-        # delete tmp varaibles
-        del tmp_reader, tmp_dataset_expended
-    else:
-        # No data is given
-        raise NoDataError("No Data is provided to retreieve and merge for ensemble")
+        # Free up memory from individual realizations
+        for ds in model_ds_list:
+            ds.close() if hasattr(ds, "close") else None
+        del model_ds_list
+        del model_ens
+        gc.collect()
 
-    if tmp_min_date_list and tmp_max_date_list:
-        common_startdate = max(tmp_min_date_list)
-        common_enddate = min(tmp_max_date_list)
-    # delete all tmp varaibles
-    #del tmp_dataset_list, tmp_min_date_list, tmp_max_date_list, tmp_dataset
-    #gc.collect()
-    # check if the ensemble dataset is a timeseries dataset
-    # then return enemble dataset
-    if "time" in ens_dataset.dims:
-        if startdate is not None and enddate is not None:
-            common_startdate = startdate
-            common_enddate = enddate
-        logger.info("Finished loading the ensemble timeseries datasets")
-        ens_dataset.attrs["description"] = f"Dataset merged along {ens_dim} for ensemble statistics"
-        ens_dataset.attrs["model"] = model_list
-        return ens_dataset.sel(time=slice(common_startdate, common_enddate))
-    else:
-        # the ensemble dataset is not a timeseries
-        logger.info("Finished loading the ensemble datasets")
-        ens_dataset.attrs["description"] = f"Dataset merged along {ens_dim} for ensemble statistics"
-        ens_dataset.attrs["model"] = model_list
-        return ens_dataset
+    # Merge across all models
+    if not all_datasets:
+        raise RuntimeError("No datasets successfully retrieved from AQUA Reader.")
 
+    
+    merged_dataset = xr.concat(all_datasets, dim=ens_dim)
+    logger.info(f"Merged {len(merged[ens_dim])} ensemble members total.")
 
-def compute_statistics(
-    variable: str = None, ds: xr.Dataset = None, ens_dim: str = "ensemble", loglevel="WARNING"
+    # Adding metadata
+    merged_dataset.attrs.update({
+        "description": "Merged data for AQUA ensemble diagnostics across models, experiments, and realizations.",
+        "variable": variable,
+        "ensemble_members": list(merged_dataset[ens_dim].values),
+    })
+
+    for ds in all_datasets:
+        ds.close() if hasattr(ds, "close") else None
+    del all_datasets
+    gc.collect()
+    logger.info("Memory successfully freed.")
+
+    return merged_dataset
+
+def merge_from_data_files(
+    variable: str = None,
+    ens_dim: str = "ensemble",
+    data_path_list: List[str] = None,
+    model_list: List[str] = None,
+    realization: Dict[str, List[str]] = None,
+    region: str = None,
+    lon_limits: List[float] = None,
+    lat_limits: List[float] = None,
+    startdate: str = None,
+    enddate: str = None,
+    loglevel: str = "WARNING",
 ):
     """
-    A function to compute mean and STD. Moreover, it can also perform weighted mean and STD.
+    Merge ensemble NetCDF files along the ensemble dimension with optional
+    spatial and temporal selection.
+
+    Parameters
+    ----------
+    variable (str) : Name of the variable to merge.
+    ens_dim (str) : Name of the ensemble dimension. Default to 'ensemble'.
+    model_names (list[str]) : List of model names. Mandatory to provide model_names.
+    data_path_list (list[str]) : List of directories containing NetCDF files. Mandatory.
+    realization (dict[str, list[str]]) : Realizations to include for each model.
+    region (str) : Optional named region.
+    lon_limits (list[float]) : Longitude limits [min_lon, max_lon].
+    lat_lim (list[float]) : Latitude limits [min_lat, max_lat].
+    startdate (str) : Start date for temporal subsetting (YYYY-MM-DD).
+    enddate (str) : End date for temporal subsetting (YYYY-MM-DD).
+    loglevel (str) : Logging level. Default is 'WARNING'.
+
+    Returns
+    -------
+    xarray.Dataset
+        Merged dataset along ensemble dimension.
+    """
+
+    logger = log_configure(log_name="merge_from_data_files", log_level=loglevel)
+    logger.info("Loading and merging the ensemble dataset by reading files")
+
+    if not all([data_path_list, model_list]):
+        raise ValueError("data_path_list and model_list must be provided.")
+
+    all_datasets = []
+
+    for model in model_list:
+        logger.info(f"Processing model: {model}")
+
+        # Determine realizations (default = ['r1'])
+        reals = ["r1"] if realization is None else realization.get(model, ["r1"])
+        model_ds_list = []
+
+        for r in reals:
+            # Attempt to find files for this model-realization
+            files_for_real = []
+            for path in data_path_list:
+                pattern = f"{model}_{r}_{variable}.nc"
+                file_path = os.path.join(path, pattern)
+                if os.path.exists(file_path):
+                    files_for_real.append(file_path)
+
+            if not files_for_real:
+                logger.warning(f"No files found for {model}-{r}-{variable}. Skipping.")
+                continue
+
+            # Open each file using xarray.open_dataset
+            for file in files_for_real:
+                try:
+                    ds = xr.open_dataset(file)[variable]
+                    logger.info(f"Loaded {variable} from {file}")
+
+                    # Spatial selection
+                    if lon_limits and lat_limits:
+                        if "lon" in ds.dims and "lat" in ds.dims:
+                            ds = ds.sel(lon=slice(*lon_limits), lat=slice(*lat_limits))
+
+                    # Temporal selection
+                    if "time" in ds.dims and (startdate or enddate):
+                        ds = ds.sel(time=slice(startdate, enddate))
+
+                    # Add ensemble label
+                    ens_label = f"{model}_{r}"
+                    ds = ds.expand_dims({ens_dim: [ens_label]})
+
+                    model_ds_list.append(ds)
+
+                except Exception as e:
+                    logger.warning(f"Skipping file {file} due to error: {e}")
+                    continue
+
+            if not model_ds_list:
+                logger.warning(f"No realizations loaded for model {model}. Skipping.")
+                continue
+
+    # Concatenate realizations for this model
+    model_ens = xr.concat(model_ds_list, dim=ens_dim)
+    all_datasets.append(model_ens)
+
+    # Free memory
+    for ds in model_ds_list:
+        ds.close() if hasattr(ds, "close") else None
+    del model_ds_list
+    del model_ens
+    gc.collect()
+
+    # Merge across models
+    if not all_datasets:
+        raise RuntimeError("No datasets successfully loaded.")
+
+    merged_dataset = xr.concat(all_datasets, dim=ens_dim)
+    log.info(f"Merged {len(merged_dataset[ens_dim])} ensemble members total.")
+
+    # Adding metadata
+    merged_dataset.attrs.update({
+        "description": "Merged NetCDF datasets across models and realizations.",
+        "variable": variable,
+        "ensemble_members": list(merged_dataset[ens_dim].values),
+    })
+
+    for ds in all_datasets:
+        ds.close() if hasattr(ds, "close") else None
+    del all_datasets
+    gc.collect()
+    logger.info("Memory successfully freed.")
+
+    return merged_dataset
+
+def load_premerged_ensemble_dataset(ds: xr.Dataset, ens_dim: str = "ensemble", loglevel: str = "WARNING"):
+    """
+    Prepares a pre-merged xarray dataset for statistical computation.
+    Ensures correct ensemble dimension and model labeling.
+
     Args:
-        variable (str): Variable name.
-        ds (xr.Dataset): xarray.Dataset merged along default dimension 'ensemble'.
+        ds (xr.Dataset): Pre-merged dataset.
+        ens_dim (str): Name of the ensemble dimension.
+        loglevel (str): Logging level.
 
     Returns:
-        1) In case of Single-model ensemble:
-           returns xarray.Dataset ds_mean and ds_std
-        2) In case of Multi-model ensemble:
-           returns xarray.Dataset weighted_mean and weighted_std
+        xr.Dataset: Prepared dataset ready for compute_statistics.
+    """
+
+    logger = log_configure(log_name="load_premerged_ensemble_dataset", log_level=loglevel)
+    logger.info("Loading and merging the ensemble dataset by reading files")
+
+    if ds is None:
+        raise ValueError("No dataset provided to load_premerged_ensemble_dataset")
+
+    # Check ensemble dimension
+    if ens_dim not in ds.dims:
+        logger.info(f"Adding '{ens_dim}' dimension as it does not exist")
+        # Expand dataset along ensemble dimension
+        ds = ds.expand_dims({ens_dim: [0]})
+
+    # Check for model coordinate
+    if "model" not in ds.coords:
+        logger.info("No 'model' coordinate found. Assuming single-model ensemble")
+        ds = ds.assign_coords(model=("ensemble", ["single_model"] * ds.dims[ens_dim]))
+
+    else:
+        # Ensure model coordinate is same length as ensemble dimension
+        if len(ds["model"]) != ds.dims[ens_dim]:
+            logger.warning(f"'model' coordinate length {len(ds['model'])} != ensemble size {ds.dims[ens_dim]}. Adjusting...")
+            # Repeat or truncate model labels as needed
+            repeat_factor = ds.dims[ens_dim] // len(ds["model"])
+            remainder = ds.dims[ens_dim] % len(ds["model"])
+            new_model = list(ds["model"].values) * repeat_factor + list(ds["model"].values)[:remainder]
+            ds = ds.assign_coords(model=("ensemble", new_model))
+
+    # Optional: sort ensemble members by model label
+    logger.info("Sorting ensemble members by model label")
+    sorted_indices = np.argsort(ds["model"].values)
+    ds = ds.isel({ens_dim: sorted_indices})
+
+    # Clean memory
+    gc.collect()
+
+    return ds
+
+
+def compute_statistics(variable: str = None, ds: xr.Dataset = None, ens_dim: str = "ensemble", loglevel="WARNING"):
+    """
+    Compute mean and standard deviation for single- and multi-model ensembles.
+    - Single-model: unweighted mean/std.
+    - Multi-model: weighted mean/std based on actual number of realizations per model.
+
+    Args:
+        variable (str): Variable name.
+        ds (xr.Dataset): xarray.Dataset merged along ensemble dimension.
+        ens_dim (str): Name of ensemble dimension.
+        loglevel (str): Logging level.
+
+    Returns:
+        Single-model: ds_mean, ds_std
+        Multi-model: weighted_mean, weighted_std
     """
 
     logger = log_configure(log_name="compute_statistics", log_level=loglevel)
     logger.info("Computing statistics of the ensemble dataset")
 
     if ds is None:
-        raise NoDataError("No data is given to the compute_statistics method in ensemble/util.py")
-    if ds.model is not None:
-        if len(np.unique(ds.model)) <= 1:
-            logger.info("Given dataset in compute_statistics is Single-model ensemble")
-            # unweighted mean and STD in case of Single-model ensemble
+        raise NoDataError("No data is given to compute_statistics")
+
+    # Case 1: dataset has 'model' coordinate
+    if "model" in ds.coords:
+        unique_models = np.unique(ds["model"].values)
+        if len(unique_models) <= 1:
+            logger.info("Single-model ensemble detected")
+            # unweighted mean and std
             ds_mean = ds[variable].mean(dim=ens_dim, skipna=False)
             ds_std = ds[variable].std(dim=ens_dim, skipna=False)
             return ds_mean, ds_std
         else:
-            logger.info("Given dataset in compute_statistics is Multi-model ensemble")
-            # weighted mean and STD in case of Multi-model ensemble.
-            # The function expects that the dataset is merged with
-            # each ensmble member is named with the model name
-            # in the multi-model ensemble
-            # Step 1: Count how many ensembles each model has
+            logger.info("Multi-model ensemble detected")
+            # Weighted mean/std based on realizations
+            # Step 1: compute number of realizations per model in the dataset
+            model_counts = {model: np.sum(ds["model"].values == model) for model in unique_models}
 
-            counts = ds["model"].to_series().value_counts().to_dict()
-            
-            # Step 2: Create weights per ensemble member using the model label
+            # Step 2: assign weight for each ensemble member
             weights = xr.DataArray(
-                [counts[model] for model in ds["model"].values],
+                [model_counts[m] for m in ds["model"].values],
                 dims=ens_dim,
-                coords={ens_dim: ds[ens_dim]},
+                coords={ens_dim: ds[ens_dim]}
             )
 
-            # Step 3: Normalize weights (optional if you want weighted *mean*, not just rescaled sum)
+            # Step 3: normalize weights
             normalized_weights = weights / weights.sum()
-            # Step 4: Compute weighted mean
-            weighted_mean = (ds * normalized_weights).sum(dim=ens_dim, skipna=False)
 
-            # Step 5: Compute weighted standard deviation
-            # First get weighted mean (without broadcasting issues)
-            broadcast_mean = weighted_mean.expand_dims({ens_dim: ds.dims[ens_dim]}).transpose(
-                *ds.dims
-            )
+            # Step 4: compute weighted mean
+            weighted_mean = (ds[variable] * normalized_weights).sum(dim=ens_dim, skipna=False)
 
-            # Compute variance: E[(x - μ)^2]
-            weighted_var = (((ds - broadcast_mean) ** 2) * normalized_weights).sum(
-                dim=ens_dim, skipna=False
-            )
-
+            # Step 5: compute weighted std
+            broadcast_mean = weighted_mean.expand_dims({ens_dim: ds.dims[ens_dim]}).transpose(*ds[variable].dims)
+            weighted_var = (((ds[variable] - broadcast_mean) ** 2) * normalized_weights).sum(dim=ens_dim, skipna=False)
             weighted_std = np.sqrt(weighted_var)
 
-            weighted_mean.attrs["normalized weights"] = normalized_weights
-            weighted_std.attrs["normalized weights"] = normalized_weights
-            weighted_mean.attrs["description"] = "Weighted mean"
-            weighted_std.attrs["description"] = "Weighted standard deviation"
-            return weighted_mean[variable], weighted_std[variable]
-    else:
-        # in case ds is not None and ds.model is not given
-        logger.info(
-            "Given dataset in compute_statistics is Single-model ensemble and model name not given"
-        )
-        ds_mean = ds[variable].mean(dim=ens_dim, skipna=False)
-        ds_std = ds[variable].mean(dim=ens_dim, skipna=False)
-        return ds_mean, ds_std
+            weighted_mean.attrs.update({
+                "description": "Weighted mean based on actual model realizations",
+            })
+            weighted_std.attrs.update({
+                "description": "Weighted std based on actual model realizations",
+            })
 
+            return weighted_mean, weighted_std
+
+    else:
+        # Case 2: no model coordinate, assume single-model ensemble
+        logger.info("Single-model ensemble detected (no 'model' coordinate)")
+        ds_mean = ds[variable].mean(dim=ens_dim, skipna=False)
+        ds_std = ds[variable].std(dim=ens_dim, skipna=False)
+        return ds_mean, ds_std
 
 def center_timestamp(time: pd.Timestamp, freq: str):
     """

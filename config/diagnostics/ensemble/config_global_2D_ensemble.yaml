@@ -2,14 +2,16 @@
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
 datasets:
-  - catalog: 'climatedt-phase1' # null
+  - catalog: 'climatedt-phase1' 
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
-  - catalog: 'nextgems4' # null
+    realization: null
+  - catalog: 'nextgems4' 
     model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
+    realization: null
 
 setup:
   loglevel: 'WARNING'

@@ -4,26 +4,11 @@
 
 # This yaml file will only have either annual or monthly
 datasets:
-  - catalog: null
+  - catalog: 'climatedt-o25.1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-monthly'
-    realization: null
-  - catalog: null  
-    model: 'IFS-FESOM'
-    exp: 'historical-1990'
-    source: 'aqua-timeseries-monthly'
-    realization: null
-  - catalog: null
-    model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'aqua-timeseries-annual'
-    realization: null
-  - catalog: null
-    model: 'IFS-FESOM'
-    exp: 'historical-1990'
-    source: 'aqua-timeseries-annual'
-    realization: null
+    realization: ['r2', 'r3', 'r4']
 
 # Reference
 references:
@@ -31,10 +16,6 @@ references:
     model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-monthly'
-  - catalog: null  
-    model: 'ERA5'
-    exp: 'era5'
-    source: 'aqua-timeseries-annual'
 
 setup:
   loglevel: 'WARNING'
