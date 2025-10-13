@@ -1,3 +1,4 @@
 from .stratification import Stratification
 from .plot_stratification import PlotStratification
-__all__ = ["Stratification", "PlotStratification"]
+from .plot_mld import PlotMLD
+__all__ = ["Stratification", "PlotStratification", "PlotMLD"]
