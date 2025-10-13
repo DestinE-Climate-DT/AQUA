@@ -221,13 +221,13 @@ class Stratification(Diagnostic):
         self.logger.debug("Potential temperature converted to conservative temperature.")
         
         # Update the dataset with converted variables
-        self.data["thetao"] = cons_thetao
-        self.data["so"] = abs_so
+        # self.data["cons_thetao"] = cons_thetao
+        # self.data["so"] = abs_so
         self.logger.info("Variables successfully converted and updated in dataset.")
         
         # self.data = convert_variables(self.data, loglevel=self.loglevel)
         self.logger.debug("Computing potential density at reference pressure 0 dbar.")
-        rho = compute_rho(self.data["so"], self.data["thetao"], 0)
+        rho = compute_rho(abs_so, cons_thetao, 0)
         self.data["rho"] = rho - 1000  # Convert to kg/m^3
         self.data["rho"].attrs["long_name"] = "Potential Density"
         self.data["rho"].attrs["units"] = "kg/m^3"
