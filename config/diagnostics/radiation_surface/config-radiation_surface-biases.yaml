@@ -27,7 +27,7 @@ diagnostics:
   globalbiases:
     run: true
     diagnostic_name: 'radiation'
-    variables: ['snlwrf', 'snswrf']
+    variables: ['snlwrf', 'snswrf', 'slhtf', 'ishf']
     params:
       default:
         plev: null # Level plot for 2D bias map if variable 3d

@@ -14,7 +14,7 @@ references:
   - catalog: obs
     model: 'ERA5'
     exp: 'era5'
-    source: 'monthly'
+    source: 'monthly-zarr'
     startdate: '1990-01-01'
     enddate: '2020-12-31'
   - catalog: obs
@@ -44,5 +44,8 @@ diagnostics:
       - vars: ['-snlwrf', 'snswrf']
         anomalies: true
         add_mean_line: true
+      - vars: ['slhtf', 'ishf']
+        anomalies: true
+        add_mean_lìne: true
 
 

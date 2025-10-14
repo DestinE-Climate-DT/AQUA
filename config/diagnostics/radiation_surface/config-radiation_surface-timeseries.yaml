@@ -33,7 +33,7 @@ diagnostics:
   timeseries:
     run: true
     diagnostic_name: 'radiation'
-    variables: ['snlwrf', 'snswrf']
+    variables: ['snlwrf', 'snswrf', 'slhtf', 'ishf']
     center_time: true
     params:
       default:
