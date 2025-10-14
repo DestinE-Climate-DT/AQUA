@@ -107,10 +107,12 @@ class PlotHovmoller:
         self.set_data_type()
         self.set_texts()
         self.set_vmax_vmin()
+        self.set_line_plot_colours()
         self.logger.debug("Plotting Timeseries for variables: %s", self.vars)
         fig = plot_multi_timeseries(
             maps=self.data,
             levels=self.levels,
+            line_plot_colours=self.line_plot_colours,
             variables=self.vars,
             loglevel=self.loglevel,
             title=self.suptitle,
@@ -151,7 +153,9 @@ class PlotHovmoller:
             merged_data = xr.concat(new_data_level_list, dim='level')
             new_data_list.append(merged_data)
         self.data = new_data_list
-
+    def set_line_plot_colours(self):
+        self.line_plot_colours = ['blue', 'green', 'orange', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+        self.line_plot_colours = self.line_plot_colours[:len(self.levels)]
     def set_suptitle(self):
         """Set the suptitle for the Hovmoller plot."""
         self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region}"
