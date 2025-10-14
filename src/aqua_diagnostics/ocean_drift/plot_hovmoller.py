@@ -7,6 +7,13 @@ from .multiple_timeseries import plot_multi_timeseries
 xr.set_options(keep_attrs=True)
 
 class PlotHovmoller:
+    """
+    Class for plotting Hovmoller diagrams and timeseries from AQUA ocean drift diagnostics.
+
+    This class provides methods to generate, customize, and save Hovmoller and timeseries plots
+    using xarray datasets and AQUA conventions. It handles metadata extraction, plot styling,
+    and output file management.
+    """
     def __init__(self,
                  data: list [xr.Dataset],
                  diagnostic_name: str = "oceandrift",
@@ -48,14 +55,19 @@ class PlotHovmoller:
                        save_png: bool = True, dpi: int = 300):
         """
         Plot the Hovmoller diagram for the given data.
+
         This method sets the title, description, vmax, vmin, and texts for the plot.
         It then calls the `plot_multi_hovmoller` function to create the plot and
         saves it using the `OutputSaver`.
 
         Args:
-            rebuild (bool): Whether to rebuild the output, default is True
-            save_pdf (bool): Whether to save the plot as a PDF, default is True
-            save_png (bool): Whether to save the plot as a PNG, default is True
+            rebuild (bool): Whether to rebuild the output, default is True.
+            save_pdf (bool): Whether to save the plot as a PDF, default is True.
+            save_png (bool): Whether to save the plot as a PNG, default is True.
+            dpi (int): Dots per inch for the saved figure. Default is 300.
+
+        Returns:
+            None
         """
         self.set_suptitle()
         self.set_title()
@@ -89,14 +101,20 @@ class PlotHovmoller:
                         save_png: bool = True, dpi: int = 300):
         """
         Plot the timeseries for the given data.
+
         This method sets the title, description, vmax, vmin, and texts for the plot.
         It then calls the `plot_multi_timeseries` function to create the plot and
         saves it using the `OutputSaver`.
 
         Args:
-            rebuild (bool): Whether to rebuild the output, default is True
-            save_pdf (bool): Whether to save the plot as a PDF, default is True
-            save_png (bool): Whether to save the plot as a PNG, default is True
+            levels (list, optional): List of levels to plot. Default is None.
+            rebuild (bool): Whether to rebuild the output, default is True.
+            save_pdf (bool): Whether to save the plot as a PDF, default is True.
+            save_png (bool): Whether to save the plot as a PNG, default is True.
+            dpi (int): Dots per inch for the saved figure. Default is 300.
+
+        Returns:
+            None
         """
         # self.levels = levels if levels else [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
         self.levels = levels
@@ -132,7 +150,10 @@ class PlotHovmoller:
                        rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
         
     def set_levels(self):
-        
+        """
+        Set the levels and corresponding labels for timeseries plots.
+        If no levels are provided, use a default set of standard ocean depths.
+        """
         level_unit = self.data[0].level.attrs['units']
         if self.levels is None:
             self.levels = [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
@@ -159,6 +180,9 @@ class PlotHovmoller:
             new_data_list.append(merged_data)
         self.data = new_data_list
     def set_line_plot_colours(self):
+        """
+        Set the color list for line plots based on the number of levels.
+        """
         self.line_plot_colours = ['blue', 'green', 'orange', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
         self.line_plot_colours = self.line_plot_colours[:len(self.levels)]
     def set_suptitle(self):
@@ -225,10 +249,10 @@ class PlotHovmoller:
         
     def set_data_type(self):
         """
-        Set the texts for the Hovmoller plot.
-        This method can be extended to set specific texts.
+        Set the data type list for the Hovmoller plot based on dataset attributes.
+        This method can be extended to set specific data types.
         """
-        self.logger.debug("Setting texts")
+        self.logger.debug("Setting data types")
         self.data_type = []
         for data in self.data:
             type = data.attrs.get('AQUA_ocean_drift_type', 'NA')
