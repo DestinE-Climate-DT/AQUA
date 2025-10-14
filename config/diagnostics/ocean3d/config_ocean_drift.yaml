@@ -8,6 +8,8 @@ datasets:
     exp: hpz3
     source: monthly-3d
     regrid: r100
+    # startdate: 1990-01
+    # enddate: 1990-12
     # reader_kwargs: r100
 
 output:

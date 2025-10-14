@@ -61,6 +61,16 @@ if __name__ == '__main__':
         reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
+    if 'startdate' in config_dict['datasets'][0]:
+        startdate = config_dict['datasets'][0]['startdate']
+    else:
+        startdate = None
+
+    if 'enddate' in config_dict['datasets'][0]:
+        enddate = config_dict['datasets'][0]['enddate']
+    else:
+        enddate = None
+
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
     rebuild = config_dict['output'].get('rebuild', True)
@@ -89,6 +99,8 @@ if __name__ == '__main__':
                         exp=exp,
                         source=source,
                         regrid=regrid,
+                        startdate=startdate,
+                        enddate=enddate,
                         loglevel=loglevel
                     )
                     data_hovmoller.run(
