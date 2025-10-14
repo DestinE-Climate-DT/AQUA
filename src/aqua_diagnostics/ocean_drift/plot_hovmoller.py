@@ -99,7 +99,8 @@ class PlotHovmoller:
             save_png (bool): Whether to save the plot as a PNG, default is True
         """
         # self.levels = levels if levels else [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
-        self.levels = levels if levels else [0, 100, 500, 1000]
+        self.levels = levels
+        self.set_levels()
         self.set_data_for_levels()
         self.set_suptitle()
         self.set_title()
@@ -111,7 +112,7 @@ class PlotHovmoller:
         self.logger.debug("Plotting Timeseries for variables: %s", self.vars)
         fig = plot_multi_timeseries(
             maps=self.data,
-            levels=self.levels,
+            levels=self.timeseries_labels,
             line_plot_colours=self.line_plot_colours,
             variables=self.vars,
             loglevel=self.loglevel,
@@ -131,7 +132,11 @@ class PlotHovmoller:
                        rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
         
     def set_levels(self):
-        self.levels = []
+        
+        level_unit = self.data[0].level.attrs['units']
+        if self.levels is None:
+            self.levels = [0, 100, 500, 1000]
+        self.timeseries_labels = [f"{level} {level_unit}" for level in self.levels]
 
     def set_data_for_levels(self):
         """

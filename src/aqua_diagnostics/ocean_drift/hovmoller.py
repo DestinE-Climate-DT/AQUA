@@ -91,6 +91,9 @@ class Hovmoller(Diagnostic):
         self.logger.info("Running Hovmoller diagram generation")
         # This will populate self.data
         super().retrieve(var=var, reader_kwargs=reader_kwargs, months_required=2)
+        #HACK
+        if self.data.level.attrs['units']=='NEMO model layers':
+            self.data.level.attrs['units'] = 'm'
         # super()._check_data(data= self.data.level, var='level', units='m' )
         self.logger.debug("Data retrieved successfully")
         # If a region is specified, apply area selection to self.data
