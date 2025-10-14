@@ -384,8 +384,8 @@ class Reader():
             if data is None or len(data.data_vars) == 0:
                 self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
 
-            if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
-                data = data.sel(time=slice(startdate, enddate))
+            # if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+            #     data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
@@ -710,14 +710,12 @@ class Reader():
                                       # use_cftime=True)
                                       progressbar=False
                                       )
-
         data = list(data.values())[0]
-
-        if 'time' in data.coords:
-            if startdate or enddate:
-                self.logger.debug(f'Filtering time: {startdate} to {enddate}')
-                data = data.sel(time=slice(startdate, enddate))
-
+        
+        if 'time' in data.coords and (startdate or enddate):
+            self.logger.debug(f'Filtering time: {startdate} to {enddate}')
+            data = data.sel(time=slice(startdate, enddate))
+        
         return data
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
@@ -886,11 +884,7 @@ class Reader():
         data = esmcat.to_dask()
 
         if 'time' in data.coords and (startdate or enddate):
-            if startdate:
-                data = data.sel(time=slice(startdate, None))
-            if enddate:
-                data = data.sel(time=slice(None, enddate))
-            self.logger.debug(f'Applied time filtering: {startdate} to {enddate}')
+            data = data.sel(time=slice(startdate, enddate))
 
         if loadvar:
             loadvar = to_list(loadvar)
@@ -957,20 +951,10 @@ class Reader():
             self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
             return self.sample_data
 
-        use_startdate = self.startdate if self.startdate else None
-        use_enddate = self.enddate if self.enddate else None
-
-        # Temporarily disable unwanted settings
         with self._temporary_attrs(aggregation=None, chunks=None, 
                                    fix=False, streaming=False,
-                                   startdate=use_startdate, 
-                                   enddate=use_enddate, 
                                    preproc=None):
             self.logger.debug('Getting sample data through _retrieve_plain()...')
-
-            if use_startdate or use_enddate:
-                self.logger.debug(f'Using date range: {use_startdate} to {use_enddate}')
-                
             data = self.retrieve(history=False, *args, **kwargs)
 
         self.sample_data = self._grid_inspector(data)
