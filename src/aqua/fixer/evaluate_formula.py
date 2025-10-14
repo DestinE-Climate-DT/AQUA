@@ -5,11 +5,13 @@ from aqua.logger import log_configure, log_history
 
 # define math operators: order is important, since defines
 # which operation is done at first!
+# Higher precedence operations are evaluated first
 OPS = {
-    '/': operator.truediv,
-    "*": operator.mul,
-    "-": operator.sub,
-    "+": operator.add
+    '^': operator.pow,      # Power operator (highest precedence)
+    '/': operator.truediv,  # Division
+    "*": operator.mul,      # Multiplication  
+    "-": operator.sub,      # Subtraction
+    "+": operator.add       # Addition (lowest precedence)
 }
 
 class EvaluateFormula:
@@ -25,7 +27,12 @@ class EvaluateFormula:
 
         Args:
             data (xr.Dataset): The input data to evaluate the formula against.
-            formula (str): The formula to evaluate.
+            formula (str): The formula to evaluate. Supports basic arithmetic operators (+, -, *, /, ^)
+                          and parentheses for grouping operations. Examples:
+                          - "var1 + var2"
+                          - "var1 * (var2 + var3)"
+                          - "var1^2 + var2^0.5"
+                          - "(var1 + var2) / (var3 - var4)"
             units (str, optional): The units of the resulting data.
             short_name (str, optional): A short name for the resulting data.
             long_name (str, optional): A long name for the resulting data.
@@ -42,14 +49,21 @@ class EvaluateFormula:
         self.token = self._extract_tokens()
 
     def _evaluate(self):
-
         """
         Evaluate the formula using the provided data.
+        Handles parentheses by recursively evaluating sub-expressions.
 
         Returns:
             xr.DataArray: The result of the evaluated formula as an xarray DataArray.
         """
         self.logger.debug('Evaluating formula: %s', self.formula)
+        
+        # Handle parentheses first by recursively evaluating sub-expressions
+        formula_with_parentheses = self._handle_parentheses(self.formula)
+        
+        # Re-tokenize after parentheses handling
+        self.token = self._extract_tokens(formula_with_parentheses)
+        
         if not self.token:
             self.logger.error('No tokens extracted from the formula.')
 
@@ -72,21 +86,77 @@ class EvaluateFormula:
         return self._update_attributes(out)
 
 
-    def _extract_tokens(self):
+    def _extract_tokens(self, formula_str=None):
         """
         Tokenize the formula string into individual components.
 
         Returns:
             list: A list of tokens extracted from the formula.
         """
-        token = [i for i in re.split('([^\\w.]+)', self.formula) if i]
+        if formula_str is None:
+            formula_str = self.formula
+
+        token = [i for i in re.split('([^\\w.]+)', formula_str) if i and i.strip()]
         return token
+    
+    def _handle_parentheses(self, formula_str):
+        """
+        Handle parentheses in the formula by recursively evaluating sub-expressions.
+        
+        This method finds the innermost parentheses, evaluates the expression within them,
+        stores the result as a temporary variable, and replaces the parentheses expression
+        with the temporary variable name.
+
+        Args:
+            formula_str (str): The formula string potentially containing parentheses.
+
+        Returns:
+            str: The formula string with parentheses resolved.
+        """
+        temp_var_counter = 0
+        
+        while '(' in formula_str:
+            # Find the innermost parentheses (rightmost opening parenthesis)
+            start = -1
+            for i, char in enumerate(formula_str):
+                if char == '(':
+                    start = i
+                elif char == ')' and start != -1:
+                    # Found a complete parenthesis pair
+                    sub_expr = formula_str[start+1:i]
+                    
+                    # Create temporary variable name
+                    temp_var_name = f'_temp_{temp_var_counter}'
+                    temp_var_counter += 1
+                    
+                    # Recursively evaluate the sub-expression
+                    sub_evaluator = EvaluateFormula(
+                        data=self.data,
+                        formula=sub_expr,
+                        loglevel=self.loglevel
+                    )
+                    sub_result = sub_evaluator._evaluate()
+                    
+                    # Store the result in our data dictionary for later use
+                    # We'll need to modify _operations to handle temp variables
+                    self.data = self.data.copy()  # Avoid modifying original data
+                    self.data[temp_var_name] = sub_result
+                    
+                    # Replace the parentheses expression with temp variable
+                    formula_str = formula_str[:start] + temp_var_name + formula_str[i+1:]
+                    break
+                    
+        return formula_str
     
     def _operations(self):
         """
-        Parsing of the CDO-based commands using operator package
-        and an ad-hoc dictionary. Could be improved, working with four basic
-        operations only.
+        Parsing of the operations using operator package and precedence-based evaluation.
+        Now supports power operator (^) and handles temporary variables from parentheses.
+        
+        Operations are evaluated in order of precedence:
+        1. ^ (power) - highest precedence
+        2. *, / (multiplication, division)
+        3. +, - (addition, subtraction) - lowest precedence
 
         Returns:
             xr.DataArray: The result of the evaluated formula as an xarray DataArray.
@@ -99,19 +169,23 @@ class EvaluateFormula:
                 try:
                     dct[k] = float(k)
                 except ValueError:
-                    dct[k] = self.data[k]
+                    # Handle both regular variables and temporary variables from parentheses
+                    if k in self.data:
+                        dct[k] = self.data[k]
+                    else:
+                        self.logger.error(f'Variable {k} not found in data')
+                        raise KeyError(f'Variable {k} not found in data')
         
         # apply operators to all occurrences, from top priority
-        # so far this is not parsing parenthesis
+        # Operations are processed in order of precedence (as defined in OPS dictionary)
         code = 0
         for p in OPS:
             while p in self.token:
                 code += 1
-                # print(token)
                 x = self.token.index(p)
                 name = 'op' + str(code)
-                # replacer = ops.get(p)(dct[token[x - 1]], dct[token[x + 1]])
-                # Using apply_ufunc in order not to
+                
+                # Use apply_ufunc to maintain xarray functionality
                 replacer = xr.apply_ufunc(OPS.get(p), dct[self.token[x - 1]], dct[self.token[x + 1]],
                                         keep_attrs=True, dask='parallelized')
                 dct[name] = replacer
@@ -156,12 +230,31 @@ class EvaluateFormula:
     def consolidate_formula(formula: str):
         """
         Consolidate the formula by removing unnecessary spaces and ensuring proper formatting.
+        Now also validates parentheses matching.
 
         Args:
             formula (str): The formula to consolidate.
 
         Returns:
             str: The consolidated formula.
+            
+        Raises:
+            ValueError: If parentheses are not properly matched.
         """
         # Remove spaces and ensure proper formatting
-        return re.sub(r'\s+', '', formula)
+        consolidated = re.sub(r'\s+', '', formula)
+        
+        # Validate parentheses matching
+        paren_count = 0
+        for char in consolidated:
+            if char == '(':
+                paren_count += 1
+            elif char == ')':
+                paren_count -= 1
+                if paren_count < 0:
+                    raise ValueError("Mismatched parentheses: closing parenthesis without opening")
+        
+        if paren_count != 0:
+            raise ValueError("Mismatched parentheses: unclosed opening parenthesis")
+            
+        return consolidated
