@@ -16,6 +16,7 @@ from aqua.util import cbar_get_label, evaluate_colorbar_limits, plot_box
 def plot_multi_timeseries(
     maps: list,
     levels: list = None,
+    line_plot_colours: list = None,
     figsize: tuple = None,
     variables: list = None,
     fig: plt.Figure = None,
@@ -79,20 +80,12 @@ def plot_multi_timeseries(
             fig, ax = plot_timeseries(
                 [maps[j][var].sel(level=level) for level in maps[j][var].level],
                 data_labels = data_labels[k], # "30m", "40m", "50m", "60m", "70m", "80m"],
-
-                # box_text=False,
-                # dim=None,
-                # vmin=vmin[k] if vmin else None,
-                # vmax=vmax[k] if vmax else None,
-                # cmap=cmap[k] if cmap else None,
-                # nlevels=nlevels,
-                # text=text[k] if text else None,
-                # cbar=False,
                 title=titles[k] if titles else None,
                 # return_fig=True,
                 ax=ax,
                 fig=fig,
                 loglevel=loglevel,
+                colors=line_plot_colours
             )
             ax.set_xticks(ax.get_xticks())
             ax.set_xticklabels(ax.get_xticklabels(), rotation=30)
