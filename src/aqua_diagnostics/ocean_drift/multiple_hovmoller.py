@@ -86,6 +86,7 @@ def plot_multi_hovmoller(
                 box_text=False,
                 dim=None,
                 nlevels=nlevels,
+                invert_space_coord = True,
                 text=text[k] if text else None,
                 cbar=False,
                 title=titles[k] if titles else None,
