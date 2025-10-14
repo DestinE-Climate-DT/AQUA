@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
+- Extending evaluate formula method to exponential and parenthesis (#2327)
 
 AQUA diagnostics complete list:
 - Gregory: more detailed description and plot labels (#2306)
