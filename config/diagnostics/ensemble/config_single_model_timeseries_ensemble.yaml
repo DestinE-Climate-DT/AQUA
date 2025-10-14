@@ -6,16 +6,25 @@
 datasets:
   - catalog: 'climatedt-o25.1'
     model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'aqua-timeseries-monthly'
+    exp: 'hist-1990-ensemble'
+    source: 'aqua-ocean-timeseries-levante'
     realization: ['r2', 'r3', 'r4']
+    regrid: null
+# Reference
+#references:
+#  - catalog: 'obs'  
+#    model: 'ERA5'
+#    exp: 'era5'
+#    source: 'aqua-timeseries-monthly'
 
 # Reference
 references:
   - catalog: null  
-    model: 'ERA5'
-    exp: 'era5'
-    source: 'aqua-timeseries-monthly'
+    model: null
+    exp: null
+    source: null
+    regrid: null
+
 
 setup:
   loglevel: 'WARNING'
@@ -32,14 +41,15 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleTimeseries'
-    variable: ['2t',]
+    variable: ['tos',]
+    region: ['global',]
     params:
       default:
-        startdate_data: "1990-01-01"
-        enddate_data: "2005-01-01"
-        startdate_ref: "1990-01-01"
-        enddate_ref: "2005-01-01"
+        startdate_data: "1990-01-16"
+        enddate_data: "2014-11-16"
+        startdate_ref: "1990-01-16"
+        enddate_ref: "2014-11-16"
     plot_params:
       default:
         title: 
-        plot_ensemble_members: False
+        plot_ensemble_members: True

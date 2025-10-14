@@ -47,7 +47,7 @@ class PlotEnsembleTimeseries(BaseMixin):
         description=None,
         title=None,
         outputdir="./",
-        log_level: str = "WARNING",
+        loglevel: str = "WARNING",
     ):
         """
         Args:
@@ -138,10 +138,10 @@ class PlotEnsembleTimeseries(BaseMixin):
         self.plot_ensemble_members = plot_ensemble_members
 
         self.outputdir = outputdir
-        self.log_level = log_level
+        self.loglevel = loglevel
 
         super().__init__(
-            log_level=self.log_level,
+            loglevel=self.loglevel,
             diagnostic_product=self.diagnostic_product,
             catalog_list=self.catalog_list,
             model_list=self.model_list,
@@ -185,7 +185,7 @@ class PlotEnsembleTimeseries(BaseMixin):
             ens_label=self.model,
             figsize=self.figure_size,
             title=self.title,
-            loglevel=self.log_level,
+            loglevel=self.loglevel,
         )
         # Loop over if need to plot the ensemble members
         if self.plot_ensemble_members:
@@ -195,8 +195,8 @@ class PlotEnsembleTimeseries(BaseMixin):
                     ax=ax,
                     ens_monthly_data=self.monthly_data_mean,
                     ens_annual_data=self.annual_data_mean,
-                    monthly_data=self.monthly_data[self.var][i, :],
-                    annual_data=self.annual_data[self.var][i, :],
+                    monthly_data=self.monthly_data[self.var][i, :] if self.monthly_data is not None else None,
+                    annual_data=self.annual_data[self.var][i, :] if self.annual_data is not None else None,
                     figsize=self.figure_size,
                     title=self.title,
                     loglevel=self.loglevel,

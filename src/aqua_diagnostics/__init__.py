@@ -6,7 +6,7 @@ from .global_biases import GlobalBiases, PlotGlobalBiases
 from .boxplots import Boxplots, PlotBoxplots
 from .ensemble import EnsembleTimeseries, EnsembleLatLon, EnsembleZonal
 from .ensemble import PlotEnsembleTimeseries, PlotEnsembleLatLon, PlotEnsembleZonal
-from .ensemble import retrieve_merge_ensemble_data
+from .ensemble import reader_retrieve_and_merge, merge_from_data_files, load_premerged_ensemble_dataset
 from .ecmean import PerformanceIndices, GlobalMean
 from .seaice import SeaIce, PlotSeaIce, Plot2DSeaIce
 
@@ -18,8 +18,7 @@ __all__ = ["NAO", "ENSO", "MJO",
            "EnsembleTimeseries", "EnsembleLatLon", 
            "EnsembleZonal", "PlotEnsembleTimeseries", 
            "PlotEnsembleLatLon", "PlotEnsembleZonal",
-           "retrieve_merge_ensemble_data",
+           "reader_retrieve_and_merge", "merge_from_data_files", "load_premerged_ensemble_dataset",
            "GlobalMean", "PerformanceIndices",
            "Boxplots", "PlotBoxplots",
-           "EnsembleTimeseries", "EnsembleLatLon", "EnsembleZonal",
            "GlobalMean", "PerformanceIndices", "SeaIce", "PlotSeaIce", "Plot2DSeaIce"]

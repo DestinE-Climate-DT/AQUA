@@ -27,7 +27,7 @@ datasets:
 
 # Reference
 references:
-  - catalog: null  
+  - catalog: 'obs'  
     model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-monthly'

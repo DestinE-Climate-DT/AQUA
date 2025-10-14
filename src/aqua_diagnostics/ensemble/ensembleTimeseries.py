@@ -88,7 +88,7 @@ class EnsembleTimeseries(BaseMixin):
             model_list=model_list,
             exp_list=exp_list,
             source_list=source_list,
-            log_level=loglevel,
+            loglevel=loglevel,
             outputdir=self.outputdir,
         )
 
@@ -103,7 +103,7 @@ class EnsembleTimeseries(BaseMixin):
         # For Hourly data
         if self.hourly_data is not None:
             self.hourly_data_mean, self.hourly_data_std = compute_statistics(
-                variable=self.var, ds=self.hourly_data, ens_dim=self.dim, log_level=self.loglevel
+                variable=self.var, ds=self.hourly_data, ens_dim=self.dim, loglevel=self.loglevel
             )
             self.save_netcdf(
                 var=self.var,
@@ -125,7 +125,7 @@ class EnsembleTimeseries(BaseMixin):
         # For Daily data
         if self.daily_data is not None:
             self.daily_data_mean, self.daily_data_std = compute_statistics(
-                variable=self.var, ds=self.daily_data, ens_dim=self.dim, log_level=self.loglevel
+                variable=self.var, ds=self.daily_data, ens_dim=self.dim, loglevel=self.loglevel
             )
             self.save_netcdf(
                 var=self.var,
@@ -147,7 +147,7 @@ class EnsembleTimeseries(BaseMixin):
         # For Monthly data
         if self.monthly_data is not None:
             self.monthly_data_mean, self.monthly_data_std = compute_statistics(
-                variable=self.var, ds=self.monthly_data, ens_dim=self.dim, log_level=self.loglevel
+                variable=self.var, ds=self.monthly_data, ens_dim=self.dim, loglevel=self.loglevel
             )
             self.save_netcdf(
                 var=self.var,
@@ -169,7 +169,7 @@ class EnsembleTimeseries(BaseMixin):
         # For Annual data
         if self.annual_data is not None:
             self.annual_data_mean, self.annual_data_std = compute_statistics(
-                variable=self.var, ds=self.annual_data, ens_dim=self.dim, log_level=self.loglevel
+                variable=self.var, ds=self.annual_data, ens_dim=self.dim, loglevel=self.loglevel
             )
             self.save_netcdf(
                 var=self.var,

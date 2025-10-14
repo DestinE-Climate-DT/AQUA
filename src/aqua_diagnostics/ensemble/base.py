@@ -67,34 +67,38 @@ class BaseMixin(Diagnostic):
         self.ref_exp = ref_exp
 
         # To handle None case
-        None_catalog = "ensemble_catalog"
-        None_model = "ensemble_model"
-        None_exp = "ensemble_exp"
-        None_source = "ensemble_source"
+        self.None_catalog = ["ensemble_catalog"]
+        None_model = ["ensemble_model"]
+        None_exp = ["ensemble_exp"]
+        None_source = ["ensemble_source"]
 
         # Multi catalog/model/exp/source
-        multi_catalog = "multi-catalog"
-        multi_model = "multi-model"
-        multi_exp = "multi-exp"
-        multi_source = "multi-source"
+        self.multi_catalog = ["multi-catalog"]
+        multi_model = ["multi-model"]
+        multi_exp = ["multi-exp"]
+        multi_source = ["multi-source"]
         
 
         # Handling catalog name
         if catalog_list is None:
             self.logger.info("No catalog names given. Assigning it to catalog_name.")
-            self.catalog = None_catalog
+            self.catalog = self.None_catalog
         else:
+            if isinstance(catalog_list, str): catalog_list = [catalog_list]
             catalog_counts = dict(Counter(catalog_list))
+            print(catalog_counts)
             if len(catalog_counts.keys()) <= 1:
                 self.logger.info("Catalog name is given. Single-model ensemble is given.")
                 catalog_str_list = [str(item) for item in catalog_list]
-                if catalog_str_list[0] == "None": catalog_str_list[0] = None_catalog 
+                if catalog_str_list[0] is None: catalog_str_list[0] = self.None_catalog
+                #if catalog_str_list[0] == "None": catalog_str_list[0] = self.None_catalog 
                 self.catalog = catalog_str_list[0]
             else:
                 self.logger.info(
                     "Multi-model ensemble is given. Assigning catalog name to multi-catalog"
                 )
-                self.catalog = multi_catalog
+                print("$$$$$$$$$$$ 1 !!!!!!!!!!!!!")
+                self.catalog = self.multi_catalog
 
         # Handling model name:
         self.model_list = model_list
@@ -102,6 +106,7 @@ class BaseMixin(Diagnostic):
             self.logger.info("No model name is given. Assigning it to model_name")
             self.model = None_model
         else:
+            if isinstance(model_list, str): model_list = [model_list]
             model_counts = dict(Counter(model_list))
             if len(model_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-model ensemble is given.")
@@ -117,6 +122,7 @@ class BaseMixin(Diagnostic):
             self.logger.info("No exp name is given. Assigning it to exp_name")
             self.exp = None_exp
         else:
+            if isinstance(exp_list, str): exp_list = [exp_list]
             exp_counts = dict(Counter(exp_list))
             if len(exp_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-exp ensemble is given.")
@@ -132,6 +138,7 @@ class BaseMixin(Diagnostic):
             self.logger.info("No source name is given. Assigning it to source_name")
             self.source = None_source
         else:
+            if isinstance(source_list, str): source_list = [source_list]
             source_counts = dict(Counter(source_list))
             if len(source_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-source ensemble is given.")
@@ -228,8 +235,9 @@ class BaseMixin(Diagnostic):
             "Saving %s for %s to netcdf in %s", data_name, self.diagnostic_product, self.outputdir
         )
         if description is None:
-            description = self.diagnostic_name + " " + self.diagnostic_product + " for " + self.catalog + " and " + self.model + " with " + self.model_list + " " + self.exp + " " + self.region  
-        if self.catalog is not None and self.model is not None and self.exp is not None and None_catalog is None and multi_catalog is None:
+            description = " ".join(filter(None, [self.diagnostic_name, self.diagnostic_product, "for",self.catalog,"and",self.model,"with",self.model_list,self.exp,self.region]))  
+            print(description)
+        if self.catalog is not None and self.model is not None and self.exp is not None and self.catalog != self.None_catalog  and self.catalog != self.multi_catalog:
             outputsaver = OutputSaver(
                 diagnostic=self.diagnostic_name,
                 #diagnostic_product=self.diagnostic_product,
@@ -252,9 +260,9 @@ class BaseMixin(Diagnostic):
                 extra_keys=extra_keys,
             )
         else:
-            data.attrs = {"AQUA diagnostic": diagnostic_product, "AQUA catalog": self.catalog, "model": self.model, "experiment": self.exp}  
+            data.attrs = {"AQUA diagnostic": self.diagnostic_product, "AQUA catalog": self.catalog, "model": self.model, "experiment": self.exp}  
             data.to_netcdf(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.nc")
-            self.logger(f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.nc")
+            self.logger.info(f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.nc")
 
     # Save figure
     def save_figure(self, var, fig, fig_std=None, description=None, format="png"):
@@ -268,7 +276,7 @@ class BaseMixin(Diagnostic):
             description (str): Description of the figure.
             format (str): Format to save the figure ('png' or 'pdf'). Default is 'png'.
         """
-        if self.catalog is not None and self.model is not None and self.exp is not None and None_catalog is None and multi_catalog is None:
+        if self.catalog is not None and self.model is not None and self.exp is not None and self.catalog != self.None_catalog  and self.catalog != self.multi_catalog:
             outputsaver = OutputSaver(
                 diagnostic=self.diagnostic_name,
                 #diagnostic_product=self.diagnostic_product,
@@ -351,12 +359,12 @@ class BaseMixin(Diagnostic):
                 else:
                     raise ValueError(f"Format {format} not supported. Use png or pdf.")
             else:
-                if format == 'png':
-                    if fig is not None:
-                        description = {"AQUA diagnostic": diagnostic_product, "AQUA catalog": self.catalog, "model": self.model, "experiment": self.exp}  
-                        fig.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.png",bbox_inches="tight", metadata={"Description": str(description)})
-                        self.logger(f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.png")
-                    if fig_std is not None:
-                        description = {"AQUA diagnostic": diagnostic_product, "AQUA catalog": self.catalog, "model": self.model, "experiment": self.exp, "ensemble": "ensemble STD"}  
-                        fig_std.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}_STD.png",bbox_inches="tight", metadata={"Description": str(description)})
-                        self.logger(f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}_STD.png")
+                print("############################################")
+                if fig:
+                    description = {"AQUA diagnostic": self.diagnostic_product, "AQUA catalog": self.catalog, "model": self.model, "experiment": self.exp}  
+                    fig.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png",bbox_inches="tight", metadata={"Description": str(description)})
+                    self.logger.info(f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png")
+                if fig_std:
+                    description = {"AQUA diagnostic": self.diagnostic_product, "AQUA catalog": self.catalog, "model": self.model, "experiment": self.exp, "ensemble": "ensemble STD"}  
+                    fig_std.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png",bbox_inches="tight", metadata={"Description": str(description)})
+                    self.logger.info(f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png")

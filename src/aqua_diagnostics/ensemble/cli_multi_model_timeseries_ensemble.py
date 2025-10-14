@@ -62,6 +62,10 @@ if __name__ == "__main__":
     )
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
 
+    regrid = get_arg(args, 'regrid', None)
+    logger.info(f"Regrid option is set to {regrid}")
+    realization = get_arg(args, 'realization', None)
+
     # Output options
     outputdir = config_dict["output"].get("outputdir", "./")
     # rebuild = config_dict['output'].get('rebuild', True)
@@ -131,7 +135,7 @@ if __name__ == "__main__":
                             annual_source_list.append(model["source"])
 
                 # Reterive monthly data
-                monthly_dataset = retrieve_merge_ensemble_data(
+                monthly_dataset = reader_retrieve_and_merge(
                     variable=variable,
                     model_list=monthly_model_list,
                     exp_list=monthly_exp_list,
@@ -141,7 +145,7 @@ if __name__ == "__main__":
                 )
 
                 # Reterieve annual data
-                annual_dataset = retrieve_merge_ensemble_data(
+                annual_dataset = reader_retrieve_and_merge(
                     variable=variable,
                     model_list=annual_model_list,
                     exp_list=annual_exp_list,

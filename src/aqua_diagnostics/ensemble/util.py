@@ -3,6 +3,7 @@ Utility functions for the ensemble class
 """
 
 import gc
+import os
 from collections import Counter
 import numpy as np
 import pandas as pd
@@ -10,10 +11,6 @@ import xarray as xr
 from aqua import Reader
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure
-
-# reader_retrieve_and_merge
-# merge_ensemble_data
-# load_merged_data
 
 def reader_retrieve_and_merge(
     variable: str = None,
@@ -28,6 +25,7 @@ def reader_retrieve_and_merge(
     lat_limits: float = None,
     startdate: str = None,
     enddate: str = None,
+    regrid: str = None,
     areas: bool = False,
     fix: bool = False,
     loglevel: str = "WARNING",
@@ -68,64 +66,87 @@ def reader_retrieve_and_merge(
     """
     logger = log_configure(log_name="reader_retrieve_and_merge", log_level=loglevel)
     logger.info("Loading and merging the ensemble dataset using the Reader class")
-    
-
-    if not all([catalog_list, model_list, exp_list, source_list]):
-        raise ValueError("catalog_list, model_list, exp_list, and source_list must all be provided.")
+   
+    if all(not v for v in [catalog_list, model_list, exp_list, source_list]):
+        logger.warning("All of catalog, model, exp, and source are None or empty. Exiting merge_from_data_files.")
+        return None
+    # Ensure consistent list types
+    if isinstance(catalog_list, str):
+        catalog_list = [catalog_list]
+    if isinstance(model_list, str):
+        model_list = [model_list]
+    if isinstance(exp_list, str):
+        exp_list = [exp_list]
+    if isinstance(source_list, str):
+        source_list = [source_list]
 
     all_datasets = []
-
-    # --- Loop through each (catalog, model, exp, source) combination ---
+    print(catalog_list)
+    print( model_list)
+    print(exp_list)
+    print(source_list)
+    print(realization)
+    # Loop through each (catalog, model, exp, source) combination
     for cat_i, model_i, exp_i, src_i in zip(catalog_list, model_list, exp_list, source_list):
         logger.info(f"Processing: catalog={cat_i}, model={model_i}, exp={exp_i}, source={src_i}")
 
         # Get realizations and set default to ['r1'] if not provided
-        reals = ["r1"] if realization is None else realization.get(model_i, ["r1"])
-
+        if realization is not None:
+            reals = realization.get(model_i)
+            if reals is None:
+                logger.info(f"No realizations defined for {model_i}, using default ['r1']")
+                reals = ['r1']
+        print(reals)
         model_ds_list = []
 
         for r in reals:
             try:
+                print("ith catalog: ",cat_i)
+                print("ith model: ",model_i)
+                print("ith exp: ",exp_i)
+                print("ith source: ",src_i)
+                print("ith realization: ",r)
                 # Retrieve the data using AQUA Reader
                 reader = Reader(
                     catalog=cat_i,
                     model=model_i,
                     exp=exp_i,
                     source=src_i,
-                    realization=r_i,
+                    realization=r,
                     region=region,
+                    regrid=regrid,
                     areas=areas,
                     fix=fix,
                 )
 
                 ds = reader.retrieve(var=variable)
-                logger.info(f"Loaded {variable} for {model}, {exp}, realization={r}")
+                logger.info(f"Loaded {variable} for {model_i}, {exp_i}, realization={r}")
 
                 # Spatial selection
                 if lon_limits and lat_limits:
                     if "lon" in ds.dims and "lat" in ds.dims:
                         ds = ds.sel(lon=slice(*lon_limits), lat=slice(*lat_limits))
                     else:
-                        logger.debug(f"Dataset for {model}-{r} has no lon/lat dims, skipping spatial subset.")
+                        logger.debug(f"Dataset for {model_i}-{r} has no lon/lat dims, skipping spatial subset.")
 
                 # Temporal selection (only if time dimension exists)
                 if "time" in ds.dims and (startdate or enddate):
                     ds = ds.sel(time=slice(startdate, enddate))
                 elif "time" not in ds.dims and (startdate or enddate):
-                    logger.debug(f"Dataset for {model}-{r} has no time dimension.")
+                    logger.debug(f"Dataset for {model_i}-{r} has no time dimension.")
 
                 # Add ensemble label
-                ens_label = f"{model}_{exp}_{r}"
+                ens_label = f"{model_i}_{exp_i}_{r}"
                 ds = ds.expand_dims({ens_dim: [ens_label]})
 
                 model_ds_list.append(ds)
 
             except Exception as e:
-                logger.warning(f"Skipping {model}-{exp}-{r} due to error: {e}")
+                logger.warning(f"Skipping {model_i}-{exp_i}-{r} due to error: {e}")
                 continue
 
         if not model_ds_list:
-            logger.warning(f"No realizations loaded for {model} ({exp}). Skipping...")
+            logger.warning(f"No realizations loaded for {model_i} ({exp_i}). Skipping...")
             continue
 
         # Concatenate realizations for this model
@@ -145,7 +166,7 @@ def reader_retrieve_and_merge(
 
     
     merged_dataset = xr.concat(all_datasets, dim=ens_dim)
-    logger.info(f"Merged {len(merged[ens_dim])} ensemble members total.")
+    logger.info(f"Merged {len(merged_dataset[ens_dim])} ensemble members total.")
 
     # Adding metadata
     merged_dataset.attrs.update({
@@ -160,17 +181,18 @@ def reader_retrieve_and_merge(
     gc.collect()
     logger.info("Memory successfully freed.")
 
+    print(merged_dataset.attrs['ensemble_members'])
     return merged_dataset
 
 def merge_from_data_files(
     variable: str = None,
     ens_dim: str = "ensemble",
-    data_path_list: List[str] = None,
-    model_list: List[str] = None,
-    realization: Dict[str, List[str]] = None,
+    data_path_list: list[str] = None,
+    model_list: list[str] = None,
+    realization: dict[str, list[str]] = None,
     region: str = None,
-    lon_limits: List[float] = None,
-    lat_limits: List[float] = None,
+    lon_limits: list[float] = None,
+    lat_limits: list[float] = None,
     startdate: str = None,
     enddate: str = None,
     loglevel: str = "WARNING",
@@ -203,8 +225,9 @@ def merge_from_data_files(
     logger.info("Loading and merging the ensemble dataset by reading files")
 
     if not all([data_path_list, model_list]):
-        raise ValueError("data_path_list and model_list must be provided.")
-
+        logger.warning("data_path_list and model_list must be provided.")
+        return None
+    
     all_datasets = []
 
     for model in model_list:
@@ -307,7 +330,8 @@ def load_premerged_ensemble_dataset(ds: xr.Dataset, ens_dim: str = "ensemble", l
     logger.info("Loading and merging the ensemble dataset by reading files")
 
     if ds is None:
-        raise ValueError("No dataset provided to load_premerged_ensemble_dataset")
+        logger.warning("No dataset provided to load_premerged_ensemble_dataset")
+        return None
 
     # Check ensemble dimension
     if ens_dim not in ds.dims:
