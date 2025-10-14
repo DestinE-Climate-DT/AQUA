@@ -106,6 +106,10 @@ if __name__ == '__main__':
                         outputdir=outputdir,
                         loglevel=loglevel
                     )
+                    hov_plot.plot_hovmoller(
+                        rebuild=rebuild, save_pdf=save_pdf,
+                        save_png=save_png, dpi=dpi
+                    )
                     hov_plot.plot_timeseries(
                         rebuild=rebuild, save_pdf=save_pdf,
                         save_png=save_png, dpi=dpi
