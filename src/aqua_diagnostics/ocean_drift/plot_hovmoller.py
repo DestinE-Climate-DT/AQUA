@@ -135,7 +135,7 @@ class PlotHovmoller:
         
         level_unit = self.data[0].level.attrs['units']
         if self.levels is None:
-            self.levels = [0, 100, 500, 1000]
+            self.levels = [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
         self.timeseries_labels = [f"{level} {level_unit}" for level in self.levels]
 
     def set_data_for_levels(self):
