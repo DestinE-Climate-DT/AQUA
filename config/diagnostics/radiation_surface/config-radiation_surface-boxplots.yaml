@@ -46,6 +46,6 @@ diagnostics:
         add_mean_line: true
       - vars: ['slhtf', 'ishf']
         anomalies: true
-        add_mean_lìne: true
+        add_mean_line: true
 
 
