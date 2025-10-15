@@ -6,6 +6,7 @@ from .multiple_timeseries import plot_multi_timeseries
 
 xr.set_options(keep_attrs=True)
 
+
 class PlotHovmoller:
     """
     Class for plotting Hovmoller diagrams and timeseries from AQUA ocean drift diagnostics.
@@ -15,7 +16,7 @@ class PlotHovmoller:
     and output file management.
     """
     def __init__(self,
-                 data: list [xr.Dataset],
+                 data: list[xr.Dataset],
                  diagnostic_name: str = "oceandrift",
                  outputdir: str = ".",
                  loglevel: str = "WARNING"):
@@ -294,8 +295,8 @@ class PlotHovmoller:
         """
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
-                                          extra_keys=extra_keys, metadata=metadata, dpi=dpi)
+                                               extra_keys=extra_keys, metadata=metadata, dpi=dpi)
         elif format == 'pdf':
             result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
-                                          extra_keys=extra_keys, metadata=metadata)
+                                               extra_keys=extra_keys, metadata=metadata)
         self.logger.info(f"Figure saved as {result}")
