@@ -60,7 +60,7 @@ if __name__ == '__main__':
     if realization:
         reader_kwargs = {'realization': realization}
     else:
-        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
+        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
     # Output options
