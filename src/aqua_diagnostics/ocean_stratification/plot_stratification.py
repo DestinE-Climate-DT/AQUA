@@ -147,7 +147,7 @@ class PlotStratification:
             plot_type = ""
         clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
         # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
-        self.suptitle = f"MLD {clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"Stratification {clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
