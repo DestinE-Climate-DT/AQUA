@@ -1,4 +1,5 @@
 import xarray as xr
+import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 from .multiple_hovmoller import plot_multi_hovmoller
@@ -161,7 +162,7 @@ class PlotHovmoller:
         """
         level_unit = self.data[0].level.attrs['units']
         if self.levels is None:
-            self.levels = [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
+            self.levels = [0, 100, 300, 600, 1000, 2000, 4000]
         self.timeseries_labels = [f"{level} {level_unit}" for level in self.levels]
 
     def set_data_for_levels(self):
@@ -189,8 +190,9 @@ class PlotHovmoller:
         """
         Set the color list for line plots based on the number of levels.
         """
-        self.line_plot_colours = ['blue', 'green', 'orange', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
-        self.line_plot_colours = self.line_plot_colours[:len(self.levels)]
+        nlev = len(self.levels)
+        cmap = plt.cm.plasma_r
+        self.line_plot_colours = [cmap(i / (nlev - 1)) for i in range(nlev)]
 
     def set_suptitle(self):
         """Set the suptitle for the Hovmoller plot."""
