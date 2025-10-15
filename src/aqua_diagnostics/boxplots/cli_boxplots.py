@@ -93,6 +93,13 @@ if __name__ == '__main__':
 
                     boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
                     boxplots_ref.run(var=variables, reader_kwargs=reader_kwargs)
+
+                    if getattr(boxplots_ref, "fldmeans", None) is None:
+                        logger.warning(
+                            f"No data retrieved for reference {reference['model']} ({reference['exp']}, {reference['source']}). Skipping."
+                        )
+                        continue 
+
                     fldmeans_ref.append(boxplots_ref.fldmeans)
 
 
