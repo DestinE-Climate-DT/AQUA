@@ -111,6 +111,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="mean",
                 data=self.hourly_data_mean,
                 description=self.description,
+                startdate=self.hourly_data_mean.time.values[0],
+                enddate=self.hourly_data_mean.time.values[-1],
             )
             self.save_netcdf(
                 var=self.var,
@@ -118,6 +120,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="std",
                 data=self.hourly_data_std,
                 description=self.description,
+                startdate=self.hourly_data_std.time.values[0],
+                enddate=self.hourly_data_std.time.values[-1],
             )
         else:
             self.logger.info("No hourly ensemble data is provided")
@@ -133,6 +137,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="mean",
                 data=self.daily_data_mean,
                 description=self.description,
+                startdate=self.daily_data_mean.time.values[0],
+                enddate=self.daily_data_mean.time.values[-1],
             )
             self.save_netcdf(
                 var=self.var,
@@ -140,6 +146,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="std",
                 data=self.daily_data_std,
                 description=self.description,
+                startdate=self.daily_data_std.time.values[0],
+                enddate=self.daily_data_std.time.values[-1],
             )
         else:
             self.logger.info("No daily ensemble data is provided")
@@ -155,6 +163,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="mean",
                 data=self.monthly_data_mean,
                 description=self.description,
+                startdate=self.monthly_data_mean.time.values[0],
+                enddate=self.monthly_data_mean.time.values[-1],
             )
             self.save_netcdf(
                 var=self.var,
@@ -162,6 +172,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="std",
                 data=self.monthly_data_std,
                 description=self.description,
+                startdate=self.monthly_data_std.time.values[0],
+                enddate=self.monthly_data_std.time.values[-1],
             )
         else:
             self.logger.info("No monthly ensemble data is provided")
@@ -177,6 +189,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="mean",
                 data=self.annual_data_mean,
                 description=self.description,
+                startdate=self.annual_data_mean.time.values[0],
+                enddate=self.annual_data_mean.time.values[-1],
             )
             self.save_netcdf(
                 var=self.var,
@@ -184,6 +198,8 @@ class EnsembleTimeseries(BaseMixin):
                 data_name="std",
                 data=self.annual_data_std,
                 description=self.description,
+                startdate=self.annual_data_std.time.values[0],
+                enddate=self.annual_data_std.time.values[-1],
             )
         else:
             self.logger.info("No annual ensemble data is provided")

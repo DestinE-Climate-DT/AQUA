@@ -8,7 +8,6 @@ defined in a yaml configuration file for multiple models.
 
 import argparse
 import sys
-
 import xarray as xr
 from aqua import Reader
 from aqua.util import get_arg
@@ -108,7 +107,6 @@ if __name__ == "__main__":
                         regrid = get_arg(args, 'regrid',  dataset[0]["regrid"])
                         realization = get_arg(args, 'realization',  dataset[0]["realization"])
                         realization_dict = {model: realization}
-                        print(realization)
                     # Reterive dataset
                     dataset = reader_retrieve_and_merge(
                         variable=variable,
@@ -165,37 +163,70 @@ if __name__ == "__main__":
                         # Compute statistics and save the results as netcdf
                         ts.run()
 
-                    # PlotEnsembleTimeseries class
-                    plot_arguments = {
-                        "var": variable,
-                        "catalog_list": catalog,
-                        "model_list": model,
-                        "exp_list": exp,
-                        "source_list": source,
-                        "ref_catalog": ref_catalog,
-                        "ref_model": ref_model,
-                        "ref_exp": ref_exp,
-                        "save_pdf": save_pdf,
-                        "save_png": save_png,
-                        "plot_ensemble_members": plot_ensemble_members,
-                        "title": title,
-                    }
+                    # Initialize PlotEnsembleTimeseries class
+                    if ref_data is not None:
+                        plot_class_arguments = {
+                            "catalog_list": catalog,
+                            "model_list": model,
+                            "exp_list": exp,
+                            "source_list": source,
+                            "ref_catalog": ref_catalog,
+                            "ref_model": ref_model,
+                            "ref_exp": ref_exp,
+                        }
+                    else:
+                        plot_class_arguments = {
+                            "catalog_list": catalog,
+                            "model_list": model,
+                            "exp_list": exp,
+                            "source_list": source,
+                        }
+
+                    if ref_data is not None:
+                        plot_class_arguments = {
+                            "catalog_list": catalog,
+                            "model_list": model,
+                            "exp_list": exp,
+                            "source_list": source,
+                            "ref_catalog": ref_catalog,
+                            "ref_model": ref_model,
+                            "ref_exp": ref_exp,
+                        }
+                    else:
+                        plot_class_arguments = {
+                            "catalog_list": catalog,
+                            "model_list": model,
+                            "exp_list": exp,
+                            "source_list": source,
+                        }
+
                     if ts.monthly_data is not None or ts.monthly_data_mean is not None or ts.monthly_data_std is not None or ts.annual_data is not None or ts.annual_data_mean is not None or ts.annual_data_std is not None or ref_data is not None:
                         ts_plot = PlotEnsembleTimeseries(
-                            **plot_arguments,
+                            **plot_class_arguments,
                             monthly_data=ts.monthly_data,
                             monthly_data_mean=ts.monthly_data_mean,
                             monthly_data_std=ts.monthly_data_std,
                             #annual_data=ts.annual_data,
                             #annual_data_mean=ts.annual_data_mean,
                             #annual_data_std=ts.annual_data_std,
-                            #ref_monthly_data=ref_data,
+                            ref_monthly_data=ref_data,
                             outputdir=outputdir,
                             loglevel=loglevel,
                         )
 
+                        # PlotEnsembleTimeseries plot options
+                        plot_arguments = {
+                            "var": variable,
+                            "save_pdf": save_pdf,
+                            "save_png": save_png,
+                            "plot_ensemble_members": plot_ensemble_members,
+                            "title": title,
+                            "startdate": ts.monthly_data.time.isel(time=0).values,
+                            "enddate": ts.monthly_data.time.isel(time=-1).values,
+                        }
+
                         # plot() function in PlotEnsembleTimeseries class
-                        ensemble_plot = ts_plot.plot()
+                        ensemble_plot = ts_plot.plot(**plot_arguments)
 
                     logger.info(f"Finished Ensemble time series diagnostic for {variable}.")
 

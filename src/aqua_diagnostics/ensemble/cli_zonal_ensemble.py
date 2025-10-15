@@ -13,7 +13,7 @@ from aqua.version import __version__ as aqua_version
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
-from aqua.diagnostics import retrieve_merge_ensemble_data
+from aqua.diagnostics import reader_retrieve_and_merge
 from aqua.diagnostics import EnsembleZonal
 from aqua.diagnostics import PlotEnsembleZonal
 
@@ -60,9 +60,9 @@ if __name__ == "__main__":
     save_netcdf = config_dict["output"].get("save_netcdf", True)
     save_pdf = config_dict["output"].get("save_pdf", True)
     save_png = config_dict["output"].get("save_png", True)
-    dpi = config_dict["output"].get("dpi", 300)
+    #dpi = config_dict["output"].get("dpi", 300)
 
-    # EnsembleLatLon diagnostic
+    # EnsembleZonal diagnostic
     if "ensemble" in config_dict["diagnostics"]:
         if config_dict["diagnostics"]["ensemble"]["run"]:
             logger.info("EnsembleZonal module is used.")
@@ -91,53 +91,67 @@ if __name__ == "__main__":
                     model_list = []
                     exp_list = []
                     source_list = []
+                    realization_dict = {}
                     if models is not None:
                         models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
                         models[0]["model"] = get_arg(args, "model", models[0]["model"])
                         models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
                         models[0]["source"] = get_arg(args, "source", models[0]["source"])
+                        models[0]["realization"] = get_arg(args, 'realization',  models[0]["realization"])
                         for model in models:
                             catalog_list.append(model["catalog"])
                             model_list.append(model["model"])
                             exp_list.append(model["exp"])
                             source_list.append(model["source"])
+                            realization_dict.update({model["model"]: model["realization"]}) 
 
-                    ens_dataset = retrieve_merge_ensemble_data(
+                    # Loading and merging data
+                    ens_dataset = reader_retrieve_and_merge(
                         region=region,
                         variable=variable,
+                        catalog_list=catalog_list,
                         model_list=model_list,
                         exp_list=exp_list,
                         source_list=source_list,
+                        regrid=False,
+                        areas=False,
+                        fix=True,
+                        realization=realization_dict,
+                        ens_dim="ensemble", 
                     )
+
+                    # Initialize EnsembleZonal class
                     ens_zm = EnsembleZonal(
                         var=variable,
                         dataset=ens_dataset,
                         catalog_list=catalog_list,
                         model_list=model_list,
+                        exp_list=exp_list,
                         source_list=source_list,
                         outputdir=outputdir,
                     )
                     ens_zm.run()
 
-                    # PlotEnsembleZonal class
-                    plot_arguments = {
-                        "var": variable,
+                    # Initialize PlotEnsembleZonal class
+                    plot_class_arguments = {
                         "catalog_list": catalog_list,
                         "model_list": model_list,
                         "exp_list": exp_list,
                         "source_list": source_list,
-                        "save_pdf": save_pdf,
-                        "save_png": save_png,
-                        "title_mean": title_mean,
-                        "title_std": title_std,
-                        "cbar_label": cbar_label,
-                        "figure_size": figure_size,
+                        "outputdir": outputdir,
                     }
 
-                    ens_zm_plot = PlotEnsembleZonal(
-                        **plot_arguments, dataset_mean=ens_zm.dataset_mean, dataset_std=ens_zm.dataset_std
-                    )
-                    ens_zm_plot.plot()
+                    ens_zm_plot = PlotEnsembleZonal(**plot_class_arguments)
+
+                    # PlotEnsembleLatLon plot options
+                    plot_arguments = {
+                        "save_pdf": save_pdf,
+                        "save_png": save_png,
+                        "var": variable,
+                        "cbar_label": None,
+                    }
+
+                    ens_zm_plot.plot(**plot_arguments, dataset_mean=ens_zm.dataset_mean, dataset_std=ens_zm.dataset_std)
                     logger.info(f"Finished Ensemble_Zonal diagnostic for {variable}.")
 
     # Close the Dask client and cluster

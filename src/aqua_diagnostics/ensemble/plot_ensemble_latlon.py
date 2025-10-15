@@ -4,6 +4,7 @@ import cartopy.crs as ccrs
 from aqua.graphics import plot_single_map
 from aqua.exceptions import NoDataError
 from .base import BaseMixin
+from aqua.util import get_projection
 
 xr.set_options(keep_attrs=True)
 
@@ -21,26 +22,8 @@ class PlotEnsembleLatLon(BaseMixin):
         exp_list: list[str] = None,
         source_list: list[str] = None,
         region: str = None,
-        save_pdf=True,
-        save_png=True,
-        var: str = None,
         dataset_mean=None,
         dataset_std=None,
-        description=None,
-        dpi=300,
-        title_mean=None,
-        title_std=None,
-        vmin_mean=None,
-        vmax_mean=None,
-        vmin_std=None,
-        vmax_std=None,
-        proj=ccrs.PlateCarree(),
-        transform_first=False,
-        cyclic_lon=False,
-        contour=True,
-        coastlines=True,
-        cbar_label=None,
-        units=None,
         outputdir="./",
         loglevel: str = "WARNING",
     ):
@@ -70,7 +53,6 @@ class PlotEnsembleLatLon(BaseMixin):
             save_png (bool): Default is True.
             dpi (int): Default is 300.
             title (str): Title for plot.
-            description (str): specific for saving the plot.
             loglevel (str): Log level. Default is "WARNING".
         """
         
@@ -80,9 +62,6 @@ class PlotEnsembleLatLon(BaseMixin):
         self.exp_list = exp_list
         self.source_list = source_list
         self.region = region
-        self.var = var
-        self.save_pdf = save_pdf
-        self.save_png = save_png
 
         self.dataset_mean = dataset_mean
         self.dataset_std = dataset_std
@@ -91,28 +70,6 @@ class PlotEnsembleLatLon(BaseMixin):
         self.loglevel = loglevel
 
         self.figure = None
-        self.dpi = dpi
-
-        # TODO: include in the config file
-        # Specific for colorbars is mean and std plots
-        self.vmin_mean = vmin_mean
-        self.vmax_mean = vmax_mean
-        self.vmin_std = vmin_std
-        self.vmax_std = vmax_std
-
-        self.proj = proj
-        self.transform_first = transform_first
-        self.cyclic_lon = cyclic_lon
-        self.contour = contour
-        self.coastlines = coastlines
-
-        self.units = units
-        if self.units is None:
-            self.units = self.dataset_mean.units
-            #self.units = self.dataset_mean[self.var].units
-        self.cbar_label = cbar_label
-        if self.cbar_label is None:
-            self.cbar_label = self.var + " in " + self.units
 
         super().__init__(
             loglevel=self.loglevel,
@@ -124,12 +81,19 @@ class PlotEnsembleLatLon(BaseMixin):
             outputdir=self.outputdir,
         )
 
-        self.title_mean = "Ensemble mean of " + self.model if title_mean is None else title_mean
-        self.title_std = "Ensemble standard deviation of " + self.model if title_std is None else title_std
-        self.description = self.catalog + " " + self.model + " with " + self.model_list if description is None else description
-
-    def plot(self):
+    def plot(self, var: str = None, description=None, dpi=300, title_mean=None, title_std=None, save_pdf=True, save_png=True, vmin_mean=None, vmax_mean=None, vmin_std=None, vmax_std=None, proj='robinson', proj_params={}, transform_first=False, cyclic_lon=False, contour=True, coastlines=True, cbar_label=None, units=None):
         """
+        Args:
+            var (str): Variable name.
+            diagnostic_name (str): The name of the diagnostic. Default is 'ensemble'.
+                                   This will be used to configure the logger and the output files.
+            save_pdf (bool): Default is True.
+            save_png (bool): Default is True.
+            dpi (int): Default is 300.
+            title_mean (str): Title for plot mean plot.
+            title_std (str): Title for plot std plot.
+            description (str): specific for saving the plot.
+
         This plots the ensemble mean and standard deviation of the ensemble statistics.
         
         Returns:
@@ -140,27 +104,43 @@ class PlotEnsembleLatLon(BaseMixin):
         self.logger.info("Plotting the ensemble computation")
         if (self.dataset_mean is None) or (self.dataset_std is None):
             raise NoDataError("No data given to the plotting function")
+        if units is None:
+            units = self.dataset_mean.units
+            #self.units = self.dataset_mean[self.var].units
+        if cbar_label is None:
+            cbar_label = var + " in " + units
+
+        if isinstance(self.model, list):
+            model_str = " ".join(str(x) for x in self.model)
+        else:
+            model_str = str(self.model) 
+
+        if title_mean is None: title_mean = "Ensemble mean of " + model_str + " for " + var + " " + units 
+        if title_std is None: title_std = "Ensemble standard deviation of " + model_str + " for " + var + " " + units
+
+        proj = get_projection(proj, **proj_params)
 
         # mean plot
         if isinstance(self.dataset_mean, xr.Dataset):
-            self.dataset_mean = self.dataset_mean[self.var]
+            self.dataset_mean = self.dataset_mean[var]
         else:
             self.dataset_mean = self.dataset_mean
-        if self.vmin_mean is None:
-            self.vmin_mean = self.dataset_mean.values.min()
-        if self.vmax_mean is None:
-            self.vmax_mean = self.dataset_mean.values.max()
+        if vmin_mean is None:
+            vmin_mean = self.dataset_mean.values.min()
+        if vmax_mean is None:
+            vmax_mean = self.dataset_mean.values.max()
         fig1, ax1 = plot_single_map(
             self.dataset_mean,
-            proj=self.proj,
-            contour=self.contour,
-            cyclic_lon=self.cyclic_lon,
-            coastlines=self.coastlines,
-            transform_first=self.transform_first,
+            proj=proj,
+            proj_params=proj_params,
+            contour=contour,
+            cyclic_lon=cyclic_lon,
+            coastlines=coastlines,
+            #transform_first=transform_first,
             return_fig=True,
-            title=self.title_mean,
-            vmin=self.vmin_mean,
-            vmax=self.vmax_mean,
+            title=title_mean,
+            vmin=vmin_mean,
+            vmax=vmax_mean,
         )
         ax1.set_xlabel("Longitude")
         ax1.set_ylabel("Latitude")
@@ -168,37 +148,35 @@ class PlotEnsembleLatLon(BaseMixin):
 
         # STD plot
         if isinstance(self.dataset_std, xr.Dataset):
-            self.dataset_std = self.dataset_std[self.var]
+            self.dataset_std = self.dataset_std[var]
         else:
             self.dataset_std = self.dataset_std
-        if self.vmin_std is None:
-            self.vmin_std = self.dataset_std.values.min()
-        if self.vmax_std is None:
-            self.vmax_std = self.dataset_std.values.max()
-        if self.vmin_std == self.vmax_std:
+        if vmin_std is None:
+            vmin_std = self.dataset_std.values.min()
+        if vmax_std is None:
+            vmax_std = self.dataset_std.values.max()
+        if vmin_std == vmax_std:
             self.logger.info("STD is Zero everywhere")
             return {'mean_plot': [fig1, ax1]}
         fig2, ax2 = plot_single_map(
             self.dataset_std,
-            proj=self.proj,
-            contour=self.contour,
-            cyclic_lon=self.cyclic_lon,
-            coastlines=self.coastlines,
-            transform_first=self.transform_first,
+            proj=proj,
+            proj_params=proj_params,
+            contour=contour,
+            cyclic_lon=cyclic_lon,
+            coastlines=coastlines,
+            #transform_first=transform_first,
             return_fig=True,
-            title=self.title_std,
-            vmin=self.vmin_std,
-            vmax=self.vmax_std,
+            title=title_std,
+            vmin=vmin_std,
+            vmax=vmax_std,
         )
         ax2.set_xlabel("Longitude")
         ax2.set_ylabel("Latitude")
 
         # Saving plots
-        if self.save_png:
-            self.save_figure(var=self.var, fig=fig1, fig_std=fig2,  description=self.description, format='png')
-        if self.save_pdf:
-            self.save_figure(var=self.var, fig=fig1, fig_std=fig2, description=self.description, format='pdf')
-
+        if save_png:
+            self.save_figure(var=var, fig=fig1, fig_std=fig2, description=description, format='png')
+        if save_pdf:
+            self.save_figure(var=var, fig=fig1, fig_std=fig2, description=description, format='pdf')
         return {'mean_plot': [fig1, ax1], 'std_plot': [fig2, ax2]}
-
-

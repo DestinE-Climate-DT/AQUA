@@ -81,18 +81,18 @@ class EnsembleLatLon(BaseMixin):
             self.dataset_mean, self.dataset_std = compute_statistics(
                 variable=self.var, ds=self.dataset, ens_dim=self.dim, loglevel=self.loglevel
             )
-            #self.save_netcdf(
-            #    var=self.var,
-            #    data_name="mean",
-            #    data=self.dataset_mean,
-            #    description=self.description
-            #)
-            #self.save_netcdf(
-            #    var=self.var,
-            #    data_name="std",
-            #    data=self.dataset_std,
-            #    description=self.description
-            #)
+            self.save_netcdf(
+                var=self.var,
+                data_name="mean",
+                data=self.dataset_mean,
+                description=self.description
+            )
+            self.save_netcdf(
+                var=self.var,
+                data_name="std",
+                data=self.dataset_std,
+                description=self.description
+            )
         else:
             self.logger.info("No ensemble data is provided to the compute method")
             raise NoDataError("No data is given to the compute method")

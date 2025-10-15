@@ -14,10 +14,9 @@ from aqua.version import __version__ as aqua_version
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
-from aqua.diagnostics import retrieve_merge_ensemble_data
+from aqua.diagnostics import reader_retrieve_and_merge
 from aqua.diagnostics import EnsembleLatLon
 from aqua.diagnostics import PlotEnsembleLatLon
-
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleLatLon diagnostic.
@@ -28,7 +27,6 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description="EnsembleLatLon CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
-
 
 if __name__ == "__main__":
 
@@ -51,7 +49,7 @@ if __name__ == "__main__":
     config_dict = load_diagnostic_config(
         diagnostic="ensemble",
         config=args.config,
-        default_config="config_global_2D_ensemble.yaml",
+        default_config="config_latlon_ensemble.yaml",
         loglevel=loglevel,
     )
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
@@ -71,15 +69,6 @@ if __name__ == "__main__":
 
             for variable in config_dict["diagnostics"]["ensemble"].get("variable", None):
                 logger.info(f"Variable under consideration: {variable}")
-                title_mean = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                    "title_mean", None
-                )
-                title_std = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                    "title_std", None
-                )
-                cbar_label = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                    "cbar_label", None
-                )
 
                 # Model data
                 models = config_dict["datasets"]
@@ -88,58 +77,98 @@ if __name__ == "__main__":
                 model_list = []
                 exp_list = []
                 source_list = []
+                realization_dict = {}
+
                 if models is not None:
                     models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
                     models[0]["model"] = get_arg(args, "model", models[0]["model"])
                     models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
                     models[0]["source"] = get_arg(args, "source", models[0]["source"])
+                    models[0]["regrid"] = get_arg(args, 'regrid',  models[0]["regrid"])
+                    models[0]["realization"] = get_arg(args, 'realization',  models[0]["realization"])
                     for model in models:
                         catalog_list.append(model["catalog"])
                         model_list.append(model["model"])
                         exp_list.append(model["exp"])
                         source_list.append(model["source"])
+                        realization_dict.update({model["model"]: model["realization"]})
 
-                ens_dataset = retrieve_merge_ensemble_data(
+                # Loading and merging data
+                ens_dataset = reader_retrieve_and_merge(
                     variable=variable,
                     catalog_list=catalog_list,
                     model_list=model_list,
                     exp_list=exp_list,
                     source_list=source_list,
-                    log_level="WARNING",
+                    regrid = models[0]["regrid"],
+                    realization=realization_dict,
+                    loglevel="WARNING",
                     ens_dim="ensemble",
                 )
-
+                
+                # Initialize EnsembleLatLon class
                 ens_latlon = EnsembleLatLon(
                     var=variable,
                     dataset=ens_dataset,
                     catalog_list=catalog_list,
+                    exp_list=exp_list,
                     model_list=model_list,
                     source_list=source_list,
                     ensemble_dimension_name="ensemble",
+                    outputdir=outputdir,
                 )
 
                 ens_latlon.run()
 
-                # PlotEnsembleLatLon class
-                plot_arguments = {
-                    "var": variable,
+                # Initialize PlotEnsembleLatLon class
+                plot_class_arguments = {
                     "catalog_list": catalog_list,
                     "model_list": model_list,
                     "exp_list": exp_list,
                     "source_list": source_list,
-                    "save_pdf": save_pdf,
-                    "save_png": save_png,
-                    "title_mean": title_mean,
-                    "title_std": title_std,
-                    "cbar_label": cbar_label,
+                    "outputdir": outputdir,
                 }
 
+                all_plot_params = config_dict['diagnostics']['ensemble'].get('plot_params', {})
+                default_params = all_plot_params.get('default', {})
+                var_params = all_plot_params.get(variable, {})
+                plot_params = {**default_params, **var_params}
+                proj = plot_params.get('projection', 'robinson')
+                proj_params = plot_params.get('projection_params', {})
+                cmap= plot_params.get('cmap', 'RdBu_r')
+                vmin_mean, vmax_mean = plot_params.get('vmin'), plot_params.get('vmax')
+                vmin_std, vmax_std = plot_params.get('vmin_std'), plot_params.get('vmax_std')
+                param_dict = config_dict['diagnostics']['ensemble'].get('params', {}).get(variable, {})
+                units = param_dict.get('units', None)
+                long_name = param_dict.get('long_name', None)
+                short_name = param_dict.get('short_name', None)
+
                 ens_latlon_plot = PlotEnsembleLatLon(
-                    **plot_arguments,
+                    **plot_class_arguments,
                     dataset_mean=ens_latlon.dataset_mean,
                     dataset_std=ens_latlon.dataset_std,
                 )
-                ens_latlon_plot.plot()
+                
+                # PlotEnsembleLatLon plot options
+                plot_arguments = {
+                    "save_pdf": save_pdf,
+                    "save_png": save_png,
+                    "var": variable,
+                    "dpi": dpi,
+                    "vmin_mean": vmin_mean,
+                    "vmax_mean": vmax_mean,
+                    "vmin_std": vmin_std,
+                    "vmax_std": vmax_std,
+                    "proj": proj,
+                    "transform_first": False,
+                    "cyclic_lon": False,
+                    "contour": True,
+                    "coastlines": True,
+                    "cbar_label": None,
+                    "units": units,
+                }
+
+                ens_latlon_plot.plot(**plot_arguments)
                 logger.info(f"Finished Ensemble_latLon diagnostic for {variable}.")
 
     # Close the Dask client and cluster

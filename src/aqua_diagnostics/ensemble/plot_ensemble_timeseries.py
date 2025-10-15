@@ -1,4 +1,5 @@
 import xarray as xr
+import pandas as pd
 #from aqua.logger import log_configure
 #from aqua.exceptions import NoDataError
 from .base import BaseMixin
@@ -23,10 +24,6 @@ class PlotEnsembleTimeseries(BaseMixin):
         ref_model: str = None,
         ref_exp: str = None,
         region: str = None,
-        figure_size = [10, 5],
-        save_pdf=True,
-        save_png=True,
-        var: str = None,
         hourly_data=None,
         hourly_data_mean=None,
         hourly_data_std=None,
@@ -44,14 +41,11 @@ class PlotEnsembleTimeseries(BaseMixin):
         ref_monthly_data=None,
         ref_annual_data=None,
         plot_ensemble_members=True,
-        description=None,
-        title=None,
-        outputdir="./",
+        outputdir='./',
         loglevel: str = "WARNING",
     ):
         """
         Args:
-            var (str): Variable name.
             diagnostic_name (str): The name of the diagnostic. Default is 'ensemble'.
                                    This will be used to configure the logger and the output files.
             catalog_list (str): This variable defines the catalog list. The default is 'None'. 
@@ -87,16 +81,11 @@ class PlotEnsembleTimeseries(BaseMixin):
                      The ensemble members are concatenated along the dimension "ensemble"
             ensemble_dimension_name="ensemble" (str): a default name given to the
                      dimensions along with the individual Datasets were concatenated.
-            monthly_data_mean: xarray.Dataset timeseries monthly mean 
-            monthly_data_std: xarray.Dataset timeseries monthly std
-            annual_data_mean: xarray.Dataset timeseries annual mean
-            annual_data_std: xarray.Dataset timeseries annual std
-            outputdir (str): String input for output path.
-            figure_size: figure_size can be changed. Default is None,
-            save_pdf (bool): Default is True.
-            save_png (bool): Default is True.
-            title (str): Title for plot.
-            description (str): specific for saving the plot.
+            monthly_data_mean: xarray.Dataset timeseries monthly mean. 
+            monthly_data_std: xarray.Dataset timeseries monthly std.
+            annual_data_mean: xarray.Dataset timeseries annual mean.
+            annual_data_std: xarray.Dataset timeseries annual std.
+            outputdir (str): String input for output path. Default is './'
             loglevel (str): Log level. Default is "WARNING".
         """
         
@@ -110,10 +99,6 @@ class PlotEnsembleTimeseries(BaseMixin):
         self.ref_model = ref_model
         self.ref_exp = ref_exp
         self.region = region
-        self.figure_size = figure_size
-        self.var = var
-        self.save_pdf = save_pdf
-        self.save_png = save_png
 
         self.hourly_data = hourly_data
         self.hourly_data_mean = hourly_data_mean
@@ -135,7 +120,6 @@ class PlotEnsembleTimeseries(BaseMixin):
         self.ref_daily_data = ref_daily_data
         self.ref_monthly_data = ref_monthly_data
         self.ref_annual_data = ref_annual_data
-        self.plot_ensemble_members = plot_ensemble_members
 
         self.outputdir = outputdir
         self.loglevel = loglevel
@@ -153,19 +137,25 @@ class PlotEnsembleTimeseries(BaseMixin):
             outputdir=self.outputdir,            
         )
 
-        self.title = "Ensemble analysis of " + self.model if title is None else title
-        self.description = self.catalog + " " + self.model + " with " + self.model_list if description is None else description
-
         if hourly_data is not None or daily_data is not None:
             self.logger.warning("Hourly and daily data are not yet supported, they will be ignored")
 
-    def plot(self):
+    def plot(self, var=None, title=None, startdate=None, enddate=None, description=None, save_pdf=True, save_png=True, figure_size=[10, 5], plot_ensemble_members=True):
         """
         This plots the ensemble mean and +/- 2 x standard deviation of the ensemble statistics
         around the ensemble mean.
         In this method, it is also possible to plot the individual ensemble members.
         It does not plots +/- 2 x STD for the referene.
-
+        
+        Args:
+            title (str): Title for plot.
+            startdate (str): startdate to be included in title if 'None'. Default is 'None'.
+            enddate (str): enddate to be included in title if 'None'. Default is 'None'.
+            description (str): specific for saving the plot.
+            figure_size: figure_size can be changed. Default is [10, 5],
+            save_pdf (bool): Default is True.
+            save_png (bool): Default is True.
+            plot_ensemble_members=True,
         Returns:
             fig, ax
 
@@ -174,6 +164,21 @@ class PlotEnsembleTimeseries(BaseMixin):
         self.logger.info("Plotting the ensemble timeseries")
         self.logger.info("Assigning label to the given model name")
 
+        if isinstance(self.model, list):
+            model_str = " ".join(str(x) for x in self.model)
+        else:
+            model_str = str(self.model) 
+
+        if title is None:
+            if startdate is None and enddate is None:
+                title = "Ensemble analysis of " + model_str
+            else:
+                startdate = pd.Timestamp(startdate)
+                startdate = startdate.strftime("%Y-%m-%d")
+                enddate = pd.Timestamp(enddate)
+                enddate = enddate.strftime("%Y-%m-%d")
+                title = f"Ensemble analysis of {model_str} ({startdate} - {enddate})"        
+        
         fig, ax = plot_timeseries(
             ref_monthly_data=self.ref_monthly_data,
             ref_annual_data=self.ref_annual_data,
@@ -182,29 +187,29 @@ class PlotEnsembleTimeseries(BaseMixin):
             std_ens_monthly_data=self.monthly_data_std,
             std_ens_annual_data=self.annual_data_std,
             ref_label=self.ref_model,
-            ens_label=self.model,
-            figsize=self.figure_size,
-            title=self.title,
+            ens_label=model_str,
+            figsize=figure_size,
+            title=title,
             loglevel=self.loglevel,
         )
         # Loop over if need to plot the ensemble members
-        if self.plot_ensemble_members:
-            for i in range(0, len(self.monthly_data[self.var][:, 0])):
+        if plot_ensemble_members:
+            for i in range(0, len(self.monthly_data[var][:, 0])):
                 fig1, ax1 = plot_timeseries(
                     fig=fig,
                     ax=ax,
                     ens_monthly_data=self.monthly_data_mean,
                     ens_annual_data=self.annual_data_mean,
-                    monthly_data=self.monthly_data[self.var][i, :] if self.monthly_data is not None else None,
-                    annual_data=self.annual_data[self.var][i, :] if self.annual_data is not None else None,
-                    figsize=self.figure_size,
-                    title=self.title,
+                    monthly_data=self.monthly_data[var][i, :] if self.monthly_data is not None else None,
+                    annual_data=self.annual_data[var][i, :] if self.annual_data is not None else None,
+                    figsize=figure_size,
+                    title=title,
                     loglevel=self.loglevel,
                 )
 
         # Saving plots
-        if self.save_png:
-            self.save_figure(var=self.var, fig=fig, description=self.description, format='png')
-        if self.save_pdf:
-            self.save_figure(var=self.var, fig=fig, description=self.description, format='pdf')
+        if save_png:
+            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format='png')
+        if save_pdf:
+            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format='pdf')
         return fig, ax

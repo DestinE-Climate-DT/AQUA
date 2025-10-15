@@ -81,11 +81,6 @@ def reader_retrieve_and_merge(
         source_list = [source_list]
 
     all_datasets = []
-    print(catalog_list)
-    print( model_list)
-    print(exp_list)
-    print(source_list)
-    print(realization)
     # Loop through each (catalog, model, exp, source) combination
     for cat_i, model_i, exp_i, src_i in zip(catalog_list, model_list, exp_list, source_list):
         logger.info(f"Processing: catalog={cat_i}, model={model_i}, exp={exp_i}, source={src_i}")
@@ -96,16 +91,10 @@ def reader_retrieve_and_merge(
             if reals is None:
                 logger.info(f"No realizations defined for {model_i}, using default ['r1']")
                 reals = ['r1']
-        print(reals)
         model_ds_list = []
 
         for r in reals:
             try:
-                print("ith catalog: ",cat_i)
-                print("ith model: ",model_i)
-                print("ith exp: ",exp_i)
-                print("ith source: ",src_i)
-                print("ith realization: ",r)
                 # Retrieve the data using AQUA Reader
                 reader = Reader(
                     catalog=cat_i,
@@ -121,7 +110,6 @@ def reader_retrieve_and_merge(
 
                 ds = reader.retrieve(var=variable)
                 logger.info(f"Loaded {variable} for {model_i}, {exp_i}, realization={r}")
-
                 # Spatial selection
                 if lon_limits and lat_limits:
                     if "lon" in ds.dims and "lat" in ds.dims:
@@ -181,7 +169,6 @@ def reader_retrieve_and_merge(
     gc.collect()
     logger.info("Memory successfully freed.")
 
-    print(merged_dataset.attrs['ensemble_members'])
     return merged_dataset
 
 def merge_from_data_files(

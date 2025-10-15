@@ -20,10 +20,9 @@ from aqua.version import __version__ as aqua_version
 from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
-from aqua.diagnostics import retrieve_merge_ensemble_data
+from aqua.diagnostics import reader_retrieve_and_merge
 from aqua.diagnostics import EnsembleTimeseries
 from aqua.diagnostics import PlotEnsembleTimeseries
-
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleTimeseries diagnostic.
@@ -34,7 +33,6 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description="EnsembleTimeseries CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
-
 
 if __name__ == "__main__":
 
@@ -57,14 +55,10 @@ if __name__ == "__main__":
     config_dict = load_diagnostic_config(
         diagnostic="ensemble",
         config=args.config,
-        default_config="config_timeseries_ensemble.yaml",
+        default_config="config_multi_model_timeseries_ensemble.yaml",
         loglevel=loglevel,
     )
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-
-    regrid = get_arg(args, 'regrid', None)
-    logger.info(f"Regrid option is set to {regrid}")
-    realization = get_arg(args, 'realization', None)
 
     # Output options
     outputdir = config_dict["output"].get("outputdir", "./")
@@ -111,48 +105,68 @@ if __name__ == "__main__":
                 monthly_model_list = []
                 monthly_exp_list = []
                 monthly_source_list = []
+                # All the realizations will be appended here with the key of model names
+                monthly_realization_dict = {}
 
                 annual_catalog_list = []
                 annual_model_list = []
                 annual_exp_list = []
                 annual_source_list = []
-
+                # All the realizations will be appended here with the key of model names
+                annual_realization_dict = {}
+                
                 if models is not None:
                     models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
                     models[0]["model"] = get_arg(args, "model", models[0]["model"])
                     models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
                     models[0]["source"] = get_arg(args, "source", models[0]["source"])
+                    models[0]["regrid"] = get_arg(args, 'regrid',  models[0]["regrid"])
+                    models[0]["realization"] = get_arg(args, 'realization',  models[0]["realization"])
                     for model in models:
                         if model["source"] == "aqua-timeseries-monthly":
                             monthly_catalog_list.append(model["catalog"])
                             monthly_model_list.append(model["model"])
                             monthly_exp_list.append(model["exp"])
                             monthly_source_list.append(model["source"])
+                            monthly_realization_dict.update({model["model"]: model["realization"]})
+
                         if model["source"] == "aqua-timeseries-annual":
                             annual_catalog_list.append(model["catalog"])
                             annual_model_list.append(model["model"])
                             annual_exp_list.append(model["exp"])
                             annual_source_list.append(model["source"])
+                            annual_realization_dict.update({model["model"]: model["realization"]})
 
                 # Reterive monthly data
                 monthly_dataset = reader_retrieve_and_merge(
                     variable=variable,
+                    catalog_list=monthly_catalog_list,
                     model_list=monthly_model_list,
                     exp_list=monthly_exp_list,
                     source_list=monthly_source_list,
+                    regrid = models[0]["regrid"],
+                    realization=monthly_realization_dict,
                     startdate=startdate_data,
                     enddate=enddate_data,
                 )
 
+                if monthly_dataset is None:
+                    logger.warning("Monthly ensemble data is not provided.")
+ 
                 # Reterieve annual data
                 annual_dataset = reader_retrieve_and_merge(
                     variable=variable,
+                    catalog_list=annual_catalog_list,
                     model_list=annual_model_list,
                     exp_list=annual_exp_list,
                     source_list=annual_source_list,
+                    regrid = models[0]["regrid"],
+                    realization=annual_realization_dict,
                     startdate=startdate_data,
                     enddate=enddate_data,
                 )
+                if annual_dataset is None:
+                    logger.warning("Annual ensemble data is not provided.")                
 
                 # Reference monthly data
                 ref = config_dict["references"]
@@ -237,9 +251,8 @@ if __name__ == "__main__":
                 # Compute statistics and save the results as netcdf
                 ts.run()
 
-                # PlotEnsembleTimeseries class
-                plot_arguments = {
-                    "var": variable,
+                # Initializing PlotEnsembleTimeseries class
+                plot_class_arguments = {
                     "catalog_list": monthly_catalog_list,
                     "model_list": monthly_model_list,
                     "exp_list": monthly_exp_list,
@@ -247,14 +260,10 @@ if __name__ == "__main__":
                     "ref_catalog": ref_monthly_catalog,
                     "ref_model": ref_monthly_model,
                     "ref_exp": ref_monthly_exp,
-                    "save_pdf": save_pdf,
-                    "save_png": save_png,
-                    "plot_ensemble_members": plot_ensemble_members,
-                    "title": title,
                 }
 
                 ts_plot = PlotEnsembleTimeseries(
-                    **plot_arguments,
+                    **plot_class_arguments,
                     monthly_data=ts.monthly_data,
                     monthly_data_mean=ts.monthly_data_mean,
                     monthly_data_std=ts.monthly_data_std,
@@ -264,11 +273,22 @@ if __name__ == "__main__":
                     ref_monthly_data=monthly_ref_data,
                     ref_annual_data=annual_ref_data,
                     outputdir=outputdir,
-                    log_level=loglevel,
+                    loglevel=loglevel,
                 )
 
+                # PlotEnsembleTimeseries plot options
+                plot_arguments = {
+                    "var": variable,
+                    "save_pdf": save_pdf,
+                    "save_png": save_png,
+                    "plot_ensemble_members": plot_ensemble_members,
+                    "title": title,
+                    "startdate": ts.monthly_data.time.isel(time=0).values,
+                    "enddate": ts.monthly_data.time.isel(time=-1).values,
+                }
+
                 # plot() function in PlotEnsembleTimeseries class
-                ensemble_plot = ts_plot.plot()
+                ensemble_plot = ts_plot.plot(**plot_arguments)
 
                 logger.info(f"Finished Ensemble time series diagnostic for {variable}.")
 

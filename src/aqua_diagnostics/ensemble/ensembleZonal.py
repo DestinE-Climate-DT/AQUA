@@ -65,7 +65,7 @@ class EnsembleZonal(BaseMixin):
             model_list=model_list,
             exp_list=exp_list,
             source_list=source_list,
-            log_level=loglevel,
+            loglevel=loglevel,
             outputdir=self.outputdir,
         )
 
@@ -80,7 +80,7 @@ class EnsembleZonal(BaseMixin):
 
         if self.dataset is not None:
             self.dataset_mean, self.dataset_std = compute_statistics(
-                variable=self.var, ds=self.dataset, ens_dim=self.dim, log_level=self.loglevel
+                variable=self.var, ds=self.dataset, ens_dim=self.dim, loglevel=self.loglevel
             )
             self.save_netcdf(
                 var=self.var,
