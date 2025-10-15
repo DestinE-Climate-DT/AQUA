@@ -63,7 +63,7 @@ def plot_multi_timeseries(
     fig = plt.figure(figsize=figsize)
     spec = fig.add_gridspec(nrows=nrows, ncols=ncols, wspace=0.4, hspace=0.5)
 
-    data_labels=[[str(x) for x in levels],None, None, None, None, None, None, None, None]
+    data_labels = [str(x) for x in levels]
 
     for j in range(nrows):
         for i, var in enumerate(variables):
@@ -73,9 +73,8 @@ def plot_multi_timeseries(
 
             fig, ax = plot_timeseries(
                 [maps[j][var].sel(level=level) for level in maps[j][var].level],
-                data_labels = data_labels[k], # "30m", "40m", "50m", "60m", "70m", "80m"],
+                data_labels=data_labels if k == 0 else None,
                 title=titles[k] if titles else None,
-                # return_fig=True,
                 ax=ax,
                 fig=fig,
                 loglevel=loglevel,
@@ -87,26 +86,6 @@ def plot_multi_timeseries(
             if text:
                 logger.debug("Adding text in the plot: %s", text)
                 ax.text(-0.3, 0.33, text[k], fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
-
-
-            # Retrieve last plotted object for colorbar (QuadMesh or ContourSet)
-            if ax.collections:
-                mappable = ax.collections[-1]
-            elif ax.images:
-                mappable = ax.images[-1]
-            else:
-                logger.warning("No mappable object found for subplot (%d, %d)", j, i)
-                continue
-
-            # Create colorbar axis next to plot
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="5%", pad=0.15)
-            cbar = fig.colorbar(mappable, cax=cax, orientation="vertical")
-
-            # if cbar_label and j < len(cbar_label):
-            #     cbar.set_label(cbar_label[j])
-            # else:
-            #     cbar.set_label(cbar_get_label(mappable, var))
 
     # Adjust overall layout
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.05, right=0.95)
