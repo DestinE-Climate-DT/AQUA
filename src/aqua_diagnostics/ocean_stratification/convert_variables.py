@@ -7,32 +7,33 @@ def convert_so(so):
     Convert practical salinity to absolute salinity using a TEOS-10 approximation.
 
     Args:
-        so (dask.array.core.Array): masked array containing the practical salinity 
+        so (dask.array.core.Array): masked array containing the practical salinity
             values (PSU or 0.001).
 
     Returns:
         dask.array.core.Array: masked array containing the absolute salinity values (g/kg).
 
     Notes:
-        Uses an approximation from TEOS-10 equations and may yield different results, 
+        Uses an approximation from TEOS-10 equations and may yield different results,
         particularly in the Baltic Sea.
         Reference: http://www.teos-10.org/pubs/gsw/pdf/SA_from_SP.pdf
     """
     abs_so = so / 0.99530670233846
     return abs_so
 
+
 def convert_thetao(abs_so, thetao):
     """
     Convert potential temperature to conservative temperature.
 
     Args:
-        abs_so (dask.array.core.Array): masked array containing the absolute 
+        abs_so (dask.array.core.Array): masked array containing the absolute
             salinity values (g/kg).
-        thetao (dask.array.core.Array): masked array containing the potential 
+        thetao (dask.array.core.Array): masked array containing the potential
             temperature values (°C).
 
     Returns:
-        dask.array.core.Array: masked array containing the conservative 
+        dask.array.core.Array: masked array containing the conservative
         temperature values (°C).
 
     Notes:

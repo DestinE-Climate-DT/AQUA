@@ -52,13 +52,13 @@ def plot_multi_vertical_lines(
     ConfigStyle(style=style, loglevel=loglevel)
 
     if all(isinstance(data_map, xr.Dataset) for data_map in maps):
-        nrows = 1 #len(maps)
+        nrows = 1  # len(maps)
         ncols = len(variables)
         figsize = figsize if figsize is not None else (ncols * 5, nrows * 3 + 1)
         logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
 
     fig = plt.figure(figsize=figsize)
-    spec = fig.add_gridspec(nrows=nrows, ncols=ncols, wspace=0.2, hspace=.1)
+    spec = fig.add_gridspec(nrows=nrows, ncols=ncols, wspace=0.2, hspace=0.1)
 
     for j in range(nrows):
         for i, var in enumerate(variables):
@@ -66,27 +66,34 @@ def plot_multi_vertical_lines(
             ax = fig.add_subplot(spec[j, i])
             logger.debug("Creating subplot for variable %s at (%d, %d)", var, j, i)
 
-
             fig, ax = plot_vertical_lines(
                 data=maps[j][var],
-                ref_data=maps[j][var]*1.001,
+                ref_data=maps[j][var] * 1.001,
                 labels=data_label,
                 ref_label=obs_label,
-                lev_name='level',
+                lev_name="level",
                 invert_yaxis=True,
                 title=variables[i],
                 return_fig=True,
                 ax=ax,
                 fig=fig,
                 loglevel=loglevel,
-                )   
+            )
             ax.set_xticks(ax.get_xticks())
             ax.set_xticklabels(ax.get_xticklabels(), rotation=30)
 
             if text:
                 logger.debug("Adding text in the plot: %s", text)
-                ax.text(-0.3, 0.33, text[k], fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
-
+                ax.text(
+                    -0.3,
+                    0.33,
+                    text[k],
+                    fontsize=15,
+                    color="dimgray",
+                    rotation=90,
+                    transform=ax.transAxes,
+                    ha="center",
+                )
 
     # Adjust overall layout
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.05, right=0.95)
@@ -94,7 +101,7 @@ def plot_multi_vertical_lines(
 
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 10, fontweight='bold', y=1.05)
+        fig.suptitle(title, fontsize=ncols * 10, fontweight="bold", y=1.05)
 
     if return_fig:
         return fig

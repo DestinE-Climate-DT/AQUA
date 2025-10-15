@@ -167,13 +167,15 @@ if __name__ == "__main__":
                         ["lat", "lon"]
                     ),
                     obs=(
-                        obs_stratification.data[["thetao", "so", "rho"]].mean(["lat", "lon"])
+                        obs_stratification.data[["thetao", "so", "rho"]].mean(
+                            ["lat", "lon"]
+                        )
                         if obs_stratification is not None
                         else None
                     ),
                     diagnostic_name=diagnostic_name,
                     outputdir=outputdir,
-                    loglevel=loglevel
+                    loglevel=loglevel,
                 )
                 strat_plot.plot_stratification(
                     save_pdf=save_pdf, save_png=save_png, dpi=dpi
@@ -187,7 +189,7 @@ if __name__ == "__main__":
                         if obs_stratification is not None
                         else None
                     ),
-                    diagnostic_name='MLD',
+                    diagnostic_name="MLD",
                     outputdir=outputdir,
                     loglevel=loglevel,
                 )

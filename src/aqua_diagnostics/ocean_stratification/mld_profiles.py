@@ -9,10 +9,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from aqua.logger import log_configure
-from aqua.util import plot_box, evaluate_colorbar_limits, cbar_get_label, generate_colorbar_ticks
+from aqua.util import (
+    plot_box,
+    evaluate_colorbar_limits,
+    cbar_get_label,
+    generate_colorbar_ticks,
+)
 from aqua import plot_single_map, plot_maps
 from aqua.graphics.styles import ConfigStyle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 def plot_maps(
     maps: list,
@@ -90,25 +96,25 @@ def plot_maps(
 
     fig = plt.figure(figsize=figsize)
 
-    if cbar_number == 'single':
+    if cbar_number == "single":
         # Evaluate min and max values for the common colorbar
         if vmin is None or vmax is None or sym:
             vmin, vmax = evaluate_colorbar_limits(maps=maps, sym=sym)
 
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
 
-    if cbar_number == 'single':
+    if cbar_number == "single":
         cbar = True
-    if cbar_number == 'separate':
+    if cbar_number == "separate":
         cbar = False
 
     # Adjust the location of the subplots on the page to make room for the colorbar
     fig.subplots_adjust(
         bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.1, hspace=0.5
     )
-    
+
     for i in range(len(maps)):
-        if cbar_number == 'separate':
+        if cbar_number == "separate":
             vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
 
         logger.debug("Plotting map %d", i)
@@ -132,12 +138,21 @@ def plot_maps(
             ax_pos=(nrows, ncols, i + 1),
             **kwargs,
         )
-        ax.set_facecolor('lightgray')
+        ax.set_facecolor("lightgray")
 
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
-            ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
-        if cbar_number == 'separate':
+            ax.text(
+                -0.3,
+                0.33,
+                ytext[i],
+                fontsize=15,
+                color="dimgray",
+                rotation=90,
+                transform=ax.transAxes,
+                ha="center",
+            )
+        if cbar_number == "separate":
             # Retrieve last plotted object for colorbar (QuadMesh or ContourSet)
             if ax.collections:
                 mappable = ax.collections[-1]
@@ -146,7 +161,7 @@ def plot_maps(
             else:
                 logger.warning("No mappable object found for subplot (%d, %d)", j, i)
                 continue
-            
+
             # Update mappable normalization and cmap
             mappable.set_norm(plt.Normalize(vmin=vmin, vmax=vmax))
             mappable.set_cmap(cmap)
@@ -156,38 +171,43 @@ def plot_maps(
             cax = divider.append_axes("right", size="5%", pad=0.15, axes_class=plt.Axes)
             cbar = fig.colorbar(mappable, cax=cax, orientation="vertical")
 
-            cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
-            cbar_ticks = generate_colorbar_ticks(vmin=vmin,
-                                                vmax=vmax, 
-                                                sym=sym,
-                                                nlevels=nlevels,
-                                                ticks_rounding=cbar_ticks_rounding,
-                                                loglevel=loglevel)
+            cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", None)
+            cbar_ticks = generate_colorbar_ticks(
+                vmin=vmin,
+                vmax=vmax,
+                sym=sym,
+                nlevels=nlevels,
+                ticks_rounding=cbar_ticks_rounding,
+                loglevel=loglevel,
+            )
             cbar.set_ticks(cbar_ticks)
-    if cbar_number == 'single':
+    if cbar_number == "single":
 
         # Add a colorbar axis at the bottom of the graph
         cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
 
-        cbar_label = cbar_get_label(data=maps[0], cbar_label=cbar_label, loglevel=loglevel)
+        cbar_label = cbar_get_label(
+            data=maps[0], cbar_label=cbar_label, loglevel=loglevel
+        )
         logger.debug("Setting colorbar label to %s", cbar_label)
 
-        
         # Add the colorbar
         mappable = ax.collections[0]
         if cbar == True:
             cbar = fig.colorbar(
                 mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label
-        )
+            )
             # cbar.set_ticks([vmin, vmax])  # Only show min and max
-            cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
-            cbar_ticks = generate_colorbar_ticks(vmin=vmin,
-                                                vmax=vmax, 
-                                                sym=sym,
-                                                nlevels=nlevels,
-                                                ticks_rounding=cbar_ticks_rounding,
-                                                max_ticks=10,
-                                                loglevel=loglevel)
+            cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", None)
+            cbar_ticks = generate_colorbar_ticks(
+                vmin=vmin,
+                vmax=vmax,
+                sym=sym,
+                nlevels=nlevels,
+                ticks_rounding=cbar_ticks_rounding,
+                max_ticks=10,
+                loglevel=loglevel,
+            )
             # cbar.set_ticks([vmin, vmax])
             cbar.set_ticks(cbar_ticks)
 
@@ -210,17 +230,23 @@ def plot_maps(
 
 
 def plot_line_vertical_profile(
-        data: xr.DataArray, var: Optional[str] = None,
-        lev_name: str = "level", x_coord: str = "lat",
-        lev_min: Optional[float] = None, lev_max: Optional[float] = None,
-        title: Optional[str] = None, title_size: int = 16,
-        style: Optional[str] = None,
-        logscale: bool = False,
-        grid: bool = True,
-        figsize: Tuple[int, int] = (8, 6),
-        fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-        return_fig: bool = False,
-        loglevel: str = "WARNING"):
+    data: xr.DataArray,
+    var: Optional[str] = None,
+    lev_name: str = "level",
+    x_coord: str = "lat",
+    lev_min: Optional[float] = None,
+    lev_max: Optional[float] = None,
+    title: Optional[str] = None,
+    title_size: int = 16,
+    style: Optional[str] = None,
+    logscale: bool = False,
+    grid: bool = True,
+    figsize: Tuple[int, int] = (8, 6),
+    fig: Optional[plt.Figure] = None,
+    ax: Optional[plt.Axes] = None,
+    return_fig: bool = False,
+    loglevel: str = "WARNING",
+):
     """
     Plot a line profile: variable vs vertical level.
 

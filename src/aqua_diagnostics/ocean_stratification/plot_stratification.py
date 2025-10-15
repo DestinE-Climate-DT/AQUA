@@ -46,8 +46,13 @@ class PlotStratification:
             loglevel=self.loglevel,
         )
 
-    def plot_stratification(self, rebuild: bool = True, save_pdf: bool = True,
-                       save_png: bool = True, dpi: int = 300):
+    def plot_stratification(
+        self,
+        rebuild: bool = True,
+        save_pdf: bool = True,
+        save_png: bool = True,
+        dpi: int = 300,
+    ):
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_data_list()
         self.set_suptitle()
@@ -70,15 +75,14 @@ class PlotStratification:
             loglevel=self.loglevel,
         )
 
-
         self.save_plot(
             fig,
             rebuild=rebuild,
             dpi=dpi,
-            format='pdf',
+            format="pdf",
             diagnostic_product=self.diagnostic,
             metadata=self.description,
-            extra_keys={"region": self.region.replace(' ','_')},
+            extra_keys={"region": self.region.replace(" ", "_")},
         )
 
     def set_nrowcol(self):
@@ -101,9 +105,10 @@ class PlotStratification:
                         self.ytext.append(None)
 
     def set_label_line_plot(self):
-        self.data_label = 'Model'
+        self.data_label = "Model"
         if self.obs:
-            self.obs_label = 'Obs'
+            self.obs_label = "Obs"
+
     def set_data_list(self):
         self.data_list = [self.data]
         if self.obs:
@@ -114,7 +119,9 @@ class PlotStratification:
         #         self.data_list.append(data_var)
 
     def set_cbar_labels(self, var: str = None):
-        self.cbar_label = cbar_get_label(data=self.data[var], cbar_label=None, loglevel=self.loglevel)
+        self.cbar_label = cbar_get_label(
+            data=self.data[var], cbar_label=None, loglevel=self.loglevel
+        )
 
     def _round_up(self, value):
         if value % 100 == 0:
@@ -128,7 +135,7 @@ class PlotStratification:
         self.vmin = 0.0
         if self.obs:
             self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
-        else: 
+        else:
             self.vmax = self.data["mld"].max()
         self.vmax = self._round_up(self.vmax)
         if self.vmax < 200:
@@ -138,10 +145,11 @@ class PlotStratification:
         else:
             nlevels = 50
         self.nlevels = nlevels
-        self.logger.debug(f"Colorbar limits set to vmin: {self.vmin}, vmax: {self.vmax}, nlevels: {self.nlevels}")
+        self.logger.debug(
+            f"Colorbar limits set to vmin: {self.vmin}, vmax: {self.vmax}, nlevels: {self.nlevels}"
+        )
 
-
-    def set_suptitle(self, plot_type = None):
+    def set_suptitle(self, plot_type=None):
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
@@ -160,7 +168,7 @@ class PlotStratification:
             attrs = self.data_list[j].attrs
             for i, var in enumerate(self.vars):
                 # if j == 0:
-                    # title = f"{var} ({self.data[var].attrs.get('units')})"
+                # title = f"{var} ({self.data[var].attrs.get('units')})"
                 title = f"{attrs.get('AQUA_catalog')} {attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
                 self.title_list.append(title)
                 # else:
@@ -173,9 +181,16 @@ class PlotStratification:
             f"Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
         }
 
-    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
-                  rebuild: bool = True,
-                  dpi: int = 300, format: str = 'png', metadata: dict = None):
+    def save_plot(
+        self,
+        fig,
+        diagnostic_product: str = None,
+        extra_keys: dict = None,
+        rebuild: bool = True,
+        dpi: int = 300,
+        format: str = "png",
+        metadata: dict = None,
+    ):
         """
         Save the plot to a file.
 
@@ -190,10 +205,21 @@ class PlotStratification:
                              They will be complemented with the metadata from the outputsaver.
                              We usually want to add here the description of the figure.
         """
-        if format == 'png':
-            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
-                                          extra_keys=extra_keys, metadata=metadata, dpi=dpi)
-        elif format == 'pdf':
-            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
-                                          extra_keys=extra_keys, metadata=metadata)
+        if format == "png":
+            result = self.outputsaver.save_png(
+                fig,
+                diagnostic_product=diagnostic_product,
+                rebuild=rebuild,
+                extra_keys=extra_keys,
+                metadata=metadata,
+                dpi=dpi,
+            )
+        elif format == "pdf":
+            result = self.outputsaver.save_pdf(
+                fig,
+                diagnostic_product=diagnostic_product,
+                rebuild=rebuild,
+                extra_keys=extra_keys,
+                metadata=metadata,
+            )
         self.logger.info(f"Figure saved as {result}")

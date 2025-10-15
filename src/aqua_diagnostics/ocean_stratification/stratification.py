@@ -4,7 +4,8 @@ from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
 from .compute_mld import compute_mld_cont
 from .compute_rho import compute_rho
-from .convert_variables import convert_so, convert_thetao 
+from .convert_variables import convert_so, convert_thetao
+
 xr.set_options(keep_attrs=True)
 
 
@@ -36,6 +37,7 @@ class Stratification(Diagnostic):
     logger : logging.Logger
         Configured logger for the diagnostic.
     """
+
     def __init__(
         self,
         catalog: str = None,
@@ -109,19 +111,20 @@ class Stratification(Diagnostic):
         self.climatology = climatology
         self.logger.info("Starting stratification diagnostic run.")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
-        if 'lev' in self.data.dims:
-            self.data = self.data.rename({'lev':'level'})
+        if "lev" in self.data.dims:
+            self.data = self.data.rename({"lev": "level"})
         self.logger.debug(
             f"Variables retrieved: {var}, region: {region}, dim_mean: {dim_mean}"
         )
         if region:
-            self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
-            res_dict = super()._select_region(data=self.data,
-                region=region, diagnostic="ocean3d",
-                drop=True
+            self.logger.info(
+                f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'."
             )
-            self.data = res_dict['data']
-            region = res_dict['region']
+            res_dict = super()._select_region(
+                data=self.data, region=region, diagnostic="ocean3d", drop=True
+            )
+            self.data = res_dict["data"]
+            region = res_dict["region"]
         if dim_mean:
             self.logger.debug(f"Averaging data over dimensions: {dim_mean}")
             self.data = self.data.mean(dim=dim_mean, keep_attrs=True)
@@ -154,7 +157,7 @@ class Stratification(Diagnostic):
         Compute climatology for the dataset based on the specified period type.
 
         Depending on the value of `self.climatology`, the method will:
-        - Group and average the data along the corresponding time accessor if 
+        - Group and average the data along the corresponding time accessor if
         `self.climatology` is not one of ["month", "year", "season"].
         - Compute the overall mean across the time dimension if `self.climatology` is "total".
 
@@ -188,7 +191,9 @@ class Stratification(Diagnostic):
                 self.data = self.data.groupby(f"time.{self.clim_type}").mean("time")
                 self.data = self.data.rename({f"{self.clim_type}": "time"})
                 if self.clim_type == "month":
-                    self.data = self.data.assign_coords(time=[calendar.month_name[m] for m in self.data["time"].values])
+                    self.data = self.data.assign_coords(
+                        time=[calendar.month_name[m] for m in self.data["time"].values]
+                    )
                 self.data = self.data.sel(time=self.climatology)
         elif self.climatology == "Total":
             self.data = self.data.mean("time", keep_attrs=True)
@@ -211,19 +216,23 @@ class Stratification(Diagnostic):
             "Converting variables to absolute salinity and conservative temperature."
         )
         # Convert practical salinity to absolute salinity
-        abs_so = convert_so(self.data['so'])
+        abs_so = convert_so(self.data["so"])
         self.logger.debug("Practical salinity converted to absolute salinity.")
 
         # Convert potential temperature to conservative temperature
-        data_thetao = super()._check_data(data=self.data['thetao'], var='thetao', units='degreeC')
+        data_thetao = super()._check_data(
+            data=self.data["thetao"], var="thetao", units="degreeC"
+        )
         cons_thetao = convert_thetao(abs_so, data_thetao)
-        self.logger.debug("Potential temperature converted to conservative temperature.")
-        
+        self.logger.debug(
+            "Potential temperature converted to conservative temperature."
+        )
+
         # Update the dataset with converted variables
         # self.data["cons_thetao"] = cons_thetao
         # self.data["so"] = abs_so
         self.logger.info("Variables successfully converted and updated in dataset.")
-        
+
         # self.data = convert_variables(self.data, loglevel=self.loglevel)
         self.logger.debug("Computing potential density at reference pressure 0 dbar.")
         rho = compute_rho(abs_so, cons_thetao, 0)
@@ -232,8 +241,6 @@ class Stratification(Diagnostic):
         self.data["rho"].attrs["units"] = "kg/m^3"
         self.data["rho"].attrs["standard_name"] = "sea_water_potential_density"
         self.logger.debug("Added 'rho' (potential density anomaly) to dataset.")
-
-        
 
     def compute_mld(self):
         """
@@ -283,6 +290,6 @@ class Stratification(Diagnostic):
             diagnostic_product=f"{diagnostic_product}",
             outputdir=outputdir,
             rebuild=rebuild,
-            extra_keys={"region": region.replace(' ','_')},
+            extra_keys={"region": region.replace(" ", "_")},
         )
         self.logger.info("NetCDF file saved successfully.")
