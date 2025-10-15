@@ -55,7 +55,7 @@ class PlotStratification:
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
-        self.set_cbar_labels(var= 'rho')
+        # self.set_cbar_labels(var= 'rho')
         self.set_label_line_plot()
         fig = plot_multi_vertical_lines(
             maps=self.data_list,
