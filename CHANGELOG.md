@@ -12,8 +12,8 @@ AQUA core complete list:
 - Extending evaluate formula method to exponential and parenthesis (#2327)
 
 AQUA diagnostics complete list:
-- Gregory: more detailed description and plot labels (#2306)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
+- Gregory: more detailed description and plot labels (#2306)
 
 ## [v0.18.0]
 
