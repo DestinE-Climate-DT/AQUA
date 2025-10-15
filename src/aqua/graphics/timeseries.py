@@ -22,9 +22,10 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
                     std_ens_monthly_data: Optional[xr.DataArray] = None,
                     std_ens_annual_data: Optional[xr.DataArray] = None,
                     data_labels: Optional[list] = None,
-                    suffix: bool = False,
+                    suffix: Optional[bool] = False,
                     ref_label: Optional[str] = None,
                     ens_label: Optional[str] = None,
+                    legend: Optional[bool] = True,
                     style: Optional[str] = None,
                     fig: Optional[plt.Figure] = None,
                     ax: Optional[plt.Axes] = None,
@@ -53,6 +54,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
                        If False, only one label is used for both monthly and annual data.
         ref_label (str): label for the reference data
         ens_label (str): label for the ensemble data
+        legend (bool): whether to show the legend. Default is True.
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
@@ -77,6 +79,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
 
     # Label generation
     # First we make sure that data_labels is a list
+    empty_label = {'monthly': None, 'annual': None}
     if data_labels is not None:
         data_labels = to_list(data_labels)
         if suffix:
@@ -88,7 +91,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
             else:
                 data_labels = {'monthly': None, 'annual': data_labels}
     else:
-        data_labels = {'monthly': None, 'annual': None}
+        data_labels = empty_label
 
     # Same for ref_label and ens_label, but they are strings
     if ref_label is not None and suffix:
@@ -99,7 +102,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
         else:
             ref_label = {'monthly': None, 'annual': ref_label}
     else:
-        ref_label = {'monthly': None, 'annual': None}
+        ref_label = empty_label
 
     if ens_label is not None and suffix:
         ens_label = {'monthly': f"{ens_label} monthly", 'annual': f"{ens_label} annual"}
@@ -109,7 +112,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
         else:
             ens_label = {'monthly': None, 'annual': ens_label}
     else:
-        ens_label = {'monthly': None, 'annual': None}
+        ens_label = empty_label
 
     if monthly_data is not None:
         lines = plot_timeseries_data(ax=ax, data=monthly_data, kind='monthly',
@@ -146,14 +149,14 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
                                  std_data=std_ens_monthly_data,
                                  data_label=ens_label['monthly'],
                                  lw=0.8, kind='monthly')
-    
+
     if ens_annual_data is not None:
         plot_timeseries_ensemble(ax=ax, data=ens_annual_data,
                                  std_data=std_ens_annual_data,
                                  data_label=ens_label['annual'],
                                  lw=0.8, kind='annual')
-    
-    if data_labels is not None or ref_label is not None or ens_label is not None:
+
+    if legend and (data_labels != empty_label or ref_label != empty_label or ens_label != empty_label):
         ax.legend(fontsize='small')
     ax.grid(True, axis="y", linestyle='-', color='silver', alpha=0.8)
 
@@ -163,6 +166,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
         ax.set_title("")
 
     return fig, ax
+
 
 def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
                        ref_data: Optional[xr.DataArray] = None,
@@ -242,6 +246,7 @@ def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
         ax.set_title("")
 
     return fig, ax
+
 
 def _extend_cycle(data: xr.DataArray, loglevel: str = 'WARNING'):
     """
