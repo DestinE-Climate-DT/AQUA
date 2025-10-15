@@ -4,25 +4,29 @@
 
 # This yaml file will only have either annual or monthly
 datasets:
-  - catalog: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-monthly'
+    regrid: null
     realization: null
-  - catalog: null  
+  - catalog: 'nextgems4'  
     model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-timeseries-monthly'
+    regrid: null
     realization: null
-  - catalog: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-annual'
+    regrid: null
     realization: null
-  - catalog: null
+  - catalog: 'nextgems4'
     model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-timeseries-annual'
+    regrid: null
     realization: null
 
 # Reference

@@ -3,12 +3,12 @@
 # --model, --exp, --source, --outputdir, --catalog
 # as an example two Zonal mean
 datasets:
-  - catalog: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-zonalmean'
     realization: null
-  - catalog: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-zonalmean'
@@ -30,7 +30,7 @@ diagnostics:
     run: true
     diagnostic_name: 'EnsembleZonal'
     variable: ['so',]
-    region: ['arctic',]
+    region: ['atlantic',] 
     params:
       default:
     plot_params:

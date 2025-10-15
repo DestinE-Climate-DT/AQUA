@@ -6,11 +6,13 @@ datasets:
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
+    regrid: null
     realization: null
   - catalog: 'nextgems4' 
     model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
+    regrid: null
     realization: null
 
 setup:
@@ -31,9 +33,28 @@ diagnostics:
     variable: ['2t',]
     params:
       default:
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
     plot_params:
       default:
-        mean_title: 
-        std_title: 
-        cbar_label: 
+        projection: 'robinson'
+        projection_params: {}
+      2t:
+        vmin:
+        vmax: 
+        vmin_std: 
+        vmax_std: 
+        cmap: 'RdBu_r'
+      msl:
+        vmin: 
+        vmax: 
+        vmin_std: 
+        vmax_std: 
+      tprate:
+        vmin: 
+        vmax: 
+        vmin_std: 
+        vmax_std: 
 

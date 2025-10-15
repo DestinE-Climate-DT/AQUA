@@ -10,12 +10,6 @@ datasets:
     source: 'aqua-ocean-timeseries-levante'
     realization: ['r2', 'r3', 'r4']
     regrid: null
-# Reference
-#references:
-#  - catalog: 'obs'  
-#    model: 'ERA5'
-#    exp: 'era5'
-#    source: 'aqua-timeseries-monthly'
 
 # Reference
 references:
