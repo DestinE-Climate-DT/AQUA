@@ -42,6 +42,7 @@ class PlotHovmoller:
         self.model = self.data[0][self.vars[0]].AQUA_model
         self.exp = self.data[0][self.vars[0]].AQUA_exp
         self.region = self.data[0].AQUA_region
+        self.levels = None  # To be set when plotting timeseries
 
         self.outputsaver = OutputSaver(
             diagnostic=self.diagnostic,
@@ -87,14 +88,16 @@ class PlotHovmoller:
             cmap=self.cmap,
             text=self.texts
         )
+        formats = []
         if save_pdf:
-            format= 'pdf'
+            formats.append('pdf')
         if save_png:
-            format= 'png'
+            formats.append('png')
 
-        self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
-                       rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
-        
+        for format in formats:
+            self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+
     def plot_timeseries(self,
                         levels: list = None,
                         rebuild: bool = True, save_pdf: bool = True,
@@ -116,7 +119,6 @@ class PlotHovmoller:
         Returns:
             None
         """
-        # self.levels = levels if levels else [0, 100, 500, 1000, 2000, 3000, 4000, 5000]
         self.levels = levels
         self.set_levels()
         self.set_data_for_levels()
@@ -141,14 +143,16 @@ class PlotHovmoller:
             cmap=self.cmap,
             text=self.texts
         )
+        formats = []
         if save_pdf:
-            format= 'pdf'
+            formats.append('pdf')
         if save_png:
-            format= 'png'
+            formats.append('png')
 
-        self.save_plot(fig, diagnostic_product="timeseries", metadata=self.description,
-                       rebuild=rebuild, dpi=dpi, format=format, extra_keys = {'region': self.region.replace(" ", "_").lower()})
-        
+        for format in formats:
+            self.save_plot(fig, diagnostic_product="timeseries", metadata=self.description,
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+
     def set_levels(self):
         """
         Set the levels and corresponding labels for timeseries plots.
@@ -179,12 +183,14 @@ class PlotHovmoller:
             merged_data = xr.concat(new_data_level_list, dim='level')
             new_data_list.append(merged_data)
         self.data = new_data_list
+
     def set_line_plot_colours(self):
         """
         Set the color list for line plots based on the number of levels.
         """
         self.line_plot_colours = ['blue', 'green', 'orange', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
         self.line_plot_colours = self.line_plot_colours[:len(self.levels)]
+
     def set_suptitle(self):
         """Set the suptitle for the Hovmoller plot."""
         self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region}"
@@ -205,7 +211,6 @@ class PlotHovmoller:
                 self.title_list.append(title)
         self.logger.debug("Title list set to: %s", self.title_list)
 
-
     def set_description(self):
         """Set the description for the Hovmoller plot."""
         self.description = {}
@@ -223,7 +228,6 @@ class PlotHovmoller:
                     'full': {'vmax': 40, 'vmin': 10 },
                     'anom_t0': {'vmax': 6, 'vmin': -6, 'cbar': 'coolwarm'},
                     'std_anom_t0': {'vmax': 5, 'vmin': -5, 'cbar': 'coolwarm'},
-                    
                     'anom_tmean': {'vmax': 6, 'vmin': -6, 'cbar': 'coolwarm'},
                     'std_anom_tmean': {'vmax': 5, 'vmin': -5, 'cbar': 'coolwarm'},
                 },
@@ -232,7 +236,6 @@ class PlotHovmoller:
                     'full': {'vmax': 38, 'vmin': 33, 'cbar': 'coolwarm'},
                     'anom_t0': {'vmax': 0.9, 'vmin': -0.3, 'cbar': 'coolwarm'},
                     'std_anom_t0': {'vmax': 5, 'vmin': -6, 'cbar': 'coolwarm'},
-                    
                     'anom_tmean': {'vmax': 5, 'vmin': -5, 'cbar': 'coolwarm'},
                     'std_anom_tmean': {'vmax': 1, 'vmin': -1, 'cbar': 'coolwarm'},
                 }
@@ -244,9 +247,8 @@ class PlotHovmoller:
             for var in self.vars:
                 self.vmax.append(hovmoller_plot_dic[var][type].get('vmax'))
                 self.vmin.append(hovmoller_plot_dic[var][type].get('vmin'))
-                self.cmap.append(hovmoller_plot_dic[var][type].get('cbar', 'jet'))
-                
-        
+                self.cmap.append(hovmoller_plot_dic[var][type].get('cbar', 'jet'))      
+
     def set_data_type(self):
         """
         Set the data type list for the Hovmoller plot based on dataset attributes.
@@ -272,7 +274,7 @@ class PlotHovmoller:
                 else:
                     self.texts.append(None)
         self.logger.debug("Texts set to: %s", self.texts)
-    
+
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,
                   dpi: int = 300, format: str = 'png', metadata: dict = None):
