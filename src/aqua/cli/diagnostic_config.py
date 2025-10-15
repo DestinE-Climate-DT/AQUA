@@ -104,23 +104,43 @@ diagnostic_config = {
             'target_path': 'diagnostics/ocean3d'
         }
     ],
-    'radiation': [
+    'radiation_surface': [
         {
-            'config_file': 'config_radiation-boxplots.yaml',
-            'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation'
+            'config_file': 'config-radiation_surface-boxplots.yaml',
+            'source_path': 'config/diagnostics/radiation_surface',
+            'target_path': 'diagnostics/radiation_surface'
         },
         {
-            'config_file': 'config_radiation-biases.yaml',
-            'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation'
+            'config_file': 'config-radiation_surface-biases.yaml',
+            'source_path': 'config/diagnostics/radiation_surface',
+            'target_path': 'diagnostics/radiation_surface'
         },
         {
-            'config_file': 'config_radiation-timeseries.yaml',
-            'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation'
+            'config_file': 'config-radiation_surface-timeseries.yaml',
+            'source_path': 'config/diagnostics/radiation_surface',
+            'target_path': 'diagnostics/radiation_surface'
+        }
+    ],
+
+    'radiation_toa': [
+        {
+            'config_file': 'config-radiation_toa-boxplots.yaml',
+            'source_path': 'config/diagnostics/radiation_toa',
+            'target_path': 'diagnostics/radiation_toa'
+        },
+        {
+            'config_file': 'config-radiation_toa-biases.yaml',
+            'source_path': 'config/diagnostics/radiation_toa',
+            'target_path': 'diagnostics/radiation_toa'
+        },
+        {
+            'config_file': 'config-radiation_toa-timeseries.yaml',
+            'source_path': 'config/diagnostics/radiation_toa',
+            'target_path': 'diagnostics/radiation_toa'
         },
     ],
+
+
     'seaice': [
         {
             'config_file': 'regions.yaml',
