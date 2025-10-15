@@ -951,6 +951,7 @@ class Reader():
             self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
             return self.sample_data
 
+        # Temporarily disable unwanted settings
         with self._temporary_attrs(aggregation=None, chunks=None, 
                                    fix=False, streaming=False,
                                    preproc=None):
