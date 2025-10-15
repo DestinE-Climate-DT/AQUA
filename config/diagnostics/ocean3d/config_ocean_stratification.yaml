@@ -1,16 +1,18 @@
 datasets:
-  - catalog: mn5-phase2
-    model: IFS-NEMO
-    exp: control-1990-freeze
-    source: lra-r100-monthly
+  - catalog: null
+    model: FESOM
+    exp: hpz3
+    source: monthly-3d
     regrid: r100
+    # startdate: '1990-01'
+    # enddate: '1990-12'
     # reader_kwargs: {}
 
 references:
-  - catalog: obs
-    model: EN4
-    exp: en4
-    source: monthly
+  - catalog: null
+    model: FESOM
+    exp: hpz3
+    source: monthly-3d
     regrid: r100
 
 output:
