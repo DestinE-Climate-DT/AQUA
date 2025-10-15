@@ -376,3 +376,118 @@ class TestVerticalLines:
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_plot_vertical_lines.png')
+
+@pytest.mark.graphics
+class TestLatLonProfiles:
+    """Basic tests for the Lat-Lon Profile functions"""
+
+    def setup_method(self):
+        """Setup method to retrieve data for testing"""
+        model = 'IFS'
+        exp = 'test-tco79'
+        source = 'teleconnections'
+        var = 'skt'
+        self.reader = Reader(model=model, exp=exp, source=source, fix=True)
+        data = self.reader.retrieve(var=var)
+        
+        # Create zonal mean (average over longitude)
+        self.lat_profile = data[var].mean(dim='lon')
+        # Create meridional mean (average over latitude)
+        self.lon_profile = data[var].mean(dim='lat')
+
+    def test_plot_lat_lon_profiles_single(self, tmp_path):
+        """Test plot_lat_lon_profiles with single DataArray"""
+        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
+        
+        # Test with latitude profile
+        fig, ax = plot_lat_lon_profiles(data=self.lat_profile.isel(time=0),
+                                        title='Latitude profile test',
+                                        data_labels=['Test data'],
+                                        loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        
+        fig.savefig(tmp_path / 'test_lat_profile.png')
+        assert os.path.exists(tmp_path / 'test_lat_profile.png')
+
+    def test_plot_lat_lon_profiles_multiple(self, tmp_path):
+        """Test plot_lat_lon_profiles with multiple DataArrays"""
+        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
+        
+        data_list = [self.lat_profile.isel(time=0), 
+                     self.lat_profile.isel(time=1)]
+        
+        fig, ax = plot_lat_lon_profiles(data=data_list,
+                                        data_labels=['Time 0', 'Time 1'],
+                                        title='Multiple latitude profiles',
+                                        loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        
+        fig.savefig(tmp_path / 'test_lat_profiles_multiple.png')
+        assert os.path.exists(tmp_path / 'test_lat_profiles_multiple.png')
+
+    def test_plot_lat_lon_profiles_with_ref(self, tmp_path):
+        """Test plot_lat_lon_profiles with reference data"""
+        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
+        
+        data = self.lat_profile.isel(time=0)
+        ref = self.lat_profile.isel(time=1)
+        ref_std = self.lat_profile.std(dim='time')
+        
+        fig, ax = plot_lat_lon_profiles(data=data,
+                                        ref_data=ref,
+                                        ref_std_data=ref_std,
+                                        data_labels=['Data'],
+                                        ref_label='Reference',
+                                        title='Profile with reference',
+                                        loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        
+        fig.savefig(tmp_path / 'test_lat_profile_with_ref.png')
+        assert os.path.exists(tmp_path / 'test_lat_profile_with_ref.png')
+
+    def test_plot_lon_profile(self, tmp_path):
+        """Test plot_lat_lon_profiles with longitude profile"""
+        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
+        
+        fig, ax = plot_lat_lon_profiles(data=self.lon_profile.isel(time=0),
+                                        title='Longitude profile test',
+                                        loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        
+        fig.savefig(tmp_path / 'test_lon_profile.png')
+        assert os.path.exists(tmp_path / 'test_lon_profile.png')
+
+    def test_plot_lat_lon_profiles_no_spatial_coords(self, tmp_path):
+            """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
+            from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
+            import xarray as xr
+            import numpy as np
+            
+            # Create a DataArray without spatial coordinates
+            data_no_coords = xr.DataArray(
+                np.random.rand(10),
+                dims=['time'],
+                coords={'time': range(10)}
+            )
+            
+            # This should trigger the warning and skip the data
+            fig, ax = plot_lat_lon_profiles(data=data_no_coords,
+                                            title='No spatial coordinates test',
+                                            loglevel=loglevel)
+            
+            assert fig is not None
+            assert ax is not None
+            
+            # The plot should be empty (no lines plotted)
+            assert len(ax.lines) == 0
+            
+            fig.savefig(tmp_path / 'test_lat_profile_no_coords.png')
+            assert os.path.exists(tmp_path / 'test_lat_profile_no_coords.png')
