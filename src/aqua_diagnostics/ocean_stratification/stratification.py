@@ -109,8 +109,6 @@ class Stratification(Diagnostic):
         self.climatology = climatology
         self.logger.info("Starting stratification diagnostic run.")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
-        data_thetao = super()._check_data(data=self.data['thetao'], var='thetao', units='degreeC')
-        self.data['thetao'] = data_thetao
         if 'lev' in self.data.dims:
             self.data = self.data.rename({'lev':'level'})
         self.logger.debug(
@@ -217,7 +215,8 @@ class Stratification(Diagnostic):
         self.logger.debug("Practical salinity converted to absolute salinity.")
 
         # Convert potential temperature to conservative temperature
-        cons_thetao = convert_thetao(abs_so, self.data['thetao'])
+        data_thetao = super()._check_data(data=self.data['thetao'], var='thetao', units='degreeC')
+        cons_thetao = convert_thetao(abs_so, data_thetao)
         self.logger.debug("Potential temperature converted to conservative temperature.")
         
         # Update the dataset with converted variables
