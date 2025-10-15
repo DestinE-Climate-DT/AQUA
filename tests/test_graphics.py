@@ -1,5 +1,7 @@
 import pytest
 import os
+import numpy as np
+import xarray as xr
 import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
@@ -7,6 +9,7 @@ from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
 from aqua.graphics import plot_vertical_lines
+from aqua.graphics.seasonal_means import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
 
 loglevel = "DEBUG"
 
@@ -397,7 +400,6 @@ class TestLatLonProfiles:
 
     def test_plot_lat_lon_profiles_single(self, tmp_path):
         """Test plot_lat_lon_profiles with single DataArray"""
-        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
         
         # Test with latitude profile
         fig, ax = plot_lat_lon_profiles(data=self.lat_profile.isel(time=0),
@@ -413,7 +415,6 @@ class TestLatLonProfiles:
 
     def test_plot_lat_lon_profiles_multiple(self, tmp_path):
         """Test plot_lat_lon_profiles with multiple DataArrays"""
-        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
         
         data_list = [self.lat_profile.isel(time=0), 
                      self.lat_profile.isel(time=1)]
@@ -431,7 +432,6 @@ class TestLatLonProfiles:
 
     def test_plot_lat_lon_profiles_with_ref(self, tmp_path):
         """Test plot_lat_lon_profiles with reference data"""
-        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
         
         data = self.lat_profile.isel(time=0)
         ref = self.lat_profile.isel(time=1)
@@ -453,7 +453,6 @@ class TestLatLonProfiles:
 
     def test_plot_lon_profile(self, tmp_path):
         """Test plot_lat_lon_profiles with longitude profile"""
-        from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
         
         fig, ax = plot_lat_lon_profiles(data=self.lon_profile.isel(time=0),
                                         title='Longitude profile test',
@@ -467,9 +466,6 @@ class TestLatLonProfiles:
 
     def test_plot_lat_lon_profiles_no_spatial_coords(self, tmp_path):
             """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
-            from aqua.graphics.lat_lon_profiles import plot_lat_lon_profiles
-            import xarray as xr
-            import numpy as np
             
             # Create a DataArray without spatial coordinates
             data_no_coords = xr.DataArray(
@@ -491,3 +487,127 @@ class TestLatLonProfiles:
             
             fig.savefig(tmp_path / 'test_lat_profile_no_coords.png')
             assert os.path.exists(tmp_path / 'test_lat_profile_no_coords.png')
+
+@pytest.mark.graphics
+class TestSeasonalMeans:
+    """Basic tests for the Seasonal Means functions"""
+
+    def setup_method(self):
+        """Setup method to retrieve data for testing"""
+        model = 'IFS'
+        exp = 'test-tco79'
+        source = 'teleconnections'
+        var = 'skt'
+        self.reader = Reader(model=model, exp=exp, source=source, fix=True)
+        data = self.reader.retrieve(var=var)
+        
+        # Create seasonal means (zonal average)
+        self.data_seasonal = data[var].mean(dim='lon')
+        
+        # Create seasonal data for DJF, MAM, JJA, SON
+        # Using simple time slicing for testing purposes
+        self.djf = self.data_seasonal.isel(time=slice(0, 3)).mean(dim='time')
+        self.mam = self.data_seasonal.isel(time=slice(3, 6)).mean(dim='time')
+        self.jja = self.data_seasonal.isel(time=slice(6, 9)).mean(dim='time')
+        self.son = self.data_seasonal.isel(time=slice(9, 12)).mean(dim='time')
+
+    def test_plot_seasonal_lat_lon_profiles(self, tmp_path):
+        """Test plot_seasonal_lat_lon_profiles function"""
+        
+        seasonal_data = [self.djf, self.mam, self.jja, self.son]
+        
+        fig, axs = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data,
+                                                  title='Seasonal Profiles Test',
+                                                  data_labels=['Test data'],
+                                                  loglevel=loglevel)
+        
+        assert fig is not None
+        assert axs is not None
+        assert len(axs) == 4
+        
+        fig.savefig(tmp_path / 'test_seasonal_profiles.png')
+        assert os.path.exists(tmp_path / 'test_seasonal_profiles.png')
+
+    def test_plot_seasonal_lat_lon_profiles_with_ref(self, tmp_path):
+        """Test plot_seasonal_lat_lon_profiles with reference data"""
+        
+        seasonal_data = [self.djf, self.mam, self.jja, self.son]
+        # Use slightly modified data as reference
+        ref_data = [self.djf * 0.95, self.mam * 0.95, 
+                    self.jja * 0.95, self.son * 0.95]
+        ref_std = [self.djf.std(), self.mam.std(), 
+                   self.jja.std(), self.son.std()]
+        
+        fig, axs = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data,
+                                                  ref_data=ref_data,
+                                                  ref_std_data=ref_std,
+                                                  title='Seasonal Profiles with Reference',
+                                                  data_labels=['Data'],
+                                                  ref_label='Reference',
+                                                  loglevel=loglevel)
+        
+        assert fig is not None
+        assert axs is not None
+        
+        fig.savefig(tmp_path / 'test_seasonal_profiles_with_ref.png')
+        assert os.path.exists(tmp_path / 'test_seasonal_profiles_with_ref.png')
+
+    def test_plot_seasonal_lat_lon_profiles_multiple(self, tmp_path):
+        """Test plot_seasonal_lat_lon_profiles with multiple models"""
+        
+        # Create second set of data (slightly different)
+        djf2 = self.djf * 1.05
+        mam2 = self.mam * 1.05
+        jja2 = self.jja * 1.05
+        son2 = self.son * 1.05
+        
+        seasonal_data = [[self.djf, djf2], [self.mam, mam2], 
+                        [self.jja, jja2], [self.son, son2]]
+        
+        fig, axs = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data,
+                                                  title='Multiple Models Seasonal Profiles',
+                                                  data_labels=['Model 1', 'Model 2'],
+                                                  loglevel=loglevel)
+        
+        assert fig is not None
+        assert axs is not None
+        
+        fig.savefig(tmp_path / 'test_seasonal_profiles_multiple.png')
+        assert os.path.exists(tmp_path / 'test_seasonal_profiles_multiple.png')
+
+    def test_plot_seasonal_lat_lon_profiles_error(self):
+        """Test plot_seasonal_lat_lon_profiles with invalid input"""
+        
+        # Test with wrong number of seasons
+        with pytest.raises(ValueError):
+            plot_seasonal_lat_lon_profiles(seasonal_data=[self.djf, self.mam])
+        
+        # Test with non-list input
+        with pytest.raises(ValueError):
+            plot_seasonal_lat_lon_profiles(seasonal_data=self.djf)
+
+    def test_plot_seasonal_lat_lon_profiles_with_none_ref_std(self, tmp_path):
+        """Test plot_seasonal_lat_lon_profiles with None in ref_std_data"""
+        
+        seasonal_data = [self.djf, self.mam, self.jja, self.son]
+        ref_data = [self.djf * 0.95, self.mam * 0.95, 
+                    self.jja * 0.95, self.son * 0.95]
+        
+        # Mix of None and actual values to test the else branch (line 73)
+        # When ref_std_data contains None, it doesn't have .compute() 
+        # so it goes through the else: computed_ref_std_data.append(s) branch
+        ref_std = [None, self.mam.std(), None, self.son.std()]
+        
+        fig, axs = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data,
+                                                ref_data=ref_data,
+                                                ref_std_data=ref_std,
+                                                title='Seasonal with None ref_std',
+                                                data_labels=['Data'],
+                                                ref_label='Reference',
+                                                loglevel=loglevel)
+        
+        assert fig is not None
+        assert axs is not None
+        
+        fig.savefig(tmp_path / 'test_seasonal_none_ref_std.png')
+        assert os.path.exists(tmp_path / 'test_seasonal_none_ref_std.png')
