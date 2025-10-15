@@ -12,6 +12,7 @@ AQUA core complete list:
 - Extending evaluate formula method to exponential and parenthesis (#2327)
 
 AQUA diagnostics complete list:
+- Global Biases: add 10si as formula to config file (#2338)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
 - Gregory: more detailed description and plot labels (#2306)
 
