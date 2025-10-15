@@ -41,10 +41,7 @@ diagnostics:
     run: true
     diagnostic_name: 'radiation'
     variables:
-      - vars: ['-snlwrf', 'snswrf']
-        anomalies: true
-        add_mean_line: true
-      - vars: ['slhtf', 'ishf']
+      - vars: ['-snlwrf', 'snswrf', 'slhtf', 'ishf']
         anomalies: true
         add_mean_line: true
 
