@@ -54,22 +54,14 @@ if __name__ == '__main__':
     exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
     source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
     regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
+    startdate = config_dict['datasets'][0].get('startdate', None)
+    enddate = config_dict['datasets'][0].get('enddate', None)
     realization = get_arg(args, 'realization', None)
     if realization:
         reader_kwargs = {'realization': realization}
     else:
         reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
-
-    if 'startdate' in config_dict['datasets'][0]:
-        startdate = config_dict['datasets'][0]['startdate']
-    else:
-        startdate = None
-
-    if 'enddate' in config_dict['datasets'][0]:
-        enddate = config_dict['datasets'][0]['enddate']
-    else:
-        enddate = None
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -87,8 +79,8 @@ if __name__ == '__main__':
             var = hovmoller_config.get('var', None)
             dim_mean = hovmoller_config.get('dim_mean', ['lat', 'lon'])
             # Add the global region if not present
-            # if regions != [None]:
-            #     regions.append(None)
+            if regions != [None]:
+                regions.append(None)
             for region in regions:
                 logger.info(f"Processing region: {region}")
                 try:
@@ -107,11 +99,14 @@ if __name__ == '__main__':
                         region=region,
                         var=var,
                         dim_mean=dim_mean,
-                        anomaly_ref= "t0",
+                        anomaly_ref="t0",
                         outputdir=outputdir,
-                        # reader_kwargs=reader_kwargs,
+                        reader_kwargs=reader_kwargs,
                         rebuild=rebuild
                     )
+                except Exception as e:
+                    logger.error(f"Error processing region {region}: {e}")
+                try:
                     hov_plot = PlotHovmoller(
                         diagnostic_name=diagnostic_name,
                         data=data_hovmoller.processed_data_list,
@@ -127,8 +122,8 @@ if __name__ == '__main__':
                         save_png=save_png, dpi=dpi
                     )
                 except Exception as e:
-                    logger.error(f"Error processing region {region}: {e}")
-
+                    logger.error(f"Error plotting region {region}: {e}")
+                
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
     logger.info("OceanDrift diagnostic completed.")
