@@ -9,7 +9,7 @@ from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
 from aqua.graphics import plot_vertical_lines
-from aqua.graphics.seasonal_means import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
+from aqua.graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
 
 loglevel = "DEBUG"
 
