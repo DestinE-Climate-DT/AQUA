@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.exceptions import NoDataError
+from aqua.graphics import plot_vertical_profile
 from .base import BaseMixin
-
 
 xr.set_options(keep_attrs=True)
 
@@ -62,23 +62,27 @@ class PlotEnsembleZonal(BaseMixin):
         else:
             dataset_mean = dataset_mean
         self.logger.info("Plotting ensemble-mean Zonal-average")
-        fig1 = plt.figure(figsize=figure_size)
-        ax1 = fig1.add_subplot(1, 1, 1)
-        im = ax1.contourf(
-            dataset_mean.lat,
-            dataset_mean.lev,
-            dataset_mean,
-            cmap=cmap,
-            levels=levels,
-            extend="both",
-        )
-        ax1.set_ylim(ylim)
-        ax1.set_ylabel(ylabel, fontsize=9)
-        ax1.set_xlabel(xlabel, fontsize=9)
-        ax1.set_facecolor("grey")
-        ax1.set_title(title_mean)
-        cbar = fig1.colorbar(im, ax=ax1, shrink=0.9, extend="both")
-        cbar.set_label(cbar_label)
+
+
+        ax, fig = plot_vertical_profile(data=dataset_mean, var=var, lev_name = "plev", x_coord = "lat", cbar_label = cbar_label , cmap = cmap ,title = title_mean , title_size = 16, loglevel = self.loglevel)
+
+        #fig1 = plt.figure(figsize=figure_size)
+        #ax1 = fig1.add_subplot(1, 1, 1)
+        #im = ax1.contourf(
+        #    dataset_mean.lat,
+        #    dataset_mean.lev,
+        #    dataset_mean,
+        #    cmap=cmap,
+        #    levels=levels,
+        #    extend="both",
+        #)
+        #ax1.set_ylim(ylim)
+        #ax1.set_ylabel(ylabel, fontsize=9)
+        #ax1.set_xlabel(xlabel, fontsize=9)
+        #ax1.set_facecolor("grey")
+        #ax1.set_title(title_mean)
+        #cbar = fig1.colorbar(im, ax=ax1, shrink=0.9, extend="both")
+        #cbar.set_label(cbar_label)
         self.logger.debug(f"Saving Lev-Lon Zonal-average ensemble-mean as pdf and png")
 
         if isinstance(dataset_std, xr.Dataset):
@@ -86,23 +90,27 @@ class PlotEnsembleZonal(BaseMixin):
         else:
             dataset_std = dataset_std
         self.logger.info("Plotting ensemble-STD Zonal-average")
-        fig2 = plt.figure(figsize=(figure_size[0], figure_size[1]))
-        ax2 = fig2.add_subplot(1, 1, 1)
-        im = ax2.contourf(
-            dataset_std.lat,
-            dataset_std.lev,
-            dataset_std,
-            cmap=cmap,
-            levels=levels,
-            extend="both",
-        )
-        ax2.set_ylim(ylim)
-        ax2.set_ylabel(ylabel, fontsize=9)
-        ax2.set_xlabel(xlabel, fontsize=9)
-        ax2.set_facecolor("grey")
-        ax2.set_title(title_std)
-        cbar = fig2.colorbar(im, ax=ax2, shrink=0.9, extend="both")
-        cbar.set_label(cbar_label)
+        
+
+        ax2, fig2 = plot_vertical_profile(data=dataset_std, var=var, lev_name = "plev", x_coord = "lat", cbar_label = cbar_label , cmap = cmap ,title = title_std , title_size = 16, loglevel = self.loglevel)
+
+        #fig2 = plt.figure(figsize=(figure_size[0], figure_size[1]))
+        #ax2 = fig2.add_subplot(1, 1, 1)
+        #im = ax2.contourf(
+        #    dataset_std.lat,
+        #    dataset_std.lev,
+        #    dataset_std,
+        #    cmap=cmap,
+        #    levels=levels,
+        #    extend="both",
+        #)
+        #ax2.set_ylim(ylim)
+        #ax2.set_ylabel(ylabel, fontsize=9)
+        #ax2.set_xlabel(xlabel, fontsize=9)
+        #ax2.set_facecolor("grey")
+        #ax2.set_title(title_std)
+        #cbar = fig2.colorbar(im, ax=ax2, shrink=0.9, extend="both")
+        #cbar.set_label(cbar_label)
         self.logger.debug(f"Saving Lev-Lon Zonal-average ensemble-STD as pdf and png")
         
         # Saving plots

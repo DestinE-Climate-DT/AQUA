@@ -63,9 +63,6 @@ class PlotEnsembleLatLon(BaseMixin):
         self.source_list = source_list
         self.region = region
 
-        self.dataset_mean = dataset_mean
-        self.dataset_std = dataset_std
-
         self.outputdir = outputdir 
         self.loglevel = loglevel
 
@@ -81,7 +78,7 @@ class PlotEnsembleLatLon(BaseMixin):
             outputdir=self.outputdir,
         )
 
-    def plot(self, var: str = None, description=None, dpi=300, title_mean=None, title_std=None, save_pdf=True, save_png=True, vmin_mean=None, vmax_mean=None, vmin_std=None, vmax_std=None, proj='robinson', proj_params={}, transform_first=False, cyclic_lon=False, contour=True, coastlines=True, cbar_label=None, units=None):
+    def plot(self, var: str = None, dataset_mean=None, dataset_std=None, long_name= None, description=None, dpi=300, title_mean=None, title_std=None, save_pdf=True, save_png=True, vmin_mean=None, vmax_mean=None, vmin_std=None, vmax_std=None, proj='robinson', proj_params={}, transform_first=False, cyclic_lon=False, contour=True, coastlines=True, cbar_label=None, units=None):
         """
         Args:
             var (str): Variable name.
@@ -102,35 +99,44 @@ class PlotEnsembleLatLon(BaseMixin):
         """
 
         self.logger.info("Plotting the ensemble computation")
-        if (self.dataset_mean is None) or (self.dataset_std is None):
+        if (dataset_mean is None) or (dataset_std is None):
             raise NoDataError("No data given to the plotting function")
         if units is None:
-            units = self.dataset_mean.units
-            #self.units = self.dataset_mean[self.var].units
-        if cbar_label is None:
+            units = dataset_mean.attrs.get("units", None)
+            #units = dataset_mean[var].units
+        if cbar_label is None and units is not None:
+            print(var)
+            print(units)
             cbar_label = var + " in " + units
 
         if isinstance(self.model, list):
             model_str = " ".join(str(x) for x in self.model)
         else:
-            model_str = str(self.model) 
-
-        if title_mean is None: title_mean = "Ensemble mean of " + model_str + " for " + var + " " + units 
-        if title_std is None: title_std = "Ensemble standard deviation of " + model_str + " for " + var + " " + units
+            model_str = str(self.model)
+        if long_name is None: 
+            long_name = dataset_mean.attrs.get("long_name", None)
+            if long_name is None: long_name = var
+            print(long_name)
+        if units is not None:
+            if title_mean is None: title_mean = "Ensemble mean of " + model_str + " for " + long_name + " " + units 
+            if title_std is None: title_std = "Ensemble standard deviation of " + model_str + " for " + long_name + " " + units
+        else:
+            if title_mean is None: title_mean = "Ensemble mean of " + model_str + " for " + long_name
+            if title_std is None: title_std = "Ensemble standard deviation of " + model_str + " for " + long_name
 
         proj = get_projection(proj, **proj_params)
 
         # mean plot
-        if isinstance(self.dataset_mean, xr.Dataset):
-            self.dataset_mean = self.dataset_mean[var]
+        if isinstance(dataset_mean, xr.Dataset):
+            dataset_mean = dataset_mean[var]
         else:
-            self.dataset_mean = self.dataset_mean
+            dataset_mean = dataset_mean
         if vmin_mean is None:
-            vmin_mean = self.dataset_mean.values.min()
+            vmin_mean = dataset_mean.values.min()
         if vmax_mean is None:
-            vmax_mean = self.dataset_mean.values.max()
+            vmax_mean = dataset_mean.values.max()
         fig1, ax1 = plot_single_map(
-            self.dataset_mean,
+            dataset_mean,
             proj=proj,
             proj_params=proj_params,
             contour=contour,
@@ -147,19 +153,19 @@ class PlotEnsembleLatLon(BaseMixin):
         self.logger.debug(f"Saving 2D map of mean")
 
         # STD plot
-        if isinstance(self.dataset_std, xr.Dataset):
-            self.dataset_std = self.dataset_std[var]
+        if isinstance(dataset_std, xr.Dataset):
+            dataset_std = dataset_std[var]
         else:
-            self.dataset_std = self.dataset_std
+            dataset_std = dataset_std
         if vmin_std is None:
-            vmin_std = self.dataset_std.values.min()
+            vmin_std = dataset_std.values.min()
         if vmax_std is None:
-            vmax_std = self.dataset_std.values.max()
+            vmax_std = dataset_std.values.max()
         if vmin_std == vmax_std:
             self.logger.info("STD is Zero everywhere")
             return {'mean_plot': [fig1, ax1]}
         fig2, ax2 = plot_single_map(
-            self.dataset_std,
+            dataset_std,
             proj=proj,
             proj_params=proj_params,
             contour=contour,

@@ -264,14 +264,6 @@ if __name__ == "__main__":
 
                 ts_plot = PlotEnsembleTimeseries(
                     **plot_class_arguments,
-                    monthly_data=ts.monthly_data,
-                    monthly_data_mean=ts.monthly_data_mean,
-                    monthly_data_std=ts.monthly_data_std,
-                    annual_data=ts.annual_data,
-                    annual_data_mean=ts.annual_data_mean,
-                    annual_data_std=ts.annual_data_std,
-                    ref_monthly_data=monthly_ref_data,
-                    ref_annual_data=annual_ref_data,
                     outputdir=outputdir,
                     loglevel=loglevel,
                 )
@@ -279,6 +271,14 @@ if __name__ == "__main__":
                 # PlotEnsembleTimeseries plot options
                 plot_arguments = {
                     "var": variable,
+                    "monthly_data": ts.monthly_data,
+                    "monthly_data_mean": ts.monthly_data_mean,
+                    "monthly_data_std": ts.monthly_data_std,
+                    "annual_data":ts.annual_data,
+                    "annual_data_mean": ts.annual_data_mean,
+                    "annual_data_std": ts.annual_data_std,
+                    "ref_monthly_data": monthly_ref_data,
+                    "ref_annual_data": annual_ref_data,
                     "save_pdf": save_pdf,
                     "save_png": save_png,
                     "plot_ensemble_members": plot_ensemble_members,

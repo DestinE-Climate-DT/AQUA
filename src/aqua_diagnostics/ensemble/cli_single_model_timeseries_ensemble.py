@@ -203,20 +203,23 @@ if __name__ == "__main__":
                     if ts.monthly_data is not None or ts.monthly_data_mean is not None or ts.monthly_data_std is not None or ts.annual_data is not None or ts.annual_data_mean is not None or ts.annual_data_std is not None or ref_data is not None:
                         ts_plot = PlotEnsembleTimeseries(
                             **plot_class_arguments,
-                            monthly_data=ts.monthly_data,
-                            monthly_data_mean=ts.monthly_data_mean,
-                            monthly_data_std=ts.monthly_data_std,
-                            #annual_data=ts.annual_data,
-                            #annual_data_mean=ts.annual_data_mean,
-                            #annual_data_std=ts.annual_data_std,
-                            ref_monthly_data=ref_data,
                             outputdir=outputdir,
                             loglevel=loglevel,
                         )
 
                         # PlotEnsembleTimeseries plot options
+                        # Uncomment the following option and provide their values
+                        # as xarray.DataArray
                         plot_arguments = {
                             "var": variable,
+                            "monthly_data": ts.monthly_data,
+                            "monthly_data_mean": ts.monthly_data_mean,
+                            "monthly_data_std": ts.monthly_data_std,
+                            #"annual_data": ts.annual_data,
+                            #"annual_data_mean": ts.annual_data_mean,
+                            #"annual_data_std": ts.annual_data_std,
+                            "ref_monthly_data": ref_data,
+                            #"ref_annual_data": ref_annual_data
                             "save_pdf": save_pdf,
                             "save_png": save_png,
                             "plot_ensemble_members": plot_ensemble_members,

@@ -69,27 +69,28 @@ class BaseMixin(Diagnostic):
 
         # To handle None case
         self.None_catalog = ["ensemble_catalog"]
-        None_model = ["ensemble_model"]
-        None_exp = ["ensemble_exp"]
-        None_source = ["ensemble_source"]
+        self.None_model = ["ensemble_model"]
+        self.None_exp = ["ensemble_exp"]
+        self.None_source = ["ensemble_source"]
 
         # Multi catalog/model/exp/source
         self.multi_catalog = ["multi-catalog"]
-        multi_model = ["multi-model"]
-        multi_exp = ["multi-exp"]
-        multi_source = ["multi-source"]
+        self.multi_model = ["multi-model"]
+        self.multi_exp = ["multi-exp"]
+        self.multi_source = ["multi-source"]
 
         # Handling catalog name
         self.catalog_list = catalog_list
-        if catalog_list is None:
+        if self.catalog_list is None:
             self.logger.info("No catalog names given. Assigning it to catalog_name.")
             self.catalog = self.None_catalog
+            self.catalog_list = self.None_catalog
         else:
-            if isinstance(catalog_list, str): catalog_list = [catalog_list]
-            catalog_counts = dict(Counter(catalog_list))
+            if isinstance(self.catalog_list, str): self.catalog_list = [self.catalog_list]
+            catalog_counts = dict(Counter(self.catalog_list))
             if len(catalog_counts.keys()) <= 1:
                 self.logger.info("Catalog name is given. Single-model ensemble is given.")
-                catalog_str_list = [str(item) for item in catalog_list]
+                catalog_str_list = [str(item) for item in self.catalog_list]
                 if catalog_str_list[0] is None: catalog_str_list[0] = self.None_catalog
                 #if catalog_str_list[0] == "None": catalog_str_list[0] = self.None_catalog 
                 self.catalog = catalog_str_list[0]
@@ -103,52 +104,55 @@ class BaseMixin(Diagnostic):
         self.model_list = model_list
         if model_list is None:
             self.logger.info("No model name is given. Assigning it to model_name")
-            self.model = None_model
+            self.model = self.None_model
+            self.model_list = self.None_model
         else:
-            if isinstance(model_list, str): model_list = [model_list]
-            model_counts = dict(Counter(model_list))
+            if isinstance(self.model_list, str): self.model_list = [self.model_list]
+            model_counts = dict(Counter(self.model_list))
             if len(model_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-model ensemble is given.")
-                model_str_list = [str(item) for item in model_list]
-                if model_str_list[0] == "None": model_str_list[0] = None_model
+                model_str_list = [str(item) for item in self.model_list]
+                if model_str_list[0] == "None": model_str_list[0] = self.None_model
                 self.model = model_str_list[0]
             else:
                 self.logger.info("Multi-model ensmeble is given. Assigning model name to multi-model")
-                self.model = multi_model
+                self.model = self.multi_model
 
         # Handling exp name:
         self.exp_list = exp_list
-        if exp_list is None:
+        if self.exp_list is None:
             self.logger.info("No exp name is given. Assigning it to exp_name")
-            self.exp = None_exp
+            self.exp = self.None_exp
+            self.exp_list = self.None_exp
         else:
-            if isinstance(exp_list, str): exp_list = [exp_list]
-            exp_counts = dict(Counter(exp_list))
+            if isinstance(self.exp_list, str): self.exp_list = [self.exp_list]
+            exp_counts = dict(Counter(self.exp_list))
             if len(exp_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-exp ensemble is given.")
-                exp_str_list = [str(item) for item in exp_list]
-                if exp_str_list[0] == "None": exp_str_list[0] = None_exp
+                exp_str_list = [str(item) for item in self.exp_list]
+                if exp_str_list[0] == "None": exp_str_list[0] = self.None_exp
                 self.exp = exp_str_list[0] 
             else:
                 self.logger.info("Multi-exp ensmeble is given. Assigning exp name to multi-exp")
-                self.exp = multi_exp
+                self.exp = self.multi_exp
 
         # Handling source name:
         self.source_list = source_list
         if source_list is None:
             self.logger.info("No source name is given. Assigning it to source_name")
-            self.source = None_source
+            self.source = self.None_source
+            self.source_list = self.None_source
         else:
-            if isinstance(source_list, str): source_list = [source_list]
-            source_counts = dict(Counter(source_list))
+            if isinstance(self.source_list, str): self.source_list = [self.source_list]
+            source_counts = dict(Counter(self.source_list))
             if len(source_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-source ensemble is given.")
-                source_str_list = [str(item) for item in source_list]
-                if source_str_list[0] == "None": source_str_list[0] = None_source
+                source_str_list = [str(item) for item in self.source_list]
+                if source_str_list[0] == "None": source_str_list[0] = self.None_source
                 self.source = source_str_list[0]
             else:
                 self.logger.info("Multi-source ensmeble is given. Assigning source name to multi-source")
-                self.source = multi_source
+                self.source = self.multi_source
 
         super().__init__(
             catalog=self.catalog,
@@ -254,7 +258,7 @@ class BaseMixin(Diagnostic):
             enddate = enddate.strftime("%Y-%m-%d") 
             metadata.update({"enddate": enddate})
 
-        if self.catalog is not None and self.model is not None and self.exp is not None and str(self.catalog) is not str(self.None_catalog) and str(self.catalog) is not str(self.multi_catalog):
+        if self.catalog is not None and self.model is not None and self.exp is not None and str(self.catalog) != str(self.None_catalog) and str(self.catalog) != str(self.multi_catalog):
             outputsaver = OutputSaver(
                 diagnostic=self.diagnostic_name,
                 #diagnostic_product=self.diagnostic_product,
@@ -274,9 +278,9 @@ class BaseMixin(Diagnostic):
                 extra_keys=extra_keys,
             )
         else:
-            data.attrs = {"AQUA diagnostic": self.diagnostic_product, "AQUA catalog": self.catalog_list, "model": self.model_list, "experiment": self.exp_list, "description": description, "metadata": metadata}  
-            data.to_netcdf(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.nc")
-            self.logger.info(f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data_name}_{var}.nc")
+            data.attrs = {"AQUA diagnostic": self.diagnostic_product, "AQUA catalog": self.catalog_list, "model": self.model_list, "experiment": self.exp_list, "description": description}  
+            data.to_netcdf(f"{self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc")
+            self.logger.info(f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc")
 
     # Save figure
     def save_figure(self, var, fig=None, fig_std=None, startdate=None, enddate=None, description=None, format="png"):
@@ -398,3 +402,4 @@ class BaseMixin(Diagnostic):
                 extra_keys.update(metadata)
                 fig_std.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png",bbox_inches="tight", metadata=extra_keys)
                 self.logger.info(f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png")
+
