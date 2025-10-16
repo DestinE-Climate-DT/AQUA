@@ -83,15 +83,10 @@ def plot_multi_hovmoller(
 
             fig, ax = plot_hovmoller(
                 data=maps[j][var],
-                invert_space_coord=invert_space_coord,
-                sym=sym,
-                contour=contour,
                 box_text=False,
                 dim=None,
-                vmin=vmin[k] if vmin else None,
-                vmax=vmax[k] if vmax else None,
-                cmap=cmap[k] if cmap else None,
                 nlevels=nlevels,
+                invert_space_coord = True,
                 text=text[k] if text else None,
                 cbar=False,
                 title=titles[k] if titles else None,
