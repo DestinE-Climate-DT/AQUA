@@ -136,7 +136,6 @@ class TestPlotLatLonProfilesLongterm:
             format='png'
         )
         
-        # Check files were created
         files = list(tmp_path.rglob('*.png'))
         assert len(files) > 0
     
@@ -148,7 +147,6 @@ class TestPlotLatLonProfilesLongterm:
             format='png'
         )
         
-        # Check files were created
         files = list(tmp_path.rglob('*.png'))
         assert len(files) > 0
 
@@ -239,7 +237,6 @@ class TestPlotLatLonProfilesSeasonal:
             format='png'
         )
         
-        # Check files were created
         files = list(tmp_path.rglob('*.png'))
         assert len(files) > 0
     
@@ -256,11 +253,9 @@ class TestPlotLatLonProfilesSeasonal:
             
     def test_plot_method_delegates_to_seasonal(self, tmp_path):
         """Test that plot() method correctly delegates to plot_seasonal_lines() for seasonal data"""
-        # Call plot() method instead of plot_seasonal_lines() directly
+
         data_labels = self.plotter.set_data_labels()
         title = self.plotter.set_title()
-        
-        # This should internally call plot_seasonal_lines()
         fig, axs = self.plotter.plot(
             data_labels=data_labels,
             title=title
@@ -292,7 +287,6 @@ class TestPlotLatLonProfilesSeasonal:
             loglevel=loglevel
         )
         
-        # Check that std dates were extracted
         assert plotter.std_startdate == '1990-01-01'
         assert plotter.std_enddate == '1995-12-31'
         
@@ -454,6 +448,5 @@ class TestPlotLatLonProfilesErrors:
             format='pdf'
         )
         
-        # Check PDF files were created
         files = list(tmp_path.rglob('*.pdf'))
         assert len(files) > 0

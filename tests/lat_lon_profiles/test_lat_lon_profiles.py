@@ -90,7 +90,7 @@ class TestLatLonProfilesZonal:
         self.diagnostic.save_netcdf(freq='seasonal', outputdir=str(tmp_path), rebuild=True)
         
         # Check that files were created somewhere in tmp_path (including subdirectories)
-        files = list(tmp_path.rglob('*.nc'))  # rglob searches recursively
+        files = list(tmp_path.rglob('*.nc')) 
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
     
     def test_save_longterm_netcdf(self, tmp_path):
@@ -99,7 +99,6 @@ class TestLatLonProfilesZonal:
         self.diagnostic.compute_dim_mean(freq='longterm')
         self.diagnostic.save_netcdf(freq='longterm', outputdir=str(tmp_path), rebuild=True)
         
-        # Check that file was created somewhere in tmp_path
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
     
@@ -112,9 +111,8 @@ class TestLatLonProfilesZonal:
         
         # Check that files were created (should include both mean and std files)
         files = list(tmp_path.rglob('*.nc'))
+
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
-        
-        # Verify std_seasonal was computed
         assert self.diagnostic.std_seasonal is not None
 
     def test_save_longterm_with_std(self, tmp_path):
@@ -126,9 +124,8 @@ class TestLatLonProfilesZonal:
         
         # Check that files were created (should include both mean and std files)
         files = list(tmp_path.rglob('*.nc'))
+
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
-        
-        # Verify std_annual was computed
         assert self.diagnostic.std_annual is not None
 
     def test_run_seasonal(self, tmp_path):
@@ -144,7 +141,6 @@ class TestLatLonProfilesZonal:
         assert self.diagnostic.seasonal is not None
         assert self.diagnostic.std_seasonal is not None
         
-        # Check files were created
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
     
@@ -161,7 +157,6 @@ class TestLatLonProfilesZonal:
         assert self.diagnostic.longterm is not None
         assert self.diagnostic.std_annual is not None
         
-        # Check files were created
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
     
@@ -180,7 +175,6 @@ class TestLatLonProfilesZonal:
         assert self.diagnostic.std_seasonal is not None
         assert self.diagnostic.std_annual is not None
         
-        # Check files were created
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
 
@@ -233,7 +227,6 @@ class TestLatLonProfilesMeridional:
         assert self.diagnostic.seasonal is not None
         assert self.diagnostic.longterm is not None
         
-        # Check files were created
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
 
@@ -271,13 +264,12 @@ class TestLatLonProfilesWithRegion:
         self.diagnostic.compute_dim_mean(freq='seasonal')
         self.diagnostic.save_netcdf(freq='seasonal', outputdir=str(tmp_path), rebuild=True)
         
-        # Check files were created
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
     
     def test_compute_with_region_name(self):
         """Test computation with named region"""
-        # Use a specific region name that should have AQUA_region attribute
+
         diagnostic = LatLonProfiles(
             model='IFS',
             exp='test-tco79',
@@ -314,7 +306,6 @@ class TestLatLonProfilesWithRegion:
         diagnostic.retrieve(var='skt')
         diagnostic.compute_dim_mean(freq='longterm')
         
-        # Check that AQUA_region attribute is set for longterm
         assert diagnostic.longterm is not None
         assert 'AQUA_region' in diagnostic.longterm.attrs
         assert diagnostic.longterm.attrs['AQUA_region'] == 'Tropics'
@@ -337,7 +328,6 @@ class TestLatLonProfilesWithRegion:
         diagnostic.compute_std(freq='seasonal')
         diagnostic.save_netcdf(freq='seasonal', outputdir=str(tmp_path), rebuild=True)
         
-        # Check files were created
         files = list(tmp_path.rglob('*.nc'))
         assert len(files) > 0, f"No .nc files found in {tmp_path} or subdirectories"
     

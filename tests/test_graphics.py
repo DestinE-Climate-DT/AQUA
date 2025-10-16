@@ -382,7 +382,7 @@ class TestVerticalLines:
 
 @pytest.mark.graphics
 class TestLatLonProfiles:
-    """Basic tests for the Lat-Lon Profile functions"""
+    """Basic tests for the lat_lon_profiles function"""
 
     def setup_method(self):
         """Setup method to retrieve data for testing"""
@@ -393,9 +393,7 @@ class TestLatLonProfiles:
         self.reader = Reader(model=model, exp=exp, source=source, fix=True)
         data = self.reader.retrieve(var=var)
         
-        # Create zonal mean (average over longitude)
         self.lat_profile = data[var].mean(dim='lon')
-        # Create meridional mean (average over latitude)
         self.lon_profile = data[var].mean(dim='lat')
 
     def test_plot_lat_lon_profiles_single(self, tmp_path):
@@ -501,7 +499,6 @@ class TestSeasonalMeans:
         self.reader = Reader(model=model, exp=exp, source=source, fix=True)
         data = self.reader.retrieve(var=var)
         
-        # Create seasonal means (zonal average)
         self.data_seasonal = data[var].mean(dim='lon')
         
         # Create seasonal data for DJF, MAM, JJA, SON
@@ -593,9 +590,7 @@ class TestSeasonalMeans:
         ref_data = [self.djf * 0.95, self.mam * 0.95, 
                     self.jja * 0.95, self.son * 0.95]
         
-        # Mix of None and actual values to test the else branch (line 73)
-        # When ref_std_data contains None, it doesn't have .compute() 
-        # so it goes through the else: computed_ref_std_data.append(s) branch
+        # Introduce None in ref_std_data
         ref_std = [None, self.mam.std(), None, self.son.std()]
         
         fig, axs = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data,
