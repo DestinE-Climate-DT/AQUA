@@ -108,8 +108,8 @@ def pandas_freq_to_string(freq: str) -> str:
         'W': 'weekly',
         'weekly': 'weekly',
         # Seasonal
-        'Q-NOV': 'seasonal',
-        'Q': 'seasonal',
+        'QE-NOV': 'seasonal',
+        'QE': 'seasonal',
         # Monthly
         '1MS': 'monthly',
         'MS': 'monthly',
@@ -263,3 +263,5 @@ def int_month_name(month, abbreviated=False):
     name = ["January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December"][month - 1]
     return name[:3] if abbreviated else name
+
+
