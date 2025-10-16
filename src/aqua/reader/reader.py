@@ -696,7 +696,18 @@ class Reader():
 
 
     def reader_esm(self, esmcat, var, startdate=None, enddate=None):
-        """Reads intake-esm entry. Returns a dataset."""
+        """
+        Read intake-esm entry. Returns a dataset.
+
+        Args:
+            esmcat (intake_esm.core.esm_datastore): The intake-esm catalog datastore to read from.
+            var (str or list): Variable(s) to retrieve. If None, uses the query from catalog metadata.
+            startdate (str, optional): The starting date for filtering the data. Defaults to None.
+            enddate (str, optional): The final date for filtering the data. Defaults to None.
+
+        Returns:
+            xarray.Dataset: The dataset retrieved from the intake-esm catalog.
+        """
         cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
         query = esmcat.metadata['query']
         if var:
@@ -872,6 +883,8 @@ class Reader():
             var (list or str): Variable to load
             loadvar (list of str): List of variables to load
             keep (str, optional): which duplicate entry to keep ("first" (default), "last" or None)
+            startdate (str, optional): The starting date for filtering the data. Defaults to None
+            enddate (str, optional): The final date for filtering the data. Defaults to None
 
         Returns:
             Dataset
