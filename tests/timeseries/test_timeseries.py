@@ -1,6 +1,7 @@
 import os
 import pytest
 import xarray as xr
+from aqua import Reader
 from aqua.diagnostics.timeseries import Timeseries, PlotTimeseries
 
 # pytest approximation, to bear with different machines
@@ -37,19 +38,23 @@ class TestTimeseries:
                        catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                        region='topolinia', loglevel=loglevel, regrid=self.regrid)
 
-    def test_monthly_annual_with_region(self, tmp_path):
+    def test_all_freq_with_region(self, tmp_path):
         ts = Timeseries(diagnostic_name=self.diagnostic_name,
                         catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
                         region=self.region, loglevel=loglevel, startdate='19900101', enddate='19911231',
                         regrid=self.regrid)
-        
-        ts.run(var=self.var, freq=['monthly', 'annual'], outputdir=tmp_path, std=True)
+
+        ts.run(var=self.var, freq=['monthly', 'annual'], outputdir=tmp_path, std=True, create_catalog_entry=True)
 
         assert ts.lon_limits == [-180, 180]
         assert ts.lat_limits == [-15, 15]
 
+        reader = Reader(catalog=self.catalog, model=self.model, exp=self.exp,
+                        source=f'aqua-{self.diagnostic_name}-timeseries',
+                        freq='monthly', loglevel=loglevel, areas=False)
+        data = reader.retrieve()[self.var]
         assert isinstance(ts.data, xr.DataArray)
-        assert ts.monthly.values[0] == pytest.approx(60.145472982004186, rel=approx_rel)
+        assert data.values[0] == pytest.approx(60.145472982004186, rel=approx_rel)
 
         filename = f'{self.diagnostic_name}.timeseries.{self.catalog}.{self.model}.{self.exp}.r1.{self.var}.monthly.{self.region}.nc'
         file = os.path.join(tmp_path, 'netcdf', filename)
@@ -82,7 +87,7 @@ class TestTimeseries:
     def test_hourly_daily_with_region(self):
         ts = Timeseries(diagnostic_name=self.diagnostic_name,
                         catalog=self.catalog, model=self.model, exp=self.exp, source=self.source,
-                        region=self.region, loglevel=loglevel, startdate='19900101', enddate='19900102',
+                        region=self.region, loglevel=loglevel, startdate='19900101', enddate='19900301',
                         regrid=self.regrid)
 
         ts.retrieve(var=self.var)

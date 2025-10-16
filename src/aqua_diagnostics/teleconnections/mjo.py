@@ -1,7 +1,6 @@
 import xarray as xr
 from aqua.graphics import plot_hovmoller
 from aqua.logger import log_configure
-from aqua.util import area_selection, to_list
 from aqua.diagnostics.core import OutputSaver
 from .base import BaseMixin
 
@@ -81,7 +80,7 @@ class MJO(BaseMixin):
         lon = [self.definition['lonW'], self.definition['lonE']]
 
         # Selecting the MJO box
-        data_sel = area_selection(self.data, lat=lat, lon=lon, drop=True)
+        data_sel = self.reader.select_area(self.data, lat=lat, lon=lon, drop=True)
 
         # Evaluating anomalies
         data_mean = data_sel.mean(dim='time')
@@ -143,9 +142,8 @@ class PlotMJO():
                                  invert_axis=invert_axis,
                                  invert_time=invert_time,
                                  nlevels=nlevels,
-                                 cmap=cmap,
+                                 cmap=cmap, return_fig=True,
                                  vmin=vmin, vmax=vmax,
-                                 display=False, return_fig=True,
                                  loglevel=self.loglevel)
         
         return fig

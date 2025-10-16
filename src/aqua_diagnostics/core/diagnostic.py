@@ -1,32 +1,34 @@
 import os
 import xarray as xr
 from aqua import Reader
+from aqua.exceptions import NotEnoughDataError
 from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from aqua.util import load_yaml, convert_units
-from aqua.util import area_selection
+from aqua.util import xarray_to_pandas_freq, pandas_freq_to_string
+from aqua.util import DEFAULT_REALIZATION
 from .output_saver import OutputSaver
 
 
 class Diagnostic():
 
-    def __init__(self, catalog: str = None, model: str = None,
-                 exp: str = None, source: str = None, regrid: str = None,
-                 startdate: str = None, enddate: str = None, loglevel: str = 'WARNING'):
+    def __init__(self, model: str, exp: str, source: str,
+                 catalog: str | None = None, regrid: str | None = None,
+                 startdate: str | None = None, enddate: str | None = None, loglevel: str = 'WARNING'):
         """
         Initialize the diagnostic class. This is a general purpose class that can be used
         by the diagnostic classes to retrieve data from a single model and to save the data
         to a netcdf file. It is not a working diagnostic class by itself.
 
         Args:
-            catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
             model (str): The model to be used.
             exp (str): The experiment to be used.
             source (str): The source to be used.
-            regrid (str): The target grid to be used for regridding. If None, no regridding will be done.
-            startdate (str): The start date of the data to be retrieved.
-                             If None, all available data will be retrieved.
-            enddate (str): The end date of the data to be retrieved.
+            catalog (str): The catalog to be used. If None, the catalog will be determined by the Reader.
+            regrid (str | None): The target grid to be used for regridding. If None, no regridding will be done.
+            startdate (str | None): The start date of the data to be retrieved.
+                        If None, all available data will be retrieved.
+            enddate (str | None): The end date of the data to be retrieved.
                            If None, all available data will be retrieved.
             loglevel (str): The log level to be used. Default is 'WARNING'.
         """
@@ -37,9 +39,7 @@ class Diagnostic():
         self.model = model
         self.exp = exp
         self.source = source
-
-        if self.model is None or self.exp is None or self.source is None:
-            raise ValueError('Model, experiment and source must be provided')
+        self.realization = None
 
         self.regrid = regrid
         self.startdate = startdate
@@ -48,13 +48,15 @@ class Diagnostic():
         # Data to be retrieved
         self.data = None
 
-    def retrieve(self, var: str = None, reader_kwargs: dict = {}):
+    def retrieve(self, var: str | None = None, reader_kwargs: dict = {},
+                 months_required: int | None = None):
         """
         Retrieve the data from the model.
 
         Args:
-            var (str): The variable to be retrieved. If None, all variables will be retrieved.
+            var (str | None): The variable to be retrieved. If None, all variables will be retrieved.
             reader_kwargs (dict): Additional keyword arguments to be passed to the Reader.
+            months_required (int | None): The number of months of data required. If None, no check will be performed.
 
         Attributes:
             self.data: The data retrieved from the model. If return_data is True, the data will be returned.
@@ -63,7 +65,11 @@ class Diagnostic():
         self.data, self.reader, self.catalog = self._retrieve(model=self.model, exp=self.exp, source=self.source,
                                                               var=var, catalog=self.catalog, startdate=self.startdate,
                                                               enddate=self.enddate, regrid=self.regrid,
-                                                              loglevel=self.logger.level, reader_kwargs=reader_kwargs)
+                                                              reader_kwargs=reader_kwargs, months_required=months_required,
+                                                              loglevel=self.logger.level)
+
+        self.realization = reader_kwargs['realization'] if 'realization' in reader_kwargs else DEFAULT_REALIZATION
+
         if self.regrid is not None:
             self.logger.info(f'Regridded data to {self.regrid} grid')
         if self.startdate is None:
@@ -74,7 +80,8 @@ class Diagnostic():
             self.logger.debug(f'End date: {self.enddate}')
 
     def save_netcdf(self, data, diagnostic: str, diagnostic_product: str = None,
-                    outputdir: str = '.', rebuild: bool = True, **kwargs):
+                    outputdir: str = '.', rebuild: bool = True,
+                    create_catalog_entry: bool = False, dict_catalog_entry: dict = None, **kwargs):
         """
         Save the data to a netcdf file.
 
@@ -84,6 +91,9 @@ class Diagnostic():
             diagnostic_product (str): The diagnostic product.
             outputdir(str): The path to save the data. Default is '.'.
             rebuild (bool): If True, the netcdf file will be rebuilt. Default is True.
+            create_catalog_entry (bool): If True, a catalog entry will be created. Default is False.
+            dict_catalog_entry (dict, optional): List of jinja and wildcard variables. Default is None.
+                                                 Keys are 'jinjalist' and 'wildcardlist'.
 
         Keyword Args:
             **kwargs: Additional keyword arguments to be passed to the OutputSaver.save_netcdf method.
@@ -93,13 +103,18 @@ class Diagnostic():
 
         outputsaver = OutputSaver(diagnostic=diagnostic, 
                                   catalog=self.catalog, model=self.model, exp=self.exp,
-                                  outputdir=outputdir, loglevel=self.logger.level)
+                                  realization=self.realization,
+                                  outputdir=outputdir, loglevel=self.loglevel)
 
-        outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, **kwargs)
+
+        outputsaver.save_netcdf(dataset=data, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                create_catalog_entry=create_catalog_entry, dict_catalog_entry=dict_catalog_entry,
+                                **kwargs)
 
     @staticmethod
     def _retrieve(model: str, exp: str, source: str, var: str = None, catalog: str = None,
                   startdate: str = None, enddate: str = None, regrid: str = None,
+                  months_required: int | None = None,
                   reader_kwargs: dict = {}, loglevel: str = 'WARNING'):
         """
         Static method to retrieve data and return everything instead of updating class
@@ -116,6 +131,7 @@ class Diagnostic():
             enddate (str): The end date of the data to be retrieved.
                            If None, all available data will be retrieved.
             regrid (str): The target grid to be used for regridding. If None, no regridding will be done.
+            months_required (int or None): The minimal amount of months to have results. If they are not met, a NotEnoughDataError will be raised.
             reader_kwargs (dict): Additional keyword arguments to be passed to the Reader.
             loglevel (str): The log level to be used. Default is 'WARNING'.
 
@@ -133,6 +149,26 @@ class Diagnostic():
         # If the data is empty, raise an error
         if not data:
             raise ValueError(f"No data found for {model} {exp} {source} with variable {var}")
+
+        # If there is a month requirement we infer the data frequency,
+        # then we check how many months are available in the data
+        # and finally raise an error if the requirement is not met.
+        if months_required is not None:
+            timedelta = xarray_to_pandas_freq(data)
+            freq = pandas_freq_to_string(timedelta)
+            factor = {
+                'hourly': 1/(24*30),
+                'daily': 1/30,
+                'weekly': 1/4,
+                'monthly': 1,
+                'seasonal': 3,
+                'annual': 12
+            }
+            # We automatically raise an error if the frequency is not pandas compliant
+            months = len(data['time']) * factor.get(freq, 0)
+
+            if months < months_required:
+                raise NotEnoughDataError(f"Not enough months of data found for {model} {exp} {source}, at least {months_required} months required, only {months} found.")
 
         if catalog is None:
             catalog = reader.catalog
@@ -167,7 +203,7 @@ class Diagnostic():
 
         return data
 
-    def _get_default_regions_file(self, diagnostic: str = None):
+    def _get_default_regions_file(self, diagnostic):
         """
         Get the default path to the regions file for the given diagnostic.
 
@@ -177,9 +213,6 @@ class Diagnostic():
         Returns:
             str: The path to the regions file.
         """
-        if not diagnostic:
-            raise ValueError("A diagnostic name must be provided when regions_file_path is not specified.")
-
         regions_file = ConfigPath().get_config_dir()
         regions_file = os.path.join(regions_file, 'diagnostics', diagnostic, 'definitions', 'regions.yaml')
         if os.path.exists(regions_file):
@@ -282,7 +315,7 @@ class Diagnostic():
             lon_limits (list): The longitude limits to select.
             lat_limits (list): The latitude limits to select.
             drop (bool): Whether to drop coordinates outside the selected region.
-            **kwargs: Additional keyword arguments passed to the area_selection function.
+            **kwargs: Additional keyword arguments passed to the select_area reader method.
 
         Returns:
             dict: A dictionary containing the modified dataset and region information.
@@ -295,8 +328,8 @@ class Diagnostic():
         if region is not None and diagnostic is not None:
             region, lon_limits, lat_limits = self._set_region(region=region, diagnostic=diagnostic)
             self.logger.info(f"Applying area selection for region: {region}")
-            data = area_selection(
-                data=data, lat=lat_limits, lon=lon_limits, drop=drop, loglevel=self.loglevel, **kwargs
+            data = self.reader.select_area(
+                data=data, lat=lat_limits, lon=lon_limits, drop=drop, **kwargs
             )
             data.attrs['AQUA_region'] = region
         else:

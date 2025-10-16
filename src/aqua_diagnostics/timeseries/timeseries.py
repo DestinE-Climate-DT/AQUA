@@ -1,7 +1,7 @@
 """Timeseries class for retrieve and netcdf saving of a single experiment"""
 import xarray as xr
 import pandas as pd
-from aqua.util import to_list, frequency_string_to_pandas
+from aqua.util import to_list, frequency_string_to_pandas, pandas_freq_to_string
 from aqua.diagnostics.core import round_startdate, round_enddate
 from .util import loop_seasonalcycle
 from .base import BaseMixin
@@ -53,7 +53,7 @@ class Timeseries(BaseMixin):
             freq: list = ['monthly', 'annual'], extend: bool = True,
             exclude_incomplete: bool = True, center_time: bool = True,
             box_brd: bool = True, outputdir: str = './', rebuild: bool = True,
-            reader_kwargs: dict = {}):
+            reader_kwargs: dict = {}, create_catalog_entry: bool = False):
         """
         Run all the steps necessary for the computation of the Timeseries.
         Save the results to netcdf files.
@@ -75,6 +75,7 @@ class Timeseries(BaseMixin):
             outputdir (str): The directory to save the data.
             rebuild (bool): If True, rebuild the data from the original files.
             reader_kwargs (dict): Additional keyword arguments for the Reader. Default is an empty dictionary.
+            create_catalog_entry (bool): If True, create a catalog entry for the data. Default is False.
         """
         self.logger.info('Running Timeseries for %s', var)
         self.retrieve(var=var, formula=formula, long_name=long_name, units=units,
@@ -87,7 +88,8 @@ class Timeseries(BaseMixin):
             if std:
                 self.compute_std(freq=f, exclude_incomplete=exclude_incomplete, center_time=center_time,
                                  box_brd=box_brd)
-            self.save_netcdf(diagnostic_product='timeseries', freq=f, outputdir=outputdir, rebuild=rebuild) 
+            self.save_netcdf(diagnostic_product='timeseries', freq=f, outputdir=outputdir,
+                             rebuild=rebuild, create_catalog_entry=create_catalog_entry)
 
     def compute(self, freq: str, extend: bool = True, exclude_incomplete: bool = True,
                 center_time: bool = True, box_brd: bool = True):
@@ -106,7 +108,7 @@ class Timeseries(BaseMixin):
             return
 
         freq = frequency_string_to_pandas(freq)
-        str_freq = self._str_freq(freq)
+        str_freq = pandas_freq_to_string(freq)
 
         self.logger.info('Computing %s mean', str_freq)
         data = self.data.sel(time=slice(self.plt_startdate, self.plt_enddate))

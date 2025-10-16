@@ -29,6 +29,6 @@ MJO: # http://www.bom.gov.au/climate/mjo
   field: tnlwrf
   latN: 15
   latS: -15
-  lonW: null
-  lonE: null
+  lonW: 0
+  lonE: 360
   flip_sign: true # To obtain standard OLR variable

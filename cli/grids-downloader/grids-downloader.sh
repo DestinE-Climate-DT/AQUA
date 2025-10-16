@@ -18,32 +18,19 @@ setup_log_level 2 # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
 # This script downloads the grids from the Swift server of DKRZ
 # and stores them in the specified output directory.
 # The user can specify the models to download by removing objects from the
-# models array.
-model=$1
-
-usage()
-{
-   echo "To download a single dataset:"
-   echo "       ./grids-downloader.sh dataset-name"
-   echo "To download all datasets:"
-   echo "       ./grids-downloader.sh all"
+# models array
+usage() {
+   echo "Usage: $0 [-o outputdir] dataset-name|all"
+   echo
+   echo "Examples:"
+   echo "   $0 -o /path/to/grids ERA5"
+   echo "   $0 -o /path/to/grids all"
    echo
 }
 
-# Check if no arguments are provided
-if [ $# -eq 0 ]; then
-    usage
-    exit 1
-fi
-
-if [[ $model == "all" ]] ; then
-	models=("EC-EARTH4" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
-else
-	models=( $model ) 	
-fi
-
-# User defined variables
-
+# Default outputdir (can be overridden with -o)
+outputdir="./grids"
+# Legacy paths:
 # for LUMI
 # outputdir="/appl/local/climatedt/data/AQUA/grids"
 # for Levante
@@ -53,15 +40,45 @@ fi
 # for HPC202
 # outputdir="/ec/res4/hpcperm/ccjh/aqua_data/grids"
 
+# Parse options
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -o|--output)
+      outputdir="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      model="$1"
+      shift
+      ;;
+  esac
+done
+
+# Check if model is given
+if [ -z "$model" ]; then
+    usage
+    exit 1
+fi
+
+if [[ $model == "all" ]]; then
+	models=("EC-EARTH4" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
+else
+	models=( "$model" )
+fi
+
 log_message INFO "Creating output directory $outputdir"
-mkdir -p $outputdir
+mkdir -p "$outputdir"
 
 # Download grids
-for model in "${models[@]}"
-do
+for model in "${models[@]}"; do
     log_message INFO "Downloading grid for $model"
 
     # Hardcoded path to the grids on the Swift server
+    # Will be DVC in the future
 
     # EC-EARTH4 link
     if [ "$model" == "EC-EARTH4" ]; then
@@ -128,16 +145,13 @@ do
         path="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/grids/WOA18.tar.gz?temp_url_sig=a1a11c27c123c0dd7f6c23cceb8e22d55fdfc1e1&temp_url_expires=2027-02-04T14:31:14Z"
     fi
 
-    # Download the grid
-    wget -O $outputdir/$model.tar.gz $path
+    wget -O "$outputdir/$model.tar.gz" "$path"
 
-    # Unpack the grid
     log_message INFO "Unpacking grid for $model"
-    tar -xzf $outputdir/$model.tar.gz -C $outputdir
+    tar -xzf "$outputdir/$model.tar.gz" -C "$outputdir"
 
-    # Remove the tar.gz file
     log_message INFO "Removing tar.gz file for $model"
-    rm -f $outputdir/$model.tar.gz
+    rm -f "$outputdir/$model.tar.gz"
 done
 
 log_message INFO "Download complete"

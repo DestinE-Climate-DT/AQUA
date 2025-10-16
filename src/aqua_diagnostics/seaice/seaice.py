@@ -4,17 +4,19 @@ import xarray as xr
 from aqua.diagnostics.core import Diagnostic
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection, to_list, merge_attrs
+from aqua.util import to_list, merge_attrs
 from aqua.diagnostics.seaice.util import ensure_istype
 
 xr.set_options(keep_attrs=True)
 
 class SeaIce(Diagnostic):
     """ 
-    Class for seaice objects.
+    Sea ice diagnostic class for computing and analyzing sea ice metrics.
     
-    This class provides methods to compute sea ice extent and volume over specified regions.
-    It also allows for the integration of masked data and the calculation of standard deviations.
+    This class provides methods to compute sea ice extent (million km²), volume (thousand km³), 
+    fraction ([0-1]) and thickness (m) over specified regions (e.g., Arctic, Antarctic). 
+    It supports both time series (integrated), with options for computing standard deviations, 
+    seasonal cycles, and 2D monthly climatologies.
 
     Args:
         model   (str): The model name.
@@ -22,29 +24,16 @@ class SeaIce(Diagnostic):
         source  (str): The data source.
         catalog (str, optional): The catalog name.
         regrid  (str, optional): The regrid option.
-        startdate (str, optional): The start date for the data.
-        enddate   (str, optional): The end date for the data.
+        startdate (str, optional): The start date for the data (format: "YYYY-MM-DD").
+        enddate   (str, optional): The end date for the data (format: "YYYY-MM-DD").
         std_startdate (str, optional): Start date for standard deviation.
         std_enddate   (str, optional): End date for standard deviation.
-        regions     (list, optional): A list of regions to analyze. Default is ['arctic', 'antarctic'].
-        regions_file (str, optional): The path to the regions definition file.
-        outputdir (str, optional): The output directory.
+        threshold (float, optional): Threshold for sea ice concentration over extent (default: 0.15; 15% conc).
+        regions     (list, optional): A list of regions to analyze. Default: ['arctic', 'antarctic'].
+        regions_file (str, optional): Path to YAML file defining regions definition file.
+        outputdir (str, optional): The output directory (default: './').
         regions_definition (dict): The loaded regions definition from the YAML file.
-        loglevel     (str, optional): The logging level. Default is 'WARNING'.
-
-    Methods:
-        load_regions(regions_file=None, regions=None):
-            Loads region definitions from a .yaml configuration file and sets the regions.
-        add_seaice_attrs(da_seaice_computed: xr.DataArray, region: str,
-                         startdate: str=None, enddate: str=None, std_flag=False):
-            Set attributes for seaice_computed.
-        integrate_seaice_masked_data(masked_data, region: str):
-            Integrate the masked data over the spatial dimension to compute sea ice metrics.
-        get_area_cells_and_coords()
-        _calc_time_stat(computed_data: xr.DataArray, stat: str = 'std', freq: str = 'monthly'):
-            Compute the standard deviation or mean of the data, grouped by ('monthly' or 'annual') frequency.
-        compute_seaice(method, var, *args, **kwargs):
-            Execute the seaice diagnostic based on the specified method. 
+        loglevel     (str, optional): The logging level. Defaults to 'WARNING'.
     """
 
     def __init__(self, model: str, exp: str, source: str,        
@@ -56,8 +45,7 @@ class SeaIce(Diagnostic):
                  regions=['arctic', 'antarctic'],
                  regions_file=None,
                  outputdir: str = './',
-                 loglevel: str = 'WARNING'
-                 ):
+                 loglevel: str = 'WARNING'):
 
         self.outputdir = outputdir
         super().__init__(model=model, exp=exp, source=source,
@@ -96,7 +84,8 @@ class SeaIce(Diagnostic):
         invalid_regions = [reg for reg in selected_regions if reg not in region_definitions]
         
         if invalid_regions:
-            raise ValueError(f"Invalid region name(s): [{', '.join(f'{i}' for i in invalid_regions)}]. "
+            invalid_regions_str = ', '.join(str(i) for i in invalid_regions)
+            raise ValueError(f"Invalid region name(s): [{invalid_regions_str}]. "
                              f"Please check regions names are lower case or the region file at: '{regions_file}'.")
 
         self.regions = selected_regions
@@ -360,7 +349,7 @@ class SeaIce(Diagnostic):
 
         # regional selection with lat-lon: use default dict to set dynamic lon bounds found above, and set lat from -90 to 90
         res_dict = self._select_region(areacello, region=region, diagnostic="seaice", drop=drop,
-                                       default={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
+                                       default_coords={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
         areacello = res_dict['data']
 
         return areacello
@@ -414,6 +403,7 @@ class SeaIce(Diagnostic):
                 - 'annual'  (computes std per year)
             stat (str, optional): 
                 The statistic to compute. Must be one of ('std', 'mean'). Default is 'std'.
+
         Returns:
             xarray.DataArray: A DataArray containing the computed time statistic.
         """
@@ -488,7 +478,7 @@ class SeaIce(Diagnostic):
         """
         ensure_istype(da_seaice_computed, xr.DataArray, logger=self.logger)
 
-        # set attributes: 'method','unit'   
+        # set attributes: 'method','unit'  
         units_dict = {"extent": "million km^2",
                       "volume": "thousands km^3",
                       "fraction": "[0-1]",
@@ -501,7 +491,7 @@ class SeaIce(Diagnostic):
 
         da_seaice_computed.attrs["long_name"] = (f"{'Std ' if std_flag else ''}Sea ice {self.method} "
                                                  f"{'integrated ' if self.method in ['extent', 'volume'] else ''}"
-                                                 f"over {da_seaice_computed.attrs["AQUA_region"]}")
+                                                 f"over {da_seaice_computed.attrs['AQUA_region']}")
         da_seaice_computed.attrs["standard_name"] = f"{region}_{'std_' if std_flag else ''}sea_ice_{self.method}"
         da_seaice_computed.attrs["AQUA_method"] = f"{self.method}"
         if startdate is not None: da_seaice_computed.attrs["AQUA_startdate"] = f"{startdate}"

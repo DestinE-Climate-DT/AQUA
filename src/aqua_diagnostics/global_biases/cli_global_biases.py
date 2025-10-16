@@ -144,10 +144,11 @@ if __name__ == '__main__':
 
                     proj = plot_params.get('projection', 'robinson')
                     proj_params = plot_params.get('projection_params', {})
+                    cmap= plot_params.get('cmap', 'RdBu_r')
 
                     logger.debug(f"Using projection: {proj} for variable: {var}")
                     plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png,
-                                                dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                                                dpi=dpi, outputdir=outputdir, cmap=cmap, loglevel=loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
                                           var=var, plev=p,
                                           proj=proj, proj_params=proj_params,

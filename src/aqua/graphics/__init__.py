@@ -22,8 +22,10 @@ from .single_map import plot_single_map, plot_single_map_diff
 from .styles import ConfigStyle
 from .timeseries import plot_timeseries, plot_seasonalcycle
 from .multiple_maps import plot_maps, plot_maps_diff
+from .vertical_profiles import plot_vertical_profile, plot_vertical_profile_diff
 from .lat_lon_profiles import plot_lat_lon_profiles
 from .seasonal_means import plot_seasonal_lat_lon_profiles
+from .vertical_line import plot_vertical_lines
 
 
 __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
@@ -33,8 +35,10 @@ __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
            "ConfigStyle",
            "plot_timeseries", "plot_seasonalcycle",
            "plot_maps", "plot_maps_diff",
+           "plot_vertical_profile", "plot_vertical_profile_diff",
            "plot_lat_lon_profiles",
-           "plot_seasonal_lat_lon_profiles"]
+           "plot_seasonal_lat_lon_profiles",
+           "plot_vertical_lines"]
 
 
 def activate_style(style: str = None,

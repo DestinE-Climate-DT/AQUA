@@ -1,6 +1,6 @@
 from aqua.exceptions import NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.util.sci_util import _lon_180_to_360
+from aqua.util.sci_util import lon_to_360
 from .base import BaseMixin
 
 
@@ -50,7 +50,7 @@ class NAO(BaseMixin):
                                   Default is an empty dictionary.
         """
         # Assign self.data, self.reader, self.catalog
-        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs, months_required=24)
 
         self.reader.timmean(self.data, freq='MS')
     
@@ -79,8 +79,8 @@ class NAO(BaseMixin):
         lon2 = self.definition.get('lon2')
 
         if self.data[self.var].lon.min() >= 0:
-            lon1 = _lon_180_to_360(lon1)
-            lon2 = _lon_180_to_360(lon2)
+            lon1 = lon_to_360(lon1)
+            lon2 = lon_to_360(lon2)
 
         self.logger.debug(f'Station 1: lon={lon1}, lat={lat1}')
         self.logger.debug(f'Station 2: lon={lon2}, lat={lat2}')

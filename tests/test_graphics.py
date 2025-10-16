@@ -3,8 +3,10 @@ import os
 import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
+from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
+from aqua.graphics import plot_vertical_lines
 
 loglevel = "DEBUG"
 
@@ -139,6 +141,60 @@ class TestMaps:
 
 
 @pytest.mark.graphics
+class TestVerticalProfiles:
+    """Basic tests for the Vertical Profile functions"""
+
+    def setup_method(self):
+        """Setup method to retrieve data for testing"""
+        model = 'ERA5'
+        exp = 'era5-hpz3'
+        source = 'monthly'
+        self.reader = Reader(model=model, exp=exp, source=source, regrid='r100')
+        self.data = self.reader.retrieve(['q'])
+        self.data = self.reader.regrid(self.data)
+
+
+    def test_plot_vertical_profile(self, tmp_path):
+        """Test the plot_vertical_profile function"""
+        fig, ax = plot_vertical_profile(data=self.data['q'].isel(time=0).mean('lon'),
+                                        var='q',
+                                        vmin=-0.002,
+                                        vmax=0.002,
+                                        nlevels=8,
+                                        return_fig=True,
+                                        loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_vertical_profile.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_vertical_profile.png')
+
+    def test_plot_vertical_profile_diff(self, tmp_path):
+        """Test the plot_vertical_profile_diff function"""
+        fig, ax = plot_vertical_profile_diff(data=self.data['q'].isel(time=0).mean('lon'),
+                                            data_ref=self.data['q'].isel(time=1).mean('lon'),
+                                            var='q',
+                                            vmin=-0.002,
+                                            vmax=0.002,
+                                            vmin_contour=-0.002,
+                                            vmax_contour=0.002,
+                                            add_contour=True,
+                                            nlevels=8,
+                                            return_fig=True,
+                                            loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_vertical_profile_diff.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_vertical_profile_diff.png')
+        
+@pytest.mark.graphics
 class TestTimeseries:
     """Basic tests for the Timeseries functions"""
 
@@ -254,46 +310,32 @@ class TestHovmoller:
 
     def test_plot_hovmoller(self, tmp_path):
         """Test the plot_hovmoller function"""
-        fig, ax = plot_hovmoller(data=self.data,
-                                 return_fig=True,
-                                 outputdir=tmp_path,
-                                 save=True,
-                                 loglevel=loglevel)
-
-        assert fig is not None
-        assert ax is not None
-        assert os.path.exists(tmp_path / 'hovmoller.pdf')
-
         fig2, ax2 = plot_hovmoller(data=self.data,
                                    return_fig=True,
-                                   outputdir=tmp_path,
-                                   filename='test_hovmoller2.png',
-                                   format='png',
                                    cmap='RdBu_r',
-                                   save=True,
                                    invert_axis=True,
                                    invert_time=True,
                                    cbar_label='test-label',
                                    nlevels=10,
                                    sym=True,
-                                   dpi=300,
                                    loglevel=loglevel)
 
         assert fig2 is not None
         assert ax2 is not None
+
+        fig2.savefig(tmp_path / 'test_hovmoller2.png')
         assert os.path.exists(tmp_path / 'test_hovmoller2.png')
 
-        plot_hovmoller(data=self.data,
-                       return_fig=False,
-                       contour=False,
-                       outputdir=tmp_path,
-                       filename='test_hovmoller3',
-                       format='png',
-                       cmap='RdBu_r',
-                       save=True,
-                       invert_time=True,
-                       dpi=300,
-                       loglevel=loglevel)
+        fig, _ = plot_hovmoller(data=self.data,
+                                 return_fig=True,
+                                 contour=False,
+                                 cmap='RdBu_r',
+                                 invert_time=True,
+                                 loglevel=loglevel)
+
+        assert fig is not None
+
+        fig.savefig(tmp_path / 'test_hovmoller3.png')
 
         assert os.path.exists(tmp_path / 'test_hovmoller3.png')
 
@@ -301,3 +343,36 @@ class TestHovmoller:
 
         with pytest.raises(TypeError):
             plot_hovmoller(data='test')
+
+
+@pytest.mark.graphics
+class TestVerticalLines:
+    """Basic tests for the Vertical Line functions"""
+
+    def setup_method(self):
+        """Setup method to retrieve data for testing"""
+        model = 'ERA5'
+        exp = 'era5-hpz3'
+        source = 'monthly'
+        self.reader = Reader(model=model, exp=exp, source=source)
+        self.data = self.reader.retrieve(['q'])['q'].isel(time=0, cells=0)
+
+    def test_plot_vertical_lines(self, tmp_path):
+        """Test the plot_vertical_lines function"""
+        fig, ax = plot_vertical_lines(data=self.data,
+                                      ref_data=self.data * 0.8,
+                                      lev_name='plev',
+                                      labels=['test'],
+                                      ref_label='ref',
+                                      title='Test vertical line',
+                                      return_fig=True,
+                                      invert_yaxis=True,
+                                      loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_vertical_lines.png')
+
+        # Check the file was created
+        assert os.path.exists(tmp_path / 'test_plot_vertical_lines.png')

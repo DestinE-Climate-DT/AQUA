@@ -6,7 +6,8 @@ Description
 
 The **Boxplots** diagnostic computes and visualizes boxplots of spatial field means 
 from climate model datasets, for one or multiple variables, over a specified time period.
-The diagnostic is designed with a class that analyzes a single model and generates the NetCDF files with the field means, and another class that produces the plots.
+The diagnostic is designed with a class that analyzes a single model and generates the NetCDF 
+files with the field means, and another class that produces the plots.
 
 Classes
 -------
@@ -21,17 +22,24 @@ There is one class for the analysis and one for the plotting:
 File structure
 --------------
 
-* The diagnostic is located in the ``src/aqua_diagnostics/boxplots`` directory, which contains both the source code and the command line interface (CLI) script.
-* The configuration files are located in the ``config/diagnostics/boxplots`` directory and contain the default configuration for the diagnostic.
-* Notebooks are available in the ``notebooks/diagnostics/boxplots`` directory and contain examples of how to use the diagnostic.
+* The diagnostic is located in the ``src/aqua_diagnostics/boxplots`` directory, which contains 
+  both the source code and the command line interface (CLI) script.
+* The configuration files are located in the ``config/diagnostics/boxplots`` directory and contain 
+  the default configuration for the diagnostic.
+* Notebooks are available in the ``notebooks/diagnostics/boxplots`` directory and contain examples 
+  of how to use the diagnostic.
 
 Input variables and datasets
 ----------------------------
 
-The diagnostic can be used with any dataset that contains spatial fields. Multimodel datasets can be analyzed,
-and the diagnostic can be configured to compare against multiple reference datasets.
-All analyzed variables should share the same units to ensure meaningful comparisons; otherwise, the diagnostic will raise an error.
-The diagnostic is designed to work with data from the Low Resolution Archive (LRA) of the AQUA project, which provides monthly data at a 1x1 degree resolution.  
+The diagnostic can be used with any dataset that contains spatial fields. Multimodel datasets 
+can be analyzed, and the diagnostic can be configured to compare against multiple reference 
+datasets.
+All analyzed variables should share the same units to ensure meaningful comparisons; otherwise, 
+the diagnostic will raise an error.
+The diagnostic is designed to work with data from the Data Reduction OPerator (DROP) of the AQUA 
+project which, in this case, provides monthly data at a 1x1 degree resolution (Low Resolution 
+Archive, LRA).  
 A higher resolution is not necessary for this diagnostic.
 
 Basic usage
@@ -86,49 +94,9 @@ Additionally, the CLI can be run with the following optional arguments:
 Config file structure
 ^^^^^^^^^^^^^^^^^^^^^
 
-The configuration file ``config_boxplots`` is a YAML file that contains the following information:
-
-* ``datasets``: a list of models to analyse (defined by the catalog, model, exp, source arguments).
-
-.. code-block:: yaml
-
-    datasets:
-      - catalog: null
-        model: 'IFS-NEMO'
-        exp: 'historical-1990'
-        source: 'lra-r100-monthly'
-        startdate: null
-        enddate: null
-
-* ``references``: a list of reference datasets to use for the analysis.
-
-.. code-block:: yaml
-
-    references:
-      - catalog: obs
-        model: ERA5
-        exp: era5
-        source: monthly
-        regrid: null
-
-* ``output``: a block describing the output details. It contains:
-
-    * ``outputdir``: the output directory for the plots.
-    * ``rebuild``: boolean flag to enable rebuilding of plots.
-    * ``save_netcdf``: boolean flag to enable saving climatologies as NetCDF files.
-    * ``save_pdf``: boolean flag to enable saving plots in PDF format.
-    * ``save_png``: boolean flag to enable saving plots in PNG format.
-    * ``dpi``: resolution of the plots.
-
-.. code-block:: yaml
-
-    output:
-      outputdir: "/path/to/output"
-      rebuild: true
-      save_netcdf: true
-      save_pdf: true
-      save_png: true
-      dpi: 300
+The configuration file is a YAML file that contains the details on the dataset to analyse or use as reference, the output directory and the diagnostic settings.
+Most of the settings are common to all the diagnostics (see :ref:`diagnostics-configuration-files`).
+Here we describe only the specific settings for the boxplots diagnostic.
 
 * ``boxplots``: a block (nested in the ``diagnostics`` block) containing options for the Boxplots diagnostic.  
   Variable-specific parameters override the defaults.
@@ -150,7 +118,9 @@ Output
 
 The diagnostic produces a single plot:
 
-* A boxplot showing the distribution of the field means for each variable across the specified models and reference datasets.  
+* A boxplot showing the distribution of the field means for each variable across the specified models and reference datasets. 
+  If reference datasets are provided and the ``anomalies`` option is set to ``True``, the boxplot will show anomalies with respect to the mean of the selected reference dataset. 
+  With the ``add_mean_line`` option set to ``True``, dashed lines indicating the absolute mean values will be added to the boxplots.
   Plots are saved in both PDF and PNG format.
 
 Example plots
@@ -161,6 +131,13 @@ Example plots
    :width: 100%
    
    Box plot showing the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to ERA5 and CERES climatologies
+
+.. figure:: figures/radiation_boxplot_anomalies.png
+   :align: center
+   :width: 100%
+
+   Box plot showing the anomalies of the globally averaged incoming and outgoing TOA radiation of IFS-NEMO historical-1990 with respect to the ERA5 climatology.
+   The dashed lines indicates the absolute mean values.
 
 Available demo notebooks
 ------------------------

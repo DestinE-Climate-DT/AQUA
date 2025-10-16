@@ -37,11 +37,19 @@ Basic usage:
 
 .. code-block:: bash
 
-    bash grids-downloader.sh all
+    bash grids-downloader.sh -o <outputdir> all | model
 
-This will download all the grids used in AQUA.
-It is also possible to download only a subset of the grids,
+This will download the grids to the ``<outputdir>`` used in AQUA.
+The output directory will be created if it does not exist.
+For the ClimateDT machines, the target folders are commented in the code for documentation.
+It is possible to specify if to download all the available grids or to download only a subset of the grids,
 by specifying the group of grids to download (usually one per model).
+
+.. warning::
+
+    From September 2025, the grids are stored and versioned using DVC (Data Version Control).
+    Grids downloader script still works but it will be deprecated in the near future.
+    Please refer to :ref:`aqua-dvc` for more information on how to access the data.
 
 .. _grids-checker:
 

@@ -12,7 +12,6 @@ import argparse
 import jinja2
 from aqua.util import load_yaml, dump_yaml, get_arg, ConfigPath
 from aqua.logger import log_configure
-from aqua.lra_generator.lra_util import replace_intake_vars
 
 from ruamel.yaml import YAML
 yaml = YAML()
@@ -317,7 +316,8 @@ class AquaFDBGenerator:
         forcing_map = {
             'hist': 'historical',
             'cont': 'control',
-            'SSP3-7.0': 'ssp370'
+            'SSP3-7.0': 'ssp370',
+            'Tplus2.0K': 'tplus2K'
         }
 
         forcing = self.config.get('forcing') or self.get_value_from_map(self.config['experiment'], forcing_map, 'experiment')

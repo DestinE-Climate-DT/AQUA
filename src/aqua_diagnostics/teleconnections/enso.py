@@ -1,6 +1,6 @@
 from aqua.exceptions import NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.util.sci_util import _lon_180_to_360
+from aqua.util.sci_util import lon_to_360
 from .base import BaseMixin
 
 
@@ -50,7 +50,7 @@ class ENSO(BaseMixin):
                                   Default is an empty dictionary.
         """
         # Assign self.data, self.reader, self.catalog
-        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
+        super().retrieve(var=self.var, reader_kwargs=reader_kwargs, months_required=24)
 
         self.reader.timmean(self.data, freq='MS')
     
@@ -81,9 +81,9 @@ class ENSO(BaseMixin):
         lonE = self.definition.get('lonE')
 
         if self.data[self.var].lon.min() >= 0:
-            lonW = _lon_180_to_360(lonW)
-            lonE = _lon_180_to_360(lonE)
-        
+            lonW = lon_to_360(lonW)
+            lonE = lon_to_360(lonE)
+
         self.logger.debug(f'lonW: {lonW}, lonE: {lonE}')
         self.logger.debug(f'latN: {latN}, latS: {latS}')
 

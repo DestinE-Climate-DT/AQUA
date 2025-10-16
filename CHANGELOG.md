@@ -5,14 +5,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.18.0):
+Unreleased in the current development version (target v0.19.0):
+
+AQUA core complete list:
+- Timeseries graphical function adapted to plot multiple levels for ocean diagnostic (#2328)
+- Extending evaluate formula method to exponential and parenthesis (#2327)
+
+AQUA diagnostics complete list:
+- Ocean Drift: timeseries plotting function with update in cli (#2322)
+- Gregory: more detailed description and plot labels (#2306)
+
+## [v0.18.0]
+
+Main changes: 
+1. LRA generator is renamed to DROP (Data Reduction OPerator)
+2. `aqua analysis` is now an entry point replacing the `aqua_analysis.py` script
+3. Timstat module is now extended to support custom function
+4. Introduction of new LatLonProfiles diagnostic 
+5. Completely refactored diagnostics: Sea Ice, radiation, Ocean drift and Ocean stratification
+
 Removed:
 -  removed old OutputSaver (#2146) 
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `aqua-analysis.py` is now an entry point `aqua analysis` in the AQUA console, with the same syntax as before.
+- `aqua lra` entry point is renamed to `aqua drop`.
+- DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
+- nc2zarr installation and sample for zarr conversion (#2332)
+- Allow `Reader()` to access standard and custom `fldstat` methods provided by `FldStat()` (#2277)
+- Actions now upload artifacts with test results and environment specifications (#2323)
+- Pin for pydantic<2.12.0 (#2323)
+- Rename LRA to DROP (Data Reduction OPerator) via the `Drop()` class (#2234)
+- Add updated grids conformal to OSI-SAF v3 (#2317)
+- Area selection is now a separate class, `AreaSelection` in the `aqua.fldstat` module (#2245)
+- Added graphical function for vertical profile plotting (#2314, #2316)
+- Added catgen support for storyline experiments (#2308)
+- Pin maximum version of xarray (#2303)
+- CI/CD data now is read from aqua-dvc repository (#8370)
+- Histogram (or any callable function) possible through TimStat. New timhist method (#2263)
+- Update AQUA base container to ECMWF specifications for new cycle with FDB 5.17.3 (#2217)
+- Data extraction (LRA) can be done without regrid option and LRA log history is more accurate (#2142)
+- Split out plotting function for vertical profile and add contour option (#2190)
+- GSV update to v2.13.1, support for Polytope access to MN5 DataBridge (#2202)
+- Separation of concerns in LRA between dask-based computation and serial netcdf writing (#2212)
+- Refactor `grids-downloader.sh` script, now outputdir is a cli argument (#2209)
+- Refactor of some `aqua.util.time` function, improving name and pandas integration (#2205,#2218)
+- Refactor of the `dump_yaml` utility function, now correctly handling `None` values as `null` (#2198)
+- `Reader` will now turn off areas and grids capabilities when `src_grid_name` is `False` (#2198)
+- LRA and `OutputSaver` jinja-related duplicated methods are now merged (#2198)
+- LatLonProfiles: refinement of the graphical functions (#2201)
 - Minor EC-Earth4 adjustments (#2196)
 - Hotfix in catgen for monthly chunking (#2184)
 - Fix loaded areas as dataset (#2174)
@@ -31,8 +74,29 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Seaice: added documentation and updated notebooks (#2249)
+- Seaice: update varname for PIOMAS and GIOMAS from sivol to sithick after updating the data in `obs` catalog (#2290)
+- Global Biases: allow GlobalBias to take color palette as argument (#2283)
+- Boxplots: added option to plot anomalies and add a mean value dotted line (#2255)
+- Global Biases: address formatting issues in plots (#2272)
+- Global Biases: fix location of config file for cli (#2284)
+- Timeseries: fix for annual only plots (#2279)
+- Timeseries: add `reader_kwargs` option to pass extra arguments to the Reader and ensemble support (#2222, #2279)
+- Add `source_oce` option for ECmean to aqua anlysis (#2246)
+- Add missing center time option to seasonalcycles (#2247)
+- Teleconnections: adapted MJO to the new Hovmoller graphical function (#1969)
+- Ocean Drift: Hovmoller multiplot class and complete diagnostic cli (#1969)
+- Diagnostic core: Locking of catalog yaml when modified (#2238)
+- Timeseries: fix output figure to use diagnostic name (#2240)
+- Diagnostic core: bugfix in Diagnostic class related to parsing realization (#2226)
+- Updated grouping file for dashboard (#2241)
+- Dummy: removed old diagnostic (#2210)
+- Diagnostic core: `retrieve` and `_retrieve` methods can take a `months_required` argument so that diagnostics can raise an error if insufficient months of data are available. (#2205)
+- Timeseries: introduction of the catalog entry capability, default in CLI (#2198)
+- Diagnostic core: introduction of the catalog entry capability and `self.realization` attribute (#2198)
+- Ensemble: Updating the ensemble module according the the issue #1925 (#2004)
 - Timeseries: refined title and description, more attributes used (#2193)
-- New Lat-Lon Profiles diagnostic tool (#1934)
+- New LatLonProfiles diagnostic tool (#1934 and #2207)
 - Boxplots: add support for reader_kwargs (#2149)
 - Global Biases: add the `diagnostic_name` option in config file (#2159)
 - Gregory: refined the reference label generation (#2157)
@@ -41,7 +105,7 @@ AQUA diagnostics complete list:
 - Timeseries: fix lazy calculation of seasonal cycles (#2143)
 - Boxplots: fix output dir (#2136) 
 - Boxplots: add tests and update docs (#2129)
-- Seaice: refactored `seaice` diagnostic with cli, relative `config_seaice.yaml` and `regions_definition.yaml` files. Add updated tests for the diagnostic. Introduce bias plot with custom projections. Extend some graphics functions features (e.g. `add_land` in `single_map.py` or fig,ax definition of `plot_seasonalcycle`  in `timeseries.py`). Enhance utils functions (e.g. `set_map_title`; add `merge_attrs` in `sci_util.py`). Add `int_month_name` in `time.py` and `strlist_to_phrase` for grammar-consistent descriptions (#1684, #2140, #2165, #2171, #2178)
+- Seaice: refactored diagnostic with cli and added bias plot with custom projections (#1684, #2140, #2165, #2171, #2178, #2185, #2221)
 - Stratification: Stratification class to create density and mixed layer depth data, notebook and tests added. (#2093)
 - Radiation: complete refactor of the diagnostic, now based on the `Boxplots` diagnostic and the  `boxplot ` function in graphics (#2007)
 - SeasonalCycles: fix a bug which was preventing to plot when no reference data is provided (#2114)
@@ -56,7 +120,7 @@ Main changes are:
 Removed:
 -  removed Reader.info() method (#2076) 
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `machine` and `author` are mandatory fields in the catalog generator config file.
 - Data portfolio required is v2.0.0, no API changes are involved in this change.
 - Add possibility to change the 'default' realization in Catalog Generator config file.
@@ -102,14 +166,13 @@ AQUA diagnostics complete list:
 - Timeseries: `center_time` option to center the time axis is exposed in the CLI (#2028)
 - Timeseries: fix the missing variable name in some netcdf output (#2023)
 - Diagnostic core: new `_select_region` method in `Diagnostic`, wrapped by `select_region` to select a region also on custom datasets (#2020, #2032)
-- Ensemble: Updating the ensemble module according the the issue #1925 (#2004)
 
 ## [v0.16.0]
 
 Removed:
 - Removed source or experiment specific fixes; only the `fixer_name` is now supported.
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - Due to a bug in Singularity, `--no-mount /etc/localtime` has to be implemented into the AQUA container call 
 - `push_analysis.sh` now updates and pushes to LUMI-O the file `experiments.yaml`, which is used by the 
   dashboard to know which experiments to list. The file is downloaded from the object store, updated and 
@@ -168,7 +231,7 @@ Main changes are:
 Removed:
 - `aqua.slurm` has been removed.
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `push_analysis.sh` (and the tool `push_s3.py` which it calls) now both return proper error codes if the transfer fails. 0 = ok, 1 = credentials not valid, 2 = bucket not found. This would allow the workflow to check return codes. As an alternative, connectivity could be tested before attempting to run push_analysis by pushing a small file (e.g. with `python push_s3.py aqua-web ping.txt`))
 
 AQUA core complete list:
@@ -213,7 +276,7 @@ Removed:
 - Support for python==3.9 has been dropped.
 - Generators option from the Reader has been removed.
 
-Workflow modifications:
+ClimateDT workflow modifications:
 - `aqua_analysis.py`: all the config files are used from the `AQUA_CONFIG` folder. This allows individual run modification kept in the `AQUA_CONFIG` folder for reproducibility.
 - `makes_contents.py`: can now take a config file as an argument to generate the `content.yaml` file.
 - `push_analysis.sh`: now has an option to rsync the figures to a specified location. Extra flags have been added (see Dashboard section in the documentation).
@@ -1066,7 +1129,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.0...HEAD
+[v0.18.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...v0.18.0
 [v0.17.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.16.0...v0.17.0
 [v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
 [v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0

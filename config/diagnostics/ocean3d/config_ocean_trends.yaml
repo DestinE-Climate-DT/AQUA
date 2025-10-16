@@ -1,0 +1,28 @@
+# Template according to #1613
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+datasets:
+  - catalog: null
+    model: FESOM
+    exp: hpz3
+    source: monthly-3d
+    regrid: null
+    reader_kwargs: null
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  ocean_trends:
+    multilevel:
+      diagnostic_name: 'ocean3d'
+      run: true
+      var: ['thetao', 'so']
+      regions: ['io', 'ao', 'so', 'arc_o', 'po', 'go']
+      # dim_mean: ['lat']

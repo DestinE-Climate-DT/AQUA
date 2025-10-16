@@ -111,10 +111,8 @@ class GlobalBiases(Diagnostic):
         else:
             self.data.attrs['short_name'] = self.var
 
-        # Infer date range if not already set
-        self.startdate = self.startdate or pd.to_datetime(self.data.time[0].values).strftime('%Y-%m-%d')
-        self.enddate = self.enddate or pd.to_datetime(self.data.time[-1].values).strftime('%Y-%m-%d')
-
+        self.startdate = pd.to_datetime(self.startdate or self.data.time[0].values).strftime("%Y-%m-%d")
+        self.enddate   = pd.to_datetime(self.enddate   or self.data.time[-1].values).strftime("%Y-%m-%d")
         if plev is not None:
             self.plev = plev
 

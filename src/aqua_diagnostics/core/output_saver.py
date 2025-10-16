@@ -5,15 +5,15 @@ AQUA diagnostics.
 """
 
 import os
+from filelock import FileLock
 from typing import Optional, Union
 import xarray as xr
 from matplotlib.figure import Figure
 from aqua.logger import log_configure, log_history
 from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata
 from aqua.util import dump_yaml, load_yaml
-from aqua.util import ConfigPath
-
-DEFAULT_REALIZATION = 'r1'  # Default realization if not specified
+from aqua.util import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
+from aqua.util import ConfigPath, format_realization
 
 
 class OutputSaver:
@@ -59,7 +59,7 @@ class OutputSaver:
         self.exp_ref = self.unpack_list(exp_ref)
 
         # Format realization to ensure it is a string or list of strings
-        self.realization = self._format_realization(realization)
+        self.realization = format_realization(realization)
 
         # Verify that catalog, model, and exp are either all strings or all lists of the same length
         self._verify_arguments(['catalog', 'model', 'exp'])
@@ -77,27 +77,6 @@ class OutputSaver:
         })
 
         self.outputdir = outputdir
-
-    @staticmethod
-    def _format_realization(realization: Optional[Union[str, int, list]]) -> Union[str, list]:
-        """
-        Format the realization string by prepending 'r' if it is a digit.
-
-        Args:
-            realization (str | int | list | None): The realization value. Can be:
-                - str/int: Single realization value
-                - list: List of realization values
-                - None: Returns default realization
-
-        Returns:
-            str | list: Formatted realization string or list of formatted strings.
-        """
-        if realization is None:
-            return DEFAULT_REALIZATION
-        if isinstance(realization, list):
-            return [f'r{r}' if str(r).isdigit() else str(r) for r in realization]
-        if isinstance(realization, (int, str)):
-            return f'r{realization}' if str(realization).isdigit() else str(realization)
 
     @staticmethod
     def unpack_list(value: Optional[Union[str, list]]) -> Optional[Union[str, list]]:
@@ -397,161 +376,70 @@ class OutputSaver:
             jinjalist (list, optional): List of Jinja variables to replace in the URL path.
             wildcardlist (list, optional): List of wildcard variables to replace in the URL path.
 
+        Returns:
+            dict: The updated catalog entry block.
         """
-
         self.logger.info("Creating catalog entry for %s", filepath)
         configpath = ConfigPath(catalog=self.catalog)
         configdir = configpath.configdir
         # find the catalog of the experiment and load it
         catalogfile = os.path.join(configdir, 'catalogs', self.catalog, 'catalog', self.model, self.exp + '.yaml')
-        cat_file = load_yaml(catalogfile)
-        # Remove None values
-        urlpath = self.replace_intake_vars(catalog=self.catalog, path=filepath)
-        
-        entry_name = f'aqua-{self.diagnostic}-{metadata.get("diagnostic_product")}'
-        if entry_name in cat_file['sources']:
-            catblock = cat_file['sources'][entry_name]
-        else:
-            catblock = None
 
-        if catblock is None:
-            # if the entry is not there, define the block to be uploaded into the catalog
-            catblock = {
-                'driver': 'netcdf',
-                'description': f'AQUA {self.diagnostic} data for {metadata.get("diagnostic_product")}',
-                'args': {
-                    'urlpath': urlpath,
-                    'chunks': {},
-                },
-                'metadata': {
-                    'source_grid_name': False,
-                }
-            }
-        else:
-            # if the entry is there, we just update the urlpath
-            catblock['args']['urlpath'] = urlpath
+        # The following block must be locked because else two diagnostics may attempt to modify the same file at the same time
 
-            catblock['args']['xarray_kwargs'] = {
-                    'decode_times': True,
-            }
-        # These variables are replaced from the url as {{ variable }}
-        if jinjalist:
-            for key in jinjalist:
-                value = metadata.get(key)
-                if value is not None:
-                    self.logger.debug("Replacing jinja variable %s with value %s in urlpath", key, value)
-                    catblock = self.replace_urlpath_jinja(catblock, value, key, self.diagnostic)
-        
-        if wildcardlist:
-           for key in wildcardlist:
-               value = metadata.get(key)
-               if value is not None:
-                   self.logger.debug("Replacing wildcard variable %s with value %s in urlpath", key, value)
-                   catblock = self.replace_urlpath_wildcard(catblock, value)
-
-        self.logger.info('Final urlpath: %s', catblock['args']['urlpath'])
-        
-        cat_file['sources'][entry_name] = catblock
-
-        # dump the update file
-        dump_yaml(outfile=catalogfile, cfg=cat_file)
-        return catblock # using this in the tests
-    
-    @staticmethod
-    def replace_urlpath_wildcard(block, value):
-        """
-        Replace the urlpath in the catalog entry with "*" 
-
-        Args:
-            block (dict): The catalog entry generated by `catalog_entry_details' to be updated
-            value (str): The value to replace in the urlpath (e.g., 'r1', 'global', 'mean')
-
-        """
-        if not value:
-            return block
-        
-        # this loop is a bit tricky but is made to ensure that the right value is replaced
-        for character in ['_', '/', '.']:
-            block['args']['urlpath'] = block['args']['urlpath'].replace(
-                character + value + character, character + "*" + character)
+        self.logger.debug("Locking catalog file %s", catalogfile)
+        with FileLock(catalogfile + '.lock'):
+            cat_file = load_yaml(catalogfile)
+            # Remove None values
+            urlpath = replace_intake_vars(catalog=self.catalog, path=filepath)
             
-        return block
-        
-    @staticmethod
-    def replace_urlpath_jinja(block, value, name, diagnostic):
-        """
-        Replace the urlpath in the catalog entry with the given jinja parameter and
-        add the parameter to the parameters block
+            entry_name = f'aqua-{self.diagnostic}-{metadata.get("diagnostic_product")}'
+            if entry_name in cat_file['sources']:
+                catblock = cat_file['sources'][entry_name]
+            else:
+                catblock = None
 
-        Args:
-            block (dict): The catalog entry generated by `catalog_entry_details' to be updated
-            value (str): The value to replace in the urlpath (e.g., 'r1', 'global', 'mean')
-            name (str): The name of the parameter to add to the parameters block
-                        and to be used in the urlpath (e.g., 'realization', 'region', 'stat')
-        """
-        if not value:
-            return block
+            if catblock is None:
+                # if the entry is not there, define the block to be uploaded into the catalog
+                catblock = {
+                    'driver': 'netcdf',
+                    'description': f'AQUA diagnostic {self.diagnostic} data for product {metadata.get("diagnostic_product")}',
+                    'args': {
+                        'urlpath': urlpath,
+                        'chunks': {},
+                    },
+                    'metadata': {
+                        'source_grid_name': False,
+                    }
+                }
+            else:
+                # if the entry is there, we just update the urlpath
+                catblock['args']['urlpath'] = urlpath
 
-        # this conditional is a bit tricky but is made to ensure that the right value is replaced
-        if name == 'diagnostic':
-             block['args']['urlpath'] = block['args']['urlpath'].replace(
-                 value + '.',  "{{" + name + "}}" + '.')
-        if 'parameters' not in block:
-            block['parameters'] = {}
-        if name not in block['parameters']:
-            block['parameters'][name] = {}
-            block['parameters'][name]['description'] = f"Parameter {name} for the {diagnostic}"
-            block['parameters'][name]['default'] = value
-            block['parameters'][name]['type'] = 'str'
-            block['parameters'][name]['allowed'] = [value]
-        else:
-            if value not in block['parameters'][name]['allowed']:
-                block['parameters'][name]['allowed'].append(value)
+                catblock['args']['xarray_kwargs'] = {
+                        'decode_times': True,
+                }
+            # These variables are replaced from the url as {{ variable }}
+            if jinjalist:
+                for key in jinjalist:
+                    value = metadata.get(key)
+                    if value is not None:
+                        self.logger.debug("Replacing jinja variable %s with value %s in urlpath", key, value)
+                        catblock = replace_urlpath_jinja(catblock, value, key)
+            
+            if wildcardlist:
+               for key in wildcardlist:
+                   value = metadata.get(key)
+                   if value is not None:
+                       self.logger.debug("Replacing wildcard variable %s with value %s in urlpath", key, value)
+                       catblock = replace_urlpath_wildcard(catblock, value)
 
-        # this loop is a bit tricky but is made to ensure that the right value is replaced
-        for character in ['_', '/', '.']:
-            block['args']['urlpath'] = block['args']['urlpath'].replace(
-                character + value + character, character + "{{" + name + "}}" + character)
-        if 'parameters' not in block:
-            block['parameters'] = {}
-        if name not in block['parameters']:
-            block['parameters'][name] = {}
-            block['parameters'][name]['description'] = f"Parameter {name} for the {diagnostic}"
-            block['parameters'][name]['default'] = value
-            block['parameters'][name]['type'] = 'str'
-            block['parameters'][name]['allowed'] = [value]
-        else:
-            if value not in block['parameters'][name]['allowed']:
-                block['parameters'][name]['allowed'].append(value)
+            self.logger.info('Final urlpath: %s', catblock['args']['urlpath'])
+            
+            cat_file['sources'][entry_name] = catblock
 
-        return block
+            # dump the update file
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
 
-    @staticmethod
-    def get_urlpath(block):
-        """
-        Get the urlpath for the catalog entry
-        """
-        return block['args']['urlpath']
-
-    @staticmethod
-    def replace_intake_vars(path, catalog=None):
-        """
-        Replace the intake jinja vars into a string for a predefined catalog
-
-        Args:
-            catalog:  the catalog name where the intake vars must be read
-            path: the original path that you want to update with the intake variables
-        """
-
-        # We exploit of configurerto get info on intake_vars so that we can replace them in the urlpath
-        Configurer = ConfigPath(catalog=catalog)
-        _, intake_vars = Configurer.get_machine_info()
-        
-        # loop on available intake_vars, replace them in the urlpath
-        for name in intake_vars.keys():
-            replacepath = intake_vars[name]
-            if replacepath is not None and replacepath in path:
-                # quotes used to ensure that then you can read the source
-                path = path.replace(replacepath, "{{ " + name + " }}")
-
-        return path
+        self.logger.debug("Releasing catalog file %s", catalogfile)
+        return catblock # using this in the tests
