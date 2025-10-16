@@ -5,6 +5,7 @@ import numpy as np
 from typeguard import TypeCheckError
 from aqua.fldstat import AreaSelection
 from aqua.util import select_season
+from aqua.util.sci_util import generate_quarter_configs
 
 loglevel = 'DEBUG'
 
@@ -106,3 +107,15 @@ def test_select_season():
     data_no_time = xr.DataArray(np.random.rand(12), dims=["dim_0"])
     with pytest.raises(KeyError):
         select_season(data_no_time, "DJF")
+
+
+@pytest.mark.aqua
+def test_generate_quarter_configs():
+    """Test the generate_quarter_configs function with various anchor months."""
+    result = generate_quarter_configs('DEC')
+    assert result == {'DEC': {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], 'Q3': [6, 7, 8], 'Q4': [9, 10, 11]}}
+    
+    result = generate_quarter_configs('MAR')
+    assert result == {'MAR': {'Q1': [3, 4, 5], 'Q2': [6, 7, 8], 'Q3': [9, 10, 11], 'Q4': [12, 1, 2]}}
+    with pytest.raises(ValueError):
+        generate_quarter_configs('XXX')

@@ -5,6 +5,27 @@ import xarray as xr
 xr.set_options(keep_attrs=True)
 
 
+MONTH_TO_NUM = {
+    'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
+    'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
+}
+
+TRIPLET_MONTHS = {
+    'DJF': [12, 1, 2],   # December-January-February
+    'JFM': [1, 2, 3],    # January-February-March
+    'FMA': [2, 3, 4],    # February-March-April
+    'MAM': [3, 4, 5],    # March-April-May
+    'AMJ': [4, 5, 6],    # April-May-June
+    'MJJ': [5, 6, 7],    # May-June-July
+    'JJA': [6, 7, 8],    # June-July-August
+    'JAS': [7, 8, 9],    # July-August-September
+    'ASO': [8, 9, 10],   # August-September-October
+    'SON': [9, 10, 11],  # September-October-November
+    'OND': [10, 11, 12], # October-November-December
+    'NDJ': [11, 12, 1],  # ovember-December-January
+}
+
+
 def lon_to_360(lon: float) -> float:
     """
     Convert longitude from [-180,180] (or any value) to [0,360].
@@ -76,42 +97,15 @@ def check_coordinates(lon: list | None, lat: list | None,
 def select_season(xr_data, season: str):
     """
     Select a season from a xarray.DataArray or xarray.Dataset.
-    Available seasons are:
-    - DJF: December-January-February
-    - JFM: January-February-March
-    - FMA: February-March-April
-    - MAM: March-April-May
-    - AMJ: April-May-June
-    - MJJ: May-June-July
-    - JJA: June-July-August
-    - JAS: July-August-September
-    - ASO: August-September-October
-    - SON: September-October-November
-    - OND: October-November-December
-    - NDJ: November-December-January
+
     Args:
         xr_data (xarray.DataArray or xarray.Dataset): input data
-        season (str):                                 season to be selected
+        season (str): season to be selected. Available options are defined in TRIPLET_MONTHS.
     Returns:
         (xarray.DataArray or xarray.Dataset): selected season
     """
-    triplet_months = {
-        'DJF': [12, 1, 2],
-        'JFM': [1, 2, 3],
-        'FMA': [2, 3, 4],
-        'MAM': [3, 4, 5],
-        'AMJ': [4, 5, 6],
-        'MJJ': [5, 6, 7],
-        'JJA': [6, 7, 8],
-        'JAS': [7, 8, 9],
-        'ASO': [8, 9, 10],
-        'SON': [9, 10, 11],
-        'OND': [10, 11, 12],
-        'NDJ': [11, 12, 1]
-    }
-
-    if season in triplet_months:
-        selected_months = triplet_months[season]
+    if season in TRIPLET_MONTHS:
+        selected_months = TRIPLET_MONTHS[season]
         selected =  xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
         # Add AQUA_season attribute
         selected.attrs['AQUA_season'] = season
@@ -119,8 +113,33 @@ def select_season(xr_data, season: str):
     elif season == 'annual':
         return xr_data
     else:
-        raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(triplet_months.keys())}, or 'annual' to perform no season selection.")
+        raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(TRIPLET_MONTHS.keys())}, or 'annual' to perform no season selection.")
 
+
+def generate_quarter_configs(anchor_month='DEC'):
+    """
+    Construct four consecutive quarters every 3rd triplet starting from the anchor month.
+
+    Args:
+        anchor_month (str): The anchor month for the quarterly groupings.
+
+    Returns:
+        dict: A dictionary of quarterly groupings.
+    """
+    anchor_month = anchor_month.upper()
+    if anchor_month not in MONTH_TO_NUM:
+        raise ValueError(f"Invalid anchor month: {anchor_month}. Must be one of: {', '.join(MONTH_TO_NUM.keys())}")
+
+    anchor_month_num = MONTH_TO_NUM[anchor_month]
+    triplet_keys = list(TRIPLET_MONTHS)
+
+    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys) if TRIPLET_MONTHS[key][0] == anchor_month_num)
+
+    quarter_configs = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)}
+
+    return {anchor_month: quarter_configs}
+
+    
 def merge_attrs(target, source, overwrite=False):
     """Merge attributes from source into target.
 
