@@ -22,8 +22,8 @@ references:
     exp: 'ebaf-toa421'
     source: 'monthly'
     regrid: 'r100'
-    startdate: '2000-03-01'
-    enddate: '2025-06-30'
+    startdate: '2001-01-01'
+    enddate: '2024-12-31'
 
 setup:
   loglevel: 'WARNING'
