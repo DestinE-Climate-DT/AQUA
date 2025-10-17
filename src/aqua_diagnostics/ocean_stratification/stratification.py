@@ -125,6 +125,9 @@ class Stratification(Diagnostic):
             )
             self.data = res_dict["data"]
             region = res_dict["region"]
+        else:
+            self.logger.info("No region selection applied; using global data.")
+            region = "global"
         if dim_mean:
             self.logger.debug(f"Averaging data over dimensions: {dim_mean}")
             self.data = self.data.mean(dim=dim_mean, keep_attrs=True)
