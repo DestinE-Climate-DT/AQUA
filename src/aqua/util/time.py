@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
+from aqua.util.sci_util import generate_quarter_months, TRIPLET_MONTHS
+from aqua.util.string import get_quarter_anchor_month
 from aqua.logger import log_configure
 
 def frequency_string_to_pandas(freq):
@@ -108,8 +110,8 @@ def pandas_freq_to_string(freq: str) -> str:
         'W': 'weekly',
         'weekly': 'weekly',
         # Seasonal
-        'QE-NOV': 'seasonal',
-        'QE': 'seasonal',
+        'QS-NOV': 'seasonal',
+        'QS': 'seasonal',
         # Monthly
         '1MS': 'monthly',
         'MS': 'monthly',
@@ -154,6 +156,38 @@ def _generate_expected_time_series(start_date, frequency, time_period):
     return time_series
 
 
+def chunk_dataset_times(xdataset, resample_frequency, loglevel):
+    """
+    Common setup for chunk completeness checking.
+    
+    Returns:
+        tuple: (logger, data_frequency, chunks)
+    """
+    logger = log_configure(loglevel, 'timmean_chunking')
+
+    # get frequency of the dataset. Expected to be regular!
+    data_frequency = xarray_to_pandas_freq(xdataset)
+    logger.debug('Data frequency detected as: %s', data_frequency)
+
+    # convert offset
+    pandas_period = to_offset(resample_frequency)
+
+    normalized_dates = xdataset.time.to_index().to_period(pandas_period).to_timestamp()
+    chunks = pd.date_range(start=normalized_dates[0],
+                           end=normalized_dates[-1],
+                           freq=resample_frequency)
+    
+    logger.info('%s chunks from %s to %s at %s frequency to be analysed', 
+                len(chunks), chunks[0], 
+                chunks[-1], resample_frequency)
+    
+    # if no chunks, no averages
+    if len(chunks) == 0:
+        raise ValueError(f'No chunks! Cannot compute average on {resample_frequency} period, not enough data')
+    
+    return data_frequency, chunks
+
+
 def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNING'):
     """
     Support function for timmean().
@@ -171,26 +205,9 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
         A Xarray DataArray binary, 1 for complete chunks and 0 for incomplete ones, to be used by timmean()
     """
 
+    data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel)
+
     logger = log_configure(loglevel, 'timmean_chunk_completeness')
-
-    # get frequency of the dataset. Expected to be regular!
-    data_frequency = xarray_to_pandas_freq(xdataset)
-
-    # convert offset
-    pandas_period = to_offset(resample_frequency)
-
-    normalized_dates = xdataset.time.to_index().to_period(pandas_period).to_timestamp()
-    chunks = pd.date_range(start=normalized_dates[0],
-                           end=normalized_dates[-1],
-                           freq=resample_frequency)
-
-    logger.info('%s chunks from %s to %s at %s frequency to be analysed...', 
-                len(chunks), chunks[0], 
-                chunks[-1], resample_frequency)
-
-    # if no chunks, no averages
-    if len(chunks) == 0:
-        raise ValueError(f'No chunks! Cannot compute average on {resample_frequency} period, not enough data')
 
     check_completeness = []
     # loop on the chunks
@@ -218,6 +235,113 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
 
     boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': taxis.time})
 
+    return boolean_mask
+
+
+def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-JAN', loglevel='WARNING'):
+    """
+    Support function for timmean() to check seasonal chunk completeness.
+    Verify that all seasonal (quarterly) chunks have complete months.
+    
+    For seasonal data (QS-JAN), this checks if each quarter has all 3 of its
+    constituent months. Uses the same season definitions as select_season().
+    
+    Args:
+        xdataset: The original dataset before averaging
+        resample_frequency: the frequency on which we are planning to resample, 
+                          expected to be 'QS-JAN' (or similar quarterly frequency)
+        loglevel: logging level
+    
+    Raise:
+        ValueError if there are no available chunks
+    
+    Returns:
+        A Xarray DataArray binary, 1 for complete quarters and 0 for incomplete ones
+    """
+    data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel)
+
+    anchor_month = get_quarter_anchor_month(resample_frequency)
+
+    logger = log_configure(loglevel, 'timmean_seasonal_completeness')
+    
+    # Generate quarter months: e.g. {'DEC': {'Q1': [12,1,2], 'Q2': [3,4,5], ...}}
+    quarters_full = generate_quarter_months(anchor_month)
+    quarter_months = quarters_full[anchor_month]
+    
+    # Build season_months: map from start_month 
+    # e.g., {12: {12, 1, 2}, 3: {3, 4, 5}, 6: {6, 7, 8}, 9: {9, 10, 11}}
+    season_months = {}
+    for quarter_key in ['Q1', 'Q2', 'Q3', 'Q4']:
+        months_list = quarter_months[quarter_key]
+        start_month = months_list[0]
+        season_months[start_month] = set(months_list)
+    
+    if 'D' in data_frequency or 'h' in data_frequency:
+        logger.info('Data is sub-monthly (%s), first checking monthly completeness...', data_frequency)
+        monthly_mask = check_chunk_completeness(xdataset, 
+                                                resample_frequency='MS',
+                                                loglevel=loglevel)
+        # Get only complete months, use .resample().mean() to get time axis
+        complete_month_times = xdataset.time.resample(time='MS').mean().time
+        complete_month_times = complete_month_times.where(monthly_mask, drop=True)
+
+        complete_months_available = set(complete_month_times.to_index().month)
+        logger.debug('Complete months available: %s', sorted(complete_months_available))
+    else:
+        complete_months_available = set(xdataset.time.to_index().month)
+        logger.debug('Retrieved data frequency is monthly or coarser, using all months')
+
+    check_completeness = []
+    for chunk in chunks:
+        end_date = _find_end_date(chunk, resample_frequency)
+        logger.debug('Processing seasonal chunk from %s to %s', chunk, end_date)
+        
+        # Determine which season this is based on the start month
+        start_month = chunk.month
+        expected_months = season_months.get(start_month, set())
+        
+        # Get actual months present in this quarter period.
+        quarter_data = xdataset.time[(xdataset['time'] >= chunk) & 
+                                     (xdataset['time'] < end_date)]
+        
+        if len(quarter_data) == 0:
+            actual_months = set()
+        else:
+            # Extract which months we actually have.
+            actual_months = set(quarter_data.to_index().month)
+        
+        # Check if all expected months are present and complete
+        has_all_months = expected_months.issubset(actual_months)
+        
+        # Additionally check that these months are complete
+        if 'D' in data_frequency or 'h' in data_frequency:
+            months_are_complete = expected_months.issubset(complete_months_available)
+            is_complete = has_all_months and months_are_complete
+        else:
+            # For monthly data, just check presence
+            is_complete = has_all_months
+        
+        if is_complete:
+            check_completeness.append(True)
+        else:
+            season_name = mon_to_quarter_season_name(start_month)
+            logger.warning(f"Seasonal chunk {chunk.strftime('%Y-%m')} ({season_name}) incomplete: expected months "
+                           f"{sorted(expected_months)}, found {sorted(actual_months)}, timmean() will exclude this")
+            check_completeness.append(False)
+    
+    if sum(check_completeness) == 0:
+        logger.warning(f'Not enough data to compute any complete seasonal average on {resample_frequency} period, returning empty array')
+    
+    taxis = xdataset.time.resample(time=resample_frequency).mean()
+    
+    # Create a dict mapping chunk dates to completeness flag
+    completeness_dict = {pd.Timestamp(chunk): is_complete for chunk, is_complete in zip(chunks, check_completeness)}
+    
+    # Align with the actual resampled time axis
+    aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis.time.values]
+    
+    boolean_mask = xr.DataArray(aligned_completeness, dims=('time',), coords={'time': taxis.time})
+    
     return boolean_mask
 
 
@@ -265,3 +389,17 @@ def int_month_name(month, abbreviated=False):
     return name[:3] if abbreviated else name
 
 
+def mon_to_quarter_season_name(month):
+    """
+    Convert a month number (starting month of a quarter) to season abbreviation name.
+    For QS-DEC, the quarter start months are 12, 3, 6, 9. Map them to their season based on TRIPLET_MONTHS
+    
+    Args:
+        month (int): Month number (1-12), expected to be a quarter start month
+    
+    Returns:
+        str: Season abbreviation (e.g., 'DJF', 'MAM', 'JJA', 'SON')
+    """
+    for season_name, months in TRIPLET_MONTHS.items():
+        if months[0] == month:
+            return season_name

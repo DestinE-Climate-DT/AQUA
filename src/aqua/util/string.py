@@ -30,3 +30,19 @@ def lat_to_phrase(lat: int) -> str:
         return f"{lat}°N"
     if lat < 0:
         return f"{abs(lat)}°S"
+
+
+def get_quarter_anchor_month(freq_string: str) -> str:
+    """
+    Get the anchor month from a quarterly frequency string.
+    Examples: 'QE-DEC' -> 'DEC'; 'Q-DEC' -> 'DEC'; 'QS' -> 'DEC' (default)
+
+    Args:
+        freq_string (str): The frequency string to extract the anchor month from.
+
+    Returns:
+        str: The anchor month.
+    """
+    if '-' in freq_string:
+        return freq_string.split('-')[1]
+    return 'DEC'

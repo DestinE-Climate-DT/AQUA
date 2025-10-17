@@ -5,11 +5,6 @@ import xarray as xr
 xr.set_options(keep_attrs=True)
 
 
-MONTH_TO_NUM = {
-    'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
-    'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
-}
-
 TRIPLET_MONTHS = {
     'DJF': [12, 1, 2],   # December-January-February
     'JFM': [1, 2, 3],    # January-February-March
@@ -116,7 +111,7 @@ def select_season(xr_data, season: str):
         raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(TRIPLET_MONTHS.keys())}, or 'annual' to perform no season selection.")
 
 
-def generate_quarter_configs(anchor_month='DEC'):
+def generate_quarter_months(anchor_month='JAN'):
     """
     Construct four consecutive quarters every 3rd triplet starting from the anchor month.
 
@@ -124,20 +119,24 @@ def generate_quarter_configs(anchor_month='DEC'):
         anchor_month (str): The anchor month for the quarterly groupings.
 
     Returns:
-        dict: A dictionary of quarterly groupings.
+        dict: A dictionary of quarterly month groupings.
     """
     anchor_month = anchor_month.upper()
-    if anchor_month not in MONTH_TO_NUM:
-        raise ValueError(f"Invalid anchor month: {anchor_month}. Must be one of: {', '.join(MONTH_TO_NUM.keys())}")
 
-    anchor_month_num = MONTH_TO_NUM[anchor_month]
+    monlist = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
     triplet_keys = list(TRIPLET_MONTHS)
 
-    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys) if TRIPLET_MONTHS[key][0] == anchor_month_num)
+    if anchor_month not in monlist:
+        raise ValueError(f"Invalid anchor month: {anchor_month}. Must be one of: {', '.join(monlist)}")
 
-    quarter_configs = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)}
+    anchor_month_num = monlist.index(anchor_month) + 1
 
-    return {anchor_month: quarter_configs}
+    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys) 
+                                  if TRIPLET_MONTHS[key][0] == anchor_month_num)
+
+    quarter_months = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)}
+
+    return {anchor_month: quarter_months}
 
     
 def merge_attrs(target, source, overwrite=False):
