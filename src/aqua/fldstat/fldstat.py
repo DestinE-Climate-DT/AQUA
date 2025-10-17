@@ -175,7 +175,7 @@ class FldStat():
         Compute the integral of the data over the area.
 
         Args:
-            data (xr.DataArray or xr.Dataset): The data (used for masking).
+            data (xr.DataArray or xr.Dataset): The data, used also for masking.
             areacell (xr.DataArray): The area cells.
             dims (list): Dimensions to sum over.
             
@@ -202,7 +202,8 @@ class FldStat():
         
         return area_weighted_integral
 
-    def sum_area(self, data: xr.Dataset | xr.DataArray, 
+    def sum_area(self, 
+                 data: xr.Dataset | xr.DataArray, 
                  areacell: xr.DataArray, 
                  dims: list):
         """
@@ -222,7 +223,7 @@ class FldStat():
         Returns:
             xr.DataArray or xr.Dataset: The sum of area cells
         """
-        summed_area = areacell.where(data.notnull()).sum(skipna=True, min_count=1, dim=dims)
+        summed_area = areacell.where(data).sum(skipna=True, min_count=1, dim=dims)
         
         if self.grid_name is not None:
             log_history(summed_area, f"Area summed from {self.grid_name} grid")
