@@ -298,14 +298,14 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-JAN', log
         start_month = chunk.month
         expected_months = season_months.get(start_month, set())
         
-        # Get actual months present in this quarter period.
+        # Get actual months present in this quarter period
         quarter_data = xdataset.time[(xdataset['time'] >= chunk) & 
                                      (xdataset['time'] < end_date)]
         
         if len(quarter_data) == 0:
             actual_months = set()
         else:
-            # Extract which months we actually have.
+            # Extract which months we actually have
             actual_months = set(quarter_data.to_index().month)
         
         # Check if all expected months are present and complete
