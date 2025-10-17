@@ -347,14 +347,14 @@ class Reader():
         ffdb = False
         # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-            data = self.reader_esm(self.esmcat, loadvar, startdate=startdate, enddate=enddate)
+            data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
         elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=True, level=level)
             ffdb = True  # These data have been read from fdb
         else:
-            data = self.reader_intake(self.esmcat, var, loadvar, startdate=startdate, enddate=enddate)
+            data = self.reader_intake(self.esmcat, var, loadvar)
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -384,8 +384,8 @@ class Reader():
             if data is None or len(data.data_vars) == 0:
                 self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
 
-            # if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
-            #     data = data.sel(time=slice(startdate, enddate))
+            if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+                data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
@@ -695,15 +695,13 @@ class Reader():
         return final
 
 
-    def reader_esm(self, esmcat, var, startdate=None, enddate=None):
+    def reader_esm(self, esmcat, var):
         """
         Read intake-esm entry. Returns a dataset.
 
         Args:
             esmcat (intake_esm.core.esm_datastore): The intake-esm catalog datastore to read from.
             var (str or list): Variable(s) to retrieve. If None, uses the query from catalog metadata.
-            startdate (str, optional): The starting date for filtering the data. Defaults to None.
-            enddate (str, optional): The final date for filtering the data. Defaults to None.
 
         Returns:
             xarray.Dataset: The dataset retrieved from the intake-esm catalog.
@@ -721,13 +719,7 @@ class Reader():
                                       # use_cftime=True)
                                       progressbar=False
                                       )
-        data = list(data.values())[0]
-        
-        if 'time' in data.coords and (startdate or enddate):
-            self.logger.debug(f'Filtering time: {startdate} to {enddate}')
-            data = data.sel(time=slice(startdate, enddate))
-        
-        return data
+        return list(data.values())[0]
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
@@ -874,7 +866,7 @@ class Reader():
 
         return data
 
-    def reader_intake(self, esmcat, var, loadvar, keep="first", startdate=None, enddate=None):
+    def reader_intake(self, esmcat, var, loadvar, keep="first"):
         """
         Read regular intake entry. Returns dataset.
 
@@ -883,8 +875,6 @@ class Reader():
             var (list or str): Variable to load
             loadvar (list of str): List of variables to load
             keep (str, optional): which duplicate entry to keep ("first" (default), "last" or None)
-            startdate (str, optional): The starting date for filtering the data. Defaults to None
-            enddate (str, optional): The final date for filtering the data. Defaults to None
 
         Returns:
             Dataset
@@ -895,9 +885,6 @@ class Reader():
             esmcat.xarray_kwargs.update({'decode_times': coder})
 
         data = esmcat.to_dask()
-
-        if 'time' in data.coords and (startdate or enddate):
-            data = data.sel(time=slice(startdate, enddate))
 
         if loadvar:
             loadvar = to_list(loadvar)
@@ -951,7 +938,7 @@ class Reader():
         Retrieve data without any additional processing.
         Making use of GridInspector, provide a sample data which has minimum
         size by subselecting along variables and time dimensions.
-        Uses Reader's startdate/enddate if set, otherwise retrieves first timestep only.
+        Uses Reader's startdate/enddate if set.
 
         Args:
             *args: arguments to be passed to retrieve

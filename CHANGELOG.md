@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
-- Allow start-enddate in `retrieve` for esm and intake, passed to `retrieve_plain()` (#2335)
+- Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
 - Timeseries graphical function adapted to plot multiple levels for ocean diagnostic (#2328)
 - Extending evaluate formula method to exponential and parenthesis (#2327)
 
