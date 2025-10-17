@@ -198,7 +198,12 @@ diagnostic_config = {
             'target_path': 'diagnostics/ensemble'
         },
         {
-            'config_file': 'config_timeseries_ensemble.yaml',
+            'config_file': 'config_single_model_timeseries_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        },
+        {
+            'config_file': 'config_multi_model_timeseries_ensemble.yaml',
             'source_path': 'config/diagnostics/ensemble',
             'target_path': 'diagnostics/ensemble'
         },
