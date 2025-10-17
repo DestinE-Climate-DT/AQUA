@@ -30,7 +30,7 @@ def test_ensemble_2D_LatLon():
         model_list=model_list, 
         exp_list=exp_list, 
         source_list=source_list, 
-        log_level = "WARNING",
+        loglevel = "WARNING",
         ens_dim="ensemble",
     )
     assert dataset is not None

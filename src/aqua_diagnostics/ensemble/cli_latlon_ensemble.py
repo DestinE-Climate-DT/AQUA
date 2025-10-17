@@ -145,8 +145,6 @@ if __name__ == "__main__":
 
                 ens_latlon_plot = PlotEnsembleLatLon(
                     **plot_class_arguments,
-                    dataset_mean=ens_latlon.dataset_mean,
-                    dataset_std=ens_latlon.dataset_std,
                 )
                 
                 # PlotEnsembleLatLon plot options
@@ -166,6 +164,8 @@ if __name__ == "__main__":
                     "coastlines": True,
                     "cbar_label": None,
                     "units": units,
+                    "dataset_mean":ens_latlon.dataset_mean,
+                    "dataset_std":ens_latlon.dataset_std,
                 }
 
                 ens_latlon_plot.plot(**plot_arguments)

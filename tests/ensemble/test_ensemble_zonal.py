@@ -28,8 +28,9 @@ def test_ensemble_zonal():
         catalog_list=catalog_list, 
         model_list=model_list, 
         exp_list=exp_list, 
-        source_list=source_list, 
-        log_level = "WARNING",
+        source_list=source_list,
+        realization=None, 
+        loglevel = "WARNING",
         ens_dim="ensemble"
     )
     assert dataset is not None
@@ -76,10 +77,6 @@ def test_ensemble_zonal():
 
     plot_arguments = {
         "var": var,
-        "catalog_list": catalog_list,
-        "model_list": model_list,
-        "exp_list": exp_list,
-        "source_list": source_list,
         "save_pdf": True,
         "save_png": True,
         "title_mean": "Test data",

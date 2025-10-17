@@ -22,8 +22,6 @@ class PlotEnsembleLatLon(BaseMixin):
         exp_list: list[str] = None,
         source_list: list[str] = None,
         region: str = None,
-        dataset_mean=None,
-        dataset_std=None,
         outputdir="./",
         loglevel: str = "WARNING",
     ):
@@ -105,8 +103,6 @@ class PlotEnsembleLatLon(BaseMixin):
             units = dataset_mean.attrs.get("units", None)
             #units = dataset_mean[var].units
         if cbar_label is None and units is not None:
-            print(var)
-            print(units)
             cbar_label = var + " in " + units
 
         if isinstance(self.model, list):
@@ -116,7 +112,6 @@ class PlotEnsembleLatLon(BaseMixin):
         if long_name is None: 
             long_name = dataset_mean.attrs.get("long_name", None)
             if long_name is None: long_name = var
-            print(long_name)
         if units is not None:
             if title_mean is None: title_mean = "Ensemble mean of " + model_str + " for " + long_name + " " + units 
             if title_std is None: title_std = "Ensemble standard deviation of " + model_str + " for " + long_name + " " + units

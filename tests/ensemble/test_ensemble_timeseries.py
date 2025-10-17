@@ -30,7 +30,7 @@ def test_ensemble_timeseries():
         model_list=model_list,
         exp_list=exp_list,
         source_list=source_list,
-        log_level = "WARNING",
+        loglevel = "WARNING",
         ens_dim="ensemble",
     )
     assert dataset is not None
@@ -77,12 +77,8 @@ def test_ensemble_timeseries():
         **plot_class_arguments,
         outputdir=tmp_path,
     )
-    plot_class_arguments = {
+    plot_arguments = {
         "var": var,
-        "catalog_list": catalog_list,
-        "model_list": model_list,
-        "exp_list": exp_list,
-        "source_list": source_list,
         "save_pdf": True,
         "save_png": True,
         "plot_ensemble_members": True,
@@ -97,7 +93,7 @@ def test_ensemble_timeseries():
         "ref_annual_data":ts.annual_data_mean,
     }
 
-    fig, ax = ts_plot.plot(**plot_class_arguments) 
+    fig, ax = ts_plot.plot(**plot_arguments) 
 
     assert fig is not None
     assert ax is not None 

@@ -68,7 +68,7 @@ def reader_retrieve_and_merge(
     logger.info("Loading and merging the ensemble dataset using the Reader class")
    
     if all(not v for v in [catalog_list, model_list, exp_list, source_list]):
-        logger.warning("All of catalog, model, exp, and source are None or empty. Exiting merge_from_data_files.")
+        logger.warning("All of catalog, model, exp, and source are None or empty. Exiting reader_retrieve_and_merge.")
         return None
     # Ensure consistent list types
     if isinstance(catalog_list, str):
@@ -91,6 +91,10 @@ def reader_retrieve_and_merge(
             if reals is None:
                 logger.info(f"No realizations defined for {model_i}, using default ['r1']")
                 reals = ['r1']
+        else:
+            logger.info(f"No realizations defined for {model_i}, using default ['r1']")
+            reals = ['r1']
+
         model_ds_list = []
 
         for r in reals:
