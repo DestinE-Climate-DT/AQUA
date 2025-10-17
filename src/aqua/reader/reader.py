@@ -696,7 +696,16 @@ class Reader():
 
 
     def reader_esm(self, esmcat, var):
-        """Reads intake-esm entry. Returns a dataset."""
+        """
+        Read intake-esm entry. Returns a dataset.
+
+        Args:
+            esmcat (intake_esm.core.esm_datastore): The intake-esm catalog datastore to read from.
+            var (str or list): Variable(s) to retrieve. If None, uses the query from catalog metadata.
+
+        Returns:
+            xarray.Dataset: The dataset retrieved from the intake-esm catalog.
+        """
         cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
         query = esmcat.metadata['query']
         if var:
@@ -928,7 +937,8 @@ class Reader():
         """
         Retrieve data without any additional processing.
         Making use of GridInspector, provide a sample data which has minimum
-        size by subselecting along variables and time dimensions 
+        size by subselecting along variables and time dimensions.
+        Uses Reader's startdate/enddate if set.
 
         Args:
             *args: arguments to be passed to retrieve
@@ -942,8 +952,9 @@ class Reader():
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, streaming=False,
-                                   startdate=None, enddate=None, preproc=None):
+        with self._temporary_attrs(aggregation=None, chunks=None, 
+                                   fix=False, streaming=False,
+                                   preproc=None):
             self.logger.debug('Getting sample data through _retrieve_plain()...')
             data = self.retrieve(history=False, *args, **kwargs)
 

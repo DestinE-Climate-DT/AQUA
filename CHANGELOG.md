@@ -9,10 +9,12 @@ Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
 - Offline cartopy data added to environment (#2344)
+- Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
 - Timeseries graphical function adapted to plot multiple levels for ocean diagnostic (#2328)
 - Extending evaluate formula method to exponential and parenthesis (#2327)
 
 AQUA diagnostics complete list:
+- Global Biases: add 10si as formula to config file (#2338)
 - LatLonProfiles: tests implementation (#2339)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
 - Implement `fldstat` methods in Seaice diagnostics (#2297)
