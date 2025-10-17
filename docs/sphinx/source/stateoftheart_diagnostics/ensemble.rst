@@ -38,28 +38,30 @@ Structure
 * ``plot_ensemble_latlon.py``: contains the ``PlotEnsembleLatLon.py`` class.
 * ``ensembleZonal.py``: contains the ``EnsembleZonal`` class.
 * ``plot_ensemble_zonal.py``: contains the ``PlotEnsembleLatLon.py`` class.
-* ``cli_timeseries_ensemble.py``: the command line interfance (CLI) script to run the ensemble-timeseries ``1D`` diagnostic.
+* ``cli_multi_model_timeseries_ensemble``: the command line interfance (CLI) script to run the ensemble-timeseries ``1D`` diagnostic (mulit-model).
+* ``cli_single_model_timeseries_ensemble``: the command line interfance (CLI) script to run the ensemble-timeseries ``1D`` diagnostic (single-model-ensemble).
 * ``cli_global_2D_ensemble.py``: the command line interfance (CLI) script to run the ensemble-2D-maps in ``Lat-Lon`` diagnostic.
 * ``cli_zonal_ensemble.py``: the command line interfance (CLI) script to run the ensemble-zonal ``Lev-Lon`` diagnostic.
-* ``util.py``: contains the ``retrieve_merge_ensemble_data`` and ``compute_statistics`` functions.
+* ``util.py``: contains the ``reader_retrieve_and_merge``, ``merge_from_data_files`` and ``compute_statistics`` functions.
 * ``base.py``: contains the base class which contains functions for saving the output as png, pdf and netcdf.
 * ``config/diagnostics/ensemble/config_global_2D_ensemble.yaml``: config file for ``cli_global_2D_ensemble.py``.
-* ``config/diagnostics/ensemble/config_timeseries_ensemble.yaml``: config file for ``ensembleTimeseries.py``.
+* ``config/diagnostics/ensemble/config_multi_model_timeseries_ensemble.yaml``: config file for ``ensembleTimeseries.py``.
+* ``config/diagnostics/ensemble/config_single_model_timeseries_ensemble.yaml``: config file for ``ensembleTimeseries.py``.
 * ``config/diagnostics/ensemble/config_zonalmean_ensemble.yaml``: config file for ``ensembleZonal.py``.
 
 Input variables
 ---------------
 
-In order to use the ``Ensemble`` module, a pre-processing step is required. To load and to merge the input data, ``aqua.diagnostics.ensemble.util.retrieve_merge_ensemble_data`` can be used which takes the list of paths of data or uses catalog entries. In this step one has to merge all the given ``1D`` timeseries, ``2D`` ``Lat-Lon`` Map and Zonal-averages ``Lev-Lon`` for ``EnsembleTimeseries``, ``EnsembleLatLon`` and ``EnsembleZonal`` along a pesudo-dimension, respectively. The default dimension is simply named as ``ensemble`` and can be changed. One can load the data directly as ``xarray.Dataset`` or can use the ``aqua`` ``Reader`` class. For example loading and merging a 2D maps ensemble into an ``xarray,Dataset``: 
+In order to use the ``Ensemble`` module, a pre-processing step is required. To load and to merge the input data via ``Reader`` class use ``aqua.diagnostics.ensemble.util.reader_retrieve_and_merge``. Additional functionality of this module is to load and merge using the list of paths of data via ``merge_from_data_files``. In this step one has to merge all the given ``1D`` timeseries, ``2D`` ``Lat-Lon`` Map and Zonal-averages ``Lev-Lon`` for ``EnsembleTimeseries``, ``EnsembleLatLon`` and ``EnsembleZonal`` along a pesudo-dimension, respectively. The default dimension is simply named as ``ensemble`` and can be changed. One can load the data directly as ``xarray.Dataset`` or can use the ``aqua`` ``Reader`` class. For example loading and merging a 2D maps ensemble into an ``xarray.Dataset``: 
 
 .. code-block:: python
    
    import glob
-   from  aqua.diagnostics import retrieve_merge_ensemble_data
+   from  aqua.diagnostics import merge_from_data_files
    
    file_list = glob.glob('/work/ab0995/a270260/pre_computed_aqua_analysis/*/historical-1990/atmglobalmean/netcdf/atmglobalmean.statistics_maps.2t.*_historical-1990.nc')
    file_list.sort()
-   ens_dataset = retrieve_merge_ensemble_data(
+   ens_dataset = merge_from_data_files(
        variable='2t', 
        model_names= ['IFS-FESOM', 'IFS-NEMO'], 
        data_path_list=file_list, 
@@ -71,7 +73,9 @@ A second method:
 
 .. code-block:: python
 
-   ens_dataset = retrieve_merge_ensemble_data(
+   from  aqua.diagnostics import reader_retrieve_and_merge
+
+   ens_dataset = reader_retrieve_and_merge(
        variable='2t',
        catalog_list=['null', 'null'],
        models_catalog_list=['IFS-FESOM', 'IFS-NEMO'],
@@ -81,6 +85,32 @@ A second method:
        ens_dim="ensemble",
    )
 
+Ensemble computation
+--------------------
+
+The ensemble statistics is performed on merged ``1D`` timesereies by ``EnsembleTimeseries``, ``2D`` map by ``EnsembleLatLon``, and zonal ``Lev-Lon`` by ``EnsembleZonal`` classes. Note that in the current version we provide ``point-wise`` ``ensemble`` ``mean`` and ``standard-deviation``. 
+
+.. code-block:: python
+
+   from aqua.diagnostics import EnsembleTimeseries
+   from aqua.diagnostics import PlotEnsembleTimeseries
+   from aqua.diagnostics import merge_from_data_files
+
+   # Check if we need monthly and annual time variables
+   ts = EnsembleTimeseries(                                                                               
+       var=variable,
+       model_list=['IFS-FESOM', 'IFS-NEMO'],
+       monthly_data=mon_model_dataset,                                                                      
+       annual_data=ann_model_dataset,                                                                        
+       outputdir='./',
+       loglevel='WARNING',
+   )   
+                 
+   # Compute statistics and save the results as netcdf                                                    
+   ts.run() 
+
+Ensemble Plotting
+-----------------
 
 The default values for the plotting fuction has been already set as default values. These values can also be by simply defining a python ``dictionary`` e.g., in the case of the ``EnsembleTimeseries``,
 ``plot_options = {'plot_ensemble_members': True, 'ensemble_label': 'Multi-model', 'plot_title': 'Ensemble statistics for 2-meter temperature [K]', 'ref_label': 'ERA5', 'figure_size': [12,6]}``.
@@ -90,6 +120,47 @@ For ``EnsembleLatLon``,
 
 For ``EnsembleZonal``, 
 ``plot_options = {'figure_size': [12,8], 'plot_label': True, 'plot_std': True, 'unit': None, 'mean_plot_title': 'Mean of Ensemble of Zonal average', 'std_plot_title':  'Standard deviation of Ensemble of Zonal average', 'cbar_label': 'temperature in K', 'dpi': 300}``.
+
+.. code-block:: python
+
+   from aqua.diagnostics import PlotEnsembleTimeseries
+   # PlotEnsembleTimeseries class                                                                         
+   plot_class_arguments = {                                                                                     
+       "model_list": ['IFS-FESOM', 'IFS-NEMO'],
+       "ref_model": 'ERA5',
+   }
+
+   plot_arguments = {    
+       "var": variable,
+       "save_pdf": True,
+       "save_png": True,
+       "plot_ensemble_members": True,
+       "monthly_data": ts.monthly_data,                                                                      
+       "monthly_data_mean": ts.monthly_data_mean,                                                            
+       "monthly_data_std": ts.monthly_data_std,                                                              
+       "annual_data": ts.annual_data,
+       "annual_data_mean": ts.annual_data_mean,                                                              
+       "annual_data_std": ts.annual_data_std,
+       "ref_monthly_data": mon_ref_data,
+       "ref_annual_data": ann_ref_data,}
+
+   ensemble_plot = ts_plot.plot(**plot_arguments)
+
+
+   ts_plot = PlotEnsembleTimeseries(                                                                      
+       **plot_class_arguments,   
+       loglevel='WARNING',
+   ) 
+
+Ensemble module provides output plots as PDF and PNG. 
+
+.. figure:: figures/ensemble_time_series_timeseries_2t.png
+    :align: center
+    :width: 100%
+    
+    Ensemble of multi-model global monthly and annual timeseries and compared with ERA5 global monthly and annual average. Models considered as IFS-NEMO and IFS-FESOM.
+
+
  
 Basic usage
 -----------
@@ -105,13 +176,7 @@ Notebooks are stored in ``notebooks/ensemble``:
 Example Plots
 -------------
 
-Ensemble module provides output plots as PDF and PNG. 
-
-.. figure:: figures/ensemble_time_series_timeseries_2t.png
-    :align: center
-    :width: 100%
-    
-    Ensemble of multi-model global monthly and annual timeseries and compared with ERA5 global monthly and annual average. Models considered as IFS-NEMO and IFS-FESOM.
+Other example of ensemble module provides output plots as PDF and PNG. 
 
 .. figure:: figures/2t_LatLon_mean.png
     :align: center

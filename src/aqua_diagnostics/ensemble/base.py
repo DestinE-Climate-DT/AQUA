@@ -358,56 +358,58 @@ class BaseMixin(Diagnostic):
                 else:
                     raise ValueError(f"Format {format} not supported. Use png or pdf.")
 
-        if fig_std is not None:
-            metadata = {"Description": description}
-            extra_keys = {}
-
             if fig_std is not None:
-                outputsaver = OutputSaver(
-                    diagnostic=self.diagnostic_name,
-                    #diagnostic_product=self.diagnostic_product,
-                    catalog=self.catalog,
-                    model=self.model,
-                    exp=self.exp,
-                    model_ref=self.ref_model,
-                    exp_ref=self.ref_exp,
-                    outputdir=self.outputdir,
-                    loglevel=self.loglevel,
-                )
+                metadata = {"Description": description}
                 extra_keys = {}
-                #if fig_std is not None:
-                #    data = "std"
-                data = "std"
-                if var is not None:
-                    extra_keys.update({"var": var, "data": data})
-                if self.region is not None:
-                    extra_keys.update({"region": self.region})
-                if format == "pdf":
-                    outputsaver.save_pdf(
-                        fig_std,
-                        diagnostic_product=self.diagnostic_product,
-                        extra_keys=extra_keys,
-                        metadata=metadata,
+
+                if fig_std is not None:
+                    outputsaver = OutputSaver(
+                        diagnostic=self.diagnostic_name,
+                        #diagnostic_product=self.diagnostic_product,
+                        catalog=self.catalog,
+                        model=self.model,
+                        exp=self.exp,
+                        model_ref=self.ref_model,
+                        exp_ref=self.ref_exp,
+                        outputdir=self.outputdir,
+                        loglevel=self.loglevel,
                     )
-                elif format == "png":
-                    outputsaver.save_png(
-                        fig_std,
-                        #diagnostic=self.diagnostic_name,
-                        diagnostic_product=self.diagnostic_product,
-                        extra_keys=extra_keys,
-                        metadata=metadata,
-                    )
-                else:
-                    raise ValueError(f"Format {format} not supported. Use png or pdf.")
+                    extra_keys = {}
+                    #if fig_std is not None:
+                    #    data = "std"
+                    data = "std"
+                    if var is not None:
+                        extra_keys.update({"var": var, "data": data})
+                    if self.region is not None:
+                        extra_keys.update({"region": self.region})
+                    if format == "pdf":
+                        outputsaver.save_pdf(
+                            fig_std,
+                            diagnostic_product=self.diagnostic_product,
+                            extra_keys=extra_keys,
+                            metadata=metadata,
+                        )
+                    elif format == "png":
+                        outputsaver.save_png(
+                            fig_std,
+                            #diagnostic=self.diagnostic_name,
+                            diagnostic_product=self.diagnostic_product,
+                            extra_keys=extra_keys,
+                            metadata=metadata,
+                        )
+                    else:
+                        raise ValueError(f"Format {format} not supported. Use png or pdf.")
         else:
             if fig:
                 extra_keys = {"statistics": "mean"}
                 extra_keys.update(metadata)
+                extra_keys = {k: str(v) for k, v in extra_keys.items()}
                 fig.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png",bbox_inches="tight", metadata=extra_keys)
                 self.logger.info(f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png")
             if fig_std:
                 extra_keys = {"statistics": "standard deviation"}
                 extra_keys.update(metadata)
+                extra_keys = {k: str(v) for k, v in extra_keys.items()}
                 fig_std.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png",bbox_inches="tight", metadata=extra_keys)
                 self.logger.info(f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png")
 
