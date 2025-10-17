@@ -210,14 +210,12 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     logger = log_configure(loglevel, 'timmean_chunk_completeness')
 
     check_completeness = []
-    # loop on the chunks
     for chunk in chunks:
         end_date = _find_end_date(chunk, resample_frequency)
         logger.debug('Processing chunk from %s to %s', chunk, end_date)
         expected_timeseries = _generate_expected_time_series(chunk, data_frequency,
                                                              resample_frequency)
         expected_len = len(expected_timeseries)
-        # effective_len = len(xdataset.time.sel(time=slice(chunk, end_date)))
         effective_len = len(xdataset.time[(xdataset['time'] >= chunk) &
                                           (xdataset['time'] < end_date)])
         logger.debug('Expected chunk length: %s, Effective chunk length: %s', expected_len, effective_len)
