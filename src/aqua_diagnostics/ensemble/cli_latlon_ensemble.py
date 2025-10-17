@@ -8,15 +8,18 @@ defined in a yaml configuration file for multiple models.
 import argparse
 import sys
 
-from aqua.util import get_arg
+from aqua.diagnostics import EnsembleLatLon, PlotEnsembleLatLon, reader_retrieve_and_merge
+from aqua.diagnostics.core import (
+    close_cluster,
+    load_diagnostic_config,
+    merge_config_args,
+    open_cluster,
+    template_parse_arguments,
+)
 from aqua.logger import log_configure
+from aqua.util import get_arg
 from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
-from aqua.diagnostics import reader_retrieve_and_merge
-from aqua.diagnostics import EnsembleLatLon
-from aqua.diagnostics import PlotEnsembleLatLon
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleLatLon diagnostic.
@@ -27,6 +30,7 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description="EnsembleLatLon CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
+
 
 if __name__ == "__main__":
 
@@ -84,8 +88,8 @@ if __name__ == "__main__":
                     models[0]["model"] = get_arg(args, "model", models[0]["model"])
                     models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
                     models[0]["source"] = get_arg(args, "source", models[0]["source"])
-                    models[0]["regrid"] = get_arg(args, 'regrid',  models[0]["regrid"])
-                    models[0]["realization"] = get_arg(args, 'realization',  models[0]["realization"])
+                    models[0]["regrid"] = get_arg(args, "regrid", models[0]["regrid"])
+                    models[0]["realization"] = get_arg(args, "realization", models[0]["realization"])
                     for model in models:
                         catalog_list.append(model["catalog"])
                         model_list.append(model["model"])
@@ -100,12 +104,12 @@ if __name__ == "__main__":
                     model_list=model_list,
                     exp_list=exp_list,
                     source_list=source_list,
-                    regrid = models[0]["regrid"],
+                    regrid=models[0]["regrid"],
                     realization=realization_dict,
                     loglevel="WARNING",
                     ens_dim="ensemble",
                 )
-                
+
                 # Initialize EnsembleLatLon class
                 ens_latlon = EnsembleLatLon(
                     var=variable,
@@ -129,24 +133,24 @@ if __name__ == "__main__":
                     "outputdir": outputdir,
                 }
 
-                all_plot_params = config_dict['diagnostics']['ensemble'].get('plot_params', {})
-                default_params = all_plot_params.get('default', {})
+                all_plot_params = config_dict["diagnostics"]["ensemble"].get("plot_params", {})
+                default_params = all_plot_params.get("default", {})
                 var_params = all_plot_params.get(variable, {})
                 plot_params = {**default_params, **var_params}
-                proj = plot_params.get('projection', 'robinson')
-                proj_params = plot_params.get('projection_params', {})
-                cmap= plot_params.get('cmap', 'RdBu_r')
-                vmin_mean, vmax_mean = plot_params.get('vmin'), plot_params.get('vmax')
-                vmin_std, vmax_std = plot_params.get('vmin_std'), plot_params.get('vmax_std')
-                param_dict = config_dict['diagnostics']['ensemble'].get('params', {}).get(variable, {})
-                units = param_dict.get('units', None)
-                long_name = param_dict.get('long_name', None)
-                short_name = param_dict.get('short_name', None)
+                proj = plot_params.get("projection", "robinson")
+                proj_params = plot_params.get("projection_params", {})
+                cmap = plot_params.get("cmap", "RdBu_r")
+                vmin_mean, vmax_mean = plot_params.get("vmin"), plot_params.get("vmax")
+                vmin_std, vmax_std = plot_params.get("vmin_std"), plot_params.get("vmax_std")
+                param_dict = config_dict["diagnostics"]["ensemble"].get("params", {}).get(variable, {})
+                units = param_dict.get("units", None)
+                long_name = param_dict.get("long_name", None)
+                short_name = param_dict.get("short_name", None)
 
                 ens_latlon_plot = PlotEnsembleLatLon(
                     **plot_class_arguments,
                 )
-                
+
                 # PlotEnsembleLatLon plot options
                 plot_arguments = {
                     "save_pdf": save_pdf,
@@ -164,14 +168,12 @@ if __name__ == "__main__":
                     "coastlines": True,
                     "cbar_label": None,
                     "units": units,
-                    "dataset_mean":ens_latlon.dataset_mean,
-                    "dataset_std":ens_latlon.dataset_std,
+                    "dataset_mean": ens_latlon.dataset_mean,
+                    "dataset_std": ens_latlon.dataset_std,
                 }
 
                 ens_latlon_plot.plot(**plot_arguments)
                 logger.info(f"Finished Ensemble_latLon diagnostic for {variable}.")
 
     # Close the Dask client and cluster
-    close_cluster(
-        client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel
-    )
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)

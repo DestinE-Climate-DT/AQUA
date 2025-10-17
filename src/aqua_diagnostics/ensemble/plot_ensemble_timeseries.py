@@ -1,16 +1,17 @@
-import xarray as xr
 import pandas as pd
-#from aqua.logger import log_configure
-#from aqua.exceptions import NoDataError
-from .base import BaseMixin
+import xarray as xr
 from aqua.graphics import plot_timeseries
+
+# from aqua.logger import log_configure
+# from aqua.exceptions import NoDataError
+from .base import BaseMixin
 
 xr.set_options(keep_attrs=True)
 
 
 class PlotEnsembleTimeseries(BaseMixin):
     """Class to plot the ensmeble timeseries"""
-    
+
     # TODO: support hourly and daily data
 
     def __init__(
@@ -24,24 +25,24 @@ class PlotEnsembleTimeseries(BaseMixin):
         ref_model: str = None,
         ref_exp: str = None,
         region: str = None,
-        outputdir='./',
+        outputdir="./",
         loglevel: str = "WARNING",
     ):
         """
         Args:
             diagnostic_name (str): The name of the diagnostic. Default is 'ensemble'.
                                    This will be used to configure the logger and the output files.
-            catalog_list (str): This variable defines the catalog list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_catalog'. In case of Multi-catalogs, 
+            catalog_list (str): This variable defines the catalog list. The default is 'None'.
+                                    If None, the variable is assigned to 'None_catalog'. In case of Multi-catalogs,
                                     the variable is assigned to 'multi-catalog'.
-            model_list (str): This variable defines the model list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_model'. In case of Multi-Model, 
+            model_list (str): This variable defines the model list. The default is 'None'.
+                                    If None, the variable is assigned to 'None_model'. In case of Multi-Model,
                                     the variable is assigned to 'multi-model'.
-            exp_list (str): This variable defines the exp list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_exp'. In case of Multi-Exp, 
+            exp_list (str): This variable defines the exp list. The default is 'None'.
+                                    If None, the variable is assigned to 'None_exp'. In case of Multi-Exp,
                                     the variable is assigned to 'multi-exp'.
-            source_list (str): This variable defines the source list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_source'. In case of Multi-Source, 
+            source_list (str): This variable defines the source list. The default is 'None'.
+                                    If None, the variable is assigned to 'None_source'. In case of Multi-Source,
                                     the variable is assigned to 'multi-source'.
             ref_catalog (str): This is specific to timeseries reference data catalog. Default is None.
             ref_model (str): This is specific to timeseries reference data model. Default is None.
@@ -51,7 +52,7 @@ class PlotEnsembleTimeseries(BaseMixin):
             outputdir (str): String input for output path. Default is './'
             loglevel (str): Log level. Default is "WARNING".
         """
-        
+
         self.diagnostic_product = diagnostic_product
 
         self.catalog_list = catalog_list
@@ -61,8 +62,8 @@ class PlotEnsembleTimeseries(BaseMixin):
         self.ref_catalog = ref_catalog
         self.ref_model = ref_model
         self.ref_exp = ref_exp
-        # TODO: Include region information 
-        #self.region = region
+        # TODO: Include region information
+        # self.region = region
 
         self.outputdir = outputdir
         self.loglevel = loglevel
@@ -77,16 +78,43 @@ class PlotEnsembleTimeseries(BaseMixin):
             ref_catalog=self.ref_catalog,
             ref_model=self.ref_model,
             ref_exp=self.ref_exp,
-            outputdir=self.outputdir,            
+            outputdir=self.outputdir,
         )
 
-    def plot(self, var=None, title=None, startdate=None, enddate=None, hourly_data=None, hourly_data_mean=None, hourly_data_std=None, daily_data=None, daily_data_mean=None, daily_data_std=None, monthly_data=None, monthly_data_mean=None, monthly_data_std=None, annual_data=None, annual_data_mean=None, annual_data_std=None, ref_hourly_data=None, ref_daily_data=None, ref_monthly_data=None, ref_annual_data=None, description=None, save_pdf=True, save_png=True, figure_size=[10, 5], plot_ensemble_members=True):
+    def plot(
+        self,
+        var=None,
+        title=None,
+        startdate=None,
+        enddate=None,
+        hourly_data=None,
+        hourly_data_mean=None,
+        hourly_data_std=None,
+        daily_data=None,
+        daily_data_mean=None,
+        daily_data_std=None,
+        monthly_data=None,
+        monthly_data_mean=None,
+        monthly_data_std=None,
+        annual_data=None,
+        annual_data_mean=None,
+        annual_data_std=None,
+        ref_hourly_data=None,
+        ref_daily_data=None,
+        ref_monthly_data=None,
+        ref_annual_data=None,
+        description=None,
+        save_pdf=True,
+        save_png=True,
+        figure_size=[10, 5],
+        plot_ensemble_members=True,
+    ):
         """
         This plots the ensemble mean and +/- 2 x standard deviation of the ensemble statistics
         around the ensemble mean.
         In this method, it is also possible to plot the individual ensemble members.
         It does not plots +/- 2 x STD for the referene.
-        
+
         Args:
             title (str): Title for plot.
             startdate (str): startdate to be included in title if 'None'. Default is 'None'.
@@ -114,7 +142,7 @@ class PlotEnsembleTimeseries(BaseMixin):
                      The ensemble members are concatenated along the dimension "ensemble"
             ensemble_dimension_name="ensemble" (str): a default name given to the
                      dimensions along with the individual Datasets were concatenated.
-            monthly_data_mean: xarray.Dataset timeseries monthly mean. 
+            monthly_data_mean: xarray.Dataset timeseries monthly mean.
             monthly_data_std: xarray.Dataset timeseries monthly std.
             annual_data_mean: xarray.Dataset timeseries annual mean.
             annual_data_std: xarray.Dataset timeseries annual std.
@@ -133,7 +161,7 @@ class PlotEnsembleTimeseries(BaseMixin):
         if isinstance(self.model, list):
             model_str = " ".join(str(x) for x in self.model)
         else:
-            model_str = str(self.model) 
+            model_str = str(self.model)
 
         if title is None:
             if startdate is None and enddate is None:
@@ -143,8 +171,8 @@ class PlotEnsembleTimeseries(BaseMixin):
                 startdate = startdate.strftime("%Y-%m-%d")
                 enddate = pd.Timestamp(enddate)
                 enddate = enddate.strftime("%Y-%m-%d")
-                title = f"Ensemble analysis of {model_str} ({startdate} - {enddate})"        
-        
+                title = f"Ensemble analysis of {model_str} ({startdate} - {enddate})"
+
         fig, ax = plot_timeseries(
             ref_monthly_data=ref_monthly_data,
             ref_annual_data=ref_annual_data,
@@ -175,7 +203,7 @@ class PlotEnsembleTimeseries(BaseMixin):
 
         # Saving plots
         if save_png:
-            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format='png')
+            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format="png")
         if save_pdf:
-            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format='pdf')
+            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format="pdf")
         return fig, ax

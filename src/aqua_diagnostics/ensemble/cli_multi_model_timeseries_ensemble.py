@@ -6,7 +6,7 @@ This CLI allows to plot ensemle of global timeseries of a variable
 defined in a yaml configuration file for multiple models.
 
 NOTE: Since the reference data is not in the catalog the data is loaded from the path
-      Once the reference data is uploaded in the catalog, line 170-192 can be un-commented 
+      Once the reference data is uploaded in the catalog, line 170-192 can be un-commented
       and line 194-217 can be removed/commented.
 """
 
@@ -14,15 +14,18 @@ import argparse
 import sys
 
 import xarray as xr
-from aqua.util import get_arg
+from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge
+from aqua.diagnostics.core import (
+    close_cluster,
+    load_diagnostic_config,
+    merge_config_args,
+    open_cluster,
+    template_parse_arguments,
+)
 from aqua.logger import log_configure
+from aqua.util import get_arg
 from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
-from aqua.diagnostics import reader_retrieve_and_merge
-from aqua.diagnostics import EnsembleTimeseries
-from aqua.diagnostics import PlotEnsembleTimeseries
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleTimeseries diagnostic.
@@ -33,6 +36,7 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description="EnsembleTimeseries CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
+
 
 if __name__ == "__main__":
 
@@ -78,24 +82,14 @@ if __name__ == "__main__":
             for variable in config_dict["diagnostics"]["ensemble"].get("variable", None):
                 logger.info(f"Variable under consideration: {variable}")
 
-                startdate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                    "startdate_data", None
+                startdate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("startdate_data", None)
+                enddate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("enddate_data", None)
+                startdate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("startdate_ref", None)
+                enddate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("enddate_ref", None)
+                title = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get("title", None)
+                plot_ensemble_members = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                    "plot_ensemble_members", True
                 )
-                enddate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                    "enddate_data", None
-                )
-                startdate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                    "startdate_ref", None
-                )
-                enddate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                    "enddate_ref", None
-                )
-                title = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                    "title", None
-                )
-                plot_ensemble_members = config_dict["diagnostics"]["ensemble"]["plot_params"][
-                    "default"
-                ].get("plot_ensemble_members", True)
 
                 # Model data
                 # TODO: hourly and daily data
@@ -114,14 +108,14 @@ if __name__ == "__main__":
                 annual_source_list = []
                 # All the realizations will be appended here with the key of model names
                 annual_realization_dict = {}
-                
+
                 if models is not None:
                     models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
                     models[0]["model"] = get_arg(args, "model", models[0]["model"])
                     models[0]["exp"] = get_arg(args, "exp", models[0]["exp"])
                     models[0]["source"] = get_arg(args, "source", models[0]["source"])
-                    models[0]["regrid"] = get_arg(args, 'regrid',  models[0]["regrid"])
-                    models[0]["realization"] = get_arg(args, 'realization',  models[0]["realization"])
+                    models[0]["regrid"] = get_arg(args, "regrid", models[0]["regrid"])
+                    models[0]["realization"] = get_arg(args, "realization", models[0]["realization"])
                     for model in models:
                         if model["source"] == "aqua-timeseries-monthly":
                             monthly_catalog_list.append(model["catalog"])
@@ -144,7 +138,7 @@ if __name__ == "__main__":
                     model_list=monthly_model_list,
                     exp_list=monthly_exp_list,
                     source_list=monthly_source_list,
-                    regrid = models[0]["regrid"],
+                    regrid=models[0]["regrid"],
                     realization=monthly_realization_dict,
                     startdate=startdate_data,
                     enddate=enddate_data,
@@ -152,7 +146,7 @@ if __name__ == "__main__":
 
                 if monthly_dataset is None:
                     logger.warning("Monthly ensemble data is not provided.")
- 
+
                 # Reterieve annual data
                 annual_dataset = reader_retrieve_and_merge(
                     variable=variable,
@@ -160,13 +154,13 @@ if __name__ == "__main__":
                     model_list=annual_model_list,
                     exp_list=annual_exp_list,
                     source_list=annual_source_list,
-                    regrid = models[0]["regrid"],
+                    regrid=models[0]["regrid"],
                     realization=annual_realization_dict,
                     startdate=startdate_data,
                     enddate=enddate_data,
                 )
                 if annual_dataset is None:
-                    logger.warning("Annual ensemble data is not provided.")                
+                    logger.warning("Annual ensemble data is not provided.")
 
                 # Reference monthly data
                 ref = config_dict["references"]
@@ -214,22 +208,16 @@ if __name__ == "__main__":
                 ERA5_monthly = "/work/ab0995/a270260/pre_computed_aqua_analysis/IFS-FESOM/historical-1990/global_time_series/netcdf/global_time_series_timeseries_2t_ERA5_era5_mon.nc"
                 monthly_ref_data = xr.open_dataset(
                     ERA5_monthly,
-                    drop_variables=[
-                        var for var in xr.open_dataset(ERA5_monthly).data_vars if var != variable
-                    ],
+                    drop_variables=[var for var in xr.open_dataset(ERA5_monthly).data_vars if var != variable],
                 )
                 # selection ERA5 data on the same time interval -> xarray.DataArray
                 # monthly_ref_data = monthly_ref_data[variable].sel(time=slice(monthly_dataset.time[0], monthly_dataset.time[-1]))
-                monthly_ref_data = monthly_ref_data[variable].sel(
-                    time=slice(startdate_ref, enddate_ref)
-                )
+                monthly_ref_data = monthly_ref_data[variable].sel(time=slice(startdate_ref, enddate_ref))
                 # Annual reference data
                 ERA5_annual = "/work/ab0995/a270260/pre_computed_aqua_analysis/IFS-FESOM/historical-1990/global_time_series/netcdf/global_time_series_timeseries_2t_ERA5_era5_ann.nc"
                 annual_ref_data = xr.open_dataset(
                     ERA5_annual,
-                    drop_variables=[
-                        var for var in xr.open_dataset(ERA5_annual).data_vars if var != variable
-                    ],
+                    drop_variables=[var for var in xr.open_dataset(ERA5_annual).data_vars if var != variable],
                 )
                 # selection ERA5 data on the same time interval -> xarray.DataArray
                 # annual_ref_data = annual_ref_data[variable].sel(time=slice(annual_dataset.time[0], annual_dataset.time[-1]))
@@ -274,7 +262,7 @@ if __name__ == "__main__":
                     "monthly_data": ts.monthly_data,
                     "monthly_data_mean": ts.monthly_data_mean,
                     "monthly_data_std": ts.monthly_data_std,
-                    "annual_data":ts.annual_data,
+                    "annual_data": ts.annual_data,
                     "annual_data_mean": ts.annual_data_mean,
                     "annual_data_std": ts.annual_data_std,
                     "ref_monthly_data": monthly_ref_data,
@@ -292,6 +280,4 @@ if __name__ == "__main__":
 
                 logger.info(f"Finished Ensemble time series diagnostic for {variable}.")
 
-    close_cluster(
-        client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel
-    )
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)

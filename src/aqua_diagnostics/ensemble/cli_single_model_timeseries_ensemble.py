@@ -8,17 +8,21 @@ defined in a yaml configuration file for multiple models.
 
 import argparse
 import sys
+
 import xarray as xr
 from aqua import Reader
-from aqua.util import get_arg
+from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge
+from aqua.diagnostics.core import (
+    close_cluster,
+    load_diagnostic_config,
+    merge_config_args,
+    open_cluster,
+    template_parse_arguments,
+)
 from aqua.logger import log_configure
+from aqua.util import get_arg
 from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 
-from aqua.diagnostics import reader_retrieve_and_merge
-from aqua.diagnostics import EnsembleTimeseries
-from aqua.diagnostics import PlotEnsembleTimeseries
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleTimeseries diagnostic.
@@ -73,27 +77,17 @@ if __name__ == "__main__":
             reference = config_dict["references"][0]
             # Loop over all the variables in the config file
             for variable in config_dict["diagnostics"]["ensemble"].get("variable", None):
-                for region in (config_dict["diagnostics"]["ensemble"].get("region") or []): 
+                for region in config_dict["diagnostics"]["ensemble"].get("region") or []:
                     logger.info(f"Variable under consideration: {variable}")
 
-                    startdate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                        "startdate_data", None
+                    startdate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("startdate_data", None)
+                    enddate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("enddate_data", None)
+                    startdate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("startdate_ref", None)
+                    enddate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get("enddate_ref", None)
+                    title = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get("title", None)
+                    plot_ensemble_members = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
+                        "plot_ensemble_members", True
                     )
-                    enddate_data = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                        "enddate_data", None
-                    )
-                    startdate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                        "startdate_ref", None
-                    )
-                    enddate_ref = config_dict["diagnostics"]["ensemble"]["params"]["default"].get(
-                        "enddate_ref", None
-                    )
-                    title = config_dict["diagnostics"]["ensemble"]["plot_params"]["default"].get(
-                        "title", None
-                    )
-                    plot_ensemble_members = config_dict["diagnostics"]["ensemble"]["plot_params"][
-                        "default"
-                    ].get("plot_ensemble_members", True)
 
                     # Model data
                     # TODO: hourly and daily data
@@ -104,8 +98,8 @@ if __name__ == "__main__":
                         model = get_arg(args, "model", dataset[0]["model"])
                         exp = get_arg(args, "exp", dataset[0]["exp"])
                         source = get_arg(args, "source", dataset[0]["source"])
-                        regrid = get_arg(args, 'regrid',  dataset[0]["regrid"])
-                        realization = get_arg(args, 'realization',  dataset[0]["realization"])
+                        regrid = get_arg(args, "regrid", dataset[0]["regrid"])
+                        realization = get_arg(args, "realization", dataset[0]["realization"])
                         realization_dict = {model: realization}
                     # Reterive dataset
                     dataset = reader_retrieve_and_merge(
@@ -128,7 +122,7 @@ if __name__ == "__main__":
                     ref_model = get_arg(args, "model", ref[0]["model"])
                     ref_exp = get_arg(args, "exp", ref[0]["exp"])
                     ref_source = get_arg(args, "source", ref[0]["source"])
-                    
+
                     if ref_catalog is not None and ref_model is not None and ref_exp is not None and ref_source is not None:
                         reader = Reader(
                             catalog=ref_catalog,
@@ -147,7 +141,7 @@ if __name__ == "__main__":
                     else:
                         logger.warning("Reference catalog, model, exp and source need to be defined")
                         ref_data = None
-                    
+
                     if dataset is not None:
                         ts = EnsembleTimeseries(
                             var=variable,
@@ -200,7 +194,15 @@ if __name__ == "__main__":
                             "source_list": source,
                         }
 
-                    if ts.monthly_data is not None or ts.monthly_data_mean is not None or ts.monthly_data_std is not None or ts.annual_data is not None or ts.annual_data_mean is not None or ts.annual_data_std is not None or ref_data is not None:
+                    if (
+                        ts.monthly_data is not None
+                        or ts.monthly_data_mean is not None
+                        or ts.monthly_data_std is not None
+                        or ts.annual_data is not None
+                        or ts.annual_data_mean is not None
+                        or ts.annual_data_std is not None
+                        or ref_data is not None
+                    ):
                         ts_plot = PlotEnsembleTimeseries(
                             **plot_class_arguments,
                             outputdir=outputdir,
@@ -215,11 +217,11 @@ if __name__ == "__main__":
                             "monthly_data": ts.monthly_data,
                             "monthly_data_mean": ts.monthly_data_mean,
                             "monthly_data_std": ts.monthly_data_std,
-                            #"annual_data": ts.annual_data,
-                            #"annual_data_mean": ts.annual_data_mean,
-                            #"annual_data_std": ts.annual_data_std,
+                            # "annual_data": ts.annual_data,
+                            # "annual_data_mean": ts.annual_data_mean,
+                            # "annual_data_std": ts.annual_data_std,
                             "ref_monthly_data": ref_data,
-                            #"ref_annual_data": ref_annual_data
+                            # "ref_annual_data": ref_annual_data
                             "save_pdf": save_pdf,
                             "save_png": save_png,
                             "plot_ensemble_members": plot_ensemble_members,
@@ -233,6 +235,4 @@ if __name__ == "__main__":
 
                     logger.info(f"Finished Ensemble time series diagnostic for {variable}.")
 
-    close_cluster(
-        client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel
-    )
+    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)

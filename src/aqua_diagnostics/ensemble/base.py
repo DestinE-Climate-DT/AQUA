@@ -1,11 +1,13 @@
-import pandas as pd
-import xarray as xr
-from aqua.logger import log_configure
-from aqua.util import pandas_freq_to_string
-from aqua.diagnostics.core import Diagnostic, OutputSaver
 from collections import Counter
 
+import pandas as pd
+import xarray as xr
+from aqua.diagnostics.core import Diagnostic, OutputSaver
+from aqua.logger import log_configure
+from aqua.util import pandas_freq_to_string
+
 xr.set_options(keep_attrs=True)
+
 
 class BaseMixin(Diagnostic):
     """The BaseMixin class is used to save the outputs from the ensemble module."""
@@ -25,35 +27,45 @@ class BaseMixin(Diagnostic):
         outputdir: str = "./",
         loglevel: str = "WARNING",
     ):
-        
         """
-        Initialize the Base class. This class provides functions to assign 
-        names and save the outputs as pdf, png and netcdf.
+        BaseMixin class for managing and saving outputs from the ensemble module.
+
+        This class provides functionality to assign catalog, model, exp, and source
+        names, handle None or multi-value cases, and save outputs as PDF, PNG, or
+        NetCDF files. It also configures logging for diagnostics.
+
+        Attributes:
+            catalog_list (list[str]): List of catalogs; None defaults to 'None_catalog'.
+            model_list (list[str]): List of models; None defaults to 'None_model'.
+            exp_list (list[str]): List of experiments; None defaults to 'None_exp'.
+            source_list (list[str]): List of sources; None defaults to 'None_source'.
+            catalog (str): Assigned catalog name or 'multi-catalog' for multiple catalogs.
+            model (str): Assigned model name or 'multi-model' for multiple models.
+            exp (str): Assigned experiment name or 'multi-exp' for multiple experiments.
+            source (str): Assigned source name or 'multi-source' for multiple sources.
+            ref_catalog (str): Reference catalog (used for timeseries).
+            ref_model (str): Reference model (used for timeseries).
+            ref_exp (str): Reference experiment (used for timeseries).
+            region (str): Region name for the outputs.
+            diagnostic_name (str): Name of the diagnostic (default 'ensemble').
+            diagnostic_product (str): Class of the ensemble module used.
+            outputdir (str): Directory to save outputs (default './').
+            logger (logging.Logger): Configured logger for the class.
 
         Args:
-            diagnostic_name (str): The name of the diagnostic. Default is 'ensemble'.
-                                   This will be used to configure the logger and the output files.
-            diagnostic_product (str): This is to define which class of the ensemble module is used.
-                                    The default is 'None'. Options are: 'EnsembleTimeseries', 
-                                    'EnsembleLatLon', 'EnsembleZonal'.
-            catalog_list (str): This variable defines the catalog list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_catalog'. In case of Multi-catalogs, 
-                                    the variable is assigned to 'multi-catalog'.
-            model_list (str): This variable defines the model list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_model'. In case of Multi-Model, 
-                                    the variable is assigned to 'multi-model'.
-            exp_list (str): This variable defines the exp list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_exp'. In case of Multi-Exp, 
-                                    the variable is assigned to 'multi-exp'.
-            source_list (str): This variable defines the source list. The default is 'None'. 
-                                    If None, the variable is assigned to 'None_source'. In case of Multi-Source, 
-                                    the variable is assigned to 'multi-source'.
-            ref_catalog (str): This is specific to timeseries reference data catalog. Default is None.
-            ref_model (str): This is specific to timeseries reference data model. Default is None.
-            ref_exp (str): This is specific to timeseries reference data exp. Default is None.
-            region (str): This is variable assigns region name. Default is None. 
-            outputdir (str): String input for output path. Default is './'
-            loglevel (str): Default is set to "WARNING"
+            diagnostic_name (str, optional): Name of the diagnostic. Default is 'ensemble'.
+            diagnostic_product (str, optional): Class of the ensemble module (e.g.,
+                'EnsembleTimeseries', 'EnsembleLatLon', 'EnsembleZonal'). Default is None.
+            catalog_list (list[str], optional): List of catalog names. Default is None.
+            model_list (list[str], optional): List of model names. Default is None.
+            exp_list (list[str], optional): List of experiment names. Default is None.
+            source_list (list[str], optional): List of source names. Default is None.
+            ref_catalog (str, optional): Reference catalog for timeseries. Default is None.
+            ref_model (str, optional): Reference model for timeseries. Default is None.
+            ref_exp (str, optional): Reference experiment for timeseries. Default is None.
+            region (str, optional): Region name. Default is None.
+            outputdir (str, optional): Output directory path. Default is './'.
+            loglevel (str, optional): Logging level. Default is 'WARNING'.
         """
         self.loglevel = loglevel
         self.logger = log_configure(log_name="BaseMixin", log_level=loglevel)
@@ -87,18 +99,18 @@ class BaseMixin(Diagnostic):
             self.catalog = self.None_catalog
             self.catalog_list = self.None_catalog
         else:
-            if isinstance(self.catalog_list, str): self.catalog_list = [self.catalog_list]
+            if isinstance(self.catalog_list, str):
+                self.catalog_list = [self.catalog_list]
             catalog_counts = dict(Counter(self.catalog_list))
             if len(catalog_counts.keys()) <= 1:
                 self.logger.info("Catalog name is given. Single-model ensemble is given.")
                 catalog_str_list = [str(item) for item in self.catalog_list]
-                if catalog_str_list[0] is None: catalog_str_list[0] = self.None_catalog
-                #if catalog_str_list[0] == "None": catalog_str_list[0] = self.None_catalog 
+                if catalog_str_list[0] is None:
+                    catalog_str_list[0] = self.None_catalog
+                # if catalog_str_list[0] == "None": catalog_str_list[0] = self.None_catalog
                 self.catalog = catalog_str_list[0]
             else:
-                self.logger.info(
-                    "Multi-model ensemble is given. Assigning catalog name to multi-catalog"
-                )
+                self.logger.info("Multi-model ensemble is given. Assigning catalog name to multi-catalog")
                 self.catalog = self.multi_catalog
 
         # Handling model name:
@@ -108,12 +120,14 @@ class BaseMixin(Diagnostic):
             self.model = self.None_model
             self.model_list = self.None_model
         else:
-            if isinstance(self.model_list, str): self.model_list = [self.model_list]
+            if isinstance(self.model_list, str):
+                self.model_list = [self.model_list]
             model_counts = dict(Counter(self.model_list))
             if len(model_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-model ensemble is given.")
                 model_str_list = [str(item) for item in self.model_list]
-                if model_str_list[0] == "None": model_str_list[0] = self.None_model
+                if model_str_list[0] == "None":
+                    model_str_list[0] = self.None_model
                 self.model = model_str_list[0]
             else:
                 self.logger.info("Multi-model ensmeble is given. Assigning model name to multi-model")
@@ -126,13 +140,15 @@ class BaseMixin(Diagnostic):
             self.exp = self.None_exp
             self.exp_list = self.None_exp
         else:
-            if isinstance(self.exp_list, str): self.exp_list = [self.exp_list]
+            if isinstance(self.exp_list, str):
+                self.exp_list = [self.exp_list]
             exp_counts = dict(Counter(self.exp_list))
             if len(exp_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-exp ensemble is given.")
                 exp_str_list = [str(item) for item in self.exp_list]
-                if exp_str_list[0] == "None": exp_str_list[0] = self.None_exp
-                self.exp = exp_str_list[0] 
+                if exp_str_list[0] == "None":
+                    exp_str_list[0] = self.None_exp
+                self.exp = exp_str_list[0]
             else:
                 self.logger.info("Multi-exp ensmeble is given. Assigning exp name to multi-exp")
                 self.exp = self.multi_exp
@@ -144,12 +160,14 @@ class BaseMixin(Diagnostic):
             self.source = self.None_source
             self.source_list = self.None_source
         else:
-            if isinstance(self.source_list, str): self.source_list = [self.source_list]
+            if isinstance(self.source_list, str):
+                self.source_list = [self.source_list]
             source_counts = dict(Counter(self.source_list))
             if len(source_counts.keys()) <= 1:
                 self.logger.info("Model name is given. Single-source ensemble is given.")
                 source_str_list = [str(item) for item in self.source_list]
-                if source_str_list[0] == "None": source_str_list[0] = self.None_source
+                if source_str_list[0] == "None":
+                    source_str_list[0] = self.None_source
                 self.source = source_str_list[0]
             else:
                 self.logger.info("Multi-source ensmeble is given. Assigning source name to multi-source")
@@ -177,21 +195,29 @@ class BaseMixin(Diagnostic):
         enddate=None,
     ):
         """
-        Handles the saving of the input data as 
-        netcdf file using OutputSaver.
-        
-        NOTE: The output can also be saved without the OutputSaver class if 'self.catalog' in 'None' or if Multi-Model catalog is given.
+        Save data as a NetCDF file using OutputSaver or directly if catalog/model/exp are None or multi-values.
+
+        This method handles Timeseries, Lat-Lon, and Zonal data. It automatically generates
+        metadata including model, experiment, source, region, and optional start/end dates.
+        The filename and description are dynamically generated based on the diagnostic,
+        catalog, model, exp, and region.
+
         Args:
-            var (str): Variable name. Default is None.
-            freq (str): The frequency of the data. Default is None
-                        In case of Lat-Lon or Zonal data it is None.
-            diagnostic_product (str): The product name to be used in the filename 
-            (e.g., 'EnsembleTimeseries' or 'EnsembleLatLon' or 'EnsembleZonal').
-            description (str): Description of the figure.
-            data_name (str): The variable is used to label the output file for mean or std. 
-                             The default is set to None.
-            data (xarray.Dataset) or (xarray.Dataarray).
-            startdate and enddate (str) to include them in the metadata. Default is 'None'.    
+            var (str, optional): Variable name. Defaults to None. If None, uses data.standard_name.
+            freq (str, optional): Data frequency (e.g., 'monthly'). Defaults to None.
+                                  For Lat-Lon or Zonal data, this is typically None.
+            diagnostic_product (str, optional): Product name for the filename
+                (e.g., 'EnsembleTimeseries', 'EnsembleLatLon', 'EnsembleZonal').
+            description (str, optional): Description to include in metadata. Defaults to auto-generated.
+            data_name (str, optional): Label for output file (e.g., 'mean' or 'std'). Defaults to 'data'.
+            data (xarray.Dataset or xarray.DataArray, optional): Data to save.
+            startdate (str, optional): Start date to include in metadata. Defaults to None.
+            enddate (str, optional): End date to include in metadata. Defaults to None.
+
+        Notes:
+            - If catalog/model/exp are None or multi-values, data is saved without OutputSaver.
+            - Metadata includes diagnostic name, catalog, model, experiment, source, region, and description.
+            - Filenames are automatically generated based on catalog, model, exp, data_name, and variable.
         """
         # In case of Timeseries data
         if data_name is None:
@@ -218,43 +244,50 @@ class BaseMixin(Diagnostic):
         region = self.region.replace(" ", "").lower() if self.region is not None else None
         extra_keys.update({"region": region})
 
-        self.logger.info(
-            "Saving %s for %s to netcdf in %s", data_name, self.diagnostic_product, self.outputdir
-        )
+        self.logger.info("Saving %s for %s to netcdf in %s", data_name, self.diagnostic_product, self.outputdir)
 
         if description is None:
-            description = " ".join(filter(None, [self.diagnostic_name, self.diagnostic_product, "for",str(self.catalog),"and",str(self.model),"with",str(self.exp),self.region])) 
-            #description = self.diagnostic_name + "_" + self.diagnostic_product
-        #outputsaver = OutputSaver(
-        #    diagnostic=self.diagnostic_name,
-        #    #diagnostic_product=self.diagnostic_product,
-        #    catalog=self.catalog,
-        #    model=self.model,
-        #    exp=self.exp,
-        #    model_ref=self.ref_model,
-        #    exp_ref=self.ref_exp,
-        #    outputdir=self.outputdir,
-        #    loglevel=self.log_level,
-        #)
+            description = " ".join(
+                filter(
+                    None,
+                    [
+                        self.diagnostic_name,
+                        self.diagnostic_product,
+                        "for",
+                        str(self.catalog),
+                        "and",
+                        str(self.model),
+                        "with",
+                        str(self.exp),
+                        self.region,
+                    ],
+                )
+            )
 
         metadata = {"Description": description}
-        metadata.update({"model" : self.model_list})
+        metadata.update({"model": self.model_list})
         metadata.update({"experiment": self.exp_list})
         metadata.update({"source": self.source_list})
 
         if startdate is not None:
             startdate = pd.Timestamp(startdate)
-            startdate = startdate.strftime("%Y-%m-%d") 
+            startdate = startdate.strftime("%Y-%m-%d")
             metadata.update({"startdate": startdate})
         if enddate is not None:
             enddate = pd.Timestamp(enddate)
-            enddate = enddate.strftime("%Y-%m-%d") 
+            enddate = enddate.strftime("%Y-%m-%d")
             metadata.update({"enddate": enddate})
 
-        if self.catalog is not None and self.model is not None and self.exp is not None and str(self.catalog) != str(self.None_catalog) and str(self.catalog) != str(self.multi_catalog):
+        if (
+            self.catalog is not None
+            and self.model is not None
+            and self.exp is not None
+            and str(self.catalog) != str(self.None_catalog)
+            and str(self.catalog) != str(self.multi_catalog)
+        ):
             outputsaver = OutputSaver(
                 diagnostic=self.diagnostic_name,
-                #diagnostic_product=self.diagnostic_product,
+                # diagnostic_product=self.diagnostic_product,
                 catalog=self.catalog,
                 model=self.model,
                 exp=self.exp,
@@ -265,62 +298,91 @@ class BaseMixin(Diagnostic):
             )
             outputsaver.save_netcdf(
                 dataset=data,
-                #diagnostic=self.diagnostic_name,
+                # diagnostic=self.diagnostic_name,
                 diagnostic_product=self.diagnostic_product,
                 metadata=metadata,
                 extra_keys=extra_keys,
             )
         else:
-            data.attrs = {"AQUA diagnostic": self.diagnostic_product, "AQUA catalog": self.catalog_list, "model": self.model_list, "experiment": self.exp_list, "description": description}  
+            data.attrs = {
+                "AQUA diagnostic": self.diagnostic_product,
+                "AQUA catalog": self.catalog_list,
+                "model": self.model_list,
+                "experiment": self.exp_list,
+                "description": description,
+            }
             data.to_netcdf(f"{self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc")
-            self.logger.info(f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc")
+            self.logger.info(
+                f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc"
+            )
 
     # Save figure
-    def save_figure(self, var, fig=None, fig_std=None, startdate=None, enddate=None, description=None, format="png"):
+    def save_figure(self, var, fig=None, fig_std=None, startdate=None, enddate=None, description=None, format="png"):    
         """
-        Handles the saving of a figure using OutputSaver.
-        
+        Save figure(s) to file using OutputSaver or directly to disk if catalog/model/exp are None or multi-values.
+
+        This method supports saving mean and standard deviation figures for a given variable.
+        Metadata is automatically generated, including model, experiment, source, region, startdate, enddate,
+        and a description. Figures can be saved in PNG or PDF formats.
+
         Args:
-            var: The variable in the dataset
-            fig (matplotlib.figure.Figure): Figure object.
-            fig_std (matplotlib.figure.Figure): Figure object.
-            description (str): Description of the figure.
-            format (str): Format to save the figure ('png' or 'pdf'). Default is 'png'.
-            startdate and enddate (str) to include them in the metadata. Default is 'None'. 
+            var (str): Name of the variable in the dataset.
+            fig (matplotlib.figure.Figure, optional): Figure object for the main data. Defaults to None.
+            fig_std (matplotlib.figure.Figure, optional): Figure object for standard deviation. Defaults to None.
+            startdate (str, optional): Start date to include in metadata. Defaults to None.
+            enddate (str, optional): End date to include in metadata. Defaults to None.
+            description (str, optional): Description to include in metadata. Defaults to auto-generated.
+            format (str, optional): File format to save the figure ('png' or 'pdf'). Defaults to 'png'.
+
+        Notes:
+            - If catalog/model/exp are None or multi-values, figures are saved directly without OutputSaver.
+            - Metadata includes diagnostic name, catalog, model, experiment, source, region, and description.
+            - Filenames are automatically generated based on catalog, model, exp, variable, and whether it's mean or STD.
+            - Raises ValueError if an unsupported format is specified.
         """
-        #outputsaver = OutputSaver(
-        #    diagnostic=self.diagnostic_name,
-        #    #diagnostic_product=self.diagnostic_product,
-        #    catalog=self.catalog,
-        #    model=self.model,
-        #    exp=self.exp,
-        #    model_ref=self.ref_model,
-        #    exp_ref=self.ref_exp,
-        #    outputdir=self.outputdir,
-        #    loglevel=self.log_level,
-        #)
         if description is None:
-            description = " ".join(filter(None, [self.diagnostic_name, self.diagnostic_product, "for",str(self.catalog),"and",str(self.model),"with",str(self.exp),self.region]))  
-        
+            description = " ".join(
+                filter(
+                    None,
+                    [
+                        self.diagnostic_name,
+                        self.diagnostic_product,
+                        "for",
+                        str(self.catalog),
+                        "and",
+                        str(self.model),
+                        "with",
+                        str(self.exp),
+                        self.region,
+                    ],
+                )
+            )
+
         metadata = {"Description": description}
-        metadata.update({"model" : self.model_list})
+        metadata.update({"model": self.model_list})
         metadata.update({"experiment": self.exp_list})
         metadata.update({"source": self.source_list})
 
         if startdate is not None:
             startdate = pd.Timestamp(startdate)
-            startdate = startdate.strftime("%Y-%m-%d") 
+            startdate = startdate.strftime("%Y-%m-%d")
             metadata.update({"startdate": startdate})
         if enddate is not None:
             enddate = pd.Timestamp(enddate)
-            enddate = enddate.strftime("%Y-%m-%d") 
+            enddate = enddate.strftime("%Y-%m-%d")
             metadata.update({"enddate": enddate})
 
-        if self.catalog is not None and self.model is not None and self.exp is not None and str(self.catalog) is not str(self.None_catalog) and str(self.catalog) is not str(self.multi_catalog):
+        if (
+            self.catalog is not None
+            and self.model is not None
+            and self.exp is not None
+            and str(self.catalog) is not str(self.None_catalog)
+            and str(self.catalog) is not str(self.multi_catalog)
+        ):
             if fig is not None:
                 outputsaver = OutputSaver(
                     diagnostic=self.diagnostic_name,
-                    #diagnostic_product=self.diagnostic_product,
+                    # diagnostic_product=self.diagnostic_product,
                     catalog=self.catalog,
                     model=self.model,
                     exp=self.exp,
@@ -330,9 +392,9 @@ class BaseMixin(Diagnostic):
                     loglevel=self.loglevel,
                 )
                 extra_keys = {}
-                #if fig_std is not None:
+                # if fig_std is not None:
                 #    data = "std"
-                #else:
+                # else:
                 #    data = "mean"
                 data = "mean"
                 if var is not None:
@@ -342,7 +404,7 @@ class BaseMixin(Diagnostic):
                 if format == "pdf":
                     outputsaver.save_pdf(
                         fig,
-                        #diagnostic=self.diagnostic_name,
+                        # diagnostic=self.diagnostic_name,
                         diagnostic_product=self.diagnostic_product,
                         extra_keys=extra_keys,
                         metadata=metadata,
@@ -350,7 +412,7 @@ class BaseMixin(Diagnostic):
                 elif format == "png":
                     outputsaver.save_png(
                         fig,
-                        #diagnostic=self.diagnostic_name,
+                        # diagnostic=self.diagnostic_name,
                         diagnostic_product=self.diagnostic_product,
                         extra_keys=extra_keys,
                         metadata=metadata,
@@ -365,7 +427,7 @@ class BaseMixin(Diagnostic):
                 if fig_std is not None:
                     outputsaver = OutputSaver(
                         diagnostic=self.diagnostic_name,
-                        #diagnostic_product=self.diagnostic_product,
+                        # diagnostic_product=self.diagnostic_product,
                         catalog=self.catalog,
                         model=self.model,
                         exp=self.exp,
@@ -375,7 +437,7 @@ class BaseMixin(Diagnostic):
                         loglevel=self.loglevel,
                     )
                     extra_keys = {}
-                    #if fig_std is not None:
+                    # if fig_std is not None:
                     #    data = "std"
                     data = "std"
                     if var is not None:
@@ -392,7 +454,7 @@ class BaseMixin(Diagnostic):
                     elif format == "png":
                         outputsaver.save_png(
                             fig_std,
-                            #diagnostic=self.diagnostic_name,
+                            # diagnostic=self.diagnostic_name,
                             diagnostic_product=self.diagnostic_product,
                             extra_keys=extra_keys,
                             metadata=metadata,
@@ -404,12 +466,23 @@ class BaseMixin(Diagnostic):
                 extra_keys = {"statistics": "mean"}
                 extra_keys.update(metadata)
                 extra_keys = {k: str(v) for k, v in extra_keys.items()}
-                fig.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png",bbox_inches="tight", metadata=extra_keys)
-                self.logger.info(f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png")
+                fig.savefig(
+                    f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png",
+                    bbox_inches="tight",
+                    metadata=extra_keys,
+                )
+                self.logger.info(
+                    f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png"
+                )
             if fig_std:
                 extra_keys = {"statistics": "standard deviation"}
                 extra_keys.update(metadata)
                 extra_keys = {k: str(v) for k, v in extra_keys.items()}
-                fig_std.savefig(f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png",bbox_inches="tight", metadata=extra_keys)
-                self.logger.info(f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png")
-
+                fig_std.savefig(
+                    f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png",
+                    bbox_inches="tight",
+                    metadata=extra_keys,
+                )
+                self.logger.info(
+                    f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png"
+                )

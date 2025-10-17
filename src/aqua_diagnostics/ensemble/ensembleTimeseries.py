@@ -1,6 +1,7 @@
 import xarray as xr
 from aqua.logger import log_configure
-#from aqua.exceptions import NoDataError
+
+# from aqua.exceptions import NoDataError
 from .base import BaseMixin
 from .util import compute_statistics
 
@@ -10,7 +11,7 @@ xr.set_options(keep_attrs=True)
 class EnsembleTimeseries(BaseMixin):
     """
     This class computes mean and standard deviation of the timeseries ensemble.
-    
+
     NOTE: The STD is computed Point-wise along the mean.
     """
 
