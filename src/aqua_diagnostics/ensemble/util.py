@@ -350,7 +350,6 @@ def load_premerged_ensemble_dataset(ds: xr.Dataset, ens_dim: str = "ensemble", l
 
 
 def compute_statistics(variable: str = None, ds: xr.Dataset = None, ens_dim: str = "ensemble", loglevel="WARNING"):
-):
     """
     Compute mean and standard deviation (POINT-WISE for timeseries) for single- and multi-model ensembles.
 

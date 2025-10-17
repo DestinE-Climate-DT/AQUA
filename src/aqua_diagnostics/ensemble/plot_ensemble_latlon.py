@@ -26,7 +26,6 @@ class PlotEnsembleLatLon(BaseMixin):
         outputdir="./",
         loglevel: str = "WARNING",
     ):
-):
         """
         Class for plotting ensemble latitude-longitude (Lat-Lon) data.
 
