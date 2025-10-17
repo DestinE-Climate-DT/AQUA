@@ -2,7 +2,6 @@
 Module to plot multiple maps
 
 """
-
 from typing import Optional, Tuple
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
@@ -15,7 +14,7 @@ from aqua.util import (
     cbar_get_label,
     generate_colorbar_ticks,
 )
-from aqua import plot_single_map, plot_maps
+from aqua import plot_single_map
 from aqua.graphics.styles import ConfigStyle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -227,79 +226,3 @@ def plot_maps(
 
     if return_fig:
         return fig
-
-
-def plot_line_vertical_profile(
-    data: xr.DataArray,
-    var: Optional[str] = None,
-    lev_name: str = "level",
-    x_coord: str = "lat",
-    lev_min: Optional[float] = None,
-    lev_max: Optional[float] = None,
-    title: Optional[str] = None,
-    title_size: int = 16,
-    style: Optional[str] = None,
-    logscale: bool = False,
-    grid: bool = True,
-    figsize: Tuple[int, int] = (8, 6),
-    fig: Optional[plt.Figure] = None,
-    ax: Optional[plt.Axes] = None,
-    return_fig: bool = False,
-    loglevel: str = "WARNING",
-):
-    """
-    Plot a line profile: variable vs vertical level.
-
-    Args:
-        data (xr.DataArray): Input data (2D or 1D)
-        var (str, optional): Variable name for labeling.
-        lev_name (str): Vertical coordinate name (default: 'plev').
-        x_coord (str): Horizontal coordinate (default: 'lat').
-        lev_min, lev_max (float, optional): Limits for levels.
-        title (str, optional): Plot title.
-        logscale (bool): Log scale for vertical axis.
-        grid (bool): Show grid.
-        figsize (tuple): Figure size.
-    """
-    print(1)
-    # Subset levels
-    # lev_min = lev_min or data[lev_name].min().item()
-    # lev_max = lev_max or data[lev_name].max().item()
-    # mask = (data[lev_name] >= lev_min) & (data[lev_name] <= lev_max)
-    # data = data.sel({lev_name: data[lev_name].where(mask, drop=True)})
-
-    # # If 2D (e.g. lat x lev), average over one dimension
-    # if x_coord in data.dims:
-    #     data_line = data.mean(dim=x_coord)
-    # else:
-    #     data_line = data
-
-    # # Prepare figure
-    # fig = fig or plt.figure(figsize=figsize)
-    # ax = ax or fig.add_subplot(1, 1, 1)
-
-    # # Plot
-    # ax.plot(data_line, data_line[lev_name], label=var or data)
-
-    # # Axis labels
-    # ax.set_xlabel(f"{var or data} [{data.attrs.get('units', '')}]")
-    # ax.set_ylabel(f"{lev_name}")
-
-    # # Vertical axis scaling
-    # if logscale:
-    #     ax.set_yscale("log")
-
-    # ax.invert_yaxis()  # Typically pressure decreases upward
-
-    # if grid:
-    #     ax.grid(True)
-
-    # if title:
-    #     ax.set_title(title, fontsize=title_size)
-
-    # ax.legend()
-
-    # if return_fig:
-    #     return fig, ax
-
-    # plt.show()
