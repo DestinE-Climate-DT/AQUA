@@ -22,6 +22,17 @@ class PlotMLD:
         outputdir: str = ".",
         loglevel: str = "WARNING",
     ):
+        """
+        Class to plot Mixed Layer Depth (MLD) maps.
+
+        Args:
+            data (xr.Dataset): Dataset containing the MLD data to be plotted.
+            obs (xr.Dataset, optional): Dataset containing observational MLD data for comparison. Default is None.
+            clim_time (str, optional): Climatological time period for the data. Default is "January".
+            diagnostic_name (str, optional): Name of the diagnostic. Default is "ocean_stratification".
+            outputdir (str, optional): Directory to save the output plots. Default is the current directory.
+            loglevel (str, optional): Logging level. Default is "WARNING".
+        """
         self.data = data
         self.obs = obs
         self.clim_time = clim_time
@@ -54,6 +65,15 @@ class PlotMLD:
         save_png: bool = True,
         dpi: int = 300,
     ):
+        """
+        Plot the Stratification maps.
+
+        Args:
+            rebuild (bool, optional): If True, the output files will be rebuilt. Default is True.
+            save_pdf (bool, optional): If True, save the plot as a PDF. Default is True.
+            save_png (bool, optional): If True, save the plot as a PNG. Default is True.
+            dpi (int, optional): The dpi of the figure. Default is 300.
+        """
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_data_map_list()
         self.set_suptitle()
@@ -117,15 +137,22 @@ class PlotMLD:
             sym=False,
         )
 
-        self.save_plot(
-            fig,
-            rebuild=rebuild,
-            dpi=dpi,
-            format="pdf",
-            diagnostic_product=self.diagnostic,
-            metadata=self.description,
-            extra_keys={"region": self.region.replace(" ", "_")},
-        )
+        formats = []
+        if save_pdf:
+            formats.append("pdf")
+        if save_png:
+            formats.append("png")
+
+        for fmt in formats:
+            self.save_plot(
+                fig,
+                rebuild=rebuild,
+                dpi=dpi,
+                format=fmt,
+                diagnostic_product=self.diagnostic,
+                metadata=self.description,
+                extra_keys={"region": self.region.replace(" ", "_")},
+            )
 
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
