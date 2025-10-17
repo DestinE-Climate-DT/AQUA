@@ -77,7 +77,7 @@ A second method:
 
    ens_dataset = reader_retrieve_and_merge(
        variable='2t',
-       catalog_list=['null', 'null'],
+       catalog_list=['nextgems4', 'climatedt-phase1'],
        models_catalog_list=['IFS-FESOM', 'IFS-NEMO'],
        exps_catalog_list=['historical-1990', 'historical-1990'],
        sources_catalog_list=['aqua-atmglobalmean', 'aqua-atmglobalmean'],
@@ -93,8 +93,6 @@ The ensemble statistics is performed on merged ``1D`` timesereies by ``EnsembleT
 .. code-block:: python
 
    from aqua.diagnostics import EnsembleTimeseries
-   from aqua.diagnostics import PlotEnsembleTimeseries
-   from aqua.diagnostics import merge_from_data_files
 
    # Check if we need monthly and annual time variables
    ts = EnsembleTimeseries(                                                                               

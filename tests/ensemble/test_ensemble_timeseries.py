@@ -2,7 +2,7 @@
 import os
 import pytest
 from aqua.diagnostics import EnsembleTimeseries
-from aqua.diagnostics.ensemble.util import retrieve_merge_ensemble_data
+from aqua.diagnostics.ensemble.util import reader_retrieve_and_merge
 from aqua.diagnostics import PlotEnsembleTimeseries
 
 
@@ -24,7 +24,7 @@ def test_ensemble_timeseries():
     source_list = ['timeseries1D', 'timeseries1D']
     
     # loading and merging the data
-    dataset = retrieve_merge_ensemble_data(
+    dataset = reader_retrieve_and_merge(
         variable=var,
         catalog_list=catalog_list,
         model_list=model_list,
@@ -65,7 +65,19 @@ def test_ensemble_timeseries():
     assert ts.annual_data_std.values.all() == 0
     
     # PlotEnsembleTimeseries class
-    plot_arguments = {
+    plot_class_arguments = {
+        "catalog_list": catalog_list,
+        "model_list": model_list,
+        "exp_list": exp_list,
+        "source_list": source_list,
+    }
+
+    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
+    ts_plot = PlotEnsembleTimeseries(
+        **plot_class_arguments,
+        outputdir=tmp_path,
+    )
+    plot_class_arguments = {
         "var": var,
         "catalog_list": catalog_list,
         "model_list": model_list,
@@ -75,22 +87,17 @@ def test_ensemble_timeseries():
         "save_png": True,
         "plot_ensemble_members": True,
         "title": "test timeseries data",
+        "monthly_data": ts.monthly_data,
+        "monthly_data_mean": ts.monthly_data_mean,
+        "monthly_data_std": ts.monthly_data_mean,
+        "annual_data":ts.annual_data,
+        "annual_data_mean": ts.annual_data_mean,
+        "annual_data_std":ts.annual_data_mean,
+        "ref_monthly_data":ts.monthly_data_mean,
+        "ref_annual_data":ts.annual_data_mean,
     }
 
-    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
-    ts_plot = PlotEnsembleTimeseries(
-        **plot_arguments,
-        monthly_data=ts.monthly_data,
-        monthly_data_mean=ts.monthly_data_mean,
-        monthly_data_std=ts.monthly_data_mean,
-        annual_data=ts.annual_data,
-        annual_data_mean=ts.annual_data_mean,
-        annual_data_std=ts.annual_data_mean,
-        ref_monthly_data=ts.monthly_data_mean,
-        ref_annual_data=ts.annual_data_mean,
-        outputdir=tmp_path,
-    )
-    fig, ax = ts_plot.plot() 
+    fig, ax = ts_plot.plot(**plot_class_arguments) 
 
     assert fig is not None
     assert ax is not None 

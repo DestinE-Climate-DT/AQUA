@@ -3,7 +3,7 @@ import os
 import pytest
 from aqua import Reader
 from aqua.diagnostics import EnsembleLatLon
-from aqua.diagnostics.ensemble.util import retrieve_merge_ensemble_data
+from aqua.diagnostics.ensemble.util import reader_retrieve_and_merge
 from aqua.diagnostics import PlotEnsembleLatLon
 
 @pytest.mark.ensemble
@@ -24,7 +24,7 @@ def test_ensemble_2D_LatLon():
     source_list = ['atmglobalmean2D', 'atmglobalmean2D']
 
     # loading and merging the data
-    dataset = retrieve_merge_ensemble_data(
+    dataset = reader_retrieve_and_merge(
         variable=var, 
         catalog_list=catalog_list, 
         model_list=model_list, 
@@ -62,27 +62,31 @@ def test_ensemble_2D_LatLon():
     assert ens_latlon.dataset_std.all() == 0
  
     # PlotEnsembleLatLon class
-    plot_arguments = {
-        "var": var,
+    plot_class_arguments = {
         "catalog_list": catalog_list,
         "model_list": model_list,
         "exp_list": exp_list,
         "source_list": source_list,
+    }
+
+    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
+    ens_latlon_plot = PlotEnsembleLatLon(
+        **plot_class_arguments,
+        outputdir=tmp_path,
+    )
+
+    plot_arguments = {
+        "var": var,
         "save_pdf": True,
         "save_png": True,
         "title_mean": "Test data",
         "title_std": "Test data",
         "cbar_label": "Test Label",
+        "dataset_mean": ens_latlon.dataset_mean,
+        "dataset_std": ens_latlon.dataset_mean,
     }
 
-    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
-    ens_latlon_plot = PlotEnsembleLatLon(
-        **plot_arguments,
-        dataset_mean=ens_latlon.dataset_mean,
-        dataset_std=ens_latlon.dataset_mean,
-        outputdir=tmp_path,
-    )
-    plot_dict = ens_latlon_plot.plot()
+    plot_dict = ens_latlon_plot.plot(**plot_arguments)
     
     assert plot_dict['mean_plot'][0] is not None
 
