@@ -116,28 +116,36 @@ class Stratification(Diagnostic):
         self.logger.debug(
             f"Variables retrieved: {var}, region: {region}, dim_mean: {dim_mean}"
         )
-        if region:
-            self.logger.info(
-                f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'."
-            )
+        # If a region is specified, apply area selection to self.data
+        if region != None:
+            self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
             res_dict = super()._select_region(
                 data=self.data, region=region, diagnostic="ocean3d", drop=True
             )
-            self.data = res_dict["data"]
-            region = res_dict["region"]
+            self.region = res_dict["region"]
+            self.lat_limits = res_dict["lat_limits"]
+            self.lon_limits = res_dict["lon_limits"]
         else:
-            self.logger.info("No region selection applied; using global data.")
-            region = "global"
-        if dim_mean:
-            self.logger.debug(f"Averaging data over dimensions: {dim_mean}")
-            self.data = self.data.mean(dim=dim_mean, keep_attrs=True)
+            self.region = "global"
+            self.lat_limits = None
+            self.lon_limits = None
+        if dim_mean is not None:
+            self.logger.debug(f"Computing fldmean over dimension: {dim_mean}")
+            self.data = self.reader.fldmean(
+                self.data,
+                dims=dim_mean,
+                lat_limits=self.lat_limits,
+                lon_limits=self.lon_limits,
+            )
+        else:
+            self.data = res_dict['data']
         self.logger.info("Computing stratification.")
         self.compute_stratification()
         if mld:
             self.logger.info("Computing mixed layer depth (MLD).")
             self.compute_mld()
         self.compute_climatology(climatology=self.climatology)
-        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=region)
+        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=self.region)
         self.logger.info("Stratification diagnostic saved to netCDF file.")
 
     def compute_stratification(self):
