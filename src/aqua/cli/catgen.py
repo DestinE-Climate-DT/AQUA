@@ -164,6 +164,18 @@ class AquaFDBGenerator:
             }
         }
         return freq2time[frequency]
+    
+
+    @staticmethod
+    def get_value_from_map(value, value_map, value_type):
+        """
+        Get the value from the map based on the value type.
+        """
+        result = value_map.get(value)
+        if not result:
+            raise ValueError(f"Unexpected {value_type}: {value}")
+        return result
+
 
     def load_jinja_template(self, template_file):
         """
