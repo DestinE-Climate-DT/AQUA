@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.18.1]
+
+AQUA core complete list:
 - Updated target grib codes for cpr and snvol (#2346)
 - Offline cartopy data added to environment (#2344)
 - Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
@@ -1137,7 +1143,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.1...HEAD
+[v0.18.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.0...v0.18.1
 [v0.18.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...v0.18.0
 [v0.17.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.16.0...v0.17.0
 [v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
