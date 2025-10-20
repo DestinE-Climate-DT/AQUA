@@ -8,6 +8,7 @@ from aqua.util import to_list
 from aqua.logger import log_configure
 from .styles import ConfigStyle
 from matplotlib import colors as mcolors
+import textwrap
 
 def boxplot(fldmeans: list[xr.Dataset],
             model_names: list[str],
@@ -92,6 +93,9 @@ def boxplot(fldmeans: list[xr.Dataset],
         order=order, hue_order=hue_order, width=0.8, ax=ax
     )
 
+    wrapped_labels = [textwrap.fill(lbl, 14) for lbl in order]
+    ax.set_xticklabels(wrapped_labels, fontsize=fontsize)
+
     # --- Add dashed mean lines for each box ---
     if add_mean_line:
         means = df.groupby(['Variables', 'Models'])['Values'].mean().unstack(fill_value=np.nan)
@@ -140,7 +144,9 @@ def boxplot(fldmeans: list[xr.Dataset],
     else:
         vars_str = ', '.join(labels[v] for v in variables)
         models_str = ', '.join(model_names)
-        ax.set_title(f'Boxplot of {vars_str}', fontsize=fontsize + 2)
+        wrapped_title = textwrap.fill(f'Boxplot of {vars_str}', 70)
+        ax.set_title(wrapped_title, fontsize=fontsize+2)
+ 
     ax.set_xlabel('Variables', fontsize=fontsize)
 
     # Y-axis label from units

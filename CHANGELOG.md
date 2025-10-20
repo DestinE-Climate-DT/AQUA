@@ -8,12 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
+- Updated target grib codes for cpr and snvol (#2346)
+- Offline cartopy data added to environment (#2344)
+- Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
 - Timeseries graphical function adapted to plot multiple levels for ocean diagnostic (#2328)
 - Extending evaluate formula method to exponential and parenthesis (#2327)
 
 AQUA diagnostics complete list:
+- Global Biases: add 10si as formula to config file (#2338)
+- LatLonProfiles: tests (#2339) and CLI implementation (#2345)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
+- Implement `fldstat` methods in Seaice diagnostics (#2297)
 - Gregory: more detailed description and plot labels (#2306)
+- Radiation: using CERES ebaf42 instead of ebaf41 (#2333)
 
 ## [v0.18.0]
 
@@ -74,6 +81,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Radiation: add Surface Radiation Fluxes (snlwrf, snswrf, latent and sensible heat) (#2318)
 - Seaice: added documentation and updated notebooks (#2249)
 - Seaice: update varname for PIOMAS and GIOMAS from sivol to sithick after updating the data in `obs` catalog (#2290)
 - Global Biases: allow GlobalBias to take color palette as argument (#2283)

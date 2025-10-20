@@ -231,30 +231,19 @@ class LatLonProfiles(Diagnostic):
 		# Save std data if available
 		if data_std is not None:
 			if freq == 'seasonal':
-				# Seasonal std data handling
-				if hasattr(data_std, '__iter__') and not isinstance(data_std, str):
-					seasons = ['DJF', 'MAM', 'JJA', 'SON']
-					for i, std_data in enumerate(data_std):
-						var = getattr(std_data, 'standard_name', 'unknown')
-						extra_keys = {'freq': freq, 'season': seasons[i], 'std': 'std', 'var': var}
-						if self.region is not None:
-							region = self.region.replace(' ', '').lower()
-							extra_keys['AQUA_region'] = region
-
-						super().save_netcdf(data=std_data, diagnostic=self.diagnostic_name,
-											diagnostic_product=diagnostic_product,
-											outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
-				else:
-					# Handle single seasonal std data
-					var = getattr(data_std, 'standard_name', 'unknown')
-					extra_keys = {'freq': freq, 'std': 'std', 'var': var}
+				# Seasonal std data: always has 4 seasons (DJF, MAM, JJA, SON)
+				seasons = ['DJF', 'MAM', 'JJA', 'SON']
+				for i, std_data in enumerate(data_std):
+					var = getattr(std_data, 'standard_name', 'unknown')
+					extra_keys = {'freq': freq, 'season': seasons[i], 'std': 'std', 'var': var}
 					if self.region is not None:
 						region = self.region.replace(' ', '').lower()
 						extra_keys['AQUA_region'] = region
 
-					super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name,
+					super().save_netcdf(data=std_data, diagnostic=self.diagnostic_name,
 										diagnostic_product=diagnostic_product,
 										outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
+				
 			elif freq == 'longterm':
 				# Handle longterm std data
 				var = getattr(data_std, 'standard_name', 'unknown')
