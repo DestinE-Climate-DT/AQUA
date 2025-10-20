@@ -330,7 +330,7 @@ class AquaFDBGenerator:
                     forcing = self.get_value_from_map(experiment, forcing_map, 'experiment')
                 except ValueError:
                     forcing = re.sub(r'[^a-z0-9]', '', experiment.lower())  #keep only letters and numbers
-
+            
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
                 'metadata': {
@@ -346,13 +346,13 @@ class AquaFDBGenerator:
                         'menu': self.config.get('menu') or self.config['exp'],
                         'resolution_id': resolution_id,
                         'note': self.config.get('note')
-                        }
-                    },
-                    'driver': 'yaml_file_cat',
-                    'args': {
-                        'path': f"{{{{CATALOG_DIR}}}}/{self.config['exp']}.yaml"
                     }
+                },
+                'driver': 'yaml_file_cat',
+                'args': {
+                    'path': f"{{{{CATALOG_DIR}}}}/{self.config['exp']}.yaml"
                 }
+            }
             dump_yaml(main_yaml_path, main_yaml)
             self.logger.info("%s entry in 'main.yaml' has been updated in %s", self.config['exp'], output_dir)
 
