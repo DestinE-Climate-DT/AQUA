@@ -18,7 +18,7 @@ datasets:
 references:
   - catalog: 'obs'
     model: 'CERES'
-    exp: 'ebaf-toa41'
+    exp: 'ebaf-toa421'
     source: 'monthly'
     regrid: null
 
@@ -42,8 +42,8 @@ diagnostics:
         daily: False
         monthly: True
         annual: True
-        std_startdate: '20000101'
-        std_enddate: '20201231'
+        std_startdate: '20010101' 
+        std_enddate: '20241231'
       tnlwrf+tnswrf:
         standard_name: "net_top_radiation"
         long_name: "Net top radiation"
@@ -56,8 +56,8 @@ diagnostics:
     monthly: true
     annual: true
     std: true
-    std_startdate: '19900101'
-    std_enddate: '20201231'
+    std_startdate: '20010101' 
+    std_enddate: '20241231'
     # Gregory needs 2 datasets and do not care about the references block above
     t2m_ref: {'catalog': 'obs', 'model': 'BERKELEY-EARTH', 'exp': 'aqua-filled', 'source': 'r100-monthly'}
     net_toa_ref: {'catalog': 'obs', 'model': 'CERES', 'exp': 'ebaf-toa42', 'source': 'monthly'}

@@ -130,8 +130,9 @@ in a single command, with a shared Dask cluster, shared output directory and wit
 The entry point is called `aqua analysis` and all the details can be found in :ref:`aqua_analysis`.
 
 .. warning::
-   The analysis has to be performed preferrably on LRA data, meaning that data should be aggregated
-   to a resolution of 1 degree in both latitude and longitude and to a monthly frequency.
+   The analysis has to be performed preferrably on Low Resolution Archive (LRA) data, meaning 
+   that data should be aggregated to a resolution of 1 degree in both latitude and longitude and 
+   to a monthly frequency.
    It is available the option to regrid the data on the fly, but the memory usage may be highly
    increased and it may be preferrable to run the diagnostics individually.
 

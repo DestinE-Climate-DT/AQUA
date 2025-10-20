@@ -33,7 +33,7 @@ Some extra options are available:
 
 The ``timhist()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
 class, so that it is easy to compute histograms on time-resampled data:
-    
+
 .. code-block:: python
 
     hist = reader.timhist(data['t2m'], freq="1D", bins=100, range=(250, 350), units='K')
@@ -47,7 +47,6 @@ or
 When no time frequency information is provided, this method operates on the full time series, 
 providing results identical to the ``histogram()`` method.
 See the ``histogram()`` section below for more details on the available options.
-
 
 Detrend
 -------
@@ -77,23 +76,45 @@ It is also possible to evaluate the coefficients of the fit by calling the ``tre
 This will call the ``coeffs()`` method of the ``Trender()`` class, which is used internally by the ``detrend()`` method.
 A ``dataarray`` with the coefficients will be returned, with the same dimensions as the original data.
 
-Spatial Averaging
+Spatial Selection
 -----------------
+
+The ``AreaSelection()`` class, part of the ``aqua.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits.
+The ``select_area()`` method can be used to perform the selection on a DataArray or Dataset.
+It is possible to consider or drop the limits of the selection by setting the ``box_brd`` flag to ``True`` or ``False`` respectively.
+It is also possible to drop the NaN values after the selection by setting the ``drop`` flag to ``True``.
+The class is nested into the ``Reader()`` class, so it is possible to call the ``select_area()`` method directly from the reader instance or as aqua accessor.
+
+.. warning::
+    In order to apply an area selection the data Xarray must include ``lon`` and ``lat`` as coordinates.
+    It can work also on unstructured grids, but information on coordinates must be available.
+    If the dataset does not include these coordinates, this can be achieved with the fixer
+    described in the :ref:`fixer` section.
+
+Spatial Statistics
+------------------
 
 The ``FldStat()`` class and its method ``fldstat()`` are used to do spatial operations and similary as for ``TimStat()`` does for time.
 Statistical operations can be area-weighted if the class is initialiased with an xarray dataset containing the areas of the corresponding grid.
 The class is nested into the ``Reader()``, which computes/load the areas of the corresponding source at the initialization.
 Thus when calling for example ``reader.fldmean()`` method area-weighted spatial averaging will be performed.
+The class ``FldStat()`` is nested into the reader, and its method are exposed so that is sufficient
+to use ``fldstat(data, stat=statname)`` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``; 
+Otherwise the relative sibilings can be called ``fldmean()``, ``fldmin()``, ``fldmax()``, ``fldsum()``, ``fldstd()``, ``fldintg()``, ``fldarea()``. 
 For example, if we run the following commands:
 
 .. code-block:: python
 
-    tprate = data.tprate
-    global_mean = reader.fldmean(tprate)
+    reader = Reader(model="PSC", exp="PIOMAS", source="monthly", regrid="r100", loglevel='info')
+    data = reader.retrieve()
+    regrid_sithick = reader.regrid(data['sithick'])
+    global_thick_mean = reader.fldmean(regrid_sithick)
+    # alternatively: global_thick_mean = reader.fldstat(regrid_sithick, stat='mean')
 
-we get a time series of the global average ``tprate``.
+we get a time series of the global average ``sithick``.
 
-It is also possible to apply a regional section to the domain before performing the averaging:
+It is also possible to apply a regional section to the domain before performing the averaging.
+This will internally use the ``AreaSelection()`` class described above.
 
 .. code-block:: python
 
@@ -106,8 +127,8 @@ It is also possible to apply a regional section to the domain before performing 
     If the dataset does not include these coordinates, this can be achieved with the fixer
     described in the :ref:`fixer` section.
 
-.. note::
-    So far only the `mean` statistics is available, but other statistics are planned to be implemented in the future.
+    Also, if you do not specify the ``dims`` argument (e.g. `dims=['lon']`), the statistical operation will be operated on both 
+    the (automatically found) horizontal dimensions of the dataset!
 
 Histogram
 ---------

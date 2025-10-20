@@ -19,11 +19,11 @@ references:
     enddate: '2020-12-31'
   - catalog: obs
     model: 'CERES'
-    exp: 'ebaf-toa41'
+    exp: 'ebaf-toa421'
     source: 'monthly'
     regrid: 'r100'
-    startdate: '2000-01-01'
-    enddate: '2020-12-31'
+    startdate: '2001-01-01'
+    enddate: '2024-12-31'
 
 setup:
   loglevel: 'WARNING'

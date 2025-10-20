@@ -259,13 +259,20 @@ convention_name:
         grib: 129
       
       #### FLUX VARIABLES ####
-      cprea: # convective precipitation rate
+      cpr: # convective precipitation rate
         source:
+          - 260033 # cpr - original GRIB2 code (cpr)
           - 143 
-          - 160143
+          - 160143 # cprea
+          - 172143 # cprate
+          - 235030 # avg_cpr
+          - avg_cpr
+          - cprate
+          - cprea
+          - cpr
           - cp
           - prc # cmor
-        grib: 160143
+        grib: 260033
       ie: # Evaporation or moisture flux
         source:
           - 232 # original GRIB2 code (ie)
@@ -598,13 +605,6 @@ convention_name:
           - ice_conc # OSI-SAF
           - sic # cmor
         grib: 262001
-      sisnthick: # Snow thickness over sea ice
-        source:
-          - 262002
-          - 263002
-          - sisnthick 
-          - avg_sisnthick
-        grib: 262002
       sithick: # Sea ice thickness
         source:
           - 262000 # original GRIB2 code
@@ -643,8 +643,12 @@ convention_name:
         grib: 262008
       snvol: # Snow volume over sea ice per unit area
         source:
-          - 262009 # original GRIB2 code
+          - 262009 # original GRIB2 code (snvol)
           - 263009 # avg_snvol
+          - 262002 # sisnthick
+          - 263002 # avg_sisnthick
+          - sisnthick
+          - avg_sisnthick
           - snvol
           - avg_snvol
         grib: 262009

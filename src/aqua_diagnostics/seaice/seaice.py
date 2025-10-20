@@ -4,8 +4,9 @@ import xarray as xr
 from aqua.diagnostics.core import Diagnostic
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection, to_list, merge_attrs
+from aqua.util import to_list, merge_attrs
 from aqua.diagnostics.seaice.util import ensure_istype
+from aqua.fldstat import FldStat
 
 xr.set_options(keep_attrs=True)
 
@@ -175,7 +176,7 @@ class SeaIce(Diagnostic):
         for region in self.regions:
 
             # integrate the seaice masked data masked_data over the regional spatial dimension to compute sea ice result
-            seaice_result = self.integrate_seaice_masked_data(masked_data, region)
+            seaice_result = self.integrate_seaice(masked_data, region)
 
             # make a deepcopy to compute seasonal cycle to avoid losing time coord
             original_si_result = seaice_result.copy(deep=True)
@@ -312,10 +313,11 @@ class SeaIce(Diagnostic):
 
         # get xr.DataArray with info on grid area that must be reinitialised for each region.
         if len(areacello.data_vars) > 1:
-            self.logger.warning(f"Dataset 'areacello' has more than one variable. Searching for 'area_cells'")
+            self.logger.warning(f"Dataset 'areacello' has more than one variable. Searching for 'cell_area'")
             areacello = areacello['cell_area']
         else:
-            areacello = areacello.to_array().squeeze()
+            var_name = list(areacello.data_vars)[0]
+            areacello = areacello[var_name]
 
         return areacello, space_coord
 
@@ -349,14 +351,15 @@ class SeaIce(Diagnostic):
 
         # regional selection with lat-lon: use default dict to set dynamic lon bounds found above, and set lat from -90 to 90
         res_dict = self._select_region(areacello, region=region, diagnostic="seaice", drop=drop,
-                                       default={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
+                                       default_coords={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
         areacello = res_dict['data']
 
         return areacello
     
-    def integrate_seaice_masked_data(self, masked_data, region: str):
+    def integrate_seaice(self, masked_data, region: str):
         """
         Integrate the masked data over the spatial dimension to compute sea ice metrics.
+        If method is extent / volume, divide by 1e12 to convert to million km^2 / thousand km^3.
 
         Args:
             masked_data (xr.DataArray): The masked data to be integrated.
@@ -367,26 +370,33 @@ class SeaIce(Diagnostic):
         """
         areacello, space_coord = self.get_area_cells_and_coords(masked_data)
         areacello = self.select_region_area_cell(areacello, region)
+        
+        masked_data_region = self._select_region(masked_data, region=region, diagnostic='seaice').get('data')
 
         self.logger.info(f'Computing sea ice {self.method} for {region}')
 
+        if 'AQUA_regridded' in masked_data.attrs:
+            grid_name = self.reader.tgt_grid_name
+        else:
+            grid_name = self.reader.src_grid_name
+
+        si_fldstat = FldStat(area=areacello, horizontal_dims=space_coord, 
+                             grid_name=grid_name, loglevel=self.loglevel)
+
         if self.method == 'extent':
-            # compute sea ice extent: exclude areas with no sea ice and sum over the spatial dimension, divide by 1e12 to convert to million km^2
-            seaice_integrated = areacello.where(masked_data.notnull()).sum(skipna = True, min_count = 1, dim=space_coord) / 1e12
-
+            # compute sea ice extent: exclude areas with no sea ice and sum over the spatial dimension; divide by 1e12 to convert to million km^2
+            seaice_integrated = si_fldstat.fldstat(masked_data_region.notnull(), stat='areasum', dims=space_coord) / 1e12
         if self.method == 'volume':
-            # compute sea ice volume: exclude areas with no sea ice
-            area_weighted_volume = masked_data * areacello.where(masked_data.notnull())
+            # compute sea ice volume: exclude areas with no sea ice; divide by 1e12 to convert to thousand km^3
+            seaice_integrated = si_fldstat.fldstat(masked_data_region, stat='integral', dims=space_coord) / 1e12
 
-            # add attrs (region) from areacello, which has priority if keys overlap
-            merged_attrs = {**masked_data.attrs, **areacello.attrs}
-            area_weighted_volume.attrs.update(merged_attrs)
+            merge_attrs(seaice_integrated.attrs, masked_data.attrs)
+            merge_attrs(seaice_integrated.attrs, areacello.attrs, overwrite=True)
 
-            # sum over the spatial dimension, divide by 1e12 to convert to thousand km^3
-            seaice_integrated = area_weighted_volume.sum(skipna = True, min_count = 1, dim=space_coord) / 1e12
+        # ensure masked_data attrs are present
+        merge_attrs(seaice_integrated.attrs, masked_data_region.attrs)
 
-        merge_attrs(seaice_integrated.attrs, masked_data.attrs)
-
+        # Add domain-specific sea ice attributes. This overwrites standard_name, long_name, units.
         seaice_integrated = self.add_seaice_attrs(seaice_integrated, region)
 
         return seaice_integrated

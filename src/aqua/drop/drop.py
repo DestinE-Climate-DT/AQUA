@@ -1,7 +1,18 @@
 """
-LRA class for glob
-"""
+DROP (Data Reduction OPerator) class
 
+This class provides comprehensive data processing capabilities for climate datasets,
+including regridding, temporal averaging, regional extraction, and archiving.
+It handles multiple file formats and uses Dask for parallel processing of large datasets.
+
+Main features:
+- Regridding to arbitrary resolutions
+- Temporal resampling with various statistics (mean, std, max, min)
+- Regional data extraction
+- Automatic catalog entry generation
+- Parallel processing with Dask
+- Memory-efficient chunked processing
+"""
 import os
 from time import time
 import subprocess
@@ -19,9 +30,8 @@ from aqua.reader import Reader
 from aqua.util import create_folder, generate_random_string
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import ConfigPath, file_is_complete
-from aqua.util import create_zarr_reference
-from aqua.util import area_selection, replace_intake_vars
-from .lra_util import move_tmp_files, list_lra_files_complete
+from aqua.util import create_zarr_reference, replace_intake_vars
+from .drop_util import move_tmp_files, list_drop_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
 
 
@@ -38,9 +48,9 @@ VAR_ENCODING = {
 }
 
 
-class LRAgenerator():
+class Drop():
     """
-    Class to generate LRA data at required frequency/resolution
+    Class to generate DROP outputs at required frequency/resolution
     """
 
     @property
@@ -64,22 +74,21 @@ class LRAgenerator():
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
                  **kwargs):
         """
-        Initialize the LRA_Generator class
+        Initialize the DROP class
 
         Args:
             catalog (string):        The catalog you want to reader. If None, guessed by the reader.
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
-            var (str, list):         Variable(s) to be processed and archived
-                                     in LRA.
-            resolution (string):     The target resolution for the LRA. If None,
-                                        no regridding is performed.
+            var (str, list):         Variable(s) to be processed and archived.
+            resolution (string):     The target resolution for the DROP output. If None,
+                                     no regridding is performed.
             frequency (string,opt):  The target frequency for averaging the
-                                     LRA, if no frequency is specified,
+                                     DROP output, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
-            outdir (string):         Where the LRA is stored.
+            outdir (string):         Where the DROP output is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
                                      Necessary for dask.distributed
@@ -91,8 +100,7 @@ class LRAgenerator():
                                      meaning 'global'.
                                      Requires 'name' (str), 'lon' (list) and 'lat' (list)
             drop (bool, opt):        Drop the missing values in the region selection.
-            overwrite (bool, opt):   True to overwrite existing files in LRA,
-                                     default is False
+            overwrite (bool, opt):   True to overwrite existing files, default is False
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
                                      operations, default is False
@@ -117,7 +125,7 @@ class LRAgenerator():
         self.var = self._require_param(var, "variable string or list.")
 
         # General settings
-        self.logger = log_configure(loglevel, 'lra_generator')
+        self.logger = log_configure(loglevel, 'DROP')
         self.loglevel = loglevel
 
         # save parameters
@@ -148,7 +156,7 @@ class LRAgenerator():
             self.tmpdir = os.path.join(outdir, 'tmp')
         else:
             self.tmpdir = tmpdir
-        self.tmpdir = os.path.join(self.tmpdir, f'LRA_{generate_random_string(10)}')
+        self.tmpdir = os.path.join(self.tmpdir, f'DROP_{generate_random_string(10)}')
 
         # set up compacting method for concatenation
         self.compact = compact
@@ -174,7 +182,7 @@ class LRAgenerator():
         # add the performance report
         self.performance_reporting = performance_reporting
 
-        # Create LRA folders
+        # Create output folders
         if outdir is None:
             raise KeyError('Please specify outdir.')
 
@@ -210,7 +218,7 @@ class LRAgenerator():
 
     def _issue_info_warning(self):
         """
-        Print information about the LRA generator settings
+        Print information about the DROP settings
         """
 
         if not self.frequency:
@@ -231,7 +239,7 @@ class LRAgenerator():
             self.logger.info('Running dask.distributed with %s workers', self.nproc)
 
         if self.rebuild:
-            self.logger.info('rebuild=True! LRA generator will rebuild weights and areas!')
+            self.logger.info('rebuild=True! DROP will rebuild weights and areas!')
 
         self.logger.info('Variable(s) to be processed: %s', self.var)
         self.logger.info('Fixing data: %s', self.fix)
@@ -282,11 +290,11 @@ class LRAgenerator():
 
         self.logger.debug(self.data)
 
-    def generate_lra(self):
+    def drop_generator(self):
         """
-        Generate LRA data
+        Generate DROP output
         """
-        self.logger.info('Generating LRA data...')
+        self.logger.info('Generating DROP output...')
 
         # Set up dask cluster
         self._set_dask()
@@ -307,7 +315,7 @@ class LRAgenerator():
         self._close_dask()
         self._remove_tmpdir()
 
-        self.logger.info('Finished generating LRA data.')
+        self.logger.info('Finished generating DROP output.')
 
     def _define_source_grid_name(self):
         """"
@@ -325,9 +333,8 @@ class LRAgenerator():
 
     def create_catalog_entry(self):
         """
-        Create an entry in the catalog for the LRA
+        Create an entry in the catalog for DROP
         """
-
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
@@ -353,13 +360,12 @@ class LRAgenerator():
 
     def create_zarr_entry(self, verify=True):
         """
-        Create a Zarr entry in the catalog for the LRA
+        Create a Zarr entry in the catalog for DROP
 
         Args:
-            verify: open the LRA source and verify it can be read by the reader
+            verify: open the DROP source and verify it can be read by the reader
         """
-
-        full_dict, partial_dict = list_lra_files_complete(self.outdir)
+        full_dict, partial_dict = list_drop_files_complete(self.outdir)
 
         # extra zarr only directory
         zarrdir = os.path.join(self.outdir, 'zarr')
@@ -368,7 +374,7 @@ class LRAgenerator():
         # this dictionary based structure is an overkill but guarantee flexibility
         urlpath = []
         for key, value in full_dict.items():
-            jsonfile = os.path.join(zarrdir, f'lra-yearly-{key}.json')
+            jsonfile = os.path.join(zarrdir, f'drop-yearly-{key}.json')
             self.logger.debug('Creating zarr files for full files %s', key)
             if value:
                 jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
@@ -376,7 +382,7 @@ class LRAgenerator():
                     urlpath = urlpath + [f'reference::{jsonfile}']
 
         for key, value in partial_dict.items():
-            jsonfile = os.path.join(zarrdir, f'lra-monthly-{key}.json')
+            jsonfile = os.path.join(zarrdir, f'drop-monthly-{key}.json')
             self.logger.debug('Creating zarr files for partial files %s', key)
             if value:
                 jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
@@ -395,8 +401,9 @@ class LRAgenerator():
                                    'catalog', self.model, self.exp + '.yaml')
         cat_file = load_yaml(catalogfile)
 
-        # define the entry name
-        entry_name = self.catbuilder.create_entry_name() + '-zarr'
+        # define the entry name - zarr entries never have lra- prefix
+        base_name = f'{self.catbuilder.resolution}-{self.catbuilder.frequency}'
+        entry_name = base_name + '-zarr'
         self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
         sgn = self._define_source_grid_name()
 
@@ -421,7 +428,7 @@ class LRAgenerator():
                 _ = reader.retrieve()
                 self.logger.info('Zarr entry successfully created!!!')
             except (KeyError, ValueError) as e:
-                self.logger.error('Cannot load zarr LRA with error --> %s', e)
+                self.logger.error('Cannot load zarr DROP with error --> %s', e)
                 self.logger.error('Zarr source is not accessible by the Reader likely due to irregular amount of NetCDF file')
                 self.logger.error('To avoid issues in the catalog, the entry will be removed')
                 self.logger.error('In case you want to keep it, please run with verify=False')
@@ -513,7 +520,7 @@ class LRAgenerator():
         return filename
 
     def check_integrity(self, varname):
-        """To check if the LRA entry is fine before running"""
+        """To check if the DROP entry is fine before running"""
 
         yearfiles = self.get_filename(varname)
         yearfiles = glob.glob(yearfiles)
@@ -568,7 +575,7 @@ class LRAgenerator():
             temp_data = self._remove_regridded(temp_data)
 
         if self.region:
-            temp_data = area_selection(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
+            temp_data = self.reader.select_area(temp_data, lon=self.region['lon'], lat=self.region['lat'], drop=self.drop)
 
         # Splitting data into yearly files
         years = sorted(set(temp_data.time.dt.year.values))
@@ -640,7 +647,7 @@ class LRAgenerator():
         Returns:
             data: Input data with updated history attribute
         """
-        history_list = ["LRA generator"]
+        history_list = ["DROP"]
         
         # Add regridding information
         if self.resolution:

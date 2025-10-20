@@ -172,3 +172,46 @@ class TestEvaluateFormula:
         original_values = (data['2t'].isel(time=0) - 273.15).mean()
         expected_values = convert.isel(time=0).mean()
         assert np.allclose(original_values.values, expected_values.values)
+
+    def test_complex_formula(self, data):
+        formula = "((2t - 273.15)^2)/2 +  (tprate / 1000)"
+        convert = EvaluateFormula(
+            data=data, formula=formula,
+            units='Celsius^2 * hPa',
+            short_name="complex_calc",
+            long_name='Complex calculation').evaluate()
+
+        assert convert.attrs['short_name'] == 'complex_calc'
+        assert convert.attrs['long_name'] == 'Complex calculation'
+        assert convert.attrs['units'] == 'Celsius^2 * hPa'
+
+        original_values = (((data['2t'].isel(time=0) - 273.15)**2)/2 + (data['tprate'].isel(time=0) / 1000)).mean()
+        expected_values = convert.isel(time=0).mean()
+        assert np.allclose(original_values.values, expected_values.values)
+
+    def test_magnitude(self, data):
+        """Test magnitude calculation"""
+        formula = "(2t^2 + 2t^2)^0.5"
+        convert = EvaluateFormula(
+            data=data, formula=formula,
+            units='K',
+            short_name="magnitude_2t",
+            long_name='Magnitude of 2t vector').evaluate()
+        
+        assert convert.attrs['short_name'] == 'magnitude_2t'
+        assert convert.attrs['long_name'] == 'Magnitude of 2t vector'
+        assert convert.attrs['units'] == 'K'
+        original_values = ((data['2t'].isel(time=0)**2 + data['2t'].isel(time=0)**2)**0.5).mean()
+        expected_values = convert.isel(time=0).mean()
+        assert np.allclose(original_values.values, expected_values.values)
+
+    def test_wrong_formula(self, data):
+        """Test wrong parentheses handling"""
+        formula = "(2t - 273.15)) + (tprate / 1000"
+        with pytest.raises(ValueError):
+            EvaluateFormula(data=data, formula=formula).evaluate()
+        formula = "((2t - 273.15) + (tprate / 1000)"
+        with pytest.raises(ValueError):
+            EvaluateFormula(data=data, formula=formula).evaluate()
+        with pytest.raises(KeyError):
+            EvaluateFormula(data=data, formula="2t ++ tprate").evaluate()
