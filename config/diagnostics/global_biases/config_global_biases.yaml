@@ -10,7 +10,7 @@ references:
   - catalog: 'obs'
     model: 'ERA5'
     exp: 'era5'
-    source: 'monthly'
+    source: 'monthly-zarr'
     regrid: null
 
 setup:
@@ -29,6 +29,7 @@ diagnostics:
     run: true
     diagnostic_name: 'globalbiases'
     variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
+    formulae: ['(10u^2+10v^2)^0.5']
     params:
       default:
         plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
@@ -43,6 +44,9 @@ diagnostics:
         standard_name: "tprate"
         long_name: "Precipitation"
         units: "mm/day"
+      (10u^2+10v^2)^0.5:
+        short_name: "10si"
+        long_name: "Wind speed at 10m"
 
     plot_params:
       default: 
