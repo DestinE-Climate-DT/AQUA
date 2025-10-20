@@ -376,8 +376,8 @@ class BaseMixin(Diagnostic):
             self.catalog is not None
             and self.model is not None
             and self.exp is not None
-            and str(self.catalog) is not str(self.None_catalog)
-            and str(self.catalog) is not str(self.multi_catalog)
+            and str(self.catalog) != str(self.None_catalog)
+            and str(self.catalog) != str(self.multi_catalog)
         ):
             if fig is not None:
                 outputsaver = OutputSaver(
