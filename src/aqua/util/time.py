@@ -231,7 +231,7 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     if sum(check_completeness) == 0:
         logger.warning('Not enough data to compute any average on %s period, returning empty array', resample_frequency)
 
-    boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': taxis.time})
+    boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': chunks})
 
     return boolean_mask
 
