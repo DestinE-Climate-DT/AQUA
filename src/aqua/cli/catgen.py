@@ -320,7 +320,13 @@ class AquaFDBGenerator:
             'Tplus2.0K': 'tplus2K'
         }
 
-        forcing = self.config.get('forcing') or self.get_value_from_map(self.config['experiment'], forcing_map, 'experiment')
+        forcing = self.config.get('forcing')
+        if not forcing:
+            experiment = self.config['experiment']
+            try:
+                forcing = self.get_value_from_map(experiment, forcing_map, 'experiment')
+            except ValueError:
+                forcing = re.sub(r'[^a-z0-9]', '', experiment.lower())  #keep only letters and numbers
 
         main_yaml['sources'][self.config['exp']] = {
             'description': self.description,
