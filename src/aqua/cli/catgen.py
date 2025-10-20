@@ -165,17 +165,6 @@ class AquaFDBGenerator:
         }
         return freq2time[frequency]
 
-    @staticmethod
-    def get_value_from_map(value, value_map, value_type):
-        """
-        Get the value from the map based on the value type.
-        """
-        result = value_map.get(value)
-        if not result:
-            raise ValueError(f"Unexpected {value_type}: {value}")
-        return result
-
-
     def load_jinja_template(self, template_file):
         """
         Load a Jinja2 template.
@@ -326,10 +315,7 @@ class AquaFDBGenerator:
             forcing = self.config.get('forcing')
             if not forcing:
                 experiment = self.config['experiment']
-                try:
-                    forcing = self.get_value_from_map(experiment, forcing_map, 'experiment')
-                except ValueError:
-                    forcing = re.sub(r'[^a-z0-9]', '', experiment.lower())  #keep only letters and numbers
+                forcing = forcing_map.get(experiment, re.sub(r'[^a-z0-9]', '', experiment.lower()))
             
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
