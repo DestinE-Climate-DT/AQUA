@@ -98,11 +98,11 @@ def test_ensemble_timeseries():
     assert fig is not None
     assert ax is not None 
    
-    filename1 = f'ensemble.EnsembleTimeseries.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.png'
+    filename1 = f'ensemble.EnsembleTimeseries.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.png'
     file = os.path.join(tmp_path, 'png', filename1)
     assert os.path.exists(file)
-
-    filename2 = f'ensemble.EnsembleTimeseries.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.pdf'
+    
+    filename2 = f'ensemble.EnsembleTimeseries.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.pdf'
     file = os.path.join(tmp_path, 'pdf', filename2)
     assert os.path.exists(file)
    
