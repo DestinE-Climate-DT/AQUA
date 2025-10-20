@@ -4,6 +4,7 @@ from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 from .multiple_hovmoller import plot_multi_hovmoller
 from .multiple_timeseries import plot_multi_timeseries
+from aqua.util import ConfigPath
 
 xr.set_options(keep_attrs=True)
 
@@ -18,7 +19,7 @@ class PlotHovmoller:
     """
     def __init__(self,
                  data: list[xr.Dataset],
-                 diagnostic_name: str = "oceandrift",
+                 diagnostic_name: str = "ocean_drift",
                  outputdir: str = ".",
                  loglevel: str = "WARNING"):
         """
@@ -26,7 +27,7 @@ class PlotHovmoller:
 
         Args:
             data (list[xr.Dataset]): List of xarray datasets containing the data to be plotted
-            diagnostic_name (str): Name of the diagnostic, default is "oceandrift"
+            diagnostic_name (str): Name of the diagnostic, default is "ocean_drift"
             outputdir (str): Directory where the output will be saved, default is current directory
             loglevel (str): Logging level, default is "WARNING"
         """
@@ -225,10 +226,12 @@ class PlotHovmoller:
         This method can be extended to set specific vmax and vmin values.
         """
         self.logger.debug("Setting vmax and vmin")
+        regions_file = ConfigPath().get_config_dir()
         hovmoller_plot_dic = {
             'thetao' :
                 {
-                    'full': {'vmax': 40, 'vmin': 10 },
+                    # 'full': {'vmax': 40, 'vmin': 10, 'cbar': 'viridis' },
+                    'full': {'cbar': 'viridis' },
                     'anom_t0': {'vmax': 6, 'vmin': -6, 'cbar': 'coolwarm'},
                     'std_anom_t0': {'vmax': 5, 'vmin': -5, 'cbar': 'coolwarm'},
                     'anom_tmean': {'vmax': 6, 'vmin': -6, 'cbar': 'coolwarm'},
@@ -236,7 +239,8 @@ class PlotHovmoller:
                 },
             'so' :
                 {
-                    'full': {'vmax': 38, 'vmin': 33, 'cbar': 'coolwarm'},
+                    # 'full': {'vmax': 38, 'vmin': 33, 'cbar': 'viridis'},
+                    'full': {'cbar': 'viridis'},
                     'anom_t0': {'vmax': 0.9, 'vmin': -0.3, 'cbar': 'coolwarm'},
                     'std_anom_t0': {'vmax': 5, 'vmin': -6, 'cbar': 'coolwarm'},
                     'anom_tmean': {'vmax': 5, 'vmin': -5, 'cbar': 'coolwarm'},
@@ -273,6 +277,7 @@ class PlotHovmoller:
             for j, _ in enumerate(self.vars):
                 if j == 0:
                     type = data.attrs.get('AQUA_ocean_drift_type', 'NA')
+                    type = type.replace('_', ' ')
                     self.texts.append(type)
                 else:
                     self.texts.append(None)

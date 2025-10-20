@@ -157,7 +157,6 @@ class Hovmoller(Diagnostic):
         data = data / data.std(dim=dim)
         data.attrs["units"] = "Stand. Units"
         data.attrs["AQUA_standardise"] = f"Standardised with {dim}"
-        #type_str = f"Std_{data.attrs.get('AQUA_type', 'full')}"
         return data
 
     def _get_std_anomaly(
