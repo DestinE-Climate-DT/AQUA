@@ -325,6 +325,8 @@ class Diagnostic():
                 - 'lon_limits': The longitude limits of the selected region.
                 - 'lat_limits': The latitude limits of the selected region.
         """
+        original_name = data.name if isinstance(data, xr.DataArray) else None
+
         if region is not None and diagnostic is not None:
             region, lon_limits, lat_limits = self._set_region(region=region, diagnostic=diagnostic)
             self.logger.info(f"Applying area selection for region: {region}")
@@ -332,6 +334,9 @@ class Diagnostic():
                 data=data, lat=lat_limits, lon=lon_limits, drop=drop, **kwargs
             )
             data.attrs['AQUA_region'] = region
+
+            if original_name is not None:
+                data.name = original_name
         else:
             region, lon_limits, lat_limits = None, None, None
             self.logger.warning(
