@@ -8,12 +8,16 @@ datasets:
     source: 'aqua-atmglobalmean'
     regrid: null
     realization: null
+    #areas: False
+    #fix: True
   - catalog: 'nextgems4' 
     model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-atmglobalmean'
     regrid: null
     realization: null
+    #areas: False
+    #fix: True
 
 setup:
   loglevel: 'WARNING'

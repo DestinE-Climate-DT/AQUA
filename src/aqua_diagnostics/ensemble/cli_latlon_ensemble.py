@@ -82,6 +82,8 @@ if __name__ == "__main__":
                 exp_list = []
                 source_list = []
                 realization_dict = {}
+                # TODO:
+                reader_kwargs_dict = {}
 
                 if models is not None:
                     models[0]["catalog"] = get_arg(args, "catalog", models[0]["catalog"])
@@ -90,13 +92,17 @@ if __name__ == "__main__":
                     models[0]["source"] = get_arg(args, "source", models[0]["source"])
                     models[0]["regrid"] = get_arg(args, "regrid", models[0]["regrid"])
                     models[0]["realization"] = get_arg(args, "realization", models[0]["realization"])
+                    #models[0]["fix"] = get_arg(args, "fix", models[0]["fix"])
+                    #models[0]["areas"] = get_arg(args, "areas", models[0]["areas"])
+                    #model[0]["reader_kwargs"] = get_arg(args, "reader_kwargs", models[0]["reader_kwargs"])
                     for model in models:
                         catalog_list.append(model["catalog"])
                         model_list.append(model["model"])
                         exp_list.append(model["exp"])
                         source_list.append(model["source"])
                         realization_dict.update({model["model"]: model["realization"]})
-
+                        #reader_kwargs_dict.update({model["model"]: {"fix":model["fix"], "areas":model["areas"]}})
+ 
                 # Loading and merging data
                 ens_dataset = reader_retrieve_and_merge(
                     variable=variable,
@@ -106,6 +112,7 @@ if __name__ == "__main__":
                     source_list=source_list,
                     regrid=models[0]["regrid"],
                     realization=realization_dict,
+                    reader_kwargs=reader_kwargs_dict,
                     loglevel="WARNING",
                     ens_dim="ensemble",
                 )

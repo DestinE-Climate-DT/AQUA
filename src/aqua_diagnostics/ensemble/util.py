@@ -21,6 +21,7 @@ def reader_retrieve_and_merge(
     model_list: list[str] = None,
     exp_list: list[str] = None,
     source_list: list[str] = None,
+    reader_kwargs: dict[str, list[str]] = None,
     realization: dict[str, list[str]] = None,
     region: str = None,
     lon_limits: float = None,
@@ -109,7 +110,7 @@ def reader_retrieve_and_merge(
         else:
             logger.info(f"No realizations defined for {model_i}, using default ['r1']")
             reals = ["r1"]
-
+            
         model_ds_list = []
 
         for r in reals:
@@ -123,6 +124,7 @@ def reader_retrieve_and_merge(
                     realization=r,
                     region=region,
                     regrid=regrid,
+                    #reader_kwargs=reader_kwargs[model_i],
                     areas=areas,
                     fix=fix,
                 )
