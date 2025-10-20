@@ -14,7 +14,7 @@ references:
   - catalog: obs
     model: 'ERA5'
     exp: 'era5'
-    source: 'monthly-zarr'
+    source: 'monthly'
     startdate: '1990-01-01'
     enddate: '2020-12-31'
   - catalog: obs
