@@ -16,7 +16,7 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - Global Biases: add 10si as formula to config file (#2338)
-- LatLonProfiles: tests implementation (#2339)
+- LatLonProfiles: tests (#2339) and CLI implementation (#2345)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
 - Implement `fldstat` methods in Seaice diagnostics (#2297)
 - Gregory: more detailed description and plot labels (#2306)
@@ -40,6 +40,7 @@ ClimateDT workflow modifications:
 - DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
+- File locking for catalog generator (#2348)
 - nc2zarr installation and sample for zarr conversion (#2332)
 - Allow `Reader()` to access standard and custom `fldstat` methods provided by `FldStat()` (#2277)
 - Actions now upload artifacts with test results and environment specifications (#2323)
@@ -81,6 +82,7 @@ AQUA core complete list:
 - `apply_circular_window()` utility function to apply a circular window to cartopy maps (#2100)
 
 AQUA diagnostics complete list:
+- Radiation: add Surface Radiation Fluxes (snlwrf, snswrf, latent and sensible heat) (#2318)
 - Seaice: added documentation and updated notebooks (#2249)
 - Seaice: update varname for PIOMAS and GIOMAS from sivol to sithick after updating the data in `obs` catalog (#2290)
 - Global Biases: allow GlobalBias to take color palette as argument (#2283)

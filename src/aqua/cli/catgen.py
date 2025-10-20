@@ -10,9 +10,11 @@ import re
 import sys
 import argparse
 import jinja2
+
 from aqua.util import load_yaml, dump_yaml, get_arg, ConfigPath
 from aqua.logger import log_configure
 
+from filelock import FileLock
 from ruamel.yaml import YAML
 yaml = YAML()
 yaml.default_flow_style = None  # Ensure default flow style is None
@@ -299,26 +301,27 @@ class AquaFDBGenerator:
 
         # Update main.yaml
         main_yaml_path = os.path.join(output_dir, 'main.yaml')
-        if not os.path.exists(main_yaml_path):
-            main_yaml = {'sources': {}}
-        else:
-            main_yaml = load_yaml(main_yaml_path)
+        with FileLock(main_yaml_path + '.lock'):
+            if not os.path.exists(main_yaml_path):
+                main_yaml = {'sources': {}}
+            else:
+                main_yaml = load_yaml(main_yaml_path)
 
-        resolution_map = {
-            'production': 'HR',
-            'develop': 'SR',
-            'lowres': 'LR',
-            'intermediate': 'MR'
-        }
-        
-        resolution_id = self.get_value_from_map(self.config['resolution'], resolution_map, 'resolution')
+            resolution_map = {
+                'production': 'HR',
+                'develop': 'SR',
+                'lowres': 'LR',
+                'intermediate': 'MR'
+            }
+            
+            resolution_id = self.get_value_from_map(self.config['resolution'], resolution_map, 'resolution')
 
-        forcing_map = {
-            'hist': 'historical',
-            'cont': 'control',
-            'SSP3-7.0': 'ssp370',
-            'Tplus2.0K': 'tplus2K'
-        }
+            forcing_map = {
+                'hist': 'historical',
+                'cont': 'control',
+                'SSP3-7.0': 'ssp370',
+                'Tplus2.0K': 'tplus2K'
+            }
 
         forcing = self.config.get('forcing')
         if not forcing:
@@ -343,34 +346,35 @@ class AquaFDBGenerator:
                     'menu': self.config.get('menu') or self.config['exp'],
                     'resolution_id': resolution_id,
                     'note': self.config.get('note')
+                    }
+                },
+                'driver': 'yaml_file_cat',
+                'args': {
+                    'path': f"{{{{CATALOG_DIR}}}}/{self.config['exp']}.yaml"
                 }
-            },
-            'driver': 'yaml_file_cat',
-            'args': {
-                'path': f"{{{{CATALOG_DIR}}}}/{self.config['exp']}.yaml"
             }
-        }
-        dump_yaml(main_yaml_path, main_yaml)
-        self.logger.info("%s entry in 'main.yaml' has been updated in %s", self.config['exp'], output_dir)
+            dump_yaml(main_yaml_path, main_yaml)
+            self.logger.info("%s entry in 'main.yaml' has been updated in %s", self.config['exp'], output_dir)
 
         # Update catalog.yaml if a new model is added
         catalog_yaml_path = os.path.join(self.catalog_dir_path, 'catalogs',  self.config['catalog_dir'], 'catalog.yaml')
-        catalog_yaml = load_yaml(catalog_yaml_path)
+        with FileLock(catalog_yaml_path + '.lock'):
+            catalog_yaml = load_yaml(catalog_yaml_path)
 
-        if catalog_yaml.get('sources') is None:
-            catalog_yaml['sources'] = {}
+            if catalog_yaml.get('sources') is None:
+                catalog_yaml['sources'] = {}
 
-        if self.model not in catalog_yaml.get('sources', {}):  
-            catalog_yaml.setdefault('sources', {}) 
-            catalog_yaml['sources'][self.model.upper()] = {
-                'description': f"{self.model.upper()} model",
-                'driver': 'yaml_file_cat',
-                'args': {
-                    'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model.upper()}/main.yaml"
+            if self.model not in catalog_yaml.get('sources', {}):  
+                catalog_yaml.setdefault('sources', {}) 
+                catalog_yaml['sources'][self.model.upper()] = {
+                    'description': f"{self.model.upper()} model",
+                    'driver': 'yaml_file_cat',
+                    'args': {
+                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model.upper()}/main.yaml"
+                    }
                 }
-            }
-            dump_yaml(catalog_yaml_path, catalog_yaml)
-            self.logger.info("%s entry in 'catalog.yaml' has been created at %s", self.model, catalog_yaml_path)
+                dump_yaml(catalog_yaml_path, catalog_yaml)
+                self.logger.info("%s entry in 'catalog.yaml' has been created at %s", self.model, catalog_yaml_path)
 
 
     def generate_catalog(self):
