@@ -68,7 +68,7 @@ def plot_multi_vertical_lines(
 
             fig, ax = plot_vertical_lines(
                 data=maps[j][var],
-                ref_data=maps[j][var] * 1.001,
+                ref_data=maps[j][var],
                 labels=data_label,
                 ref_label=obs_label,
                 lev_name="level",
