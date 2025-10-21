@@ -30,6 +30,7 @@ class Boxplots(Diagnostic):
                  startdate: str = None,
                  enddate: str = None,
                  regrid: str = None,
+                 diagnostic: str = "boxplots",
                  save_netcdf: bool = False,
                  outputdir: str = './',
                  loglevel: str = 'WARNING'):
@@ -40,6 +41,7 @@ class Boxplots(Diagnostic):
 
         self.logger = log_configure(log_level=loglevel, log_name='Boxplots')
         self.var = var
+        self.diagnostic = diagnostic
         self.save_netcdf = save_netcdf
         self.outputdir = outputdir
         self.loglevel = loglevel
@@ -124,7 +126,7 @@ class Boxplots(Diagnostic):
             extra_keys = {'var': var_string} if var_string else {}
             super().save_netcdf(
                 data=self.fldmeans,
-                diagnostic='boxplots',
+                diagnostic=self.diagnostic,
                 diagnostic_product='boxplot',
                 outputdir=self.outputdir,
                 extra_keys=extra_keys
