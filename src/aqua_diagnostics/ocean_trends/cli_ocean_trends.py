@@ -41,14 +41,10 @@ if __name__ == '__main__':
     exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
     source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
     regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
-    realization = get_arg(args, 'realization', None)
-    if realization:
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
-    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
+    logger.info("Catalog: %s, Model: %s, Experiment: %s, Source: %s, Regrid: %s", catalog, model, exp, source, regrid)
 
     # Output options (from cli_base)
+    reader_kwargs = cli.reader_kwargs
     outputdir = cli.outputdir
     rebuild = cli.rebuild
     save_pdf = cli.save_pdf

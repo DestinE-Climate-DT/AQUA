@@ -37,9 +37,6 @@ if __name__ == '__main__':
     save_png = cli.save_png
     dpi = cli.dpi
     save_netcdf = cli.save_netcdf
-    
-    # Diagnostic-specific output option
-    save_netcdf = config_dict['output'].get('save_netcdf', True)
 
     # Global Biases diagnostic
     if 'globalbiases' in config_dict['diagnostics']:
