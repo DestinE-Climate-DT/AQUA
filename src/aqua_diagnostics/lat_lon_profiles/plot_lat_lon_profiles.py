@@ -28,7 +28,7 @@ class PlotLatLonProfiles():
             ref_data: Reference data (structure matches data based on data_type)
             data_type (str): 'longterm' for single/multi-line longterm plots, 'seasonal' for 4-panel seasonal plots
             ref_std_data: Reference standard deviation data
-            mean_type (str): The type of mean to compute ('zonal' or 'meridional')
+            diagnostic_name (str): Name of the diagnostic. Default is 'lat_lon_profiles'.
             loglevel (str): Logging level. Default is 'WARNING'.
             
         Note:
