@@ -11,19 +11,13 @@ from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
 class DiagnosticCLI:
     """
     Base class to centralize common CLI initialization operations.
-    
-    This class handles:
-    - Logging setup
-    - Config loading and merging with CLI args
-    - Cluster management
-    - Output options extraction
-    - Reader kwargs setup
+
     
     Usage:
         cli = DiagnosticCLI(
             args=args,
             diagnostic_name='timeseries',
-            default_config='config_timeseries_atm.yaml'
+            config='config_timeseries_atm.yaml'
         )
         cli.prepare()
         cli.open_dask_cluster()
@@ -38,20 +32,20 @@ class DiagnosticCLI:
         cli.close_dask_cluster()
     """
     
-    def __init__(self, args, diagnostic_name, default_config, log_name=None):
+    def __init__(self, args, diagnostic_name, config, log_name=None):
         """
         Initialize the CLI handler.
         
         Args:
             args: Parsed command-line arguments
             diagnostic_name (str): Name of the diagnostic (e.g., 'timeseries', 'seaice')
-            default_config (str): Default config file name
+            config (str): Default config file name
             log_name (str, optional): Logger name. Defaults to '{diagnostic_name} CLI'
         """
         self.args = args
         self.diagnostic_name = diagnostic_name
-        self.default_config = default_config
-        self.log_name = log_name or f"{diagnostic_name.capitalize()} CLI"
+        self.config = config
+        self.log_name = log_name or f"{diagnostic_name.capitalize()}-CLI"
         
         # Attributes populated by prepare()
         self.loglevel = None
@@ -70,7 +64,7 @@ class DiagnosticCLI:
         self.save_netcdf = None
         self.dpi = None
         
-    def prepare(self):
+    def prepare(self, **overrides):
         """
         Execute common setup operations (excluding cluster management).
         
@@ -79,8 +73,9 @@ class DiagnosticCLI:
         2. Loads and merges config
         3. Extracts common options (regrid, realization, output settings)
         
-        Note: Cluster management is done separately via open_dask_cluster()/close_dask_cluster()
-        for better modularity.
+        Optional keyword arguments can be passed to override options extracted
+        from configuration. Overrides are applied after extraction so they
+        take precedence.
         
         Returns:
             self: For method chaining
@@ -88,6 +83,12 @@ class DiagnosticCLI:
         self._setup_logging()
         self._load_config()
         self._extract_options()
+
+        # option to override arguments
+        if overrides:
+            for key, value in overrides.items():
+                setattr(self, key, value)
+
         return self
     
     def _setup_logging(self):
@@ -95,33 +96,13 @@ class DiagnosticCLI:
         self.loglevel = get_arg(self.args, 'loglevel', 'WARNING')
         self.logger = log_configure(log_level=self.loglevel, log_name=self.log_name)
         self.logger.info("Running %s diagnostic with AQUA version %s", self.diagnostic_name, aqua_version)
-    
-    def open_dask_cluster(self):
-        """
-        Open dask cluster if requested via CLI arguments.
-        
-        This method should be called explicitly after prepare() if cluster support is needed.
-        Checks for --cluster and --nworkers arguments and opens cluster accordingly.
-        
-        Returns:
-            self: For method chaining
-        """
-        cluster_arg = get_arg(self.args, 'cluster', None)
-        nworkers = get_arg(self.args, 'nworkers', None)
-        
-        self.client, self.cluster, self.private_cluster = open_cluster(
-            nworkers=nworkers, 
-            cluster=cluster_arg, 
-            loglevel=self.loglevel
-        )
-        return self
-    
+
     def _load_config(self):
         """Load diagnostic config and merge with CLI args."""
         self.config_dict = load_diagnostic_config(
             diagnostic=self.diagnostic_name,
             config=self.args.config,
-            default_config=self.default_config,
+            config=self.config,
             loglevel=self.loglevel
         )
         self.config_dict = merge_config_args(
@@ -129,14 +110,14 @@ class DiagnosticCLI:
             args=self.args,
             loglevel=self.loglevel
         )
-    
+
     def _extract_options(self):
         """Extract common options from config and args."""
         # Regrid option
         self.regrid = get_arg(self.args, 'regrid', None)
         if self.regrid:
             self.logger.info("Regrid option is set to %s", self.regrid)
-        
+
         # Realization option and reader_kwargs
         self.realization = get_arg(self.args, 'realization', None)
         if self.realization:
@@ -145,7 +126,7 @@ class DiagnosticCLI:
         else:
             # Fallback to config if present
             self.reader_kwargs = self.config_dict.get('datasets', [{}])[0].get('reader_kwargs') or {}
-        
+
         # Output options
         output_config = self.config_dict.get('output', {})
         self.outputdir = output_config.get('outputdir', './')
@@ -154,13 +135,38 @@ class DiagnosticCLI:
         self.save_png = output_config.get('save_png', True)
         self.save_netcdf = output_config.get('save_netcdf', True)
         self.dpi = output_config.get('dpi', 300)
-    
+
+    def dataset_args(self, dataset):
+        """
+        Helper to extract dataset arguments for diagnostics.
+        """
+
+        return {'catalog': dataset['catalog'], 'model': dataset['model'],
+                'exp': dataset['exp'], 'source': dataset['source'],
+                'regrid': dataset.get('regrid', self.regrid),
+                'startdate': dataset.get('startdate', None),
+                'enddate': dataset.get('enddate', None)}
+
+    def open_dask_cluster(self):
+        """
+        Open dask cluster if requested via CLI arguments.
+        
+        Returns:
+            self: For method chaining
+        """
+        cluster_arg = get_arg(self.args, 'cluster', None)
+        nworkers = get_arg(self.args, 'nworkers', None)
+
+        self.client, self.cluster, self.private_cluster = open_cluster(
+            nworkers=nworkers,
+            cluster=cluster_arg,
+            loglevel=self.loglevel
+        )
+        return self
+
     def close_dask_cluster(self):
         """
         Close the dask cluster if it was opened.
-        
-        This method should be called explicitly at the end of the diagnostic execution
-        to properly clean up cluster resources.
         """
         if self.client or self.cluster:
             close_cluster(
