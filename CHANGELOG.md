@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
+- Update Data Portfolio to v2.1.0 (#2356)
 - Updated target grib codes for cpr and snvol (#2346)
 - Offline cartopy data added to environment (#2344)
 - Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
