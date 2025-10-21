@@ -16,6 +16,7 @@ AQUA core complete list:
 - Extending evaluate formula method to exponential and parenthesis (#2327)
 
 AQUA diagnostics complete list:
+- Global Biases/Boxplots: use diagnostic_name while saving netcdfs, remove radiative flux from config (#2363)
 - Global Biases: add 10si as formula to config file (#2338)
 - LatLonProfiles: tests (#2339), CLI implementation (#2345) and removal of hardcoded diagnostic_name (#2357)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
