@@ -1,11 +1,8 @@
 import argparse
 import sys
-from aqua.logger import log_configure
-from aqua.util import get_arg
-from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
+from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics import Boxplots, PlotBoxplots
+from aqua_diagnostics.core import DiagnosticCLI
 
 def parse_arguments(args):
     """Parse command-line arguments for GlobalBiases diagnostic.
@@ -20,32 +17,13 @@ def parse_arguments(args):
 if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
-
-    loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='Boxplots CLI')
-    logger.info(f"Running Boxplots diagnostic with AQUA version {aqua_version}")
-
-    cluster = get_arg(args, 'cluster', None)
-    nworkers = get_arg(args, 'nworkers', None)
-
-    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
-
-    # Load the configuration file and then merge it with the command-line arguments
-    config_dict = load_diagnostic_config(diagnostic='boxplots', config=args.config,
-                                         default_config='config_radiation-boxplots.yaml',
-                                         loglevel=loglevel)
-    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-
-    regrid = get_arg(args, 'regrid', None) 
-
-    if regrid:
-        logger.info(f"Regrid option is set to {regrid}")
-    realization = get_arg(args, 'realization', None)
-    if realization:
-        logger.info(f"Realization option is set to {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
+    
+    cli = DiagnosticCLI(args, 'boxplots', 'config_radiation-boxplots.yaml', log_name='Boxplots CLI').prepare()
+    
+    logger = cli.logger
+    config_dict = cli.config_dict
+    regrid = cli.regrid
+    reader_kwargs = cli.reader_kwargs
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -79,7 +57,7 @@ if __name__ == '__main__':
                                     'startdate': dataset.get('startdate'),
                                     'enddate': dataset.get('enddate')}
 
-                    boxplots = Boxplots(**dataset_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots = Boxplots(**dataset_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=cli.loglevel)
                     boxplots.run(var=variables, reader_kwargs=reader_kwargs)
                     fldmeans.append(boxplots.fldmeans)
                 
@@ -91,7 +69,7 @@ if __name__ == '__main__':
                                     'startdate': reference.get('startdate'),
                                     'enddate': reference.get('enddate')}
 
-                    boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=cli.loglevel)
                     boxplots_ref.run(var=variables, reader_kwargs=reader_kwargs)
 
                     if getattr(boxplots_ref, "fldmeans", None) is None:
@@ -103,9 +81,9 @@ if __name__ == '__main__':
                     fldmeans_ref.append(boxplots_ref.fldmeans)
 
 
-                plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=cli.loglevel)
                 plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, **plot_kwargs)
 
-    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+    cli.close()
 
     logger.info("Boxplots diagnostic completed.")

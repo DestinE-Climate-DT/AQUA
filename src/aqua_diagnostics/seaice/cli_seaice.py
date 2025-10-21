@@ -10,11 +10,8 @@ add reference data.
 import argparse
 import sys
 
-from aqua.logger import log_configure
 from aqua.util import get_arg
-from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
+from aqua.diagnostics.core import template_parse_arguments, DiagnosticCLI
 from aqua.diagnostics import SeaIce, PlotSeaIce, Plot2DSeaIce
 from aqua.diagnostics.seaice.util import filter_region_list
 
@@ -36,46 +33,32 @@ if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
 
-    loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='SeaIce CLI')
-    logger.info(f"Running Sea Ice diagnostic with AQUA version {aqua_version}")
-
-    projection = get_arg(args, 'proj', 'orthographic')
-
-    cluster = get_arg(args, 'cluster', None)
-    nworkers = get_arg(args, 'nworkers', None)
-
-    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
-
-    # Load the configuration file and then merge it with the command-line arguments,
-    # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='seaice', config=args.config,
-                                         default_config='config_seaice.yaml',
-                                         loglevel=loglevel)
-    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-    logger.info("Loaded config_dict")
+    # Initialize and prepare CLI
+    cli = DiagnosticCLI(
+        args=args,
+        diagnostic_name='seaice',
+        default_config='config_seaice.yaml',
+        log_name='SeaIce CLI'
+    ).prepare()
     
-    # Set the loglevel to the config_file
+    # Extract prepared attributes
+    logger = cli.logger
+    loglevel = cli.loglevel
+    config_dict = cli.config_dict
+    regrid = cli.regrid
+    reader_kwargs = cli.reader_kwargs
+    outputdir = cli.outputdir
+    rebuild = cli.rebuild
+    save_pdf = cli.save_pdf
+    save_png = cli.save_png
+    dpi = cli.dpi
+    
+    # Diagnostic-specific options
+    projection = get_arg(args, 'proj', 'orthographic')
     config_dict['setup']['loglevel'] = loglevel
-
+    
     # Load region dict through dummy method access
     regions_dict = SeaIce(model='', exp='', source='')._load_regions_from_file(diagnostic='seaice')    
-
-    regrid = get_arg(args, 'regrid', None)
-
-    realization = get_arg(args, 'realization', None)
-    if realization:
-        logger.info(f"Realization option is set to: {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
-
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild   = config_dict['output'].get('rebuild',  True)
-    save_pdf  = config_dict['output'].get('save_pdf', True)
-    save_png  = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300)
 
     # Use the top-level datasets
     datasets = config_dict['datasets']
@@ -414,6 +397,4 @@ if __name__ == '__main__':
                                save_pdf=save_pdf, 
                                save_png=save_png)
 
-    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
-
-    logger.info("Sea Ice diagnostic completed.")
+    cli.close()
