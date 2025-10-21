@@ -9,13 +9,10 @@ single or multiple experiments.
 import argparse
 import sys
 
-from aqua.logger import log_configure
-from aqua.util import get_arg
-from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
+from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.teleconnections import NAO, ENSO
 from aqua.diagnostics.teleconnections import PlotNAO, PlotENSO
+from aqua_diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):
@@ -31,38 +28,21 @@ def parse_arguments(args):
 
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
+    
+    cli = DiagnosticCLI(args, 'teleconnections', 'config_teleconnections.yaml', log_name='Teleconnections CLI').prepare()
+    cli.open_dask_cluster()
+    
+    logger = cli.logger
+    config_dict = cli.config_dict
+    regrid = cli.regrid
+    reader_kwargs = cli.reader_kwargs
 
-    loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='Teleconnections CLI')
-    logger.info(f"Running Teleconnections diagnostic with AQUA version {aqua_version}")
-
-    cluster = get_arg(args, 'cluster', None)
-    nworkers = get_arg(args, 'nworkers', None)
-
-    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
-
-    # Load the configuration file and then merge it with the command-line arguments,
-    # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='teleconnections', config=args.config,
-                                         default_config='config_teleconnections.yaml',
-                                         loglevel=loglevel)
-    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-
-    regrid = get_arg(args, 'regrid', None)
-    logger.debug(f'Regrid CLI option: {regrid}')
-    realization = get_arg(args, 'realization', None)
-    if realization:
-        logger.info(f"Realization option is set to {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
-
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300)
+    # Output options (from cli_base)
+    outputdir = cli.outputdir
+    rebuild = cli.rebuild
+    save_pdf = cli.save_pdf
+    save_png = cli.save_png
+    dpi = cli.dpi
 
     if 'teleconnections' in config_dict['diagnostics']:
         if 'NAO' in config_dict['diagnostics']['teleconnections']:
@@ -79,7 +59,7 @@ if __name__ == '__main__':
                 nao_regressions = {season: [None] * len(config_dict['datasets']) for season in seasons}
                 nao_correlations = {season: [None] * len(config_dict['datasets']) for season in seasons}
 
-                init_args = {'loglevel': loglevel}
+                init_args = {'loglevel': cli.loglevel}
 
                 for i, dataset in enumerate(config_dict['datasets']):
                     dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
@@ -143,7 +123,7 @@ if __name__ == '__main__':
                     plot_args = {'indexes': [nao[i].index for i in range(len(nao))],
                                  'ref_indexes': [nao_ref[i].index for i in range(len(nao_ref))],
                                  'outputdir': outputdir, 'rebuild': rebuild,
-                                 'loglevel': loglevel}
+                                 'loglevel': cli.loglevel}
                     
                     plot_nao = PlotNAO(**plot_args)
 
@@ -207,7 +187,7 @@ if __name__ == '__main__':
                 enso_regressions = {season: [None] * len(config_dict['datasets']) for season in seasons}
                 enso_correlations = {season: [None] * len(config_dict['datasets']) for season in seasons}
 
-                init_args = {'loglevel': loglevel}
+                init_args = {'loglevel': cli.loglevel}
 
                 for i, dataset in enumerate(config_dict['datasets']):
                     dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
@@ -271,7 +251,7 @@ if __name__ == '__main__':
                     plot_args = {'indexes': [enso[i].index for i in range(len(enso))],
                                  'ref_indexes': [enso_ref[i].index for i in range(len(enso_ref))],
                                  'outputdir': outputdir, 'rebuild': rebuild,
-                                 'loglevel': loglevel}
+                                 'loglevel': cli.loglevel}
 
                     plot_enso = PlotENSO(**plot_args)
 
@@ -321,6 +301,6 @@ if __name__ == '__main__':
                             plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
                                                metadata={'description': correlation_description}, dpi=dpi)
 
-    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+    cli.close_dask_cluster()
 
     logger.info('Teleconnections diagnostic finished.')
