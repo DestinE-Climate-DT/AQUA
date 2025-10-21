@@ -30,6 +30,7 @@ class GlobalBiases(Diagnostic):
         enddate (str): End date for data selection.
         var (str): Variable name to analyze.
         plev (float): Pressure level to select (if applicable).
+        diagnostic (str): Name of the diagnostic.
         save_netcdf (bool): If True, saves output climatologies.
         outputdir (str): Output directory for NetCDF files.
         loglevel (str): Log level. Default is 'WARNING'.
@@ -37,6 +38,7 @@ class GlobalBiases(Diagnostic):
     def __init__(self, catalog=None, model=None, exp=None, source=None,
                  regrid=None, startdate=None, enddate=None,
                  var=None, plev=None,
+                 diagnostic='globalbiases',
                  save_netcdf=True, outputdir='./', loglevel='WARNING'):
 
         super().__init__(catalog=catalog, model=model, exp=exp, source=source,
@@ -50,7 +52,7 @@ class GlobalBiases(Diagnostic):
         self.outputdir = outputdir
         self.startdate = startdate
         self.enddate = enddate
-
+        self.diagnostic = diagnostic
 
     def _check_data(self, var: str, units: str):
         """
@@ -174,7 +176,7 @@ class GlobalBiases(Diagnostic):
             extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
             super().save_netcdf(
                 data=self.climatology,
-                diagnostic='globalbiases',
+                diagnostic=self.diagnostic,
                 diagnostic_product='climatology',
                 outputdir=self.outputdir,
                 extra_keys=extra_keys
