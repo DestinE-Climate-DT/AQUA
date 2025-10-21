@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.19.0):
 
 AQUA core complete list:
+- Update Data Portfolio to v2.1.0 (#2356)
 - Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2341)
 - Updated target grib codes for cpr and snvol (#2346)
 - Offline cartopy data added to environment (#2344)
@@ -41,6 +42,7 @@ ClimateDT workflow modifications:
 - DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
+- File locking for catalog generator (#2348)
 - nc2zarr installation and sample for zarr conversion (#2332)
 - Allow `Reader()` to access standard and custom `fldstat` methods provided by `FldStat()` (#2277)
 - Actions now upload artifacts with test results and environment specifications (#2323)
