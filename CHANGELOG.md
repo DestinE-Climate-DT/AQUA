@@ -14,6 +14,8 @@ AQUA diagnostics complete list:
 ## [v0.18.1]
 
 AQUA core complete list:
+- Handle unknown activity names in catgen (#2351)
+- Update Data Portfolio to v2.1.0 (#2356)
 - Updated target grib codes for cpr and snvol (#2346)
 - Offline cartopy data added to environment (#2344)
 - Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
@@ -22,7 +24,7 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - Global Biases: add 10si as formula to config file (#2338)
-- LatLonProfiles: tests (#2339) and CLI implementation (#2345)
+- LatLonProfiles: tests (#2339), CLI implementation (#2345) and removal of hardcoded diagnostic_name (#2357)
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
 - Implement `fldstat` methods in Seaice diagnostics (#2297)
 - Gregory: more detailed description and plot labels (#2306)
@@ -46,6 +48,7 @@ ClimateDT workflow modifications:
 - DVC is now used for observations, grids and CI/CD: please refer to aqua-dvc for AQUA support data. 
 
 AQUA core complete list:
+- File locking for catalog generator (#2348)
 - nc2zarr installation and sample for zarr conversion (#2332)
 - Allow `Reader()` to access standard and custom `fldstat` methods provided by `FldStat()` (#2277)
 - Actions now upload artifacts with test results and environment specifications (#2323)
