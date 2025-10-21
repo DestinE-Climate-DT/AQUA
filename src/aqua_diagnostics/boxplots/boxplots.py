@@ -60,15 +60,23 @@ class Boxplots(Diagnostic):
             KeyError: If the variable is missing from the data.
         """
 
-        if var is not None:
-            self.var = [v.lstrip('-') for v in (var if isinstance(var, list) else [var])]
+        try:
+            if var is not None:
+                self.var = [v.lstrip('-') for v in (var if isinstance(var, list) else [var])]
+            
+            super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
-        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to retrieve variable(s) {var} from {self.model}, {self.exp}, {self.source}: {e}"
+            )
 
         if self.data is None:
-            self.logger.error(f"Variable {self.var} not found in dataset {self.model}, {self.exp}, {self.source}")
-            raise NoDataError("Variable not found in dataset")
-
+            self.logger.warning(
+                f"Variable(s) {self.var} not found in dataset {self.model}, {self.exp}, {self.source}. Skipping."
+            )
+            return
+   
         self.startdate = self.startdate or pd.to_datetime(self.data.time[0].values).strftime('%Y-%m-%d')
         self.enddate = self.enddate or pd.to_datetime(self.data.time[-1].values).strftime('%Y-%m-%d')
 

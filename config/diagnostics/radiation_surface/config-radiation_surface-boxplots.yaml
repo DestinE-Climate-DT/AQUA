@@ -14,12 +14,12 @@ references:
   - catalog: obs
     model: 'ERA5'
     exp: 'era5'
-    source: 'monthly'
+    source: 'monthly-zarr'
     startdate: '1990-01-01'
     enddate: '2020-12-31'
   - catalog: obs
     model: 'CERES'
-    exp: 'ebaf-toa41'
+    exp: 'ebaf-sfc41'
     source: 'monthly'
     regrid: 'r100'
     startdate: '2000-01-01'
@@ -41,4 +41,8 @@ diagnostics:
     run: true
     diagnostic_name: 'radiation'
     variables:
-      - vars: ['-tnlwrf', 'tnswrf']
+      - vars: ['-snlwrf', 'snswrf', 'slhtf', 'ishf']
+        anomalies: true
+        add_mean_line: true
+
+
