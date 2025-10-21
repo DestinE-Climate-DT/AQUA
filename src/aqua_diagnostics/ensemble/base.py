@@ -195,8 +195,9 @@ class BaseMixin(Diagnostic):
         enddate=None,
     ):
         """
-        Save data as a NetCDF file using OutputSaver or directly if catalog/model/exp are None or multi-values.
-
+        Commented-out: Save data as a NetCDF file using OutputSaver or directly if catalog/model/exp are None or multi-values.
+        
+        Save data as a NetCDF file using OutputSaver.
         This method handles Timeseries, Lat-Lon, and Zonal data. It automatically generates
         metadata including model, experiment, source, region, and optional start/end dates.
         The filename and description are dynamically generated based on the diagnostic,
