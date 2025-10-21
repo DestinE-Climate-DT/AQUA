@@ -83,7 +83,7 @@ jobs:
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-2/data-portfolio data-portfolio
           cd data-portfolio
-          git checkout tags/v2.0.0
+          git checkout tags/v2.1.0
       - name: List Workspace Contents
         run: |
           echo "Current Directory: $PWD"
