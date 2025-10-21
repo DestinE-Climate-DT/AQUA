@@ -331,7 +331,7 @@ class AquaFDBGenerator:
                     'author': self.author,
                     'maintainer': self.config.get('maintainer') or 'not specified',
                     'machine': self.machine,
-                    'expid': self.expid,                
+                    'expid': self.config['expid'],                
                     'resolution_atm': self.atm_grid,
                     'resolution_oce': self.ocean_grid,
                     'forcing': forcing,
