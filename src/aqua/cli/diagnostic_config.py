@@ -13,7 +13,12 @@ diagnostic_config = {
             'target_path': 'diagnostics/lat_lon_profiles/definitions'
         },
         {
-            'config_file': 'config_lat_lon_profiles.yaml',
+            'config_file': 'config_lat_lon_profiles-atmosphere2d.yaml',
+            'source_path': 'config/diagnostics/lat_lon_profiles',
+            'target_path': 'diagnostics/lat_lon_profiles'
+        },
+        {
+            'config_file': 'config_lat_lon_profiles-water.yaml',
             'source_path': 'config/diagnostics/lat_lon_profiles',
             'target_path': 'diagnostics/lat_lon_profiles'
         }

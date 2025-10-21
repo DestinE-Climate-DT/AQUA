@@ -40,20 +40,23 @@ cluster:  # options for dask cluster (this works well on lumi)
     memory_limit: 7GiB  # per worker
 
 diagnostics:
-
   run: [  "global_biases",
           "timeseries_atm", "timeseries_oce", 
           "seasonal_cycles",
-          "radiation-boxplots", 
-          "radiation-timeseries", 
-          "radiation-biases",
-          "lat_lon_profiles", 
+          "radiation_toa-boxplots", 
+          "radiation_toa-timeseries", 
+          "radiation_toa-biases",
+          "radiation_surface-boxplots", 
+          "radiation_surface-timeseries", 
+          "radiation_surface-biases",
+          "atmosphere2d-lat_lon_profiles", 
+          "water-lat_lon_profiles", 
           "tropical_rainfall", 
           "teleconnections_atm", "teleconnections_oce",
           "ecmean", 
           "seaice",
           "ocean3d_circulation", "ocean3d_drift"
-       ]
+  ]
 
   # List of diagnostics
 
@@ -149,8 +152,13 @@ diagnostics:
     script_path: "seaice/cli_seaice.py"
     nworkers: 4
     config: "${AQUA_CONFIG}/diagnostics/seaice/config_seaice.yaml"
-  lat_lon_profiles:
+  atmosphere2d-lat_lon_profiles:
     script_path: "lat_lon_profiles/cli_lat_lon_profiles.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/lat_lon_profiles/config_lat_lon_profiles.yaml"
-    outname: lat_lon_profiles
+    config: "${AQUA_CONFIG}/diagnostics/lat_lon_profiles/config_lat_lon_profiles-atmosphere2d.yaml"
+    outname: atmosphere2d
+  water-lat_lon_profiles:
+    script_path: "lat_lon_profiles/cli_lat_lon_profiles.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/lat_lon_profiles/config_lat_lon_profiles-water.yaml"
+    outname: water
