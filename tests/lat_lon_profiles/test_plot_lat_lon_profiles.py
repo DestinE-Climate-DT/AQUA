@@ -100,6 +100,49 @@ class TestPlotLatLonProfilesCore:
         ref_label = plotter.set_ref_label()
         assert ref_label is not None
         assert 'IFS' in ref_label
+    
+    @pytest.mark.parametrize("data_type,diagnostic_name,mean_type,expected_diagnostic,expected_product", [
+        ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_zonal'),
+        ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'custom_profile_zonal'),
+        ('seasonal', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_seasonal_zonal'),
+        ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'my_diagnostic_seasonal_meridional'),
+    ])
+    def test_diagnostic_product_construction(self, sample_lat_lon_data, tmp_path,
+                                            data_type, diagnostic_name, mean_type, 
+                                            expected_diagnostic, expected_product):
+        """Test that diagnostic and diagnostic_product are correctly constructed in OutputSaver filenames"""
+        seasonal = (data_type == 'seasonal')
+        data = sample_lat_lon_data(mean_type=mean_type, seasonal=seasonal)
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
+            data_type=data_type,
+            diagnostic_name=diagnostic_name,
+            loglevel=loglevel
+        )
+        
+        # Verify diagnostic_name is stored
+        assert plotter.diagnostic_name == diagnostic_name
+        
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0, f"No PNG files created for {diagnostic_name} {data_type}"
+        
+        # Check filename structure
+        filename = png_files[0].name
+        
+        # Verify both diagnostic and diagnostic_product appear in filename
+        assert expected_diagnostic in filename, \
+            f"Expected diagnostic '{expected_diagnostic}' not found in filename: {filename}"
+        
+        assert expected_product in filename, \
+            f"Expected diagnostic_product '{expected_product}' not found in filename: {filename}"
+        
+        # Verify they appear in correct order (diagnostic before diagnostic_product)
+        diagnostic_pos = filename.find(expected_diagnostic)
+        product_pos = filename.find(expected_product)
+        assert diagnostic_pos < product_pos, \
+            f"'diagnostic' should appear before 'diagnostic_product' in filename: {filename}"
 
 
 @pytest.mark.diagnostics  
@@ -164,7 +207,7 @@ class TestPlotLatLonProfilesIntegration:
         assert files[0].stat().st_size > 0, f"{format.upper()} file is empty"
     
     def test_custom_diagnostic_name_in_output(self, sample_lat_lon_data, tmp_path):
-        """Test that custom diagnostic_name affects output"""
+        """Test that custom diagnostic_name affects output filenames"""
         data = sample_lat_lon_data()
         custom_name = 'custom_profile_test'
         
@@ -177,8 +220,12 @@ class TestPlotLatLonProfilesIntegration:
         
         plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
         
-        files = list(tmp_path.rglob('*.png'))
-        assert len(files) > 0
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0
+        
+        # Verify custom name appears in filename
+        filename = png_files[0].name
+        assert custom_name in filename, f"Custom diagnostic name '{custom_name}' not in filename: {filename}"
 
 
 @pytest.mark.diagnostics
