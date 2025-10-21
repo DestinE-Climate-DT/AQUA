@@ -31,6 +31,7 @@ if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     
     cli = DiagnosticCLI(args, 'ocean3d', 'config_ocean_drift.yaml', log_name='OceanDrift CLI').prepare()
+    cli.open_dask_cluster()
     
     logger = cli.logger
     config_dict = cli.config_dict
@@ -49,12 +50,12 @@ if __name__ == '__main__':
         reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300)
+    # Output options (from cli_base)
+    outputdir = cli.outputdir
+    rebuild = cli.rebuild
+    save_pdf = cli.save_pdf
+    save_png = cli.save_png
+    dpi = cli.dpi
 
     if 'hovmoller' in config_dict['diagnostics']['ocean_drift']:
         hovmoller_config = config_dict['diagnostics']['ocean_drift']['hovmoller']
@@ -110,6 +111,6 @@ if __name__ == '__main__':
                 except Exception as e:
                     logger.error(f"Error plotting region {region}: {e}")
                 
-    cli.close()
+    cli.close_dask_cluster()
 
     logger.info("OceanDrift diagnostic completed.")

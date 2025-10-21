@@ -26,12 +26,16 @@ class DiagnosticCLI:
             default_config='config_timeseries_atm.yaml'
         )
         cli.prepare()
+        cli.open_dask_cluster()
         
         # Access prepared attributes
         logger = cli.logger
         config_dict = cli.config_dict
         outputdir = cli.outputdir
         ...
+        
+        # At the end
+        cli.close_dask_cluster()
     """
     
     def __init__(self, args, diagnostic_name, default_config, log_name=None):
@@ -63,23 +67,25 @@ class DiagnosticCLI:
         self.rebuild = None
         self.save_pdf = None
         self.save_png = None
+        self.save_netcdf = None
         self.dpi = None
         
     def prepare(self):
         """
-        Execute all common setup operations.
+        Execute common setup operations (excluding cluster management).
         
         This method:
         1. Sets up logging
-        2. Opens cluster (if requested)
-        3. Loads and merges config
-        4. Extracts common options (regrid, realization, output settings)
+        2. Loads and merges config
+        3. Extracts common options (regrid, realization, output settings)
+        
+        Note: Cluster management is done separately via open_dask_cluster()/close_dask_cluster()
+        for better modularity.
         
         Returns:
             self: For method chaining
         """
         self._setup_logging()
-        self._open_cluster()
         self._load_config()
         self._extract_options()
         return self
@@ -90,15 +96,25 @@ class DiagnosticCLI:
         self.logger = log_configure(log_level=self.loglevel, log_name=self.log_name)
         self.logger.info("Running %s diagnostic with AQUA version %s", self.diagnostic_name, aqua_version)
     
-    def _open_cluster(self):
-        """Open dask cluster if requested."""
+    def open_dask_cluster(self):
+        """
+        Open dask cluster if requested via CLI arguments.
+        
+        This method should be called explicitly after prepare() if cluster support is needed.
+        Checks for --cluster and --nworkers arguments and opens cluster accordingly.
+        
+        Returns:
+            self: For method chaining
+        """
         cluster_arg = get_arg(self.args, 'cluster', None)
         nworkers = get_arg(self.args, 'nworkers', None)
+        
         self.client, self.cluster, self.private_cluster = open_cluster(
             nworkers=nworkers, 
             cluster=cluster_arg, 
             loglevel=self.loglevel
         )
+        return self
     
     def _load_config(self):
         """Load diagnostic config and merge with CLI args."""
@@ -136,10 +152,16 @@ class DiagnosticCLI:
         self.rebuild = output_config.get('rebuild', True)
         self.save_pdf = output_config.get('save_pdf', True)
         self.save_png = output_config.get('save_png', True)
+        self.save_netcdf = output_config.get('save_netcdf', True)
         self.dpi = output_config.get('dpi', 300)
     
-    def close(self):
-        """Close the cluster if it was opened."""
+    def close_dask_cluster(self):
+        """
+        Close the dask cluster if it was opened.
+        
+        This method should be called explicitly at the end of the diagnostic execution
+        to properly clean up cluster resources.
+        """
         if self.client or self.cluster:
             close_cluster(
                 client=self.client,

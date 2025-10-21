@@ -40,6 +40,7 @@ if __name__ == '__main__':
         default_config='config_seaice.yaml',
         log_name='SeaIce CLI'
     ).prepare()
+    cli.open_dask_cluster()
     
     # Extract prepared attributes
     logger = cli.logger
@@ -397,4 +398,4 @@ if __name__ == '__main__':
                                save_pdf=save_pdf, 
                                save_png=save_png)
 
-    cli.close()
+    cli.close_dask_cluster()

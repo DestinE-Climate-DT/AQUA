@@ -19,19 +19,20 @@ if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     
     cli = DiagnosticCLI(args, 'boxplots', 'config_radiation-boxplots.yaml', log_name='Boxplots CLI').prepare()
+    cli.open_dask_cluster()
     
     logger = cli.logger
     config_dict = cli.config_dict
     regrid = cli.regrid
     reader_kwargs = cli.reader_kwargs
 
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
-    save_netcdf = config_dict['output'].get('save_netcdf', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300) 
+    # Output options (from cli_base)
+    outputdir = cli.outputdir
+    rebuild = cli.rebuild
+    save_pdf = cli.save_pdf
+    save_png = cli.save_png
+    save_netcdf = cli.save_netcdf
+    dpi = cli.dpi
 
     # Boxplots diagnostic
     if 'boxplots' in config_dict['diagnostics']:
@@ -84,6 +85,6 @@ if __name__ == '__main__':
                 plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=cli.loglevel)
                 plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, **plot_kwargs)
 
-    cli.close()
+    cli.close_dask_cluster()
 
     logger.info("Boxplots diagnostic completed.")

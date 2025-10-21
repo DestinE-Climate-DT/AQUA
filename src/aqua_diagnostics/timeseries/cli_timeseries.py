@@ -37,6 +37,7 @@ if __name__ == '__main__':
         diagnostic_name='timeseries',
         default_config='config_timeseries_atm.yaml'
     ).prepare()
+    cli.open_dask_cluster()
 
     # Extract prepared attributes
     logger = cli.logger
@@ -364,4 +365,4 @@ if __name__ == '__main__':
             except Exception as e:
                 logger.error(f"Error running Gregory diagnostic: {e}")
 
-    cli.close()
+    cli.close_dask_cluster()

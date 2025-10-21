@@ -23,19 +23,23 @@ if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     
     cli = DiagnosticCLI(args, 'globalbiases', 'config_global_biases.yaml', log_name='GlobalBiases CLI').prepare()
+    cli.open_dask_cluster()
     
     logger = cli.logger
     config_dict = cli.config_dict
     regrid = cli.regrid
     reader_kwargs = cli.reader_kwargs
     
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
+    # Output options (from cli_base)
+    outputdir = cli.outputdir
+    rebuild = cli.rebuild
+    save_pdf = cli.save_pdf
+    save_png = cli.save_png
+    dpi = cli.dpi
+    save_netcdf = cli.save_netcdf
+    
+    # Diagnostic-specific output option
     save_netcdf = config_dict['output'].get('save_netcdf', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300) 
 
     # Global Biases diagnostic
     if 'globalbiases' in config_dict['diagnostics']:
@@ -145,6 +149,6 @@ if __name__ == '__main__':
                     plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, 
                                                    var=var, vmin=vmin_v, vmax=vmax_v)
 
-    cli.close()
+    cli.close_dask_cluster()
 
     logger.info("Global Biases diagnostic completed.")

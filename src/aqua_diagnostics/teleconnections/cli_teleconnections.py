@@ -30,18 +30,19 @@ if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     
     cli = DiagnosticCLI(args, 'teleconnections', 'config_teleconnections.yaml', log_name='Teleconnections CLI').prepare()
+    cli.open_dask_cluster()
     
     logger = cli.logger
     config_dict = cli.config_dict
     regrid = cli.regrid
     reader_kwargs = cli.reader_kwargs
 
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300)
+    # Output options (from cli_base)
+    outputdir = cli.outputdir
+    rebuild = cli.rebuild
+    save_pdf = cli.save_pdf
+    save_png = cli.save_png
+    dpi = cli.dpi
 
     if 'teleconnections' in config_dict['diagnostics']:
         if 'NAO' in config_dict['diagnostics']['teleconnections']:
@@ -300,6 +301,6 @@ if __name__ == '__main__':
                             plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
                                                metadata={'description': correlation_description}, dpi=dpi)
 
-    cli.close()
+    cli.close_dask_cluster()
 
     logger.info('Teleconnections diagnostic finished.')
