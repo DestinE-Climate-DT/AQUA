@@ -97,9 +97,11 @@ if __name__ == '__main__':
 
             logger.debug("Selected levels for vertical plots: %s", plev)
 
-            biases_dataset = GlobalBiases(**dataset_args, startdate=startdate_data, enddate=enddate_data,
+            biases_dataset = GlobalBiases(**dataset_args, diagnostic=diagnostic_name,
+                                          startdate=startdate_data, enddate=enddate_data,
                                           outputdir=outputdir, loglevel=loglevel)
-            biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref,
+            biases_reference = GlobalBiases(**reference_args, diagnostic=diagnostic_name,
+                                            startdate=startdate_ref, enddate=enddate_ref,
                                             outputdir=outputdir, loglevel=loglevel)
 
             all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
