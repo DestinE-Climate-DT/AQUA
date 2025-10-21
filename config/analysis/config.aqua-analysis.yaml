@@ -56,7 +56,7 @@ diagnostics:
           "ecmean", 
           "seaice",
           "ocean3d_circulation", "ocean3d_drift"
-  ]
+       ]
 
   # List of diagnostics
 
