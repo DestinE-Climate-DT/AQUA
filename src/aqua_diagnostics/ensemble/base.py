@@ -81,21 +81,21 @@ class BaseMixin(Diagnostic):
         self.ref_exp = ref_exp
 
         # To handle None case
-        self.None_catalog = ["ensemble_catalog"]
-        self.None_model = ["ensemble_model"]
-        self.None_exp = ["ensemble_exp"]
-        self.None_source = ["ensemble_source"]
+        self.None_catalog = "ensemble_catalog"
+        self.None_model = "ensemble_model"
+        self.None_exp = "ensemble_exp"
+        self.None_source = "ensemble_source"
 
         # Multi catalog/model/exp/source
-        self.multi_catalog = ["multi-catalog"]
-        self.multi_model = ["multi-model"]
-        self.multi_exp = ["multi-exp"]
-        self.multi_source = ["multi-source"]
+        self.multi_catalog = "multi_catalog"
+        self.multi_model = "multi_model"
+        self.multi_exp = "multi_exp"
+        self.multi_source = "multi_source"
 
         # Handling catalog name
         self.catalog_list = catalog_list
         if self.catalog_list is None:
-            self.logger.info("No catalog names given. Assigning it to catalog_name.")
+            self.logger.info(f"No catalog names given. Assigning it to {self.None_catalog}.")
             self.catalog = self.None_catalog
             self.catalog_list = self.None_catalog
         else:
@@ -103,20 +103,20 @@ class BaseMixin(Diagnostic):
                 self.catalog_list = [self.catalog_list]
             catalog_counts = dict(Counter(self.catalog_list))
             if len(catalog_counts.keys()) <= 1:
-                self.logger.info("Catalog name is given. Single-model ensemble is given.")
+                self.logger.info("Catalog name is given. Single model ensemble is given.")
                 catalog_str_list = [str(item) for item in self.catalog_list]
                 if catalog_str_list[0] is None:
                     catalog_str_list[0] = self.None_catalog
                 # if catalog_str_list[0] == "None": catalog_str_list[0] = self.None_catalog
                 self.catalog = catalog_str_list[0]
             else:
-                self.logger.info("Multi-model ensemble is given. Assigning catalog name to multi-catalog")
+                self.logger.info(f"Multi model ensemble is given. Assigning catalog name to {self.multi_catalog}")
                 self.catalog = self.multi_catalog
 
         # Handling model name:
         self.model_list = model_list
         if model_list is None:
-            self.logger.info("No model name is given. Assigning it to model_name")
+            self.logger.info(f"No model name is given. Assigning it to {self.None_model}")
             self.model = self.None_model
             self.model_list = self.None_model
         else:
@@ -124,19 +124,19 @@ class BaseMixin(Diagnostic):
                 self.model_list = [self.model_list]
             model_counts = dict(Counter(self.model_list))
             if len(model_counts.keys()) <= 1:
-                self.logger.info("Model name is given. Single-model ensemble is given.")
+                self.logger.info("Model name is given. Single model ensemble is given.")
                 model_str_list = [str(item) for item in self.model_list]
                 if model_str_list[0] == "None":
                     model_str_list[0] = self.None_model
                 self.model = model_str_list[0]
             else:
-                self.logger.info("Multi-model ensmeble is given. Assigning model name to multi-model")
+                self.logger.info(f"Multi model ensemble is given. Assigning model name to {self.multi_model}")
                 self.model = self.multi_model
 
         # Handling exp name:
         self.exp_list = exp_list
         if self.exp_list is None:
-            self.logger.info("No exp name is given. Assigning it to exp_name")
+            self.logger.info(f"No exp name is given. Assigning it to {self.None_exp}")
             self.exp = self.None_exp
             self.exp_list = self.None_exp
         else:
@@ -150,13 +150,13 @@ class BaseMixin(Diagnostic):
                     exp_str_list[0] = self.None_exp
                 self.exp = exp_str_list[0]
             else:
-                self.logger.info("Multi-exp ensmeble is given. Assigning exp name to multi-exp")
+                self.logger.info(f"Multi exp ensemble is given. Assigning exp name to {self.multi_exp}")
                 self.exp = self.multi_exp
 
         # Handling source name:
         self.source_list = source_list
         if source_list is None:
-            self.logger.info("No source name is given. Assigning it to source_name")
+            self.logger.info(f"No source name is given. Assigning it to {self.None_source}")
             self.source = self.None_source
             self.source_list = self.None_source
         else:
@@ -170,7 +170,7 @@ class BaseMixin(Diagnostic):
                     source_str_list[0] = self.None_source
                 self.source = source_str_list[0]
             else:
-                self.logger.info("Multi-source ensmeble is given. Assigning source name to multi-source")
+                self.logger.info(f"Multi source ensemble is given. Assigning source name to {self.multi_source}")
                 self.source = self.multi_source
 
         super().__init__(
@@ -282,8 +282,8 @@ class BaseMixin(Diagnostic):
             self.catalog is not None
             and self.model is not None
             and self.exp is not None
-            and str(self.catalog) != str(self.None_catalog)
-            and str(self.catalog) != str(self.multi_catalog)
+            #and str(self.catalog) != str(self.None_catalog)
+            #and str(self.catalog) != str(self.multi_catalog)
         ):
             outputsaver = OutputSaver(
                 diagnostic=self.diagnostic_name,
@@ -304,17 +304,26 @@ class BaseMixin(Diagnostic):
                 extra_keys=extra_keys,
             )
         else:
-            data.attrs = {
-                "AQUA diagnostic": self.diagnostic_product,
-                "AQUA catalog": self.catalog_list,
-                "model": self.model_list,
-                "experiment": self.exp_list,
-                "description": description,
-            }
-            data.to_netcdf(f"{self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc")
-            self.logger.info(
-                f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc"
-            )
+            self.logger.info(f"Output is not saved, please check {self.catalog}, {self.model} and {self.exp}")
+
+            #data.attrs = {
+            #    "AQUA diagnostic": self.diagnostic_product,
+            #    "AQUA catalog": self.catalog_list,
+            #    "model": self.model_list,
+            #    "experiment": self.exp_list,
+            #    "description": description,
+            #}
+
+            #catalog_str = "_".join(self.catalog_list)
+            #model_str = "_".join(self.model_list)
+            #exp_str = "_".join(self.exp_list)
+
+            #filename = f"{self.outputdir}/{catalog_str}_{model_str}_{exp_str}_{data_name}_{var}.nc"
+            #
+            #data.to_netcdf(filename)
+            #self.logger.info(
+            #    f"Saving the output without the OutputSaver to {self.outputdir}/{self.catalog_list}_{self.model_list}_{self.exp_list}_{data_name}_{var}.nc"
+            #)
 
     # Save figure
     def save_figure(self, var, fig=None, fig_std=None, startdate=None, enddate=None, description=None, format="png"):    
@@ -376,8 +385,8 @@ class BaseMixin(Diagnostic):
             self.catalog is not None
             and self.model is not None
             and self.exp is not None
-            and str(self.catalog) != str(self.None_catalog)
-            and str(self.catalog) != str(self.multi_catalog)
+            #and str(self.catalog) != str(self.None_catalog)
+            #and str(self.catalog) != str(self.multi_catalog)
         ):
             if fig is not None:
                 outputsaver = OutputSaver(
@@ -462,27 +471,28 @@ class BaseMixin(Diagnostic):
                     else:
                         raise ValueError(f"Format {format} not supported. Use png or pdf.")
         else:
-            if fig:
-                extra_keys = {"statistics": "mean"}
-                extra_keys.update(metadata)
-                extra_keys = {k: str(v) for k, v in extra_keys.items()}
-                fig.savefig(
-                    f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png",
-                    bbox_inches="tight",
-                    metadata=extra_keys,
-                )
-                self.logger.info(
-                    f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}.png"
-                )
-            if fig_std:
-                extra_keys = {"statistics": "standard deviation"}
-                extra_keys.update(metadata)
-                extra_keys = {k: str(v) for k, v in extra_keys.items()}
-                fig_std.savefig(
-                    f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png",
-                    bbox_inches="tight",
-                    metadata=extra_keys,
-                )
-                self.logger.info(
-                    f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{data}_{var}_STD.png"
-                )
+            self.logger.info(f"Output plot is not saved, please check {self.catalog}, {self.model} and {self.exp}")
+            #if fig:
+            #    extra_keys = {"statistics": "mean"}
+            #    extra_keys.update(metadata)
+            #    extra_keys = {k: str(v) for k, v in extra_keys.items()}
+            #    fig.savefig(
+            #        f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{var}_mean.png",
+            #        bbox_inches="tight",
+            #        metadata=extra_keys,
+            #    )
+            #    self.logger.info(
+            #        f"Saving the figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{var}_mean.png"
+            #    )
+            #if fig_std:
+            #    extra_keys = {"statistics": "standard deviation"}
+            #    extra_keys.update(metadata)
+            #    extra_keys = {k: str(v) for k, v in extra_keys.items()}
+            #    fig_std.savefig(
+            #        f"{self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{var}_STD.png",
+            #        bbox_inches="tight",
+            #        metadata=extra_keys,
+            #    )
+            #    self.logger.info(
+            #        f"Saving the STD figure without the OutputSaver to {self.outputdir}/{self.catalog}_{self.model}_{self.exp}_{var}_STD.png"
+            #    )
