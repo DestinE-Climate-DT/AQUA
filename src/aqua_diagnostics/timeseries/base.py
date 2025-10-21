@@ -162,6 +162,9 @@ class BaseMixin(Diagnostic):
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
         data = data.sel(time=slice(self.std_startdate, self.std_enddate))
+        if self.std_startdate is None or self.std_enddate is None:
+            self.std_startdate = data.time.min().values
+            self.std_enddate = data.time.max().values
         if freq_dict[str_freq]['groupdby'] is not None:
             data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
         else:  # For annual data, we compute the std over all years
@@ -328,8 +331,8 @@ class PlotBaseMixin():
             title (str): Title for the plot.
         """
         title = f'{diagnostic} '
-        if self.short_name is not None:
-            title += f'for {self.short_name} '
+        if self.long_name is not None:
+            title += f'of {self.long_name} '
 
         if self.units is not None:
             title += f'[{self.units}] '
@@ -361,25 +364,33 @@ class PlotBaseMixin():
 
         description += f'of {self.long_name} '
         if self.units is not None:
-            description += f'[{self.units}] '
+          units = self.units.replace("**", r"\*\*")
+          description += f'[{units}] '
+        if self.short_name is not None:
+          description += f'({self.short_name}) '
 
         if self.region is not None:
             description += f'for region {self.region} '
 
         description += 'for '
         description += strlist_to_phrase(items=[f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(self.len_data)])
-        description += ' '
 
-        for i in range(self.len_ref):
-            if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
-                description += f'with reference ERA5 '
-            elif isinstance(self.ref_models, list):
-                description += f'with reference {self.ref_models[i]} {self.ref_exps[i]} '
-            else:
-                description += f'with reference {self.ref_models} {self.ref_exps} '
+        if self.len_ref > 0:
+            description += f' with reference'
+            for i in range(self.len_ref):
+                if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
+                    description += f' ERA5 '
+                elif isinstance(self.ref_models, list):
+                    description += f' {self.ref_models[i]} {self.ref_exps[i]} '
+                else:
+                    description += f' {self.ref_models} {self.ref_exps} '
+        elif self.len_ref == 0:
+            description += '.'
+
+        
 
         if self.std_startdate is not None and self.std_enddate is not None:
-            description += f'with standard deviation from {self.std_startdate} to {self.std_enddate}.'
+            description += f'with standard deviation from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}.'
             description += ' The shaded area represents 2 standard deviations.'
 
         self.logger.debug('Description: %s', description)

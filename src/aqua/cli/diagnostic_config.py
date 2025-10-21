@@ -3,7 +3,7 @@ diagnostic_config = {
         {
             'config_file': 'config_global_biases.yaml',
             'source_path': 'config/diagnostics/global_biases',
-            'target_path': 'diagnostics/global_biases/cli'
+            'target_path': 'diagnostics/global_biases'
         },
     ],
     'lat_lon_profiles': [
@@ -12,6 +12,11 @@ diagnostic_config = {
             'source_path': 'config/diagnostics/lat_lon_profiles/definitions',
             'target_path': 'diagnostics/lat_lon_profiles/definitions'
         },
+        {
+            'config_file': 'config_lat_lon_profiles.yaml',
+            'source_path': 'config/diagnostics/lat_lon_profiles',
+            'target_path': 'diagnostics/lat_lon_profiles'
+        }
     ],
     'ecmean': [
         {
@@ -93,29 +98,54 @@ diagnostic_config = {
             'source_path': 'diagnostics/ocean3d/cli',
             'target_path': 'diagnostics/ocean3d/cli'
         },
-            {
+        {
+            'config_file': 'config_ocean_trends.yaml',
+            'source_path': 'config/diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d'
+        },
+        {
             'config_file': 'config_ocean_drift.yaml',
             'source_path': 'config/diagnostics/ocean3d',
             'target_path': 'diagnostics/ocean3d'
         }
     ],
-    'radiation': [
+    'radiation_surface': [
         {
-            'config_file': 'config_radiation-boxplots.yaml',
-            'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation/cli'
+            'config_file': 'config-radiation_surface-boxplots.yaml',
+            'source_path': 'config/diagnostics/radiation_surface',
+            'target_path': 'diagnostics/radiation_surface'
         },
         {
-            'config_file': 'config_radiation-biases.yaml',
-            'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation/cli'
+            'config_file': 'config-radiation_surface-biases.yaml',
+            'source_path': 'config/diagnostics/radiation_surface',
+            'target_path': 'diagnostics/radiation_surface'
         },
         {
-            'config_file': 'config_radiation-timeseries.yaml',
-            'source_path': 'config/diagnostics/radiation',
-            'target_path': 'diagnostics/radiation/cli'
+            'config_file': 'config-radiation_surface-timeseries.yaml',
+            'source_path': 'config/diagnostics/radiation_surface',
+            'target_path': 'diagnostics/radiation_surface'
+        }
+    ],
+
+    'radiation_toa': [
+        {
+            'config_file': 'config-radiation_toa-boxplots.yaml',
+            'source_path': 'config/diagnostics/radiation_toa',
+            'target_path': 'diagnostics/radiation_toa'
+        },
+        {
+            'config_file': 'config-radiation_toa-biases.yaml',
+            'source_path': 'config/diagnostics/radiation_toa',
+            'target_path': 'diagnostics/radiation_toa'
+        },
+        {
+            'config_file': 'config-radiation_toa-timeseries.yaml',
+            'source_path': 'config/diagnostics/radiation_toa',
+            'target_path': 'diagnostics/radiation_toa'
         },
     ],
+
+
     'seaice': [
         {
             'config_file': 'regions.yaml',

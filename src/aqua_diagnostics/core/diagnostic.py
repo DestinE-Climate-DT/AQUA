@@ -6,7 +6,7 @@ from aqua.logger import log_configure
 from aqua.util import ConfigPath
 from aqua.util import load_yaml, convert_units
 from aqua.util import xarray_to_pandas_freq, pandas_freq_to_string
-from aqua.util import area_selection, DEFAULT_REALIZATION
+from aqua.util import DEFAULT_REALIZATION
 from .output_saver import OutputSaver
 
 
@@ -315,7 +315,7 @@ class Diagnostic():
             lon_limits (list): The longitude limits to select.
             lat_limits (list): The latitude limits to select.
             drop (bool): Whether to drop coordinates outside the selected region.
-            **kwargs: Additional keyword arguments passed to the area_selection function.
+            **kwargs: Additional keyword arguments passed to the select_area reader method.
 
         Returns:
             dict: A dictionary containing the modified dataset and region information.
@@ -325,13 +325,18 @@ class Diagnostic():
                 - 'lon_limits': The longitude limits of the selected region.
                 - 'lat_limits': The latitude limits of the selected region.
         """
+        original_name = data.name if isinstance(data, xr.DataArray) else None
+
         if region is not None and diagnostic is not None:
             region, lon_limits, lat_limits = self._set_region(region=region, diagnostic=diagnostic)
             self.logger.info(f"Applying area selection for region: {region}")
-            data = area_selection(
-                data=data, lat=lat_limits, lon=lon_limits, drop=drop, loglevel=self.loglevel, **kwargs
+            data = self.reader.select_area(
+                data=data, lat=lat_limits, lon=lon_limits, drop=drop, **kwargs
             )
             data.attrs['AQUA_region'] = region
+
+            if original_name is not None:
+                data.name = original_name
         else:
             region, lon_limits, lat_limits = None, None, None
             self.logger.warning(

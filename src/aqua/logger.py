@@ -1,8 +1,6 @@
 """Module to implement logging configurations"""
 
 import logging
-import types
-import xarray as xr
 import pandas as pd
 import warnings
 

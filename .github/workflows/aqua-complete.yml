@@ -34,7 +34,7 @@ jobs:
       # This is needed for the FDB tests.
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
       # github token
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }}
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
@@ -53,10 +53,23 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
+      # checkout the AQUA code, the Climate-DT-catalog and the aqua-dvc repository
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           path: AQUA
+      - name: Checkout Climate-DT-catalog repository
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/Climate-DT-catalog
+          path: Climate-DT-catalog
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
+      - name: Checkout DVC repo
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/aqua-dvc
+          path: aqua-dvc
+          token: ${{ secrets.AQUA_DVC_PAT }}
       # The FDB docker image does not have git and other dependencies
       - name: Install GH Actions dependencies
         run: |
@@ -66,16 +79,11 @@ jobs:
               curl \
               git \
               gpg
-      - name: Checkout Climate-DT-catalog repository
-        uses: actions/checkout@v5
-        with:
-          repository: DestinE-Climate-DT/Climate-DT-catalog
-          path: Climate-DT-catalog 
       - name: Clone GitLab data-portfolio repository
         run: |
-          git clone https://oauth2:${{ secrets.BSC_GITLAB }}@earth.bsc.es/gitlab/digital-twins/de_340-2/data-portfolio data-portfolio
+          git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-2/data-portfolio data-portfolio
           cd data-portfolio
-          git checkout tags/v2.0.0
+          git checkout tags/v2.1.0
       - name: List Workspace Contents
         run: |
           echo "Current Directory: $PWD"
@@ -93,9 +101,6 @@ jobs:
               - conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
-      - name: List Pip packages
-        run: |
-          pip freeze
       - name: Install Flake8
         run: |
           python -m pip install flake8
@@ -107,10 +112,25 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
-      - name: Download and set up tests
+      - name: Install DVC s3
         run: |
-          cd AQUA
-          ./download_data_for_tests.sh
+          python -m pip install "dvc[s3]"
+      - name: Configure AWS credentials for DVC
+        run: |
+          mkdir -p $HOME/.aws
+          cat >$HOME/.aws/credentials << EOF
+          [default]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
+      - name: Pull DVC data and move to the right folder
+        run: |
+          cd aqua-dvc
+          git checkout main
+          dvc pull -R data-tests/*
+          mkdir -p ../AQUA/AQUA_tests
+          # Move the entire data-tests folder contents into AQUA_tests
+          mv data-tests/* ../AQUA/AQUA_tests
       - name: Set up FDB
         run: |
           export
