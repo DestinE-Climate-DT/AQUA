@@ -216,7 +216,12 @@ class PlotLatLonProfiles():
         base_diagnostic = diagnostic if diagnostic else self.diagnostic_name
         outputsaver = OutputSaver(diagnostic=base_diagnostic, outputdir=outputdir,
                                   loglevel=self.loglevel, **metadata)
-        diagnostic_product = f"{base_diagnostic}_{self.mean_type}"   
+        
+        # Build diagnostic_product with data_type info
+        if self.data_type == 'seasonal':
+            diagnostic_product = f"{base_diagnostic}_seasonal_{self.mean_type}"
+        else:  # longterm
+            diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
            
         # Save based on format
         if format == 'png':
@@ -352,11 +357,9 @@ class PlotLatLonProfiles():
         fig, _ = self.plot_seasonal_lines(data_labels=data_labels, 
                                           title=title, style=style)
 
-        seasonal_diagnostic = f'{self.diagnostic_name}_seasonal'
-
         self.save_plot(fig, description=description, 
                        rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
-                       diagnostic=seasonal_diagnostic)
+                       diagnostic=self.diagnostic_name)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
