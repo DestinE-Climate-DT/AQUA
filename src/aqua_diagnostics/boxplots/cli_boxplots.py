@@ -1,3 +1,5 @@
+"""Command-line interface for Boxplots diagnostic."""
+
 import argparse
 import sys
 from aqua.diagnostics.core import template_parse_arguments
