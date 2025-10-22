@@ -64,6 +64,10 @@ def analysis_execute(args):
     source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
     source_oce = args.source_oce or config.get('job', {}).get('source_oce', None)
     realization = args.realization if args.realization else config.get('job', {}).get('realization', None)
+
+    # startdate and enddate
+    startdate = args.startdate or config.get('job', {}).get('startdate', None)
+    enddate = args.enddate or config.get('job', {}).get('enddate', None)
     # We get regrid option and then we set it to None if it is False
     # This avoids to add the --regrid argument to the command line
     # if it is not needed
@@ -164,6 +168,8 @@ def analysis_execute(args):
                 exp=exp,
                 source=source,
                 source_oce=source_oce,
+                startdate=startdate,
+                enddate=enddate,
                 realization=realization,
                 regrid=regrid,
                 output_dir=output_dir,

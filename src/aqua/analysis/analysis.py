@@ -68,7 +68,9 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str,
 
 def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = None,
                         config=None, catalog=None, model='default_model', exp='default_exp',
-                        source='default_source', source_oce=None, realization=None,
+                        source='default_source', source_oce=None,
+                        startdate=None, enddate=None,
+                        realization=None,
                         output_dir='./output', loglevel='INFO',
                         logger=None, aqua_path='', cluster=None):
     """
@@ -84,6 +86,8 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = N
         exp (str): Experiment name.
         source (str): Source name.
         source_oce (str): Extra source name for ocean data when both are needed.
+        startdate (str): Start date (YYYY-MM-DD). Defaults to None.
+        enddate (str): End date (YYYY-MM-DD). Defaults to None.
         realization (str): Realization name. Defaults to None.
         output_dir (str): Directory to save output.
         loglevel (str): Log level for the diagnostic.
@@ -127,6 +131,11 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = N
 
     if realization:
         extra_args += f" --realization {realization}"
+
+    if startdate:
+        extra_args += f" --startdate {startdate}"
+    if enddate:
+        extra_args += f" --enddate {enddate}"
 
     if diagnostic_config.get('source_oce', False) and source_oce:  # pass source_oce only if allowed by the diagnostic config file
         extra_args += f" --source_oce {source_oce}"
