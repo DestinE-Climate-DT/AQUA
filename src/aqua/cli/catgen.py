@@ -164,6 +164,7 @@ class AquaFDBGenerator:
             }
         }
         return freq2time[frequency]
+    
 
     @staticmethod
     def get_value_from_map(value, value_map, value_type):
@@ -323,8 +324,11 @@ class AquaFDBGenerator:
                 'Tplus2.0K': 'tplus2K'
             }
 
-            forcing = self.config.get('forcing') or self.get_value_from_map(self.config['experiment'], forcing_map, 'experiment')
-
+            forcing = self.config.get('forcing')
+            if not forcing:
+                experiment = self.config['experiment']
+                forcing = forcing_map.get(experiment, re.sub(r'[^a-z0-9]', '', experiment.lower()))
+            
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
                 'metadata': {

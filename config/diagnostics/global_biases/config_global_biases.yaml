@@ -28,7 +28,7 @@ diagnostics:
   globalbiases:
     run: true
     diagnostic_name: 'globalbiases'
-    variables: ['tprate', '2t', 'msl', 'tnlwrf', 't', 'u', 'v', 'q', 'tos']
+    variables: ['tprate', '2t', 'msl', 't', 'u', 'v', 'q', 'tos']
     formulae: ['(10u^2+10v^2)^0.5']
     params:
       default:
@@ -59,9 +59,6 @@ diagnostics:
       msl:
         vmin: -1000
         vmax: 1000
-      tnlwrf:
-        vmin: -40
-        vmax: 40
       tprate:
         vmin: -8
         vmax: 8
