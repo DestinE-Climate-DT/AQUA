@@ -299,57 +299,57 @@ def merge_from_data_files(
         return ens_dataset
 
 # This function is mainly for testing purposes. Not-tested
-#def load_premerged_ensemble_dataset(ds: xr.Dataset, ens_dim: str = "ensemble", loglevel: str = "WARNING"):
-#    """
-#    Prepares a pre-merged xarray dataset for statistical computation.
-#    Ensures correct ensemble dimension and model labeling.
-#
-#    Args:
-#        ds (xr.Dataset): Pre-merged dataset.
-#        ens_dim (str): Name of the ensemble dimension.
-#        loglevel (str): Logging level.
-#
-#    Returns:
-#        xr.Dataset: Prepared dataset ready for compute_statistics.
-#    """
-#
-#    logger = log_configure(log_name="load_premerged_ensemble_dataset", log_level=loglevel)
-#    logger.info("Loading and merging the ensemble dataset by reading files")
-#
-#    if ds is None:
-#        logger.warning("No dataset provided to load_premerged_ensemble_dataset")
-#        return None
-#
-#    # Check ensemble dimension
-#    if ens_dim not in ds.dims:
-#        logger.info(f"Adding '{ens_dim}' dimension as it does not exist")
-#        # Expand dataset along ensemble dimension
-#        ds = ds.expand_dims({ens_dim: [0]})
-#
-#    # Check for model coordinate
-#    if "model" not in ds.coords:
-#        logger.info("No 'model' coordinate found. Assuming single-model ensemble")
-#        ds = ds.assign_coords(model=("ensemble", ["single_model"] * ds.dims[ens_dim]))
-#
-#    else:
-#        # Ensure model coordinate is same length as ensemble dimension
-#        if len(ds["model"]) != ds.dims[ens_dim]:
-#            logger.warning(f"'model' coordinate length {len(ds['model'])} != ensemble size {ds.dims[ens_dim]}. Adjusting...")
-#            # Repeat or truncate model labels as needed
-#            repeat_factor = ds.dims[ens_dim] // len(ds["model"])
-#            remainder = ds.dims[ens_dim] % len(ds["model"])
-#            new_model = list(ds["model"].values) * repeat_factor + list(ds["model"].values)[:remainder]
-#            ds = ds.assign_coords(model=("ensemble", new_model))
-#
-#    # Optional: sort ensemble members by model label
-#    logger.info("Sorting ensemble members by model label")
-#    sorted_indices = np.argsort(ds["model"].values)
-#    ds = ds.isel({ens_dim: sorted_indices})
-#
-#    # Clean memory
-#    gc.collect()
-#
-#    return ds
+def load_premerged_ensemble_dataset(ds: xr.Dataset, ens_dim: str = "ensemble", loglevel: str = "WARNING"):
+    """
+    Prepares a pre-merged xarray dataset for statistical computation.
+    Ensures correct ensemble dimension and model labeling.
+
+    Args:
+        ds (xr.Dataset): Pre-merged dataset.
+        ens_dim (str): Name of the ensemble dimension.
+        loglevel (str): Logging level.
+
+    Returns:
+        xr.Dataset: Prepared dataset ready for compute_statistics.
+    """
+
+    logger = log_configure(log_name="load_premerged_ensemble_dataset", log_level=loglevel)
+    logger.info("Loading and merging the ensemble dataset by reading files")
+
+    if ds is None:
+        logger.warning("No dataset provided to load_premerged_ensemble_dataset")
+        return None
+
+    # Check ensemble dimension
+    if ens_dim not in ds.dims:
+        logger.info(f"Adding '{ens_dim}' dimension as it does not exist")
+        # Expand dataset along ensemble dimension
+        ds = ds.expand_dims({ens_dim: [0]})
+
+    # Check for model coordinate
+    if "model" not in ds.coords:
+        logger.info("No 'model' coordinate found. Assuming single-model ensemble")
+        ds = ds.assign_coords(model=("ensemble", ["single_model"] * ds.dims[ens_dim]))
+
+    else:
+        # Ensure model coordinate is same length as ensemble dimension
+        if len(ds["model"]) != ds.dims[ens_dim]:
+            logger.warning(f"'model' coordinate length {len(ds['model'])} != ensemble size {ds.dims[ens_dim]}. Adjusting...")
+            # Repeat or truncate model labels as needed
+            repeat_factor = ds.dims[ens_dim] // len(ds["model"])
+            remainder = ds.dims[ens_dim] % len(ds["model"])
+            new_model = list(ds["model"].values) * repeat_factor + list(ds["model"].values)[:remainder]
+            ds = ds.assign_coords(model=("ensemble", new_model))
+
+    # Optional: sort ensemble members by model label
+    logger.info("Sorting ensemble members by model label")
+    sorted_indices = np.argsort(ds["model"].values)
+    ds = ds.isel({ens_dim: sorted_indices})
+
+    # Clean memory
+    gc.collect()
+
+    return ds
 
 def compute_statistics(variable: str = None, ds: xr.Dataset = None, ens_dim: str = "ensemble", loglevel="WARNING"):
     """
