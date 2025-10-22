@@ -141,10 +141,11 @@ class Diagnostic():
             catalog (str): The catalog used to retrieve the data.
         """
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        regrid=regrid, startdate=startdate, enddate=enddate,
+                        regrid=regrid,
                         loglevel=loglevel, **reader_kwargs)
 
         data = reader.retrieve(var=var)
+        data = data.sel(time=slice(startdate, enddate))
 
         # If the data is empty, raise an error
         if not data:

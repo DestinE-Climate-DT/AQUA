@@ -38,6 +38,8 @@ def analysis_parser(parser=None):
                         help="Use separate local clusters instead of single global one")
     parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostics in parallel with a cluster")
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
+    parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
     parser.add_argument("-l", "--loglevel", type=lambda s: s.upper(),
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                         default=None, help="Log level")
