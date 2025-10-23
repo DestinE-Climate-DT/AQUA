@@ -26,6 +26,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
+    parser.add_argument("--source_oce", type=str, help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
     parser.add_argument("--realization", type=str, default=None, help="Realization (default: None)")
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
     parser.add_argument("-f", "--config", type=str, required=False, default=None,
@@ -59,6 +60,7 @@ def analysis_execute(args):
     model = args.model or config.get('job', {}).get('model')
     exp = args.exp or config.get('job', {}).get('exp')
     source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
+    source_oce = args.source_oce or config.get('job', {}).get('source_oce', None)
     realization = args.realization if args.realization else config.get('job', {}).get('realization', None)
     # We get regrid option and then we set it to None if it is False
     # This avoids to add the --regrid argument to the command line
@@ -71,7 +73,7 @@ def analysis_execute(args):
         logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
         sys.exit(1)
     else:
-        logger.info(f"Requested experiment: Model = {model}, Experiment = {exp}, Source = {source}.")
+        logger.info(f"Requested experiment: Model = {model}, Experiment = {exp}, Source = {source}. Source_oce = {source_oce}")
 
     catalog = args.catalog or config.get('job', {}).get('catalog')
     if catalog:
@@ -159,6 +161,7 @@ def analysis_execute(args):
                 model=model,
                 exp=exp,
                 source=source,
+                source_oce=source_oce,
                 realization=realization,
                 regrid=regrid,
                 output_dir=output_dir,

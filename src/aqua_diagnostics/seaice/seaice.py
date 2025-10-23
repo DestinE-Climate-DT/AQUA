@@ -4,17 +4,20 @@ import xarray as xr
 from aqua.diagnostics.core import Diagnostic
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure, log_history
-from aqua.util import area_selection, to_list, merge_attrs
+from aqua.util import to_list, merge_attrs
 from aqua.diagnostics.seaice.util import ensure_istype
+from aqua.fldstat import FldStat
 
 xr.set_options(keep_attrs=True)
 
 class SeaIce(Diagnostic):
     """ 
-    Class for seaice objects.
+    Sea ice diagnostic class for computing and analyzing sea ice metrics.
     
-    This class provides methods to compute sea ice extent and volume over specified regions.
-    It also allows for the integration of masked data and the calculation of standard deviations.
+    This class provides methods to compute sea ice extent (million km²), volume (thousand km³), 
+    fraction ([0-1]) and thickness (m) over specified regions (e.g., Arctic, Antarctic). 
+    It supports both time series (integrated), with options for computing standard deviations, 
+    seasonal cycles, and 2D monthly climatologies.
 
     Args:
         model   (str): The model name.
@@ -22,29 +25,16 @@ class SeaIce(Diagnostic):
         source  (str): The data source.
         catalog (str, optional): The catalog name.
         regrid  (str, optional): The regrid option.
-        startdate (str, optional): The start date for the data.
-        enddate   (str, optional): The end date for the data.
+        startdate (str, optional): The start date for the data (format: "YYYY-MM-DD").
+        enddate   (str, optional): The end date for the data (format: "YYYY-MM-DD").
         std_startdate (str, optional): Start date for standard deviation.
         std_enddate   (str, optional): End date for standard deviation.
-        regions     (list, optional): A list of regions to analyze. Default is ['arctic', 'antarctic'].
-        regions_file (str, optional): The path to the regions definition file.
-        outputdir (str, optional): The output directory.
+        threshold (float, optional): Threshold for sea ice concentration over extent (default: 0.15; 15% conc).
+        regions     (list, optional): A list of regions to analyze. Default: ['arctic', 'antarctic'].
+        regions_file (str, optional): Path to YAML file defining regions definition file.
+        outputdir (str, optional): The output directory (default: './').
         regions_definition (dict): The loaded regions definition from the YAML file.
-        loglevel     (str, optional): The logging level. Default is 'WARNING'.
-
-    Methods:
-        load_regions(regions_file=None, regions=None):
-            Loads region definitions from a .yaml configuration file and sets the regions.
-        add_seaice_attrs(da_seaice_computed: xr.DataArray, region: str,
-                         startdate: str=None, enddate: str=None, std_flag=False):
-            Set attributes for seaice_computed.
-        integrate_seaice_masked_data(masked_data, region: str):
-            Integrate the masked data over the spatial dimension to compute sea ice metrics.
-        get_area_cells_and_coords()
-        _calc_time_stat(computed_data: xr.DataArray, stat: str = 'std', freq: str = 'monthly'):
-            Compute the standard deviation or mean of the data, grouped by ('monthly' or 'annual') frequency.
-        compute_seaice(method, var, *args, **kwargs):
-            Execute the seaice diagnostic based on the specified method. 
+        loglevel     (str, optional): The logging level. Defaults to 'WARNING'.
     """
 
     def __init__(self, model: str, exp: str, source: str,        
@@ -56,8 +46,7 @@ class SeaIce(Diagnostic):
                  regions=['arctic', 'antarctic'],
                  regions_file=None,
                  outputdir: str = './',
-                 loglevel: str = 'WARNING'
-                 ):
+                 loglevel: str = 'WARNING'):
 
         self.outputdir = outputdir
         super().__init__(model=model, exp=exp, source=source,
@@ -187,7 +176,7 @@ class SeaIce(Diagnostic):
         for region in self.regions:
 
             # integrate the seaice masked data masked_data over the regional spatial dimension to compute sea ice result
-            seaice_result = self.integrate_seaice_masked_data(masked_data, region)
+            seaice_result = self.integrate_seaice(masked_data, region)
 
             # make a deepcopy to compute seasonal cycle to avoid losing time coord
             original_si_result = seaice_result.copy(deep=True)
@@ -324,10 +313,11 @@ class SeaIce(Diagnostic):
 
         # get xr.DataArray with info on grid area that must be reinitialised for each region.
         if len(areacello.data_vars) > 1:
-            self.logger.warning(f"Dataset 'areacello' has more than one variable. Searching for 'area_cells'")
+            self.logger.warning(f"Dataset 'areacello' has more than one variable. Searching for 'cell_area'")
             areacello = areacello['cell_area']
         else:
-            areacello = areacello.to_array().squeeze()
+            var_name = list(areacello.data_vars)[0]
+            areacello = areacello[var_name]
 
         return areacello, space_coord
 
@@ -361,14 +351,15 @@ class SeaIce(Diagnostic):
 
         # regional selection with lat-lon: use default dict to set dynamic lon bounds found above, and set lat from -90 to 90
         res_dict = self._select_region(areacello, region=region, diagnostic="seaice", drop=drop,
-                                       default={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
+                                       default_coords={"lon_min": lonmin, "lon_max": lonmax, "lat_min": -90, "lat_max": 90})
         areacello = res_dict['data']
 
         return areacello
     
-    def integrate_seaice_masked_data(self, masked_data, region: str):
+    def integrate_seaice(self, masked_data, region: str):
         """
         Integrate the masked data over the spatial dimension to compute sea ice metrics.
+        If method is extent / volume, divide by 1e12 to convert to million km^2 / thousand km^3.
 
         Args:
             masked_data (xr.DataArray): The masked data to be integrated.
@@ -379,26 +370,33 @@ class SeaIce(Diagnostic):
         """
         areacello, space_coord = self.get_area_cells_and_coords(masked_data)
         areacello = self.select_region_area_cell(areacello, region)
+        
+        masked_data_region = self._select_region(masked_data, region=region, diagnostic='seaice').get('data')
 
         self.logger.info(f'Computing sea ice {self.method} for {region}')
 
+        if 'AQUA_regridded' in masked_data.attrs:
+            grid_name = self.reader.tgt_grid_name
+        else:
+            grid_name = self.reader.src_grid_name
+
+        si_fldstat = FldStat(area=areacello, horizontal_dims=space_coord, 
+                             grid_name=grid_name, loglevel=self.loglevel)
+
         if self.method == 'extent':
-            # compute sea ice extent: exclude areas with no sea ice and sum over the spatial dimension, divide by 1e12 to convert to million km^2
-            seaice_integrated = areacello.where(masked_data.notnull()).sum(skipna = True, min_count = 1, dim=space_coord) / 1e12
-
+            # compute sea ice extent: exclude areas with no sea ice and sum over the spatial dimension; divide by 1e12 to convert to million km^2
+            seaice_integrated = si_fldstat.fldstat(masked_data_region.notnull(), stat='areasum', dims=space_coord) / 1e12
         if self.method == 'volume':
-            # compute sea ice volume: exclude areas with no sea ice
-            area_weighted_volume = masked_data * areacello.where(masked_data.notnull())
+            # compute sea ice volume: exclude areas with no sea ice; divide by 1e12 to convert to thousand km^3
+            seaice_integrated = si_fldstat.fldstat(masked_data_region, stat='integral', dims=space_coord) / 1e12
 
-            # add attrs (region) from areacello, which has priority if keys overlap
-            merged_attrs = {**masked_data.attrs, **areacello.attrs}
-            area_weighted_volume.attrs.update(merged_attrs)
+            merge_attrs(seaice_integrated.attrs, masked_data.attrs)
+            merge_attrs(seaice_integrated.attrs, areacello.attrs, overwrite=True)
 
-            # sum over the spatial dimension, divide by 1e12 to convert to thousand km^3
-            seaice_integrated = area_weighted_volume.sum(skipna = True, min_count = 1, dim=space_coord) / 1e12
+        # ensure masked_data attrs are present
+        merge_attrs(seaice_integrated.attrs, masked_data_region.attrs)
 
-        merge_attrs(seaice_integrated.attrs, masked_data.attrs)
-
+        # Add domain-specific sea ice attributes. This overwrites standard_name, long_name, units.
         seaice_integrated = self.add_seaice_attrs(seaice_integrated, region)
 
         return seaice_integrated
@@ -415,6 +413,7 @@ class SeaIce(Diagnostic):
                 - 'annual'  (computes std per year)
             stat (str, optional): 
                 The statistic to compute. Must be one of ('std', 'mean'). Default is 'std'.
+
         Returns:
             xarray.DataArray: A DataArray containing the computed time statistic.
         """

@@ -54,11 +54,14 @@ See :ref:`configuration-file-guidelines` for an example of diagnostic specific b
         exp: historical-1990
         source: lra-r100-monthly
         regrid: null
+        reader_kwargs: null # it can be a dictionary with reader kwargs
+
       - catalog: climatedt-phase1
         model: ICON
         exp: historical-1990
         source: lra-r100-monthly
         regrid: null
+        reader_kwargs: null # it can be a dictionary with reader kwargs
 
 * ``references``: a list of reference datasets to use for the analysis.
   Some diagnostics may not work with multiple references, it is better to specify it in the documentation and in the configuration file.
@@ -71,6 +74,7 @@ See :ref:`configuration-file-guidelines` for an example of diagnostic specific b
         exp: era5
         source: monthly
         regrid: null
+        reader_kwargs: null # it can be a dictionary with reader kwargs
 
 * ``output``: a block describing the details of the output. Is contains:
 
@@ -126,8 +130,9 @@ in a single command, with a shared Dask cluster, shared output directory and wit
 The entry point is called `aqua analysis` and all the details can be found in :ref:`aqua_analysis`.
 
 .. warning::
-   The analysis has to be performed preferrably on LRA data, meaning that data should be aggregated
-   to a resolution of 1 degree in both latitude and longitude and to a monthly frequency.
+   The analysis has to be performed preferrably on Low Resolution Archive (LRA) data, meaning 
+   that data should be aggregated to a resolution of 1 degree in both latitude and longitude and 
+   to a monthly frequency.
    It is available the option to regrid the data on the fly, but the memory usage may be highly
    increased and it may be preferrable to run the diagnostics individually.
 

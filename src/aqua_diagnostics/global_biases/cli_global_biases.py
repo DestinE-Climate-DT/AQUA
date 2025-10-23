@@ -97,9 +97,11 @@ if __name__ == '__main__':
 
             logger.debug("Selected levels for vertical plots: %s", plev)
 
-            biases_dataset = GlobalBiases(**dataset_args, startdate=startdate_data, enddate=enddate_data,
+            biases_dataset = GlobalBiases(**dataset_args, diagnostic=diagnostic_name,
+                                          startdate=startdate_data, enddate=enddate_data,
                                           outputdir=outputdir, loglevel=loglevel)
-            biases_reference = GlobalBiases(**reference_args, startdate=startdate_ref, enddate=enddate_ref,
+            biases_reference = GlobalBiases(**reference_args, diagnostic=diagnostic_name,
+                                            startdate=startdate_ref, enddate=enddate_ref,
                                             outputdir=outputdir, loglevel=loglevel)
 
             all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
@@ -144,10 +146,11 @@ if __name__ == '__main__':
 
                     proj = plot_params.get('projection', 'robinson')
                     proj_params = plot_params.get('projection_params', {})
+                    cmap= plot_params.get('cmap', 'RdBu_r')
 
                     logger.debug(f"Using projection: {proj} for variable: {var}")
                     plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png,
-                                                dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                                                dpi=dpi, outputdir=outputdir, cmap=cmap, loglevel=loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
                                           var=var, plev=p,
                                           proj=proj, proj_params=proj_params,

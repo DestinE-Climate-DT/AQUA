@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --job-name={{ job_name }}
+#SBATCH --partition={{ partition }}
+#SBATCH --account={{ account }}
+#SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node={{ ntasks_per_node }}
+#SBATCH --time={{ time }}
+#SBATCH --mem={{ memory }}
+#SBATCH --error={{ log_error }}
+#SBATCH --output={{ log_output }}
+
+
+aqua lra -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
+{% endif %}
+<<<<<<< HEAD:cli/lra/aqua_lra.j2
+=======
+bash {{ aqua }}/cli/aqua-container/load-aqua-container.sh {{ machine }} <<EOF
+#!/bin/bash
+aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
+EOF
+{% else %}
+aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
+{% endif %}
+>>>>>>> main:cli/drop/aqua_drop.j2

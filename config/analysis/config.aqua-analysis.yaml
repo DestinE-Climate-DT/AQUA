@@ -40,13 +40,17 @@ cluster:  # options for dask cluster (this works well on lumi)
     memory_limit: 7GiB  # per worker
 
 diagnostics:
-
   run: [  "global_biases",
           "timeseries_atm", "timeseries_oce", 
           "seasonal_cycles",
-          "radiation-boxplots", 
-          "radiation-timeseries", 
-          "radiation-biases", 
+          "radiation_toa-boxplots", 
+          "radiation_toa-timeseries", 
+          "radiation_toa-biases",
+          "radiation_surface-boxplots", 
+          "radiation_surface-timeseries", 
+          "radiation_surface-biases",
+          "atmosphere2d-lat_lon_profiles", 
+          "water-lat_lon_profiles", 
           "tropical_rainfall", 
           "teleconnections_atm", "teleconnections_oce",
           "ecmean", 
@@ -69,7 +73,7 @@ diagnostics:
   global_biases:
     nworkers: 16
     script_path: "global_biases/cli_global_biases.py"
-    config: "${AQUA_CONFIG}/diagnostics/global_biases/cli/config_global_biases.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/global_biases/config_global_biases.yaml"
   timeseries_atm:
     script_path: "timeseries/cli_timeseries.py"
     config: "${AQUA_CONFIG}/diagnostics/timeseries/config_timeseries_atm.yaml"
@@ -85,20 +89,35 @@ diagnostics:
     nworkers: 16
     config: "${AQUA_CONFIG}/diagnostics/timeseries/config_seasonalcycles_atm.yaml"
     outname: timeseries
-  radiation-biases:
+  radiation_toa-biases:
     script_path: "global_biases/cli_global_biases.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-biases.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-biases.yaml"
     outname: radiation
-  radiation-boxplots:
+  radiation_toa-boxplots:
     script_path: "boxplots/cli_boxplots.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-boxplots.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-boxplots.yaml"
     outname: radiation
-  radiation-timeseries:
+  radiation_toa-timeseries:
     script_path: "timeseries/cli_timeseries.py"
     nworkers: 8
-    config: "${AQUA_CONFIG}/diagnostics/radiation/cli/config_radiation-timeseries.yaml"
+    config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-timeseries.yaml"
+    outname: radiation
+  radiation_surface-biases:
+    script_path: "global_biases/cli_global_biases.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-biases.yaml"
+    outname: radiation
+  radiation_surface-boxplots:
+    script_path: "boxplots/cli_boxplots.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-boxplots.yaml"
+    outname: radiation
+  radiation_surface-timeseries:
+    script_path: "timeseries/cli_timeseries.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-timeseries.yaml"
     outname: radiation
   teleconnections_atm:
     script_path: "teleconnections/cli_teleconnections.py"
@@ -119,6 +138,7 @@ diagnostics:
     script_path: "ecmean/cli_ecmean.py"
     nworkers: 4
     nocluster: true  # ECmean does not use the global dask cluster
+    source_oce: true  # if a --source_oce argument was passed use it
     config: "${AQUA_CONFIG}/diagnostics/ecmean/config_ecmean_cli.yaml"
   ocean3d_drift:
     script_path: "../../diagnostics/ocean3d/cli/cli_ocean3d.py"
@@ -132,3 +152,13 @@ diagnostics:
     script_path: "seaice/cli_seaice.py"
     nworkers: 4
     config: "${AQUA_CONFIG}/diagnostics/seaice/config_seaice.yaml"
+  atmosphere2d-lat_lon_profiles:
+    script_path: "lat_lon_profiles/cli_lat_lon_profiles.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/lat_lon_profiles/config_lat_lon_profiles-atmosphere2d.yaml"
+    outname: atmosphere2d
+  water-lat_lon_profiles:
+    script_path: "lat_lon_profiles/cli_lat_lon_profiles.py"
+    nworkers: 8
+    config: "${AQUA_CONFIG}/diagnostics/lat_lon_profiles/config_lat_lon_profiles-water.yaml"
+    outname: water
