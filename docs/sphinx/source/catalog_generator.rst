@@ -51,6 +51,7 @@ The configuration file ``config.tmpl`` contains the following keys:
 FDB Request definitions (to be filled by the user/workflow):
 
 - ``activity``: Default is ``highresmip``
+- ``forcing``: specifies the type of external forcing used in the experiment (e.g., "historical", "control", etc.). If not provided, it will be automatically inferred from the value of ``experiment``.
 - ``experiment``:  Default is ``cont``
 - ``generation``: the generation to use. Default is ``1``
 - ``expver``:  Default is ``0001``

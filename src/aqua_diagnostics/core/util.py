@@ -3,10 +3,9 @@ Utility functions for the CLI
 """
 import argparse
 import os
-import xarray as xr
 from dask.distributed import Client, LocalCluster
-from aqua.logger import log_configure, log_history
-from aqua.util import load_yaml, get_arg, convert_units
+from aqua.logger import log_configure
+from aqua.util import load_yaml, get_arg
 from aqua.util import ConfigPath
 
 
@@ -42,6 +41,10 @@ def template_parse_arguments(parser: argparse.ArgumentParser):
                         required=False, help="target regrid resolution")
     parser.add_argument("--outputdir", type=str,
                         required=False, help="output directory")
+    parser.add_argument("--startdate", type=str,
+                        required=False, help="start date (YYYY-MM-DD)")
+    parser.add_argument("--enddate", type=str,
+                        required=False, help="end date (YYYY-MM-DD)")
 
     return parser
 

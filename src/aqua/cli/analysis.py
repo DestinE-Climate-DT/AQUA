@@ -38,6 +38,8 @@ def analysis_parser(parser=None):
                         help="Use separate local clusters instead of single global one")
     parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostics in parallel with a cluster")
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
+    parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
     parser.add_argument("-l", "--loglevel", type=lambda s: s.upper(),
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                         default=None, help="Log level")
@@ -62,6 +64,10 @@ def analysis_execute(args):
     source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
     source_oce = args.source_oce or config.get('job', {}).get('source_oce', None)
     realization = args.realization if args.realization else config.get('job', {}).get('realization', None)
+
+    # startdate and enddate
+    startdate = args.startdate or config.get('job', {}).get('startdate', None)
+    enddate = args.enddate or config.get('job', {}).get('enddate', None)
     # We get regrid option and then we set it to None if it is False
     # This avoids to add the --regrid argument to the command line
     # if it is not needed
@@ -162,6 +168,8 @@ def analysis_execute(args):
                 exp=exp,
                 source=source,
                 source_oce=source_oce,
+                startdate=startdate,
+                enddate=enddate,
                 realization=realization,
                 regrid=regrid,
                 output_dir=output_dir,
