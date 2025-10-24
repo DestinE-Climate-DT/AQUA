@@ -13,7 +13,12 @@ diagnostic_config = {
             'target_path': 'diagnostics/lat_lon_profiles/definitions'
         },
         {
-            'config_file': 'config_lat_lon_profiles.yaml',
+            'config_file': 'config_lat_lon_profiles-atmosphere2d.yaml',
+            'source_path': 'config/diagnostics/lat_lon_profiles',
+            'target_path': 'diagnostics/lat_lon_profiles'
+        },
+        {
+            'config_file': 'config_lat_lon_profiles-water.yaml',
             'source_path': 'config/diagnostics/lat_lon_profiles',
             'target_path': 'diagnostics/lat_lon_profiles'
         }
@@ -100,6 +105,11 @@ diagnostic_config = {
         },
         {
             'config_file': 'config_ocean_trends.yaml',
+            'source_path': 'config/diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d'
+        },
+        {
+            'config_file': 'config_ocean_stratification.yaml',
             'source_path': 'config/diagnostics/ocean3d',
             'target_path': 'diagnostics/ocean3d'
         },
