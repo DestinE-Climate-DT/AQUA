@@ -35,38 +35,37 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3",
+    "boto3==1.40.58",
     "cartopy==0.24.1",
-    "cfgrib",
-    "dask",
+    "cfgrib==0.9.15.1",
+    "dask==2025.10.0",
     "eccodes==2.41.0",
-    "docker",
-    "filelock",
-    "gcsfs", # Google Cloud Storage File System
-    "pandas",
+    "docker==7.1.0",
+    "filelock==3.20.0",
+    "gcsfs==2025.9.0", # Google Cloud Storage File System
+    "pandas==2.3.3",
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-esm",
-    "intake-xarray",
-    "jinja2",
-    "matplotlib",
-    "metpy",
-    "numpy",
-    "pydantic<2.12.0",
-    "pypdf",
-    "pyYAML",
-    "ruamel.yaml",
+    "intake-esm==2024.2.6",
+    "intake-xarray==0.7.0",
+    "jinja2==3.1.6",
+    "matplotlib==3.10.7",
+    "metpy==1.7.1",
+    "numpy==2.3.4",
+    "pydantic==2.12.0",
+    "pypdf==6.1.3",
+    "pyYAML==6.0.3",
+    "ruamel.yaml==0.18.16",
     "smmregrid==0.1.3",
-    #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
-    "sparse",
-    "typeguard",
-    "xarray>=2025.01.2,<2025.09.1", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
-    "kerchunk",
-    "h5py>=3.12.1", #specific github pin to avoid installation of binaries
-    "fastparquet",
+    "sparse==0.17.0",
+    "typeguard==4.4.4",
+    "xarray==2025.09.0",
+    "kerchunk==0.2.9",
+    "h5py>=3.12.1",
+    "fastparquet==2024.11.0",
     "ECmean4==0.1.15",
     "pyfdb==0.1.2",
     "gsv-interface==2.13.1",
-    "zarr"
+    "zarr==3.1.3"
 ]
 
 [project.optional-dependencies]
