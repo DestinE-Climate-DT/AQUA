@@ -76,14 +76,16 @@ def test_minmax_maps(da):
         assert min_val <= maps[i].min().values, "Minimum value should be less than minimum value of the map"
         assert max_val >= maps[i].max().values, "Maximum value should be greater than maximum value of the map"
 
+@pytest.fixture(scope='module')
+def ifs_data():
+    """Retrieve IFS data for graphics tools tests"""
+    reader = Reader(model='IFS', exp='test-tco79', source='short', loglevel=loglevel)
+    return reader.retrieve()
 
 @pytest.mark.graphics
-def test_label():
+def test_label(ifs_data):
     """Test the cbar_get_label function"""
-    # Retrieve data
-    reader = Reader(model='IFS', exp='test-tco79', source='short', loglevel=loglevel)
-    ds = reader.retrieve()
-    da = ds['2t']
+    da = ifs_data['2t']
 
     # Test cbar_get_label function
     label = cbar_get_label(da, loglevel=loglevel)

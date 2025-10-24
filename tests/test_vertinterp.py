@@ -4,13 +4,18 @@ import pytest
 from aqua import Reader
 
 loglevel = "DEBUG"
+@pytest.fixture(scope='module')
+def reader():
+    return Reader(model='FESOM', exp='test-pi', source='original_3d', loglevel=loglevel)
 
+@pytest.fixture(scope='module')
+def data(reader):
+    """Retrieve 3D FESOM data once for all vertinterp tests"""
+    return reader.retrieve()
+    
 @pytest.mark.aqua
-def test_vertinterp():
+def test_vertinterp(reader, data):
     """Trivial test for vertical interpolation. to be expanded"""
-
-    reader = Reader(model='FESOM', exp='test-pi', source='original_3d', loglevel=loglevel)
-    data = reader.retrieve()
     select = data.isel(time=0)
 
     # dataarray access
@@ -28,11 +33,8 @@ def test_vertinterp():
     assert interp.shape == (2, 3140)
 
 @pytest.mark.aqua
-def test_vertinterp_exceptions():
+def test_vertinterp_exceptions(reader, data):
     """"Test exceptions for vertical interpolation"""
-
-    reader = Reader(model='FESOM', exp='test-pi', source='original_3d', loglevel=loglevel)
-    data = reader.retrieve()
     select = data.isel(time=0)
 
     # wrong vert_coord
