@@ -304,6 +304,8 @@ class Drop():
                              catalog=self.catalog,
                              loglevel=self.loglevel,
                              rebuild=self.rebuild,
+                             startdate=self.startdate,
+                             enddate=self.enddate,
                              fix=self.fix, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
@@ -314,7 +316,7 @@ class Drop():
             self.catalog = self.reader.catalog
 
         self.logger.info('Retrieving data...')
-        self.data = self.reader.retrieve(var=self.var, startdate=self.startdate, enddate=self.enddate)
+        self.data = self.reader.retrieve(var=self.var)
 
         self.logger.debug(self.data)
 
@@ -630,8 +632,7 @@ class Drop():
                 if not self.overwrite:
                     self.logger.info('Yearly file %s already exists, skipping...', yearfile)
                     continue
-                else:
-                    self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
+                self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
             year_data = temp_data.sel(time=temp_data.time.dt.year == year)
 
             # Splitting data into monthly files
@@ -648,8 +649,7 @@ class Drop():
                     if not self.overwrite:
                         self.logger.info('Monthly file %s already exists, skipping...', outfile)
                         continue
-                    else:
-                        self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
+                    self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
 
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
 
