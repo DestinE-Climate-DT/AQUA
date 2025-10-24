@@ -145,12 +145,13 @@ class Diagnostic():
                         loglevel=loglevel, **reader_kwargs)
 
         data = reader.retrieve(var=var)
-        data = data.sel(time=slice(startdate, enddate))
 
         # If the data is empty, raise an error
         if not data:
             raise ValueError(f"No data found for {model} {exp} {source} with variable {var}")
-
+        
+        data = data.sel(time=slice(startdate, enddate))
+        
         # If there is a month requirement we infer the data frequency,
         # then we check how many months are available in the data
         # and finally raise an error if the requirement is not met.
