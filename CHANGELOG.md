@@ -10,6 +10,7 @@ Unreleased in the current development version (target v0.19.0):
 AQUA core complete list:
 - EC-EARTH4 ORCA2 and eORCA1 grids refactor (#2280)
 - Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)
+- AQUA analysis now can receive ``stardate`` and ``enddate`` (#2368)
 
 AQUA diagnostics complete list:
 - Stratification: MLD and vertical profiles diagnostic refactor (#2268)
