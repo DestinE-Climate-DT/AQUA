@@ -35,6 +35,11 @@ class Tropical_Rainfall_CLI:
         self.model = get_arg(args, 'model', config['data']['model'])
         self.exp = get_arg(args, 'exp', config['data']['exp'])
         self.source = get_arg(args, 'source', config['data']['source'])
+        realization = get_arg(args, 'realization', None)
+        if realization:
+            self.reader_kwargs = {'realization': realization}
+        else:
+            self.reader_kwargs = config['data'].get('reader_kwargs') or {}
         self.freq = get_arg(args, 'freq', config['data']['freq'])
         self.regrid = get_arg(args, 'regrid', config['data']['regrid'])
         self.loglevel = get_arg(args, 'loglevel', config['logger']['diag_loglevel'])
@@ -96,7 +101,7 @@ class Tropical_Rainfall_CLI:
             self.path_to_netcdf = self.path_to_pdf = None
 
         self.reader = Reader(model=self.model, exp=self.exp, source=self.source, loglevel=self.reader_loglevel, regrid=self.regrid,
-                             nproc=self.nproc)
+                             nproc=self.nproc, **self.reader_kwargs)
         self.diag = Tropical_Rainfall(trop_lat=self.trop_lat, num_of_bins=self.num_of_bins, first_edge=self.first_edge,
                                       width_of_bin=self.width_of_bin, loglevel=self.loglevel)
 
