@@ -20,7 +20,7 @@ from .util import extract_literal_and_numeric, extract_attrs, add_pdf_metadata, 
 from .util import open_image, username, update_metadata
 from .yaml import load_yaml, dump_yaml, load_multi_yaml
 from .time import check_chunk_completeness, frequency_string_to_pandas, pandas_freq_to_string
-from .time import time_to_string, int_month_name, xarray_to_pandas_freq
+from .time import time_to_string, int_month_name, xarray_to_pandas_freq, check_seasonal_chunk_completeness
 from .zarr import create_zarr_reference
 
 __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard',
@@ -43,6 +43,6 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'open_image', 'username', 'update_metadata',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas', 'pandas_freq_to_string',
-           'time_to_string', 'int_month_name',  'xarray_to_pandas_freq',
+           'time_to_string', 'int_month_name',  'xarray_to_pandas_freq', 'check_seasonal_chunk_completeness',
            'create_zarr_reference',
            ]

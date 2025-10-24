@@ -3,7 +3,7 @@ import pandas as pd
 import xarray as xr
 import numpy as np
 from functools import partial
-from aqua.util import check_chunk_completeness, frequency_string_to_pandas
+from aqua.util import check_chunk_completeness, check_seasonal_chunk_completeness, frequency_string_to_pandas
 from aqua.util import extract_literal_and_numeric
 from aqua.logger import log_history, log_configure
 from aqua.histogram import histogram
@@ -29,7 +29,7 @@ class TimStat():
                 time_bounds=False, center_time=False, func_kwargs={}, **kwargs):
         """
         Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
-        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object. The statistic can be
+        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-JAN') or a pandas frequency object. The statistic can be
         'mean', 'std', 'max', 'min' or 'histogram'. The output is a new xarray dataset with the time dimension resampled to the desired
         frequency and the statistic computed over the time window.
 
@@ -106,14 +106,17 @@ class TimStat():
             else:
                 out = stat(resample_data, **func_kwargs, **kwargs)
 
-        if exclude_incomplete and freq not in [None, 'seasonal']:
+        if exclude_incomplete and freq not in [None]:
             self.logger.info('Checking if incomplete chunks has been produced...')
-            boolean_mask = check_chunk_completeness(data,
-                                                    resample_frequency=resample_freq,
-                                                    loglevel=self.loglevel)
+            if 'QS' in freq:
+                boolean_mask = check_seasonal_chunk_completeness(data,
+                                                                 resample_frequency=resample_freq,
+                                                                 loglevel=self.loglevel)
+            else:
+                boolean_mask = check_chunk_completeness(data,
+                                                        resample_frequency=resample_freq,
+                                                        loglevel=self.loglevel)
             out = out.where(boolean_mask, drop=True)
-        elif exclude_incomplete and freq in ['seasonal']:
-            self.logger.warning('Excluding incomplete chunks is not supported for seasonal averaging, skipping this option...')
 
         # Set time:
         # if not center_time as the first timestamp of each month/day according to the sampling frequency
