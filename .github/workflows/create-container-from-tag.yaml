@@ -19,20 +19,20 @@ jobs:
     steps:
       - name: "Check out code"
         uses: actions/checkout@v4
-      - name: Set Dockerfile based on tag
-        id: set_dockerfile
+      - name: Set build arguments based on tag
+        id: set_build_args
         run: |
           if [[ "${{ github.event.release.tag_name }}" == v0.13.* ]]; then
-            echo "DOCKERVERSION=operational" >> $GITHUB_ENV
+            echo "BUILD_ARGS=--build-arg MICROMAMBA_VERSION=1.5.6 --build-arg BASE_IMAGE=ghcr.io/destine-climate-dt/base:ubuntu-22.04 --build-arg MAMBA_USER_ID=1000 --build-arg MAMBA_USER_GID=1000 --build-arg EXTRA_PACKAGES=" >> $GITHUB_ENV
           elif [[ "${{ github.event.release.tag_name }}" == o26.* ]]; then
-            echo "DOCKERVERSION=operational-o26.1" >> $GITHUB_ENV
+            echo "BUILD_ARGS=--build-arg EXTRA_PACKAGES=cartopy_offlinedata" >> $GITHUB_ENV
           else
-            echo "DOCKERVERSION=development" >> $GITHUB_ENV
+            echo "BUILD_ARGS=--build-arg EXTRA_PACKAGES=cartopy_offlinedata" >> $GITHUB_ENV
           fi
       - name: "Log in to registry"
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }}  --password-stdin
       - name: "build container"
-        run: docker build --file dockerfiles/Dockerfile-$DOCKERVERSION --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}" .
+        run: docker build $BUILD_ARGS --file dockerfiles/Dockerfile.aqua --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}" .
       - name: "publish container"
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
