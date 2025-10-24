@@ -24,6 +24,8 @@ jobs:
         run: |
           if [[ "${{ github.event.release.tag_name }}" == v0.13.* ]]; then
             echo "DOCKERVERSION=operational" >> $GITHUB_ENV
+          elif [[ "${{ github.event.release.tag_name }}" == o26.* ]]; then
+            echo "DOCKERVERSION=operational-o26.1" >> $GITHUB_ENV
           else
             echo "DOCKERVERSION=development" >> $GITHUB_ENV
           fi
