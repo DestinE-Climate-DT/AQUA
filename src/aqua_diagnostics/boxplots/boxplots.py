@@ -17,6 +17,8 @@ class Boxplots(Diagnostic):
         var (str or list of str, optional): Variable(s) to retrieve. Defaults to None.
         startdate (str, optional): Start date for data retrieval. Defaults to None.
         enddate (str, optional): End date for data retrieval. Defaults to None.
+        regrid (str): Target grid for regridding. If None, no regridding.
+        diagnostic (str): Name of the diagnostic.
         save_netcdf (bool, optional): Whether to save results as NetCDF files. Defaults to False.
         outputdir (str, optional): Directory to save output files. Defaults to './'.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
@@ -30,6 +32,7 @@ class Boxplots(Diagnostic):
                  startdate: str = None,
                  enddate: str = None,
                  regrid: str = None,
+                 diagnostic: str = "boxplots",
                  save_netcdf: bool = False,
                  outputdir: str = './',
                  loglevel: str = 'WARNING'):
@@ -40,6 +43,7 @@ class Boxplots(Diagnostic):
 
         self.logger = log_configure(log_level=loglevel, log_name='Boxplots')
         self.var = var
+        self.diagnostic = diagnostic
         self.save_netcdf = save_netcdf
         self.outputdir = outputdir
         self.loglevel = loglevel
@@ -60,15 +64,23 @@ class Boxplots(Diagnostic):
             KeyError: If the variable is missing from the data.
         """
 
-        if var is not None:
-            self.var = [v.lstrip('-') for v in (var if isinstance(var, list) else [var])]
+        try:
+            if var is not None:
+                self.var = [v.lstrip('-') for v in (var if isinstance(var, list) else [var])]
+            
+            super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
-        super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to retrieve variable(s) {var} from {self.model}, {self.exp}, {self.source}: {e}"
+            )
 
         if self.data is None:
-            self.logger.error(f"Variable {self.var} not found in dataset {self.model}, {self.exp}, {self.source}")
-            raise NoDataError("Variable not found in dataset")
-
+            self.logger.warning(
+                f"Variable(s) {self.var} not found in dataset {self.model}, {self.exp}, {self.source}. Skipping."
+            )
+            return
+   
         self.startdate = self.startdate or pd.to_datetime(self.data.time[0].values).strftime('%Y-%m-%d')
         self.enddate = self.enddate or pd.to_datetime(self.data.time[-1].values).strftime('%Y-%m-%d')
 
@@ -116,7 +128,7 @@ class Boxplots(Diagnostic):
             extra_keys = {'var': var_string} if var_string else {}
             super().save_netcdf(
                 data=self.fldmeans,
-                diagnostic='boxplots',
+                diagnostic=self.diagnostic,
                 diagnostic_product='boxplot',
                 outputdir=self.outputdir,
                 extra_keys=extra_keys

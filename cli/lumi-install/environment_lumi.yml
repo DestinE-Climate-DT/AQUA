@@ -12,6 +12,7 @@ dependencies:
   - python>=3.10,<3.13
   - cdo>=2.5.0
   - eccodes==2.41.0
+  - cartopy_offlinedata # this is needed for MN5 HPC
   - pandas
   - pip
   - hdf5 #explicit to avoid issues with pypi

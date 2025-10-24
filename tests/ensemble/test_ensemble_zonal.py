@@ -2,7 +2,7 @@
 import os
 import pytest
 from aqua.diagnostics import EnsembleZonal
-from aqua.diagnostics.ensemble.util import retrieve_merge_ensemble_data
+from aqua.diagnostics.ensemble.util import reader_retrieve_and_merge
 from aqua.diagnostics import PlotEnsembleZonal
 
 @pytest.mark.ensemble
@@ -23,13 +23,14 @@ def test_ensemble_zonal():
     source_list = ['zonal_mean-latlev', 'zonal_mean-latlev']
 
     # loading and merging the data
-    dataset = retrieve_merge_ensemble_data(
+    dataset = reader_retrieve_and_merge(
         variable=var, 
         catalog_list=catalog_list, 
         model_list=model_list, 
         exp_list=exp_list, 
-        source_list=source_list, 
-        log_level = "WARNING",
+        source_list=source_list,
+        realization=None, 
+        loglevel = "WARNING",
         ens_dim="ensemble"
     )
     assert dataset is not None
@@ -61,27 +62,32 @@ def test_ensemble_zonal():
     assert zonalmean_ens.dataset_std.all() == 0
    
     # PlotEnsembleZonal class
-    plot_arguments = {
-        "var": var,
+    plot_class_arguments = {
         "catalog_list": catalog_list,
         "model_list": model_list,
         "exp_list": exp_list,
         "source_list": source_list,
+    }
+
+    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
+    ens_zonal_plot = PlotEnsembleZonal(
+        **plot_class_arguments,
+        outputdir=tmp_path,
+    )
+
+    plot_arguments = {
+        "var": var,
         "save_pdf": True,
         "save_png": True,
         "title_mean": "Test data",
         "title_std": "Test data",
         "cbar_label": "Test Label",
+        "dataset_mean": zonalmean_ens.dataset_mean,
+        "dataset_std": zonalmean_ens.dataset_std,
     }
 
-    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
-    ens_zonal_plot = PlotEnsembleZonal(
-        **plot_arguments,
-        dataset_mean=zonalmean_ens.dataset_mean,
-        dataset_std=zonalmean_ens.dataset_std,
-        outputdir=tmp_path,
-    )
-    plot_dict = ens_zonal_plot.plot()
+
+    plot_dict = ens_zonal_plot.plot(**plot_arguments)
     
     assert plot_dict['mean_plot'][0] is not None
 

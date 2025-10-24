@@ -20,19 +20,22 @@ def plot_timeseries_data(ax: plt.Axes,
         data_labels (str | list[str], optional): Labels for the data.
         lw (float, optional): Line width. Default is 1.5.
         realization (bool, optional): Whether the data is a realization. Default is False.
-        kind (str, optional): 'monthly' or 'annual'. Determines label suffix and line style.
+        kind (str, optional): 'monthly' or 'annual'. Determines the line style.
+        colors (list[str], optional): List of colors to use for the lines.
+    
+    Returns:
+        list[plt.Line2D]: List of Line2D objects representing the plotted lines.
     """
     data = to_list(data)
     data_labels = to_list(data_labels) if data_labels is not None else None
 
     linestyle = '-' if kind == 'monthly' else '--'
-    suffix = f' {kind}' if kind in ['monthly', 'annual'] else ''
     lines = []
 
     for i in range(len(data)):
         da = data[i]
         if data_labels and not realization:
-            label = data_labels[i] + suffix
+            label = data_labels[i]
         else:
             label = None
 
@@ -61,6 +64,7 @@ def plot_timeseries_data(ax: plt.Axes,
 
     return lines
 
+
 def plot_timeseries_ref_data(ax: plt.Axes,
                              ref_data: xr.DataArray | list[xr.DataArray],
                              std_data: xr.DataArray | list[xr.DataArray] = None,
@@ -83,14 +87,13 @@ def plot_timeseries_ref_data(ax: plt.Axes,
     ref_label = to_list(ref_label) if ref_label is not None else None
 
     linestyle = '-' if kind == 'monthly' else '--'
-    suffix = f' {kind}' if kind in ['monthly', 'annual'] else ''
 
     colors = ['black', 'darkgrey', 'grey']
 
     for i in range(len(ref_data)):
         ref_da = ref_data[i]
         if ref_label and isinstance(ref_label, list):
-            label = ref_label[i] + suffix
+            label = ref_label[i]
         else:
             label = None
 
@@ -117,6 +120,7 @@ def plot_timeseries_ref_data(ax: plt.Axes,
 
         ref_da.plot(**plot_kwargs)
 
+
 def plot_timeseries_ensemble(ax: plt.Axes,
                              data: xr.DataArray,
                              data_label: str,
@@ -138,11 +142,10 @@ def plot_timeseries_ensemble(ax: plt.Axes,
         kind (str, optional): 'monthly' or 'annual'. Determines label suffix and line style.
     """
     linestyle = '-' if kind == 'monthly' else '--'
-    suffix = f' {kind}' if kind in ['monthly', 'annual'] else ''
 
     plot_kwargs = {
         'ax': ax,
-        'label': data_label + suffix if data_label else None,
+        'label': data_label if data_label else None,
         'lw': lw,
         'linestyle': linestyle,
         'color': "#f89e13" if kind == 'annual' else "#1898e0"

@@ -62,16 +62,16 @@ class CatalogEntryBuilder():
 
         return entry_name
 
-    def update_urlpath(self, oldpath, newpath):
-        """Update the urlpath in the catalog entry."""
-        old = to_list(oldpath)
-        new = to_list(newpath)
+    # def update_urlpath(self, oldpath, newpath):
+    #     """Update the urlpath in the catalog entry."""
+    #     old = to_list(oldpath)
+    #     new = to_list(newpath)
 
-        for n in new:
-            if n not in old:
-                old.append(n)
+    #     for n in new:
+    #         if n not in old:
+    #             old.append(n)
 
-        return old if len(old) > 1 else old[0]
+    #     return old if len(old) > 1 else old[0]
 
     def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name='lon-lat'):
         """
@@ -108,7 +108,8 @@ class CatalogEntryBuilder():
             }
         else:
             # if the entry is there, we just update the urlpath
-            catblock['args']['urlpath'] = self.update_urlpath(catblock['args']['urlpath'], urlpath)
+            # catblock['args']['urlpath'] = self.update_urlpath(catblock['args']['urlpath'], urlpath)
+            catblock['args']['urlpath'] = urlpath
             self.logger.info('Updated urlpath in existing catalog entry to %s', catblock['args']['urlpath'])
 
         if driver == 'netcdf':
@@ -126,6 +127,6 @@ class CatalogEntryBuilder():
             self.logger.debug("Urlpath after replacing stat: %s", catblock['args']['urlpath'])
 
             # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
-            catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))
+            # catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))
 
         return catblock

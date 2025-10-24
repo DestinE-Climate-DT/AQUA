@@ -35,7 +35,7 @@ ocean_grid:
     production: NG5
     develop: NG5
     lowres: CORE2
-    intermediate: D3
+    intermediate: DARS
   icon:
     production: R02B09
     develop: R02B08
