@@ -7,7 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.19.0):
 
+ClimateDT workflow modifications:
+- The configuration file of the catalog generator now requires `expid`
+
 AQUA core complete list:
+- Introduce `expid` into configuration file of the catalog generator (#2340)
 - Update Data Portfolio to v2.1.0 (#2356)
 - Updated target grib codes for cpr and snvol (#2346)
 - Offline cartopy data added to environment (#2344)
