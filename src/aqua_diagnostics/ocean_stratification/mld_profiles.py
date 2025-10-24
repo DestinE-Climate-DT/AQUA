@@ -135,6 +135,7 @@ def plot_maps(
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
+            ticks_rounding=0,
             **kwargs,
         )
         ax.set_facecolor("lightgray")
