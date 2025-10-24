@@ -93,7 +93,7 @@ fixer_name:
         data_model: False
         vars:
             snlwrf: 
-                derived: 0.-sfc_net_lw_all_mon
+                derived: sfc_net_lw_all_mon
             snswrf: 
                 source: sfc_net_sw_all_mon
 

@@ -116,22 +116,22 @@ log_message $next_level_msg_type "Please note that adding AQUA to your PATH will
 
 # ask if you want to make the container the default
 while true; do
-  log_message $next_level_msg_type "Would you add AQUA to your PATH in .bash_profile (not recommended)? (y/n) "
+  log_message $next_level_msg_type "Would you add AQUA to your PATH in .bashrc (not recommended)? (y/n) "
   # Read the user's input
   read -n 1 -r
   echo
   case $REPLY in
     [Yy])
-      if ! grep -q 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' ~/.bash_profile; then
-        echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >>  ~/.bash_profile
-        log_message INFO 'AQUA addaed to your PATH in your .bash_profile.'
+      if ! grep -q 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' ~/.bashrc; then
+        echo 'export PATH="'$INSTALLATION_PATH'/bin:$PATH"' >>  ~/.bashrc
+        log_message INFO 'AQUA addaed to your PATH in your .bashrc.'
       else
         log_message WARNING 'AQUA is already in PATH in your bash profile, not adding it again!'
       fi
       break
       ;;
     [Nn])
-      log_message WARNING "AQUA not added to PATH in .bash_profile"
+      log_message WARNING "AQUA not added to PATH in .bashrc"
       log_message $next_level_msg_type "You can use AQUA by loading the tykky module 'module load tykky' and then activating the environment 'tykky activate aqua'"
       break
       ;;

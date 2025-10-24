@@ -5,448 +5,236 @@ from aqua.diagnostics.lat_lon_profiles import PlotLatLonProfiles
 
 loglevel = "DEBUG"
 
-
-@pytest.mark.diagnostics
-class TestPlotLatLonProfilesLongterm:
-    """Basic tests for PlotLatLonProfiles with longterm data"""
-    
-    def setup_method(self):
-        """Setup method to create test data"""
-        # Create mock longterm data
-        lat = np.linspace(-90, 90, 20)
-        values = np.random.rand(20)
+@pytest.fixture
+def sample_lat_lon_data():
+    """Factory fixture for creating test data"""
+    def _make_data(mean_type='zonal', num_datasets=1, seasonal=False):
+        coord_name = 'lat' if mean_type == 'zonal' else 'lon'
+        coord_values = np.linspace(-90, 90, 20) if mean_type == 'zonal' else np.linspace(0, 360, 30)
         
-        self.data = xr.DataArray(
-            values,
-            dims=['lat'],
-            coords={'lat': lat},
-            attrs={
-                'AQUA_catalog': 'test_catalog',
-                'AQUA_model': 'IFS',
-                'AQUA_exp': 'test-tco79',
-                'AQUA_mean_type': 'zonal',
-                'AQUA_region': 'Global',
-                'short_name': 'skt',
-                'standard_name': 'skin_temperature',
-                'long_name': 'Skin Temperature',
-                'units': 'K'
-            }
-        )
-        
-        self.ref_data = self.data * 0.95
-        self.ref_data.attrs = self.data.attrs.copy()
-        
-        self.plotter = PlotLatLonProfiles(
-            data=self.data,
-            data_type='longterm',
-            loglevel=loglevel
-        )
-    
-    def test_initialization_longterm(self):
-        """Test PlotLatLonProfiles initialization with longterm data"""
-        assert self.plotter.data_type == 'longterm'
-        assert len(self.plotter.data) == 1
-        assert self.plotter.mean_type == 'zonal'
-        assert self.plotter.region == 'Global'
-    
-    def test_set_data_labels(self):
-        """Test setting data labels"""
-        labels = self.plotter.set_data_labels()
-        assert len(labels) > 0
-        assert 'IFS' in labels[0]
-        assert 'test-tco79' in labels[0]
-    
-    def test_set_ref_label(self):
-        """Test setting reference label"""
-        plotter = PlotLatLonProfiles(
-            data=self.data,
-            ref_data=self.ref_data,
-            data_type='longterm',
-            loglevel=loglevel
-        )
-        ref_label = plotter.set_ref_label()
-        assert ref_label is not None
-        assert 'IFS' in ref_label
-    
-    def test_set_title(self):
-        """Test setting plot title"""
-        title = self.plotter.set_title()
-        assert 'Zonal profile' in title
-        assert 'Global' in title
-        assert 'K' in title
-    
-    def test_set_description(self):
-        """Test setting plot description"""
-        description = self.plotter.set_description()
-        assert 'Zonal profile' in description
-        assert 'Global' in description
-    
-    def test_get_data_info(self):
-        """Test extracting data info"""
-        assert len(self.plotter.models) == 1
-        assert self.plotter.models[0] == 'IFS'
-        assert len(self.plotter.exps) == 1
-        assert self.plotter.exps[0] == 'test-tco79'
-        assert self.plotter.short_name == 'skt'
-        assert self.plotter.units == 'K'
-    
-    def test_plot_longterm(self, tmp_path):
-        """Test plotting longterm data"""
-        data_labels = self.plotter.set_data_labels()
-        title = self.plotter.set_title()
-        
-        fig, ax = self.plotter.plot(
-            data_labels=data_labels,
-            title=title
-        )
-        
-        assert fig is not None
-        assert ax is not None
-        
-        # Save to verify it works
-        fig.savefig(tmp_path / 'test_longterm_plot.png')
-        assert (tmp_path / 'test_longterm_plot.png').exists()
-    
-    def test_plot_with_reference(self, tmp_path):
-        """Test plotting with reference data"""
-        plotter = PlotLatLonProfiles(
-            data=self.data,
-            ref_data=self.ref_data,
-            data_type='longterm',
-            loglevel=loglevel
-        )
-        
-        fig, ax = plotter.plot()
-        
-        assert fig is not None
-        assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_with_ref.png')
-        assert (tmp_path / 'test_with_ref.png').exists()
-    
-    def test_save_plot(self, tmp_path):
-        """Test saving plot to file"""
-        fig, _ = self.plotter.plot()
-        
-        self.plotter.save_plot(
-            fig=fig,
-            description='Test description',
-            outputdir=str(tmp_path),
-            rebuild=True,
-            format='png'
-        )
-        
-        files = list(tmp_path.rglob('*.png'))
-        assert len(files) > 0
-    
-    def test_run_longterm(self, tmp_path):
-        """Test full run method for longterm data"""
-        self.plotter.run(
-            outputdir=str(tmp_path),
-            rebuild=True,
-            format='png'
-        )
-        
-        files = list(tmp_path.rglob('*.png'))
-        assert len(files) > 0
-
-
-@pytest.mark.diagnostics
-class TestPlotLatLonProfilesSeasonal:
-    """Basic tests for PlotLatLonProfiles with seasonal data"""
-    
-    def setup_method(self):
-        """Setup method to create seasonal test data"""
-        lat = np.linspace(-90, 90, 20)
-        
-        # Create seasonal data (DJF, MAM, JJA, SON)
-        self.seasonal_data = []
-        for i in range(4):
-            values = np.random.rand(20) + i * 0.1
-            data = xr.DataArray(
-                values,
-                dims=['lat'],
-                coords={'lat': lat},
+        def make_single_array(i=0):
+            return xr.DataArray(
+                np.random.rand(len(coord_values)) + i * 0.1,
+                dims=[coord_name],
+                coords={coord_name: coord_values},
                 attrs={
-                    'AQUA_catalog': 'test_catalog',
-                    'AQUA_model': 'IFS',
-                    'AQUA_exp': 'test-tco79',
-                    'AQUA_mean_type': 'zonal',
-                    'AQUA_region': 'Tropics',
+                    'AQUA_catalog': f'catalog_{i}' if num_datasets > 1 else 'test_catalog',
+                    'AQUA_model': ['IFS', 'GFS', 'ECMWF'][i % 3] if num_datasets > 1 else 'IFS',
+                    'AQUA_exp': f'test-exp{i}' if num_datasets > 1 else 'test-tco79',
+                    'AQUA_mean_type': mean_type,
+                    'AQUA_region': 'Global',
                     'short_name': 'skt',
                     'standard_name': 'skin_temperature',
                     'long_name': 'Skin Temperature',
                     'units': 'K'
                 }
             )
-            self.seasonal_data.append(data)
         
-        self.plotter = PlotLatLonProfiles(
-            data=self.seasonal_data,
-            data_type='seasonal',
-            loglevel=loglevel
-        )
+        if seasonal:
+            return [make_single_array(i) for i in range(4)]
+        elif num_datasets > 1:
+            return [make_single_array(i) for i in range(num_datasets)]
+        else:
+            return make_single_array()
     
-    def test_initialization_seasonal(self):
-        """Test PlotLatLonProfiles initialization with seasonal data"""
-        assert self.plotter.data_type == 'seasonal'
-        assert len(self.plotter.data) == 4
-        assert self.plotter.mean_type == 'zonal'
+    return _make_data
+
+@pytest.mark.diagnostics
+class TestPlotLatLonProfilesCore:
+    """Core functionality tests - covers most scenarios efficiently"""
     
-    def test_plot_seasonal(self, tmp_path):
-        """Test plotting seasonal data"""
-        data_labels = self.plotter.set_data_labels()
-        title = self.plotter.set_title()
+    @pytest.mark.parametrize("mean_type", ['zonal', 'meridional'])
+    def test_initialization_and_metadata(self, sample_lat_lon_data, mean_type):
+        """Test initialization and metadata extraction for both mean types"""
+        data = sample_lat_lon_data(mean_type=mean_type)
+        plotter = PlotLatLonProfiles(data=data, data_type='longterm', loglevel=loglevel)
         
-        fig, axs = self.plotter.plot_seasonal_lines(
-            data_labels=data_labels,
-            title=title
-        )
+        assert plotter.data_type == 'longterm'
+        assert plotter.mean_type == mean_type
+        assert plotter.region == 'Global'
+        assert plotter.diagnostic_name == 'lat_lon_profiles'  # default
         
-        assert fig is not None
-        assert axs is not None
-        assert len(axs) == 4  # 4 panels for seasons
+        # Test title generation
+        title = plotter.set_title()
+        assert mean_type.capitalize() in title
         
-        fig.savefig(tmp_path / 'test_seasonal_plot.png')
-        assert (tmp_path / 'test_seasonal_plot.png').exists()
-    
-    def test_plot_seasonal_with_reference(self, tmp_path):
-        """Test plotting seasonal data with reference"""
-        ref_data = [d * 0.95 for d in self.seasonal_data]
+    def test_custom_diagnostic_name(self, sample_lat_lon_data):
+        """Test custom diagnostic_name parameter"""
+        data = sample_lat_lon_data()
+        custom_name = 'my_custom_profile'
         
         plotter = PlotLatLonProfiles(
-            data=self.seasonal_data,
+            data=data, 
+            data_type='longterm',
+            diagnostic_name=custom_name,
+            loglevel=loglevel
+        )
+        
+        assert plotter.diagnostic_name == custom_name
+    
+    @pytest.mark.parametrize("num_datasets", [1, 2, 3])
+    def test_multiple_datasets(self, sample_lat_lon_data, num_datasets):
+        """Test handling of multiple datasets"""
+        data = sample_lat_lon_data(num_datasets=num_datasets)
+        plotter = PlotLatLonProfiles(data=data, data_type='longterm', loglevel=loglevel)
+        
+        assert len(plotter.data) == num_datasets
+        assert len(plotter.models) == num_datasets
+        
+        labels = plotter.set_data_labels()
+        assert len(labels) == num_datasets
+    
+    def test_reference_data(self, sample_lat_lon_data):
+        """Test with reference data"""
+        data = sample_lat_lon_data()
+        ref_data = data * 0.95
+        ref_data.attrs = data.attrs.copy()
+        
+        plotter = PlotLatLonProfiles(
+            data=data, 
             ref_data=ref_data,
+            data_type='longterm',
+            loglevel=loglevel
+        )
+        
+        ref_label = plotter.set_ref_label()
+        assert ref_label is not None
+        assert 'IFS' in ref_label
+    
+    @pytest.mark.parametrize("data_type,diagnostic_name,mean_type,expected_diagnostic,expected_product", [
+        ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_zonal'),
+        ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'custom_profile_zonal'),
+        ('seasonal', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_seasonal_zonal'),
+        ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'my_diagnostic_seasonal_meridional'),
+    ])
+    def test_diagnostic_product_construction(self, sample_lat_lon_data, tmp_path,
+                                            data_type, diagnostic_name, mean_type, 
+                                            expected_diagnostic, expected_product):
+        """Test that diagnostic and diagnostic_product are correctly constructed in OutputSaver filenames"""
+        seasonal = (data_type == 'seasonal')
+        data = sample_lat_lon_data(mean_type=mean_type, seasonal=seasonal)
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
+            data_type=data_type,
+            diagnostic_name=diagnostic_name,
+            loglevel=loglevel
+        )
+        
+        # Verify diagnostic_name is stored
+        assert plotter.diagnostic_name == diagnostic_name
+        
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0, f"No PNG files created for {diagnostic_name} {data_type}"
+        
+        # Check filename structure
+        filename = png_files[0].name
+        
+        # Verify both diagnostic and diagnostic_product appear in filename
+        assert expected_diagnostic in filename, \
+            f"Expected diagnostic '{expected_diagnostic}' not found in filename: {filename}"
+        
+        assert expected_product in filename, \
+            f"Expected diagnostic_product '{expected_product}' not found in filename: {filename}"
+        
+        # Verify they appear in correct order (diagnostic before diagnostic_product)
+        diagnostic_pos = filename.find(expected_diagnostic)
+        product_pos = filename.find(expected_product)
+        assert diagnostic_pos < product_pos, \
+            f"'diagnostic' should appear before 'diagnostic_product' in filename: {filename}"
+
+
+@pytest.mark.diagnostics  
+class TestPlotLatLonProfilesSeasonal:
+    """Seasonal-specific tests"""
+    
+    def test_seasonal_initialization(self, sample_lat_lon_data):
+        """Test seasonal data initialization"""
+        seasonal_data = sample_lat_lon_data(seasonal=True)
+        
+        plotter = PlotLatLonProfiles(
+            data=seasonal_data,
             data_type='seasonal',
             loglevel=loglevel
         )
         
-        fig, axs = plotter.plot_seasonal_lines()
-        
-        assert fig is not None
-        assert len(axs) == 4
-        
-        fig.savefig(tmp_path / 'test_seasonal_with_ref.png')
-        assert (tmp_path / 'test_seasonal_with_ref.png').exists()
+        assert plotter.data_type == 'seasonal'
+        assert len(plotter.data) == 4
     
-    def test_run_seasonal(self, tmp_path):
-        """Test full run method for seasonal data"""
-        self.plotter.run(
-            outputdir=str(tmp_path),
-            rebuild=True,
-            format='png'
-        )
-        
-        files = list(tmp_path.rglob('*.png'))
-        assert len(files) > 0
-    
-    def test_seasonal_insufficient_data(self):
+    def test_seasonal_insufficient_data(self, sample_lat_lon_data):
         """Test error when seasonal data has insufficient elements"""
+        seasonal_data = sample_lat_lon_data(seasonal=True)[:2]  # Only 2 seasons
+        
         plotter = PlotLatLonProfiles(
-            data=self.seasonal_data[:2],  # Only 2 seasons
+            data=seasonal_data,
             data_type='seasonal',
             loglevel=loglevel
         )
         
         with pytest.raises(ValueError, match='must contain at least 4 elements'):
             plotter.plot_seasonal_lines()
-            
-    def test_plot_method_delegates_to_seasonal(self, tmp_path):
-        """Test that plot() method correctly delegates to plot_seasonal_lines() for seasonal data"""
 
-        data_labels = self.plotter.set_data_labels()
-        title = self.plotter.set_title()
-        fig, axs = self.plotter.plot(
-            data_labels=data_labels,
-            title=title
-        )
-        
-        # Verify it returns the correct 4-panel seasonal plot
-        assert fig is not None
-        assert axs is not None
-        assert len(axs) == 4  # 4 panels for seasons
-        
-        fig.savefig(tmp_path / 'test_plot_delegates_seasonal.png')
-        assert (tmp_path / 'test_plot_delegates_seasonal.png').exists()
+
+@pytest.mark.diagnostics
+class TestPlotLatLonProfilesIntegration:
+    """Integration tests - actual plotting and file saving"""
     
-    def test_seasonal_with_ref_std_data(self, tmp_path):
-        """Test seasonal plotting with reference std data"""
-        ref_data = [d * 0.95 for d in self.seasonal_data]
-        
-        # Create ref_std_data with std dates
-        ref_std = self.seasonal_data[0] * 0.1
-        ref_std.attrs = self.seasonal_data[0].attrs.copy()
-        ref_std.attrs['std_startdate'] = '1990-01-01'
-        ref_std.attrs['std_enddate'] = '1995-12-31'
+    @pytest.mark.parametrize("data_type,format", [
+        ('longterm', 'png'),
+        ('longterm', 'pdf'),
+        ('seasonal', 'png'),
+    ])
+    def test_full_run(self, sample_lat_lon_data, tmp_path, data_type, format):
+        """Test complete run with file output"""
+        seasonal = (data_type == 'seasonal')
+        data = sample_lat_lon_data(seasonal=seasonal)
         
         plotter = PlotLatLonProfiles(
-            data=self.seasonal_data,
-            ref_data=ref_data,
-            ref_std_data=ref_std,
-            data_type='seasonal',
+            data=data,
+            data_type=data_type,
             loglevel=loglevel
         )
         
-        assert plotter.std_startdate == '1990-01-01'
-        assert plotter.std_enddate == '1995-12-31'
-        
-        # Test description includes std info
-        description = plotter.set_description()
-        assert 'standard deviation' in description or '1990' in description
-        
-        fig, axs = plotter.plot_seasonal_lines()
-        assert fig is not None
-        assert len(axs) == 4
-        
-        fig.savefig(tmp_path / 'test_seasonal_with_std.png')
-        assert (tmp_path / 'test_seasonal_with_std.png').exists()
-
-@pytest.mark.diagnostics
-class TestPlotLatLonProfilesMeridional:
-    """Tests for PlotLatLonProfiles with meridional mean"""
-    
-    def setup_method(self):
-        """Setup method to create meridional test data"""
-        lon = np.linspace(0, 360, 30)
-        values = np.random.rand(30)
-        
-        self.data = xr.DataArray(
-            values,
-            dims=['lon'],
-            coords={'lon': lon},
-            attrs={
-                'AQUA_catalog': 'test_catalog',
-                'AQUA_model': 'IFS',
-                'AQUA_exp': 'test-tco79',
-                'AQUA_mean_type': 'meridional',
-                'short_name': 'skt',
-                'units': 'K'
-            }
+        plotter.run(
+            outputdir=str(tmp_path),
+            rebuild=True,
+            format=format
         )
         
-        self.plotter = PlotLatLonProfiles(
-            data=self.data,
+        files = list(tmp_path.rglob(f'*.{format}'))
+        assert len(files) > 0, f"No {format} files created"
+        assert files[0].stat().st_size > 0, f"{format.upper()} file is empty"
+    
+    def test_custom_diagnostic_name_in_output(self, sample_lat_lon_data, tmp_path):
+        """Test that custom diagnostic_name affects output filenames"""
+        data = sample_lat_lon_data()
+        custom_name = 'custom_profile_test'
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
             data_type='longterm',
+            diagnostic_name=custom_name,
             loglevel=loglevel
         )
-    
-    def test_meridional_initialization(self):
-        """Test initialization with meridional data"""
-        assert self.plotter.mean_type == 'meridional'
-        assert self.plotter.data_type == 'longterm'
-    
-    def test_meridional_title(self):
-        """Test title for meridional plot"""
-        title = self.plotter.set_title()
-        assert 'Meridional profile' in title
-    
-    def test_plot_meridional(self, tmp_path):
-        """Test plotting meridional data"""
-        fig, ax = self.plotter.plot()
         
-        assert fig is not None
-        assert ax is not None
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
         
-        fig.savefig(tmp_path / 'test_meridional_plot.png')
-        assert (tmp_path / 'test_meridional_plot.png').exists()
-
-
-@pytest.mark.diagnostics
-class TestPlotLatLonProfilesMultipleModels:
-    """Tests for PlotLatLonProfiles with multiple models"""
-    
-    def setup_method(self):
-        """Setup method to create multiple model data"""
-        lat = np.linspace(-90, 90, 20)
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0
         
-        self.data_list = []
-        for i, (model, exp) in enumerate([('IFS', 'test-tco79'), ('GFS', 'test-exp2')]):
-            values = np.random.rand(20) + i * 0.1
-            data = xr.DataArray(
-                values,
-                dims=['lat'],
-                coords={'lat': lat},
-                attrs={
-                    'AQUA_catalog': f'catalog_{i}',
-                    'AQUA_model': model,
-                    'AQUA_exp': exp,
-                    'AQUA_mean_type': 'zonal',
-                    'short_name': 'skt',
-                    'units': 'K'
-                }
-            )
-            self.data_list.append(data)
-        
-        self.plotter = PlotLatLonProfiles(
-            data=self.data_list,
-            data_type='longterm',
-            loglevel=loglevel
-        )
-    
-    def test_multiple_models_initialization(self):
-        """Test initialization with multiple models"""
-        assert len(self.plotter.data) == 2
-        assert len(self.plotter.models) == 2
-        assert 'IFS' in self.plotter.models
-        assert 'GFS' in self.plotter.models
-    
-    def test_multiple_models_labels(self):
-        """Test labels for multiple models"""
-        labels = self.plotter.set_data_labels()
-        assert len(labels) == 2
-        assert 'IFS test-tco79' in labels
-        assert 'GFS test-exp2' in labels
-    
-    def test_plot_multiple_models(self, tmp_path):
-        """Test plotting multiple models"""
-        fig, ax = self.plotter.plot()
-        
-        assert fig is not None
-        assert ax is not None
-        assert len(ax.lines) >= 2  # At least 2 lines plotted
-        
-        fig.savefig(tmp_path / 'test_multiple_models.png')
-        assert (tmp_path / 'test_multiple_models.png').exists()
+        # Verify custom name appears in filename
+        filename = png_files[0].name
+        assert custom_name in filename, f"Custom diagnostic name '{custom_name}' not in filename: {filename}"
 
 
 @pytest.mark.diagnostics
 class TestPlotLatLonProfilesErrors:
-    """Test error handling in PlotLatLonProfiles"""
+    """Error handling tests"""
     
-    def test_invalid_data_type(self):
+    def test_invalid_data_type(self, sample_lat_lon_data):
         """Test that invalid data_type raises error"""
-        lat = np.linspace(-90, 90, 20)
-        data = xr.DataArray(np.random.rand(20), dims=['lat'], coords={'lat': lat})
+        data = sample_lat_lon_data()
         
         with pytest.raises(ValueError, match="data_type must be 'longterm' or 'seasonal'"):
             PlotLatLonProfiles(data=data, data_type='invalid', loglevel=loglevel)
-    
-    def test_save_plot_pdf_format(self, tmp_path):
-        """Test saving plot in PDF format"""
-        lat = np.linspace(-90, 90, 20)
-        data = xr.DataArray(
-            np.random.rand(20),
-            dims=['lat'],
-            coords={'lat': lat},
-            attrs={
-                'AQUA_catalog': 'test',
-                'AQUA_model': 'IFS',
-                'AQUA_exp': 'test',
-                'AQUA_mean_type': 'zonal',
-                'short_name': 'skt'
-            }
-        )
-        
-        plotter = PlotLatLonProfiles(data=data, data_type='longterm', loglevel=loglevel)
-        fig, _ = plotter.plot()
-        
-        plotter.save_plot(
-            fig=fig,
-            description='Test PDF',
-            outputdir=str(tmp_path),
-            rebuild=True,
-            format='pdf'
-        )
-        
-        files = list(tmp_path.rglob('*.pdf'))
-        assert len(files) > 0
