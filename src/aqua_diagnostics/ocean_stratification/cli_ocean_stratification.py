@@ -107,9 +107,9 @@ if __name__ == "__main__":
             diagnostic_name = stratification_config.get(
                 "diagnostic_name", "ocean_stratification"
             )
-            climatology = stratification_config.get("climatology", None)
-            for region in regions:
-                logger.info(f"Processing region: {region}")
+            climatologies = stratification_config.get("climatology", None)
+            for region, climatology in zip(regions, climatologies):
+                logger.info(f"Processing region: {region}, climatology: {climatology}")
                 var = stratification_config.get("var", None)
                 # dim_mean = stratification_config.get("dim_mean", ["lat", "lon"])
                 dim_mean = ["lat", "lon"]
