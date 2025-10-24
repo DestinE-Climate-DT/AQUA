@@ -60,7 +60,10 @@ def drop_parser(parser = None):
                         help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
                         help="Resolution of the DROP output. Can be anything in the AQUA resolution.")
-
+    parser.add_argument('--startdate', type=str,
+                        help="Start date to subset the data. Format YYYY-MM-DD")
+    parser.add_argument('--enddate', type=str,
+                        help="End date to subset the data. Format YYYY-MM-DD")
     #return parser.parse_args(arguments)
     return parser
 
@@ -97,6 +100,8 @@ def drop_execute(args):
     region = config['target'].get('region', None)
     catalog = config['target'].get('catalog', None)
     stat = config['target'].get('stat', 'mean')
+    startdate = config['target'].get('startdate', None)
+    enddate = config['target'].get('enddate', None)
     
     # assig paths
     paths = config['paths']
@@ -126,14 +131,14 @@ def drop_execute(args):
     
 
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
-            frequency=frequency, fix=fix,
+            frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
             region=region, stat=stat,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
-def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
+def drop_cli(args, config, catalog, resolution, frequency, fix, startdate, enddate, outdir, tmpdir, loglevel,
             region=None, stat='mean',
             definitive=False, overwrite=False,
             rebuild=False, monitoring=False,
@@ -203,6 +208,7 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
                         # init the DROP
                         drop = Drop(catalog=catalog, model=model, exp=exp, source=source,
                                         var=varname, resolution=resolution,
+                                        startdate=startdate, enddate=enddate,
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir,
                                         nproc=workers, loglevel=loglevel,
