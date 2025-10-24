@@ -12,6 +12,7 @@ AQUA core complete list:
 - Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)
 
 AQUA diagnostics complete list:
+- Stratification: MLD and vertical profiles diagnostic refactor (#2268)
 - ECmean Performance Indices replace EC23 climatology with the new EC24 (#2367)
 
 ## [v0.18.1]
