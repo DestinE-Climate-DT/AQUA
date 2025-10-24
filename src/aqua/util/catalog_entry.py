@@ -47,6 +47,7 @@ def replace_urlpath_jinja(block: dict, value: str, name: str, default: str | Non
     if not value:
         return block
     
+    # TODO: verify this is needed 
     # return if the value is the default one, no need to create a parameter
     if default is not None and value == default:
         return block
