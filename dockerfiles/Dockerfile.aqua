@@ -9,12 +9,12 @@ ARG EXTRA_PACKAGES=""
 
 # -----------------------------------------------------------------------------
 # --- Micromamba / Conda (used later).
-FROM mambaorg/micromamba:${MICROMAMBA_VERSION} as micromamba
+FROM mambaorg/micromamba:${MICROMAMBA_VERSION} AS micromamba
 
 # -----------------------------------------------------------------------------
 # The container is created by the AQUA team, with the Dockerfile.ubuntu
 # it includes updated FDB and ECCODES libraries.
-FROM ${BASE_IMAGE} as fdb
+FROM ${BASE_IMAGE} AS fdb
 
 # Install dependencies
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -85,7 +85,7 @@ EXPOSE 8888
 
 WORKDIR /app/AQUA/
 
-ENV PATH "$MAMBA_ROOT_PREFIX/bin:$PATH"
+ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
 # NOTE: This works with Docker, but not with Singularity as
