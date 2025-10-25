@@ -58,50 +58,6 @@ class PlotMLD:
             loglevel=self.loglevel,
         )
 
-    def plot_stratification(
-        self,
-        rebuild: bool = True,
-        save_pdf: bool = True,
-        save_png: bool = True,
-        dpi: int = 300,
-    ):
-        """
-        Plot the Stratification maps.
-
-        Args:
-            rebuild (bool, optional): If True, the output files will be rebuilt. Default is True.
-            save_pdf (bool, optional): If True, save the plot as a PDF. Default is True.
-            save_png (bool, optional): If True, save the plot as a PNG. Default is True.
-            dpi (int, optional): The dpi of the figure. Default is 300.
-        """
-        self.data_list = [self.data, self.obs] if self.obs else [self.data]
-        self.set_data_map_list()
-        self.set_suptitle()
-        self.set_title()
-        self.set_description()
-        self.set_ytext()
-        self.set_nrowcol()
-        self.set_cbar_labels(var="mld")
-        self.set_cbar_limits()
-        fig = plot_maps(
-            maps=self.data_map_list,
-            nrows=self.nrows,
-            ncols=self.ncols,
-            proj=ccrs.PlateCarree(),
-            title=self.suptitle,
-            titles=self.title_list,
-            cbar_number="single",
-            cbar_label=self.cbar_label,
-            figsize=(9 * self.ncols, 8 * self.nrows),
-            cmap="jet",
-            ytext=self.ytext,
-            return_fig=True,
-            vmax=self.vmax,
-            vmin=self.vmin,
-            nlevels=self.nlevels,
-            sym=False,
-        )
-
     def plot_mld(
         self,
         rebuild: bool = True,
@@ -116,6 +72,7 @@ class PlotMLD:
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
+        self.set_figsize()
         self.set_cbar_labels(var="mld")
         self.set_cbar_limits()
         fig = plot_maps(
@@ -127,7 +84,7 @@ class PlotMLD:
             titles=self.title_list,
             cbar_number="single",
             cbar_label=self.cbar_label,
-            figsize=(9 * self.ncols, 8 * self.nrows),
+            figsize=self.figsize,
             cmap="jet",
             ytext=self.ytext,
             return_fig=True,
@@ -153,6 +110,22 @@ class PlotMLD:
                 metadata=self.description,
                 extra_keys={"region": self.region.replace(" ", "_")},
             )
+    def set_figsize(self):
+        self.figsize = (9 * self.ncols, 8 * self.nrows)
+
+        # lon_span = abs(self.data.lon.max() - self.data.lon.min())
+        # lat_span = abs(self.data.lat.max() - self.data.lat.min())
+
+        # # Avoid division by zero
+        # if lat_span == 0:
+        #     lat_span = 1e-6
+
+        # # Set figure size proportional to lon:lat ratio
+        # base_width = 9 * self.ncols
+        # base_height = 8 * self.nrows
+
+        # aspect_ratio = lon_span / lat_span * 0.6
+        # self.figsize = (base_width * aspect_ratio, base_height)
 
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
