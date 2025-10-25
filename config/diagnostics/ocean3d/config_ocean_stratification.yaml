@@ -29,6 +29,6 @@ diagnostics:
       diagnostic_name: 'stratification'
       run: true
       var: ['thetao', 'so']
-      regions: ['ls']
-      climatology: 'January'
+      regions: ['ls', 'rs']
+      climatology: ['January', 'JJA']
       # dim_mean: ['lat', 'lon']

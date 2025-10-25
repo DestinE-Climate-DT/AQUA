@@ -192,8 +192,10 @@ class Stratification(Diagnostic):
         season_list = ["DJF", "MAM", "JJA", "SON"]
         month_season_list = month_list + season_list
 
-        if self.climatology in month_season_list:
+        if self.climatology in month_list:
             self.clim_type = "month"
+        elif self.climatology in season_list:
+            self.clim_type = "season"
         else:
             self.clim_type = "Total"
 
