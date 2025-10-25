@@ -236,9 +236,10 @@ def time_to_string(time=None, format='%Y-%m-%d'):
     """
     if time is None:
         raise ValueError('time_to_string() requires a time argument')
-    elif isinstance(time, str):
-        # if time is a string, we assume it is already in the right format
-        return time
+
+    # if it's already a string, try to parse and reformat it
+    if isinstance(time, str):
+        return pd.to_datetime(time).strftime(format)
     elif isinstance(time, pd.Timestamp):
         # if time is a pandas timestamp, we convert it to a string
         return time.strftime(format)

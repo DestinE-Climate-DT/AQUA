@@ -5,21 +5,23 @@ diagnostics:
     Climate metrics, performance indices: [ecmean.performance_indices., PI4]
     Climate metrics, global biases: [ecmean.global_mean., global_mean_]
 
-    Radiation, boxplot: [radiation.boxplot, boxplot_]
-    Radiation, timeseries: [radiation.timeseries., timeseries_ifs, timeseries_icon]
-    Radiation, annual bias: [radiation.bias, radiation.bias., toa_mean_biases_]
-    Radiation, seasonal bias: [radiation.seasonal_bias]
+    Radiation, boxplot: [radiation_toa.boxplot, radiation_surface.boxplot, radiation.boxplot, boxplot_]
+    Radiation, timeseries: [radiation_toa.timeseries, radiation_surface.timeseries, radiation.timeseries., timeseries_ifs, timeseries_icon]
+    Radiation, annual bias: [radiation_toa.bias, radiation_surface.bias, radiation.bias., toa_mean_biases_]
+    Radiation, seasonal bias: [radiatio_toa.seasonal_bias, radiation_surface.seasonal_bias, radiation.seasonal_bias]
 
-    Atmosphere 2D, time series: [atmosphere.timeseries, global_time_series_timeseries, global_time_series_IFS]
-    Atmosphere 2D, seasonal cycle: [atmosphere.seasonalcycles, global_time_series_seasonalcycle, timeseries.seasonalcycle]
-    Atmosphere 2D, annual bias: ["globalbiases.bias*[!0].png", global_biases.total_bias_map, global_biases.seasonal_bias_map]
-    Atmosphere 2D, seasonal bias: ["globalbiases.seasonal_bias*[!0].png", Seasonal_Bias_Plot, atmglobalmean.seasonal_bias]
+    Atmosphere 2D, time series: [atmosphere2d.timeseries, atmosphere.timeseries, global_time_series_timeseries, global_time_series_IFS]
+    Atmosphere 2D, seasonal cycle: [atmosphere2d.seasonalcycles, atmosphere.seasonalcycles, global_time_series_seasonalcycle, timeseries.seasonalcycle]
+    Atmosphere 2D, annual bias: [atmosphere2d.bias, "globalbiases.bias*[!0].png", global_biases.total_bias_map, global_biases.seasonal_bias_map]
+    Atmosphere 2D, seasonal bias: [atmosphere2d.seasonal_bias, "globalbiases.seasonal_bias*[!0].png", Seasonal_Bias_Plot, atmglobalmean.seasonal_bias]
+    Atmosphere 2D, profiles: atmosphere2d.lat_lon_profiles
 
-    Atmosphere 3D, vertical bias : [global_biases.vertical_bias, globalbiases.vertical_bias, atmglobalmean.vertical_bias, Vertical_biases]
-    Atmosphere 3D, annual bias: ["globalbiases.bias*0.png"]
-    Atmosphere 3D, seasonal bias: ["globalbiases.seasonal_bias*0.png"]
+    Atmosphere 3D, vertical bias : [atmosphere3d.vertical_bias, global_biases.vertical_bias, globalbiases.vertical_bias, atmglobalmean.vertical_bias, Vertical_biases]
+    Atmosphere 3D, annual bias: [atmosphere3d.bias, "globalbiases.bias*0.png"]
+    Atmosphere 3D, seasonal bias: [atmosphere3d.seasonal_bias, "globalbiases.seasonal_bias*0.png"]
 
     Water cycle, tropical rainfall: trop_rainfall
+    Water cycle, profiles: water
 
     Teleconnections, NAO: [teleconnections.NAO, nao.]
     Teleconnections, ENSO: [teleconnections.ENSO, enso.]

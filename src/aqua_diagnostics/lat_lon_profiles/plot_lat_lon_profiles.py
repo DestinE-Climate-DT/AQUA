@@ -1,6 +1,6 @@
 from aqua.graphics import plot_seasonal_lat_lon_profiles
 from aqua.logger import log_configure
-from aqua.util import to_list
+from aqua.util import to_list, strlist_to_phrase
 from aqua.graphics import plot_lat_lon_profiles
 from aqua.diagnostics.core import OutputSaver
 
@@ -284,11 +284,14 @@ class PlotLatLonProfiles():
         description = f'{self.mean_type.capitalize()} profile '
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                description += f'for {name} '
+                description += f'of {name} '
                 break
 
         if self.units is not None:
-            description += f'[{self.units}] '
+            units = self.units.replace("**", r"\*\*")  # Same as BaseMixin
+            description += f'[{units}] '
+        if self.short_name is not None:
+            description += f'({self.short_name}) '
 
         if self.region is not None:
             description += f'for region {self.region} '
@@ -296,11 +299,29 @@ class PlotLatLonProfiles():
         # Check if we have enough metadata for all data items
         num_items = min(len(self.catalogs), len(self.models), len(self.exps)) if hasattr(self, 'catalogs') else 0
         
-        for i in range(min(self.len_data, num_items)):
-            description += f'for {self.catalogs[i]} {self.models[i]} {self.exps[i]} '
+        description += 'for '
+        dataset_names = [f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
+        description += strlist_to_phrase(items=dataset_names)
 
-        if hasattr(self, 'std_startdate') and self.std_startdate is not None and hasattr(self, 'std_enddate') and self.std_enddate is not None:
-            description += f'with reference data standard deviation bands calculated from {self.std_startdate} to {self.std_enddate} '
+        # Reference data description
+        if self.len_ref > 0:
+            description += ' with reference'
+            # Handle ref_data structure based on data_type
+            if self.ref_data is not None:
+                if hasattr(self.ref_data, 'AQUA_model'):
+                    ref_model = self.ref_data.AQUA_model
+                    ref_exp = self.ref_data.AQUA_exp
+                    if ref_model == 'ERA5':
+                        description += ' ERA5'
+                    else:
+                        description += f' {ref_model} {ref_exp}'
+        
+        # Standard deviation info
+        if self.std_startdate is not None and self.std_enddate is not None:
+            description += f' with standard deviation from {self.std_startdate} to {self.std_enddate}.'
+            description += ' The shaded area represents 2 standard deviations.'
+        else:
+            description += '.'
             
         self.logger.debug('Description: %s', description)
         return description

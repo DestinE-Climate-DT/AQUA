@@ -231,7 +231,7 @@ class PlotTrends:
             format (str): The format of the figure. Default is 'png'.
         """
         metadata = {"description": self.description}
-        extra_keys.update({"region": self.region})
+        extra_keys.update({"region": self.region.replace(' ', '_').lower()})
 
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,

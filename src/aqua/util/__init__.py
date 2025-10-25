@@ -15,7 +15,7 @@ from .sci_util import select_season, merge_attrs
 from .string import strlist_to_phrase, lat_to_phrase
 from .units import multiply_units, normalize_units, convert_units, convert_data_units
 from .util import generate_random_string, get_arg, create_folder, to_list
-from .util import file_is_complete, files_exist, find_vert_coord
+from .util import file_is_complete, files_exist, find_vert_coord, expand_env_vars
 from .util import extract_literal_and_numeric, extract_attrs, add_pdf_metadata, add_png_metadata
 from .util import open_image, username, update_metadata
 from .yaml import load_yaml, dump_yaml, load_multi_yaml
@@ -38,7 +38,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'select_season', 'merge_attrs',
            'strlist_to_phrase', 'lat_to_phrase',
            'generate_random_string', 'get_arg', 'create_folder', 'to_list',
-           'file_is_complete', 'files_exist', 'find_vert_coord',
+           'file_is_complete', 'files_exist', 'find_vert_coord', 'expand_env_vars',
            'extract_literal_and_numeric', 'extract_attrs', 'add_pdf_metadata', 'add_png_metadata',
            'open_image', 'username', 'update_metadata',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',

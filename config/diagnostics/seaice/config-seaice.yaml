@@ -1,0 +1,211 @@
+# Template according to #1613
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+
+# Datasets holds the models, adding more than one "-"
+# will create a list of dict
+# =======  Dataset Configuration  =======
+datasets:
+  - catalog: null              # mandatory as null
+    model: 'IFS-NEMO'          # mandatory
+    exp: 'historical-1990'     # mandatory
+    source: 'lra-r100-monthly' # mandatory
+    regrid: null               # if the diagnostic supports it
+    reader_kwargs: null        # it can be a dictionary with reader kwargs
+    startdate: null            # e.g. '1990-01-01'
+    enddate: null              # e.g. '2000-12-31'
+
+# =======  Reference Datasets  =======
+references:
+  # ---- Extent in NH ----
+  - &ref_osi_nh
+    catalog: 'obs'             # mandatory
+    model: 'OSI-SAF'           # mandatory
+    exp: 'osi-saf-aqua'             # mandatory
+    source: 'nh-monthly'       # mandatory
+    regrid: 'r100'
+    domain: "nh"
+
+  # ---- Extent in SH ----
+  - &ref_osi_sh
+    catalog: 'obs'             # mandatory
+    model: 'OSI-SAF'           # mandatory
+    exp: 'osi-saf-aqua'             # mandatory
+    source: 'sh-monthly'       # mandatory
+    regrid: 'r100'
+    domain: "sh"
+
+  # ---- Volume in NH ----
+  - &ref_psc_nh
+    catalog: 'obs'
+    model: 'PSC'
+    exp: 'PIOMAS'
+    source: 'monthly'
+    regrid: 'r100'
+    domain: "nh"
+
+  # ---- Volume in SH ----
+  - &ref_psc_sh
+    catalog: 'obs'
+    model: 'PSC'
+    exp: 'GIOMAS'
+    source: 'monthly'
+    regrid: 'r100'
+    domain: "sh"
+
+# =======  Setup Configuration  =======
+setup:
+  loglevel: 'WARNING'
+
+# =======  Output Configuration  =======
+output:
+  outputdir: "./" # mandatory
+  rebuild: true
+  save_netcdf: true # mandatory
+  save_pdf: true    # mandatory
+  save_png: true    # mandatory
+  dpi: 300
+  create_catalog_entry: false
+
+# =======  Config for timeseries Sea Ice  =======
+# ===============================================
+# These are options that specify how the data is plotted
+# If you need specific options, you can add it here.
+diagnostics:
+  seaice_timeseries:
+    run: true
+    # List of methods to plot.
+    methods: ["extent", "volume"]
+    # List of regions to plot. The default regions are defined in config/diagnostics/seaice
+    regions: ['arctic','antarctic']
+    startdate: '1991-01-01'
+    enddate: '2024-01-01'
+    calc_ref_std: true
+    ref_std_freq: 'monthly' # set to 'monthly' 'annual'
+    varname:
+      extent: 'siconc'
+      volume: 'sithick'
+      fraction: 'siconc'       # for 2D bias
+      thickness: 'sithick'     # for 2D bias
+  
+    # ====  Update Datasets and reference entries  ====
+    references:
+    # -- OSI-SAF for "extent" in NH --
+    - <<: *ref_osi_nh
+      # might be useful to add a key that allow to use a certain dataset only for a specific method
+      use_for_method: "extent"
+      varname: "siconc"
+  
+    # -- OSI-SAF for "extent" in SH --
+    - <<: *ref_osi_sh
+      use_for_method: "extent"
+      varname: "siconc"
+  
+    # -- PSC for "volume" in NH --
+    - <<: *ref_psc_nh
+      use_for_method: "volume"
+      varname: "sithick"
+  
+    # -- PSC for "volume" in SH --
+    - <<: *ref_psc_sh
+      use_for_method: "volume"
+      varname: "sithick"
+
+  # =======  Config for seasonal cycle Sea Ice  =======
+  # ===================================================
+  # These are options that specify how the data is plotted
+  # If you need specific options, you can add it here.
+  seaice_seasonal_cycle:
+    run: true
+    methods: ["extent", "volume"]
+    regions: ['arctic','antarctic']
+    startdate: '1991-01-01'
+    enddate: '2024-01-01'
+    calc_ref_std: true
+    ref_std_freq: 'monthly' # set to 'monthly' 'annual'
+    varname:
+      extent: 'siconc'
+      volume: 'sithick'
+      fraction: 'siconc'       # for 2D bias
+      thickness: 'sithick'     # for 2D bias
+  
+    # ====  Update Datasets and reference entries  ====
+    references:
+    # -- OSI-SAF for "extent" in NH --
+    - <<: *ref_osi_nh
+      # might be useful to add a key that allow to use a 
+      # certain dataset only for a specific method
+      use_for_method: "extent"
+      varname: "siconc"
+      
+    # -- OSI-SAF for "extent" in SH --
+    - <<: *ref_osi_sh
+      use_for_method: "extent"
+      varname: "siconc"
+  
+    # -- PSC for "volume" in NH --
+    - <<: *ref_psc_nh
+      use_for_method: "volume"
+      varname: "sithick"
+  
+    # -- PSC for "volume" in SH --
+    - <<: *ref_psc_sh
+      use_for_method: "volume"
+      varname: "sithick"
+  
+  # =======  Config for 2d bias maps =======
+  # =========================================
+  # These are options that specify how the data is plotted
+  # If you need specific options, you can add it here.
+  seaice_2d_bias:
+    run: true
+    methods: ["fraction", "thickness"]
+    regions: ['arctic','antarctic']
+    startdate: '1991-01-01'
+    enddate: '2024-12-31'
+    # List of months to plot (e.g., [3, 9] for March and September)
+    months: [3, 9]
+    # List of projections to use
+    projections:
+      orthographic:
+        projname: "orthographic"
+        projpars:
+          central_longitude: 0.0
+          central_latitude: "max_lat_signed"
+      azimuthal_equidistant:
+        projname: "azimuthal_equidistant"
+        projpars:
+          central_longitude: 0.0
+          central_latitude: "max_lat_signed"
+        extent_regions:
+          Arctic: [-180, 180, 50, 90]
+          Antarctic: [-180, 180, -50, -90]
+    varname:
+      extent: 'siconc'
+      volume: 'sithick'
+      fraction: 'siconc'       # for 2D bias
+      thickness: 'sithick'     # for 2D bias
+  
+    # ====  Update Datasets and reference entries  ====
+    references:
+    # -- OSI-SAF for fraction in NH --
+    - <<: *ref_osi_nh
+      # key that allow to use a certain dataset only for a specific method
+      use_for_method: "fraction"
+      varname: "siconc"
+  
+    # -- OSI-SAF for fraction in SH --
+    - <<: *ref_osi_sh
+      use_for_method: "fraction"
+      varname: "siconc"
+  
+    # -- PSC for thickness in NH --
+    - <<: *ref_psc_nh
+      use_for_method: "thickness"
+      varname: "sithick"
+  
+    # -- PSC for thickness in SH --
+    - <<: *ref_psc_sh
+      use_for_method: "thickness"
+      varname: "sithick"

@@ -91,7 +91,7 @@ if __name__ == '__main__':
                                     'startdate': reference.get('startdate'),
                                     'enddate': reference.get('enddate')}
 
-                    boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots_ref = Boxplots(**reference_args, diagnostic=diagnostic_name, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
                     boxplots_ref.run(var=variables, reader_kwargs=reader_kwargs)
 
                     if getattr(boxplots_ref, "fldmeans", None) is None:

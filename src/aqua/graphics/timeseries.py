@@ -2,6 +2,7 @@
 Function to plot timeseries and reference data,
 both with monthly and annual aggregation options
 """
+import textwrap
 from typing import Optional
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -161,7 +162,8 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
     ax.grid(True, axis="y", linestyle='-', color='silver', alpha=0.8)
 
     if title:
-        ax.set_title(title, fontsize=13, fontweight='bold')
+        wrapped_title = textwrap.fill(title, width=70)
+        ax.set_title(wrapped_title, fontsize=13, fontweight='bold')
     else:
         ax.set_title("")
 
@@ -241,7 +243,8 @@ def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
     ax.grid(True, axis="y", linestyle='-', color='silver', alpha=0.8)
 
     if title is not None:
-        ax.set_title(title, fontsize=13, fontweight='bold')
+        wrapped_title = textwrap.fill(title, width=60)
+        ax.set_title(wrapped_title, fontsize=13, fontweight='bold')
     else:
         ax.set_title("")
 

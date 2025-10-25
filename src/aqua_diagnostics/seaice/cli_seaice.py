@@ -68,7 +68,7 @@ if __name__ == '__main__':
         logger.info(f"Realization option is set to: {realization}")
         reader_kwargs = {'realization': realization}
     else:
-        reader_kwargs = {}
+        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')

@@ -27,6 +27,7 @@ AQUA_tests/
 AQUA_testsv*
 AQUA_tests_teleconnections*
 *.bak
+.env
 
 # coverage and vscode
 .coverage

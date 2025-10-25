@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # Load the configuration file and then merge itTimeseries with the command-line arguments,
     # overwriting the configuration file values with the command-line arguments.
     config_dict = load_diagnostic_config(
-        diagnostic="ocean3d",
+        diagnostic="ocean3d", config=args.config,
         default_config="config_ocean_stratification.yaml",
         loglevel=loglevel,
     )

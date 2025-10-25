@@ -160,6 +160,10 @@ class LatLonProfiles(Diagnostic):
 										   center_time=center_time)
 		monthly_data = monthly_data.sel(time=slice(self.std_startdate, self.std_enddate))
 
+		if self.std_startdate is None or self.std_enddate is None:
+				self.std_startdate = monthly_data.time.min().values
+				self.std_enddate = monthly_data.time.max().values
+
 		if freq == 'seasonal':
 			# Group by season and compute std
 			seasonal_std = monthly_data.groupby('time.season').std('time')

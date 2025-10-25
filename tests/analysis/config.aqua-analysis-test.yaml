@@ -1,7 +1,17 @@
 job:
   run_checker: true
+  loglevel: 'DEBUG'
+
+run:
+  - ['dummy'] 
 
 diagnostics:
-  run: ['dummy']
   dummy:
-    script_path: '../src/aqua_diagnostics/dummy/cli_dummy.py'
+    dummy_tool: 
+      config: 'dummy_config.yaml'
+      outname: 'dummy_output'
+      extra: ''
+      nworkers: 1
+
+cli:
+  dummy_tool: '$AQUA/src/aqua_diagnostics/dummy/cli_dummy.py'

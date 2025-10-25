@@ -42,9 +42,9 @@ if __name__ == '__main__':
 
     client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
 
-    # Load the configuration file and then merge itTimeseries with the command-line arguments,
+    # Load the configuration file and then merge it with the command-line arguments,
     # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='ocean3d',
+    config_dict = load_diagnostic_config(diagnostic='ocean3d', config=args.config,
                                          default_config='config_ocean_drift.yaml',
                                          loglevel=loglevel)
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)

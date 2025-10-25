@@ -24,7 +24,7 @@ def test_run_command():
 def test_run_diagnostic_func(tmp_path):
     """Test the run_diagnostic_func function."""
 
-    res = run_diagnostic_func(diagnostic='pluto', config={}, logger=logger)
+    res = run_diagnostic_func(diagnostic='pluto', diag_config={}, logger=logger)
     assert res is None, "Expected None return value for empty config"
 
     config = {
@@ -43,7 +43,7 @@ def test_run_diagnostic_func(tmp_path):
     # completes without errors.
     run_diagnostic_func(diagnostic='pluto', parallel=True,
                         regrid='r100', logger=logger,
-                        config=config, cluster=True,
+                        diag_config=config, cluster=True,
                         catalog='test_catalog', realization='r2')
     
     assert True, "run_diagnostic_func should complete without errors"

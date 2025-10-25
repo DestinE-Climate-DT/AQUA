@@ -3,19 +3,20 @@
 import os
 import pytest
 from aqua import Reader
-from aqua.util import load_yaml, ConfigPath
 from aqua.diagnostics import PerformanceIndices, GlobalMean
-from aqua.diagnostics.core import OutputSaver
+from aqua.diagnostics.core import OutputSaver, load_diagnostic_config, get_diagnostic_configpath
 
 @pytest.fixture
 def common_setup(tmp_path):
     """Fixture to set up common configuration and data for tests."""
-    Configurer = ConfigPath()
     loglevel = 'warning'
-    ecmeandir = os.path.join(Configurer.configdir, 'diagnostics', 'ecmean')
-    interface = os.path.join(ecmeandir, 'interface_AQUA_climatedt.yaml')
-    config = os.path.join(ecmeandir, 'ecmean_config_climatedt.yaml')
-    config = load_yaml(config)
+    config = load_diagnostic_config(diagnostic='ecmean',
+                           default_config='ecmean_config_climatedt.yaml',
+                           folder="tools",
+                           loglevel=loglevel
+                        )
+    ecmeandir = get_diagnostic_configpath('ecmean', folder="tools", loglevel=loglevel)
+    interface = os.path.join(ecmeandir, "interface", "interface_AQUA_climatedt.yaml")
     config['dirs']['exp'] = ecmeandir
 
     exp = 'era5-hpz3'

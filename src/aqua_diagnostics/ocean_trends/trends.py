@@ -69,6 +69,7 @@ class Trends(Diagnostic):
             reader_kwargs (dict, optional): Additional keyword arguments for the data reader. Default is {}.
         """
         self.logger.info("Starting trend analysis workflow")
+        reader_kwargs.update({"chunks": {"level": 1, "time": 12}})
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
 
         # If a region is specified, apply area selection to self.data
