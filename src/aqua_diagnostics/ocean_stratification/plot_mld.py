@@ -106,7 +106,7 @@ class PlotMLD:
                 rebuild=rebuild,
                 dpi=dpi,
                 format=fmt,
-                diagnostic_product=self.diagnostic,
+                diagnostic_product='mld',
                 metadata=self.description,
                 extra_keys={"region": self.region.replace(" ", "_")},
             )

@@ -80,7 +80,7 @@ class PlotStratification:
             rebuild=rebuild,
             dpi=dpi,
             format="pdf",
-            diagnostic_product=self.diagnostic,
+            diagnostic_product='stratification',
             metadata=self.description,
             extra_keys={"region": self.region.replace(" ", "_")},
         )

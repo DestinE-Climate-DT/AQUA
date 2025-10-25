@@ -234,7 +234,7 @@ if __name__ == "__main__":
                         if obs_stratification is not None
                         else None
                     ),
-                    diagnostic_name="MLD",
+                    diagnostic_name=diagnostic_name,
                     outputdir=outputdir,
                     loglevel=loglevel,
                 )
