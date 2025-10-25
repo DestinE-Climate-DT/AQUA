@@ -7,7 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.19.0):
 
+ClimateDT workflow modifications:
+- The configuration file of the catalog generator now requires `expid`
+
 AQUA core complete list:
+- Introduce `expid` into configuration file of the catalog generator (#2340)
 - EC-EARTH4 ORCA2 and eORCA1 grids refactor (#2280)
 - Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)
 - AQUA analysis now can receive ``stardate`` and ``enddate`` (#2368)
@@ -34,6 +38,7 @@ AQUA diagnostics complete list:
 - Ocean Drift: timeseries plotting function with update in cli (#2322)
 - Implement `fldstat` methods in Seaice diagnostics (#2297)
 - Gregory: more detailed description and plot labels (#2306)
+- Ensemble: updated ensemble module to use realizations via Reader class (#2342)
 - Radiation: using CERES ebaf42 instead of ebaf41 (#2333)
 
 ## [v0.18.0]

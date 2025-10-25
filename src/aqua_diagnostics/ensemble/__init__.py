@@ -1,12 +1,12 @@
 # """Ensemble Module"""
 
-from .ensembleTimeseries import EnsembleTimeseries
-from .plot_ensemble_timeseries import PlotEnsembleTimeseries
 from .ensembleLatLon import EnsembleLatLon
-from .plot_ensemble_latlon import PlotEnsembleLatLon
+from .ensembleTimeseries import EnsembleTimeseries
 from .ensembleZonal import EnsembleZonal
+from .plot_ensemble_latlon import PlotEnsembleLatLon
+from .plot_ensemble_timeseries import PlotEnsembleTimeseries
 from .plot_ensemble_zonal import PlotEnsembleZonal
-from .util import retrieve_merge_ensemble_data
+from .util import load_premerged_ensemble_dataset, merge_from_data_files, reader_retrieve_and_merge
 
 __all__ = [
     "EnsembleTimeseries",
@@ -15,5 +15,7 @@ __all__ = [
     "PlotEnsembleTimeseries",
     "PlotEnsembleLatLon",
     "PlotEnsembleZonal",
-    "retrieve_merge_ensemble_data",
+    "reader_retrieve_and_merge",
+    "merge_from_data_files",
+    "load_premerged_ensemble_dataset",
 ]
