@@ -82,7 +82,7 @@ class PlotStratification:
             format="pdf",
             diagnostic_product='stratification',
             metadata=self.description,
-            extra_keys={"region": self.region.replace(" ", "_")},
+            extra_keys={"region": self.region.lower().replace(" ", "_")},
         )
 
     def set_nrowcol(self):

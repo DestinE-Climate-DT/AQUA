@@ -108,7 +108,7 @@ class PlotMLD:
                 format=fmt,
                 diagnostic_product='mld',
                 metadata=self.description,
-                extra_keys={"region": self.region.replace(" ", "_")},
+                extra_keys={"region": self.region.lower().replace(" ", "_")},
             )
     def set_figsize(self):
         self.figsize = (9 * self.ncols, 8 * self.nrows)
