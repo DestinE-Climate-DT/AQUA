@@ -162,8 +162,6 @@ class PlotTrends:
 
     def set_data_list(self):
         """Prepare the list of data arrays to plot."""
-        self.logger.debug('Loading the data into memory')
-        self.data = self.data.compute()
         self.data_list = []
         if hasattr(self, "levels") and self.levels:
             self.data = self.data.interp(level=self.levels)
