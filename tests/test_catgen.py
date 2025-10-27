@@ -155,22 +155,31 @@ def test_catgen_full(tmp_path, model, nsources, nocelevels):
     # check number of vertical levels in the atmosphere
     assert len(sources['sources']['daily-hpz10-oce3d']['metadata']['levels']) == nocelevels
 
+
+MANDATORY_KEYS_TO_TEST = [
+    "author",
+    "model",
+    "repos.data-portfolio_path",
+]
+@pytest.mark.parametrize("missing_key", MANDATORY_KEYS_TO_TEST)
+
 @pytest.mark.catgen
-def test_catgen_raise(tmp_path):
-    """test for catgen raise"""
-
+def test_catgen_missing_key(tmp_path, missing_key):
+    """
+    Ensure that a ValueError is raised when a required configuration key is missing.
+    """
     config_path = 'tests/catgen/config-test-catgen.j2'
+    config = load_yaml(config_path)
 
-    with pytest.raises(ValueError):
-        config = load_yaml(config_path)
-        config.pop('author', None)
-        dump_path = os.path.join(tmp_path, 'test.yaml')
-        dump_yaml(dump_path, config)
-        AquaFDBGenerator(config_path=dump_path, data_portfolio='minimal')
+    if missing_key.startswith("repos."):
+        subkey = missing_key.split(".", 1)[1]
+        if "repos" in config and subkey in config["repos"]:
+            del config["repos"][subkey]
+    else:
+        config.pop(missing_key, None)
 
-    with pytest.raises(ValueError):
-        config = load_yaml(config_path)
-        config.pop('machine', None)
-        dump_path = os.path.join(tmp_path, 'test.yaml')
-        dump_yaml(dump_path, config)
-        AquaFDBGenerator(config_path=dump_path, data_portfolio='minimal')
+    dump_path = os.path.join(tmp_path, "test.yaml")
+    dump_yaml(dump_path, config)
+
+    with pytest.raises(ValueError, match="Missing required configuration keys"):
+        AquaFDBGenerator(config_path=dump_path, data_portfolio="minimal")
