@@ -37,7 +37,7 @@ class Reader():
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
                  regrid=None, regrid_method=None,
-                 areas=True, 
+                 areas=True,
                  streaming=False,
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
