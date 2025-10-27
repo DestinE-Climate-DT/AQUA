@@ -11,6 +11,7 @@ ClimateDT workflow modifications:
 - The configuration file of the catalog generator now requires `expid`
 
 AQUA core complete list:
+- Chunking of netcdf sources is not filtered anymore (#2380)
 - Introduce `expid` into configuration file of the catalog generator (#2340)
 - EC-EARTH4 ORCA2 and eORCA1 grids refactor (#2280)
 - Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)
