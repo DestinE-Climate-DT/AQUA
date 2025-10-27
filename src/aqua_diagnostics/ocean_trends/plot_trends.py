@@ -149,6 +149,8 @@ class PlotTrends:
 
     def set_data_list(self):
         """Prepare the list of data arrays to plot."""
+        self.logger.debug('Loading the data into memory')
+        self.data = self.data.compute()
         self.data_list = []
         if hasattr(self, "levels") and self.levels:
             self.data = self.data.interp(level=self.levels)
@@ -231,7 +233,7 @@ class PlotTrends:
             format (str): The format of the figure. Default is 'png'.
         """
         metadata = {"description": self.description}
-        extra_keys.update({"region": self.region})
+        extra_keys.update({"region": self.region.replace(" ", "_")})
 
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
