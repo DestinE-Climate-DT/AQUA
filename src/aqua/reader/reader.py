@@ -625,6 +625,10 @@ class Reader():
                 filtered_kwargs['engine'] = engine
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
 
+        # HACK: Keep chunking info if present as reader kwarg
+        if self.chunks is not None:
+            filtered_kwargs.update({'chunks': self.chunks})
+
         return filtered_kwargs
 
     def vertinterp(self, data, levels=None, vert_coord='plev', units=None,
