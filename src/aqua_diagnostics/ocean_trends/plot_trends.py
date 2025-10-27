@@ -64,6 +64,7 @@ class PlotTrends:
         if levels is None:
             self.levels = [10, 100, 500, 1000, 3000, 5000]
         self.logger.debug(f"Levels set to: {self.levels}")
+        self.data = self.set_convert_lon(data=self.data)
         self.set_data_list()
         self.set_suptitle(plot_type='Multi-level')
         self.set_title()
@@ -135,7 +136,12 @@ class PlotTrends:
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
 
 
-
+    def set_convert_lon(self, data=None):
+        '''Convert longitude from 0-360 to -180 to 180 and sort accordingly.'''
+        data = data.assign_coords(lon=((data.lon + 180) % 360) - 180)
+        data = data.sortby('lon')
+        return data
+    
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
             self.nrows = len(self.levels)
