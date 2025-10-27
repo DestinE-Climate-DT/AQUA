@@ -7,7 +7,7 @@ datasets:
     model: FESOM
     exp: hpz3
     source: monthly-3d
-    regrid: null
+    regrid: r100
     reader_kwargs: null # it can be a dictionary with reader kwargs
     # startdate: 1990-01
     # enddate: 1990-12

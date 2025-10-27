@@ -17,7 +17,6 @@ class PlotMLD:
         self,
         data: xr.Dataset,
         obs: xr.Dataset = None,
-        clim_time: str = "January",
         diagnostic_name: str = "ocean_stratification",
         outputdir: str = ".",
         loglevel: str = "WARNING",
@@ -35,7 +34,6 @@ class PlotMLD:
         """
         self.data = data
         self.obs = obs
-        self.clim_time = clim_time
 
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "PlotStratification")
@@ -58,50 +56,6 @@ class PlotMLD:
             loglevel=self.loglevel,
         )
 
-    def plot_stratification(
-        self,
-        rebuild: bool = True,
-        save_pdf: bool = True,
-        save_png: bool = True,
-        dpi: int = 300,
-    ):
-        """
-        Plot the Stratification maps.
-
-        Args:
-            rebuild (bool, optional): If True, the output files will be rebuilt. Default is True.
-            save_pdf (bool, optional): If True, save the plot as a PDF. Default is True.
-            save_png (bool, optional): If True, save the plot as a PNG. Default is True.
-            dpi (int, optional): The dpi of the figure. Default is 300.
-        """
-        self.data_list = [self.data, self.obs] if self.obs else [self.data]
-        self.set_data_map_list()
-        self.set_suptitle()
-        self.set_title()
-        self.set_description()
-        self.set_ytext()
-        self.set_nrowcol()
-        self.set_cbar_labels(var="mld")
-        self.set_cbar_limits()
-        fig = plot_maps(
-            maps=self.data_map_list,
-            nrows=self.nrows,
-            ncols=self.ncols,
-            proj=ccrs.PlateCarree(),
-            title=self.suptitle,
-            titles=self.title_list,
-            cbar_number="single",
-            cbar_label=self.cbar_label,
-            figsize=(9 * self.ncols, 8 * self.nrows),
-            cmap="jet",
-            ytext=self.ytext,
-            return_fig=True,
-            vmax=self.vmax,
-            vmin=self.vmin,
-            nlevels=self.nlevels,
-            sym=False,
-        )
-
     def plot_mld(
         self,
         rebuild: bool = True,
@@ -109,6 +63,11 @@ class PlotMLD:
         save_png: bool = True,
         dpi: int = 300,
     ):
+        self.diagnostic_product = "mld"
+        self.clim_time = self.data.attrs.get("AQUA_mld_climatology", "Total")
+        self.data = self.set_convert_lon(data=self.data)
+        if self.obs:
+            self.obs = self.set_convert_lon(data=self.obs)
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_data_map_list()
         self.set_suptitle()
@@ -116,6 +75,7 @@ class PlotMLD:
         self.set_description()
         self.set_ytext()
         self.set_nrowcol()
+        self.set_figsize()
         self.set_cbar_labels(var="mld")
         self.set_cbar_limits()
         fig = plot_maps(
@@ -127,7 +87,7 @@ class PlotMLD:
             titles=self.title_list,
             cbar_number="single",
             cbar_label=self.cbar_label,
-            figsize=(9 * self.ncols, 8 * self.nrows),
+            figsize=self.figsize,
             cmap="jet",
             ytext=self.ytext,
             return_fig=True,
@@ -139,20 +99,30 @@ class PlotMLD:
 
         formats = []
         if save_pdf:
-            formats.append("pdf")
+            formats.append('pdf')
         if save_png:
-            formats.append("png")
+            formats.append('png')
 
-        for fmt in formats:
-            self.save_plot(
-                fig,
-                rebuild=rebuild,
-                dpi=dpi,
-                format=fmt,
-                diagnostic_product=self.diagnostic,
-                metadata=self.description,
-                extra_keys={"region": self.region.replace(" ", "_")},
-            )
+        for format in formats:
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+
+    def set_figsize(self):
+        self.figsize = (9 * self.ncols, 8 * self.nrows)
+
+        # lon_span = abs(self.data.lon.max() - self.data.lon.min())
+        # lat_span = abs(self.data.lat.max() - self.data.lat.min())
+
+        # # Avoid division by zero
+        # if lat_span == 0:
+        #     lat_span = 1e-6
+
+        # # Set figure size proportional to lon:lat ratio
+        # base_width = 9 * self.ncols
+        # base_height = 8 * self.nrows
+
+        # aspect_ratio = lon_span / lat_span * 0.6
+        # self.figsize = (base_width * aspect_ratio, base_height)
 
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
@@ -198,7 +168,12 @@ class PlotMLD:
         self.cbar_label = cbar_get_label(
             data=self.data[var], cbar_label=None, loglevel=self.loglevel
         )
-
+    def set_convert_lon(self, data=None):
+        '''Convert longitude from 0-360 to -180 to 180 and sort accordingly.'''
+        data = data.assign_coords(lon=((data.lon + 180) % 360) - 180)
+        data = data.sortby('lon')
+        return data
+    
     def _round_up(self, value):
         if value % 100 == 0:
             return value  # Already a multiple of 100
@@ -229,9 +204,7 @@ class PlotMLD:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
-        # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
-        self.suptitle = f"MLD {clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"MLD {self.clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -254,19 +227,12 @@ class PlotMLD:
     def set_description(self):
         self.description = {}
         self.description["description"] = {
-            f"Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
+            f"{self.diagnostic_product} {self.clim_time} climatology over {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
         }
 
-    def save_plot(
-        self,
-        fig,
-        diagnostic_product: str = None,
-        extra_keys: dict = None,
-        rebuild: bool = True,
-        dpi: int = 300,
-        format: str = "png",
-        metadata: dict = None,
-    ):
+    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+                  rebuild: bool = True,
+                  dpi: int = 300, format: str = 'png', metadata: dict = None):
         """
         Save the plot to a file.
 
@@ -281,21 +247,10 @@ class PlotMLD:
                              They will be complemented with the metadata from the outputsaver.
                              We usually want to add here the description of the figure.
         """
-        if format == "png":
-            result = self.outputsaver.save_png(
-                fig,
-                diagnostic_product=diagnostic_product,
-                rebuild=rebuild,
-                extra_keys=extra_keys,
-                metadata=metadata,
-                dpi=dpi,
-            )
-        elif format == "pdf":
-            result = self.outputsaver.save_pdf(
-                fig,
-                diagnostic_product=diagnostic_product,
-                rebuild=rebuild,
-                extra_keys=extra_keys,
-                metadata=metadata,
-            )
+        if format == 'png':
+            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                               extra_keys=extra_keys, metadata=metadata, dpi=dpi)
+        elif format == 'pdf':
+            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                               extra_keys=extra_keys, metadata=metadata)
         self.logger.info(f"Figure saved as {result}")

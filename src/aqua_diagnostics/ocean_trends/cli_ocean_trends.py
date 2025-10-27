@@ -68,12 +68,6 @@ if __name__ == '__main__':
     save_png = config_dict['output'].get('save_png', True)
     dpi = config_dict['output'].get('dpi', 300)
 
-    formats = []
-    if save_pdf:
-        formats.append('pdf')
-    if save_png:
-        formats.append('png')
-
     if 'multilevel' in config_dict['diagnostics']['ocean_trends']:
         trends_config = config_dict['diagnostics']['ocean_trends']['multilevel']
         logger.info(f"Ocean Trends diagnostic is set to {trends_config['run']}")
@@ -82,7 +76,7 @@ if __name__ == '__main__':
             diagnostic_name = trends_config.get('diagnostic_name', 'ocean_trends')
             var = trends_config.get('var', None)
             dim_mean = trends_config.get('dim_mean', None) 
-            # Add the global region if not present
+            Add the global region if not present
             if regions != [None] or 'go' not in regions:
                 regions.append('go')
             for region in regions:
@@ -112,8 +106,8 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    trends_plot.plot_multilevel(formats=formats, dpi=dpi)
-                    
+                    trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+
                     zonal_trend_plot = PlotTrends(
                         data=data_trends.trend_coef.mean('lon'),
                         diagnostic_name=diagnostic_name,
@@ -121,7 +115,7 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    zonal_trend_plot.plot_zonal(formats=formats, dpi=dpi)
+                    zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
 
