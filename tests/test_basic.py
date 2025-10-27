@@ -78,6 +78,20 @@ class TestAqua:
                                                       rel=approx_rel)
         assert global_mean.values[1] == pytest.approx(17.98060367,
                                                       rel=approx_rel)
+        
+    def test_chunks(self):
+        """
+        Test that the Reader class correctly handles chunking
+        """
+        reader = Reader(model="IFS", exp="test-tco79", source="long",
+                        chunks={"time": 12}, loglevel=loglevel)
+        data = reader.retrieve()
+        assert set(data['2t'].chunksizes['time']) == {12}
+        reader = Reader(model="IFS", exp="test-tco79", source="long",
+                        chunks={"time": 1}, loglevel=loglevel)
+        data = reader.retrieve()
+        assert set(data['2t'].chunksizes['time']) == {1}
+        
 
     def test_catalog_override(self):
         """
