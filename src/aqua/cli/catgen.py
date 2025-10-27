@@ -30,6 +30,14 @@ def catgen_parser(parser=None):
 
     return parser
 
+def get_nested(cfg, key):
+    if isinstance(key, tuple):
+        value = cfg
+        for k in key:
+            value = value.get(k) if value else None
+        return value
+    return cfg.get(key)
+
 class AquaFDBGenerator:
     def __init__(self, data_portfolio, config_path, loglevel='INFO'):
 
@@ -47,13 +55,32 @@ class AquaFDBGenerator:
         self.template = self.load_jinja_template(os.path.join(self.catgendir, "catalog_entry.j2"))
         self.matching_grids = load_yaml(os.path.join(self.catgendir, "matching_grids.yaml"))
 
+
         # config options
-        self.author = self.config.get('author')
-        if not self.author: 
-            raise ValueError("Please specify the author of the experiment")
-        self.machine = self.config.get('machine')
-        if not self.machine:
-            raise ValueError("Please specify the machine you are using")
+        required_keys = [
+            "author",
+            "machine",
+            ("repos", "data-portfolio_path"),
+            ("repos", "Climate-DT-catalog_path"),
+            "model",
+            "resolution",
+            "activity",
+            "experiment",
+            "expver",
+            "expid",
+            "data_start_date"
+        ]
+
+        # check missing parameters in config file
+        missing = [k if isinstance(k, str) else ".".join(k)
+                for k in required_keys if not get_nested(self.config, k)]
+
+        if missing:
+            raise ValueError(f"Missing required configuration keys: {', '.join(missing)}")
+
+        # config options
+        self.author = self.config['author']
+        self.machine = self.config['machine']
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
         self.model = self.config["model"].lower()
