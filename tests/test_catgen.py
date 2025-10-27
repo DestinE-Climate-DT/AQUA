@@ -31,8 +31,9 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
         'model': model, 
         'kind': kind, 
         'resolution': reso,
-        'num_of_realizations': num_of_realizations
-    } 
+        'num_of_realizations': num_of_realizations,
+        'expid': 'test'
+    }
     config = load_yaml(config_file, definitions)
     model_config = f'{tmp_path}/test.yaml'
     
