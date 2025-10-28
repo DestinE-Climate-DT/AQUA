@@ -1,16 +1,19 @@
-# Template according to #1613
-# The first model in this block can be overridden
-# in the command line by using:
-# --model, --exp, --source, --outputdir, --catalog
 datasets:
   - catalog: null
     model: FESOM
     exp: hpz3
     source: monthly-3d
-    regrid: r100
+    regrid: null
     reader_kwargs: null # it can be a dictionary with reader kwargs
     # startdate: 1990-01
     # enddate: 1990-12
+
+references:
+  - catalog: null
+    model: FESOM
+    exp: hpz3
+    source: monthly-3d
+    regrid: r100
 
 output:
   outputdir: "./"
@@ -21,10 +24,11 @@ output:
   dpi: 300
 
 diagnostics:
-  ocean_drift:
-    hovmoller:
-      diagnostic_name: 'ocean3d'
+  ocean_stratification:
+    stratification:
+      diagnostic_name: 'stratification'
       run: true
       var: ['thetao', 'so']
-      regions: ['io', 'sss']
-      dim_mean: ['lat', 'lon']
+      regions: ['ls', 'rs']
+      climatology: ['January', 'JJA']
+      # dim_mean: ['lat', 'lon']

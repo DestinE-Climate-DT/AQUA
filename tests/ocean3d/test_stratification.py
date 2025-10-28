@@ -14,10 +14,10 @@ def test_stratification():
     strat.run(
         dim_mean=["lat","lon"],
         var=['thetao', 'so'],
+        climatology='January',
         region='ls',
         mld=True,
         )
-    data = strat.data.sel(month=12)
     assert strat is not None, "strat instance should not be None"
-    assert data["mld"].values == pytest.approx(13.76194609,rel=approx_rel)
-    assert data["rho"].isel(level=1).values == pytest.approx(26.63128532,rel=approx_rel)
+    assert strat.data["mld"].values == pytest.approx(2.5000076,rel=approx_rel)
+    assert strat.data["rho"].isel(level=1).values == pytest.approx(-3.34617212e+08,rel=approx_rel)

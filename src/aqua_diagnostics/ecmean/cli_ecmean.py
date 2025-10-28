@@ -257,6 +257,8 @@ if __name__ == '__main__':
         source_oce = get_arg(args, 'source_oce', dataset.get('source_oce', source_atm))
         regrid = get_arg(args, 'regrid', dataset.get('regrid', 'r100'))
         catalog = get_arg(args, 'catalog', dataset.get('catalog'))
+        startdate = get_arg(args, 'startdate', dataset.get('startdate'))
+        enddate = get_arg(args, 'enddate', dataset.get('enddate'))
         if catalog is None:
             configurer = ConfigPath(loglevel=loglevel)
             cat, _, _ = configurer.deliver_intake_catalog(model=model, exp=exp, source=source_atm)
@@ -279,8 +281,8 @@ if __name__ == '__main__':
             # setting options from configuration files
             atm_vars = ecmean_config[diagnostic]['atm_vars']
             oce_vars = ecmean_config[diagnostic]['oce_vars']
-            year1 = ecmean_config[diagnostic]['year1']
-            year2 = ecmean_config[diagnostic]['year2']
+            year1 = ecmean_config[diagnostic].get('year1') if not startdate else int(startdate[:4])
+            year2 = ecmean_config[diagnostic].get('year2') if not enddate else int(enddate[:4])
 
             # load the data
             logger.info('Loading atmospheric data %s', model)

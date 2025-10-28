@@ -30,4 +30,4 @@ performance_indices:
     ice: [siconc]
   regions: ['Global', 'North Midlat', 'Tropical', 'South Midlat']
   seasons: ['ALL', 'DJF', 'JJA']
-  climatology: EC23
+  climatology: EC24

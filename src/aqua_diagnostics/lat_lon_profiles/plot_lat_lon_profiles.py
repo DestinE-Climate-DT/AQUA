@@ -14,6 +14,7 @@ class PlotLatLonProfiles():
     def __init__(self, data=None, ref_data=None,
                  data_type='longterm',
                  ref_std_data=None,
+                 diagnostic_name='lat_lon_profiles',
                  loglevel: str = 'WARNING'):
         """
         Initialise the PlotLatLonProfiles class.
@@ -27,7 +28,7 @@ class PlotLatLonProfiles():
             ref_data: Reference data (structure matches data based on data_type)
             data_type (str): 'longterm' for single/multi-line longterm plots, 'seasonal' for 4-panel seasonal plots
             ref_std_data: Reference standard deviation data
-            mean_type (str): The type of mean to compute ('zonal' or 'meridional')
+            diagnostic_name (str): Name of the diagnostic. Default is 'lat_lon_profiles'.
             loglevel (str): Logging level. Default is 'WARNING'.
             
         Note:
@@ -51,7 +52,8 @@ class PlotLatLonProfiles():
             raise ValueError(f"data_type must be 'longterm' or 'seasonal', got '{data_type}'")
 
         self.ref_std_data = ref_std_data
-        
+        self.diagnostic_name = diagnostic_name
+
         self.len_data, self.len_ref = self._check_data_length()
         self.get_data_info()
 
@@ -200,9 +202,6 @@ class PlotLatLonProfiles():
             'model': getattr(self, 'models', ['unknown_model'])[0], 
             'exp': getattr(self, 'exps', ['unknown_exp'])[0]
         }
-
-        outputsaver = OutputSaver(diagnostic='lat_lon_profiles', outputdir=outputdir,
-                                loglevel=self.loglevel, **metadata)
         
         # Use class attributes
         var = getattr(self, 'short_name', None) or getattr(self, 'standard_name', None)
@@ -214,8 +213,15 @@ class PlotLatLonProfiles():
         if region: extra_keys['region'] = region.replace(' ', '').lower()
         
         # diagnostic_product must match the one used in OutputSaver
-        base_diagnostic = diagnostic or 'lat_lon_profiles'
-        diagnostic_product = f"{base_diagnostic}_{self.mean_type}"   
+        base_diagnostic = diagnostic if diagnostic else self.diagnostic_name
+        outputsaver = OutputSaver(diagnostic=base_diagnostic, outputdir=outputdir,
+                                  loglevel=self.loglevel, **metadata)
+        
+        # Build diagnostic_product with data_type info
+        if self.data_type == 'seasonal':
+            diagnostic_product = f"{base_diagnostic}_seasonal_{self.mean_type}"
+        else:  # longterm
+            diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
            
         # Save based on format
         if format == 'png':
@@ -338,7 +344,7 @@ class PlotLatLonProfiles():
                            style=style)
 
         self.save_plot(fig, description=description, rebuild=rebuild,
-                       outputdir=outputdir, dpi=dpi, format=format, diagnostic='lat_lon_profiles')
+                       outputdir=outputdir, dpi=dpi, format=format, diagnostic=self.diagnostic_name)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
@@ -351,11 +357,9 @@ class PlotLatLonProfiles():
         fig, _ = self.plot_seasonal_lines(data_labels=data_labels, 
                                           title=title, style=style)
 
-        seasonal_diagnostic = f'lat_lon_profiles_seasonal_{self.mean_type}'
-
         self.save_plot(fig, description=description, 
                        rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
-                       diagnostic=seasonal_diagnostic)
+                       diagnostic=self.diagnostic_name)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 

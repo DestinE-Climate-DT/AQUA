@@ -17,6 +17,8 @@ class Boxplots(Diagnostic):
         var (str or list of str, optional): Variable(s) to retrieve. Defaults to None.
         startdate (str, optional): Start date for data retrieval. Defaults to None.
         enddate (str, optional): End date for data retrieval. Defaults to None.
+        regrid (str): Target grid for regridding. If None, no regridding.
+        diagnostic (str): Name of the diagnostic.
         save_netcdf (bool, optional): Whether to save results as NetCDF files. Defaults to False.
         outputdir (str, optional): Directory to save output files. Defaults to './'.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
@@ -30,6 +32,7 @@ class Boxplots(Diagnostic):
                  startdate: str = None,
                  enddate: str = None,
                  regrid: str = None,
+                 diagnostic: str = "boxplots",
                  save_netcdf: bool = False,
                  outputdir: str = './',
                  loglevel: str = 'WARNING'):
@@ -40,6 +43,7 @@ class Boxplots(Diagnostic):
 
         self.logger = log_configure(log_level=loglevel, log_name='Boxplots')
         self.var = var
+        self.diagnostic = diagnostic
         self.save_netcdf = save_netcdf
         self.outputdir = outputdir
         self.loglevel = loglevel
@@ -124,7 +128,7 @@ class Boxplots(Diagnostic):
             extra_keys = {'var': var_string} if var_string else {}
             super().save_netcdf(
                 data=self.fldmeans,
-                diagnostic='boxplots',
+                diagnostic=self.diagnostic,
                 diagnostic_product='boxplot',
                 outputdir=self.outputdir,
                 extra_keys=extra_keys

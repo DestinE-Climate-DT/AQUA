@@ -56,7 +56,7 @@ if __name__ == '__main__':
                 for dataset in datasets:
                     dataset_args = cli.dataset_args(dataset)
 
-                    boxplots = Boxplots(**dataset_args, save_netcdf=cli.save_netcdf, outputdir=cli.outputdir, loglevel=cli.loglevel)
+                    boxplots = Boxplots(**dataset_args, diagnostic=diagnostic_name, save_netcdf=cli.save_netcdf, outputdir=cli.outputdir, loglevel=cli.loglevel)
                     boxplots.run(var=variables, reader_kwargs=cli.reader_kwargs)
                     fldmeans.append(boxplots.fldmeans)
 
