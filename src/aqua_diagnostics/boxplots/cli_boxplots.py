@@ -56,7 +56,9 @@ if __name__ == '__main__':
                 for dataset in datasets:
                     dataset_args = cli.dataset_args(dataset)
 
-                    boxplots = Boxplots(**dataset_args, diagnostic=diagnostic_name, save_netcdf=cli.save_netcdf, outputdir=cli.outputdir, loglevel=cli.loglevel)
+                    boxplots = Boxplots(**dataset_args, diagnostic=diagnostic_name, 
+                                        save_netcdf=cli.save_netcdf, outputdir=cli.outputdir, 
+                                        loglevel=cli.loglevel)
                     boxplots.run(var=variables, reader_kwargs=cli.reader_kwargs)
                     fldmeans.append(boxplots.fldmeans)
 
@@ -64,7 +66,8 @@ if __name__ == '__main__':
                 for reference in references:
                     reference_args = cli.dataset_args(reference)
 
-                    boxplots_ref = Boxplots(**reference_args, save_netcdf=cli.save_netcdf, outputdir=cli.outputdir, loglevel=cli.loglevel)
+                    boxplots_ref = Boxplots(**reference_args, save_netcdf=cli.save_netcdf, 
+                                            outputdir=cli.outputdir, loglevel=cli.loglevel)
                     boxplots_ref.run(var=variables, reader_kwargs=cli.reader_kwargs)
 
                     if getattr(boxplots_ref, "fldmeans", None) is None:
@@ -78,7 +81,9 @@ if __name__ == '__main__':
 
                     fldmeans_ref.append(boxplots_ref.fldmeans)
 
-                plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=cli.save_pdf, save_png=cli.save_png, dpi=cli.dpi, outputdir=cli.outputdir, loglevel=cli.loglevel)
+                plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=cli.save_pdf, 
+                                    save_png=cli.save_png, dpi=cli.dpi, outputdir=cli.outputdir, 
+                                    loglevel=cli.loglevel)
                 plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, **plot_kwargs)
 
     cli.close_dask_cluster()
