@@ -69,7 +69,7 @@ class Reader():
             nproc (int, optional): Number of processes to use for weights generation. Defaults to 4.
             aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
                                          Defaults to None (using default from catalog, recommended).
-            chunks (str or dict, optional): chunking to be used for GSV access.
+            chunks (str or dict, optional): chunking to be used for data access.
                                             Defaults to None (using default from catalog, recommended).
                                             If it is a string time chunking is assumed.
                                             If it is a dictionary the keys 'time' and 'vertical' are looked for.
