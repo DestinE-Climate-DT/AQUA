@@ -4,26 +4,34 @@
 
 # This yaml file will only have either annual or monthly
 datasets:
-  - catalog: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-monthly'
-  - catalog: null  
+    regrid: null
+    realization: null
+  - catalog: 'nextgems4'  
     model: 'IFS-FESOM'
     exp: 'historical-1990'
-    source: 'aqua-timeseries-monthly' 
-  - catalog: null
+    source: 'aqua-timeseries-monthly'
+    regrid: null
+    realization: null
+  - catalog: 'climatedt-phase1'
     model: 'IFS-NEMO'
     exp: 'historical-1990'
     source: 'aqua-timeseries-annual'
-  - catalog: null
+    regrid: null
+    realization: null
+  - catalog: 'nextgems4'
     model: 'IFS-FESOM'
     exp: 'historical-1990'
     source: 'aqua-timeseries-annual'
+    regrid: null
+    realization: null
 
 # Reference
 references:
-  - catalog: null  
+  - catalog: 'obs'  
     model: 'ERA5'
     exp: 'era5'
     source: 'aqua-timeseries-monthly'
@@ -47,7 +55,7 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleTimeseries'
-    variable: '2t'
+    variable: ['2t',]
     params:
       default:
         startdate_data: "1990-01-01"
@@ -56,5 +64,5 @@ diagnostics:
         enddate_ref: "2005-01-01"
     plot_params:
       default:
-        title: "Multi-Model Ensemble Statistics"
+        title: 
         plot_ensemble_members: False

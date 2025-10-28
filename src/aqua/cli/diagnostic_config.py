@@ -109,6 +109,11 @@ diagnostic_config = {
             'target_path': 'diagnostics/ocean3d'
         },
         {
+            'config_file': 'config_ocean_stratification.yaml',
+            'source_path': 'config/diagnostics/ocean3d',
+            'target_path': 'diagnostics/ocean3d'
+        },
+        {
             'config_file': 'config_ocean_drift.yaml',
             'source_path': 'config/diagnostics/ocean3d',
             'target_path': 'diagnostics/ocean3d'
@@ -223,12 +228,17 @@ diagnostic_config = {
     ],
     'ensemble': [
         {
-            'config_file': 'config_global_2D_ensemble.yaml',
+            'config_file': 'config_latlon_ensemble.yaml',
             'source_path': 'config/diagnostics/ensemble',
             'target_path': 'diagnostics/ensemble'
         },
         {
-            'config_file': 'config_timeseries_ensemble.yaml',
+            'config_file': 'config_single_model_timeseries_ensemble.yaml',
+            'source_path': 'config/diagnostics/ensemble',
+            'target_path': 'diagnostics/ensemble'
+        },
+        {
+            'config_file': 'config_multi_model_timeseries_ensemble.yaml',
             'source_path': 'config/diagnostics/ensemble',
             'target_path': 'diagnostics/ensemble'
         },

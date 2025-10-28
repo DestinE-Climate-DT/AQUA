@@ -8,6 +8,7 @@ from src.tropical_rainfall_cli_class import Tropical_Rainfall_CLI
 # Initialize logger
 logger = log_configure(log_name="Trop. Rainfall CLI", log_level='INFO')
 
+
 def load_config(args):
     """Load the configuration file."""
     homedir = os.environ.get('HOME')
@@ -26,6 +27,7 @@ def load_config(args):
         sys.exit(3)
 
     return config
+
 
 def main():
     """Main function to orchestrate the tropical rainfall CLI operations."""
@@ -54,8 +56,9 @@ def main():
     if trop_rainfall_cli.private_cluster:
         trop_rainfall_cli.cluster.close()
         logger.debug("Dask cluster closed.")
-    
+
     logger.info("Tropical rainfall diagnostic has finished.")
+
 
 if __name__ == '__main__':
     main()
