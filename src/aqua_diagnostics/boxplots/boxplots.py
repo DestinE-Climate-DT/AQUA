@@ -1,9 +1,10 @@
+"""Module for computing and plotting boxplots of field means from climate model datasets."""
+
 import pandas as pd
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import Diagnostic
-from aqua.util import select_season, to_list
-from aqua.exceptions import NoDataError
+from aqua.util import to_list
 
 class Boxplots(Diagnostic):
     """Class for computing and plotting boxplots of field means from climate model datasets.
@@ -47,6 +48,7 @@ class Boxplots(Diagnostic):
         self.save_netcdf = save_netcdf
         self.outputdir = outputdir
         self.loglevel = loglevel
+        self.fldmeans = None
 
     def run(self, var: str = None, save_netcdf: bool = False,
             units: str = None, reader_kwargs: dict = {}) -> None:
@@ -71,14 +73,12 @@ class Boxplots(Diagnostic):
             super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to retrieve variable(s) {var} from {self.model}, {self.exp}, {self.source}: {e}"
-            )
+            self.logger.warning("Failed to retrieve variable(s) %s from %s, %s, %s: %s", 
+                                var, self.model, self.exp, self.source, e)
 
         if self.data is None:
-            self.logger.warning(
-                f"Variable(s) {self.var} not found in dataset {self.model}, {self.exp}, {self.source}. Skipping."
-            )
+            self.logger.warning("Variable(s) %s not found in dataset %s, %s, %s. Skipping.", 
+                                self.var, self.model, self.exp, self.source)
             return
    
         self.startdate = self.startdate or pd.to_datetime(self.data.time[0].values).strftime('%Y-%m-%d')
@@ -100,14 +100,14 @@ class Boxplots(Diagnostic):
         # Compute field means
         fldmeans = {}
         for var_name in self.var:
-            if var_name not in self.data: 
-                self.logger.warning(f"Variable {var_name} not found in dataset.")
+            if var_name not in self.data:
+                self.logger.warning("Variable %s not found in dataset.", var_name)
                 continue
             fldmean = self.reader.fldmean(self.data[var_name])
             fldmeans[var_name] = fldmean
 
         self.fldmeans = xr.Dataset(fldmeans)
-        self.logger.info(f"Field means computed for variables: {self.var}")
+        self.logger.info("Field means computed for variables: %s", self.var)
 
         self.fldmeans.attrs.update({
             'AQUA_catalog': self.catalog,
@@ -133,4 +133,4 @@ class Boxplots(Diagnostic):
                 outputdir=self.outputdir,
                 extra_keys=extra_keys
                 )
-            self.logger.info(f"Field means saved to {self.outputdir}.")
+            self.logger.info("Field means saved to %s.", self.outputdir)
