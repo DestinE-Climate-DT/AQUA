@@ -16,14 +16,12 @@ class PlotStratification:
         self,
         data: xr.Dataset,
         obs: xr.Dataset = None,
-        clim_time: str = "January",
         diagnostic_name: str = "ocean_stratification",
         outputdir: str = ".",
         loglevel: str = "WARNING",
     ):
         self.data = data
         self.obs = obs
-        self.clim_time = clim_time
 
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "PlotStratification")
@@ -53,6 +51,8 @@ class PlotStratification:
         save_png: bool = True,
         dpi: int = 300,
     ):
+        self.diagnostic_product = "stratification"
+        self.clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_data_list()
         self.set_suptitle()
@@ -75,15 +75,16 @@ class PlotStratification:
             loglevel=self.loglevel,
         )
 
-        self.save_plot(
-            fig,
-            rebuild=rebuild,
-            dpi=dpi,
-            format="pdf",
-            diagnostic_product=self.diagnostic,
-            metadata=self.description,
-            extra_keys={"region": self.region.replace(" ", "_")},
-        )
+        formats = []
+        if save_pdf:
+            formats.append('pdf')
+        if save_png:
+            formats.append('png')
+
+        for format in formats:
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+
 
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
@@ -153,9 +154,8 @@ class PlotStratification:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
         # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
-        self.suptitle = f"Stratification {clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"Stratification {self.clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -178,19 +178,12 @@ class PlotStratification:
     def set_description(self):
         self.description = {}
         self.description["description"] = {
-            f"Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
+            f"{self.diagnostic_product} {self.clim_time} climatology spatially averaged {self.region} {self.clim_time} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
         }
 
-    def save_plot(
-        self,
-        fig,
-        diagnostic_product: str = None,
-        extra_keys: dict = None,
-        rebuild: bool = True,
-        dpi: int = 300,
-        format: str = "png",
-        metadata: dict = None,
-    ):
+    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+                  rebuild: bool = True,
+                  dpi: int = 300, format: str = 'png', metadata: dict = None):
         """
         Save the plot to a file.
 
@@ -205,21 +198,10 @@ class PlotStratification:
                              They will be complemented with the metadata from the outputsaver.
                              We usually want to add here the description of the figure.
         """
-        if format == "png":
-            result = self.outputsaver.save_png(
-                fig,
-                diagnostic_product=diagnostic_product,
-                rebuild=rebuild,
-                extra_keys=extra_keys,
-                metadata=metadata,
-                dpi=dpi,
-            )
-        elif format == "pdf":
-            result = self.outputsaver.save_pdf(
-                fig,
-                diagnostic_product=diagnostic_product,
-                rebuild=rebuild,
-                extra_keys=extra_keys,
-                metadata=metadata,
-            )
+        if format == 'png':
+            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                               extra_keys=extra_keys, metadata=metadata, dpi=dpi)
+        elif format == 'pdf':
+            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                               extra_keys=extra_keys, metadata=metadata)
         self.logger.info(f"Figure saved as {result}")

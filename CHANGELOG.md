@@ -12,6 +12,7 @@ ClimateDT workflow modifications:
 
 AQUA core complete list:
 - `stardate` and `enddate` can be passed to DROP to limit the range of scan (#2325)
+- Chunking of netcdf sources is not filtered anymore (#2380)
 - Introduce `expid` into configuration file of the catalog generator (#2340)
 - EC-EARTH4 ORCA2 and eORCA1 grids refactor (#2280)
 - Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)

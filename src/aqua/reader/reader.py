@@ -37,7 +37,7 @@ class Reader():
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
                  regrid=None, regrid_method=None,
-                 areas=True, 
+                 areas=True,
                  streaming=False,
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
@@ -624,6 +624,10 @@ class Reader():
             if 'engine' not in filtered_kwargs:
                 filtered_kwargs['engine'] = engine
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
+        # HACK: Keep chunking info if present as reader kwarg
+        if self.chunks is not None:
+            filtered_kwargs.update({'chunks': self.chunks})
 
         return filtered_kwargs
 

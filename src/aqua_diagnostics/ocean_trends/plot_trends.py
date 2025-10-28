@@ -51,22 +51,24 @@ class PlotTrends:
 
     def plot_multilevel(self,
                         levels = None,
-                        formats: list = ['pdf'],
-                        dpi: int = 300):
+                        rebuild: bool = True,
+                        save_pdf: bool = True,
+                        save_png: bool = True, dpi: int = 300):
         """Plot multi-level maps of trends.
         
         Args:
             levels (list, optional): List of depth levels to plot. Defaults to None.
             formats (list, optional): List of output formats. Defaults to ['pdf'].
         """
-        product = 'multi_level'
+        self.diagnostic_product = 'multilevel_trend'
         if levels is None:
             self.levels = [10, 100, 500, 1000, 3000, 5000]
         self.logger.debug(f"Levels set to: {self.levels}")
+        self.data = self.set_convert_lon(data=self.data)
         self.set_data_list()
         self.set_suptitle(plot_type='Multi-level')
         self.set_title()
-        self.set_description(product=product)
+        self.set_description()
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -81,18 +83,21 @@ class PlotTrends:
             return_fig=True,
             loglevel=self.loglevel
         )
+        formats = []
+        if save_pdf:
+            formats.append('pdf')
+        if save_png:
+            formats.append('png')
+
         for format in formats:
-            self.save_plot(
-                fig,
-                diagnostic_product=product,
-                format=format,
-                rebuild=self.rebuild,
-                dpi=dpi
-            )
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+
 
     def plot_zonal(self,
-                   formats: list = ['pdf'],
-                   dpi: int = 300):
+                    rebuild: bool = True,
+                    save_pdf: bool = True,
+                    save_png: bool = True, dpi: int = 300):
         """
         Plot zonal mean vertical profiles of trends.
         
@@ -100,11 +105,11 @@ class PlotTrends:
             formats (list, optional): List of output formats. Defaults to ['pdf'].
             dpi (int, optional): Dots per inch for the output figure. Defaults to 300.
         """
-        product = 'zonal_mean'
+        self.diagnostic_product = 'zonal_mean'
         self.set_data_list()
         self.set_suptitle(plot_type='Zonal mean')
         self.set_title()
-        self.set_description(product=product)
+        self.set_description()
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -120,15 +125,23 @@ class PlotTrends:
             sym=True,
             loglevel=self.loglevel
         )
-        for format in formats:
-            self.save_plot(
-                fig,
-                diagnostic_product=product,
-                format=format,
-                rebuild=self.rebuild,
-                dpi=dpi
-        )
+        formats = []
+        if save_pdf:
+            formats.append('pdf')
+        if save_png:
+            formats.append('png')
 
+        for format in formats:
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+
+
+    def set_convert_lon(self, data=None):
+        '''Convert longitude from 0-360 to -180 to 180 and sort accordingly.'''
+        data = data.assign_coords(lon=((data.lon + 180) % 360) - 180)
+        data = data.sortby('lon')
+        return data
+    
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
             self.nrows = len(self.levels)
@@ -207,39 +220,13 @@ class PlotTrends:
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
-    def set_description(self, product: str):
+    def set_description(self):
         """
         Set the description metadata for the plot.
-
-        Args:
-            product (str): The type of product being plotted.
         """
-        self.description = f"{product} {self.region} region of {self.catalog} {self.model} {self.exp}"
+        self.description = {}
+        self.description["description"] = f"{self.diagnostic_product} {self.region} region of {self.catalog} {self.model} {self.exp} "
 
-    def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},
-                  rebuild: bool = True,
-                  dpi: int = 300, format: str = 'png'):
-        """
-        Save the plot to a file.
-
-        Args:
-            fig (matplotlib.figure.Figure): The figure to be saved.
-            diagnostic_product (str): The name of the diagnostic product.
-            extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is {}.
-            rebuild (bool): If True, the output files will be rebuilt. Default is True.
-            dpi (int): The dpi of the figure. Default is 300.
-            format (str): The format of the figure. Default is 'png'.
-        """
-        metadata = {"description": self.description}
-        extra_keys.update({"region": self.region})
-
-        if format == 'png':
-            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
-                                          extra_keys=extra_keys, metadata=metadata, dpi=dpi)
-        elif format == 'pdf':
-            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
-                                          extra_keys=extra_keys, metadata=metadata)
-        self.logger.info(f"Figure saved as {result}")
 
     def _get_info(self):
         """Extract model, catalog, exp, region from data attributes."""
@@ -247,3 +234,28 @@ class PlotTrends:
         self.model = self.data[self.vars[0]].AQUA_model
         self.exp = self.data[self.vars[0]].AQUA_exp
         self.region = self.data.attrs.get("AQUA_region", "global")
+
+    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+                  rebuild: bool = True,
+                  dpi: int = 300, format: str = 'png', metadata: dict = None):
+        """
+        Save the plot to a file.
+
+        Args:
+            fig (matplotlib.figure.Figure): The figure to be saved.
+            diagnostic_product (str): The name of the diagnostic product. Default is None.
+            extra_keys (dict): Extra keys to be used for the filename (e.g. season). Default is None.
+            rebuild (bool): If True, the output files will be rebuilt. Default is True.
+            dpi (int): The dpi of the figure. Default is 300.
+            format (str): The format of the figure. Default is 'png'.
+            metadata (dict): The metadata to be used for the figure. Default is None.
+                             They will be complemented with the metadata from the outputsaver.
+                             We usually want to add here the description of the figure.
+        """
+        if format == 'png':
+            result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                               extra_keys=extra_keys, metadata=metadata, dpi=dpi)
+        elif format == 'pdf':
+            result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
+                                               extra_keys=extra_keys, metadata=metadata)
+        self.logger.info(f"Figure saved as {result}")
