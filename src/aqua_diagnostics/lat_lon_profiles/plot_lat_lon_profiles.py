@@ -219,9 +219,9 @@ class PlotLatLonProfiles():
         
         # Build diagnostic_product with data_type info
         if self.data_type == 'seasonal':
-            diagnostic_product = f"seasonal_{self.mean_type}_profile"
+            diagnostic_product = f"{base_diagnostic}_seasonal_{self.mean_type}"
         else:  # longterm
-            diagnostic_product = f"{self.mean_type}_profile"
+            diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
            
         # Save based on format
         if format == 'png':
