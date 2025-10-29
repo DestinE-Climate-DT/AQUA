@@ -9,7 +9,7 @@ import argparse
 import sys
 
 from aqua import Reader
-from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge
+from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge, extract_realizations
 from aqua.diagnostics.core import (
     close_cluster,
     load_diagnostic_config,
@@ -20,7 +20,6 @@ from aqua.diagnostics.core import (
 from aqua.logger import log_configure
 from aqua.util import get_arg, ConfigPath
 
-
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleTimeseries diagnostic.
 
@@ -30,35 +29,6 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description="EnsembleTimeseries CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
-
-
-def extract_realizations(catalog, model, exp, source):
-    """Extract the realizations available for a given catalog, model, exp and source.
-
-    Args:
-        catalog (str): Intake catalog name.
-        model (str): Model name.
-        exp (str): Experiment name.
-        source (str): Source name.
-
-    Returns:
-        list: List of available realizations.
-    """
-    configurer = ConfigPath(catalog=catalog, loglevel='WARNING')
-    cat, catalog_file, machine_file = configurer.deliver_intake_catalog(
-        catalog=catalog, model=model, exp=exp, source=source)
-
-    expcat = cat()[model][exp]
-    esmcat = expcat[source].describe().get('user_parameters', {})
-
-    for parameter in esmcat:
-        name = parameter.get('name')
-
-        if name == 'realization':
-            realization = parameter.get('allowed')
-            return realization
-    return None
-
 
 if __name__ == "__main__":
 

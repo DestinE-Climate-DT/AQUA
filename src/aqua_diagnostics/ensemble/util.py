@@ -12,7 +12,7 @@ import xarray as xr
 from aqua import Reader
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure
-
+from aqua.util import ConfigPath
 
 def reader_retrieve_and_merge(
     variable: str = None,
@@ -465,3 +465,32 @@ def center_timestamp(time: pd.Timestamp, freq: str):
         raise ValueError(f"Frequency {freq} not supported")
 
     return center_time
+
+def extract_realizations(catalog, model, exp, source):
+    """Extract the realizations available for a given catalog, model, exp and source.
+
+    Args:
+        catalog (str): Intake catalog name.
+        model (str): Model name.
+        exp (str): Experiment name.
+        source (str): Source name.
+
+    Returns:
+        list: List of available realizations.
+    """
+    configurer = ConfigPath(catalog=catalog, loglevel='WARNING')
+    cat, catalog_file, machine_file = configurer.deliver_intake_catalog(
+        catalog=catalog, model=model, exp=exp, source=source)
+
+    expcat = cat()[model][exp]
+    esmcat = expcat[source].describe().get('user_parameters', {})
+
+    for parameter in esmcat:
+        name = parameter.get('name')
+
+        if name == 'realization':
+            realization = parameter.get('allowed')
+            return realization
+    return None
+
+
