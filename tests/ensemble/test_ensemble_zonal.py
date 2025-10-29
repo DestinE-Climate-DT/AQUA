@@ -2,7 +2,7 @@
 import os
 import pytest
 from aqua.diagnostics import EnsembleZonal
-from aqua.diagnostics.ensemble.util import retrieve_merge_ensemble_data
+from aqua.diagnostics.ensemble.util import reader_retrieve_and_merge
 from aqua.diagnostics import PlotEnsembleZonal
 
 @pytest.mark.ensemble
@@ -23,13 +23,14 @@ def test_ensemble_zonal():
     source_list = ['zonal_mean-latlev', 'zonal_mean-latlev']
 
     # loading and merging the data
-    dataset = retrieve_merge_ensemble_data(
+    dataset = reader_retrieve_and_merge(
         variable=var, 
         catalog_list=catalog_list, 
         model_list=model_list, 
         exp_list=exp_list, 
-        source_list=source_list, 
-        log_level = "WARNING",
+        source_list=source_list,
+        realization=None, 
+        loglevel = "WARNING",
         ens_dim="ensemble"
     )
     assert dataset is not None
@@ -48,11 +49,11 @@ def test_ensemble_zonal():
  
     zonalmean_ens.run()
     
-    filename1 = f'ensemble.EnsembleZonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.nc'
+    filename1 = f'ensemble.ensemblezonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.nc'
     file = os.path.join(tmp_path, 'netcdf', filename1)
     assert os.path.exists(file)
 
-    filename2 = f'ensemble.EnsembleZonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.std.nc'
+    filename2 = f'ensemble.ensemblezonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.std.nc'
     file = os.path.join(tmp_path, 'netcdf', filename2)
     assert os.path.exists(file)
  
@@ -61,43 +62,48 @@ def test_ensemble_zonal():
     assert zonalmean_ens.dataset_std.all() == 0
    
     # PlotEnsembleZonal class
-    plot_arguments = {
-        "var": var,
+    plot_class_arguments = {
         "catalog_list": catalog_list,
         "model_list": model_list,
         "exp_list": exp_list,
         "source_list": source_list,
+    }
+
+    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
+    ens_zonal_plot = PlotEnsembleZonal(
+        **plot_class_arguments,
+        outputdir=tmp_path,
+    )
+
+    plot_arguments = {
+        "var": var,
         "save_pdf": True,
         "save_png": True,
         "title_mean": "Test data",
         "title_std": "Test data",
         "cbar_label": "Test Label",
+        "dataset_mean": zonalmean_ens.dataset_mean,
+        "dataset_std": zonalmean_ens.dataset_std,
     }
 
-    # STD values are zero. Therefore we are giving the mean value as std values to test the implementation
-    ens_zonal_plot = PlotEnsembleZonal(
-        **plot_arguments,
-        dataset_mean=zonalmean_ens.dataset_mean,
-        dataset_std=zonalmean_ens.dataset_std,
-        outputdir=tmp_path,
-    )
-    plot_dict = ens_zonal_plot.plot()
+
+    plot_dict = ens_zonal_plot.plot(**plot_arguments)
     
     assert plot_dict['mean_plot'][0] is not None
 
-    filename1 = f'ensemble.EnsembleZonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.png'
+    filename1 = f'ensemble.ensemblezonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.png'
     file = os.path.join(tmp_path, 'png', filename1)
     assert os.path.exists(file)
 
-    filename2 = f'ensemble.EnsembleZonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.std.png'
+    filename2 = f'ensemble.ensemblezonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.std.png'
     file = os.path.join(tmp_path, 'png', filename2)
     assert os.path.exists(file)
 
-    filename1 = f'ensemble.EnsembleZonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.pdf'
+    filename1 = f'ensemble.ensemblezonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.mean.pdf'
     file = os.path.join(tmp_path, 'pdf', filename1)
     assert os.path.exists(file)
 
-    filename2 = f'ensemble.EnsembleZonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.std.pdf'
+    filename2 = f'ensemble.ensemblezonal.{catalog_list[0]}.{model_list[0]}.{exp_list[0]}.r1.{var}.std.pdf'
     file = os.path.join(tmp_path, 'pdf', filename2)
     assert os.path.exists(file)
 

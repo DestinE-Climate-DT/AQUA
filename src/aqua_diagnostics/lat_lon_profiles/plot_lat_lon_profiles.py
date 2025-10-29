@@ -1,6 +1,6 @@
 from aqua.graphics import plot_seasonal_lat_lon_profiles
 from aqua.logger import log_configure
-from aqua.util import to_list
+from aqua.util import to_list, strlist_to_phrase
 from aqua.graphics import plot_lat_lon_profiles
 from aqua.diagnostics.core import OutputSaver
 
@@ -14,6 +14,7 @@ class PlotLatLonProfiles():
     def __init__(self, data=None, ref_data=None,
                  data_type='longterm',
                  ref_std_data=None,
+                 diagnostic_name='lat_lon_profiles',
                  loglevel: str = 'WARNING'):
         """
         Initialise the PlotLatLonProfiles class.
@@ -27,7 +28,7 @@ class PlotLatLonProfiles():
             ref_data: Reference data (structure matches data based on data_type)
             data_type (str): 'longterm' for single/multi-line longterm plots, 'seasonal' for 4-panel seasonal plots
             ref_std_data: Reference standard deviation data
-            mean_type (str): The type of mean to compute ('zonal' or 'meridional')
+            diagnostic_name (str): Name of the diagnostic. Default is 'lat_lon_profiles'.
             loglevel (str): Logging level. Default is 'WARNING'.
             
         Note:
@@ -51,7 +52,8 @@ class PlotLatLonProfiles():
             raise ValueError(f"data_type must be 'longterm' or 'seasonal', got '{data_type}'")
 
         self.ref_std_data = ref_std_data
-        
+        self.diagnostic_name = diagnostic_name
+
         self.len_data, self.len_ref = self._check_data_length()
         self.get_data_info()
 
@@ -200,9 +202,6 @@ class PlotLatLonProfiles():
             'model': getattr(self, 'models', ['unknown_model'])[0], 
             'exp': getattr(self, 'exps', ['unknown_exp'])[0]
         }
-
-        outputsaver = OutputSaver(diagnostic='lat_lon_profiles', outputdir=outputdir,
-                                loglevel=self.loglevel, **metadata)
         
         # Use class attributes
         var = getattr(self, 'short_name', None) or getattr(self, 'standard_name', None)
@@ -214,8 +213,15 @@ class PlotLatLonProfiles():
         if region: extra_keys['region'] = region.replace(' ', '').lower()
         
         # diagnostic_product must match the one used in OutputSaver
-        base_diagnostic = diagnostic or 'lat_lon_profiles'
-        diagnostic_product = f"{base_diagnostic}_{self.mean_type}"   
+        base_diagnostic = diagnostic if diagnostic else self.diagnostic_name
+        outputsaver = OutputSaver(diagnostic=base_diagnostic, outputdir=outputdir,
+                                  loglevel=self.loglevel, **metadata)
+        
+        # Build diagnostic_product with data_type info
+        if self.data_type == 'seasonal':
+            diagnostic_product = f"seasonal_{self.mean_type}_profile"
+        else:  # longterm
+            diagnostic_product = f"{self.mean_type}_profile"
            
         # Save based on format
         if format == 'png':
@@ -275,26 +281,68 @@ class PlotLatLonProfiles():
         Set the caption for the plot.
         Specialized for Lat-Lon Profiles diagnostic.
         """
-        description = f'{self.mean_type.capitalize()} profile '
+        # Start with data_type info for seasonal plots
+        if self.data_type == 'seasonal':
+            description = f'Seasonal {self.mean_type.lower()} profile '
+        else:
+            description = f'{self.mean_type.capitalize()} profile '
+        
+        # Variable name
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                description += f'for {name} '
+                description += f'of {name} '
                 break
 
+        # Units
         if self.units is not None:
-            description += f'[{self.units}] '
+            units = self.units.replace("**", r"\*\*")
+            description += f'[{units}] '
+        
+        # Short name in parentheses
+        if self.short_name is not None:
+            description += f'({self.short_name}) '
 
-        if self.region is not None:
-            description += f'for region {self.region} '
+        # Region - only if not Global
+        if self.region is not None and self.region.lower() != 'global':
+            description += f'over {self.region} '
 
-        # Check if we have enough metadata for all data items
+        # Dataset info
         num_items = min(len(self.catalogs), len(self.models), len(self.exps)) if hasattr(self, 'catalogs') else 0
         
-        for i in range(min(self.len_data, num_items)):
-            description += f'for {self.catalogs[i]} {self.models[i]} {self.exps[i]} '
+        description += 'for '
+        dataset_names = [f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
+        description += strlist_to_phrase(items=dataset_names)
 
-        if hasattr(self, 'std_startdate') and self.std_startdate is not None and hasattr(self, 'std_enddate') and self.std_enddate is not None:
-            description += f'with reference data standard deviation bands calculated from {self.std_startdate} to {self.std_enddate} '
+        # Reference data description
+        if self.len_ref > 0 and self.ref_data is not None:
+            # Extract reference info properly
+            if self.data_type == 'seasonal' and isinstance(self.ref_data, list):
+                # For seasonal, ref_data is a list, use first element
+                ref_item = self.ref_data[0] if self.ref_data else None
+            else:
+                # For longterm, ref_data is a single DataArray
+                ref_item = self.ref_data
+            
+            if ref_item is not None and hasattr(ref_item, 'AQUA_model'):
+                ref_model = ref_item.AQUA_model
+                ref_exp = ref_item.AQUA_exp
+                ref_catalog = getattr(ref_item, 'AQUA_catalog', None)
+                
+                # Build reference string
+                if ref_catalog:
+                    description += f' compared to {ref_catalog} {ref_model} {ref_exp}'
+                else:
+                    description += f' compared to {ref_model} {ref_exp}'
+            else:
+                description += ' with reference data'
+        
+        # Standard deviation info
+        if self.ref_std_data is not None:
+            description += ' with ±2σ uncertainty bands'
+            if self.std_startdate is not None and self.std_enddate is not None:
+                description += f' computed over {self.std_startdate} to {self.std_enddate}'
+        
+        description += '.'
             
         self.logger.debug('Description: %s', description)
         return description
@@ -338,7 +386,7 @@ class PlotLatLonProfiles():
                            style=style)
 
         self.save_plot(fig, description=description, rebuild=rebuild,
-                       outputdir=outputdir, dpi=dpi, format=format, diagnostic='lat_lon_profiles')
+                       outputdir=outputdir, dpi=dpi, format=format, diagnostic=self.diagnostic_name)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 
@@ -351,11 +399,9 @@ class PlotLatLonProfiles():
         fig, _ = self.plot_seasonal_lines(data_labels=data_labels, 
                                           title=title, style=style)
 
-        seasonal_diagnostic = f'lat_lon_profiles_seasonal_{self.mean_type}'
-
         self.save_plot(fig, description=description, 
                        rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
-                       diagnostic=seasonal_diagnostic)
+                       diagnostic=self.diagnostic_name)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 

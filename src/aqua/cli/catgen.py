@@ -30,6 +30,14 @@ def catgen_parser(parser=None):
 
     return parser
 
+def get_nested(cfg, key):
+    if isinstance(key, tuple):
+        value = cfg
+        for k in key:
+            value = value.get(k) if value else None
+        return value
+    return cfg.get(key)
+
 class AquaFDBGenerator:
     def __init__(self, data_portfolio, config_path, loglevel='INFO'):
 
@@ -47,21 +55,43 @@ class AquaFDBGenerator:
         self.template = self.load_jinja_template(os.path.join(self.catgendir, "catalog_entry.j2"))
         self.matching_grids = load_yaml(os.path.join(self.catgendir, "matching_grids.yaml"))
 
+
         # config options
-        self.author = self.config.get('author')
-        if not self.author: 
-            raise ValueError("Please specify the author of the experiment")
-        self.machine = self.config.get('machine')
-        if not self.machine:
-            raise ValueError("Please specify the machine you are using")
+        required_keys = [
+            "author",
+            "machine",
+            ("repos", "data-portfolio_path"),
+            ("repos", "Climate-DT-catalog_path"),
+            "model",
+            "resolution",
+            "activity",
+            "experiment",
+            "expver",
+            "expid",
+            "data_start_date"
+        ]
+
+        # check missing parameters in config file
+        missing = [k if isinstance(k, str) else ".".join(k)
+                for k in required_keys if not get_nested(self.config, k)]
+
+        if missing:
+            raise ValueError(f"Missing required configuration keys: {', '.join(missing)}")
+
+        # config options
+        self.author = self.config['author']
+        self.machine = self.config['machine']
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
         self.model = self.config["model"].lower()
         #self.portfolio = self.config["portfolio"]
         self.resolution = self.config["resolution"]
-        self.ocean_grid = self.config.get("ocean_grid") 
+        self.ocean_grid = self.config.get("ocean_grid")
         self.atm_grid = self.config.get("atm_grid")
         self.num_of_realizations = int(self.config.get("num_of_realizations", 1))
+        self.description = None
+        self.grid_resolutions = None
+
 
         # portfolio
         self.logger.info("Running FDB catalog generator for %s portfolio for model %s", data_portfolio, self.model)
@@ -164,6 +194,7 @@ class AquaFDBGenerator:
             }
         }
         return freq2time[frequency]
+    
 
     @staticmethod
     def get_value_from_map(value, value_map, value_type):
@@ -323,15 +354,18 @@ class AquaFDBGenerator:
                 'Tplus2.0K': 'tplus2K'
             }
 
-            forcing = self.config.get('forcing') or self.get_value_from_map(self.config['experiment'], forcing_map, 'experiment')
-
+            forcing = self.config.get('forcing')
+            if not forcing:
+                experiment = self.config['experiment']
+                forcing = forcing_map.get(experiment, re.sub(r'[^a-z0-9]', '', experiment.lower()))
+            
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
                 'metadata': {
                     'author': self.author,
                     'maintainer': self.config.get('maintainer') or 'not specified',
                     'machine': self.machine,
-                    'expid': self.config['expver'],
+                    'expid': self.config['expid'],                
                     'resolution_atm': self.atm_grid,
                     'resolution_oce': self.ocean_grid,
                     'forcing': forcing,

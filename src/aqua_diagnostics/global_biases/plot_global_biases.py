@@ -188,11 +188,11 @@ class PlotGlobalBiases:
         ax.set_ylabel("Latitude")
 
         description = (
-            f"Spatial map of global bias of {data[var].attrs.get('long_name', var)} "
+            f"Spatial map of global bias of {data[var].attrs.get('long_name', var)}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
-            f"from {data.startdate} to {data.enddate}"
-            f"for the {data.model} model, experiment {data.exp}, with {data_ref.model}"
-            f"from {data_ref.startdate} to {data_ref.enddate} used as reference data."
+            f" from {data.startdate} to {data.enddate}"
+            f" for the {data.model} model, experiment {data.exp}, with {data_ref.model}"
+            f" from {data_ref.startdate} to {data_ref.enddate} used as reference data."
         )
 
         if self.save_pdf:
@@ -257,12 +257,12 @@ class PlotGlobalBiases:
         fig = plot_maps(**plot_kwargs)
 
         description = (
-            f"Seasonal bias map of {data[var].attrs.get('long_name', var)} "
-            f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
-            f"for the {data.model} model, experiment {data.exp}, "
-            f"using {data_ref.model} as reference data. "
-            f"The bias is computed for each season over the period from {data.startdate} to {data.enddate} for the model " 
-            f"and from {data_ref.startdate} to {data_ref.enddate} for the reference data."
+            f"Seasonal bias map of {data[var].attrs.get('long_name', var)}"
+            f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
+            f" for the {data.model} model, experiment {data.exp},"
+            f" using {data_ref.model} as reference data."
+            f" The bias is computed for each season over the period from {data.startdate} to {data.enddate} for the model" 
+            f" and from {data_ref.startdate} to {data_ref.enddate} for the reference data."
         )
 
         if self.save_pdf:
@@ -295,9 +295,9 @@ class PlotGlobalBiases:
         )
 
         description = (
-            f"Vertical bias plot of {data[var].attrs.get('long_name', var)} across pressure levels from {data.startdate} to {data.enddate} "
-            f"for the {data.model} model, experiment {data.exp}, with {data_ref.model} from {data_ref.startdate} to {data_ref.enddate} "
-            f"used as reference data."
+            f"Vertical bias plot of {data[var].attrs.get('long_name', var)} across pressure levels from {data.startdate} to {data.enddate}"
+            f" for the {data.model} model, experiment {data.exp}, with {data_ref.model} from {data_ref.startdate} to {data_ref.enddate}"
+            f" used as reference data."
         )
 
         fig, ax = plot_vertical_profile_diff(

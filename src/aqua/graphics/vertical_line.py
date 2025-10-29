@@ -53,6 +53,10 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
     data = to_list(data)
     labels = to_list(labels)
 
+    # Prepare figure and axis
+    fig = fig or plt.figure(figsize=figsize)
+    ax = ax or fig.add_subplot(*ax_pos)
+
     # Select vertical levels
     if lev_min is None or lev_max is None:
         lev_min = min(data[lev_name].min().item() for data in data)
@@ -60,17 +64,14 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
         if ref_data is not None:
             lev_min = min(lev_min, ref_data[lev_name].min().item())
             lev_max = max(lev_max, ref_data[lev_name].max().item())
+    else: # If at least one is provided, limit to the provided range
+        ax.set_ylim(lev_max, lev_min)
 
     logger.debug(f"Plotting vertical line from {lev_min} to {lev_max} {lev_name}")
-
-    # Prepare figure and axis
-    fig = fig or plt.figure(figsize=figsize)
-    ax = ax or fig.add_subplot(*ax_pos)
 
     if logscale:
         ax.set_yscale("log")
 
-    ax.set_ylim(lev_max, lev_min)
     units = data[0][lev_name].attrs.get("units", "")
     var_name = data[0].long_name or data[0].short_name
     var_units = data[0].attrs.get("units", "")

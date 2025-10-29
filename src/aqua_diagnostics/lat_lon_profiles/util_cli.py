@@ -133,7 +133,8 @@ def process_dataset(dataset, var_name, var_units, var_long_name, var_standard_na
     return profile
     
 def _create_single_plot(plot_type, data_list, ref_data, ref_std_data, 
-                       save_pdf, save_png, outputdir, rebuild, dpi, loglevel):
+                       save_pdf, save_png, outputdir, rebuild, dpi, 
+                       diagnostic_name, loglevel):
     """
     Internal helper to create and save a single plot.
     
@@ -147,6 +148,7 @@ def _create_single_plot(plot_type, data_list, ref_data, ref_std_data,
         outputdir (str): Output directory
         rebuild (bool): Whether to rebuild existing files
         dpi (int): DPI for saved images
+        diagnostic_name (str): Diagnostic name
         loglevel (str): Log level
     """
     plot_args = {
@@ -154,6 +156,7 @@ def _create_single_plot(plot_type, data_list, ref_data, ref_std_data,
         'ref_data': ref_data,
         'ref_std_data': ref_std_data,
         'data_type': plot_type,
+        'diagnostic_name': diagnostic_name,
         'loglevel': loglevel
     }
     
@@ -166,7 +169,8 @@ def _create_single_plot(plot_type, data_list, ref_data, ref_std_data,
 
 
 def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, compute_seasonal,
-                         save_pdf, save_png, outputdir, rebuild, dpi, loglevel):
+                         save_pdf, save_png, outputdir, rebuild, dpi, 
+                         diagnostic_name, loglevel):
     """
     Create and save plots for LatLonProfiles CLI.
     
@@ -181,6 +185,7 @@ def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, com
         outputdir (str): Output directory
         rebuild (bool): Whether to rebuild existing files
         dpi (int): DPI for saved images
+        diagnostic_name (str): Diagnostic name
         loglevel (str): Log level
     """
     logger = log_configure(log_level=loglevel, log_name='LatLonProfiles CLI')
@@ -202,6 +207,7 @@ def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, com
             outputdir=outputdir,
             rebuild=rebuild,
             dpi=dpi,
+            diagnostic_name=diagnostic_name,
             loglevel=loglevel
         )
 
@@ -232,6 +238,7 @@ def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, com
             outputdir=outputdir,
             rebuild=rebuild,
             dpi=dpi,
+            diagnostic_name=diagnostic_name,
             loglevel=loglevel
         )
 
@@ -329,6 +336,7 @@ def process_variable_or_formula(config_dict, var_config, regions, datasets,
                     outputdir=outputdir,
                     rebuild=rebuild,
                     dpi=dpi,
+                    diagnostic_name=diagnostic_name,
                     loglevel=loglevel
                 )
 

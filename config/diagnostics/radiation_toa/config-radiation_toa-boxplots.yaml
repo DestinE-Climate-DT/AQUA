@@ -42,6 +42,4 @@ diagnostics:
     diagnostic_name: 'radiation'
     variables:
       - vars: ['-tnlwrf', 'tnswrf']
-
-
-
+        add_mean_line: true

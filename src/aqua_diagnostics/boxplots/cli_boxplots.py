@@ -79,7 +79,7 @@ if __name__ == '__main__':
                                     'startdate': dataset.get('startdate'),
                                     'enddate': dataset.get('enddate')}
 
-                    boxplots = Boxplots(**dataset_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots = Boxplots(**dataset_args, diagnostic=diagnostic_name, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
                     boxplots.run(var=variables, reader_kwargs=reader_kwargs)
                     fldmeans.append(boxplots.fldmeans)
                 
