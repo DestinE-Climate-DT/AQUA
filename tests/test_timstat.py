@@ -132,20 +132,21 @@ class TestTimmean():
 
     def test_timstat_histogram(self, reader, data_2t):
         """Test histogram through timstat"""
+        bins, range = 20, (250,330)
 
         #test passing a string
-        hist1 = reader.timstat(data_2t['2t'], freq='monthly', stat='histogram', bins=100, range=(250,330), exclude_incomplete=True)
+        hist1 = reader.timstat(data_2t['2t'], freq='monthly', stat='histogram', bins=bins, range=range, exclude_incomplete=True)
         # timhist passes a function
-        hist2 = reader.timhist(data_2t['2t'], freq='monthly', bins=100, range=(250,330), exclude_incomplete=True)
-        hist3 = reader.timstat(data_2t['2t'], freq='monthly', stat=histogram,bins=100, range=(250,330), exclude_incomplete=True)
+        hist2 = reader.timhist(data_2t['2t'], freq='monthly', bins=bins, range=range, exclude_incomplete=True)
+        hist3 = reader.timstat(data_2t['2t'], freq='monthly', stat=histogram,bins=bins, range=range, exclude_incomplete=True)
 
         assert hist1['center_of_bin'].shape == hist2['center_of_bin'].shape
         assert hist1['center_of_bin'].shape == hist3['center_of_bin'].shape
         assert hist1.isel(time=2).sum().values == hist2.isel(time=2).sum().values
         assert hist2.isel(time=2).sum().values == hist3.isel(time=2).sum().values
 
-        hist1 = reader.timhist(data_2t['2t'], bins=100, range=(250,330))
-        hist2 = reader.histogram(data_2t['2t'], bins=100, range=(250,330))
+        hist1 = reader.timhist(data_2t['2t'], bins=bins, range=range)
+        hist2 = reader.histogram(data_2t['2t'], bins=bins, range=range)
 
         assert hist1.sum().values == hist2.sum().values
         
@@ -168,3 +169,26 @@ class TestTimmean():
         # Expected value is the mean over May–Jul 2020 of the same series
         expected = da_sel.sel(time=da_sel.time.dt.month.isin([5, 6, 7])).mean().values
         assert float(avg.values) == float(expected)
+    
+    def test_timmean_exclude_incomplete_tcoords(self, reader, data_2t):
+        """Test that exclude_incomplete mask coordinates align with resampled time axis"""
+        da = data_2t['2t'].isel(lon=0, lat=0)
+        
+        # Get the averaged result 
+        avg_with_mask = reader.timmean(da, freq='daily', exclude_incomplete=True)
+        
+        # Get what the resample time axis should be
+        expected_time_axis = da.resample(time='1D').mean().time
+        
+        # The coordinates should match exactly (subset since incomplete are excluded)
+        assert all(t in expected_time_axis.values for t in avg_with_mask.time.values), \
+            "Masked result time coordinates should be a subset of the resampled time axis"
+        
+        # Verify alignment works without errors - this would fail with mismatched coords
+        try:
+            resampled = da.resample(time='1D').mean()
+            # This operation requires matching coordinates
+            aligned = resampled.sel(time=avg_with_mask.time)
+            assert len(aligned) == len(avg_with_mask)
+        except KeyError as e:
+            pytest.fail(f"Coordinate alignment failed: {e}")

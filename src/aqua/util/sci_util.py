@@ -17,7 +17,7 @@ TRIPLET_MONTHS = {
     'ASO': [8, 9, 10],   # August-September-October
     'SON': [9, 10, 11],  # September-October-November
     'OND': [10, 11, 12], # October-November-December
-    'NDJ': [11, 12, 1],  # ovember-December-January
+    'NDJ': [11, 12, 1],  # November-December-January
 }
 
 

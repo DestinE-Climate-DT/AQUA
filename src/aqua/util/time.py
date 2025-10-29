@@ -231,7 +231,13 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     if sum(check_completeness) == 0:
         logger.warning('Not enough data to compute any average on %s period, returning empty array', resample_frequency)
 
-    boolean_mask = xr.DataArray(check_completeness, dims=('time',), coords={'time': chunks})
+    # Create a dict mapping chunk dates to completeness flag
+    completeness_dict = {pd.Timestamp(chunk): is_complete for chunk, is_complete in zip(chunks, check_completeness)}
+    
+    # Align with the actual resampled time axis
+    aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis.time.values]
+    
+    boolean_mask = xr.DataArray(aligned_completeness, dims=('time',), coords={'time': taxis.time})
 
     return boolean_mask
 
