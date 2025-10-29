@@ -11,7 +11,7 @@ ClimateDT workflow modifications:
 - The configuration file of the catalog generator now requires `expid`
 
 AQUA core complete list:
-- `stardate` and `enddate` can be passed to DROP to limit the range of scan (#2387, #2393)
+- `stardate` and `enddate` can be passed to DROP to limit the range of scan (#2325)
 - Chunking of netcdf sources is not filtered anymore (#2380)
 - Introduce `expid` into configuration file of the catalog generator (#2340)
 - EC-EARTH4 ORCA2 and eORCA1 grids refactor (#2280)
