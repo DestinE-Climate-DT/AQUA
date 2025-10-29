@@ -2,10 +2,10 @@
 # in the command line by using:
 # --model, --exp, --source, --outputdir, --catalog
 datasets:
-  - catalog: 'climatedt-phase1' 
+  - catalog: null
     model: 'IFS-NEMO'
-    exp: 'historical-1990'
-    source: 'aqua-atmglobalmean'
+    exp: 'hist-1990-ensemble'
+    source: 'aqua-atmosphere2d-annual_climatology'
     regrid: null
     #areas: False
     #fix: True
@@ -25,7 +25,7 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleLatLon'
-    variable: ['2t',]
+    variable: ['2t','msl']
     params:
       default:
       tprate:
