@@ -19,7 +19,8 @@ from aqua.diagnostics.core import (
 )
 from aqua.logger import log_configure
 from aqua.util import get_arg, ConfigPath
-from .util import extract_realizations
+# This is no circular import because this is a CLI so far
+from aqua.diagnostics.ensemble import extract_realizations
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleLatLon diagnostic.
@@ -105,70 +106,71 @@ if __name__ == "__main__":
                 if dataset is None:
                     logger.warning("Ensemble data is not provided.")
 
-                    if dataset is not None:
-                        ens_latlon = EnsembleLatLon(
-                            var=variable,
-                            monthly_data=dataset,
-                            catalog_list=catalog,
-                            model_list=model,
-                            exp_list=exp,
-                            source_list=source,
-                            outputdir=outputdir,
-                            loglevel=loglevel,
-                        )
-
-                        # Compute statistics and save the results as netcdf
-                        ens_latlon.run()
-
-                    # Initialize PlotEnsembleLatLon class
-                    plot_class_arguments = {
-                        "catalog_list": catalog,
-                        "model_list": model,
-                        "exp_list": exp,
-                        "source_list": source,
-                        "outputdir": outputdir,
-                    }
-
-                    all_plot_params = config_dict["diagnostics"]["ensemble"].get("plot_params", {})
-                    default_params = all_plot_params.get("default", {})
-                    var_params = all_plot_params.get(variable, {})
-                    plot_params = {**default_params, **var_params}
-                    proj = plot_params.get("projection", "robinson")
-                    proj_params = plot_params.get("projection_params", {})
-                    cmap = plot_params.get("cmap", "RdBu_r")
-                    vmin_mean, vmax_mean = plot_params.get("vmin"), plot_params.get("vmax")
-                    vmin_std, vmax_std = plot_params.get("vmin_std"), plot_params.get("vmax_std")
-                    param_dict = config_dict["diagnostics"]["ensemble"].get("params", {}).get(variable, {})
-                    units = param_dict.get("units", None)
-                    long_name = param_dict.get("long_name", None)
-                    short_name = param_dict.get("short_name", None)
-
-                    ens_latlon_plot = PlotEnsembleLatLon(
-                        **plot_class_arguments,
+                if dataset is not None:
+                    ens_latlon = EnsembleLatLon(
+                        var=variable,
+                        dataset=dataset,
+                        catalog_list=catalog,
+                        model_list=model,
+                        exp_list=exp,
+                        source_list=source,
+                        outputdir=outputdir,
+                        loglevel=loglevel,
                     )
 
-                    # PlotEnsembleLatLon plot options
-                    plot_arguments = {
-                        "save_pdf": save_pdf,
-                        "save_png": save_png,
-                        "var": variable,
-                        "dpi": dpi,
-                        "vmin_mean": vmin_mean,
-                        "vmax_mean": vmax_mean,
-                        "vmin_std": vmin_std,
-                        "vmax_std": vmax_std,
-                        "proj": proj,
-                        "transform_first": False,
-                        "cyclic_lon": False,
-                        "contour": True,
-                        "coastlines": True,
-                        "cbar_label": None,
-                        "units": units,
-                        "dataset_mean": ens_latlon.dataset_mean,
-                        "dataset_std": ens_latlon.dataset_std,
-                    }
+                    # Compute statistics and save the results as netcdf
+                    ens_latlon.run()
 
-                    ens_latlon_plot.plot(**plot_arguments)
+                # Initialize PlotEnsembleLatLon class
+                plot_class_arguments = {
+                    "catalog_list": catalog,
+                    "model_list": model,
+                    "exp_list": exp,
+                    "source_list": source,
+                    "outputdir": outputdir,
+                    "loglevel": loglevel,
+                }
 
-                    logger.info(f"Finished EnsembleLatLon diagnostic for {variable}.")
+                all_plot_params = config_dict["diagnostics"]["ensemble"].get("plot_params", {})
+                default_params = all_plot_params.get("default", {})
+                var_params = all_plot_params.get(variable, {})
+                plot_params = {**default_params, **var_params}
+                proj = plot_params.get("projection", "robinson")
+                proj_params = plot_params.get("projection_params", {})
+                cmap = plot_params.get("cmap", "RdBu_r")
+                vmin_mean, vmax_mean = plot_params.get("vmin"), plot_params.get("vmax")
+                vmin_std, vmax_std = plot_params.get("vmin_std"), plot_params.get("vmax_std")
+                param_dict = config_dict["diagnostics"]["ensemble"].get("params", {}).get(variable, {})
+                units = param_dict.get("units", None)
+                long_name = param_dict.get("long_name", None)
+                short_name = param_dict.get("short_name", None)
+
+                ens_latlon_plot = PlotEnsembleLatLon(
+                    **plot_class_arguments,
+                )
+
+                # PlotEnsembleLatLon plot options
+                plot_arguments = {
+                    "save_pdf": save_pdf,
+                    "save_png": save_png,
+                    "var": variable,
+                    "dpi": dpi,
+                    "vmin_mean": vmin_mean,
+                    "vmax_mean": vmax_mean,
+                    "vmin_std": vmin_std,
+                    "vmax_std": vmax_std,
+                    "proj": proj,
+                    "transform_first": False,
+                    "cyclic_lon": False,
+                    "contour": True,
+                    "coastlines": True,
+                    "cbar_label": None,
+                    "units": units,
+                    "dataset_mean": ens_latlon.dataset_mean,
+                    "dataset_std": ens_latlon.dataset_std,
+                }
+
+                ens_latlon_plot.plot(**plot_arguments)
+
+                logger.info(f"Finished EnsembleLatLon diagnostic for {variable}.")
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
