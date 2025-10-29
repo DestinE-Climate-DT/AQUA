@@ -61,7 +61,7 @@ def test_NAO(tmp_path):
     description = plot_ref.set_map_description(maps=reg_DJF, ref_maps=reg_DJF, statistic='regression')
     assert description == 'NAO regression map (Mean sea level pressure) IFS test-tco79 (DJF) compared to IFS test-tco79. The contour lines are the model regression map and the filled contour map is the defference between the model and the reference regression map.' # noqa: E501
     plot_ref.save_plot(fig_reg, diagnostic_product='regression_DJF', metadata={'description': description}, format='pdf')
-    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'nao.regression_DJF.ci.IFS.test-tco79.r1.ci.IFS.test-tco79.pdf'))) is True
+    assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'nao.regression_djf.ci.IFS.test-tco79.r1.ci.IFS.test-tco79.pdf'))) is True
 
     # Correlation plotting
     plot_single = PlotNAO(loglevel=loglevel, indexes=nao.index, outputdir=tmp_path)

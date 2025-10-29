@@ -4,19 +4,10 @@
 
 # This yaml file will only have either annual or monthly
 datasets:
-  - catalog: 'climatedt-o25.1'
+  - catalog: null
     model: 'IFS-NEMO'
     exp: 'hist-1990-ensemble'
-    source: 'aqua-ocean-timeseries-levante'
-    realization: ['r2', 'r3', 'r4']
-    regrid: null
-
-# Reference
-references:
-  - catalog: null  
-    model: null
-    exp: null
-    source: null
+    source: 'aqua-atmosphere2d-timeseries'
     regrid: null
 
 
@@ -35,7 +26,7 @@ diagnostics:
   ensemble:
     run: true
     diagnostic_name: 'EnsembleTimeseries'
-    variable: ['tos',]
+    variable: ['2t',]
     region: ['global',]
     params:
       default:

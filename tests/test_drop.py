@@ -110,7 +110,7 @@ class TestDROP:
     def test_definitive_true(self, drop_arguments, tmp_path, nworkers):
         test = Drop(
             catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
-            nproc=nworkers, resolution='r100', frequency='monthly', 
+            nproc=nworkers, resolution='r100', frequency='monthly',
             definitive=True, loglevel=LOGLEVEL
         )
 
@@ -154,7 +154,8 @@ class TestDROP:
         test = Drop(
             catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
             resolution='r100', frequency='monthly', nproc=1,
-            loglevel=LOGLEVEL, definitive=True
+            loglevel=LOGLEVEL, definitive=True,
+            startdate="2020-01-01", enddate="2020-05-31"
         )
 
         test.retrieve()

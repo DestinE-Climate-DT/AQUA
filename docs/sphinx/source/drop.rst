@@ -256,6 +256,16 @@ Usage
 
     Which realization (e.g. ensemble member) to use for the DROP output (default: 'r1')
 
+.. option:: --startdate
+
+    Start date for the DROP output (default: as the original data).
+    Accepted format: 'YYYY-MM-DD'
+
+.. option:: --enddate
+
+    End date for the DROP output (default: as the original data).
+    Accepted format: 'YYYY-MM-DD'
+
 **Examples:**
 
 Process data to create monthly 1° resolution output:
