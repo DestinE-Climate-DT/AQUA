@@ -75,7 +75,6 @@ class TestTimmean():
         
     def test_timstat_compare(self, reader, data_2t):
         """Time operations provide robust values"""
-
         minval = reader.timmin(data_2t['2t'], freq='daily')
         maxval = reader.timmax(data_2t['2t'], freq='daily')
         avg = reader.timmean(data_2t['2t'], freq='daily')
