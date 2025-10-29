@@ -212,7 +212,7 @@ if __name__ == "__main__":
                         or ts.annual_data is not None
                         or ts.annual_data_mean is not None
                         or ts.annual_data_std is not None
-                        or ref_data is not None
+                        # or ref_data is not None
                     ):
                         ts_plot = PlotEnsembleTimeseries(
                             **plot_class_arguments,
