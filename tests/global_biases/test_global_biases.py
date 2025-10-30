@@ -30,7 +30,7 @@ class TestGlobalBiases:
         assert "season" in self.gb.seasonal_climatology[self.var].dims
         assert set(self.gb.seasonal_climatology["season"].values) == {"DJF", "MAM", "JJA", "SON"}
 
-        nc = os.path.join(self.tmp_path, 'netcdf', f'globalbiases.climatology.ci.ERA5.era5-hpz3.r1.{self.var}.nc')
+        nc = os.path.join(self.tmp_path, 'netcdf', f'globalbiases.annual_climatology.ci.ERA5.era5-hpz3.r1.{self.var}.nc')
         assert os.path.exists(nc)
 
         nc_seasonal = os.path.join(self.tmp_path, 'netcdf', f'globalbiases.seasonal_climatology.ci.ERA5.era5-hpz3.r1.{self.var}.nc')
@@ -38,10 +38,10 @@ class TestGlobalBiases:
 
         self.plotgb.plot_climatology(data=self.gb.climatology, var=self.var, plev=85000)
 
-        pdf = os.path.join(self.tmp_path, 'pdf', f'globalbiases.climatology.ci.ERA5.era5-hpz3.r1.{self.var}.85000.pdf')
+        pdf = os.path.join(self.tmp_path, 'pdf', f'globalbiases.annual_climatology.ci.ERA5.era5-hpz3.r1.{self.var}.85000.pdf')
         assert os.path.exists(pdf)
 
-        png = os.path.join(self.tmp_path, 'png', f'globalbiases.climatology.ci.ERA5.era5-hpz3.r1.{self.var}.85000.png')
+        png = os.path.join(self.tmp_path, 'png', f'globalbiases.annual_climatology.ci.ERA5.era5-hpz3.r1.{self.var}.85000.png')
         assert os.path.exists(png)
 
     def test_bias(self):

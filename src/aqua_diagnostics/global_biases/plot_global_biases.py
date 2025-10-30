@@ -134,10 +134,10 @@ class PlotGlobalBiases:
         )
 
         if self.save_pdf:
-            self._save_figure(fig=fig, format='pdf', data=data, diagnostic_product='climatology', 
+            self._save_figure(fig=fig, format='pdf', data=data, diagnostic_product='annual_climatology', 
                               description=description, var=var, plev=plev)
         if self.save_png:
-            self._save_figure(fig=fig, format='png', data=data, diagnostic_product='climatology',
+            self._save_figure(fig=fig, format='png', data=data, diagnostic_product='annual_climatology',
                               description=description, var=var, plev=plev)
 
 

@@ -104,7 +104,7 @@ class PlotMLD:
             formats.append('png')
 
         for format in formats:
-            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
 
     def set_figsize(self):
@@ -225,10 +225,8 @@ class PlotMLD:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
-        self.description = {}
-        self.description["description"] = {
-            f"{self.diagnostic_product} {self.clim_time} climatology over {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
-        }
+        
+        self.description = f"{self.diagnostic_product} {self.clim_time} climatology over {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

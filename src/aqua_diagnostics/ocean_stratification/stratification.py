@@ -47,7 +47,7 @@ class Stratification(Diagnostic):
         regrid: str = None,
         startdate: str = None,
         enddate: str = None,
-        diagnostic_name: str = "oceandrift",
+        diagnostic_name: str = "stratification",
         loglevel: str = "WARNING",
     ):
         super().__init__(
@@ -129,6 +129,7 @@ class Stratification(Diagnostic):
             self.region = "global"
             self.lat_limits = None
             self.lon_limits = None
+        self.data.attrs["AQUA_region"] = self.region
         if dim_mean is not None:
             self.logger.debug(f"Computing fldmean over dimension: {dim_mean}")
             self.data = self.reader.fldmean(
@@ -145,6 +146,9 @@ class Stratification(Diagnostic):
             self.logger.info("Computing mixed layer depth (MLD).")
             self.compute_mld()
         self.compute_climatology(climatology=self.climatology)
+        self.logger.info("Loading data in memory.")
+        self.data.load()
+        self.logger.info("Loaded data in memory.")
         self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=self.region)
         self.logger.info("Stratification diagnostic saved to netCDF file.")
 
@@ -303,6 +307,6 @@ class Stratification(Diagnostic):
             diagnostic_product=f"{diagnostic_product}",
             outputdir=outputdir,
             rebuild=rebuild,
-            extra_keys={"region": region.replace(" ", "_")},
+            extra_keys={"region": region.replace(" ", "_").lower()},
         )
         self.logger.info("NetCDF file saved successfully.")

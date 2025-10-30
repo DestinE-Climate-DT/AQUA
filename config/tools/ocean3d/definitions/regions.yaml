@@ -1,0 +1,137 @@
+regions:
+  io:
+    longname: Indian Ocean
+    lon_limits: [30, 110]
+    lat_limits: [-30, 30]
+  ls:
+    longname: Labrador Sea
+    lon_limits: [300, 316]
+    lat_limits: [52, 65]
+  lgs:
+    longname: Labrador Gin Seas
+    lon_limits: [-70, 20]
+    lat_limits: [50, 80]
+  is:
+    longname: Irminger Sea
+    lon_limits: [316, 330]
+    lat_limits: [60, 70]
+  go:
+    longname: Global Ocean
+    lon_limits: [0, 360]
+    lat_limits: [-90, 90]
+  ao:
+    longname: Atlantic Ocean
+    lon_limits: [-80, 30]
+    lat_limits: [-35, 65]
+  po:
+    longname: Pacific Ocean
+    lon_limits: [120, 290]
+    lat_limits: [-55, 65]
+  arc_o:
+    longname: Arctic Ocean
+    lon_limits: [0, 360]
+    lat_limits: [65, 90]
+  so:
+    longname: Southern Ocean
+    lon_limits: [0, 360]
+    lat_limits: [-80, -50]
+  gs:
+    longname: Gin Sea
+    lon_limits: [-10, 20]
+    lat_limits: [70, 80]
+  ws:
+    longname: Weddell Sea
+    lon_limits: [295, 350]
+    lat_limits: [-80, -65]
+  bs:
+    longname: Bering Sea
+    lon_limits: [-178, 168]
+    lat_limits: [53, 66]
+  gom:
+    longname: Gulf of Mexico
+    lon_limits: [-97, -81]
+    lat_limits: [18, 30]
+  hb:
+    longname: Hudson Bay
+    lon_limits: [-95, -75]
+    lat_limits: [51, 63]
+  rs:
+    longname: Red Sea
+    lon_limits: [32, 44]
+    lat_limits: [12, 30]
+  pg:
+    longname: Persian Gulf
+    lon_limits: [48, 56]
+    lat_limits: [24, 30]
+  adr:
+    longname: Adriatic Sea
+    lon_limits: [13, 19]
+    lat_limits: [40, 45]
+  cs:
+    longname: Caribbean Sea
+    lon_limits: [-85, -60]
+    lat_limits: [9, 23]
+  sj:
+    longname: Sea of Japan
+    lon_limits: [129, 132]
+    lat_limits: [34, 43]
+  ms:
+    longname: Mediterranean Sea
+    lon_limits: [-6, 36]
+    lat_limits: [30, 46]
+  bks:
+    longname: Black Sea
+    lon_limits: [27, 41]
+    lat_limits: [41, 45]
+  scs:
+    longname: South China Sea
+    lon_limits: [99, 121]
+    lat_limits: [3, 21]
+  as:
+    longname: Arabian Sea
+    lon_limits: [50, 70]
+    lat_limits: [12, 25]
+  cos:
+    longname: Coral Sea
+    lon_limits: [147, 157]
+    lat_limits: [-24, -10]
+  ts:
+    longname: Timor Sea
+    lon_limits: [123, 129]
+    lat_limits: [-13, -10]
+  goa:
+    longname: Gulf of Alaska
+    lon_limits: [-145, -136]
+    lat_limits: [48, 60]
+  ecs:
+    longname: East China Sea
+    lon_limits: [120, 128]
+    lat_limits: [30, 35]
+  oks:
+    longname: Sea of Okhotsk
+    lon_limits: [142, 163]
+    lat_limits: [45, 60]
+  ps:
+    longname: Philippine Sea
+    lon_limits: [117, 135]
+    lat_limits: [5, 25]
+  ros:
+    longname: Ross Sea
+    lon_limits: [160, -150]
+    lat_limits: [-78, -60]
+  sss:
+    longname: Sargasso Sea
+    lon_limits: [-70, -50]
+    lat_limits: [20, 35]
+  ans:
+    longname: Andaman Sea
+    lon_limits: [93, 98]
+    lat_limits: [6, 20]
+  jas:
+    longname: Java Sea
+    lon_limits: [105, 117]
+    lat_limits: [-8, -6]
+  bfs:
+    longname: Beaufort Sea
+    lon_limits: [-148, -140]
+    lat_limits: [68, 79]

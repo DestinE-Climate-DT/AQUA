@@ -9,8 +9,12 @@ Unreleased in the current development version (target v0.19.0):
 
 ClimateDT workflow modifications:
 - The configuration file of the catalog generator now requires `expid`
+- Aqua analysis config file organized differently with diagnostic groups
+- Diagnostic and cli tool config files grouped differently in `$AQUA/config/diagnostics` and `$AQUA/config/tools`
+- New position for push_analysis ``config.grouping.yaml` in `$AQUA/config/analysis`
 
 AQUA core complete list:
+- Refactoring of aqua analysis to allow config file with diagnostic groups and reorganization of diagnostic config files. Optimizations of diagnostic parallel execution. Including minor fixes to output filenames, figure descriptions and color ranges. Cleaner distinction between `diagnostics` and `tools` (#2371)
 - `stardate` and `enddate` can be passed to DROP to limit the range of scan (#2325)
 - Chunking of netcdf sources is not filtered anymore (#2380)
 - Introduce `expid` into configuration file of the catalog generator (#2340)

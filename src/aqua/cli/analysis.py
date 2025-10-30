@@ -1,3 +1,5 @@
+"""AQUA analysis command line interface."""
+
 import os
 import sys
 import argparse
@@ -6,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dask.distributed import LocalCluster
 from aqua.analysis import run_diagnostic_func, run_command, get_aqua_paths
 from aqua.util import load_yaml, create_folder, ConfigPath, format_realization
+from aqua.util import expand_env_vars
 from aqua.logger import log_configure
 
 
@@ -79,34 +82,43 @@ def analysis_execute(args):
         logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
         sys.exit(1)
     else:
-        logger.info(f"Requested experiment: Model = {model}, Experiment = {exp}, Source = {source}. Source_oce = {source_oce}")
+        logger.info(
+            "Requested experiment: Model = %s, Experiment = %s, Source = %s. Source_oce = %s",
+            model, exp, source, source_oce
+        )
 
     catalog = args.catalog or config.get('job', {}).get('catalog')
     if catalog:
-        logger.info(f"Requested catalog: {catalog}")
+        logger.info("Requested catalog: %s", catalog)
     else:
         cat, _ = ConfigPath().browse_catalogs(model, exp, source)
         if cat:
             catalog = cat[0]
-            logger.info(f"Automatically determined catalog: {catalog}")
+            logger.info("Automatically determined catalog: %s", catalog)
         else:
-            logger.error(f"Model = {model}, Experiment = {exp}, Source = {source} triplet not found in any installed catalog.")
+            logger.error(
+                "Model = %s, Experiment = %s, Source = %s triplet not found in any installed catalog.",
+                model, exp, source
+            )
             sys.exit(1)
 
     outputdir = os.path.expandvars(args.outputdir or config.get('job', {}).get('outputdir', './output'))
     max_threads = args.threads
 
-    logger.debug(f"outputdir: {outputdir}")
-    logger.debug(f"max_threads: {max_threads}")
+    logger.debug("outputdir: %s", outputdir)
+    logger.debug("max_threads: %d", max_threads)
 
     realization_folder = format_realization(realization)
-    output_dir = f"{outputdir}/{catalog}/{model}/{exp}/{realization_folder}"
+    output_dir = os.path.join(outputdir, catalog, model, exp, realization_folder)
     output_dir = os.path.expandvars(output_dir)
 
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA"] = aqua_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if 'AQUA_CONFIG' not in os.environ else os.environ["AQUA_CONFIG"]
     create_folder(output_dir, loglevel=loglevel)
+
+    # expand the environment variables in the entire config
+    config = expand_env_vars(config)
 
     run_checker = config.get('job', {}).get('run_checker', False)
     if run_checker:
@@ -120,7 +132,7 @@ def analysis_execute(args):
             command += f" --catalog {catalog}"
         if realization:
             command += f" --realization {realization}"
-        logger.debug(f"Command: {command}")
+        logger.debug("Command: %s", command)
         result = run_command(command, log_file=output_log_path, logger=logger)
 
         if result == 1:
@@ -129,11 +141,11 @@ def analysis_execute(args):
         elif result == 0:
             logger.info("Setup checker completed successfully.")
         else:
-            logger.error(f"Setup checker returned exit code {result}, check the logs for more information.")
+            logger.error("Setup checker returned exit code %s, check the logs for more information.", result)
 
-    diagnostics = config.get('diagnostics', {}).get('run')
-    if not diagnostics:
-        logger.error("No diagnostics found in configuration.")
+    run = config.get('run', [])
+    if not run:
+        logger.error("No run block found in configuration.")
         sys.exit(1)
 
     if args.parallel:
@@ -146,51 +158,74 @@ def analysis_execute(args):
             nworkers = config.get('cluster', {}).get('workers', 64)
             mem_limit = config.get('cluster', {}).get('memory_limit', "3.1GiB")
 
-            cluster = LocalCluster(threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit,
-                                   silence_logs=logging.ERROR)  # avoids excessive logging (see https://github.com/dask/dask/issues/9888)
+            # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
+            cluster = LocalCluster(
+                threads_per_worker=nthreads,
+                n_workers=nworkers,
+                memory_limit=mem_limit,
+                silence_logs=logging.ERROR
+            )
             cluster_address = cluster.scheduler_address
-            logger.info(f"Initialized global dask cluster {cluster_address} providing {len(cluster.workers)} workers.")
+            logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
     else:
         logger.info("Running diagnostics without a dask cluster.")
         cluster = None
         cluster_address = None
 
-    with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
-        futures = []
-        for diagnostic in diagnostics:
-            futures.append(executor.submit(
-                run_diagnostic_func,
-                diagnostic=diagnostic,
-                parallel=args.parallel,
-                config=config,
-                catalog=catalog,
-                model=model,
-                exp=exp,
-                source=source,
-                source_oce=source_oce,
-                startdate=startdate,
-                enddate=enddate,
-                realization=realization,
-                regrid=regrid,
-                output_dir=output_dir,
-                loglevel=loglevel,
-                logger=logger,
-                aqua_path=aqua_path,
-                cluster=cluster_address
-            ))
+    # read cli definitions and prepend script path
+    cli = config.get('cli', {})
+    script_dir = config.get('job', {}).get("script_path_base")  # we were not using this key
+    if script_dir:
+        for diag in cli:
+            cli[diag] = os.path.join(script_dir, cli[diag])
 
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-            except Exception as e:
-                logger.error(f"Diagnostic raised an exception: {e}")
+    # Internal naming scheme:
+    # diagnostic: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
+    # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
+    for diag_group in run:
+
+        with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
+            futures = []
+            for diagnostic in diag_group:
+
+                logger.info("Starting diagnostic: %s", diagnostic)
+                diag_config = config.get('diagnostics', {}).get(diagnostic)
+                if diag_config is None:
+                    logger.error("Diagnostic '%s' not found in the configuration, skipping.", diagnostic)
+                    continue
+
+                futures.append(executor.submit(
+                    run_diagnostic_func,
+                    diagnostic=diagnostic,
+                    parallel=args.parallel,
+                    diag_config=diag_config,
+                    cli=cli,
+                    catalog=catalog,
+                    model=model,
+                    exp=exp,
+                    source=source,
+                    source_oce=source_oce,
+                    realization=realization,
+                    startdate=startdate,
+                    enddate=enddate,
+                    regrid=regrid,
+                    output_dir=output_dir,
+                    loglevel=loglevel,
+                    logger=logger,
+                    cluster=cluster_address
+                ))
+
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                except Exception as e:
+                    logger.error("Diagnostic raised an exception: %s", e)
 
     if cluster:
         cluster.close()
         logger.info("Dask cluster closed.")
 
     logger.info("All diagnostics finished.")
-
 
 if __name__ == "__main__":
     args = analysis_parser().parse_args(sys.argv[1:])

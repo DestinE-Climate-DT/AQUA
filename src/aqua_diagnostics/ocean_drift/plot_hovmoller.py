@@ -97,7 +97,7 @@ class PlotHovmoller:
             formats.append('png')
 
         for format in formats:
-            self.save_plot(fig, diagnostic_product="hovmoller", metadata=self.description,
+            self.save_plot(fig, diagnostic_product="hovmoller", metadata={"description": self.description},
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
 
     def plot_timeseries(self,
@@ -152,7 +152,7 @@ class PlotHovmoller:
             formats.append('png')
 
         for format in formats:
-            self.save_plot(fig, diagnostic_product="timeseries", metadata=self.description,
+            self.save_plot(fig, diagnostic_product="timeseries", metadata={"description": self.description},
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
 
     def set_levels(self):
@@ -216,8 +216,8 @@ class PlotHovmoller:
 
     def set_description(self):
         """Set the description for the Hovmoller plot."""
-        self.description = {}
-        self.description["description"] = {f'Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}'}
+
+        self.description = f'Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}'
 
     def set_vmax_vmin(self):
         """
@@ -268,12 +268,21 @@ class PlotHovmoller:
         Set the texts for the Hovmoller plot.
         This method can be extended to set specific texts.
         """
+        type_label_mapping = {
+            'full': 'Full values',
+            'anom_t0': 'Anomalies from t0',
+            'std_anom_t0': 'Standardized anomalies from t0',
+            'anom_tmean': 'Anomalies from time mean',
+            'std_anom_tmean': 'Standardized anomalies from time mean'
+        }
+
         self.texts = []
         for _, data in enumerate(self.data):
             for j, _ in enumerate(self.vars):
                 if j == 0:
-                    type = data.attrs.get('AQUA_ocean_drift_type', 'NA')
-                    self.texts.append(type)
+                    odrift_type = data.attrs.get('AQUA_ocean_drift_type', 'NA')
+                    descr_label = type_label_mapping.get(odrift_type, odrift_type)
+                    self.texts.append(descr_label)
                 else:
                     self.texts.append(None)
         self.logger.debug("Texts set to: %s", self.texts)

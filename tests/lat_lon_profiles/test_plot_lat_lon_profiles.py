@@ -102,10 +102,10 @@ class TestPlotLatLonProfilesCore:
         assert 'IFS' in ref_label
     
     @pytest.mark.parametrize("data_type,diagnostic_name,mean_type,expected_diagnostic,expected_product", [
-        ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_zonal'),
-        ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'custom_profile_zonal'),
-        ('seasonal', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_seasonal_zonal'),
-        ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'my_diagnostic_seasonal_meridional'),
+        ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'zonal_profile'),
+        ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'zonal_profile'),
+        ('seasonal', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'seasonal_zonal_profile'),
+        ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'seasonal_meridional_profile'),
     ])
     def test_diagnostic_product_construction(self, sample_lat_lon_data, tmp_path,
                                             data_type, diagnostic_name, mean_type, 

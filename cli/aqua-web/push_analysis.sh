@@ -148,7 +148,7 @@ print_help() {
     echo
     echo "Options:"
     echo "  -b, --bucket BUCKET    push to the specified bucket (defaults to 'aqua-web')"
-    echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml)"
+    echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml in \$AQUA/config/analysis)"
     echo "  -d, --no-update        do not update the remote github repository"  
     echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
@@ -174,7 +174,7 @@ bucket="aqua-web"
 repository="DestinE-Climate-DT/aqua-web"
 update=1
 rsync=""
-config="$SCRIPT_DIR/config.grouping.yaml"
+config="$SCRIPT_DIR/../../config/analysis/config.grouping.yaml"
 ensemble=1  # Default to new ensemble structure with 4 levels (catalog/model/experiment/realization)
 
 # Parse all options first

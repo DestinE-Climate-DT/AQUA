@@ -41,11 +41,10 @@ if __name__ == '__main__':
     if regrid:
         logger.info(f"Regrid option is set to {regrid}")
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        logger.info(f"Realization option is set to {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
+        reader_kwargs['realization'] = realization
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -91,8 +90,9 @@ if __name__ == '__main__':
                                     'startdate': reference.get('startdate'),
                                     'enddate': reference.get('enddate')}
 
-                    boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
-                    boxplots_ref.run(var=variables, reader_kwargs=reader_kwargs)
+                    boxplots_ref = Boxplots(**reference_args, diagnostic=diagnostic_name, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots_ref.run(var=variables) 
+                    # , reader_kwargs=reader_kwargs) # we remove this, realization should not be applied to references
 
                     if getattr(boxplots_ref, "fldmeans", None) is None:
                         logger.warning(

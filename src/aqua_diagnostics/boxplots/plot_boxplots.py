@@ -1,6 +1,6 @@
 import xarray as xr
 import numpy as np
-from aqua.util import to_list, extract_attrs
+from aqua.util import to_list, extract_attrs, time_to_string
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import matplotlib as plt
@@ -50,9 +50,13 @@ class PlotBoxplots:
         catalog = extract_attrs(data, 'AQUA_catalog')
         model = extract_attrs(data, 'AQUA_model')
         exp = extract_attrs(data, 'AQUA_exp')
+        startdates = extract_attrs(data, 'startdate')
+        enddates = extract_attrs(data, 'enddate')
 
         model_ref = extract_attrs(data_ref, 'AQUA_model')
         exp_ref = extract_attrs(data_ref, 'AQUA_exp')
+        startdates_ref = extract_attrs(data_ref, 'startdate')
+        enddates_ref = extract_attrs(data_ref, 'enddate')
 
         self.logger.info(f'catalogs: {catalog}, models: {model}, experiments: {exp}')
         self.logger.info(f'ref catalogs: {extract_attrs(data_ref, "catalog")}, models: {model_ref}, experiments: {exp_ref}')
@@ -69,10 +73,15 @@ class PlotBoxplots:
         )
 
         all_models = model + (model_ref or [])
-        all_exps = exp + (exp_ref or [])
-        dataset_info = ', '.join(f'{m} (experiment {e})' for m, e in zip(all_models, all_exps))
+        all_exps = exp + (exp_ref or [])    
+        all_startdates = startdates + (startdates_ref or [] )  
+        all_enddates = enddates + (enddates_ref or [] )     
+        dataset_info = ', '.join(
+            f"{m} (exp: {e}) from {time_to_string(s)} to {time_to_string(en)}"
+            for m, e, s, en in zip(all_models, all_exps, all_startdates, all_enddates)
+        )
+        description = f"Boxplot for: {dataset_info}"
 
-        description = f"Boxplot of variables ({', '.join(var) if isinstance(var, list) else var}) for: {dataset_info}"
         metadata = {"Description": description}
         extra_keys = {'var': '_'.join(var) if isinstance(var, list) else var}
 
@@ -105,9 +114,6 @@ class PlotBoxplots:
         model_names = extract_attrs(fldmeans, 'AQUA_model')
         exp_names = extract_attrs(fldmeans, 'AQUA_exp')
 
-        dataset_info = ', '.join(f'{m} (experiment {e})' for m, e in zip(model_names, exp_names))
-        description = f"Boxplot of ({', '.join(var) if isinstance(var, list) else var}) for: {dataset_info}"
-
         base_vars = []
         long_names = []
         for v in to_list(var):
@@ -128,6 +134,12 @@ class PlotBoxplots:
             self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
             ref = data_ref[ref_number] 
             fldmeans = [ds - ref.mean('time') for ds in fldmeans]
+
+        if not title:
+            model_exp_list = [f"{m} ({e})" for m, e in zip(model_names, exp_names)]
+            seen = set()
+            model_exp_list_unique = [x for x in model_exp_list if not (x in seen or seen.add(x))]
+            title = "Boxplot for: " + ", ".join(model_exp_list_unique)
 
         # Plot boxplot 
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var, variable_names=long_names, title=title, 

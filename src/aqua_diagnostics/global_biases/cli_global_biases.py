@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     loglevel = get_arg(args, 'loglevel', 'WARNING')
     logger = log_configure(log_level=loglevel, log_name='GlobalBiases CLI')
-    logger.info(f"Running GlobalBiases diagnostic with AQUA version {aqua_version}")
+    logger.info("Running GlobalBiases diagnostic with AQUA version %s", aqua_version)
 
     cluster = get_arg(args, 'cluster', None)
     nworkers = get_arg(args, 'nworkers', None)
@@ -42,13 +42,12 @@ if __name__ == '__main__':
 
     regrid = get_arg(args, 'regrid', None)
     if regrid:
-        logger.info(f"Regrid option is set to {regrid}")
+        logger.info("Regrid option is set to %s", regrid)
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        logger.info(f"Realization option is set to {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
+        reader_kwargs['realization'] = realization
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -57,6 +56,7 @@ if __name__ == '__main__':
     save_pdf = config_dict['output'].get('save_pdf', True)
     save_png = config_dict['output'].get('save_png', True)
     dpi = config_dict['output'].get('dpi', 300) 
+    create_catalog_entry = config_dict['output'].get('create_catalog_entry', True)
 
     # Global Biases diagnostic
     if 'globalbiases' in config_dict['diagnostics']:
@@ -107,8 +107,8 @@ if __name__ == '__main__':
             all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
 
             for var, is_formula in all_vars:
-                logger.info(f"Running Global Biases diagnostic for {'formula' if is_formula else 'variable'}: {var}")
-
+                logger.info("Running Global Biases diagnostic for %s: %s",
+                            "formula" if is_formula else "variable", var)
                 all_plot_params = config_dict['diagnostics']['globalbiases'].get('plot_params', {})
                 default_params = all_plot_params.get('default', {})
                 var_params = all_plot_params.get(var, {})
@@ -127,10 +127,10 @@ if __name__ == '__main__':
                     biases_reference.retrieve(var=var, units=units, formula=is_formula,
                                             long_name=long_name, short_name=short_name)
                 except (NoDataError, KeyError, ValueError) as e:
-                    logger.warning(f"Variable '{var}' not found in dataset. Skipping. ({e})")
+                    logger.warning("Variable '%s' not found in dataset. Skipping. (%s)", var, e)
                     continue  
 
-                biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
+                biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat, create_catalog_entry=create_catalog_entry)
                 biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
 
                 if short_name is not None: 
@@ -142,13 +142,13 @@ if __name__ == '__main__':
                     plev_list = [None] 
 
                 for p in plev_list:
-                    logger.info(f"Processing variable: {var} at pressure level: {p}" if p else f"Processing variable: {var} at surface level")
+                    logger.info("Processing variable: %s at %s level", var, f"pressure level {p}" if p else "surface")
 
                     proj = plot_params.get('projection', 'robinson')
                     proj_params = plot_params.get('projection_params', {})
                     cmap= plot_params.get('cmap', 'RdBu_r')
 
-                    logger.debug(f"Using projection: {proj} for variable: {var}")
+                    logger.debug("Using projection: %s for variable: %s", proj, var)
                     plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png,
                                                 dpi=dpi, outputdir=outputdir, cmap=cmap, loglevel=loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
@@ -163,7 +163,7 @@ if __name__ == '__main__':
                                                        vmin=vmin, vmax=vmax)
 
                 if vertical and 'plev' in biases_dataset.data.get(var, {}).dims:
-                    logger.debug(f"Plotting vertical bias for variable: {var}")
+                    logger.debug('Plotting vertical bias for variable: %s', var)
                     vmin_v , vmax_v = plot_params.get('vmin_v'), plot_params.get('vmax_v')
                     plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, 
                                                    var=var, vmin=vmin_v, vmax=vmax_v)

@@ -18,7 +18,6 @@ from aqua.logger import log_configure
 from aqua.util.util import HiddenPrints, to_list
 
 from aqua.cli.parser import parse_arguments
-from aqua.cli.diagnostic_config import diagnostic_config
 from aqua.cli.analysis import analysis_execute
 from aqua.cli.drop import drop_execute
 from aqua.cli.catgen import catgen_execute
@@ -29,7 +28,8 @@ from aqua.cli.builder import builder_execute
 CATPATH = 'catalogs'
 
 # directories to be installed in the AQUA config folder
-BASIC_DIRECTORIES = ['analysis', 'catgen', 'datachecker', 'data_model', 'fixes', 'grids', 'styles']
+BASIC_DIRECTORIES = ['analysis', 'catgen', 'datachecker', 'data_model',
+                     'diagnostics', 'fixes', 'grids', 'styles', 'tools']
 
 
 class AquaConsole():
@@ -121,12 +121,8 @@ class AquaConsole():
         # define from where aqua is installed and copy/link the files
         if args.editable is None:
             self._install_default()
-            for diagnostic_type in diagnostic_config:
-                self._install_default_diagnostics(diagnostic_type)
         else:
             self._install_editable(args.editable)
-            for diagnostic_type in diagnostic_config:
-                self._install_editable_diagnostics(diagnostic_type, args.editable)
 
         self._set_machine(args)
 
@@ -172,13 +168,18 @@ class AquaConsole():
         if check:
             if 'HOME' in os.environ:
                 link = os.path.join(os.environ['HOME'], '.aqua')
-                if os.path.exists(link):
+                if os.path.exists(link) or os.path.islink(link):
                     self.logger.warning('Removing the content of %s', link)
-                    shutil.rmtree(link)
+                    if os.path.islink(link):
+                        os.unlink(link)
+                    elif os.path.isdir(link):
+                        shutil.rmtree(link)
+                    else:
+                        os.remove(link)
                 os.symlink(path, link)
             else:
                 self.logger.error('$HOME not found. Cannot create a link to the installation path')
-                self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable', path)  # noqa
+                self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable', path)
         else:
             self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable',
                                 path)
@@ -222,80 +223,6 @@ class AquaConsole():
             self._copy_update_folder_file(os.path.join(editable, '..', directory), f'{self.configpath}/{directory}', link=True)
 
         os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
-
-    def _install_default_diagnostics(self, diagnostic_type):
-        """Copy the config file from the diagnostics path to AQUA"""
-
-        if diagnostic_type not in diagnostic_config:
-            self.logger.error('Unknown diagnostic type: %s', diagnostic_type)
-            sys.exit(1)
-
-        for config in diagnostic_config[diagnostic_type]:
-            # NOTE: the aqua src code is in the src/aqua folder, so we need to go up one level
-            #       to find the config folder
-            source_path = os.path.join(os.path.dirname(self.pypath), '../', config['source_path'])
-            config_file = config['config_file']
-            target_directory = os.path.join(self.configpath, config['target_path'])
-            target_file = os.path.join(target_directory, config_file)
-
-            if not os.path.exists(source_path):
-                self.logger.error('The source path %s does not exist. Please check the path.', source_path)
-                sys.exit(1)
-
-            source_file = os.path.join(source_path, config_file)
-
-            if not os.path.isfile(source_file):
-                self.logger.error('The config file %s does not exist in the source path. Please check the path.', source_file)
-                sys.exit(1)
-
-            # Ensure the target directory exists using create_folder
-            create_folder(target_directory, loglevel=self.loglevel)
-
-            if not os.path.exists(target_file):
-                self.logger.debug('Copying from %s to %s', source_file, target_file)
-                shutil.copy(source_file, target_file)
-            else:
-                self.logger.debug('Config file %s already exists in the target path %s. Skipping copy.',
-                                  config_file, target_directory)
-
-    def _install_editable_diagnostics(self, diagnostic_type, editable):
-        """Create a symbolic link for the config file from the diagnostics path to AQUA"""
-
-        if diagnostic_type not in diagnostic_config:
-            self.logger.error('Unknown diagnostic type: %s', diagnostic_type)
-            sys.exit(1)
-
-        if not os.path.exists(editable):
-            self.logger.error('The editable path %s does not exist. Please check the path.', editable)
-            sys.exit(1)
-
-        for config in diagnostic_config[diagnostic_type]:
-            editable = os.path.abspath(editable)
-            self.logger.info("Copying %s config files from %s to %s", diagnostic_type, editable, self.configpath)
-            source_path = os.path.join(os.path.dirname(editable), config['source_path'])
-            config_file = config['config_file']
-            target_directory = os.path.join(self.configpath, config['target_path'])
-            target_file = os.path.join(target_directory, config_file)
-
-            if not os.path.exists(source_path):
-                self.logger.error('The source path %s does not exist. Please check the path.', source_path)
-                sys.exit(1)
-
-            source_file = os.path.join(source_path, config_file)
-
-            if not os.path.isfile(source_file):
-                self.logger.error('The config file %s does not exist in the source path. Please check the path.', source_file)
-                sys.exit(1)
-
-            # Ensure the target directory exists using create_folder
-            create_folder(target_directory, loglevel=self.loglevel)
-
-            if not os.path.exists(target_file):
-                self.logger.debug('Linking from %s to %s', source_file, target_file)
-                os.symlink(source_file, target_file)
-            else:
-                self.logger.debug('Config file %s already exists in the target path %s. Skipping link.',
-                                  config_file, target_directory)
 
     def _set_machine(self, args):
         """Modify the config-aqua.yaml with the identified machine"""
@@ -410,7 +337,7 @@ class AquaConsole():
         """
         Set the grids (and concurrently the weights and areas) paths in the config-aqua.yaml
         This will override the grids paths defined in the individual catalogs
-        
+
         Args:
             args (argparse.Namespace): arguments from the command line
         """
@@ -421,7 +348,7 @@ class AquaConsole():
 
         self.logger.info('Setting grids path to %s, weights path to %s and areas path to %s',
                          grids_path, weights_path, areas_path)
-        
+
         # Check if the paths exist and if not create them
         for path in [grids_path, areas_path, weights_path]:
             if not os.path.exists(path):
@@ -517,7 +444,7 @@ class AquaConsole():
     def _github_explore(self, repository=None):
         """
         Explore the remote GitHub repository
-        
+
         Args:
             repository (str): the repository to explore, if None it uses the default
                               DestinE-Climate-DT/Climate-DT-catalog
@@ -565,7 +492,7 @@ class AquaConsole():
     def avail(self, args):
         """
         Return the catalog available on the Github website
-        
+
         Args:
             args (argparse.Namespace): arguments from the command line
         """
@@ -574,13 +501,12 @@ class AquaConsole():
         print('Available ClimateDT catalogs at are:')
         print(available_catalog)
 
-
     def _add_catalog_github(self, catalog, repository=None):
         """
         Add a catalog from a remote Github repository.
         Default repository is the Climate-DT repository
         DestinE-Climate-DT/Climate-DT-catalog
-          
+
         Args:
             catalog (str): the catalog to be added
             repository (str): the repository from which to fetch the catalog, if None it uses the default
@@ -665,7 +591,7 @@ class AquaConsole():
                 self._copy_update_folder_file(os.path.join(self.aquapath, '..', directory),
                                          os.path.join(self.configpath, directory),
                                          update=True)
-                
+    
     def _update_catalog(self, catalog):
         """Update a catalog by copying it if not installed in editable mode
 
@@ -684,7 +610,6 @@ class AquaConsole():
         else:
             self.logger.error('%s does not appear to be installed, please consider `aqua add`', catalog)
             sys.exit(1)
-
 
     def _set_catalog(self, catalog):
         """Modify the config-aqua.yaml with the proper catalog
@@ -832,11 +757,11 @@ class AquaConsole():
                 self.logger.error("Existing files in the %s folder are not compatible", kind)
             self.logger.error(e)
             return False
-        
+
     def analysis(self, args):
         """
         Run the AQUA analysis
-        
+
         Args:
             args (argparse.Namespace): arguments from the command line
         """
@@ -847,7 +772,7 @@ class AquaConsole():
     def drop(self, args):
         """
         Run the Data Reduction OPerator
-        
+
         Args:
             args (argparse.Namespace): arguments from the command line
         """
@@ -858,13 +783,14 @@ class AquaConsole():
     def catgen(self, args):
         """
         Run the FDB catalog generator
-        
+
         Args:
             args (argparse.Namespace): arguments from the command line
         """
 
         print("Running the catalog generator")
-        catgen_execute(args)       
+        catgen_execute(args)
+
 
 def main():
     """AQUA main installation tool"""

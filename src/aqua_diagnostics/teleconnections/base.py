@@ -38,7 +38,7 @@ class BaseMixin(Diagnostic):
                          startdate=startdate, enddate=enddate, loglevel=loglevel)
 
         self.definition = self.load_definition(configdir=configdir, definition=definition,
-                                             telecname=telecname)
+                                               telecname=telecname)
         # Initialize the possible results
         self.index = None
 
@@ -124,7 +124,7 @@ class BaseMixin(Diagnostic):
             definition = f'{definition}.yaml'
         if not configdir:
             configdir = ConfigPath().get_config_dir()
-            configdir = os.path.join(configdir, 'diagnostics', 'teleconnections', 'definitions')
+            configdir = os.path.join(configdir, 'tools', 'teleconnections', 'definitions')
 
         definition_file = os.path.join(configdir, definition)
         self.logger.debug(f'Loading definition file: {definition_file}')

@@ -210,6 +210,12 @@ class SeaIce(Diagnostic):
         # merge the standard deviation DataArrays if computed
         self.result_std = xr.merge(regional_results_std, combine_attrs='drop_conflicts') if calc_std_freq else None
 
+        self.logger.debug("Loading data in memory")
+        self.result.load()
+        if calc_std_freq:
+            self.result_std.load()
+        self.logger.debug("Loaded data in memory")
+
         # return a tuple if standard deviation was computed, otherwise just the result
         return (self.result, self.result_std) if calc_std_freq else self.result
 
@@ -253,6 +259,10 @@ class SeaIce(Diagnostic):
 
         # combine the result DataArrays into one Dataset and keep only the attributes common
         self.result = xr.merge(regional_2d_results, combine_attrs='drop_conflicts')
+
+        self.logger.debug("Loading data in memory")
+        self.result.load()
+        self.logger.debug("Loaded data in memory")
 
         return self.result
 

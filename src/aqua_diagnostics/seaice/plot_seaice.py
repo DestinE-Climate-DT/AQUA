@@ -342,7 +342,7 @@ class PlotSeaIce:
 
         # generate plot type name
         if hasattr(self, "plot_type") and self.plot_type:
-            if self.plot_type == 'seasonal_cycle':
+            if self.plot_type == 'seasonalcycle':
                 pl_type = 'Seasonal cycle of the '
             elif self.plot_type == 'timeseries':
                 pl_type = 'Time series of the '
@@ -371,7 +371,7 @@ class PlotSeaIce:
         
         self.num_regions = len(region_dict)
 
-        fig_height = 6 if self.plot_type == 'seasonal_cycle' else 10
+        fig_height = 6 if self.plot_type == 'seasonalcycle' else 10
 
         fig, axes = plt.subplots(nrows=self.num_regions, ncols=1, 
                                  figsize=(fig_height, 4 * self.num_regions), squeeze=False)
@@ -413,7 +413,7 @@ class PlotSeaIce:
                                           ax=ax,
                                           **kwargs)
 
-            elif self.plot_type == 'seasonal_cycle':
+            elif self.plot_type == 'seasonalcycle':
                 fig, ax = plot_seasonalcycle(data=monthly_models,
                                              ref_data=monthly_ref,
                                              std_data=monthly_std,
@@ -438,7 +438,7 @@ class PlotSeaIce:
         
         Args:
             plot_type (str, optional): Type of plot to generate. Options are 
-                `'timeseries'` or `'seasonal_cycle'`. Defaults to `'timeseries'`.
+                `'timeseries'` or `'seasonalcycle'`. Defaults to `'timeseries'`.
             save_pdf (bool, optional): Whether to save the figure as a PDF. Defaults to True.
             save_png (bool, optional): Whether to save the figure as a PNG. Defaults to True.
             style (str, optional): Override the plotting style. Default to None (which will get the style from config file or fallback to'aqua').
@@ -448,7 +448,7 @@ class PlotSeaIce:
 
         self.logger.info(f"Plotting sea ice {self.plot_type}")
 
-        valid_type_plots = ['timeseries', 'seasonal_cycle']
+        valid_type_plots = ['timeseries', 'seasonalcycle']
 
         if self.plot_type not in valid_type_plots:
             raise ValueError(f"Invalid plot_type. Allowed plots are: {valid_type_plots}")
@@ -492,7 +492,7 @@ class PlotSeaIce:
             diagnostic_product = self.plot_type
             
             extra_keys = {'method': self.method,
-                          'regions': '_'.join(region_dict.keys())}
+                          'regions': '_'.join(region_dict.keys()).lower()}
             
             if save_pdf: 
                 output_saver.save_pdf(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,

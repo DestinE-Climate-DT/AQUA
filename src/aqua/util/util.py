@@ -82,3 +82,18 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+
+def expand_env_vars(obj):
+  """
+  Recursively apply os.path.expandvars to all strings in a nested structure.
+  Works for dicts, lists, and strings.
+  """
+  if isinstance(obj, dict):
+    return {k: expand_env_vars(v) for k, v in obj.items()}
+  elif isinstance(obj, list):
+    return [expand_env_vars(v) for v in obj]
+  elif isinstance(obj, str):
+    return os.path.expandvars(obj)
+  else:
+    return obj
