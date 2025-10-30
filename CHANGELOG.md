@@ -23,6 +23,8 @@ AQUA core complete list:
 - AQUA analysis now can receive ``stardate`` and ``enddate`` (#2368)
 
 AQUA diagnostics complete list:
+- Tropical Rainfall: speedup histogram computation and other fixes (#2390, #2375)
+- Ensemble: CLI for single experiment ensemble analysis for timeseries and climatology (#2387, #2393)
 - LatLonProfiles: figures description fix (#2388)
 - Stratification: MLD and vertical profiles diagnostic refactor (#2268)
 - ECmean Performance Indices replace EC23 climatology with the new EC24 (#2367)
