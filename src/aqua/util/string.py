@@ -44,7 +44,23 @@ def lat_to_phrase(lat: int) -> str:
     if lat < 0:
         return f"{abs(lat)}°S"
 
+      
+def get_quarter_anchor_month(freq_string: str) -> str:
+    """
+    Get the anchor month from a quarterly frequency string.
+    Examples: 'QE-DEC' -> 'DEC'; 'Q-DEC' -> 'DEC'; 'QS' -> 'DEC' (default)
 
+    Args:
+        freq_string (str): The frequency string to extract the anchor month from.
+
+    Returns:
+        str: The anchor month.
+    """
+    if '-' in freq_string:
+        return freq_string.split('-')[1]
+    return 'DEC'
+
+  
 def clean_filename(filename: str) -> str:
     """
     Check a filename by replacing spaces with '_' and forcing lowercase.
@@ -57,7 +73,7 @@ def clean_filename(filename: str) -> str:
     """
     return filename.replace(' ', '_').lower()
 
-
+  
 def extract_literal_and_numeric(text):
     """
     Given a string, extract its literal and numeric part
