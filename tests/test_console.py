@@ -594,7 +594,7 @@ def run_query_with_input(tmpdir):
         testfile = os.path.join(tmpdir, TESTFILE)
         with open(testfile, 'w', encoding='utf-8') as f:
             f.write(input_text)
-        sys.stdin = open(testfile)
+        sys.stdin = open(testfile, 'r', encoding='utf-8')
         try:
             result = query_yes_no("Question?", default_answer)
         finally:
