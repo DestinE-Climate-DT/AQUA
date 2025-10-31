@@ -16,7 +16,7 @@ class TestGlobalBiases:
         cls.tmp_path = "./"
         cls.var = 'q'
         cls.gb = GlobalBiases(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly', regrid='r100')
-        cls.plotgb = PlotGlobalBiases()
+        cls.plotgb = PlotGlobalBiases(dpi=50)
         cls.gb.retrieve()
 
     def test_climatology(self):

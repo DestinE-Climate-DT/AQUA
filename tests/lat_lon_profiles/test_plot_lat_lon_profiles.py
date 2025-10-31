@@ -124,7 +124,7 @@ class TestPlotLatLonProfilesCore:
         # Verify diagnostic_name is stored
         assert plotter.diagnostic_name == diagnostic_name
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=50)
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0, f"No PNG files created for {diagnostic_name} {data_type}"
         

@@ -15,7 +15,7 @@ class TestBoxplots:
         cls.tmp_path = "./"
         cls.var = ['tnlwrf', 'tnswrf']
         cls.bp = Boxplots(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly')
-        cls.plotbp = PlotBoxplots(diagnostic='test')
+        cls.plotbp = PlotBoxplots(diagnostic='test', dpi=50)
     
     def test_run_basic(self):
         self.bp.run(var=self.var, save_netcdf=True)

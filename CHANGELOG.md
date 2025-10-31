@@ -33,6 +33,7 @@ AQUA diagnostics complete list:
 ## [v0.18.1]
 
 AQUA core complete list:
+- Reduce calls to retrieve to speed up tests execution time (#2361)
 - Handle unknown activity names in catgen (#2351)
 - Update Data Portfolio to v2.1.0 (#2356)
 - Updated target grib codes for cpr and snvol (#2346)
