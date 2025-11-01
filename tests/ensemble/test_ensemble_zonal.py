@@ -86,7 +86,6 @@ def test_ensemble_zonal():
         "dataset_std": zonalmean_ens.dataset_std,
     }
 
-
     plot_dict = ens_zonal_plot.plot(**plot_arguments)
     
     assert plot_dict['mean_plot'][0] is not None

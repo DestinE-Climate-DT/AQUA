@@ -3,19 +3,26 @@ import os
 import numpy as np
 import xarray as xr
 from aqua.diagnostics import Boxplots, PlotBoxplots
+from conftest import DPI, LOGLEVEL
 
 # Tolerance for numerical comparisons
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
-@pytest.mark.diagnostics
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+# These tests use setup_class with shared resources (data fetching, tmp files)
+pytestmark = [
+    pytest.mark.diagnostics,
+    pytest.mark.xdist_group(name="diagnostic_setup_class")
+]
+
 class TestBoxplots:
     @classmethod
     def setup_class(cls):
         cls.tmp_path = "./"
         cls.var = ['tnlwrf', 'tnswrf']
         cls.bp = Boxplots(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly')
-        cls.plotbp = PlotBoxplots(diagnostic='test')
+        cls.plotbp = PlotBoxplots(diagnostic='test', dpi=DPI)
     
     def test_run_basic(self):
         self.bp.run(var=self.var, save_netcdf=True)

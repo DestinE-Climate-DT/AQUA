@@ -1,16 +1,16 @@
 import pytest
 from aqua import Reader
 from ocean3d import check_variable_name
-
 from ocean3d import stratification
 from ocean3d import mld
+from conftest import LOGLEVEL
 
+loglevel = LOGLEVEL
 approx_rel = 1e-4
 
 @pytest.fixture
 def common_setup(tmp_path):
     """Fixture to set up common configuration and test data."""
-    loglevel = 'DEBUG'
     catalog = 'ci'
     exp = 'hpz3'
     model = 'FESOM'

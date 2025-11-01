@@ -6,13 +6,14 @@ from ocean3d import multilevel_trend
 from ocean3d import zonal_mean_trend
 
 from aqua import Reader
+from conftest import LOGLEVEL
 
+loglevel = LOGLEVEL
 approx_rel = 1e-4
 
 @pytest.fixture
 def common_setup(tmp_path):
     """Fixture to set up common configuration and test data."""
-    loglevel = 'DEBUG'
     catalog = 'ci'
     exp = 'hpz3'
     model = 'FESOM'

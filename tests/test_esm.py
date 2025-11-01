@@ -1,16 +1,15 @@
 import pytest
 from aqua import Reader
+from conftest import LOGLEVEL
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
-loglevel = "DEBUG"
-
+loglevel = LOGLEVEL
 
 @pytest.fixture
 def reader_instance():
     return Reader(model="IFS", exp="test-tco79", source="intake-esm-test",
                   areas=False, fix=False, loglevel=loglevel)
-
 
 # aqua class for tests
 @pytest.mark.aqua

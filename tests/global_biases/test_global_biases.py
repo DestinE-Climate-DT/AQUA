@@ -4,19 +4,26 @@ import numpy as np
 import xarray as xr
 from aqua.diagnostics import GlobalBiases, PlotGlobalBiases
 from aqua.exceptions import NoDataError
+from conftest import DPI, LOGLEVEL
 
 # Tolerance for numerical comparisons
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
-@pytest.mark.diagnostics
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+# These tests use setup_class with shared resources (data fetching, tmp files)
+pytestmark = [
+    pytest.mark.diagnostics,
+    pytest.mark.xdist_group(name="diagnostic_setup_class")
+]
+
 class TestGlobalBiases:
     @classmethod
     def setup_class(cls):
         cls.tmp_path = "./"
         cls.var = 'q'
         cls.gb = GlobalBiases(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly', regrid='r100')
-        cls.plotgb = PlotGlobalBiases()
+        cls.plotgb = PlotGlobalBiases(dpi=DPI)
         cls.gb.retrieve()
 
     def test_climatology(self):

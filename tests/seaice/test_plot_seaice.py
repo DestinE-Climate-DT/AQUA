@@ -4,11 +4,18 @@ import numpy as np
 import xarray as xr
 from aqua.diagnostics import SeaIce, PlotSeaIce
 from aqua.diagnostics.core import OutputSaver
+from conftest import DPI, LOGLEVEL
 
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
-@pytest.mark.diagnostics
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+# These tests use setup_class with shared resources (data fetching, tmp files)
+pytestmark = [
+    pytest.mark.diagnostics,
+    pytest.mark.xdist_group(name="diagnostic_setup_class")
+]
+
 class TestPlotSeaIce:
     @classmethod
     def setup_class(cls):
@@ -107,7 +114,7 @@ class TestPlotSeaIce:
             monthly_ref=self.siext_ref,
             regions_to_plot=['Arctic', 'Antarctic'],
             model=self.model, exp=self.exp, source=self.source,
-            catalog=self.catalog, loglevel=self.loglevel
+            catalog=self.catalog, loglevel=self.loglevel, dpi=DPI
         )
         psi.plot_seaice(plot_type='timeseries', save_pdf=False, save_png=False)
 
@@ -116,19 +123,19 @@ class TestPlotSeaIce:
         psi = PlotSeaIce(
             regions_to_plot=['Arctic', 'Antarctic'],
             model=self.model, exp=self.exp, source=self.source,
-            catalog=self.catalog, loglevel=self.loglevel
+            catalog=self.catalog, loglevel=self.loglevel, dpi=DPI
         )
         psi.plot_seaice(plot_type="seasonalcycle", save_pdf=False, save_png=False)
 
     def test_plot_seascycle_multi(self):
         """Test the seasonal cycle path with multiple datasets."""
         psi = PlotSeaIce(monthly_models=self.siext_seas,
-                         monthly_ref=[self.siext_seas_ref])
+                         monthly_ref=[self.siext_seas_ref], dpi=DPI)
         psi.plot_seaice(plot_type="seasonalcycle", save_pdf=False, save_png=False)
 
     def test_invalid_plot_type_raises(self):
         """Test that invalid plot type raises ValueError."""
-        psi = PlotSeaIce(monthly_models=self.siext)
+        psi = PlotSeaIce(monthly_models=self.siext, dpi=DPI)
         with pytest.raises(ValueError):
             psi.plot_seaice(plot_type='bad_type', save_pdf=False, save_png=False)
 
@@ -212,7 +219,7 @@ class TestPlotSeaIce:
         psi = PlotSeaIce(monthly_models=self.siext,
                          regions_to_plot=["Arctic"], 
                          model=self.model, exp=self.exp, source=self.source, 
-                         catalog=self.catalog, loglevel=self.loglevel)
+                         catalog=self.catalog, loglevel=self.loglevel, dpi=DPI)
 
         # Both branches inside save_fig should run 
         psi.plot_seaice(plot_type="timeseries", save_pdf=True, save_png=True)
@@ -226,7 +233,7 @@ class TestPlotSeaIce:
                          monthly_ref=self.siext_ref,
                          regions_to_plot=['Arctic', 'Antarctic'],
                          model=self.model, exp=self.exp, source=self.source,
-                         catalog=self.catalog, loglevel=self.loglevel,
+                         catalog=self.catalog, loglevel=self.loglevel, dpi=DPI,
                          outputdir=self.tmp_path)
 
         psi.plot_seaice(plot_type='timeseries', save_pdf=True, save_png=True)

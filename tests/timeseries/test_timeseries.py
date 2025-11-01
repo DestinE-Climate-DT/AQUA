@@ -3,10 +3,11 @@ import pytest
 import xarray as xr
 from aqua import Reader
 from aqua.diagnostics.timeseries import Timeseries, PlotTimeseries
+from conftest import LOGLEVEL
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 
 @pytest.mark.diagnostics

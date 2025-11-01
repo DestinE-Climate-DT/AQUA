@@ -3,8 +3,9 @@
 import pytest
 import numpy as np
 from aqua import Reader
+from conftest import LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 approx_rel = 1e-4
 
 @pytest.fixture(

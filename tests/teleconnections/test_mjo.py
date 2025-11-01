@@ -2,10 +2,11 @@ import os
 import matplotlib
 import pytest
 from aqua.diagnostics.teleconnections import MJO, PlotMJO
+from conftest import LOGLEVEL
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 @pytest.mark.diagnostics
 def test_MJO(tmp_path):

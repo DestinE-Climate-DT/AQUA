@@ -6,11 +6,16 @@ import pandas as pd
 from aqua import Drop, Reader
 from aqua.drop.output_path_builder import OutputPathBuilder
 from aqua.drop.catalog_entry_builder import CatalogEntryBuilder   
+from conftest import LOGLEVEL
 
-LOGLEVEL = "DEBUG"
 DROP_PATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
 DROP_PATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
 
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+pytestmark = [
+    pytest.mark.aqua,
+    pytest.mark.xdist_group(name="dask_operations")
+]
 
 @pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "drop_test"}])
 def drop_arguments(request):
@@ -18,7 +23,6 @@ def drop_arguments(request):
     return request.param
 
 
-@pytest.mark.aqua
 class TestOutputPathBuilder:
     """Class containing tests for OutputPathBuilder."""
 
@@ -52,7 +56,6 @@ class TestOutputPathBuilder:
 
         assert path == expected
 
-@pytest.mark.aqua
 class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
 
@@ -90,7 +93,6 @@ class TestCatalogEntryBuilder:
 
 
 
-@pytest.mark.aqua
 class TestDROP:
     """Class containing DROP tests."""
 
