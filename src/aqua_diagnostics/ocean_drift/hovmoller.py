@@ -100,7 +100,7 @@ class Hovmoller(Diagnostic):
         if region:
             self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
             res_dict = super()._select_region(
-                data=self.data, region=region, diagnostic="ocean3d", drop=True
+                data=self.data, region=region, diagnostic=self.diagnostic_name, drop=True
             )
             self.region = res_dict["region"]
             self.lat_limits = res_dict["lat_limits"]
@@ -112,6 +112,7 @@ class Hovmoller(Diagnostic):
         self.stacked_data = self.compute_hovmoller(
             dim_mean=dim_mean, anomaly_ref=anomaly_ref
         )
+        self.logger.info("Region is: %s", self.region)
         self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=self.region)
         self.logger.info("Hovmoller diagram saved to netCDF file")
 
@@ -272,5 +273,6 @@ class Hovmoller(Diagnostic):
                 diagnostic_product=f"{diagnostic_product}",
                 outputdir=outputdir,
                 rebuild=rebuild,
-                extra_keys={"region": region, 'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
+                extra_keys={"region": self.region.replace(" ", "_").lower() if self.region else None,
+                            'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
             )
