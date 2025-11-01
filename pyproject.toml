@@ -39,7 +39,7 @@ dependencies = [
     "cartopy==0.24.1",
     "cfgrib",
     "dask",
-    "eccodes==2.41.0",
+    "eccodes==2.44.0",
     "docker",
     "filelock",
     "gcsfs", # Google Cloud Storage File System
