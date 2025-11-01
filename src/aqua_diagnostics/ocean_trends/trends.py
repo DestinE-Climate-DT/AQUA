@@ -201,6 +201,6 @@ class Trends(Diagnostic):
             outputdir=outputdir,
             rebuild=rebuild,
             data=self.trend_coef,
-            extra_keys={"region": self.region.replace(" ", "_") if self.region else None},
+            extra_keys={"region": self.region.replace(" ", "_").lower() if self.region else None},
         )
         self.logger.info("Trend coefficients saved to NetCDF file")
