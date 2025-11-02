@@ -2,9 +2,7 @@
 import os
 import re
 import shutil
-import tempfile
 import xarray as xr
-from filelock import FileLock
 from smmregrid import CdoGenerate, GridInspector
 from smmregrid import Regridder as SMMRegridder
 from smmregrid.util import check_gridfile
@@ -246,61 +244,18 @@ class Regridder():
         """
         area_filename = self._area_filename(grid_name if grid_name else None, reader_kwargs)
         area_type = "target" if grid_name else "source"
-        lock_filename = area_filename + ".lock"
-        
-        # Use file locking to prevent race conditions in parallel environments
-        lock = FileLock(lock_filename, timeout=300)  # 5 minute timeout
-        
-        try:
-            with lock:
-                # Double-check if file exists after acquiring lock
-                if not rebuild and check_existing_file(area_filename):
-                    self.logger.info("Loading existing %s area from %s.", area_type, area_filename)
-                    return xr.open_dataset(area_filename)
-                
-                # generate and save the area
-                grid_area = self._generate_area(grid_name, grid_dict, area_filename, area_type)
-                
-                # Write atomically to avoid corruption
-                self._atomic_write_netcdf(grid_area, area_filename, self.logger)
-                self.logger.info("Saved %s area to %s.", area_type, area_filename)
-                
-                return grid_area
-        finally:
-            # Clean up lock file if it exists
-            try:
-                if os.path.exists(lock_filename):
-                    os.remove(lock_filename)
-            except OSError:
-                # Ignore errors when removing lock file (e.g., file already removed)
-                pass
 
-    @staticmethod
-    def _atomic_write_netcdf(dataset, filename, logger):
-        """
-        Atomically write a NetCDF file using a temporary file and atomic rename.
-        
-        Args:
-            dataset (xr.Dataset): The dataset to write.
-            filename (str): The target filename.
-            logger: Logger instance for logging.
-        """
-        # Write to temporary file in the same directory for atomic rename
-        file_dir = os.path.dirname(filename) or '.'
-        with tempfile.NamedTemporaryFile(mode='wb', dir=file_dir, delete=False, suffix='.nc.tmp') as tmp_file:
-            temp_filename = tmp_file.name
-        
-        try:
-            dataset.to_netcdf(temp_filename)
-            os.replace(temp_filename, filename)  # Atomic operation on POSIX systems
-        except Exception as e:
-            # Clean up temp file on error
-            try:
-                if os.path.exists(temp_filename):
-                    os.remove(temp_filename)
-            except:
-                pass
-            raise e
+        # if file exists, load it
+        if not rebuild and check_existing_file(area_filename):
+            self.logger.info("Loading existing %s area from %s.", area_type, area_filename)
+            return xr.open_dataset(area_filename)
+
+        # generate and save the area
+        grid_area = self._generate_area(grid_name, grid_dict, area_filename, area_type)
+        grid_area.to_netcdf(area_filename)
+        self.logger.info("Saved %s area to %s.", area_type, area_filename)
+
+        return grid_area
 
     def _generate_area(self, grid_name, grid_dict, area_filename, area_type):
         """
@@ -377,68 +332,51 @@ class Regridder():
 
             weights_filename = self._weights_filename(tgt_grid_name, regrid_method,
                                                       vertical_dim, reader_kwargs)
-            lock_filename = weights_filename + ".lock"
-            weights = None
-            
-            # Use file locking to prevent race conditions in parallel environments
-            lock = FileLock(lock_filename, timeout=600)  # 10 minute timeout for weights generation
-            
-            try:
-                with lock:
-                    # Double-check if weights already exist after acquiring lock
-                    if rebuild or not check_existing_file(weights_filename):
-                        # clean if necessary
-                        if os.path.exists(weights_filename):
-                            self.logger.info(
-                                "Weights file %s exists. Regenerating.", weights_filename)
-                            os.remove(weights_filename)
-                        else:
-                            self.logger.info(
-                                "Generating weights for %s grid: %s", tgt_grid_name, vertical_dim)
 
-                        if smm_vertical_dim:
-                            self.logger.warning("Mask-changing vertical dimension identified, weights generation might take a few!")
+            # check if weights already exist, if not, generate them
+            if rebuild or not check_existing_file(weights_filename):
 
-                        # smmregrid call
-                        # TODO: here or better in smmregird, we could use GridInspect to get the grid info
-                        # and reduce the dimensionality of the input data.
-                        generator = CdoGenerate(source_grid=self.src_grid_path[vertical_dim],
-                                                target_grid=self._get_grid_path(tgt_grid_dict.get('path')),
-                                                cdo_extra=cdo_extra,
-                                                cdo_options=cdo_options,
-                                                cdo=self.cdo,
-                                                loglevel=self.loglevel)
+                # clean if necessary
+                if os.path.exists(weights_filename):
+                    self.logger.info(
+                        "Weights file %s exists. Regenerating.", weights_filename)
+                    os.remove(weights_filename)
+                else:
+                    self.logger.info(
+                        "Generating weights for %s grid: %s", tgt_grid_name, vertical_dim)
 
-                        # generate and save the weights
-                        weights = generator.weights(method=regrid_method,
-                                                    vertical_dim=smm_vertical_dim,
-                                                    nproc=nproc)
-                        
-                        # Write atomically to avoid corruption
-                        self._atomic_write_netcdf(weights, weights_filename, self.logger)
+                if smm_vertical_dim:
+                    self.logger.warning("Mask-changing vertical dimension identified, weights generation might take a few!")
 
-                    else:
-                        self.logger.info(
-                            "Loading existing weights from %s.", weights_filename)
-                        # load the weights
-                        weights = xr.open_dataset(weights_filename)
-            finally:
-                # Clean up lock file if it exists
-                try:
-                    if os.path.exists(lock_filename):
-                        os.remove(lock_filename)
-                except OSError:
-                    # Ignore errors when removing lock file (e.g., file already removed)
-                    pass
+                # smmregrid call
+                # TODO: here or better in smmregird, we could use GridInspect to get the grid info
+                # and reduce the dimensionality of the input data.
+                generator = CdoGenerate(source_grid=self.src_grid_path[vertical_dim],
+                                        target_grid=self._get_grid_path(tgt_grid_dict.get('path')),
+                                        cdo_extra=cdo_extra,
+                                        cdo_options=cdo_options,
+                                        cdo=self.cdo,
+                                        loglevel=self.loglevel)
+
+                # generate and save the weights
+                weights = generator.weights(method=regrid_method,
+                                            vertical_dim=smm_vertical_dim,
+                                            nproc=nproc)
+                weights.to_netcdf(weights_filename)
+
+            else:
+                self.logger.info(
+                    "Loading existing weights from %s.", weights_filename)
+                # load the weights
+                weights = xr.open_dataset(weights_filename)
 
             # initialize the regridder
-            if weights is not None:
-                self.smmregridder[vertical_dim] = SMMRegridder(
-                    weights=weights,
-                    horizontal_dims=self.src_horizontal_dims,
-                    vertical_dim=smm_vertical_dim,
-                    loglevel=self.loglevel
-                )
+            self.smmregridder[vertical_dim] = SMMRegridder(
+                weights=weights,
+                horizontal_dims=self.src_horizontal_dims,
+                vertical_dim=smm_vertical_dim,
+                loglevel=self.loglevel
+            )
 
     def _area_filename(self, tgt_grid_name, reader_kwargs):
         """"
