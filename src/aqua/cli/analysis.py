@@ -30,10 +30,9 @@ def analysis_parser(parser=None):
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
     parser.add_argument("--source_oce", type=str, help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
-    parser.add_argument("--realization", type=str, default=None, help="Realization (default: None)")
+    parser.add_argument("--realization", type=str, help="Realization (default: None)")
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
-    parser.add_argument("-f", "--config", type=str, required=False, default=None,
-                        help="Configuration file")
+    parser.add_argument("-f", "--config", type=str, help="Configuration file")
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
     parser.add_argument("--regrid", type=str, default="False",
                         help="Regrid option (Target grid/False). If False, no regridding will be performed.")
@@ -43,9 +42,9 @@ def analysis_parser(parser=None):
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
     parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
     parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
-    parser.add_argument("-l", "--loglevel", type=lambda s: s.upper(),
+    parser.add_argument("-l", "--loglevel", type=str.upper,
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-                        default=None, help="Log level")
+                        default="INFO", help="Log level")
 
     return parser
 
@@ -60,17 +59,17 @@ def analysis_execute(args):
 
     config = load_yaml(aqua_config_path)
     loglevel = args.loglevel or config.get('job', {}).get('loglevel', "info")
-    logger = log_configure(loglevel.lower(), 'AQUA Analysis')
+    logger = log_configure(log_level=loglevel.lower(), log_name='AQUA Analysis')
 
     model = args.model or config.get('job', {}).get('model')
     exp = args.exp or config.get('job', {}).get('exp')
     source = args.source or config.get('job', {}).get('source', 'lra-r100-monthly')
-    source_oce = args.source_oce or config.get('job', {}).get('source_oce', None)
-    realization = args.realization if args.realization else config.get('job', {}).get('realization', None)
+    source_oce = args.source_oce or config.get('job', {}).get('source_oce')
+    realization = args.realization if args.realization else config.get('job', {}).get('realization')
 
     # startdate and enddate
-    startdate = args.startdate or config.get('job', {}).get('startdate', None)
-    enddate = args.enddate or config.get('job', {}).get('enddate', None)
+    startdate = args.startdate or config.get('job', {}).get('startdate')
+    enddate = args.enddate or config.get('job', {}).get('enddate')
     # We get regrid option and then we set it to None if it is False
     # This avoids to add the --regrid argument to the command line
     # if it is not needed
@@ -108,8 +107,11 @@ def analysis_execute(args):
     logger.debug("outputdir: %s", outputdir)
     logger.debug("max_threads: %d", max_threads)
 
-    realization_folder = format_realization(realization)
-    output_dir = os.path.join(outputdir, catalog, model, exp, realization_folder)
+    # Format the realization string by prepending 'r' if it is a digit or setting a default `r1`.
+    realization = format_realization(realization)
+    logger.info("Input realization formatted to: %s", realization)
+
+    output_dir = os.path.join(outputdir, catalog, model, exp, realization)
     output_dir = os.path.expandvars(output_dir)
 
     os.environ["OUTPUT"] = output_dir

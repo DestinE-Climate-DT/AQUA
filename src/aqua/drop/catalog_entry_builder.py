@@ -1,10 +1,13 @@
 """Class to create a catalog entry for DROP"""
 
 from aqua.logger import log_configure
-from aqua.util import format_realization, to_list
-from .output_path_builder import OutputPathBuilder
+from aqua.util import format_realization
 from aqua.util import replace_intake_vars, replace_urlpath_jinja
+from .output_path_builder import OutputPathBuilder
 
+
+# default grid name for DROP outputs, if not specified otherwise
+DEFAULT_DROP_GRID = 'lon-lat-r100'  
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for DROP"""
@@ -73,7 +76,7 @@ class CatalogEntryBuilder():
 
     #     return old if len(old) > 1 else old[0]
 
-    def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name='lon-lat'):
+    def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name=DEFAULT_DROP_GRID):
         """
         Create an entry in the catalog for DROP
 
@@ -118,13 +121,17 @@ class CatalogEntryBuilder():
                 'combine': 'by_coords'
             }
 
-            # TODO: add kwargs in form of key-value pairs to be added to the intake jinja strings
-            catblock = replace_urlpath_jinja(catblock, self.realization, 'realization')
-            self.logger.debug("Urlpath after replacing realization: %s", catblock['args']['urlpath'])
-            catblock = replace_urlpath_jinja(catblock, self.region, 'region')
-            self.logger.debug("Urlpath after replacing region: %s", catblock['args']['urlpath'])
-            catblock = replace_urlpath_jinja(catblock, self.stat, 'stat')
-            self.logger.debug("Urlpath after replacing stat: %s", catblock['args']['urlpath'])
+            # Jinja parameters to be replaced in the urlpath
+            jinja_params = {
+                'realization': self.realization,
+                'region': self.region,
+                'stat': self.stat
+            }
+
+            # Apply replacements
+            for param_name, param_value in jinja_params.items():
+                catblock = replace_urlpath_jinja(catblock, param_value, param_name)
+                self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock['args']['urlpath'])
 
             # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
             # catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))

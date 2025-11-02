@@ -27,13 +27,6 @@ references:
     reader_kwargs: null
     startdate: '2001-01-01'
     enddate: '2024-12-31'
-  - catalog: obs
-    model: 'ERA5'
-    exp: 'era5'
-    regrid: 'r100'
-    source: 'monthly'
-    startdate: '1990-01-01'
-    enddate: '2020-12-31'
 
 output:
   outputdir: "./"
@@ -111,12 +104,3 @@ diagnostics:
       tnlwrf-tnlwrfcs:
         vmin: -30
         vmax: 30
-
-  boxplots:
-    run: true
-    diagnostic_name: 'radiation_toa'
-    variables:
-      - vars: ['-tnlwrf', 'tnswrf']
-        add_mean_line: true
-        anomalies: true
-        ref_number: 1 # use ERA5 as reference for anomalies

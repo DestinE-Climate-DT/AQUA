@@ -122,7 +122,7 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
     for tool, tool_config in diag_config.items():
 
         logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
-        logfile = f"{output_dir}/{diagnostic}-{tool}.log"
+        
         cli_path = cli.get(tool)
         if cli_path is None:
             logger.error("CLI path for tool '%s' not found, skipping.", tool)
@@ -164,8 +164,12 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
             logger.error(f"Config for tool '{tool}' not found, skipping.")
             continue
 
-        for cfg in cfgs:
+        for i, cfg in enumerate(cfgs, start=1):
             args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
+            if len(cfgs) == 1:
+                logfile = f"{output_dir}/{diagnostic}-{tool}.log"
+            else:
+                logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
 
             run_diagnostic(
                 diagnostic=diagnostic,

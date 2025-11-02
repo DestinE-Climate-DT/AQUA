@@ -72,13 +72,13 @@ class PlotHovmoller:
         Returns:
             None
         """
-        self.set_suptitle()
+        self.set_suptitle(content="Hovmöller")
         self.set_title()
-        self.set_description()
+        self.set_description(content="Hovmöller plot of spatially averaged")
         self.set_data_type()
         self.set_texts()
         self.set_vmax_vmin()
-        self.logger.debug("Plotting Hovmoller for variables: %s", self.vars)
+        self.logger.debug("Plotting Hovmöller for variables: %s", self.vars)
         fig = plot_multi_hovmoller(
             maps=self.data,
             variables=self.vars,
@@ -124,9 +124,9 @@ class PlotHovmoller:
         self.levels = levels
         self.set_levels()
         self.set_data_for_levels()
-        self.set_suptitle()
+        self.set_suptitle(content="Timeseries")
         self.set_title()
-        self.set_description()
+        self.set_description(content="Timeseries of spatially averaged")
         self.set_data_type()
         self.set_texts()
         self.set_vmax_vmin()
@@ -192,11 +192,11 @@ class PlotHovmoller:
         """
         nlev = len(self.levels)
         cmap = plt.cm.plasma_r
-        self.line_plot_colours = [cmap(i / (nlev - 1)) for i in range(nlev)]
+        self.line_plot_colours = [cmap(0.3 + 0.7*i/(nlev-1)) for i in range(nlev)]
 
-    def set_suptitle(self):
+    def set_suptitle(self, content: str = None):
         """Set the suptitle for the Hovmoller plot."""
-        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"{content} plot in the {self.region} - {self.catalog} {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -214,10 +214,10 @@ class PlotHovmoller:
                 self.title_list.append(title)
         self.logger.debug("Title list set to: %s", self.title_list)
 
-    def set_description(self):
+    def set_description(self, content: str = None):
         """Set the description for the Hovmoller plot."""
 
-        self.description = f'Spatially averaged {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}'
+        self.description = f'{content} {self.region} region for experiment {self.catalog} {self.model} {self.exp}'
 
     def set_vmax_vmin(self):
         """

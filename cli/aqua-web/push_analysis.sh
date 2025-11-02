@@ -12,11 +12,8 @@ rsync_with_mkdir() {
     local remote_host="${rsync_target%%:*}"
     local remote_path="${rsync_target#*:}"
 
-    # Ensure the remote directory exists
-    ssh "$remote_host" "mkdir -p \"$remote_path\""
-
     # Run rsync
-    rsync -avz "$local_path/" "$rsync_target/"
+    rsync -avz "$local_path/" "$rsync_target/" --relative --chmod=D775,F664
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
         log_message ERROR "Rsync failed with exit code $exit_code"
@@ -58,8 +55,8 @@ push_lumio() {
         if [ -f "content/experiments.yaml" ]; then
             rsync -avz content/experiments.yaml $3/content/experiments.yaml
         fi
-        rsync_with_mkdir content/png/$2/ $3/content/png/$2/
-        rsync_with_mkdir content/pdf/$2/ $3/content/pdf/$2/
+        rsync_with_mkdir content/png/$2/ $3
+        rsync_with_mkdir content/pdf/$2/ $3
         return
     else
         log_message INFO "Pushing figures to bucket $1 on LUMI-O, experiment: $2"

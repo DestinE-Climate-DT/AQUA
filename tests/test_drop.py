@@ -59,11 +59,11 @@ class TestOutputPathBuilder:
 class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
 
-    @pytest.mark.parametrize("resolution, frequency, realization, region, stat", [
-        ('r100', 'monthly', 'r1', 'global', 'mean'),
-        ('r200', 'daily', 'r1', 'global', 'mean'),
+    @pytest.mark.parametrize("resolution, frequency, realization, region, stat, source_grid_name", [
+        ('r100', 'monthly', 'r1', 'global', 'mean', 'lon-lat-r100'),
+        ('r200', 'daily', 'r1', 'global', 'mean', 'lon-lat'),
       ])
-    def test_create_entry_name(self, drop_arguments, resolution, frequency, realization, region, stat):
+    def test_create_entry_name(self, drop_arguments, resolution, frequency, realization, region, stat, source_grid_name):
         """Test creation of entry name."""
         builder = CatalogEntryBuilder(
             catalog='ci', **drop_arguments,
@@ -71,7 +71,7 @@ class TestCatalogEntryBuilder:
             stat=stat, region=region, loglevel=LOGLEVEL
         )
         entry_name = builder.create_entry_name()
-        block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name='lon-lat')
+        block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name=source_grid_name)
         
         if resolution == 'r100' and frequency == 'monthly':
             expected_name = f'lra-{resolution}-{frequency}'
@@ -87,7 +87,7 @@ class TestCatalogEntryBuilder:
             resolution=resolution, frequency=frequency, realization='r2',
             stat=stat, region=region, loglevel=LOGLEVEL
         )
-        newblock = builder2.create_entry_details(basedir=drop_arguments["outdir"], catblock=block, source_grid_name='lon-lat')
+        newblock = builder2.create_entry_details(basedir=drop_arguments["outdir"], catblock=block, source_grid_name=source_grid_name)
         assert newblock['args']['urlpath'] == block['args']['urlpath']
         assert newblock['parameters']['realization']['allowed'] == ['r1','r2']
 

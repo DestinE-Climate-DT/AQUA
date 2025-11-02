@@ -33,8 +33,8 @@ class PlotBoxplots:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name='Boxplots')
 
-    def _save_figure(self, fig,
-                     data, data_ref, var, format='png'):
+    def _save_figure(self, fig, data, data_ref, var,
+                     diagnostic_product='boxplot', description=None, format='png'):
         """
         Handles the saving of a figure using OutputSaver.
 
@@ -42,9 +42,9 @@ class PlotBoxplots:
             fig (matplotlib.Figure): The figure to save.
             data (xarray.Dataset or list of xarray.Dataset): Input dataset(s) containing the fldmeans of the variables to plot.
             data_ref (xarray.Dataset or list of xarray.Dataset, optional): Reference dataset(s) for comparison.
+            var (str): Variable name.
             diagnostic_product (str): Name of the diagnostic product.
             description (str): Description of the figure.
-            var (str): Variable name.
             format (str): Format to save the figure ('png' or 'pdf').
         """
         catalog = extract_attrs(data, 'AQUA_catalog')
@@ -80,7 +80,16 @@ class PlotBoxplots:
             f"{m} (exp: {e}) from {time_to_string(s)} to {time_to_string(en)}"
             for m, e, s, en in zip(all_models, all_exps, all_startdates, all_enddates)
         )
-        description = f"Boxplot for: {dataset_info}"
+        if not description:
+            description = f"Boxplot for: {dataset_info}."
+
+        if self.anomalies:
+            ref_name = extract_attrs(data_ref[self.ref_number], 'AQUA_model')
+            description += (
+                f" Anomalies with respect to {ref_name} mean value are shown. "
+                "The dashed line represents the mean value, the solid line the median value, "
+                "and the number indicates the absolute mean value."
+            )
 
         metadata = {"Description": description}
         extra_keys = {'var': '_'.join(var) if isinstance(var, list) else var}
@@ -93,7 +102,8 @@ class PlotBoxplots:
             raise ValueError(f'Unsupported format: {format}. Use "png" or "pdf".')
 
 
-    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, add_mean_line=False, ref_number=0, title=None):
+    def plot_boxplots(self, data, data_ref=None, var=None, anomalies=False, add_mean_line=False, 
+                      ref_number=0, title=None, description=None):
         """
         Plot boxplots for specified variables in the dataset.
 
@@ -105,8 +115,11 @@ class PlotBoxplots:
             add_mean_line (bool): Whether to add dashed lines for means.
             ref_number (int): Position of reference dataset in data_ref list to use when plotting anomalies.
             title (str, optional): Title for the plot. If None, a default title will be generated.
+            description(str, optional): Description for the plot. If None, a default description will be generated.
         """
 
+        self.ref_number = ref_number
+        self.anomalies = anomalies 
         data = to_list(data)
         data_ref = to_list(data_ref) if data_ref is not None else []
 
@@ -130,22 +143,21 @@ class PlotBoxplots:
             means_dict = {v: mean_ds[v].item() for v in mean_ds.data_vars}
             abs_means.append(means_dict)
         
-        if anomalies and data_ref:
-            self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[ref_number], 'AQUA_model')}")
-            ref = data_ref[ref_number] 
+        if self.anomalies and data_ref:
+            self.logger.info(f"Computing anomalies relative to reference dataset {extract_attrs(data_ref[self.ref_number], 'AQUA_model')}")
+            ref = data_ref[self.ref_number] 
             fldmeans = [ds - ref.mean('time') for ds in fldmeans]
 
         if not title:
             model_exp_list = [f"{m} ({e})" for m, e in zip(model_names, exp_names)]
-            seen = set()
-            model_exp_list_unique = [x for x in model_exp_list if not (x in seen or seen.add(x))]
+            model_exp_list_unique = list(dict.fromkeys(model_exp_list))
             title = "Boxplot for: " + ", ".join(model_exp_list_unique)
 
         # Plot boxplot 
         fig, ax = boxplot(fldmeans=fldmeans, model_names=model_names, variables=var, variable_names=long_names, title=title, 
                           add_mean_line=add_mean_line, loglevel=self.loglevel)
 
-        if anomalies and data_ref:
+        if self.anomalies and data_ref:
             ax.set_ylabel("Anomalies with respect to observation mean (W/m2)")
 
             if add_mean_line:
@@ -179,8 +191,6 @@ class PlotBoxplots:
 
 
         if self.save_pdf:
-            self._save_figure(fig, data, data_ref, var, format='pdf')
+            self._save_figure(fig=fig, data=data, data_ref=data_ref, var=var, diagnostic_product='boxplot', format='pdf')
         if self.save_png:
-            self._save_figure(fig, data, data_ref, var, format='png')
-
-
+            self._save_figure(fig=fig, data=data, data_ref=data_ref, var=var, diagnostic_product='boxplot', format='png')

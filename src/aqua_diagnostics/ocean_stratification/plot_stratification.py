@@ -107,9 +107,9 @@ class PlotStratification:
                         self.ytext.append(None)
 
     def set_label_line_plot(self):
-        self.data_label = "Model"
+        self.data_label = self.model
         if self.obs:
-            self.obs_label = "Obs"
+            self.obs_label = self.obs.attrs.get("model", "Observation")
 
     def set_data_list(self):
         self.data_list = [self.data]
@@ -156,7 +156,7 @@ class PlotStratification:
         if plot_type is None:
             plot_type = ""
         # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
-        self.suptitle = f"Stratification {self.clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"Stratification in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -176,9 +176,10 @@ class PlotStratification:
                 #     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
-    def set_description(self):
-        
-        self.description = f"{self.diagnostic_product} {self.clim_time} climatology spatially averaged {self.region} {self.clim_time} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
+    def set_description(self, ):
+        self.description = f"Stratification plot of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.catalog} {self.model} {self.exp} experiment"
+        if self.obs:
+            self.description = self.description + (f" with the reference data from {self.obs.attrs['catalog']} {self.obs.attrs['model']} {self.obs.attrs['exp']}")
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

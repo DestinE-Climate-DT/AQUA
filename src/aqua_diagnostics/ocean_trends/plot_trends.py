@@ -66,9 +66,9 @@ class PlotTrends:
         self.logger.debug(f"Levels set to: {self.levels}")
         self.data = self.set_convert_lon(data=self.data)
         self.set_data_list()
-        self.set_suptitle(plot_type='Multi-level')
+        self.set_suptitle(plot_type='Multi-level Trends')
         self.set_title()
-        self.set_description()
+        self.set_description(content="Multi-level Trends")
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -107,9 +107,9 @@ class PlotTrends:
         """
         self.diagnostic_product = 'zonal_mean'
         self.set_data_list()
-        self.set_suptitle(plot_type='Zonal mean')
+        self.set_suptitle(plot_type='Zonal mean Trends')
         self.set_title()
-        self.set_description()
+        self.set_description(content="Zonal mean Trends")
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -190,7 +190,7 @@ class PlotTrends:
         """Set the title for the plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type} Trends"
+        self.suptitle = f"{plot_type} in {self.region} - {self.catalog} {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -220,12 +220,12 @@ class PlotTrends:
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
-    def set_description(self):
+    def set_description(self, content=None):
         """
         Set the description metadata for the plot.
         """
-        
-        self.description = f"{self.diagnostic_product} {self.region} region of {self.catalog} {self.model} {self.exp} "
+
+        self.description = f"{content} in the {self.region} region of {self.catalog} {self.model} {self.exp}."
 
     def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},
                   rebuild: bool = True,

@@ -140,7 +140,7 @@ def boxplot(fldmeans: list[xr.Dataset],
 
     # Title and labels
     if title:
-        ax.set_title(title, fontsize=fontsize + 4)
+        ax.set_title(title, fontsize=fontsize + 3)
     else:
         vars_str = ', '.join(labels[v] for v in variables)
         models_str = ', '.join(model_names)

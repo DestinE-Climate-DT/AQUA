@@ -174,9 +174,9 @@ class Trends(Diagnostic):
         trend_data.attrs["AQUA_region"] = self.region
         self.logger.info("Trend value calculated")
 
-        self.logger.info("Loading trend data in memory")
+        self.logger.debug("Loading trend data in memory")
         trend_data.load()
-        self.logger.info("Loaded trend data in memory")
+        self.logger.debug("Loaded trend data in memory")
         return trend_data
 
     def save_netcdf(

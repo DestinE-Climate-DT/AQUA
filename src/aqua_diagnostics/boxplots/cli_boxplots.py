@@ -102,9 +102,18 @@ if __name__ == '__main__':
 
                     fldmeans_ref.append(boxplots_ref.fldmeans)
 
+                all_entries = datasets + references
+                model_exp_list = [f"{entry['model']} ({entry['exp']})" for entry in all_entries]
+                model_exp_list_unique = list(dict.fromkeys(model_exp_list))
+
+                title=None
+                if variables == ['-snlwrf', 'snswrf', 'slhtf', 'ishf']:
+                    title = "Boxplot of Surface Radiation Fluxes for: " + ", ".join(model_exp_list_unique)
+                elif variables == ['-tnlwrf', 'tnswrf']:
+                    title = "Boxplot of TOA Radiation Fluxes for: " + ", " .join(model_exp_list_unique)
 
                 plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
-                plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, **plot_kwargs)
+                plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, title=title, **plot_kwargs)
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
