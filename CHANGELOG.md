@@ -31,7 +31,7 @@ AQUA core complete list:
 - AQUA analysis now can receive ``stardate`` and ``enddate`` (#2368)
 
 AQUA diagnostics complete list:
-- Ocean3D diagnostics: improve description, titles and notebook (#2397)
+- Ocean3D diagnostics: improve description, titles and notebook (#2397, #2414)
 - Ocean3D diagnostics config files: fix optimal chunking (#2409)
 - Boxplots: improve title and description (#2411)
 - LatLonProfiles: figures description fix (#2388)
