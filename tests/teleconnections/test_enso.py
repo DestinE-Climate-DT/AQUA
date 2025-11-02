@@ -3,10 +3,11 @@ import matplotlib
 import pytest
 from aqua.exceptions import NotEnoughDataError
 from aqua.diagnostics.teleconnections import ENSO, PlotENSO
+from conftest import LOGLEVEL
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 
 @pytest.mark.diagnostics

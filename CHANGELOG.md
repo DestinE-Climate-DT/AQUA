@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 - New position for push_analysis ``config.grouping.yaml` in `$AQUA/config/analysis`
 
 AQUA core complete list:
+- Safe parallel creation of area and weight files (#2412)
 - New grid lat-lon-r100 with explicit grid file, new default in DROP catgen (#2410, #2413)
 - Realization formatting correctly processed by the Reader (#2392) 
 - Realization (and other intake kwargs) are an attribute of the Reader (#2392)
@@ -41,6 +42,7 @@ AQUA diagnostics complete list:
 ## [v0.18.1]
 
 AQUA core complete list:
+- Reduce calls to retrieve to speed up tests execution time (#2361)
 - Handle unknown activity names in catgen (#2351)
 - Update Data Portfolio to v2.1.0 (#2356)
 - Updated target grib codes for cpr and snvol (#2346)

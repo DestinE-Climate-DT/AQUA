@@ -2,10 +2,11 @@ import os
 import pytest
 import xarray as xr
 from aqua.diagnostics.timeseries import Gregory, PlotGregory
+from conftest import LOGLEVEL
 
 # pytest approximation, to bear with different machines
 approx_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 @pytest.mark.diagnostics
 class TestGregory:
