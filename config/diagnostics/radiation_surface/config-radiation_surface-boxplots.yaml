@@ -27,7 +27,7 @@ references:
     enddate: '2020-12-31'
   - catalog: 'obs'
     model: 'CERES'
-    exp: 'ebaf-sfc41'
+    exp: 'ebaf-sfc421'
     source: 'monthly'
     regrid: 'r100'
     reader_kwargs: null
