@@ -34,28 +34,17 @@ if __name__ == '__main__':
     cli = DiagnosticCLI(args, 'lat_lon_profiles', 'config_lat_lon_profiles.yaml', log_name='LatLonProfiles CLI').prepare()
     cli.open_dask_cluster()
     
-    logger = cli.logger
-    config_dict = cli.config_dict
-    regrid = cli.regrid
-    reader_kwargs = cli.reader_kwargs
-
-    # Output options (from cli_base)
-    outputdir = cli.outputdir
-    rebuild = cli.rebuild
-    save_pdf = cli.save_pdf
-    save_png = cli.save_png
-    dpi = cli.dpi
     
     # Diagnostic-specific output option
-    create_catalog_entry = config_dict['output'].get('create_catalog_entry', True)
+    create_catalog_entry = cli.config_dict['output'].get('create_catalog_entry', True)
 
     # LatLonProfiles diagnostic
-    if 'lat_lon_profiles' in config_dict['diagnostics']:
-        if config_dict['diagnostics']['lat_lon_profiles']['run']:
-            logger.info("LatLonProfiles diagnostic is enabled.")
+    if 'lat_lon_profiles' in cli.config_dict['diagnostics']:
+        if cli.config_dict['diagnostics']['lat_lon_profiles']['run']:
+            cli.logger.info("LatLonProfiles diagnostic is enabled.")
 
             # Extract all configuration
-            diagnostic_config = config_dict['diagnostics']['lat_lon_profiles']
+            diagnostic_config = cli.config_dict['diagnostics']['lat_lon_profiles']
             diagnostic_name = diagnostic_config.get('diagnostic_name', 'lat_lon_profiles')
             mean_type = diagnostic_config.get('mean_type', 'zonal')
             center_time = diagnostic_config.get('center_time', True)
@@ -73,26 +62,26 @@ if __name__ == '__main__':
 
             # Process variables
             for var in diagnostic_config.get('variables', []):
-                var_config, regions = load_var_config(config_dict, var)
+                var_config, regions = load_var_config(cli.config_dict, var)
                 process_variable_or_formula(
-                    config_dict=config_dict,
+                    config_dict=cli.config_dict,
                     var_config=var_config,
                     regions=regions,
-                    datasets=config_dict['datasets'],
+                    datasets=cli.config_dict['datasets'],
                     mean_type=mean_type,
                     diagnostic_name=diagnostic_name,
-                    regrid=regrid,
+                    regrid=cli.regrid,
                     freq=freq,
                     compute_std=compute_std,
                     exclude_incomplete=exclude_incomplete,
                     center_time=center_time,
                     box_brd=box_brd,
-                    outputdir=outputdir,
-                    rebuild=rebuild,
-                    reader_kwargs=reader_kwargs,
-                    save_pdf=save_pdf,
-                    save_png=save_png,
-                    dpi=dpi,
+                    outputdir=cli.outputdir,
+                    rebuild=cli.rebuild,
+                    reader_kwargs=cli.reader_kwargs,
+                    save_pdf=cli.save_pdf,
+                    save_png=cli.save_png,
+                    dpi=cli.dpi,
                     compute_longterm=compute_longterm,
                     compute_seasonal=compute_seasonal,
                     loglevel=cli.loglevel,
@@ -101,26 +90,26 @@ if __name__ == '__main__':
 
             # Process formulae
             for var in diagnostic_config.get('formulae', []):
-                var_config, regions = load_var_config(config_dict, var)
+                var_config, regions = load_var_config(cli.config_dict, var)
                 process_variable_or_formula(
-                    config_dict=config_dict,
+                    config_dict=cli.config_dict,
                     var_config=var_config,
                     regions=regions,
-                    datasets=config_dict['datasets'],
+                    datasets=cli.config_dict['datasets'],
                     mean_type=mean_type,
                     diagnostic_name=diagnostic_name,
-                    regrid=regrid,
+                    regrid=cli.regrid,
                     freq=freq,
                     compute_std=compute_std,
                     exclude_incomplete=exclude_incomplete,
                     center_time=center_time,
                     box_brd=box_brd,
-                    outputdir=outputdir,
-                    rebuild=rebuild,
-                    reader_kwargs=reader_kwargs,
-                    save_pdf=save_pdf,
-                    save_png=save_png,
-                    dpi=dpi,
+                    outputdir=cli.outputdir,
+                    rebuild=cli.rebuild,
+                    reader_kwargs=cli.reader_kwargs,
+                    save_pdf=cli.save_pdf,
+                    save_png=cli.save_png,
+                    dpi=cli.dpi,
                     compute_longterm=compute_longterm,
                     compute_seasonal=compute_seasonal,
                     loglevel=cli.loglevel,
@@ -128,4 +117,4 @@ if __name__ == '__main__':
                 )
 
     cli.close_dask_cluster()
-    logger.info("LatLonProfiles diagnostic completed.")
+    cli.logger.info("LatLonProfiles diagnostic completed.")
