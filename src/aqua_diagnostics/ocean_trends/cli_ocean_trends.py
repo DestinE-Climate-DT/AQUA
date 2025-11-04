@@ -60,8 +60,8 @@ if __name__ == '__main__':
             var = trends_config.get('var', None)
             dim_mean = trends_config.get('dim_mean', None) 
             # Add the global region if not present
-            if regions != [None] or 'go' not in regions:
-                regions.append('go')
+            # if regions != [None] or 'go' not in regions:
+            #     regions.append('go')
             for region in regions:
                 logger.info(f"Processing region: {region}")
 
@@ -81,6 +81,7 @@ if __name__ == '__main__':
                         # dim_mean=dim_mean,
                         outputdir=outputdir,
                         rebuild=rebuild,
+                        reader_kwargs=reader_kwargs
                     )
                     trends_plot = PlotTrends(
                         data=data_trends.trend_coef,
@@ -104,4 +105,4 @@ if __name__ == '__main__':
 
     cli.close_dask_cluster()
 
-    logger.info("OceanTrends diagnostic completed.")
+    logger.info("Ocean Trends diagnostic completed.")

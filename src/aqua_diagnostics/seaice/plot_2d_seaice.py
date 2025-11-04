@@ -213,7 +213,7 @@ class Plot2DSeaIce:
             f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
             )
         self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
-                         description=description, extra_keys={'method': self.method, 'region': region})
+                         description=description, extra_keys={'method': self.method, 'region': region.lower()})
 
 
     def _plot_var_map(self, region, **kwargs):
@@ -288,7 +288,7 @@ class Plot2DSeaIce:
             f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' and self.plot_ref_contour else ''}"
         )
         self._save_plots(fig=fig, data=mondat, data_ref=None, 
-                         diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
+                         diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region.lower()})
 
     def _get_colorbar_ticks(self, data, vmin=None, vmax=None, norm=None,
                             boundaries=None, sym=False, ticks_rounding=1):

@@ -66,7 +66,8 @@ if __name__ == '__main__':
                 for reference in references:
                     reference_args = cli.dataset_args(reference)
 
-                    boxplots_ref = Boxplots(**reference_args, save_netcdf=cli.save_netcdf, 
+                    boxplots_ref = Boxplots(**reference_args, diagnostic_name=cli.diagnostic_name, 
+                                            save_netcdf=cli.save_netcdf, 
                                             outputdir=cli.outputdir, loglevel=cli.loglevel)
                     boxplots_ref.run(var=variables, reader_kwargs=cli.reader_kwargs)
 
@@ -81,10 +82,19 @@ if __name__ == '__main__':
 
                     fldmeans_ref.append(boxplots_ref.fldmeans)
 
-                plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=cli.save_pdf, 
-                                    save_png=cli.save_png, dpi=cli.dpi, outputdir=cli.outputdir, 
-                                    loglevel=cli.loglevel)
-                plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, **plot_kwargs)
+                all_entries = datasets + references
+                model_exp_list = [f"{entry['model']} ({entry['exp']})" for entry in all_entries]
+                model_exp_list_unique = list(dict.fromkeys(model_exp_list))
+
+                title=None
+                if variables == ['-snlwrf', 'snswrf', 'slhtf', 'ishf']:
+                    title = "Boxplot of Surface Radiation Fluxes for: " + ", ".join(model_exp_list_unique)
+                elif variables == ['-tnlwrf', 'tnswrf']:
+                    title = "Boxplot of TOA Radiation Fluxes for: " + ", ".join(model_exp_list_unique)
+
+                plot = PlotBoxplots(diagnostic=cli.diagnostic_name, save_pdf=cli.save_pdf,
+                                    save_png=cli.save_png, dpi=cli.dpi, outputdir=cli.outputdir, loglevel=cli.loglevel)
+                plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, title=title, **plot_kwargs)
 
     cli.close_dask_cluster()
 

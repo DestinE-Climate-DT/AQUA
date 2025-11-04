@@ -9,7 +9,8 @@ from aqua.util import cbar_get_label, evaluate_colorbar_limits, plot_box
 
 
 def plot_multi_vertical_lines(
-    maps: list,
+    data_list: list,
+    ref_data_list: list,
     nrows: int,
     ncols: int,
     figsize: tuple = None,
@@ -29,7 +30,8 @@ def plot_multi_vertical_lines(
     Plot multiple vertical line profiles in a grid layout.
 
     Args:
-        maps (list): List of xarray datasets containing the data to be plotted.
+        data_list (list): List of xarray datasets containing the data to be plotted.
+        ref_data_list (list): List of xarray datasets containing the reference data to be plotted.
         nrows (int): Number of rows in the subplot grid.
         ncols (int): Number of columns in the subplot grid.
         figsize (tuple, optional): Size of the figure (width, height). If None, it is set automatically.
@@ -51,8 +53,8 @@ def plot_multi_vertical_lines(
     logger = log_configure(loglevel, "plot_multi_hovmoller")
     ConfigStyle(style=style, loglevel=loglevel)
 
-    if all(isinstance(data_map, xr.Dataset) for data_map in maps):
-        nrows = 1  # len(maps)
+    if all(isinstance(data_map, xr.Dataset) for data_map in data_list):
+        nrows = 1  # len(data_list)
         ncols = len(variables)
         figsize = figsize if figsize is not None else (ncols * 5, nrows * 3 + 1)
         logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
@@ -67,8 +69,8 @@ def plot_multi_vertical_lines(
             logger.debug("Creating subplot for variable %s at (%d, %d)", var, j, i)
 
             fig, ax = plot_vertical_lines(
-                data=maps[j][var],
-                ref_data=maps[j][var],
+                data=data_list[j][var],
+                ref_data=ref_data_list[j][var] if ref_data_list else None,
                 labels=data_label,
                 ref_label=obs_label,
                 lev_name="level",

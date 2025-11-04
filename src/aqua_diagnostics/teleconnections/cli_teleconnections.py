@@ -303,4 +303,4 @@ if __name__ == '__main__':
 
     cli.close_dask_cluster()
 
-    logger.info('Teleconnections diagnostic finished.')
+    logger.info('Teleconnections diagnostic completed.')

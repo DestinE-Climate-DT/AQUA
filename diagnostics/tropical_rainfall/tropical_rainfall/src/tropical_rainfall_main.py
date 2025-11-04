@@ -571,6 +571,31 @@ class MainClass:
 
         return tprate_dataset
 
+
+    def dataset_to_netcdf_filename(self, start_year=None, end_year=None, start_month=None, end_month=None, path_to_netcdf: Optional[str] = None,
+                          name_of_file: Optional[str] = None) -> str:
+        """
+        Function to compute the name of a destination file for the histogram.
+
+        Args:
+            dataset (xarray, optional):         The Dataset with the histogram.     Defaults to None.
+            path_to_netcdf (str, optional):  The path to save the histogram.     Defaults to None.
+
+        Returns:
+            str: The filename
+        """
+        if path_to_netcdf is None:
+            path_to_netcdf = self.path_to_netcdf
+
+        path_to_netcdf = self.tools.select_files_by_year_and_month_range(path_to_histograms=path_to_netcdf,
+                                                                        start_year=start_year, end_year=end_year,
+                                                                        start_month=start_month, end_month=end_month, flag=name_of_file)
+
+        self.logger.debug("Generated filename %s", path_to_netcdf)
+
+        return(path_to_netcdf[0])
+
+
     def dataset_to_netcdf(self, dataset: Optional[xr.Dataset] = None, path_to_netcdf: Optional[str] = None, rebuild: bool = False,
                           name_of_file: Optional[str] = None) -> str:
         """

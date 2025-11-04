@@ -32,7 +32,6 @@ if __name__ == '__main__':
     cli.prepare()
     cli.open_dask_cluster()
 
-
     # Global Biases diagnostic
     if 'globalbiases' in cli.config_dict['diagnostics']:
         if cli.config_dict['diagnostics']['globalbiases']['run']:
@@ -78,8 +77,8 @@ if __name__ == '__main__':
             all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
 
             for var, is_formula in all_vars:
-                cli.logger.info("Running Global Biases diagnostic for %s: %s", 'formula' if is_formula else 'variable', var)
-
+                cli.logger.info("Running Global Biases diagnostic for %s: %s",
+                            "formula" if is_formula else "variable", var)
                 all_plot_params = cli.config_dict['diagnostics']['globalbiases'].get('plot_params', {})
                 default_params = all_plot_params.get('default', {})
                 var_params = all_plot_params.get(var, {})
@@ -99,9 +98,9 @@ if __name__ == '__main__':
                                             long_name=long_name, short_name=short_name)
                 except (NoDataError, KeyError, ValueError) as e:
                     cli.logger.warning("Variable '%s' not found in dataset. Skipping. (%s)", var, e)
-                    continue
+                    continue  
 
-                biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
+                biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat, create_catalog_entry=cli.create_catalog_entry)
                 biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
 
                 if short_name is not None:
@@ -120,7 +119,7 @@ if __name__ == '__main__':
                     cmap= plot_params.get('cmap', 'RdBu_r')
 
                     cli.logger.debug("Using projection: %s for variable: %s", proj, var)
-                    plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=cli.save_pdf, save_png=cli.save_png,
+                    plot_biases = PlotGlobalBiases(diagnostic=cli.diagnostic_name, save_pdf=cli.save_pdf, save_png=cli.save_png,
                                                 dpi=cli.dpi, outputdir=cli.outputdir, cmap=cmap, loglevel=cli.loglevel)
                     plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
                                           var=var, plev=p,

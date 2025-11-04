@@ -44,10 +44,10 @@ if __name__ == '__main__':
     startdate = config_dict['datasets'][0].get('startdate', None)
     enddate = config_dict['datasets'][0].get('enddate', None)
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
+        reader_kwargs['realization'] = realization
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
     # Output options (from cli_base)
@@ -66,8 +66,8 @@ if __name__ == '__main__':
             var = hovmoller_config.get('var', None)
             dim_mean = hovmoller_config.get('dim_mean', ['lat', 'lon'])
             # Add the global region if not present
-            if regions != [None]:
-                regions.append(None)
+            # if regions != [None]:
+            #    regions.append(None)
             for region in regions:
                 logger.info(f"Processing region: {region}")
                 try:
@@ -94,6 +94,10 @@ if __name__ == '__main__':
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
                 try:
+                    logger.info(f"Loading data in memory")
+                    for processed_data in data_hovmoller.processed_data_list:
+                        processed_data.load()
+                    logger.info(f"Loaded data in memory")
                     hov_plot = PlotHovmoller(
                         diagnostic_name=diagnostic_name,
                         data=data_hovmoller.processed_data_list,
@@ -113,4 +117,4 @@ if __name__ == '__main__':
                 
     cli.close_dask_cluster()
 
-    logger.info("OceanDrift diagnostic completed.")
+    logger.info("Ocean Drift diagnostic completed.")

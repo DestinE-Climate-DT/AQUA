@@ -57,7 +57,7 @@ def main():
         trop_rainfall_cli.cluster.close()
         logger.debug("Dask cluster closed.")
 
-    logger.info("Tropical rainfall diagnostic has finished.")
+    logger.info("Tropical rainfall diagnostic completed.")
 
 
 if __name__ == '__main__':

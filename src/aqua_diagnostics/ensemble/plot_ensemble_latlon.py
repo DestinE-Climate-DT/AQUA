@@ -110,7 +110,7 @@ class PlotEnsembleLatLon(BaseMixin):
         proj="robinson",
         proj_params={},
         transform_first=False,
-        cyclic_lon=False,
+        cyclic_lon=True,
         contour=True,
         coastlines=True,
         cbar_label=None,
