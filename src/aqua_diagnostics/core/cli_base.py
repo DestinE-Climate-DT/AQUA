@@ -63,6 +63,7 @@ class DiagnosticCLI:
         self.save_png = None
         self.save_netcdf = None
         self.dpi = None
+        self.create_catalog_entry = None  # Default behavior; can be overridden in prepare()
         
     def prepare(self, **overrides):
         """
@@ -135,6 +136,7 @@ class DiagnosticCLI:
         self.save_png = output_config.get('save_png', True)
         self.save_netcdf = output_config.get('save_netcdf', True)
         self.dpi = output_config.get('dpi', 300)
+        self.create_catalog_entry = output_config.get('create_catalog_entry', False)
 
     def dataset_args(self, dataset):
         """
