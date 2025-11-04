@@ -273,6 +273,6 @@ class Hovmoller(Diagnostic):
                 diagnostic_product=f"{diagnostic_product}",
                 outputdir=outputdir,
                 rebuild=rebuild,
-                extra_keys={"region": self.region.replace(" ", "_").lower() if self.region else None,
+                extra_keys={"region": self.region,
                             'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
             )
