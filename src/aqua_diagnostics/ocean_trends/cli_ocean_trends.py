@@ -35,13 +35,11 @@ if __name__ == '__main__':
     
     logger = cli.logger
     config_dict = cli.config_dict
-    
-    catalog = get_arg(args, 'catalog', config_dict['datasets'][0]['catalog'])
-    model = get_arg(args, 'model', config_dict['datasets'][0]['model'])
-    exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
-    source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
-    regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
-    logger.info("Catalog: %s, Model: %s, Experiment: %s, Source: %s, Regrid: %s", catalog, model, exp, source, regrid)
+
+    dataset = config_dict['datasets'][0]
+    dataset_args = cli.dataset_args(dataset)
+
+    #logger.info("Catalog: %s, Model: %s, Experiment: %s, Source: %s, Regrid: %s", catalog, model, exp, source, regrid)
 
     # Output options (from cli_base)
     reader_kwargs = cli.reader_kwargs
@@ -53,7 +51,7 @@ if __name__ == '__main__':
 
     if 'multilevel' in config_dict['diagnostics']['ocean_trends']:
         trends_config = config_dict['diagnostics']['ocean_trends']['multilevel']
-        logger.info(f"Ocean Trends diagnostic is set to {trends_config['run']}")
+        cli.logger.info("Ocean Trends diagnostic is set to %s", trends_config['run'])
         if trends_config['run']:
             regions = trends_config.get('regions', [None])
             diagnostic_name = trends_config.get('diagnostic_name', 'ocean_trends')
@@ -63,16 +61,12 @@ if __name__ == '__main__':
             # if regions != [None] or 'go' not in regions:
             #     regions.append('go')
             for region in regions:
-                logger.info(f"Processing region: {region}")
+                cli.logger.info("Processing region: %s", region)
 
                 try:
                     data_trends = Trends(
+                        **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        regrid=regrid,
                         loglevel=cli.loglevel
                     )
                     data_trends.run(
@@ -101,8 +95,8 @@ if __name__ == '__main__':
                     )
                     zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
                 except Exception as e:
-                    logger.error(f"Error processing region {region}: {e}")
+                    cli.logger.error("Error processing region %s: %s", region, e)
 
     cli.close_dask_cluster()
 
-    logger.info("Ocean Trends diagnostic completed.")
+    cli.logger.info("Ocean Trends diagnostic completed.")
