@@ -410,3 +410,51 @@ class TestLatLonProfilesErrors:
         # Test that compute_std also raises ValueError for invalid mean_type
         with pytest.raises(ValueError, match='Mean type invalid not recognized for std computation'):
             diagnostic.compute_std(freq='seasonal')
+
+@pytest.mark.diagnostics
+class TestLatLonProfilesRealization:
+    """Test realization extraction from data attributes"""
+    
+    def test_realization_extracted_from_data(self, tmp_path, monkeypatch):
+        """Test that AQUA_realization is extracted and used in filenames"""
+        
+        diagnostic = LatLonProfiles(
+            model='IFS',
+            exp='test-tco79',
+            source='teleconnections',
+            startdate='1991-01-01',
+            enddate='1992-12-31',
+            mean_type='zonal',
+            loglevel=loglevel
+        )
+        
+        # Get reference to the parent class retrieve method through the instance
+        original_parent_retrieve = diagnostic.__class__.__bases__[0].retrieve
+        
+        def mock_parent_retrieve(self, var=None, reader_kwargs={}, months_required=None):
+            """Mock that adds AQUA_realization to data after retrieve"""
+            # Call the original parent retrieve
+            original_parent_retrieve(self, var, reader_kwargs, months_required)
+            
+            # Add AQUA_realization to the retrieved data
+            if self.data is not None:
+                if var:  # Single variable case
+                    if var in self.data:
+                        self.data[var].attrs['AQUA_realization'] = 'r5'
+                else:  # All variables case
+                    for data_var in self.data.data_vars:
+                        self.data[data_var].attrs['AQUA_realization'] = 'r5'
+        
+        monkeypatch.setattr(diagnostic.__class__.__bases__[0], 'retrieve', mock_parent_retrieve)
+    
+        # Now retrieve will have AQUA_realization = 'r5'
+        diagnostic.retrieve(var='skt')
+        
+        assert diagnostic.realization == 'r5'
+
+        diagnostic.compute_dim_mean(freq='longterm')
+        diagnostic.save_netcdf(freq='longterm', outputdir=str(tmp_path), rebuild=True)
+        files = list(tmp_path.rglob('*.nc'))
+        assert len(files) > 0
+        # Check that realization appears in at least one filename
+        assert any('r5' in f.name for f in files), "Realization 'r5' not found in any filename"
