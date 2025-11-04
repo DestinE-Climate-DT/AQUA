@@ -74,6 +74,8 @@ class LatLonProfiles(Diagnostic):
 		self.std_annual = None   # Annual std deviation, used by the longterm mean
 
 		self.mean_type = mean_type
+		# Realization is extracted from data during retrieve(), if available
+		self.realization = None
 
 	def retrieve(self, var: str, formula: bool = False, long_name: str = None, 
 				 units: str = None, standard_name: str = None,
@@ -109,6 +111,14 @@ class LatLonProfiles(Diagnostic):
 			# Get the xr.DataArray to be aligned with the formula code
 			self.data = self.data[var]
 
+		# Extract realization from data attributes if available
+		if hasattr(self.data, 'AQUA_realization'):
+			self.realization = self.data.AQUA_realization
+			self.logger.debug(f'Extracted realization from data: {self.realization}')
+		elif 'realization' in reader_kwargs:
+			self.realization = reader_kwargs['realization']
+			self.logger.debug(f'Using realization from reader_kwargs: {self.realization}')
+
 		if self.plt_startdate is None:
 			self.plt_startdate = self.data.time.min().values
 			self.logger.debug('Plot start date set to %s', self.plt_startdate)
@@ -121,8 +131,8 @@ class LatLonProfiles(Diagnostic):
 			self.data = self._check_data(data=self.data, var=var, units=units)
 		if long_name is not None:
 			self.data.attrs['long_name'] = long_name
-		# We use the standard_name as the name of the variable
-		# to be always used in plots
+
+		# Set standard name
 		if standard_name is not None:
 			self.data.attrs['standard_name'] = standard_name
 			self.data.name = standard_name
