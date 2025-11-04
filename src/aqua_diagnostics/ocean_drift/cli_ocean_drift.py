@@ -9,7 +9,7 @@ single or multiple experiments.
 import argparse
 import sys
 
-from aqua.util import get_arg, to_list
+from aqua.util import to_list
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.ocean_drift.hovmoller import Hovmoller
 from aqua.diagnostics.ocean_drift.plot_hovmoller import PlotHovmoller
@@ -35,31 +35,16 @@ if __name__ == '__main__':
     
     logger = cli.logger
     config_dict = cli.config_dict
-    
-    catalog = get_arg(args, 'catalog', config_dict['datasets'][0]['catalog'])
-    model = get_arg(args, 'model', config_dict['datasets'][0]['model'])
-    exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
-    source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
-    regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
-    startdate = config_dict['datasets'][0].get('startdate', None)
-    enddate = config_dict['datasets'][0].get('enddate', None)
-    realization = get_arg(args, 'realization', None)
-    # This reader_kwargs will be used if the dataset corresponding value is None or not present
-    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
-    if realization:
-        reader_kwargs['realization'] = realization
-    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
-    # Output options (from cli_base)
-    outputdir = cli.outputdir
-    rebuild = cli.rebuild
-    save_pdf = cli.save_pdf
-    save_png = cli.save_png
-    dpi = cli.dpi
+    dataset = cli.config_dict['datasets'][0]
+    dataset_args = cli.dataset_args(dataset)
+    
+    #logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
+
 
     if 'hovmoller' in config_dict['diagnostics']['ocean_drift']:
         hovmoller_config = config_dict['diagnostics']['ocean_drift']['hovmoller']
-        logger.info(f"Hovmoller diagnostic is set to {hovmoller_config['run']}")
+        logger.info("Hovmoller diagnostic is set to %s", hovmoller_config['run'])
         if hovmoller_config['run']:
             regions = to_list(hovmoller_config.get('regions', None))
             diagnostic_name = hovmoller_config.get('diagnostic_name', 'ocean_drift')
@@ -69,17 +54,11 @@ if __name__ == '__main__':
             # if regions != [None]:
             #    regions.append(None)
             for region in regions:
-                logger.info(f"Processing region: {region}")
+                logger.info("Processing region: %s", region)
                 try:
                     data_hovmoller = Hovmoller(
+                        **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        regrid=regrid,
-                        startdate=startdate,
-                        enddate=enddate,
                         loglevel=cli.loglevel
                     )
                     data_hovmoller.run(
@@ -87,33 +66,33 @@ if __name__ == '__main__':
                         var=var,
                         dim_mean=dim_mean,
                         anomaly_ref="t0",
-                        outputdir=outputdir,
-                        reader_kwargs=reader_kwargs,
-                        rebuild=rebuild
+                        outputdir=cli.outputdir,
+                        reader_kwargs=cli.reader_kwargs,
+                        rebuild=cli.rebuild
                     )
                 except Exception as e:
-                    logger.error(f"Error processing region {region}: {e}")
+                    logger.error("Error processing region %s: %s", region, e)
                 try:
-                    logger.info(f"Loading data in memory")
+                    logger.info("Loading data in memory")
                     for processed_data in data_hovmoller.processed_data_list:
                         processed_data.load()
-                    logger.info(f"Loaded data in memory")
+                    logger.info("Loaded data in memory")
                     hov_plot = PlotHovmoller(
                         diagnostic_name=diagnostic_name,
                         data=data_hovmoller.processed_data_list,
-                        outputdir=outputdir,
+                        outputdir=cli.outputdir,
                         loglevel=cli.loglevel
                     )
                     hov_plot.plot_hovmoller(
-                        rebuild=rebuild, save_pdf=save_pdf,
-                        save_png=save_png, dpi=dpi
+                        rebuild=cli.rebuild, save_pdf=cli.save_pdf,
+                        save_png=cli.save_png, dpi=cli.dpi
                     )
                     hov_plot.plot_timeseries(
-                        rebuild=rebuild, save_pdf=save_pdf,
-                        save_png=save_png, dpi=dpi
+                        rebuild=cli.rebuild, save_pdf=cli.save_pdf,
+                        save_png=cli.save_png, dpi=cli.dpi
                     )
                 except Exception as e:
-                    logger.error(f"Error plotting region {region}: {e}")
+                    logger.error("Error plotting region %s: %s", region, e)
                 
     cli.close_dask_cluster()
 
