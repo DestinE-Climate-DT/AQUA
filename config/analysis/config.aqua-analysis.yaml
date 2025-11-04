@@ -40,6 +40,8 @@ cluster:  # options for dask cluster (this works well on lumi)
     workers: 32
     threads: 1  # per worker
     memory_limit: 7GiB  # per worker
+    connect_timeout: 120  # seconds to wait for client to connect to the cluster
+    # ftp_timeout: 60  # timeout in seconds for ftp connections. Will not be set if omitted.
 
 # List of available CLI tools (diagnostics)
 cli:
