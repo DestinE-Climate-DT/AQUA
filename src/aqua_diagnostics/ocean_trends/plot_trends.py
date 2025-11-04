@@ -91,7 +91,7 @@ class PlotTrends:
 
         for format in formats:
             self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
 
     def plot_zonal(self,
@@ -133,7 +133,7 @@ class PlotTrends:
 
         for format in formats:
             self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
 
     def set_convert_lon(self, data=None):
@@ -244,7 +244,7 @@ class PlotTrends:
                              They will be complemented with the metadata from the outputsaver.
                              We usually want to add here the description of the figure.
         """
-        extra_keys.update({"region": self.region.replace(' ', '_').lower()})
+        extra_keys.update({"region": self.region})
 
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,

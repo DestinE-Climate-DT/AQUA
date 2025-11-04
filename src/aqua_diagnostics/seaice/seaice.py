@@ -516,7 +516,7 @@ class SeaIce(Diagnostic):
         da_seaice_computed.attrs["AQUA_method"] = f"{self.method}"
         if startdate is not None: da_seaice_computed.attrs["AQUA_startdate"] = f"{startdate}"
         if enddate is not None: da_seaice_computed.attrs["AQUA_enddate"] = f"{enddate}"
-        da_seaice_computed.name = f"{'std_' if std_flag else ''}sea_ice_{self.method}_{region.replace(' ', '_').lower()}"
+        da_seaice_computed.name = f"{'std_' if std_flag else ''}sea_ice_{self.method}_{region}"
 
         return da_seaice_computed
 
