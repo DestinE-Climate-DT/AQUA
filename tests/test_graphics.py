@@ -396,10 +396,14 @@ class TestLatLonProfiles:
         self.lat_profile = data[var].mean(dim='lon')
         self.lon_profile = data[var].mean(dim='lat')
 
+    def _save_and_check(self, fig, tmp_path, filename):
+        """Helper to save figure and verify file exists"""
+        filepath = tmp_path / filename
+        fig.savefig(filepath)
+        assert os.path.exists(filepath)
+
     def test_plot_lat_lon_profiles_single(self, tmp_path):
         """Test plot_lat_lon_profiles with single DataArray"""
-        
-        # Test with latitude profile
         fig, ax = plot_lat_lon_profiles(data=self.lat_profile.isel(time=0),
                                         title='Latitude profile test',
                                         data_labels=['Test data'],
@@ -407,13 +411,10 @@ class TestLatLonProfiles:
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lat_profile.png')
-        assert os.path.exists(tmp_path / 'test_lat_profile.png')
+        self._save_and_check(fig, tmp_path, 'test_lat_profile.png')
 
     def test_plot_lat_lon_profiles_multiple(self, tmp_path):
         """Test plot_lat_lon_profiles with multiple DataArrays"""
-        
         data_list = [self.lat_profile.isel(time=0), 
                      self.lat_profile.isel(time=1)]
         
@@ -424,13 +425,10 @@ class TestLatLonProfiles:
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lat_profiles_multiple.png')
-        assert os.path.exists(tmp_path / 'test_lat_profiles_multiple.png')
+        self._save_and_check(fig, tmp_path, 'test_lat_profiles_multiple.png')
 
     def test_plot_lat_lon_profiles_with_ref(self, tmp_path):
         """Test plot_lat_lon_profiles with reference data"""
-        
         data = self.lat_profile.isel(time=0)
         ref = self.lat_profile.isel(time=1)
         ref_std = self.lat_profile.std(dim='time')
@@ -445,46 +443,34 @@ class TestLatLonProfiles:
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lat_profile_with_ref.png')
-        assert os.path.exists(tmp_path / 'test_lat_profile_with_ref.png')
+        self._save_and_check(fig, tmp_path, 'test_lat_profile_with_ref.png')
 
     def test_plot_lon_profile(self, tmp_path):
         """Test plot_lat_lon_profiles with longitude profile"""
-        
         fig, ax = plot_lat_lon_profiles(data=self.lon_profile.isel(time=0),
                                         title='Longitude profile test',
                                         loglevel=loglevel)
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lon_profile.png')
-        assert os.path.exists(tmp_path / 'test_lon_profile.png')
+        self._save_and_check(fig, tmp_path, 'test_lon_profile.png')
 
     def test_plot_lat_lon_profiles_no_spatial_coords(self, tmp_path):
-            """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
-            
-            # Create a DataArray without spatial coordinates
-            data_no_coords = xr.DataArray(
-                np.random.rand(10),
-                dims=['time'],
-                coords={'time': range(10)}
-            )
-            
-            # This should trigger the warning and skip the data
-            fig, ax = plot_lat_lon_profiles(data=data_no_coords,
-                                            title='No spatial coordinates test',
-                                            loglevel=loglevel)
-            
-            assert fig is not None
-            assert ax is not None
-            
-            # The plot should be empty (no lines plotted)
-            assert len(ax.lines) == 0
-            
-            fig.savefig(tmp_path / 'test_lat_profile_no_coords.png')
-            assert os.path.exists(tmp_path / 'test_lat_profile_no_coords.png')
+        """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
+        data_no_coords = xr.DataArray(
+            np.random.rand(10),
+            dims=['time'],
+            coords={'time': range(10)}
+        )
+        
+        fig, ax = plot_lat_lon_profiles(data=data_no_coords,
+                                        title='No spatial coordinates test',
+                                        loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        assert len(ax.lines) == 0  # No lines should be plotted
+        self._save_and_check(fig, tmp_path, 'test_lat_profile_no_coords.png')
 
 @pytest.mark.graphics
 class TestSeasonalMeans:
