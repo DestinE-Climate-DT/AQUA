@@ -58,7 +58,7 @@ if __name__ == '__main__':
         reader_kwargs = {}
 
     # Use the top-level datasets
-    datasets = config_dict['datasets']
+    datasets = cli.config_dict['datasets']
 
     # ============= Sea Ice diagnostic - Timeseries diagnostic ============
     # =====================================================================
@@ -91,8 +91,8 @@ if __name__ == '__main__':
                                 exp=dataset['exp'], 
                                 source=dataset['source'], 
                                 regions=regions,
-                                startdate=dataset.get('startdate', None), 
-                                enddate=dataset.get('enddate', None), 
+                                startdate=dataset.get('startdate', None),
+                                enddate=dataset.get('enddate', None),
                                 regrid=regrid or dataset.get('regrid', None),
                                 outputdir=cli.outputdir,
                                 loglevel=cli.loglevel)
