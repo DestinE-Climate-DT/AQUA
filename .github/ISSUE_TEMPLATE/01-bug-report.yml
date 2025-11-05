@@ -15,9 +15,10 @@ body:
       description: Which machine are you using?
       options:
       - Levante
-      - Leonardo
       - Lumi
+      - Lumi operational
       - MN5
+      - MN5 operational
       - CI
       - HPC2020
       - Others
@@ -49,22 +50,12 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v0.19.0+op
+      - v0.19.0
       - v0.18.1
       - v0.18.0
-      - v0.17.0
-      - v0.16.0
-      - v0.15.0
-      - v0.14.0
-      - v0.13.9
-      - v0.13.8
-      - v0.13.7
-      - v0.13.6
-      - v0.13.5
-      - v0.13.4
-      - v0.13.3
-      - v0.13.2
-      - v0.13.1
-      - v0.13.0
+      - v0.14.* - v0.17.* (specify)
+      - v0.13.* (specify)
       - older (specify)
     validations:
       required: true

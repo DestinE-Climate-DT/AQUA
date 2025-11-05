@@ -66,9 +66,9 @@ class PlotTrends:
         self.logger.debug(f"Levels set to: {self.levels}")
         self.data = self.set_convert_lon(data=self.data)
         self.set_data_list()
-        self.set_suptitle(plot_type='Multi-level')
+        self.set_suptitle(plot_type='Multi-level Trends')
         self.set_title()
-        self.set_description()
+        self.set_description(content="Multi-level Trends")
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -90,8 +90,8 @@ class PlotTrends:
             formats.append('png')
 
         for format in formats:
-            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
 
     def plot_zonal(self,
@@ -107,9 +107,9 @@ class PlotTrends:
         """
         self.diagnostic_product = 'zonal_mean'
         self.set_data_list()
-        self.set_suptitle(plot_type='Zonal mean')
+        self.set_suptitle(plot_type='Zonal mean Trends')
         self.set_title()
-        self.set_description()
+        self.set_description(content="Zonal mean Trends")
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -132,8 +132,8 @@ class PlotTrends:
             formats.append('png')
 
         for format in formats:
-            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
 
     def set_convert_lon(self, data=None):
@@ -190,7 +190,7 @@ class PlotTrends:
         """Set the title for the plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"{self.catalog} {self.model} {self.exp} {self.region} {plot_type} Trends"
+        self.suptitle = f"{plot_type} in {self.region} - {self.catalog} {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -220,22 +220,14 @@ class PlotTrends:
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
-    def set_description(self):
+    def set_description(self, content=None):
         """
         Set the description metadata for the plot.
         """
-        self.description = {}
-        self.description["description"] = f"{self.diagnostic_product} {self.region} region of {self.catalog} {self.model} {self.exp} "
 
+        self.description = f"{content} in the {self.region} region of {self.catalog} {self.model} {self.exp}."
 
-    def _get_info(self):
-        """Extract model, catalog, exp, region from data attributes."""
-        self.catalog = self.data[self.vars[0]].AQUA_catalog
-        self.model = self.data[self.vars[0]].AQUA_model
-        self.exp = self.data[self.vars[0]].AQUA_exp
-        self.region = self.data.attrs.get("AQUA_region", "global")
-
-    def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
+    def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},
                   rebuild: bool = True,
                   dpi: int = 300, format: str = 'png', metadata: dict = None):
         """
@@ -252,6 +244,8 @@ class PlotTrends:
                              They will be complemented with the metadata from the outputsaver.
                              We usually want to add here the description of the figure.
         """
+        extra_keys.update({"region": self.region})
+
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                                extra_keys=extra_keys, metadata=metadata, dpi=dpi)
@@ -259,3 +253,10 @@ class PlotTrends:
             result = self.outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,
                                                extra_keys=extra_keys, metadata=metadata)
         self.logger.info(f"Figure saved as {result}")
+
+    def _get_info(self):
+        """Extract model, catalog, exp, region from data attributes."""
+        self.catalog = self.data[self.vars[0]].AQUA_catalog
+        self.model = self.data[self.vars[0]].AQUA_model
+        self.exp = self.data[self.vars[0]].AQUA_exp
+        self.region = self.data.attrs.get("AQUA_region", "global")

@@ -82,7 +82,7 @@ class Reader():
 
         Keyword Args: 
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
-            realization (int, optional): The ensemble realization number, included in the output filename.
+            realization (int, optional): The ensemble realization number.
             **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
 
         Returns:
@@ -153,7 +153,13 @@ class Reader():
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
+
+        # intake parameters
+        self.intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
+
         self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine)
+        self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
+        self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
@@ -398,8 +404,11 @@ class Reader():
         info_metadata = {'AQUA_model': self.model, 'AQUA_exp': self.exp,
                          'AQUA_source': self.source, 'AQUA_catalog': self.catalog,
                          'AQUA_version': aqua_version}
+        for kwarg in self.kwargs:
+            info_metadata[f'AQUA_{kwarg}'] = str(self.kwargs[kwarg])
+
         data = set_attrs(data, info_metadata)
-        
+
         return data
 
     def _add_index(self, data):
@@ -578,6 +587,40 @@ class Reader():
     #                             name, list(drop_coords))
     #     return data.drop_vars(drop_coords)
 
+    def _format_realization_reader_kwargs(self, kwargs: dict):
+        """
+        Reformats the realization string for the access to the reader
+        If realization is in the format rXX and the intake type is int, it converts to int XX.
+        """
+        realization = kwargs.get('realization')
+        if realization is None:
+            return kwargs
+
+        param_types = {p['name']: p['type'] for p in self.intake_user_parameters}
+        realization_type = param_types.get('realization')
+
+        if realization_type is None:
+            self.logger.info("'realization' not in intake parameters %s — removing it.", list(param_types))
+            kwargs.pop('realization', None)
+            return kwargs
+
+        # if type is string, return as is
+        if realization_type == 'str':
+            self.logger.debug('realization parameter is of type string, will use it is as is: %s', str(realization))
+            kwargs['realization'] = str(realization)
+            return kwargs
+
+        # if it is in the rXX format and the type is int, convert to int
+        if realization_type == 'int':
+            if isinstance(realization, str) and realization.startswith('r') and realization[1:].isdigit():
+                kwargs['realization'] = int(realization[1:])
+                self.logger.info('realization parameter converted from rXXX format to int: %d', kwargs['realization'])
+                return kwargs
+            if isinstance(realization, int):
+                return kwargs  # already an int
+
+        raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
+
     def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb'):
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
@@ -591,11 +634,7 @@ class Reader():
         Returns:
             A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
         """
-        esm_dict = self.esmcat.describe().get('user_parameters', {})
-        len_esmcat = len(esm_dict)
-
-        # This contains both the intake_vars and the esmcat parameters
-        params = [esm_dict[i]['name'] for i in range(len_esmcat)]
+        params = [elem.get('name') for elem in self.intake_user_parameters]
 
         # List comprehension to filter out kwargs that are not in the params
         filtered_kwargs = {k: v for k, v in kwargs.items() if k in params}
@@ -610,23 +649,25 @@ class Reader():
         intake_vars_list = list(intake_vars.keys())
         for param in params:
             if param not in filtered_list and param not in intake_vars_list:
-                self.logger.warning('%s parameter is required but is missing, setting to default %s',
-                                    param, esm_dict[params.index(param)]['default'])
-                allowed = esm_dict[params.index(param)].get('allowed', None)
+                element = self.intake_user_parameters[params.index(param)]
+                self.logger.info('%s parameter is required but is missing, setting to default %s',
+                                    param, element['default'])
+                allowed = element.get('allowed', None)
                 # It is possible to have intake_vars which are not specified for the machine,
                 # so that we still need to check whether there is an allowed list
                 if allowed is not None:
-                    self.logger.warning('Available values for %s are: %s', param, allowed)
-                filtered_kwargs[param] = esm_dict[params.index(param)]['default']
+                    self.logger.info('Available values for %s are: %s', param, allowed)
+                filtered_kwargs.update({param: element['default']})
 
         if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             # If the engine is fdb, we need to add the engine parameter
             if 'engine' not in filtered_kwargs:
-                filtered_kwargs['engine'] = engine
+                filtered_kwargs.update({'engine': engine})
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
+            self.logger.warning('Keeping chunks=%s in the filtered kwargs', self.chunks)
             filtered_kwargs.update({'chunks': self.chunks})
 
         return filtered_kwargs
@@ -697,7 +738,6 @@ class Reader():
         final = data.interp({vert_coord: levels}, method=method)
 
         return final
-
 
     def reader_esm(self, esmcat, var):
         """
@@ -1063,7 +1103,6 @@ class Reader():
         Field area wrapper which is calling the fldstat module.
         """
         return self.fldstat(data, stat='areasum', **kwargs)
-
 
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
              time_bounds=False, center_time=False, **kwargs):

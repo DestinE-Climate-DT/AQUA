@@ -160,12 +160,20 @@ class LatLonProfiles(Diagnostic):
 										   center_time=center_time)
 		monthly_data = monthly_data.sel(time=slice(self.std_startdate, self.std_enddate))
 
+		if self.std_startdate is None or self.std_enddate is None:
+				self.std_startdate = monthly_data.time.min().values
+				self.std_enddate = monthly_data.time.max().values
+
 		if freq == 'seasonal':
 			# Group by season and compute std
 			seasonal_std = monthly_data.groupby('time.season').std('time')
 			seasonal_std.attrs['std_startdate'] = time_to_string(self.std_startdate)
 			seasonal_std.attrs['std_enddate'] = time_to_string(self.std_enddate)
 			self.std_seasonal = seasonal_std
+
+			self.logger.debug("Loading data in memory")
+			self.std_seasonal.load()
+			self.logger.debug("Loaded data in memory")
 
 		elif freq == 'longterm':
 			# Group by year and compute std across years
@@ -174,6 +182,10 @@ class LatLonProfiles(Diagnostic):
 			annual_std.attrs['std_startdate'] = time_to_string(self.std_startdate)
 			annual_std.attrs['std_enddate'] = time_to_string(self.std_enddate)
 			self.std_annual = annual_std
+
+			self.logger.debug("Loading data in memory")
+			self.std_annual.load()
+			self.logger.debug("Loaded data in memory")
                 
 	def save_netcdf(self, freq: str, outputdir: str = './', rebuild: bool = True):
 		"""
@@ -197,7 +209,7 @@ class LatLonProfiles(Diagnostic):
 				self.logger.error('No longterm data available')
 				return
 			
-		diagnostic_product = f"{self.mean_type}profile"
+		diagnostic_product = f"{self.mean_type}_profile"
 
 		# Handle seasonal data (list of seasons)
 		if freq == 'seasonal':
@@ -207,7 +219,7 @@ class LatLonProfiles(Diagnostic):
 
 				extra_keys = {'freq': freq, 'season': seasons[i], 'var': var}
 				if self.region is not None:
-					region = self.region.replace(' ', '').lower()
+					region = self.region
 					extra_keys['AQUA_region'] = region
 				
 				self.logger.info('Saving %s data for %s to netcdf in %s', seasons[i], diagnostic_product, outputdir)
@@ -220,7 +232,7 @@ class LatLonProfiles(Diagnostic):
 
 			extra_keys = {'freq': freq, 'var': var}
 			if self.region is not None:
-				region = self.region.replace(' ', '').lower()
+				region = self.region
 				extra_keys['AQUA_region'] = region
 			
 			self.logger.info('Saving %s data for %s to netcdf in %s', freq, diagnostic_product, outputdir)
@@ -237,7 +249,7 @@ class LatLonProfiles(Diagnostic):
 					var = getattr(std_data, 'standard_name', 'unknown')
 					extra_keys = {'freq': freq, 'season': seasons[i], 'std': 'std', 'var': var}
 					if self.region is not None:
-						region = self.region.replace(' ', '').lower()
+						region = self.region
 						extra_keys['AQUA_region'] = region
 
 					super().save_netcdf(data=std_data, diagnostic=self.diagnostic_name,
@@ -250,7 +262,7 @@ class LatLonProfiles(Diagnostic):
 
 				extra_keys = {'freq': 'annual', 'std': 'std', 'var': var}
 				if self.region is not None:
-					region = self.region.replace(' ', '').lower()
+					region = self.region
 					extra_keys['AQUA_region'] = region
 
 				super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name,
@@ -294,6 +306,10 @@ class LatLonProfiles(Diagnostic):
 					season_data.attrs['AQUA_region'] = self.region
 			for season_data in seasonal_data:
 				season_data.attrs['AQUA_mean_type'] = self.mean_type
+				self.logger.debug("Loading data in memory")
+				season_data.load()
+				self.logger.debug("Loaded data in memory")
+
 			self.seasonal = seasonal_data
 
 		elif freq == 'longterm':
@@ -307,6 +323,10 @@ class LatLonProfiles(Diagnostic):
 				longterm_data.attrs['AQUA_region'] = self.region
 			longterm_data.attrs['AQUA_mean_type'] = self.mean_type
 			self.longterm = longterm_data
+
+			self.logger.debug("Loading data in memory")
+			self.longterm.load()
+			self.logger.debug("Loaded data in memory")
 
 	def run(self, var: str, formula: bool = False, long_name: str = None,
 			units: str = None, standard_name: str = None, std: bool = False,

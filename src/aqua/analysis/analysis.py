@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+"""
+AQUA analysis module for running diagnostics and handling configurations.
+"""
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import sys
 import subprocess
-from aqua.util import create_folder, ConfigPath
+from aqua.util import create_folder, ConfigPath, to_list
 from aqua import __path__ as pypath
 
 
@@ -25,10 +27,12 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
         log_dir = os.path.dirname(log_file)
         create_folder(log_dir)
 
-        with open(log_file, 'w') as log:
-            process = subprocess.run(cmd, shell=True, stdout=log, stderr=log, text=True)
+        with open(log_file, 'w', encoding='utf-8') as log:
+            process = subprocess.run(
+                cmd, shell=True, stdout=log, stderr=log, text=True, check=False
+            )
             return process.returncode
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as e:
         if logger:
             logger.error(f"Error running command {cmd}: {e}")
         raise
@@ -56,23 +60,34 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str,
         logger.info(f"Running diagnostic {diagnostic}")
         logger.debug(f"Command: {cmd}")
 
-        process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        process = subprocess.run(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False
+        )
 
         if process.returncode != 0:
             logger.error(f"Error running diagnostic {diagnostic}: {process.stderr}")
         else:
             logger.info(f"Diagnostic {diagnostic} completed successfully.")
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as e:
         logger.error(f"Failed to run diagnostic {diagnostic}: {e}")
 
 
-def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = None,
-                        config=None, catalog=None, model='default_model', exp='default_exp',
+def _build_extra_args(**kwargs):
+    """Build command line arguments from key-value pairs, skipping None values."""
+    args = ""
+    for flag, value in kwargs.items():
+        if value is not None:
+            args += f" --{flag} {value}"
+    return args
+
+
+def run_diagnostic_func(diagnostic: str, parallel: bool = False,
+                        regrid: str = None, cli: dict = {},
+                        diag_config=None, catalog=None, model='default_model', exp='default_exp',
                         source='default_source', source_oce=None,
-                        startdate=None, enddate=None,
-                        realization=None,
+                        startdate=None, enddate=None, realization=None,
                         output_dir='./output', loglevel='INFO',
-                        logger=None, aqua_path='', cluster=None):
+                        logger=None, cluster=None):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
 
@@ -80,7 +95,8 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = N
         diagnostic (str): Name of the diagnostic to run.
         parallel (bool): Whether to run in parallel mode.
         regrid (str): Regrid option.
-        config (dict): Configuration dictionary loaded from YAML.
+        cli (dict): CLI definitions for the tools.
+        diag_config (dict): Configuration dictionary loaded from YAML.
         catalog (str): Catalog name.
         model (str): Model name.
         exp (str): Experiment name.
@@ -92,66 +108,77 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False, regrid: str = N
         output_dir (str): Directory to save output.
         loglevel (str): Log level for the diagnostic.
         logger: Logger instance for logging messages.
-        aqua_path (str): AQUA path.
         cluster: Dask cluster scheduler address.
     """
 
-    script_dir = config.get('job', {}).get("script_path_base")  # we were not using this key
-    if not script_dir:
-        script_dir=os.path.join(aqua_path, "diagnostics")
-
-    diagnostic_config = config.get('diagnostics', {}).get(diagnostic)
-    if diagnostic_config is None:
-        logger.error(f"Diagnostic '{diagnostic}' not found in the configuration.")
-        return
+    # Internal naming scheme:
+    # diagnostic: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
+    # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
 
     output_dir = os.path.expandvars(output_dir)
     create_folder(output_dir)
 
-    logfile = f"{output_dir}/{diagnostic}.log"
+    # run individual tools in serial mode
+    for tool, tool_config in diag_config.items():
 
-    extra_args = diagnostic_config.get('extra', "")
-    cfg = diagnostic_config.get('config')
-    if cfg:
-        extra_args += f" --config {cfg}"
+        logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
+        
+        cli_path = cli.get(tool)
+        if cli_path is None:
+            logger.error("CLI path for tool '%s' not found, skipping.", tool)
+            continue
+ 
+        if not os.path.exists(cli_path):
+            logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
+            continue
 
-    if regrid:
-        extra_args += f" --regrid {regrid}"
+        outname = f"{output_dir}/{tool_config.get('outname', diagnostic)}"
+        extra_args = tool_config.get('extra', "")
 
-    if parallel:
-        nworkers = diagnostic_config.get('nworkers')
-        if nworkers is not None:
-            extra_args += f" --nworkers {nworkers}"
+        # Build conditional arguments
+        if regrid:
+            extra_args += f" --regrid {regrid}"
 
-    if cluster and not diagnostic_config.get('nocluster', False):  # This is needed for ECmean which uses multiprocessing
-        extra_args += f" --cluster {cluster}"
+        if parallel:
+            nworkers = tool_config.get('nworkers')
+            if nworkers is not None:
+                extra_args += f" --nworkers {nworkers}"
 
-    if catalog:
-        extra_args += f" --catalog {catalog}"
+        # This is needed for ECmean which uses multiprocessing
+        if cluster and not tool_config.get('nocluster', False):
+            extra_args += f" --cluster {cluster}"
 
-    if realization:
-        extra_args += f" --realization {realization}"
+        # Add standard arguments using helper function
+        extra_args += _build_extra_args(
+            catalog=catalog,
+            realization=realization,
+            startdate=startdate,
+            enddate=enddate
+        )
 
-    if startdate:
-        extra_args += f" --startdate {startdate}"
-    if enddate:
-        extra_args += f" --enddate {enddate}"
+        if tool_config.get('source_oce', False) and source_oce:  # pass source_oce only if allowed by the diagnostic config file
+            extra_args += f" --source_oce {source_oce}"
 
-    if diagnostic_config.get('source_oce', False) and source_oce:  # pass source_oce only if allowed by the diagnostic config file
-        extra_args += f" --source_oce {source_oce}"
+        cfgs = to_list(tool_config.get('config'))
+        if not cfgs:
+            logger.error(f"Config for tool '{tool}' not found, skipping.")
+            continue
 
-    outname = f"{output_dir}/{diagnostic_config.get('outname', diagnostic)}"
-    args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args}"
+        for i, cfg in enumerate(cfgs, start=1):
+            args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
+            if len(cfgs) == 1:
+                logfile = f"{output_dir}/{diagnostic}-{tool}.log"
+            else:
+                logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
 
-    run_diagnostic(
-        diagnostic=diagnostic,
-        script_path=os.path.join(script_dir, diagnostic_config.get('script_path', f"{diagnostic}/cli/cli_{diagnostic}.py")),
-        extra_args=args,
-        loglevel=loglevel,
-        logger=logger,
-        logfile=logfile
-    )
-
+            run_diagnostic(
+                diagnostic=diagnostic,
+                script_path=cli_path,
+                extra_args=args,
+                loglevel=loglevel,
+                logger=logger,
+                logfile=logfile
+            )
 
 def get_aqua_paths(*, args, logger):
     """

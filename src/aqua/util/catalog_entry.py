@@ -1,4 +1,5 @@
 from .config import ConfigPath
+from .util import to_list
 
 def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     """
@@ -26,7 +27,7 @@ def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     return path
 
 
-def replace_urlpath_jinja(block: dict, value: str, name: str) -> dict:
+def replace_urlpath_jinja(block: dict, value: str, name: str, default: str | None = None) -> dict:
     """
     Replace the urlpath in the catalog entry with the given jinja parameter and
     add the parameter to the parameters block
@@ -36,17 +37,30 @@ def replace_urlpath_jinja(block: dict, value: str, name: str) -> dict:
         value (str): The value to replace in the urlpath (e.g., 'r1', 'global', 'mean')
         name (str): The name of the parameter to add to the parameters block
                     and to be used in the urlpath (e.g., 'realization', 'region', 'stat')
+        default(optional, str): The default value for the parameter. If the value is equal to the default,
+                 no parameter is created and the urlpath is not modified.
+        
 
     Returns:
         dict: The updated catalog entry block
     """
     if not value:
         return block
+    
+    # TODO: verify this is needed 
+    # return if the value is the default one, no need to create a parameter
+    if default is not None and value == default:
+        return block
 
     # this loop is a bit tricky but is made to ensure that the right value is replaced
-    for character in ['_', '/', '.']:
-        block['args']['urlpath'] = block['args']['urlpath'].replace(
-            character + value + character, character + "{{" + name + "}}" + character)
+    # it works on multiple urlpath (list) or single urlpath (str)
+    urlpath = to_list(block['args']['urlpath'])
+    for i, _ in enumerate(urlpath):
+        for character in ['_', '/', '.']:
+            urlpath[i] = urlpath[i].replace(character + value + character, character + "{{" + name + "}}" + character)
+    block['args']['urlpath'] = urlpath if len(urlpath) > 1 else urlpath[0]
+
+    # add the parameter to the parameters block
     if 'parameters' not in block:
         block['parameters'] = {}
     if name not in block['parameters']:

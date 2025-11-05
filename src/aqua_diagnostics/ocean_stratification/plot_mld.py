@@ -64,7 +64,7 @@ class PlotMLD:
         dpi: int = 300,
     ):
         self.diagnostic_product = "mld"
-        self.clim_time = self.data.attrs.get("AQUA_mld_climatology", "Total")
+        self.clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
         self.data = self.set_convert_lon(data=self.data)
         if self.obs:
             self.obs = self.set_convert_lon(data=self.obs)
@@ -104,8 +104,8 @@ class PlotMLD:
             formats.append('png')
 
         for format in formats:
-            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata=self.description,
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+            self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
     def set_figsize(self):
         self.figsize = (9 * self.ncols, 8 * self.nrows)
@@ -204,7 +204,7 @@ class PlotMLD:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"MLD {self.clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
+        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -225,10 +225,9 @@ class PlotMLD:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
-        self.description = {}
-        self.description["description"] = {
-            f"{self.diagnostic_product} {self.clim_time} climatology over {self.region} region {self.diagnostic} of {self.catalog} {self.model} {self.exp}"
-        }
+        self.description = f"Mixed layer depth plot of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.catalog} {self.model} {self.exp} experiment"
+        if self.obs:
+            self.description = self.description + (f" with the reference data from {self.obs.attrs['catalog']} {self.obs.attrs['model']} {self.obs.attrs['exp']}")
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

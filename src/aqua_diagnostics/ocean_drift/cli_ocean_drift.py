@@ -40,11 +40,11 @@ if __name__ == '__main__':
     cluster = get_arg(args, 'cluster', None)
     nworkers = get_arg(args, 'nworkers', None)
 
-    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
+    client, cluster, private_cluster = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
 
-    # Load the configuration file and then merge itTimeseries with the command-line arguments,
+    # Load the configuration file and then merge it with the command-line arguments,
     # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='ocean3d',
+    config_dict = load_diagnostic_config(diagnostic='ocean3d', config=args.config,
                                          default_config='config_ocean_drift.yaml',
                                          loglevel=loglevel)
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
@@ -57,10 +57,10 @@ if __name__ == '__main__':
     startdate = config_dict['datasets'][0].get('startdate', None)
     enddate = config_dict['datasets'][0].get('enddate', None)
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
+        reader_kwargs['realization'] = realization
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
     # Output options
@@ -79,8 +79,8 @@ if __name__ == '__main__':
             var = hovmoller_config.get('var', None)
             dim_mean = hovmoller_config.get('dim_mean', ['lat', 'lon'])
             # Add the global region if not present
-            if regions != [None]:
-                regions.append(None)
+            # if regions != [None]:
+            #    regions.append(None)
             for region in regions:
                 logger.info(f"Processing region: {region}")
                 try:
@@ -107,6 +107,10 @@ if __name__ == '__main__':
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
                 try:
+                    logger.info(f"Loading data in memory")
+                    for processed_data in data_hovmoller.processed_data_list:
+                        processed_data.load()
+                    logger.info(f"Loaded data in memory")
                     hov_plot = PlotHovmoller(
                         diagnostic_name=diagnostic_name,
                         data=data_hovmoller.processed_data_list,
@@ -126,4 +130,4 @@ if __name__ == '__main__':
                 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
-    logger.info("OceanDrift diagnostic completed.")
+    logger.info("Ocean Drift diagnostic completed.")

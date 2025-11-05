@@ -2,16 +2,14 @@
 """
 Command-line interface for ensemble global time series diagnostic.
 
-This CLI allows to plot ensemle of global timeseries of a variable
+This CLI allows to plot ensemble of global timeseries of a variable
 defined in a yaml configuration file for multiple models.
 """
-
 import argparse
 import sys
 
-import xarray as xr
 from aqua import Reader
-from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge
+from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge, extract_realizations
 from aqua.diagnostics.core import (
     close_cluster,
     load_diagnostic_config,
@@ -20,9 +18,7 @@ from aqua.diagnostics.core import (
     template_parse_arguments,
 )
 from aqua.logger import log_configure
-from aqua.util import get_arg
-from aqua.version import __version__ as aqua_version
-
+from aqua.util import get_arg, ConfigPath
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleTimeseries diagnostic.
@@ -33,7 +29,6 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(description="EnsembleTimeseries CLI")
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
-
 
 if __name__ == "__main__":
 
@@ -63,18 +58,17 @@ if __name__ == "__main__":
 
     # Output options
     outputdir = config_dict["output"].get("outputdir", "./")
-    # rebuild = config_dict['output'].get('rebuild', True)
+    rebuild = config_dict['output'].get('rebuild', True)
     save_netcdf = config_dict["output"].get("save_netcdf", True)
     save_pdf = config_dict["output"].get("save_pdf", True)
     save_png = config_dict["output"].get("save_png", True)
-    # dpi = config_dict['output'].get('dpi', 300)
+    dpi = config_dict['output'].get('dpi', 300)
 
     # EnsembleTimeseries diagnostic
     if "ensemble" in config_dict["diagnostics"]:
         if config_dict["diagnostics"]["ensemble"]["run"]:
             logger.info("EnsembleTimeseries module is used.")
 
-            reference = config_dict["references"][0]
             # Loop over all the variables in the config file
             for variable in config_dict["diagnostics"]["ensemble"].get("variable", None):
                 for region in config_dict["diagnostics"]["ensemble"].get("region") or []:
@@ -99,7 +93,12 @@ if __name__ == "__main__":
                         exp = get_arg(args, "exp", dataset[0]["exp"])
                         source = get_arg(args, "source", dataset[0]["source"])
                         regrid = get_arg(args, "regrid", dataset[0]["regrid"])
-                        realization = get_arg(args, "realization", dataset[0]["realization"])
+                        realization = extract_realizations(
+                            catalog=catalog,
+                            model=model,
+                            exp=exp,
+                            source=source,
+                        )
                         realization_dict = {model: realization}
                     # Reterive dataset
                     dataset = reader_retrieve_and_merge(
@@ -116,31 +115,31 @@ if __name__ == "__main__":
                     if dataset is None:
                         logger.warning("Ensemble data is not provided.")
 
-                    # Reference data
-                    ref = config_dict["references"]
-                    ref_catalog = get_arg(args, "catalog", ref[0]["catalog"])
-                    ref_model = get_arg(args, "model", ref[0]["model"])
-                    ref_exp = get_arg(args, "exp", ref[0]["exp"])
-                    ref_source = get_arg(args, "source", ref[0]["source"])
+                    # # Reference data
+                    # ref = config_dict["references"]
+                    # ref_catalog = get_arg(args, "catalog", ref[0]["catalog"])
+                    # ref_model = get_arg(args, "model", ref[0]["model"])
+                    # ref_exp = get_arg(args, "exp", ref[0]["exp"])
+                    # ref_source = get_arg(args, "source", ref[0]["source"])
 
-                    if ref_catalog is not None and ref_model is not None and ref_exp is not None and ref_source is not None:
-                        reader = Reader(
-                            catalog=ref_catalog,
-                            model=ref_model,
-                            exp=ref_exp,
-                            source=ref_source,
-                            startdate=startdate_ref,
-                            enddate=enddate_ref,
-                            region=region,
-                            areas=False,
-                            variable=variable,
-                        )
-                        ref_data = reader.retrieve(var=variable)
-                        if ref_data is None:
-                            logger.warning("Reference data is not provided.")
-                    else:
-                        logger.warning("Reference catalog, model, exp and source need to be defined")
-                        ref_data = None
+                    # if ref_catalog is not None and ref_model is not None and ref_exp is not None and ref_source is not None:
+                    #     reader = Reader(
+                    #         catalog=ref_catalog,
+                    #         model=ref_model,
+                    #         exp=ref_exp,
+                    #         source=ref_source,
+                    #         startdate=startdate_ref,
+                    #         enddate=enddate_ref,
+                    #         region=region,
+                    #         areas=False,
+                    #         variable=variable,
+                    #     )
+                    #     ref_data = reader.retrieve(var=variable)
+                    #     if ref_data is None:
+                    #         logger.warning("Reference data is not provided.")
+                    # else:
+                    #     logger.warning("Reference catalog, model, exp and source need to be defined")
+                    #     ref_data = None
 
                     if dataset is not None:
                         ts = EnsembleTimeseries(
@@ -158,41 +157,23 @@ if __name__ == "__main__":
                         ts.run()
 
                     # Initialize PlotEnsembleTimeseries class
-                    if ref_data is not None:
-                        plot_class_arguments = {
-                            "catalog_list": catalog,
-                            "model_list": model,
-                            "exp_list": exp,
-                            "source_list": source,
-                            "ref_catalog": ref_catalog,
-                            "ref_model": ref_model,
-                            "ref_exp": ref_exp,
-                        }
-                    else:
-                        plot_class_arguments = {
-                            "catalog_list": catalog,
-                            "model_list": model,
-                            "exp_list": exp,
-                            "source_list": source,
-                        }
-
-                    if ref_data is not None:
-                        plot_class_arguments = {
-                            "catalog_list": catalog,
-                            "model_list": model,
-                            "exp_list": exp,
-                            "source_list": source,
-                            "ref_catalog": ref_catalog,
-                            "ref_model": ref_model,
-                            "ref_exp": ref_exp,
-                        }
-                    else:
-                        plot_class_arguments = {
-                            "catalog_list": catalog,
-                            "model_list": model,
-                            "exp_list": exp,
-                            "source_list": source,
-                        }
+                    # if ref_data is not None:
+                    #     plot_class_arguments = {
+                    #         "catalog_list": catalog,
+                    #         "model_list": model,
+                    #         "exp_list": exp,
+                    #         "source_list": source,
+                    #         "ref_catalog": ref_catalog,
+                    #         "ref_model": ref_model,
+                    #         "ref_exp": ref_exp,
+                    #     }
+                    # else:
+                    plot_class_arguments = {
+                        "catalog_list": catalog,
+                        "model_list": model,
+                        "exp_list": exp,
+                        "source_list": source,
+                    }
 
                     if (
                         ts.monthly_data is not None
@@ -201,7 +182,7 @@ if __name__ == "__main__":
                         or ts.annual_data is not None
                         or ts.annual_data_mean is not None
                         or ts.annual_data_std is not None
-                        or ref_data is not None
+                        # or ref_data is not None
                     ):
                         ts_plot = PlotEnsembleTimeseries(
                             **plot_class_arguments,
@@ -220,7 +201,7 @@ if __name__ == "__main__":
                             # "annual_data": ts.annual_data,
                             # "annual_data_mean": ts.annual_data_mean,
                             # "annual_data_std": ts.annual_data_std,
-                            "ref_monthly_data": ref_data,
+                            # "ref_monthly_data": ref_data,
                             # "ref_annual_data": ref_annual_data
                             "save_pdf": save_pdf,
                             "save_png": save_png,

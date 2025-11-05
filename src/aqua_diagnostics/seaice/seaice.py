@@ -210,6 +210,12 @@ class SeaIce(Diagnostic):
         # merge the standard deviation DataArrays if computed
         self.result_std = xr.merge(regional_results_std, combine_attrs='drop_conflicts') if calc_std_freq else None
 
+        self.logger.debug("Loading data in memory")
+        self.result.load()
+        if calc_std_freq:
+            self.result_std.load()
+        self.logger.debug("Loaded data in memory")
+
         # return a tuple if standard deviation was computed, otherwise just the result
         return (self.result, self.result_std) if calc_std_freq else self.result
 
@@ -253,6 +259,10 @@ class SeaIce(Diagnostic):
 
         # combine the result DataArrays into one Dataset and keep only the attributes common
         self.result = xr.merge(regional_2d_results, combine_attrs='drop_conflicts')
+
+        self.logger.debug("Loading data in memory")
+        self.result.load()
+        self.logger.debug("Loaded data in memory")
 
         return self.result
 
@@ -506,7 +516,7 @@ class SeaIce(Diagnostic):
         da_seaice_computed.attrs["AQUA_method"] = f"{self.method}"
         if startdate is not None: da_seaice_computed.attrs["AQUA_startdate"] = f"{startdate}"
         if enddate is not None: da_seaice_computed.attrs["AQUA_enddate"] = f"{enddate}"
-        da_seaice_computed.name = f"{'std_' if std_flag else ''}sea_ice_{self.method}_{region.replace(' ', '_').lower()}"
+        da_seaice_computed.name = f"{'std_' if std_flag else ''}sea_ice_{self.method}_{region}"
 
         return da_seaice_computed
 
