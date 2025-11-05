@@ -122,8 +122,8 @@ class PlotLatLonProfiles():
                     self.realizations.append(data_item.AQUA_realization)
                     self.logger.debug(f'Extracted realization: {data_item.AQUA_realization}')
                 else:
-                    self.realizations.append(None)
-                    self.logger.debug('No realization found in data')
+                    self.realizations.append('r1')
+                    self.logger.debug('No realization found in data, using default: r1')
 
                 # Extract region if not already set
                 if self.region is None and hasattr(data_item, 'AQUA_region'):
@@ -217,7 +217,7 @@ class PlotLatLonProfiles():
         if self.realizations:
             metadata['realization'] = self.realizations[0]
             self.logger.debug(f'Using realization for plot filename: {self.realizations[0]}')
-        
+                
         # Use class attributes
         var = getattr(self, 'short_name', None) or getattr(self, 'standard_name', None)
         region = self.region
