@@ -51,7 +51,30 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
 
     logger.debug(f"Plotting {len(data_list)} data arrays")
 
-    # Plot
+    # Plot reference data first
+    if ref_data is not None:
+        
+        # Find coordinate for ref_data
+        lon_name, lat_name = coord_names(ref_data)
+        coord_name = lat_name if lat_name is not None else lon_name
+        
+        if coord_name is not None:
+            ref_x_coord = ref_data[coord_name].values
+            
+            # Plot reference std
+            if ref_std_data is not None:
+                if hasattr(ref_std_data, 'compute'):
+                    ref_std_data = ref_std_data.compute()
+                ax.fill_between(ref_x_coord,
+                                ref_data.values - 2.*ref_std_data.values,
+                                ref_data.values + 2.*ref_std_data.values,
+                                facecolor='grey', alpha=0.5)
+            
+            # Plot reference line
+            ref_data.plot(ax=ax, label=ref_label if ref_label else 'Reference',
+                          color='black', linestyle='-', linewidth=3, alpha=1.0)
+
+    # Plot data second
     for i, d in enumerate(data_list):
         # Determine coordinate name based on 'lat' or 'lon'
         lon_name, lat_name = coord_names(d)
@@ -63,29 +86,6 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
             
         label = data_labels[i] if data_labels else None
         d.plot(ax=ax, label=label, linewidth=3)
-
-    # Handle reference data
-    if ref_data is not None:
-        
-        # Find coordinate for ref_data
-        lon_name, lat_name = coord_names(ref_data)
-        coord_name = lat_name if lat_name is not None else lon_name
-        
-        if coord_name is not None:
-            ref_x_coord = ref_data[coord_name].values
-            
-            # Plot reference data
-            ref_data.plot(ax=ax, label=ref_label if ref_label else 'Reference',
-                          color='black', linestyle='-', linewidth=3, alpha=1.0)
-            
-            # Plot reference std if available
-            if ref_std_data is not None:
-                if hasattr(ref_std_data, 'compute'):
-                    ref_std_data = ref_std_data.compute()
-                ax.fill_between(ref_x_coord,
-                                ref_data.values - 2.*ref_std_data.values,
-                                ref_data.values + 2.*ref_std_data.values,
-                                facecolor='grey', alpha=0.5)
 
     # Finalize plot
     if data_labels:
