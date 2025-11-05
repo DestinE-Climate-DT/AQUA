@@ -276,11 +276,11 @@ class OutputSaver:
         folder = self.generate_folder(extension=extension)
         return os.path.join(folder, filename + '.' + extension)
 
-    def _save_figure(self, fig: Figure, diagnostic_product: str, file_format: str,
-                     rebuild: bool = True, extra_keys: Optional[dict] = None, metadata: Optional[dict] = None,
-                     dpi: Optional[int] = None):
+    def _save_figure_format(self, fig: Figure, diagnostic_product: str, file_format: str,
+                            rebuild: bool = True, extra_keys: Optional[dict] = None, metadata: Optional[dict] = None,
+                            dpi: Optional[int] = None):
         """
-        Internal method to save a Matplotlib figure with common logic for PDF and PNG.
+        Internal method to save a Matplotlib figure in a single format with common logic for PDF and PNG.
 
         Args:
             fig (plt.Figure): The Matplotlib figure to save.
@@ -323,14 +323,56 @@ class OutputSaver:
         """
         Save a Matplotlib figure as a PDF.
         """
-        return self._save_figure(fig, diagnostic_product, 'pdf', rebuild, extra_keys, metadata)
+        return self._save_figure_format(fig, diagnostic_product, 'pdf', rebuild, extra_keys, metadata)
 
     def save_png(self, fig: Figure, diagnostic_product: str, rebuild: bool = True,
                  extra_keys: Optional[dict] = None, metadata: Optional[dict] = None, dpi: int = 300):
         """
         Save a Matplotlib figure as a PNG.
         """
-        return self._save_figure(fig, diagnostic_product, 'png', rebuild, extra_keys, metadata, dpi)
+        return self._save_figure_format(fig, diagnostic_product, 'png', rebuild, extra_keys, metadata, dpi)
+
+    def save_figure(self, fig: Figure, diagnostic_product: str,
+                    extra_keys: Optional[dict] = None,
+                    metadata: Optional[dict] = None,
+                    save_pdf: bool = False,
+                    save_png: bool = True,
+                    rebuild: bool = True,
+                    dpi: int = 300):
+        """
+        Save a matplotlib figure in the specified format(s).
+        
+        This method handles the format selection logic and delegates to
+        save_pdf() and/or save_png() as needed.
+        
+        Args:
+            fig: Matplotlib figure to save.
+            diagnostic_product (str): Name of the diagnostic product.
+            extra_keys (dict): Dictionary of additional keys for filename generation.
+            metadata (dict): Dictionary of metadata to embed in the file.
+            save_pdf (bool): Whether to save as PDF.
+            save_png (bool): Whether to save as PNG.
+            rebuild (bool): Whether to rebuild if file exists.
+            dpi (int): Resolution for PNG output (ignored for PDF).
+        """
+        if save_pdf and save_png:
+            format = 'both'
+        elif save_pdf:
+            format = 'pdf'
+        elif save_png:
+            format = 'png'
+        else:
+            raise ValueError("At least one of save_pdf or save_png must be True")
+        
+        if format not in ['png', 'pdf', 'both']:
+            raise ValueError(f"format must be 'png', 'pdf', or 'both', got '{format}'")
+        
+        if format in ['pdf', 'both']:
+            self.save_pdf(fig, diagnostic_product, rebuild=rebuild, extra_keys=extra_keys, metadata=metadata)
+        
+        if format in ['png', 'both']:
+            self.save_png(fig, diagnostic_product, rebuild=rebuild,
+                         extra_keys=extra_keys, metadata=metadata, dpi=dpi)
 
     def create_metadata(self, diagnostic_product: str, extra_keys: Optional[dict] = None, metadata: Optional[dict] = None) -> dict:
         """
@@ -448,76 +490,3 @@ class OutputSaver:
 
         self.logger.debug("Releasing catalog file %s", catalogfile)
         return catblock # using this in the tests
-
-
-def save_figure_core(fig: Figure,
-                     diagnostic_product: str,
-                     saver_kwargs: Optional[dict] = None,
-                     extra_keys: Optional[dict] = None,
-                     metadata: Optional[dict] = None,
-                     fmt: str = 'png',
-                     rebuild: bool = True,
-                     dpi: int = 300):
-    """
-    Centralized figure saving function for a common saving of matplotlib figures
-    as PNG or PDF files, reducing code duplication across diagnostics. This function creates an
-    OutputSaver instance and delegates to its save_pdf/save_png methods.
-    
-    Args:
-        fig: Matplotlib figure to save.
-        diagnostic_product (str): Name of the diagnostic product (e.g., 'bias', 'climatology', 'timeseries').
-        saver_kwargs (dict): Dictionary of kwargs for OutputSaver initialization.
-                             Expected keys: 'diagnostic', 'catalog', 'model', 'exp',
-                                            'catalog_ref', 'model_ref', 'exp_ref',
-                                            'outputdir', 'loglevel'
-        extra_keys (dict): Dictionary of additional keys for filename generation:
-                            (e.g., {'var': 'tas', 'plev': 85000, 'region': 'Arctic'}).
-        metadata (dict): Dictionary of metadata to embed in the file
-                            (e.g., {'Description': '...', 'dpi': 300}).
-        fmt (str): Output format: 'png', 'pdf', or 'both'.
-        rebuild (bool): Whether to rebuild if file exists (passed to save methods).
-        dpi (int): Resolution for PNG output (ignored for PDF).
-    
-    Returns:
-        str or tuple: File path(s) of saved figure(s). Returns a single path string
-                     for 'png' or 'pdf', or a tuple (pdf_path, png_path) for 'both'.
-    """
-    # Ensure dictionaries are not None
-    saver_kwargs = {} if saver_kwargs is None else dict(saver_kwargs)
-    extra_keys = {} if extra_keys is None else dict(extra_keys)
-    metadata = {} if metadata is None else dict(metadata)
-    
-    # Validate format
-    if fmt not in ['png', 'pdf', 'both']:
-        raise ValueError(f"fmt must be 'png', 'pdf', or 'both', got '{fmt}'")
-    
-    outputsaver = OutputSaver(**saver_kwargs)
-    
-    save_png = fmt in ['png', 'both']
-    save_pdf = fmt in ['pdf', 'both']
-    
-    paths = []
-    
-    if save_pdf:
-        pdf_path = outputsaver.save_pdf(
-            fig=fig,
-            diagnostic_product=diagnostic_product,
-            extra_keys=extra_keys,
-            metadata=metadata,
-            rebuild=rebuild
-        )
-        paths.append(pdf_path)
-    
-    if save_png:
-        png_path = outputsaver.save_png(
-            fig=fig,
-            diagnostic_product=diagnostic_product,
-            extra_keys=extra_keys,
-            metadata=metadata,
-            rebuild=rebuild, dpi=dpi
-        )
-        paths.append(png_path)
-    
-    if len(paths) == 1:
-        return paths[0]
-    return tuple(paths)
