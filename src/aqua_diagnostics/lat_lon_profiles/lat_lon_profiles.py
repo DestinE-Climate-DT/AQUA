@@ -74,8 +74,6 @@ class LatLonProfiles(Diagnostic):
 		self.std_annual = None   # Annual std deviation, used by the longterm mean
 
 		self.mean_type = mean_type
-		# Realization is extracted from data during retrieve(), if available
-		self.realization = None
 
 	def retrieve(self, var: str, formula: bool = False, long_name: str = None, 
 				 units: str = None, standard_name: str = None,
@@ -115,9 +113,6 @@ class LatLonProfiles(Diagnostic):
 		if hasattr(self.data, 'AQUA_realization'):
 			self.realization = self.data.AQUA_realization
 			self.logger.debug(f'Extracted realization from data: {self.realization}')
-		elif 'realization' in reader_kwargs:
-			self.realization = reader_kwargs['realization']
-			self.logger.debug(f'Using realization from reader_kwargs: {self.realization}')
 
 		if self.plt_startdate is None:
 			self.plt_startdate = self.data.time.min().values
