@@ -109,11 +109,6 @@ class LatLonProfiles(Diagnostic):
 			# Get the xr.DataArray to be aligned with the formula code
 			self.data = self.data[var]
 
-		# Extract realization from data attributes if available
-		if hasattr(self.data, 'AQUA_realization'):
-			self.realization = self.data.AQUA_realization
-			self.logger.debug(f'Extracted realization from data: {self.realization}')
-
 		if self.plt_startdate is None:
 			self.plt_startdate = self.data.time.min().values
 			self.logger.debug('Plot start date set to %s', self.plt_startdate)
