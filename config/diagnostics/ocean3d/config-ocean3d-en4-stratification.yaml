@@ -37,6 +37,6 @@ diagnostics:
       run: true
       var: ['thetao', 'so']
       # Note: region and climatology are zipped together, so if you want the same region with different climatologies, you need to repeat it
-      regions: ['ls', 'is', 'ws', 'gs']  # removed ros/DJF
-      climatology: ['DJF', 'JJA', 'JJA', 'DJF']
+      regions: ['ls', 'is', 'ws', 'gs', 'ros']  # removed ros/DJF
+      climatology: ['DJF', 'JJA', 'JJA', 'DJF', 'DJF']
       # dim_mean: ['lat', 'lon']
