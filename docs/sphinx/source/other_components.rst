@@ -85,11 +85,6 @@ It is possible to consider or drop the limits of the selection by setting the ``
 It is also possible to drop the NaN values after the selection by setting the ``drop`` flag to ``True``.
 The class is nested into the ``Reader()`` class, so it is possible to call the ``select_area()`` method directly from the reader instance or as aqua accessor.
 
-.. note::
-    When selecting a region that crosses the Greenwich meridian (e.g. lon_limits=[350, 10]),
-    the method will automatically convert longitudes to the -180 to 180 range for the selection,
-    in order to allow flawless plotting. The option can be disabled by setting the ``to_180`` flag to ``False``.
-
 .. warning::
     In order to apply an area selection the data Xarray must include ``lon`` and ``lat`` as coordinates.
     It can work also on unstructured grids, but information on coordinates must be available.
