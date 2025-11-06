@@ -125,7 +125,7 @@ class FldStat():
 
         if lon_limits is not None or lat_limits is not None:
             data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
-                                                   to_180=False, **kwargs)
+                                                   **kwargs)
 
         # cleaning coordinates which have "multiple" coordinates in their own definition
         # grid_area = self._clean_spourious_coords(grid_area, name = "area")
@@ -155,8 +155,7 @@ class FldStat():
                     box_brd: bool = True, drop: bool = False,
                     lat_name: str = "lat", lon_name: str = "lon",
                     default_coords: dict = {"lat_min": -90, "lat_max": 90,
-                                            "lon_min": 0, "lon_max": 360},
-                    to_180: bool = True) -> xr.Dataset | xr.DataArray:
+                                            "lon_min": 0, "lon_max": 360}) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
         Wrapper for AreaSelection.select_area method.
@@ -167,7 +166,7 @@ class FldStat():
         return self.area_selection.select_area(data, lon=lon, lat=lat,
                                                 box_brd=box_brd, drop=drop,
                                                 lat_name=lat_name, lon_name=lon_name,
-                                                default_coords=default_coords, to_180=to_180)
+                                                default_coords=default_coords)
 
     def integrate_over_area(self, data: xr.Dataset | xr.DataArray, 
                             areacell: xr.DataArray, 
