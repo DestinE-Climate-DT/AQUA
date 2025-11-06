@@ -1,3 +1,5 @@
+from pyproj import transform
+from aqua.graphics.single_map import plot_single_map
 import xarray as xr
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
@@ -11,30 +13,70 @@ def plot_maps(maps: list[xr.DataArray],
               style=None,
               title: str = None,
               titles: list = None,
+              proj: ccrs.Projection = ccrs.PlateCarree(),
+              extent: list = None,
               cmap: str = "RdBu_r",
               cbar_labels: list = None,
               ytext: list = None,
               nrows: int = 6,
               ncols: int = 2,
+              transform_first: bool = False,
+              cyclic_lon: bool = True,
               loglevel: str = "WARNING",
               return_fig: bool = True,
-              nlevels: int = 12):
+              nlevels: int = 12,
+              **kwargs
+              ):
     """
-    Plot multiple maps.
-        
-    Args:
-        maps (list of xr.DataArray): List of maps to plot.
-        style (str, optional): Plot style (default aqua style).
-        title (str, optional): Overall title for the figure.
-        titles (list, optional): Titles for each subplot.
-        cmap (str, optional): Colormap to use.
-        cbar_labels (list, optional): Labels for each colorbar.
-        ytext (list, optional): Text to add on the y-axis of each subplot.
-        nrows (int, optional): Number of rows in the subplot grid.
-        ncols (int, optional): Number of columns in the subplot grid.
-        loglevel (str, optional): Logging level.
-        return_fig (bool, optional): If True, return the figure object.
-        nlevels (int, optional): Number of color levels in the colormap.
+    Plot multiple 2D maps (xarray DataArrays) in a grid layout.
+
+    Parameters
+    ----------
+    maps : list[xr.DataArray]
+        List of xarray DataArrays to plot.
+    style : str, optional
+        Plot style preset or name. If None, uses the default AQUA style.
+    title : str, optional
+        Overall figure title.
+    titles : list[str], optional
+        List of subplot titles corresponding to each DataArray in `maps`.
+    proj : cartopy.crs.Projection, optional
+        Map projection for plotting (default: PlateCarree).
+    extent : list[float], optional
+        Geographic extent as [lon_min, lon_max, lat_min, lat_max].
+    cmap : str, optional
+        Colormap name to use (default: "RdBu_r").
+    cbar_labels : list[str], optional
+        List of colorbar labels for each subplot.
+    ytext : list[str], optional
+        Text annotations to place on the y-axis of each subplot.
+    nrows : int, optional
+        Number of rows in the subplot grid (default: 6).
+    ncols : int, optional
+        Number of columns in the subplot grid (default: 2).
+    transform_first : bool, optional
+        If True, apply coordinate transformation before plotting.
+    cyclic_lon : bool, optional
+        Whether to make longitude cyclic for continuous global maps.
+    loglevel : str, optional
+        Logging verbosity level (default: "WARNING").
+    return_fig : bool, optional
+        If True, return the Matplotlib figure object (default: True).
+    nlevels : int, optional
+        Number of discrete color levels in the colormap (default: 12).
+    **kwargs
+        Additional keyword arguments passed to the underlying contour or pcolormesh function.
+
+    Returns
+    -------
+    matplotlib.figure.Figure or None
+        The Matplotlib figure if `return_fig=True`, otherwise None.
+
+    Notes
+    -----
+    This function provides a convenient way to visualize multiple geospatial fields
+    using Cartopy. Handles projection setup, cyclic longitude wrapping, and optional
+    labeling automatically.
     """
     logger = log_configure(loglevel, "plot_maps")
     ConfigStyle(style=style, loglevel=loglevel)
@@ -65,18 +107,26 @@ def plot_maps(maps: list[xr.DataArray],
         logger.debug(f"Colorbar limits for map {i}: vmin={vmin}, vmax={vmax}")
 
         logger.debug("Plotting map %d", i)
-        ax = axs[i]
-        _ = maps[i].plot.contourf(
-            ax=ax,
-            transform=ccrs.PlateCarree(),
-            cmap=cmap,
+        fig, ax = plot_single_map(
+            data=maps[i],
+            contour=True,
+            proj=proj,
+            extent=extent,
             vmin=vmin,
             vmax=vmax,
-            levels=nlevels,
-            extend='both',
-            add_colorbar=True,
-            cbar_kwargs={'label': cbar_labels[i] if cbar_labels and i < len(cbar_labels) else None,
-                 'ticks': ticks}  # Format to show tick levels
+            nlevels=nlevels,
+            title=titles[i] if titles is not None else None,
+            cmap=cmap,
+            cbar=False,
+            transform_first=transform_first,
+            add_land=True,
+            return_fig=True,
+            cyclic_lon=cyclic_lon,
+            fig=fig,
+            loglevel=loglevel,
+            ax_pos=(nrows, ncols, i + 1),
+            ticks_rounding=0,
+            **kwargs,
         )
         ax.set_aspect("auto")  # NEW: stretch plot to fill subplot
         ax.coastlines()
