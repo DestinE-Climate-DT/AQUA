@@ -1,13 +1,11 @@
 import xarray as xr
+import numpy as np
 from typeguard import typechecked
 from aqua.logger import log_configure, log_history
 from aqua.util import check_coordinates
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
-
-DEFAULT_COORDS = {"lat_min": -90, "lat_max": 90,
-                  "lon_min": 0, "lon_max": 360}
 
 
 class AreaSelection:
@@ -75,7 +73,9 @@ class AreaSelection:
         if lon is None and lat is None:
             return data
 
-        default_coords = default_coords or DEFAULT_COORDS
+        if default_coords is None:
+            default_coords = {"lat_min": -90, "lat_max": 90,
+                              "lon_min": 0, "lon_max": 360}
 
         lon, lat = check_coordinates(lon, lat, default_coords)
 
@@ -112,8 +112,14 @@ class AreaSelection:
         # dask-friendly.
         if to_180 and crossing_greenwich and lon_name in selected.coords:
             lon_da = selected[lon_name]
-            # Use xarray.where to compute conversion lazily
-            lon_conv = xr.where(lon_da > 180, lon_da - 360, lon_da)
+            # Use xarray.where to compute conversion lazily if possible
+            try:
+                lon_conv = xr.where(lon_da > 180, lon_da - 360, lon_da)
+            except Exception:
+                # Fallback to numpy conversion
+                lon_vals = lon_da.values
+                lon_np = np.array(lon_vals)
+                lon_conv = np.where(lon_np > 180, lon_np - 360, lon_np)
 
             selected = selected.assign_coords({lon_name: lon_conv})
             # sort longitudes so they are ascending (-80 .. 30)
@@ -149,7 +155,9 @@ class AreaSelection:
         Returns:
             A boolean mask for selecting the appropriate longitude values.
         """
-        default_coords = default_coords or DEFAULT_COORDS
+        if default_coords is None:
+            default_coords = {"lat_min": -90, "lat_max": 90,
+                              "lon_min": 0, "lon_max": 360}
 
         lon = data[lon_name]
 
