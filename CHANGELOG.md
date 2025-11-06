@@ -10,14 +10,13 @@ Unreleased in the current development version (target v0.20.0):
 ClimateDT workflow modifications:
 
 AQUA core complete list:
-- Add filelock when modifying catalog sources (#2432)
-- Area selection full support for regions across the dateline (#2430, #2434)
 
 AQUA diagnostics complete list:
 
 ## [v0.19.0]
 
 ClimateDT workflow modifications:
+- Add filelock when modifying catalog sources (#2437)
 - The configuration file of the catalog generator now requires `expid`
 - Aqua analysis config file organized differently with diagnostic groups
 - Diagnostic and cli tool config files grouped differently in `$AQUA/config/diagnostics` and `$AQUA/config/tools`
