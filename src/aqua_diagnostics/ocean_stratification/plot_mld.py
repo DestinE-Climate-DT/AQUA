@@ -143,6 +143,7 @@ class PlotMLD:
 
     def set_central_longitude(self):
         self.central_longitude = self.data.lon.mean().values
+        self.logger.debug(f"Central longitude set to: {self.central_longitude}")
 
     def set_data_map_list(self):
         self.data_map_list = []
