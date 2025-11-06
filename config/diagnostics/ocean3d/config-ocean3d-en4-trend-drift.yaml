@@ -44,5 +44,5 @@ diagnostics:
       diagnostic_name: 'ocean3d'
       run: true
       var: ['thetao', 'so']
-      regions: ['go', 'io', 'ao', 'so', 'arc_o']  # 'po'
+      regions: ['go', 'io', 'ao', 'so', 'arc_o', 'po']
       # dim_mean: ['lat']
