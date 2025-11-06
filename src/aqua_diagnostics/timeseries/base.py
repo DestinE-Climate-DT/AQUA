@@ -231,7 +231,7 @@ class BaseMixin(Diagnostic):
             data.name = var
 
         # In order to have a catalog entry we want to have a key region even in the global case
-        region = self.region.replace(' ', '').lower() if self.region is not None else 'global'
+        region = self.region if self.region is not None else 'global'
         extra_keys.update({'region': region})
 
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
@@ -434,7 +434,7 @@ class PlotBaseMixin():
         if self.short_name is not None:
             extra_keys.update({'var': self.short_name})
         if self.region is not None:
-            region = self.region.replace(' ', '').lower()
+            region = self.region
             extra_keys.update({'region': region})
 
         if format == 'png':

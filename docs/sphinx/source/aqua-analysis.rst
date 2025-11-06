@@ -145,6 +145,12 @@ The cluster section contains the following keys:
 - ``workers``: the number of workers to use. Default is ``32``.
 - ``threads``: the number of threads per worker. Default is ``2``.
 - ``memory_limit``: the memory per worker. Default is ``7GiB``.
+- ``reconnect_timeout``: the timeout in seconds to wait for client to connect to the cluster.
+                        Default is ``120``.
+                        Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT=120s``.
+- ``ftp_timeout``: the timeout in seconds for ftp connections.
+                        Default is ``60``.
+                        Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__FTP=60s``
 
 .. note::
 

@@ -219,7 +219,7 @@ class LatLonProfiles(Diagnostic):
 
 				extra_keys = {'freq': freq, 'season': seasons[i], 'var': var}
 				if self.region is not None:
-					region = self.region.replace(' ', '').lower()
+					region = self.region
 					extra_keys['AQUA_region'] = region
 				
 				self.logger.info('Saving %s data for %s to netcdf in %s', seasons[i], diagnostic_product, outputdir)
@@ -232,7 +232,7 @@ class LatLonProfiles(Diagnostic):
 
 			extra_keys = {'freq': freq, 'var': var}
 			if self.region is not None:
-				region = self.region.replace(' ', '').lower()
+				region = self.region
 				extra_keys['AQUA_region'] = region
 			
 			self.logger.info('Saving %s data for %s to netcdf in %s', freq, diagnostic_product, outputdir)
@@ -249,7 +249,7 @@ class LatLonProfiles(Diagnostic):
 					var = getattr(std_data, 'standard_name', 'unknown')
 					extra_keys = {'freq': freq, 'season': seasons[i], 'std': 'std', 'var': var}
 					if self.region is not None:
-						region = self.region.replace(' ', '').lower()
+						region = self.region
 						extra_keys['AQUA_region'] = region
 
 					super().save_netcdf(data=std_data, diagnostic=self.diagnostic_name,
@@ -262,7 +262,7 @@ class LatLonProfiles(Diagnostic):
 
 				extra_keys = {'freq': 'annual', 'std': 'std', 'var': var}
 				if self.region is not None:
-					region = self.region.replace(' ', '').lower()
+					region = self.region
 					extra_keys['AQUA_region'] = region
 
 				super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name,

@@ -210,7 +210,7 @@ class PlotLatLonProfiles():
         # Build extra_keys
         extra_keys = {}
         if var: extra_keys['var'] = var
-        if region: extra_keys['region'] = region.replace(' ', '').lower()
+        if region: extra_keys['region'] = region
         
         # diagnostic_product must match the one used in OutputSaver
         base_diagnostic = diagnostic if diagnostic else self.diagnostic_name

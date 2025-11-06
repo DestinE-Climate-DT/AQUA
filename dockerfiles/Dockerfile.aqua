@@ -1,11 +1,20 @@
 # -----------------------------------------------------------------------------
+# Build arguments for different versions
+# this can be configured from github actions, and currently used by create-container-from-tag.yaml   
+ARG MICROMAMBA_VERSION=2.3.2
+ARG BASE_IMAGE=ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
+ARG MAMBA_USER_ID=57439
+ARG MAMBA_USER_GID=57439
+ARG EXTRA_PACKAGES=""
+
+# -----------------------------------------------------------------------------
 # --- Micromamba / Conda (used later).
-FROM mambaorg/micromamba:2.3.2 as micromamba
+FROM mambaorg/micromamba:${MICROMAMBA_VERSION} as micromamba
 
 # -----------------------------------------------------------------------------
 # The container is created by the AQUA team, with the Dockerfile.ubuntu
 # it includes updated FDB and ECCODES libraries.
-FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container as fdb
+FROM ${BASE_IMAGE} as fdb
 
 # Install dependencies
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -30,8 +39,9 @@ USER root
 # From Ubuntu 24.04 onwards, there is a default user already created
 # in the base image with GID 1000.
 ARG MAMBA_USER=mamba
-ARG MAMBA_USER_ID=57439
-ARG MAMBA_USER_GID=57439
+ARG MAMBA_USER_ID
+ARG MAMBA_USER_GID
+ARG EXTRA_PACKAGES
 ENV MAMBA_USER=$MAMBA_USER
 ENV MAMBA_ROOT_PREFIX="/opt/conda"
 ENV MAMBA_EXE="/bin/micromamba"
@@ -68,7 +78,7 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 # Generate conda environment (env name does not matter,
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
-RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab cartopy_offlinedata && \
+RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab ${EXTRA_PACKAGES} && \
     micromamba install -y -n base -f AQUA/environment.yml
 
 EXPOSE 8888
@@ -108,4 +118,3 @@ ARG MAMBA_DOCKERFILE_ACTIVATE=1
 #        useful command just replace it here.
 # CMD ["python", "-c", "'import aqua'"]
 # CMD ["jupyter", "lab", "--ip", "0.0.0.0", "--port", "8888"]
-

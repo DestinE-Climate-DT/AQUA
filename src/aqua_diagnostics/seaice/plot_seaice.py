@@ -492,7 +492,7 @@ class PlotSeaIce:
             diagnostic_product = self.plot_type
             
             extra_keys = {'method': self.method,
-                          'regions': '_'.join(region_dict.keys()).lower()}
+                          'region': '_'.join(region_dict.keys())}
             
             if save_pdf: 
                 output_saver.save_pdf(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,
