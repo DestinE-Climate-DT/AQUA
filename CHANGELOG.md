@@ -32,7 +32,7 @@ AQUA core complete list:
 - Introduce `expid` into configuration file of the catalog generator (#2340)
 - EC-EARTH4 ORCA2 and eORCA1 grids refactor (#2280)
 - Added PALEORCA2 support for the EC-EARTH4 low-resolution paleoclimate configuration (#2280)
-- AQUA analysis now can receive `stardate` and `enddate` (#2368)
+- AQUA analysis now can receive ``startdate`` and ``enddate`` (#2368, #2423)
 
 AQUA diagnostics complete list:
 - Cleanup diagnostic code, remove lower() and replace() for regions (#2422)
