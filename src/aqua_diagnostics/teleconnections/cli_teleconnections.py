@@ -51,11 +51,10 @@ if __name__ == '__main__':
     regrid = get_arg(args, 'regrid', None)
     logger.debug(f'Regrid CLI option: {regrid}')
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        logger.info(f"Realization option is set to {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
+        reader_kwargs['realization'] = realization
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -323,4 +322,4 @@ if __name__ == '__main__':
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
-    logger.info('Teleconnections diagnostic finished.')
+    logger.info('Teleconnections diagnostic completed.')

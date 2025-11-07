@@ -118,13 +118,13 @@ class TestPlotSeaIce:
             model=self.model, exp=self.exp, source=self.source,
             catalog=self.catalog, loglevel=self.loglevel
         )
-        psi.plot_seaice(plot_type="seasonal_cycle", save_pdf=False, save_png=False)
+        psi.plot_seaice(plot_type="seasonalcycle", save_pdf=False, save_png=False)
 
     def test_plot_seascycle_multi(self):
         """Test the seasonal cycle path with multiple datasets."""
         psi = PlotSeaIce(monthly_models=self.siext_seas,
                          monthly_ref=[self.siext_seas_ref])
-        psi.plot_seaice(plot_type="seasonal_cycle", save_pdf=False, save_png=False)
+        psi.plot_seaice(plot_type="seasonalcycle", save_pdf=False, save_png=False)
 
     def test_invalid_plot_type_raises(self):
         """Test that invalid plot type raises ValueError."""

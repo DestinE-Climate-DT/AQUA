@@ -112,7 +112,8 @@ class Hovmoller(Diagnostic):
         self.stacked_data = self.compute_hovmoller(
             dim_mean=dim_mean, anomaly_ref=anomaly_ref
         )
-        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=region)
+        
+        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=self.region)
         self.logger.info("Hovmoller diagram saved to netCDF file")
 
     def _get_anomaly(
@@ -272,5 +273,6 @@ class Hovmoller(Diagnostic):
                 diagnostic_product=f"{diagnostic_product}",
                 outputdir=outputdir,
                 rebuild=rebuild,
-                extra_keys={"region": region, 'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
+                extra_keys={"region": self.region,
+                            'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
             )

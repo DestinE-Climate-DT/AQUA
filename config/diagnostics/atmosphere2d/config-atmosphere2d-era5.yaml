@@ -1,0 +1,87 @@
+# Currently, the diagnostic supports comparing one dataset against one reference dataset at a time.
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
+    reader_kwargs: null # it can be a dictionary with reader kwargs
+    startdate: null
+    enddate: null
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: 'r100'
+    startdate: null
+    enddate: null
+
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+  create_catalog_entry: true
+
+diagnostics:
+  globalbiases:
+    run: true
+    diagnostic_name: 'atmosphere2d'
+    variables: ['msl']
+    formulae: ['(10u^2+10v^2)^0.5']
+    params:
+      default:
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: false     # Vertical profile if variable 3d
+        #TODO: to remove
+        startdate_data: null
+        enddate_data: null
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2020-12-31"
+      (10u^2+10v^2)^0.5:
+        short_name: "10si"
+        long_name: "Wind speed at 10m"
+    plot_params:
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      msl:
+        vmin: -1000
+        vmax: 1000
+        cmap: 'RdBu_r'
+      (10u^2+10v^2)^0.5:
+        vmin: -2.5
+        vmax: 2.5
+        cmap: 'RdBu_r'
+  
+  seasonalcycles:
+    run: true
+    diagnostic_name: 'atmosphere2d'
+    variables: ['ie', 'msl', 'tcc']
+    center_time: true
+    params:
+      default:
+        std_startdate: '19900101'
+        std_enddate: '20201231'
+  
+  timeseries:
+    run: true
+    diagnostic_name: 'atmosphere2d'
+    variables: ['ie', 'msl', 'tcc']
+    center_time: true
+    params:
+      default:
+        hourly: False
+        daily: False
+        monthly: True
+        annual: True
+        std_startdate: '19900101'
+        std_enddate: '20201231'

@@ -37,7 +37,6 @@ def parse_arguments(args):
 
 if __name__ == '__main__':
 
-    print('Running Check setup CLI')
     args = parse_arguments(sys.argv[1:])
 
     try:
@@ -56,7 +55,7 @@ if __name__ == '__main__':
     except Exception as e:
         raise ImportError('Failed to import aqua: {}'.format(e))
 
-    logger.info('Running aqua version {}'.format(aqua_version))
+    logger.info("Running Setup Checker with AQUA version %s", aqua_version)
 
     catalog = get_arg(args, 'catalog', None)
     model = get_arg(args, 'model', None)

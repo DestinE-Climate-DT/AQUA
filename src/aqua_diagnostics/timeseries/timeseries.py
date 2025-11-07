@@ -132,6 +132,11 @@ class Timeseries(BaseMixin):
         # Due to the possible usage of the standard period, the time may need to be reselected correctly
         data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 
+        # Load data in memory for faster plot
+        self.logger.debug(f"Loading data for frequency {str_freq} in memory")
+        data.load()
+        self.logger.debug(f"Loaded data for frequency {str_freq} in memory")
+
         if str_freq == 'hourly':
             self.hourly = data
         elif str_freq == 'daily':

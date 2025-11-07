@@ -178,6 +178,11 @@ class BaseMixin(Diagnostic):
         data.attrs['std_startdate'] = time_to_string(self.std_startdate)
         data.attrs['std_enddate'] = time_to_string(self.std_enddate)
 
+        # Load data in memory for faster plot
+        self.logger.debug(f"Loading std data for frequency {str_freq} in memory")
+        data.load()
+        self.logger.debug(f"Loaded std data for frequency {str_freq} in memory")
+
         # Assign the data to the correct attribute based on frequency
         if str_freq == 'hourly':
             self.std_hourly = data
@@ -226,18 +231,19 @@ class BaseMixin(Diagnostic):
             data.name = var
 
         # In order to have a catalog entry we want to have a key region even in the global case
-        region = self.region.replace(' ', '').lower() if self.region is not None else 'global'
+        region = self.region if self.region is not None else 'global'
         extra_keys.update({'region': region})
 
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
 
+        # Loading data in memory before saving to netcdf
         super().save_netcdf(data=data, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                             outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys,
                             create_catalog_entry=create_catalog_entry, dict_catalog_entry=dict_catalog_entry)
         if data_std is not None:
             extra_keys.update({'std': 'std'})
             self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
-            #TODO: Check if the catalog entry generation is required for the std values
+            # TODO: Check if the catalog entry generation is required for the std values
             super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                                 outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 
@@ -428,7 +434,7 @@ class PlotBaseMixin():
         if self.short_name is not None:
             extra_keys.update({'var': self.short_name})
         if self.region is not None:
-            region = self.region.replace(' ', '').lower()
+            region = self.region
             extra_keys.update({'region': region})
 
         if format == 'png':
