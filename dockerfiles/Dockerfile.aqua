@@ -85,7 +85,7 @@ EXPOSE 8888
 
 WORKDIR /app/AQUA/
 
-ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+ENV PATH "$MAMBA_ROOT_PREFIX/bin:$PATH"
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
 # NOTE: This works with Docker, but not with Singularity as
