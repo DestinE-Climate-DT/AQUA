@@ -197,7 +197,13 @@ class GlobalBiases(Diagnostic):
         })
 
         if save_netcdf:
-            extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
+            extra_keys = {
+                k: v for k, v in {
+                    'var': var,
+                    'plev': plev,
+                    'realization': self.realization
+                }.items() if v is not None
+            }
             self.savenetcdf(
                 data=self.climatology,
                 diagnostic_product='annual_climatology',
