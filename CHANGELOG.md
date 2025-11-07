@@ -7,7 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.20.0):
 
+ClimateDT workflow modifications:
+
 AQUA core complete list:
+- Add filelock when modifying catalog sources (#2432)
 - Area selection full support for regions across the dateline (#2430, #2434)
 
 AQUA diagnostics complete list:
