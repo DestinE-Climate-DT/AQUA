@@ -13,7 +13,7 @@ class SafeFileLock:
       - Stale lock cleanup
     """
 
-    def __init__(self, lock_path, timeout=30, stale_timeout=120,
+    def __init__(self, lock_path, timeout=60, stale_timeout=120,
                  heartbeat_interval=10, loglevel: str = 'WARNING'):
         """
         :param lock_path: Path to the .lock file (must be on shared filesystem)
