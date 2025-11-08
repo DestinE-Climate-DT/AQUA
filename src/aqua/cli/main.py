@@ -9,7 +9,8 @@ import shutil
 import sys
 from urllib.error import HTTPError
 import fsspec
-from filelock import FileLock
+
+from aqua.lock import SafeFileLock
 
 from aqua import __path__ as pypath
 from aqua import catalog as print_catalog
@@ -239,7 +240,7 @@ class AquaConsole():
             self.configfile = os.path.join(self.configpath, 'config-aqua.yaml')
             self.logger.info('Setting machine name to %s', machine)
 
-            with FileLock(self.configfile + '.lock'):
+            with SafeFileLock(self.configfile + '.lock', loglevel=self.loglevel):
                 cfg = load_yaml(self.configfile)
                 cfg['machine'] = machine
                 dump_yaml(self.configfile, cfg)
@@ -358,7 +359,7 @@ class AquaConsole():
                 os.makedirs(path, exist_ok=True)
 
         filename = os.path.join(self.configpath, self.configfile)
-        with FileLock(filename + '.lock'):
+        with SafeFileLock(filename + '.lock', loglevel=self.loglevel):
             cfg = load_yaml(filename)
             path_dict = {
                 'paths': {
@@ -623,7 +624,7 @@ class AquaConsole():
         """
 
         self.logger.info('Setting catalog name to %s', catalog)
-        with FileLock(self.configfile + '.lock'):
+        with SafeFileLock(self.configfile + '.lock', loglevel=self.loglevel):
             cfg = load_yaml(self.configfile)
             if cfg['catalog'] is None:
                 self.logger.debug('No catalog previously installed: setting catalog name to %s', catalog)
@@ -671,7 +672,7 @@ class AquaConsole():
         Remove catalog from the configuration file
         """
 
-        with FileLock(self.configfile + '.lock'):
+        with SafeFileLock(self.configfile + '.lock', loglevel=self.loglevel):
             cfg = load_yaml(self.configfile)
             if isinstance(cfg['catalog'], str):
                 cfg['catalog'] = None
