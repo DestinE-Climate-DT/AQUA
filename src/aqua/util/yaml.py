@@ -1,5 +1,6 @@
 """YAML utility functions"""
 
+from fileinput import filename
 import os
 from string import Template as DefaultTemplate
 from jinja2 import Template
@@ -140,6 +141,13 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
 
     # Dump the dictionary with a safe temporary directory
     # to avoid intake reading a partially written file
+
+    # Ensure parent directory exists
+    dest_dir = os.path.dirname(os.path.abspath(outfile))
+    if dest_dir:  # Handle edge case where filename has no directory component
+        os.makedirs(dest_dir, exist_ok=True)
+    else:
+        dest_dir = '.'  # Use current directory
     with TemporaryDirectory(dir=dest_dir) as tmpdirname:
         tmp_file = os.path.join(tmpdirname, "temp.yaml")
         with open(tmp_file, 'w', encoding='utf-8') as file:
