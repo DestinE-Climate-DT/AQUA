@@ -5,7 +5,7 @@ AQUA diagnostics.
 """
 
 import os
-from filelock import FileLock
+import portalocker
 from typing import Optional, Union
 import xarray as xr
 from matplotlib.figure import Figure
@@ -390,7 +390,8 @@ class OutputSaver:
         # The following block must be locked because else two diagnostics may attempt to modify the same file at the same time
 
         self.logger.debug("Locking catalog file %s", catalogfile)
-        with FileLock(catalogfile + '.lock'):
+        
+        with portalocker.Lock(catalogfile + '.lock', timeout=60):
             cat_file = load_yaml(catalogfile)
             # Remove None values
             urlpath = replace_intake_vars(catalog=self.catalog, path=filepath)

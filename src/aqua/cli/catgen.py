@@ -14,7 +14,7 @@ import jinja2
 from aqua.util import load_yaml, dump_yaml, get_arg, ConfigPath
 from aqua.logger import log_configure
 
-from filelock import FileLock
+import portalocker
 from ruamel.yaml import YAML
 yaml = YAML()
 yaml.default_flow_style = None  # Ensure default flow style is None
@@ -332,7 +332,8 @@ class AquaFDBGenerator:
 
         # Update main.yaml
         main_yaml_path = os.path.join(output_dir, 'main.yaml')
-        with FileLock(main_yaml_path + '.lock'):
+
+        with portalocker.Lock(main_yaml_path + '.lock', timeout=60):
             if not os.path.exists(main_yaml_path):
                 main_yaml = {'sources': {}}
             else:
@@ -386,7 +387,8 @@ class AquaFDBGenerator:
 
         # Update catalog.yaml if a new model is added
         catalog_yaml_path = os.path.join(self.catalog_dir_path, 'catalogs',  self.config['catalog_dir'], 'catalog.yaml')
-        with FileLock(catalog_yaml_path + '.lock'):
+
+        with portalocker.Lock(catalog_yaml_path + '.lock', timeout=60):
             catalog_yaml = load_yaml(catalog_yaml_path)
 
             if catalog_yaml.get('sources') is None:

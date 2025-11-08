@@ -22,7 +22,7 @@ import dask
 import xarray as xr
 import numpy as np
 import pandas as pd
-from filelock import FileLock
+import portalocker
 from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
 from dask.distributed.diagnostics import MemorySampler
@@ -370,7 +370,7 @@ class Drop():
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         
-        with FileLock(catalogfile + '.lock'):
+        with portalocker.Lock(catalogfile + '.lock', timeout=60):
             cat_file = load_yaml(catalogfile)
 
             # define the entry name
@@ -433,7 +433,7 @@ class Drop():
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
         
-        with FileLock(catalogfile + '.lock'):
+        with portalocker.Lock(catalogfile + '.lock', timeout=60):
             cat_file = load_yaml(catalogfile)
 
             # define the entry name - zarr entries never have lra- prefix
@@ -467,7 +467,8 @@ class Drop():
                 self.logger.error('Zarr source is not accessible by the Reader likely due to irregular amount of NetCDF file')
                 self.logger.error('To avoid issues in the catalog, the entry will be removed')
                 self.logger.error('In case you want to keep it, please run with verify=False')
-                with FileLock(catalogfile + '.lock'):
+
+                with portalocker.Lock(catalogfile + '.lock', timeout=60):
                     cat_file = load_yaml(catalogfile)
                     del cat_file['sources'][entry_name]
                     dump_yaml(outfile=catalogfile, cfg=cat_file)

@@ -41,7 +41,6 @@ dependencies = [
     "dask",
     "eccodes==2.41.0",
     "docker",
-    "filelock",
     "gcsfs", # Google Cloud Storage File System
     "pandas",
     "intake==0.7.0", # Version 2 is a major refactor still in development
@@ -51,6 +50,7 @@ dependencies = [
     "matplotlib",
     "metpy",
     "numpy",
+    "portalocker",
     "pydantic<2.13.0",
     "pypdf",
     "pyYAML",
