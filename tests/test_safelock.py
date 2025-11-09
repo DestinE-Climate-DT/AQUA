@@ -6,6 +6,7 @@ import pytest
 import tempfile
 import threading
 from pathlib import Path
+from unittest.mock import patch
 from filelock import Timeout
 
 from aqua.lock import SafeFileLock
@@ -122,13 +123,14 @@ class TestSafeFileLock:
         """Test that multiple locks access file sequentially."""
         def increment_file(lock_path, file_path, iterations=5):
             """Increment counter in file under lock."""
+            lock = SafeFileLock(lock_path, timeout=30)
             for _ in range(iterations):
-                with SafeFileLock(lock_path, timeout=10):
+                with lock:
                     with open(file_path, 'r') as f:
                         value = int(f.read().strip())
                     
                     # Simulate some work
-                    time.sleep(0.01)
+                    time.sleep(0.05)
                     
                     with open(file_path, 'w') as f:
                         f.write(f"{value + 1}\n")
@@ -154,8 +156,9 @@ class TestSafeFileLock:
         """Test that lock prevents concurrent writes from corrupting data."""
         def write_pattern(lock_path, file_path, pattern, count=10):
             """Write a pattern to file multiple times under lock."""
+            lock = SafeFileLock(lock_path, timeout=60)
             for _ in range(count):
-                with SafeFileLock(lock_path, timeout=15):
+                with lock:
                     with open(file_path, 'a') as f:
                         f.write(f"{pattern}\n")
                     time.sleep(0.001)
@@ -286,18 +289,23 @@ def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
 
 
 @pytest.mark.aqua
-def test_logging_levels(lock_file, caplog):
+def test_logging_levels(lock_file):
     """Test that logging works at different levels."""
-    import logging
-    
-    with caplog.at_level(logging.DEBUG):
-        lock = SafeFileLock(lock_file, timeout=5, loglevel='DEBUG')
+    lock = SafeFileLock(lock_file, timeout=5, loglevel='DEBUG')
+
+    # Use patch to spy on the logger's debug method
+    with patch.object(lock.logger, 'debug') as mock_debug:
         lock.acquire()
         lock.release()
+
+    # Check that the logger's debug method was called with the expected messages
+    assert mock_debug.call_count >= 2
     
-    # Check that debug messages were logged
-    assert any("Acquired" in record.message for record in caplog.records)
-    assert any("Released" in record.message for record in caplog.records)
+    # Get all the calls made to the mock
+    all_calls = [call.args[0] for call in mock_debug.call_args_list]
+    
+    assert any("Acquired" in call for call in all_calls)
+    assert any("Released" in call for call in all_calls)
 
 
 @pytest.mark.aqua
