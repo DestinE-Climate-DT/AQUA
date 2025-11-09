@@ -3,9 +3,7 @@
 import os
 import time
 import pytest
-import tempfile
 import threading
-from pathlib import Path
 from unittest.mock import patch
 from filelock import Timeout
 
