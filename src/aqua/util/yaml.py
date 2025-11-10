@@ -1,14 +1,11 @@
 """YAML utility functions"""
 
-import operator
 import os
-import re
 from string import Template as DefaultTemplate
 from jinja2 import Template
-import xarray as xr
 from collections import defaultdict
 from ruamel.yaml import YAML
-from ruamel.yaml.representer import RoundTripRepresenter
+from tempfile import TemporaryDirectory
 from aqua.logger import log_configure
 import yaml  # This is needed to allow YAML override in intake
 
@@ -141,9 +138,20 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
     if cfg is None:
         raise ValueError('ERROR: cfg not defined')
 
-    # Dump the dictionary
-    with open(outfile, 'w', encoding='utf-8') as file:
-        yaml.dump(cfg, file)
+    # Dump the dictionary with a safe temporary directory
+    # to avoid intake reading a partially written file
+
+    # Ensure parent directory exists
+    dest_dir = os.path.dirname(os.path.abspath(outfile))
+    if dest_dir:  # Handle edge case where filename has no directory component
+        os.makedirs(dest_dir, exist_ok=True)
+    else:
+        dest_dir = '.'  # Use current directory
+    with TemporaryDirectory(dir=dest_dir) as tmpdirname:
+        tmp_file = os.path.join(tmpdirname, "temp.yaml")
+        with open(tmp_file, 'w', encoding='utf-8') as file:
+            yaml.dump(cfg, file)
+        os.replace(tmp_file, outfile)
 
 
 def _load_merge(folder_path: str | None = None, filenames: list | None = None,
