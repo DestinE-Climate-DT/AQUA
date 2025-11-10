@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Safe dumping yaml with a temporary file and SoftFileLock (#2448)
 
 AQUA diagnostics complete list:
 
