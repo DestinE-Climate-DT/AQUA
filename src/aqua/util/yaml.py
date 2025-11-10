@@ -1,6 +1,5 @@
 """YAML utility functions"""
 
-from fileinput import filename
 import os
 from string import Template as DefaultTemplate
 from jinja2 import Template
