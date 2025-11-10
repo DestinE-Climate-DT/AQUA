@@ -213,8 +213,8 @@ class PlotLatLonProfiles():
             'exp': getattr(self, 'exps', ['unknown_exp'])[0]
         }
         
-        # Add realization if available
-        if hasattr(self, 'realizations') and self.realizations and self.realizations[0] is not None:
+        # Add realization
+        if self.realizations:
             metadata['realization'] = self.realizations[0]
             self.logger.debug(f'Using realization for plot filename: {self.realizations[0]}')
         
