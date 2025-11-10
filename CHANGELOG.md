@@ -17,6 +17,7 @@ AQUA core complete list:
 AQUA diagnostics complete list:
 - LatLonProfiles: Adjustments on lines plotting order (#2431)
 - LatLonProfiles: Documentation (#2442)
+- Updated SSH diagnotic (#1842)
 
 ## [v0.19.0]
 
@@ -389,6 +390,7 @@ AQUA diagnostics complete list:
 - Global bias: Handling plev and using scientific notation in contour plots (#1649)
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1696)
 - Diagnostic core: A common parser and fuctions to open/close the dask cluster are provided (#1703)
+- ssh: Updated the SSH diagnostics. Updating the notebooks is remaining (#1601). 
 
 ## [v0.13.1]
 
