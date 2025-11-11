@@ -89,7 +89,7 @@ class CatalogEntryBuilder():
 
         chunks = {}
 
-        # guessing cases for rXXX and rXXXs resolutions
+        # guessing cases for rXXX and rXXXs resolutions: all other cases stay undefined
         if len(self.resolution) == 4 and self.resolution.startswith('r'):
             ref_value = int(self.resolution[1:])
             chunks.update({'lat': 18000 // ref_value, 'lon': 36000 // ref_value})
@@ -98,11 +98,14 @@ class CatalogEntryBuilder():
             chunks.update({'lat': (18000 // ref_value) + 1, 'lon': (36000 // ref_value)})
 
         # self guessing ot time chunking based on frequency
-        rng = pd.date_range(
-            f'{baseyear}-01-01', f'{baseyear+1}-01-01',
-            freq=frequency_string_to_pandas(self.frequency), 
-            inclusive="left")
-        chunks.update({'time': len(rng)})
+        freq = frequency_string_to_pandas(self.frequency)
+        if freq:
+            rng = pd.date_range(
+                f'{baseyear}-01-01', f'{baseyear+1}-01-01',
+                freq=freq, 
+                inclusive="left"
+            )
+            chunks.update({'time': len(rng)})
 
         return chunks
 
