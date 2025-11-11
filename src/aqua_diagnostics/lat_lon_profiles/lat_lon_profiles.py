@@ -121,8 +121,8 @@ class LatLonProfiles(Diagnostic):
 			self.data = self._check_data(data=self.data, var=var, units=units)
 		if long_name is not None:
 			self.data.attrs['long_name'] = long_name
-		# We use the standard_name as the name of the variable
-		# to be always used in plots
+
+		# Set standard name
 		if standard_name is not None:
 			self.data.attrs['standard_name'] = standard_name
 			self.data.name = standard_name
