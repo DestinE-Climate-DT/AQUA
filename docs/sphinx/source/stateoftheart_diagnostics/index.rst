@@ -27,6 +27,7 @@ Currently implemented diagnostics are:
    seaice
    teleconnections
    ensemble
+   lat_lon_profiles
 
 .. _diagnostics-configuration-files:
 
