@@ -5,10 +5,13 @@ AQUA diagnostics.
 """
 
 import os
-from filelock import FileLock
+
 from typing import Optional, Union
+
 import xarray as xr
 from matplotlib.figure import Figure
+
+from aqua.lock import SafeFileLock
 from aqua.logger import log_configure, log_history
 from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata
 from aqua.util import dump_yaml, load_yaml
@@ -390,7 +393,7 @@ class OutputSaver:
         # The following block must be locked because else two diagnostics may attempt to modify the same file at the same time
 
         self.logger.debug("Locking catalog file %s", catalogfile)
-        with FileLock(catalogfile + '.lock'):
+        with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
             cat_file = load_yaml(catalogfile)
             # Remove None values
             urlpath = replace_intake_vars(catalog=self.catalog, path=filepath)
