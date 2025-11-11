@@ -31,7 +31,11 @@ def parse_arguments(args):
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     
-    cli = DiagnosticCLI(args, 'lat_lon_profiles', 'config_lat_lon_profiles.yaml', log_name='LatLonProfiles CLI').prepare()
+    cli = DiagnosticCLI(
+        args,
+        diagnostic_name='lat_lon_profiles',
+        diagnostic_config='config_lat_lon_profiles.yaml',
+        log_name='LatLonProfiles CLI').prepare()
     cli.open_dask_cluster()
     
 
