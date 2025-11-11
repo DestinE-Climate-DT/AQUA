@@ -76,7 +76,21 @@ class CatalogEntryBuilder():
 
     #     return old if len(old) > 1 else old[0]
 
-    def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name=DEFAULT_DROP_GRID):
+    def define_optimal_chunks(self):
+        """Define optimal chunking for DROP outputs."""
+        chunks = {}
+        if self.resolution == 'r100':
+            chunks.update({'lat': 180, 'lon': 360})
+        if self.frequency == 'monthly':
+            chunks.update({'time': 12})
+        if self.frequency == 'daily':
+            chunks.update({'time': 365})
+
+        return chunks
+
+    def create_entry_details(self, basedir=None, catblock=None, 
+                             driver='netcdf', 
+                             source_grid_name=DEFAULT_DROP_GRID):
         """
         Create an entry in the catalog for DROP
 
@@ -96,6 +110,9 @@ class CatalogEntryBuilder():
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
         self.logger.info('New urlpath with intake variables is %s', urlpath)
 
+        # define optimal chunks for DROP outputs
+        chunks = self.define_optimal_chunks()
+
         if catblock is None:
             # if the entry is not there, define the block to be uploaded into the catalog
             catblock = {
@@ -103,7 +120,7 @@ class CatalogEntryBuilder():
                 'description': f'AQUA {driver} DROP-generated data {self.frequency} at {self.resolution}',
                 'args': {
                     'urlpath': urlpath,
-                    'chunks': {},
+                    'chunks': chunks,
                 },
                 'metadata': {
                     'source_grid_name': source_grid_name,
