@@ -15,8 +15,8 @@ references:
     exp: 'era5'
     source: 'monthly'
     regrid: 'r100'
-    startdate: null
-    enddate: null
+    startdate: "1990-01-01"
+    enddate: "2020-12-31"
 
 setup:
   loglevel: 'WARNING'
@@ -41,11 +41,6 @@ diagnostics:
         seasons: true
         seasons_stat: 'mean' # May become a list
         vertical: false     # Vertical profile if variable 3d
-        #TODO: to remove
-        startdate_data: null
-        enddate_data: null
-        startdate_ref: "1990-01-01"
-        enddate_ref: "2020-12-31"
       (10u^2+10v^2)^0.5:
         short_name: "10si"
         long_name: "Wind speed at 10m"

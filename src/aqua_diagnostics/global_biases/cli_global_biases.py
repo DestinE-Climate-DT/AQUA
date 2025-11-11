@@ -60,11 +60,6 @@ if __name__ == '__main__':
             seasons_stat = cli.config_dict['diagnostics']['globalbiases']['params']['default'].get('seasons_stat', 'mean')
             vertical = cli.config_dict['diagnostics']['globalbiases']['params']['default'].get('vertical', False)
 
-            startdate_data = cli.config_dict['diagnostics']['globalbiases']['params']['default'].get('startdate_data', None)
-            enddate_data = cli.config_dict['diagnostics']['globalbiases']['params']['default'].get('enddate_data', None)
-            startdate_ref = cli.config_dict['diagnostics']['globalbiases']['params']['default'].get('startdate_ref', None)
-            enddate_ref = cli.config_dict['diagnostics']['globalbiases']['params']['default'].get('enddate_ref', None)
-
             cli.logger.debug("Selected levels for vertical plots: %s", plev)
 
             biases_dataset = GlobalBiases(**dataset_args, diagnostic=diagnostic_name,
