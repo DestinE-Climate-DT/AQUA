@@ -1,6 +1,7 @@
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
+import cartopy.crs as ccrs
 
 from .multiple_maps import plot_maps
 from .multivar_vertical_profiles import plot_multivars_vertical_profile
@@ -64,7 +65,7 @@ class PlotTrends:
         if levels is None:
             self.levels = [10, 100, 500, 1000, 3000, 5000]
         self.logger.debug(f"Levels set to: {self.levels}")
-        self.data = self.set_convert_lon(data=self.data)
+        self.set_central_longitude()
         self.set_data_list()
         self.set_suptitle(plot_type='Multi-level Trends')
         self.set_title()
@@ -76,6 +77,7 @@ class PlotTrends:
             maps=self.data_list,
             nrows=self.nrows,
             ncols=self.ncols,
+            proj=ccrs.PlateCarree(central_longitude=self.central_longitude),
             title=self.suptitle,
             titles=self.title_list,
             cbar_labels=self.cbar_labels,
@@ -91,7 +93,7 @@ class PlotTrends:
 
         for format in formats:
             self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
 
     def plot_zonal(self,
@@ -133,15 +135,8 @@ class PlotTrends:
 
         for format in formats:
             self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
-
-    def set_convert_lon(self, data=None):
-        '''Convert longitude from 0-360 to -180 to 180 and sort accordingly.'''
-        data = data.assign_coords(lon=((data.lon + 180) % 360) - 180)
-        data = data.sortby('lon')
-        return data
-    
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
             self.nrows = len(self.levels)
@@ -160,6 +155,9 @@ class PlotTrends:
                     else:
                         self.ytext.append(None)
 
+    def set_central_longitude(self):
+        self.central_longitude = self.data.lon.mean().values
+        self.logger.debug(f"Central longitude set to: {self.central_longitude}")
     def set_data_list(self):
         """Prepare the list of data arrays to plot."""
         self.data_list = []
@@ -244,7 +242,7 @@ class PlotTrends:
                              They will be complemented with the metadata from the outputsaver.
                              We usually want to add here the description of the figure.
         """
-        extra_keys.update({"region": self.region.replace(' ', '_').lower()})
+        extra_keys.update({"region": self.region})
 
         if format == 'png':
             result = self.outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild,

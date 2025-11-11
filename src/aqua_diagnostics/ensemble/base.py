@@ -242,7 +242,7 @@ class BaseMixin(Diagnostic):
         if data.name is None and var is not None:
             data.name = var
 
-        region = self.region.replace(" ", "").lower() if self.region is not None else None
+        region = self.region if self.region is not None else None
         extra_keys.update({"region": region})
 
         self.logger.info("Saving %s for %s to netcdf in %s", data_name, self.diagnostic_product, self.outputdir)

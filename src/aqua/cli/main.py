@@ -10,6 +10,8 @@ import sys
 from urllib.error import HTTPError
 import fsspec
 
+from aqua.lock import SafeFileLock
+
 from aqua import __path__ as pypath
 from aqua import catalog as print_catalog
 from aqua.util import load_yaml, dump_yaml, load_multi_yaml
@@ -237,10 +239,11 @@ class AquaConsole():
         else:
             self.configfile = os.path.join(self.configpath, 'config-aqua.yaml')
             self.logger.info('Setting machine name to %s', machine)
-            cfg = load_yaml(self.configfile)
-            cfg['machine'] = machine
 
-            dump_yaml(self.configfile, cfg)
+            with SafeFileLock(self.configfile + '.lock', loglevel=self.loglevel):
+                cfg = load_yaml(self.configfile)
+                cfg['machine'] = machine
+                dump_yaml(self.configfile, cfg)
 
     def set(self, args):
         """Set an installed catalog as the one used in the config-aqua.yaml
@@ -355,24 +358,26 @@ class AquaConsole():
                 self.logger.info('Creating path %s', path)
                 os.makedirs(path, exist_ok=True)
 
-        cfg = load_yaml(os.path.join(self.configpath, self.configfile))
-        path_dict = {
-            'paths': {
-                'grids': grids_path,
-                'areas': areas_path,
-                'weights': weights_path
+        filename = os.path.join(self.configpath, self.configfile)
+        with SafeFileLock(filename + '.lock', loglevel=self.loglevel):
+            cfg = load_yaml(filename)
+            path_dict = {
+                'paths': {
+                    'grids': grids_path,
+                    'areas': areas_path,
+                    'weights': weights_path
+                }
             }
-        }
 
-        # If the paths already exist, we just update them
-        if 'paths' in cfg:
-            self.logger.info('Updating existing paths in %s', self.configfile)
-            cfg['paths'].update(path_dict['paths'])
-        else:
-            self.logger.info('Adding new paths to %s', self.configfile)
-            cfg['paths'] = path_dict['paths']
+            # If the paths already exist, we just update them
+            if 'paths' in cfg:
+                self.logger.info('Updating existing paths in %s', self.configfile)
+                cfg['paths'].update(path_dict['paths'])
+            else:
+                self.logger.info('Adding new paths to %s', self.configfile)
+                cfg['paths'] = path_dict['paths']
 
-        dump_yaml(self.configfile, cfg)
+            dump_yaml(filename, cfg)
 
     def _file_add(self, kind, file, link=False):
         """Add a personalized file to the fixes/grids folder
@@ -619,25 +624,26 @@ class AquaConsole():
         """
 
         self.logger.info('Setting catalog name to %s', catalog)
-        cfg = load_yaml(self.configfile)
-        if cfg['catalog'] is None:
-            self.logger.debug('No catalog previously installed: setting catalog name to %s', catalog)
-            cfg['catalog'] = catalog
-        else:
-            if catalog not in to_list(cfg['catalog']):
-                self.logger.debug('Adding catalog %s to the existing list %s', catalog, cfg['catalog'])
-                cfg['catalog'] = [catalog] + to_list(cfg['catalog'])
+        with SafeFileLock(self.configfile + '.lock', loglevel=self.loglevel):
+            cfg = load_yaml(self.configfile)
+            if cfg['catalog'] is None:
+                self.logger.debug('No catalog previously installed: setting catalog name to %s', catalog)
+                cfg['catalog'] = catalog
             else:
-                if isinstance(cfg['catalog'], list):
-                    other_catalogs = [x for x in cfg['catalog'] if x != catalog]
-                    self.logger.debug('Catalog %s is already there, setting it as first entry before %s',
-                                      catalog, other_catalogs)
-                    cfg['catalog'] = [catalog] + other_catalogs
+                if catalog not in to_list(cfg['catalog']):
+                    self.logger.debug('Adding catalog %s to the existing list %s', catalog, cfg['catalog'])
+                    cfg['catalog'] = [catalog] + to_list(cfg['catalog'])
                 else:
-                    self.logger.debug('Catalog %s is already there, but is the only installed', catalog)
-                    cfg['catalog'] = catalog
+                    if isinstance(cfg['catalog'], list):
+                        other_catalogs = [x for x in cfg['catalog'] if x != catalog]
+                        self.logger.debug('Catalog %s is already there, setting it as first entry before %s',
+                                        catalog, other_catalogs)
+                        cfg['catalog'] = [catalog] + other_catalogs
+                    else:
+                        self.logger.debug('Catalog %s is already there, but is the only installed', catalog)
+                        cfg['catalog'] = catalog
 
-        dump_yaml(self.configfile, cfg)
+            dump_yaml(self.configfile, cfg)
 
     def remove(self, args):
         """Remove a catalog
@@ -666,13 +672,14 @@ class AquaConsole():
         Remove catalog from the configuration file
         """
 
-        cfg = load_yaml(self.configfile)
-        if isinstance(cfg['catalog'], str):
-            cfg['catalog'] = None
-        else:
-            cfg['catalog'].remove(catalog)
-        self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
-        dump_yaml(self.configfile, cfg)
+        with SafeFileLock(self.configfile + '.lock', loglevel=self.loglevel):
+            cfg = load_yaml(self.configfile)
+            if isinstance(cfg['catalog'], str):
+                cfg['catalog'] = None
+            else:
+                cfg['catalog'].remove(catalog)
+            self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
+            dump_yaml(self.configfile, cfg)
 
     def remove_file(self, args):
         """Add a personalized file to the fixes/grids folder

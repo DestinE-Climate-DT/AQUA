@@ -324,7 +324,7 @@ class PlotBaseMixin():
             description = description[:-2]
         description += "."
         if ref_maps is not None:
-            description += f" The contour lines are the model regression map and the filled contour map is the defference between the model and the reference {statistic} map."
+            description += f" The contour lines are the model regression map and the filled contour map is the difference between the model and the reference {statistic} map."
         self.logger.debug(f'Map description: {description}')
 
         return description

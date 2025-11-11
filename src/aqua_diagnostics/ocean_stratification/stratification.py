@@ -307,6 +307,6 @@ class Stratification(Diagnostic):
             diagnostic_product=f"{diagnostic_product}",
             outputdir=outputdir,
             rebuild=rebuild,
-            extra_keys={"region": region.replace(" ", "_").lower()},
+            extra_keys={"region": region},
         )
         self.logger.info("NetCDF file saved successfully.")

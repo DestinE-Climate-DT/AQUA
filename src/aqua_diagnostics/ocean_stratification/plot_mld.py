@@ -65,10 +65,8 @@ class PlotMLD:
     ):
         self.diagnostic_product = "mld"
         self.clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
-        self.data = self.set_convert_lon(data=self.data)
-        if self.obs:
-            self.obs = self.set_convert_lon(data=self.obs)
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
+        self.set_central_longitude()
         self.set_data_map_list()
         self.set_suptitle()
         self.set_title()
@@ -82,7 +80,7 @@ class PlotMLD:
             maps=self.data_map_list,
             nrows=self.nrows,
             ncols=self.ncols,
-            proj=ccrs.PlateCarree(),
+            proj=ccrs.PlateCarree(central_longitude=self.central_longitude),
             title=self.suptitle,
             titles=self.title_list,
             cbar_number="single",
@@ -105,7 +103,7 @@ class PlotMLD:
 
         for format in formats:
             self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
-                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region.replace(" ", "_").lower()})
+                           rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
     def set_figsize(self):
         self.figsize = (9 * self.ncols, 8 * self.nrows)
@@ -143,6 +141,10 @@ class PlotMLD:
                     else:
                         self.ytext.append(None)
 
+    def set_central_longitude(self):
+        self.central_longitude = self.data.lon.mean().values
+        self.logger.debug(f"Central longitude set to: {self.central_longitude}")
+
     def set_data_map_list(self):
         self.data_map_list = []
         for data in self.data_list:
@@ -172,6 +174,27 @@ class PlotMLD:
         '''Convert longitude from 0-360 to -180 to 180 and sort accordingly.'''
         data = data.assign_coords(lon=((data.lon + 180) % 360) - 180)
         data = data.sortby('lon')
+
+        lat_limits = data.attrs['AQUA_lat_limits']
+        lon_limits = data.attrs['AQUA_lon_limits']
+
+
+        if lon_limits != None:
+            lon_min, lon_max = lon_limits
+            lon_min = ((lon_min + 180) % 360) - 180
+            lon_max = ((lon_max + 180) % 360) - 180
+            ds_reg = self.data
+            if lon_min < lon_max:
+                ds_reg = ds_reg.sel(lon=slice(lon_min, lon_max))
+            else:
+                ds_reg = xr.concat(
+                    [
+                        ds_reg.sel(lon=slice(lon_min, 180)),
+                        ds_reg.sel(lon=slice(-180, lon_max)),
+                    ],
+                    dim="lon"
+                )
+            data = ds_reg
         return data
     
     def _round_up(self, value):
