@@ -9,6 +9,7 @@ AQUA core complete list:
 - Area selection full support for regions across the dateline (#2451)
 
 AQUA diagnostics complete list:
+- LatLonProfiles: Adjustments on lines plotting order and AQUA_realization management (#2456)
 - Teleconnections: ENSO better vmin/vmax for regression plots (#2455)
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2451)
 
