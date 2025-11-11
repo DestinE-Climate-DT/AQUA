@@ -14,6 +14,7 @@ AQUA core complete list:
 - Add filelock when modifying catalog sources (#2432)
 
 AQUA diagnostics complete list:
+- Teleconnections: ENSO better vmin/vmax for regression plots (#2453)
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2433)
 - Area selection full support for regions across the dateline (#2430, #2434)
 - LatLonProfiles: Documentation (#2442), adjustments on lines plotting order (#2431) and AQUA_realization management (#2421)
