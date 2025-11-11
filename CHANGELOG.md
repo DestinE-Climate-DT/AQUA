@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+Area selection full support for regions across the dateline (#2451)
 
 AQUA diagnostics complete list:
+- Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2451)
 
 ## [v0.19.2]
 
