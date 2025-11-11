@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
-Area selection full support for regions across the dateline (#2451)
+- Area selection full support for regions across the dateline (#2451)
 
 AQUA diagnostics complete list:
 - Teleconnections: ENSO better vmin/vmax for regression plots (#2455)
