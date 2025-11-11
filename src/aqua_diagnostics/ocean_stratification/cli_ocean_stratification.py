@@ -9,15 +9,12 @@ single or multiple experiments.
 import argparse
 import sys
 
-from aqua.logger import log_configure
-from aqua.util import get_arg, to_list
-from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
-
+from aqua.util import to_list
+from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.ocean_stratification.stratification import Stratification
 from aqua.diagnostics.ocean_stratification import PlotStratification
 from aqua.diagnostics.ocean_stratification import PlotMLD
+from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):
@@ -33,62 +30,27 @@ def parse_arguments(args):
 
 if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
+    
+    cli = DiagnosticCLI(args, 
+                        diagnostic_name='ocean3d', 
+                        diagnostic_config='config_ocean_stratification.yaml', 
+                        log_name='OceanStratification CLI').prepare()
+    cli.open_dask_cluster()
+    
+    logger = cli.logger
+    config_dict = cli.config_dict
 
-    loglevel = get_arg(args, "loglevel", "WARNING")
-    logger = log_configure(log_level=loglevel, log_name="OceanStratification CLI")
-    logger.info(f"Running OceanStratification diagnostic with AQUA version {aqua_version}")
-
-    cluster = get_arg(args, "cluster", None)
-    nworkers = get_arg(args, "nworkers", None)
-
-    client, cluster, private_cluster = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
-
-    # Load the configuration file and then merge itTimeseries with the command-line arguments,
-    # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(
-        diagnostic="ocean3d", config=args.config,
-        default_config="config_ocean_stratification.yaml",
-        loglevel=loglevel,
-    )
-    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-
-    catalog = get_arg(args, "catalog", config_dict["datasets"][0]["catalog"])
-    model = get_arg(args, "model", config_dict["datasets"][0]["model"])
-    exp = get_arg(args, "exp", config_dict["datasets"][0]["exp"])
-    source = get_arg(args, "source", config_dict["datasets"][0]["source"])
-    regrid = get_arg(args, "regrid", config_dict["datasets"][0]["regrid"])
-    realization = get_arg(args, "realization", None)
-    # This reader_kwargs will be used if the dataset corresponding value is None or not present
-    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
-    if realization:
-        reader_kwargs['realization'] = realization
-    logger.info(
-        f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}"
-    )
-
-    startdate = config_dict["datasets"][0].get("startdate", None)
-    enddate = config_dict["datasets"][0].get("enddate", None)
+    dataset = cli.config_dict['datasets'][0]
+    dataset_args = cli.dataset_args(dataset)
+    
+    startdate = dataset.get("startdate", None)
+    enddate = dataset.get("enddate", None)
 
     if config_dict["references"]:
         references = config_dict["references"]
         logger.info(f"References found: {references}")
-        catalog_ref = references[0].get("catalog", None)
-        model_ref = references[0].get("model", None)
-        exp_ref = references[0].get("exp", None)
-        source_ref = references[0].get("source", None)
-        regrid_ref = references[0].get("regrid", None)
-        # realization_ref = references[0].get('realization', None)
-        # if realization_ref:
-        #     reader_kwargs_ref = {'realization': realization_ref}
-        # else:
-        #     reader_kwargs_ref = config_dict['references'][0].get('reader_kwargs', {})
-
-    # Output options
-    outputdir = config_dict["output"].get("outputdir", "./")
-    rebuild = config_dict["output"].get("rebuild", True)
-    save_pdf = config_dict["output"].get("save_pdf", True)
-    save_png = config_dict["output"].get("save_png", True)
-    dpi = config_dict["output"].get("dpi", 300)
+        reference = config_dict["references"][0]
+        reference_args = cli.dataset_args(reference)
 
     if "stratification" in config_dict["diagnostics"]["ocean_stratification"]:
         stratification_config = config_dict["diagnostics"]["ocean_stratification"][
@@ -111,15 +73,11 @@ if __name__ == "__main__":
                     # Stratification instance
                     # Model data
                     model_stratification = Stratification(
+                        **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        regrid=regrid,
                         startdate=startdate,
                         enddate=enddate,
-                        loglevel=loglevel,
+                        loglevel=cli.loglevel,
                     )
                     model_stratification.run(
                         region=region,
@@ -127,36 +85,31 @@ if __name__ == "__main__":
                         dim_mean=dim_mean,
                         mld=True,
                         climatology=climatology,
-                        outputdir=outputdir,
-                        reader_kwargs=reader_kwargs,
-                        rebuild=rebuild,
+                        outputdir=cli.outputdir,
+                        reader_kwargs=cli.reader_kwargs,
+                        rebuild=cli.rebuild,
                     )
                     # Reference data
                     if references:
-                        if model_ref and exp_ref and source_ref:
-                            logger.info(
-                                f"Processing reference data for model: {model_ref}, exp: {exp_ref}, source: {source_ref}"
-                            )
-                            obs_stratification = Stratification(
-                                diagnostic_name=diagnostic_name,
-                                catalog=catalog_ref,
-                                model=model_ref,
-                                exp=exp_ref,
-                                source=source_ref,
-                                regrid=regrid_ref,
-                                loglevel=loglevel,
-                            )
-                            obs_stratification.run(
-                                region=region,
-                                var=var,
-                                dim_mean=dim_mean,
-                                mld=False,
-                                climatology=climatology,
-                                outputdir=outputdir,
-                                rebuild=rebuild,
-                            )
-                        else:
-                            obs_stratification = None
+                        logger.info(
+                            f"Processing reference data"
+                        )
+                        obs_stratification = Stratification(
+                            **reference_args,
+                            diagnostic_name=diagnostic_name,
+                            loglevel=cli.loglevel,
+                        )
+                        obs_stratification.run(
+                            region=region,
+                            var=var,
+                            dim_mean=dim_mean,
+                            mld=False,
+                            climatology=climatology,
+                            outputdir=cli.outputdir,
+                            rebuild=cli.rebuild,
+                        )
+                    else:
+                        obs_stratification = None
                     # Plotting Stratification
                     strat_plot = PlotStratification(
                         data=model_stratification.data[["thetao", "so", "rho"]],
@@ -166,24 +119,20 @@ if __name__ == "__main__":
                             else None
                         ),
                         diagnostic_name=diagnostic_name,
-                        outputdir=outputdir,
-                        loglevel=loglevel,
+                        outputdir=cli.outputdir,
+                        loglevel=cli.loglevel,
                     )
                     strat_plot.plot_stratification(
-                        save_pdf=save_pdf, save_png=save_png, dpi=dpi
+                        save_pdf=cli.save_pdf, save_png=cli.save_png, dpi=cli.dpi
                     )
                     # Mixed Layer Depth instance
                     # Model data
                     model_stratification = Stratification(
+                        **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        regrid=regrid,
                         startdate=startdate,
                         enddate=enddate,
-                        loglevel=loglevel,
+                        loglevel=cli.loglevel,
                     )
                     model_stratification.run(
                         region=region,
@@ -191,36 +140,31 @@ if __name__ == "__main__":
                         # dim_mean=dim_mean,
                         mld=True,
                         climatology=climatology,
-                        outputdir=outputdir,
-                        reader_kwargs=reader_kwargs,
-                        rebuild=rebuild,
+                        outputdir=cli.outputdir,
+                        reader_kwargs=cli.reader_kwargs,
+                        rebuild=cli.rebuild,
                     )
                     # Reference data
                     if references:
-                        if model_ref and exp_ref and source_ref:
-                            logger.info(
-                                f"Processing reference data for model: {model_ref}, exp: {exp_ref}, source: {source_ref}"
-                            )
-                            obs_stratification = Stratification(
-                                diagnostic_name=diagnostic_name,
-                                catalog=catalog_ref,
-                                model=model_ref,
-                                exp=exp_ref,
-                                source=source_ref,
-                                regrid=regrid_ref,
-                                loglevel=loglevel,
-                            )
-                            obs_stratification.run(
-                                region=region,
-                                var=var,
-                                # dim_mean=dim_mean,
-                                mld=True,
-                                climatology=climatology,
-                                outputdir=outputdir,
-                                rebuild=rebuild,
-                            )
-                        else:
-                            obs_stratification = None
+                        logger.info(
+                            f"Processing reference data"
+                        )
+                        obs_stratification = Stratification(
+                            **reference_args,
+                            diagnostic_name=diagnostic_name,
+                            loglevel=cli.loglevel,
+                        )
+                        obs_stratification.run(
+                            region=region,
+                            var=var,
+                            # dim_mean=dim_mean,
+                            mld=True,
+                            climatology=climatology,
+                            outputdir=cli.outputdir,
+                            rebuild=cli.rebuild,
+                        )
+                    else:
+                        obs_stratification = None
                     # Plotting MLD
                     mld_plot = PlotMLD(
                         data=model_stratification.data[["mld"]],
@@ -230,11 +174,11 @@ if __name__ == "__main__":
                             else None
                         ),
                         diagnostic_name=diagnostic_name,
-                        outputdir=outputdir,
-                        loglevel=loglevel,
+                        outputdir=cli.outputdir,
+                        loglevel=cli.loglevel,
                     )
-                    mld_plot.plot_mld(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    mld_plot.plot_mld(save_pdf=cli.save_pdf, save_png=cli.save_png, dpi=cli.dpi)
 
-        close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+    cli.close_dask_cluster()
 
-        logger.info("Ocean stratification diagnostic completed.")
+    logger.info("Ocean stratification diagnostic completed.")
