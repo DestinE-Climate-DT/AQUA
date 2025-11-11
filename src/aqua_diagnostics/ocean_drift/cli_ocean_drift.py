@@ -13,7 +13,7 @@ from aqua.util import to_list
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.ocean_drift.hovmoller import Hovmoller
 from aqua.diagnostics.ocean_drift.plot_hovmoller import PlotHovmoller
-from aqua_diagnostics.core import DiagnosticCLI
+from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):

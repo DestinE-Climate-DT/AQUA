@@ -6,7 +6,7 @@ from aqua.util import to_list
 from aqua.exceptions import NoDataError
 from aqua.diagnostics import GlobalBiases, PlotGlobalBiases
 from aqua.diagnostics.core import template_parse_arguments
-from aqua_diagnostics.core import DiagnosticCLI
+from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     cli = DiagnosticCLI(
         args,
         diagnostic_name='globalbiases',
-        config='config_global_biases.yaml',
+        default_config='config_global_biases.yaml',
         log_name='GlobalBiases CLI'
     )
     cli.prepare()

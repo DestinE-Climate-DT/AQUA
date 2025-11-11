@@ -4,7 +4,7 @@ import argparse
 import sys
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics import Boxplots, PlotBoxplots
-from aqua_diagnostics.core import DiagnosticCLI
+from aqua.diagnostics.core import DiagnosticCLI
 
 TOOLNAME='boxplots'
 

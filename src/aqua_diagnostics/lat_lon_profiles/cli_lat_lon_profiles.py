@@ -11,7 +11,7 @@ import sys
 import argparse
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.lat_lon_profiles.util_cli import load_var_config, process_variable_or_formula
-from aqua_diagnostics.core import DiagnosticCLI
+from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):

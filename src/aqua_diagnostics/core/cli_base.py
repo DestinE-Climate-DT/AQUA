@@ -31,20 +31,20 @@ class DiagnosticCLI:
         # At the end
         cli.close_dask_cluster()
     """
-    
-    def __init__(self, args, diagnostic_name, config, log_name=None):
+
+    def __init__(self, args, diagnostic_name, default_config, log_name=None):
         """
         Initialize the CLI handler.
         
         Args:
             args: Parsed command-line arguments
             diagnostic_name (str): Name of the diagnostic (e.g., 'timeseries', 'seaice')
-            config (str): Default config file name
+            default_config (str): Default config file name
             log_name (str, optional): Logger name. Defaults to '{diagnostic_name} CLI'
         """
         self.args = args
         self.diagnostic_name = diagnostic_name
-        self.config = config
+        self.default_config = default_config
         self.log_name = log_name or f"{diagnostic_name.capitalize()}-CLI"
         
         # Attributes populated by prepare()
@@ -103,7 +103,7 @@ class DiagnosticCLI:
         self.config_dict = load_diagnostic_config(
             diagnostic=self.diagnostic_name,
             config=self.args.config,
-            config=self.config,
+            default_config=self.default_config,
             loglevel=self.loglevel
         )
         self.config_dict = merge_config_args(

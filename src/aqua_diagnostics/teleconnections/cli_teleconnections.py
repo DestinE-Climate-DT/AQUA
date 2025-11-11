@@ -12,7 +12,7 @@ import sys
 from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.teleconnections import NAO, ENSO
 from aqua.diagnostics.teleconnections import PlotNAO, PlotENSO
-from aqua_diagnostics.core import DiagnosticCLI
+from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):
