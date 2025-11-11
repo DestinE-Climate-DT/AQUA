@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-'''
+"""
 Command-line interface for Teleconnections diagnostic.
 
 This CLI allows to run the NAO and ENSO diagnostics.
 Details of the run are defined in a yaml configuration file for a
 single or multiple experiments.
-'''
+"""
 import argparse
 import sys
 
-from aqua.diagnostics.core import template_parse_arguments
+from aqua.diagnostics.core import template_parse_arguments, DiagnosticCLI
 from aqua.diagnostics.teleconnections import NAO, ENSO
 from aqua.diagnostics.teleconnections import PlotNAO, PlotENSO
-from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):
@@ -28,23 +27,20 @@ def parse_arguments(args):
 
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
-    
-    cli = DiagnosticCLI(args, 'teleconnections', 'config_teleconnections.yaml', log_name='Teleconnections CLI').prepare()
+
+    cli = DiagnosticCLI(
+        args,
+        diagnostic_name='teleconnections',
+        default_config='config_teleconnections.yaml',
+        log_name='Teleconnections CLI',
+    ).prepare()
     cli.open_dask_cluster()
-    
+
     logger = cli.logger
     config_dict = cli.config_dict
-    regrid = cli.regrid
-    reader_kwargs = cli.reader_kwargs
-
-    # Output options (from cli_base)
-    outputdir = cli.outputdir
-    rebuild = cli.rebuild
-    save_pdf = cli.save_pdf
-    save_png = cli.save_png
-    dpi = cli.dpi
 
     if 'teleconnections' in config_dict['diagnostics']:
+        # NAO
         if 'NAO' in config_dict['diagnostics']['teleconnections']:
             if config_dict['diagnostics']['teleconnections']['NAO']['run']:
                 logger.info('Running NAO teleconnections diagnostic')
@@ -54,27 +50,22 @@ if __name__ == '__main__':
                 nao_config = config_dict['diagnostics']['teleconnections']['NAO']
                 seasons = nao_config.get('seasons', 'annual')
 
-                # Initialize a matrix to store the NAO regressions and correlations
-                # for each dataset and each season
                 nao_regressions = {season: [None] * len(config_dict['datasets']) for season in seasons}
                 nao_correlations = {season: [None] * len(config_dict['datasets']) for season in seasons}
 
                 init_args = {'loglevel': cli.loglevel}
 
                 for i, dataset in enumerate(config_dict['datasets']):
-                    dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
-                                    'exp': dataset['exp'], 'source': dataset['source'],
-                                    'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
+                    dataset_args = cli.dataset_args(dataset)
                     logger.info(f'Running dataset: {dataset_args}')
 
                     nao[i] = NAO(**dataset_args, **init_args)
-                    nao[i].retrieve(reader_kwargs=reader_kwargs)
-                    nao[i].compute_index(months_window=nao_config.get('months_window', 3),
-                                         rebuild=rebuild)
+                    nao[i].retrieve(reader_kwargs=cli.reader_kwargs)
+                    nao[i].compute_index(months_window=nao_config.get('months_window', 3), rebuild=cli.rebuild)
 
                     nao[i].save_netcdf(nao[i].index, diagnostic='nao', diagnostic_product='index',
-                                       outputdir=outputdir, rebuild=rebuild)
-                    
+                                       outputdir=cli.outputdir, rebuild=cli.rebuild)
+
                     for season in seasons:
                         nao_regressions[season][i] = nao[i].compute_regression(season=season)
                         nao_correlations[season][i] = nao[i].compute_correlation(season=season)
@@ -83,9 +74,9 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         nao[i].save_netcdf(nao_regressions[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_reg,
-                                           outputdir=outputdir, rebuild=rebuild)
+                                           outputdir=cli.outputdir, rebuild=cli.rebuild)
                         nao[i].save_netcdf(nao_correlations[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_cor,
-                                           outputdir=outputdir, rebuild=rebuild)
+                                           outputdir=cli.outputdir, rebuild=cli.rebuild)
 
                 nao_ref = [None] * len(config_dict['references'])
 
@@ -93,18 +84,15 @@ if __name__ == '__main__':
                 nao_ref_correlations = {season: [None] * len(config_dict['references']) for season in seasons}
 
                 for i, reference in enumerate(config_dict['references']):
-                    reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
-                                      'exp': reference['exp'], 'source': reference['source'],
-                                      'regrid': regrid if regrid is not None else reference.get('regrid', None)}
+                    reference_args = cli.dataset_args(reference)
                     logger.info(f'Running reference: {reference_args}')
                     nao_ref[i] = NAO(**reference_args, **init_args)
                     nao_ref[i].retrieve()
-                    nao_ref[i].compute_index(months_window=nao_config.get('months_window', 3),
-                                             rebuild=rebuild)
-                    
+                    nao_ref[i].compute_index(months_window=nao_config.get('months_window', 3), rebuild=cli.rebuild)
+
                     nao_ref[i].save_netcdf(nao_ref[i].index, diagnostic='nao', diagnostic_product='index',
-                                           outputdir=outputdir, rebuild=rebuild)
-                    
+                                           outputdir=cli.outputdir, rebuild=cli.rebuild)
+
                     for season in seasons:
                         nao_ref_regressions[season][i] = nao_ref[i].compute_regression(season=season)
                         nao_ref_correlations[season][i] = nao_ref[i].compute_correlation(season=season)
@@ -113,34 +101,35 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         nao_ref[i].save_netcdf(nao_ref_regressions[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_reg,
-                                               outputdir=outputdir, rebuild=rebuild)
+                                               outputdir=cli.outputdir, rebuild=cli.rebuild)
                         nao_ref[i].save_netcdf(nao_ref_correlations[season][i], diagnostic='nao', diagnostic_product=diagnostic_product_cor,
-                                               outputdir=outputdir, rebuild=rebuild)
+                                               outputdir=cli.outputdir, rebuild=cli.rebuild)
 
                 # Plot NAO regressions
-                if save_pdf or save_png:
+                if cli.save_pdf or cli.save_png:
                     logger.info('Plotting NAO')
-                    plot_args = {'indexes': [nao[i].index for i in range(len(nao))],
-                                 'ref_indexes': [nao_ref[i].index for i in range(len(nao_ref))],
-                                 'outputdir': outputdir, 'rebuild': rebuild,
-                                 'loglevel': cli.loglevel}
-                    
+                    plot_args = {
+                        'indexes': [nao[i].index for i in range(len(nao))],
+                        'ref_indexes': [nao_ref[i].index for i in range(len(nao_ref))],
+                        'outputdir': cli.outputdir,
+                        'rebuild': cli.rebuild,
+                        'loglevel': cli.loglevel,
+                    }
+
                     plot_nao = PlotNAO(**plot_args)
 
                     # Plot the NAO index
                     fig_index, _ = plot_nao.plot_index()
                     index_description = plot_nao.set_index_description()
-                    if save_pdf:
+                    if cli.save_pdf:
                         plot_nao.save_plot(fig_index, diagnostic_product='index', format='pdf',
-                                           metadata={'description': index_description}, dpi=dpi)
-                    if save_png:
+                                           metadata={'description': index_description}, dpi=cli.dpi)
+                    if cli.save_png:
                         plot_nao.save_plot(fig_index, diagnostic_product='index', format='png',
-                                           metadata={'description': index_description}, dpi=dpi)
+                                           metadata={'description': index_description}, dpi=cli.dpi)
 
                     # Plot regressions and correlations
                     for season in seasons:
-                        # Load the regression and correlation maps for each season
-                        # to greatly speed up the plotting process
                         for i in range(len(nao)):
                             nao_regressions[season][i].load(keep_attrs=True)
                             nao_ref_regressions[season][i].load(keep_attrs=True)
@@ -148,9 +137,9 @@ if __name__ == '__main__':
                             nao_ref_correlations[season][i].load(keep_attrs=True)
 
                         fig_reg = plot_nao.plot_maps(maps=nao_regressions[season], ref_maps=nao_ref_regressions[season],
-                                                        statistic='regression')
+                                                     statistic='regression')
                         fig_cor = plot_nao.plot_maps(maps=nao_correlations[season], ref_maps=nao_ref_correlations[season],
-                                                        statistic='correlation')
+                                                     statistic='correlation')
 
                         regression_description = plot_nao.set_map_description(maps=nao_regressions[season],
                                                                              ref_maps=nao_ref_regressions[season],
@@ -162,17 +151,18 @@ if __name__ == '__main__':
                         reg_product = f'regression_{season}' if season != 'annual' else 'regression'
                         cor_product = f'correlation_{season}' if season != 'annual' else 'correlation'
 
-                        if save_pdf:
+                        if cli.save_pdf:
                             plot_nao.save_plot(fig_reg, diagnostic_product=reg_product, format='pdf',
                                                metadata={'description': regression_description})
                             plot_nao.save_plot(fig_cor, diagnostic_product=cor_product, format='pdf',
                                                metadata={'description': correlation_description})
-                        if save_png:
+                        if cli.save_png:
                             plot_nao.save_plot(fig_reg, diagnostic_product=reg_product, format='png',
-                                               metadata={'description': regression_description}, dpi=dpi)
+                                               metadata={'description': regression_description}, dpi=cli.dpi)
                             plot_nao.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
-                                               metadata={'description': correlation_description}, dpi=dpi)
+                                               metadata={'description': correlation_description}, dpi=cli.dpi)
 
+        # ENSO
         if 'ENSO' in config_dict['diagnostics']['teleconnections']:
             if config_dict['diagnostics']['teleconnections']['ENSO']['run']:
                 logger.info('Running ENSO teleconnections diagnostic')
@@ -182,25 +172,20 @@ if __name__ == '__main__':
                 enso_config = config_dict['diagnostics']['teleconnections']['ENSO']
                 seasons = enso_config.get('seasons', 'annual')
 
-                # Initialize a matrix to store the ENSO regressions and correlations
-                # for each dataset and each season
                 enso_regressions = {season: [None] * len(config_dict['datasets']) for season in seasons}
                 enso_correlations = {season: [None] * len(config_dict['datasets']) for season in seasons}
 
                 init_args = {'loglevel': cli.loglevel}
 
                 for i, dataset in enumerate(config_dict['datasets']):
-                    dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
-                                    'exp': dataset['exp'], 'source': dataset['source'],
-                                    'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
+                    dataset_args = cli.dataset_args(dataset)
                     logger.info(f'Running dataset: {dataset_args}')
 
                     enso[i] = ENSO(**dataset_args, **init_args)
-                    enso[i].retrieve(reader_kwargs=reader_kwargs)
-                    enso[i].compute_index(months_window=enso_config.get('months_window', 3),
-                                          rebuild=rebuild)
+                    enso[i].retrieve(reader_kwargs=cli.reader_kwargs)
+                    enso[i].compute_index(months_window=enso_config.get('months_window', 3), rebuild=cli.rebuild)
                     enso[i].save_netcdf(enso[i].index, diagnostic='enso', diagnostic_product='index',
-                                       outputdir=outputdir, rebuild=rebuild)
+                                       outputdir=cli.outputdir, rebuild=cli.rebuild)
 
                     for season in seasons:
                         enso_regressions[season][i] = enso[i].compute_regression(season=season)
@@ -210,9 +195,9 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         enso[i].save_netcdf(enso_regressions[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_reg,
-                                            outputdir=outputdir, rebuild=rebuild)
+                                            outputdir=cli.outputdir, rebuild=cli.rebuild)
                         enso[i].save_netcdf(enso_correlations[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_cor,
-                                            outputdir=outputdir, rebuild=rebuild)
+                                            outputdir=cli.outputdir, rebuild=cli.rebuild)
 
                 enso_ref = [None] * len(config_dict['references'])
 
@@ -220,18 +205,15 @@ if __name__ == '__main__':
                 enso_ref_correlations = {season: [None] * len(config_dict['references']) for season in seasons}
 
                 for i, reference in enumerate(config_dict['references']):
-                    reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
-                                      'exp': reference['exp'], 'source': reference['source'],
-                                      'regrid': regrid if regrid is not None else reference.get('regrid', None)}
+                    reference_args = cli.dataset_args(reference)
                     logger.info(f'Running reference: {reference_args}')
 
                     enso_ref[i] = ENSO(**reference_args, **init_args)
                     enso_ref[i].retrieve()
-                    enso_ref[i].compute_index(months_window=enso_config.get('months_window', 3),
-                                              rebuild=rebuild)
+                    enso_ref[i].compute_index(months_window=enso_config.get('months_window', 3), rebuild=cli.rebuild)
 
                     enso_ref[i].save_netcdf(enso_ref[i].index, diagnostic='enso', diagnostic_product='index',
-                                            outputdir=outputdir, rebuild=rebuild)
+                                            outputdir=cli.outputdir, rebuild=cli.rebuild)
 
                     for season in seasons:
                         enso_ref_regressions[season][i] = enso_ref[i].compute_regression(season=season)
@@ -241,34 +223,35 @@ if __name__ == '__main__':
                         diagnostic_product_cor = f'correlation_{season}' if season != 'annual' else 'correlation'
 
                         enso_ref[i].save_netcdf(enso_ref_regressions[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_reg,
-                                                outputdir=outputdir, rebuild=rebuild)
+                                                outputdir=cli.outputdir, rebuild=cli.rebuild)
                         enso_ref[i].save_netcdf(enso_ref_correlations[season][i], diagnostic='enso', diagnostic_product=diagnostic_product_cor,
-                                                outputdir=outputdir, rebuild=rebuild)
+                                                outputdir=cli.outputdir, rebuild=cli.rebuild)
 
                 # Plot ENSO regressions
-                if save_pdf or save_png:
+                if cli.save_pdf or cli.save_png:
                     logger.info('Plotting ENSO')
-                    plot_args = {'indexes': [enso[i].index for i in range(len(enso))],
-                                 'ref_indexes': [enso_ref[i].index for i in range(len(enso_ref))],
-                                 'outputdir': outputdir, 'rebuild': rebuild,
-                                 'loglevel': cli.loglevel}
+                    plot_args = {
+                        'indexes': [enso[i].index for i in range(len(enso))],
+                        'ref_indexes': [enso_ref[i].index for i in range(len(enso_ref))],
+                        'outputdir': cli.outputdir,
+                        'rebuild': cli.rebuild,
+                        'loglevel': cli.loglevel,
+                    }
 
                     plot_enso = PlotENSO(**plot_args)
 
                     # Plot the ENSO index
                     fig_index, _ = plot_enso.plot_index()
                     index_description = plot_enso.set_index_description()
-                    if save_pdf:
+                    if cli.save_pdf:
                         plot_enso.save_plot(fig_index, diagnostic_product='index', format='pdf',
                                             metadata={'description': index_description})
-                    if save_png:
+                    if cli.save_png:
                         plot_enso.save_plot(fig_index, diagnostic_product='index', format='png',
-                                            metadata={'description': index_description}, dpi=dpi)
+                                            metadata={'description': index_description}, dpi=cli.dpi)
 
                     # Plot regressions and correlations
                     for season in seasons:
-                        # Load the regression and correlation maps for each season
-                        # to greatly speed up the plotting process
                         for i in range(len(enso)):
                             enso_regressions[season][i].load(keep_attrs=True)
                             enso_ref_regressions[season][i].load(keep_attrs=True)
@@ -290,16 +273,16 @@ if __name__ == '__main__':
                         reg_product = f'regression_{season}' if season != 'annual' else 'regression'
                         cor_product = f'correlation_{season}' if season != 'annual' else 'correlation'
 
-                        if save_pdf:
+                        if cli.save_pdf:
                             plot_enso.save_plot(fig_reg, diagnostic_product=reg_product, format='pdf',
                                                metadata={'description': regression_description})
                             plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='pdf',
                                                metadata={'description': correlation_description})
-                        if save_png:
+                        if cli.save_png:
                             plot_enso.save_plot(fig_reg, diagnostic_product=reg_product, format='png',
-                                               metadata={'description': regression_description}, dpi=dpi)
+                                               metadata={'description': regression_description}, dpi=cli.dpi)
                             plot_enso.save_plot(fig_cor, diagnostic_product=cor_product, format='png',
-                                               metadata={'description': correlation_description}, dpi=dpi)
+                                               metadata={'description': correlation_description}, dpi=cli.dpi)
 
     cli.close_dask_cluster()
 
