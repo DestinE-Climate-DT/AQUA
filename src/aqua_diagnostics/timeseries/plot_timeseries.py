@@ -1,5 +1,5 @@
 from aqua.graphics import plot_timeseries
-from aqua.util import to_list
+from aqua.util import to_list, DEFAULT_REALIZATION
 from .base import PlotBaseMixin
 
 
@@ -117,7 +117,7 @@ class PlotTimeseries(PlotBaseMixin):
                 self.catalogs = [d.AQUA_catalog for d in data]
                 self.models = [d.AQUA_model for d in data]
                 self.exps = [d.AQUA_exp for d in data]
-                # We expect all data arrays to have the same region
+                self.realizations = [d.AQUA_realization if hasattr(d, 'AQUA_realization') else DEFAULT_REALIZATION for d in data]   
                 self.region = data[0].AQUA_region if hasattr(data[0], 'AQUA_region') else None
                 self.short_name = data[0].short_name if hasattr(data[0], 'short_name') else None
                 self.long_name = data[0].long_name if hasattr(data[0], 'long_name') else None
