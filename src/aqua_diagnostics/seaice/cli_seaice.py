@@ -85,15 +85,11 @@ if __name__ == '__main__':
             for i, dataset in enumerate(datasets):
                 # Get the variable name for this method from the diagnostic configuration
                 mod_var = conf_dict_ts['varname'][method]
-                
+                dataset_args = cli.dataset_args(dataset)
+
                 # Integrate by method the model data and store them in a list.
-                seaice = SeaIce(model=dataset['model'], 
-                                exp=dataset['exp'], 
-                                source=dataset['source'], 
+                seaice = SeaIce(**dataset_args,
                                 regions=regions,
-                                startdate=dataset.get('startdate', None),
-                                enddate=dataset.get('enddate', None),
-                                regrid=regrid or dataset.get('regrid', None),
                                 outputdir=cli.outputdir,
                                 loglevel=cli.loglevel)
 
@@ -129,15 +125,15 @@ if __name__ == '__main__':
                     # Filter the region from the domain information
                     regs_indomain = filter_region_list(regions_dict, regions, domain_ref, cli.logger)
                     
+                    # Get reference args and override specific fields
+                    reference_args = cli.dataset_args(reference)
+                    reference_args['regions'] = regs_indomain
+                    reference_args['startdate'] = reference.get('startdate', startdate)
+                    reference_args['enddate'] = reference.get('enddate', enddate)
+                    reference_args['regrid'] = regrid or reference.get('regrid', None)
+                    
                     # Integrate by method the reference data and store them in a list
-                    seaice_ref = SeaIce(model=reference['model'], 
-                                        exp=reference['exp'], 
-                                        source=reference['source'],
-                                        catalog=reference['catalog'],
-                                        regions=regs_indomain,
-                                        startdate=reference.get('startdate', startdate), # Get specific start-end date for dataset if provided in config
-                                        enddate=reference.get('enddate', enddate), 
-                                        regrid=regrid or reference.get('regrid', None),
+                    seaice_ref = SeaIce(**reference_args,
                                         outputdir=cli.outputdir,
                                         loglevel=cli.loglevel)
 
@@ -196,15 +192,11 @@ if __name__ == '__main__':
             for i, dataset in enumerate(datasets):
                 # Get the variable name for this method from the diagnostic configuration
                 mod_var = conf_dict_ts['varname'][method]
+                dataset_args = cli.dataset_args(dataset)
+                dataset_args['regions'] = regions
 
                 # Integrate by method the model data and store them in a list.
-                seaice = SeaIce(model=dataset['model'], 
-                                exp=dataset['exp'], 
-                                source=dataset['source'], 
-                                regions=regions,
-                                startdate=dataset.get('startdate', None), 
-                                enddate=dataset.get('enddate', None), 
-                                regrid=regrid or dataset.get('regrid', None),
+                seaice = SeaIce(**dataset_args,
                                 outputdir=cli.outputdir,
                                 loglevel=cli.loglevel)
 
@@ -241,15 +233,15 @@ if __name__ == '__main__':
                     # Filter the region from the domain information
                     regs_indomain = filter_region_list(regions_dict, regions, domain_ref, cli.logger)
                     
+                    # Get reference args and override specific fields
+                    reference_args = cli.dataset_args(reference)
+                    reference_args['regions'] = regs_indomain
+                    reference_args['startdate'] = reference.get('startdate', startdate)
+                    reference_args['enddate'] = reference.get('enddate', enddate)
+                    reference_args['regrid'] = regrid or reference.get('regrid', None)
+                    
                     # Integrate by method the reference data and store them in a list.
-                    seaice_ref = SeaIce(model=reference['model'], 
-                                        exp=reference['exp'], 
-                                        source=reference['source'],
-                                        catalog=reference['catalog'],
-                                        regions=regs_indomain,
-                                        startdate=reference.get('startdate', startdate), # Get specific start-end date for reference if provided in config
-                                        enddate=reference.get('enddate', enddate), 
-                                        regrid=regrid or reference.get('regrid', None),
+                    seaice_ref = SeaIce(**reference_args,
                                         outputdir=cli.outputdir,
                                         loglevel=cli.loglevel)
 
@@ -311,14 +303,11 @@ if __name__ == '__main__':
             for i, dataset in enumerate(datasets):
                 # Get the variable name for this method from the diagnostic configuration
                 mod_var = conf_dict_2d['varname'][method]
+                dataset_args = cli.dataset_args(dataset)
+                dataset_args['regions'] = regions
 
                 # Compute 2D sea ice data for the model
-                seaice = SeaIce(model=dataset['model'], exp=dataset['exp'], 
-                                source=dataset['source'], 
-                                regions=regions,
-                                startdate=dataset.get('startdate', None), 
-                                enddate=dataset.get('enddate', None), 
-                                regrid=regrid or dataset.get('regrid', None),
+                seaice = SeaIce(**dataset_args,
                                 outputdir=cli.outputdir,
                                 loglevel=cli.loglevel)
 
@@ -351,17 +340,17 @@ if __name__ == '__main__':
                     # Filter the regions from the domain information
                     regs_indomain = filter_region_list(regions_dict, regions, domain_ref, cli.logger)
                     
+                    # Get reference args and override specific fields
+                    reference_args = cli.dataset_args(reference)
+                    reference_args['regions'] = regs_indomain
+                    reference_args['startdate'] = reference.get('startdate', startdate)
+                    reference_args['enddate'] = reference.get('enddate', enddate)
+                    reference_args['regrid'] = regrid or reference.get('regrid', None)
+                    
                     # Get by method the reference data and store them in a list.
-                    seaice_ref = SeaIce(model=reference['model'],
-                                        exp=reference['exp'],
-                                        source=reference['source'],
-                                        catalog=reference['catalog'],
-                                        regions=regs_indomain,
-                                        startdate=reference.get('startdate', startdate),
-                                        enddate=reference.get('enddate', enddate),
-                                        regrid=regrid or reference.get('regrid', None),
+                    seaice_ref = SeaIce(**reference_args,
                                         outputdir=cli.outputdir,
-                                        loglevel=cli.config_dict['setup']['loglevel'])
+                                        loglevel=cli.loglevel)
 
                     clims_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
                                                              stat='mean', freq='monthly') # , reader_kwargs=reader_kwargs)
