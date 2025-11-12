@@ -117,7 +117,8 @@ class PlotTimeseries(PlotBaseMixin):
                 self.catalogs = [d.AQUA_catalog for d in data]
                 self.models = [d.AQUA_model for d in data]
                 self.exps = [d.AQUA_exp for d in data]
-                self.realizations = [d.AQUA_realization if hasattr(d, 'AQUA_realization') else DEFAULT_REALIZATION for d in data]   
+                self.realizations = [d.AQUA_realization if hasattr(d, 'AQUA_realization') else DEFAULT_REALIZATION for d in data]
+                self.realizations = self.realizations if len(self.realizations) > 1 else self.realizations[0]  
                 self.region = data[0].AQUA_region if hasattr(data[0], 'AQUA_region') else None
                 self.short_name = data[0].short_name if hasattr(data[0], 'short_name') else None
                 self.long_name = data[0].long_name if hasattr(data[0], 'long_name') else None
