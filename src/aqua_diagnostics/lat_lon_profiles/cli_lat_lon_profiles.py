@@ -193,9 +193,7 @@ if __name__ == '__main__':
         args,
         diagnostic_name='lat_lon_profiles',
         default_config='config_lat_lon_profiles.yaml',
-        log_name='LatLonProfiles CLI'
-    ).prepare()
-    
+        log_name='LatLonProfiles CLI').prepare()
     cli.open_dask_cluster()
     
     # LatLonProfiles diagnostic

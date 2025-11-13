@@ -32,7 +32,7 @@ if __name__ == '__main__':
     cli = DiagnosticCLI(
         args,
         diagnostic_name=TOOLNAME_KEY,
-        config='config_radiation-boxplots.yaml',
+        default_config='config_radiation-boxplots.yaml',
     )
 
     # Prepare CLI (load config, setup logging, etc.)
