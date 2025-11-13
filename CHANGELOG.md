@@ -10,6 +10,7 @@ AQUA core complete list:
 - Area selection full support for regions across the dateline (#2451)
 
 AQUA diagnostics complete list:
+- Add unique random key to dask graph tokens for each CLI (#2462)
 - LatLonProfiles: Adjustments on lines plotting order and AQUA_realization management (#2456)
 - Teleconnections: ENSO better vmin/vmax for regression plots (#2455)
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2451)
