@@ -25,6 +25,53 @@ def parse_arguments(args):
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
 
+def _create_plot(cli, profiles, profile_ref, freq_type, diagnostic_name):
+    """
+    Helper function to create and save plots for both longterm and seasonal frequencies.
+    
+    Args:
+        cli: DiagnosticCLI instance with configuration
+        profiles (list): List of LatLonProfiles instances for datasets
+        profile_ref: LatLonProfiles instance for reference dataset (or None)
+        freq_type (str): Frequency type ('longterm' or 'seasonal')
+        diagnostic_name (str): Name of the diagnostic
+    """
+    cli.logger.info(f"Creating {freq_type} plot")
+    
+    if freq_type == 'longterm':
+        # For longterm: single profile per dataset
+        data_list = [p.longterm for p in profiles]
+        ref_data = profile_ref.longterm if profile_ref else None
+        ref_std_data = profile_ref.std_annual if profile_ref else None
+        
+    else:  # seasonal
+        # For seasonal: transform from [[DJF, MAM, JJA, SON], ...] to [DJF_list, MAM_list, JJA_list, SON_list]
+        num_seasons = 4
+        data_list = []
+        for season_idx in range(num_seasons):
+            season_data = [p.seasonal[season_idx] for p in profiles]
+            data_list.append(season_data)
+        
+        ref_data = profile_ref.seasonal if profile_ref else None
+        ref_std_data = profile_ref.std_seasonal if profile_ref and profile_ref.std_seasonal else None
+    
+    # Create and run plot
+    plot = PlotLatLonProfiles(
+        data=data_list,
+        ref_data=ref_data,
+        ref_std_data=ref_std_data,
+        data_type=freq_type,
+        diagnostic_name=diagnostic_name,
+        loglevel=cli.loglevel
+    )
+    
+    plot.run(
+        outputdir=cli.outputdir,
+        rebuild=cli.rebuild,
+        dpi=cli.dpi,
+        format='png' if cli.save_png else 'pdf' if cli.save_pdf else 'png'
+    )
+
 def process_variable(cli, var_config, regions, datasets, references,
                      mean_type, diagnostic_name, freq, compute_std,
                      exclude_incomplete, center_time, box_brd,
@@ -60,12 +107,12 @@ def process_variable(cli, var_config, regions, datasets, references,
     
     # Loop over regions
     for region in regions:
-        cli.logger.info(f"  Region: {region}")
+        cli.logger.info(f"Region: {region}")
         
         # Process datasets
         profiles = []
         for dataset in datasets:
-            cli.logger.info(f"    Processing dataset: {dataset['model']}/{dataset['exp']}")
+            cli.logger.info(f"Processing dataset: {dataset['model']}/{dataset['exp']}")
             
             dataset_args = cli.dataset_args(dataset)
             
@@ -101,7 +148,7 @@ def process_variable(cli, var_config, regions, datasets, references,
         
         if references:
             ref = references[0]  # Take first reference
-            cli.logger.info(f"    Processing reference: {ref['model']}/{ref['exp']}")
+            cli.logger.info(f"Processing reference: {ref['model']}/{ref['exp']}")
             
             ref_args = cli.dataset_args(ref)
             
@@ -135,54 +182,12 @@ def process_variable(cli, var_config, regions, datasets, references,
                 reader_kwargs={}  # No custom reader_kwargs for reference
             )
         
-        # Longterm plot
+        # Create plots using helper function
         if compute_longterm and 'longterm' in freq:
-            cli.logger.info("    Creating longterm plot")
-            
-            data_list = [p.longterm for p in profiles]
-            ref_data = profile_ref.longterm if profile_ref else None
-            ref_std_data = profile_ref.std_annual if profile_ref else None
-            
-            plot = PlotLatLonProfiles(
-                data=data_list,
-                ref_data=ref_data,
-                ref_std_data=ref_std_data,
-                data_type='longterm',
-                diagnostic_name=diagnostic_name,
-                loglevel=cli.loglevel
-            )
-            
-            plot.run(
-                outputdir=cli.outputdir,
-                rebuild=cli.rebuild,
-                dpi=cli.dpi,
-                format='png' if cli.save_png else 'pdf' if cli.save_pdf else 'png'
-            )
+            _create_plot(cli, profiles, profile_ref, 'longterm', diagnostic_name)
         
-        # Seasonal plot
         if compute_seasonal and 'seasonal' in freq:
-            cli.logger.info("    Creating seasonal plot")
-            
-            # Seasonal data structure: list of [DJF, MAM, JJA, SON] for each dataset
-            data_list = [p.seasonal for p in profiles]
-            ref_data = profile_ref.seasonal if profile_ref else None
-            ref_std_data = profile_ref.std_seasonal if profile_ref else None
-            
-            plot = PlotLatLonProfiles(
-                data=data_list,
-                ref_data=ref_data,
-                ref_std_data=ref_std_data,
-                data_type='seasonal',
-                diagnostic_name=diagnostic_name,
-                loglevel=cli.loglevel
-            )
-            
-            plot.run(
-                outputdir=cli.outputdir,
-                rebuild=cli.rebuild,
-                dpi=cli.dpi,
-                format='png' if cli.save_png else 'pdf' if cli.save_pdf else 'png'
-            )
+            _create_plot(cli, profiles, profile_ref, 'seasonal', diagnostic_name)
 
 
 if __name__ == '__main__':
@@ -194,6 +199,7 @@ if __name__ == '__main__':
         diagnostic_name='lat_lon_profiles',
         default_config='config_lat_lon_profiles.yaml',
         log_name='LatLonProfiles CLI').prepare()
+    
     cli.open_dask_cluster()
     
     # LatLonProfiles diagnostic
