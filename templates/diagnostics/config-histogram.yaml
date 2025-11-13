@@ -1,0 +1,96 @@
+# Configuration file for Histogram diagnostic
+# This diagnostic computes histograms and probability density functions (PDFs)
+# of variables over specified regions.
+
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: 'lra-r100-monthly'
+    regrid: null
+    reader_kwargs: null # it can be a dictionary with reader kwargs
+    startdate: null
+    enddate: null
+  # Possible second/third/fourth datasets here, not present by default
+  # - catalog: 'cmip6'
+  #   model: 'EC-Earth3'
+  #   exp: 'historical'
+  #   source: 'monthly'
+  #   regrid: 'r100'
+  #   startdate: '1980-01-01'
+  #   enddate: '2014-12-31'
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'r100-monthly'
+    regrid: 'r100'
+    reader_kwargs: null
+    startdate: null
+    enddate: null
+
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+  create_catalog_entry: true
+
+diagnostics:
+  histogram:
+    run: true
+    diagnostic_name: 'histogram'
+    
+    # Histogram computation parameters
+    bins: 100              # Number of bins for the histogram
+    range: null            # Range for bins as [min, max], null for auto
+    weighted: true         # Use latitudinal weights
+    density: true          # Compute probability density function (PDF)
+    box_brd: true          # Apply box boundaries
+    
+    # Plotting options
+    xlogscale: false       # Use logarithmic scale for x-axis
+    ylogscale: true        # Use logarithmic scale for y-axis
+    smooth: false          # Apply smoothing to histogram
+    smooth_window: 5       # Window size for smoothing (if smooth=true)
+    xmin: null             # Minimum x-axis value (null for auto)
+    xmax: null             # Maximum x-axis value (null for auto)
+    ymin: null             # Minimum y-axis value (null for auto)
+    ymax: null             # Maximum y-axis value (null for auto)
+    
+    # Variables to process
+    variables:
+      - name: '2t'
+        regions: [null, 'tropics']  # global and tropics
+        # Optional: specify custom limits per variable
+        # lon_limits: [-180, 180]
+        # lat_limits: [-90, 90]
+        # units: 'K'
+        # long_name: '2m temperature'
+        # standard_name: 'air_temperature'
+      
+      # Example with multiple regions and custom range
+      # - name: 'tp'
+      #   regions: [null, 'tropics', 'NH', 'SH']
+      #   range: [0, 20]  # Custom range for precipitation
+      #   bins: 50
+      
+      # Example with specific spatial limits
+      # - name: 'sst'
+      #   regions: [null]
+      #   lon_limits: [-180, 180]
+      #   lat_limits: [-60, 60]
+    
+    # Formulae to process (optional)
+    formulae: []
+      # Example formula
+      # - name: 'temp_anomaly'
+      #   formula: '2t - 273.15'  # Convert K to °C
+      #   regions: [null]
+      #   units: '°C'
+      #   long_name: '2m temperature anomaly'

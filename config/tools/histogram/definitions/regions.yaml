@@ -1,0 +1,17 @@
+regions:
+  nh:
+    longname: North Midlatitudes
+    lon_limits: [-180, 180]
+    lat_limits: [30, 90]
+  sh:
+    longname: South Midlatitudes
+    lon_limits: [-180, 180]
+    lat_limits: [-90, -30]
+  tropics:
+    longname: Tropics
+    lon_limits: [-180, 180]
+    lat_limits: [-15, 15]
+  europe:
+    longname: Europe
+    lon_limits: [-10, 40]
+    lat_limits: [35, 70]

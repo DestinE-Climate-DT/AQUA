@@ -15,6 +15,7 @@ AQUA core complete list:
 - Add filelock when modifying catalog sources (#2432)
 
 AQUA diagnostics complete list:
+- Histogram: new Histogram diagnostic tool (#2372)
 - Teleconnections: ENSO better vmin/vmax for regression plots (#2453)
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2433)
 - Area selection full support for regions across the dateline (#2430, #2434)
