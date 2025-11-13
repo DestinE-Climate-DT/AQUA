@@ -9,7 +9,7 @@ from metpy.units import units
 from smmregrid import GridInspector
 
 from aqua.util import load_multi_yaml, files_exist, to_list
-from aqua.util import ConfigPath, find_vert_coord, DEFAULT_REALIZATION
+from aqua.util import ConfigPath, find_vert_coord
 from aqua.logger import log_configure, log_history
 from aqua.exceptions import NoDataError, NoRegridError
 from aqua.version import __version__ as aqua_version
@@ -403,7 +403,6 @@ class Reader():
         # Add info metadata in each dataset
         info_metadata = {'AQUA_model': self.model, 'AQUA_exp': self.exp,
                          'AQUA_source': self.source, 'AQUA_catalog': self.catalog,
-                         'AQUA_realization': self.kwargs.get('realization', DEFAULT_REALIZATION),
                          'AQUA_version': aqua_version}
         for kwarg in self.kwargs:
             info_metadata[f'AQUA_{kwarg}'] = str(self.kwargs[kwarg])
