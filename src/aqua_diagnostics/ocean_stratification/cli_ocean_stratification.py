@@ -42,9 +42,6 @@ if __name__ == "__main__":
 
     dataset = cli.config_dict['datasets'][0]
     dataset_args = cli.dataset_args(dataset)
-    
-    startdate = dataset.get("startdate", None)
-    enddate = dataset.get("enddate", None)
 
     if config_dict["references"]:
         references = config_dict["references"]
@@ -75,8 +72,6 @@ if __name__ == "__main__":
                     model_stratification = Stratification(
                         **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        startdate=startdate,
-                        enddate=enddate,
                         loglevel=cli.loglevel,
                     )
                     model_stratification.run(
@@ -130,8 +125,6 @@ if __name__ == "__main__":
                     model_stratification = Stratification(
                         **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        startdate=startdate,
-                        enddate=enddate,
                         loglevel=cli.loglevel,
                     )
                     model_stratification.run(
