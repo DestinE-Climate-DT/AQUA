@@ -5,7 +5,7 @@ import cartopy.crs as ccrs
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps, plot_vertical_profile_diff
-from aqua.util import get_projection, DEFAULT_REALIZATION
+from aqua.util import get_projection, get_realizations
 from .util import handle_pressure_level
 
 class PlotGlobalBiases: 
@@ -37,18 +37,8 @@ class PlotGlobalBiases:
 
         self.logger = log_configure(log_level=loglevel, log_name='Global Biases')
 
-    def _extract_realization(self, data):
-        """Extract realization info from dataset or use default."""
-        if hasattr(data, 'AQUA_realization'):
-            realization = data.AQUA_realization
-            self.logger.debug(f'Extracted realization: {realization}')
-        else:
-            realization = DEFAULT_REALIZATION
-            self.logger.debug(f'No realization found in data, using default: {DEFAULT_REALIZATION}')
-        return realization
-
-    def _save_figure(self, fig, diagnostic_product, 
-                     data, description, var, data_ref=None, 
+    def _save_figure(self, fig, diagnostic_product,
+                     data, description, var, data_ref=None,
                      plev=None, **kwargs):
         """
         Handles the saving of a figure using OutputSaver.
@@ -114,7 +104,7 @@ class PlotGlobalBiases:
         if data is None:
             return None
 
-        realization = self._extract_realization(data)
+        realization = get_realizations(data)
         proj = get_projection(proj, **proj_params)
         
         title = (f"Climatology of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}" 
@@ -166,7 +156,7 @@ class PlotGlobalBiases:
         data = handle_pressure_level(data, var, plev, loglevel=self.loglevel)
         data_ref = handle_pressure_level(data_ref, var, plev, loglevel=self.loglevel)
 
-        realization = self._extract_realization(data)
+        realization = get_realizations(data)
 
         sym = vmin is None or vmax is None
 
@@ -290,7 +280,7 @@ class PlotGlobalBiases:
         """
         self.logger.info('Plotting vertical biases for variable: %s', var)
 
-        realization = self._extract_realization(data)
+        realization = get_realizations(data)
 
         title = (
             f"Vertical bias of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
