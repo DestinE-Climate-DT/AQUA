@@ -6,11 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
-- Add unique random key to dask graph tokens for each CLI (#2462)
 - eORCA025 nested grid for o25.1 and o26.1 support (#2460)
 - Area selection full support for regions across the dateline (#2451)
 
 AQUA diagnostics complete list:
+- Add unique random key to dask graph tokens for each CLI (#2462)
 - LatLonProfiles: Adjustments on lines plotting order and AQUA_realization management (#2456)
 - Teleconnections: ENSO better vmin/vmax for regression plots (#2455)
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2451)
