@@ -45,7 +45,7 @@ class DiagnosticCLI:
         self.args = args
         self.diagnostic_name = diagnostic_name
         self.default_config = default_config
-        self.log_name = log_name or f"{diagnostic_name.capitalize()}-CLI"
+        self.log_name = log_name or f"{diagnostic_name.capitalize()} CLI"
         
         # Attributes populated by prepare()
         self.loglevel = None
