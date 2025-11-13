@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Command-line interface for LatLonProfiles diagnostic.
 
@@ -9,10 +8,9 @@ single or multiple experiments.
 
 import sys
 import argparse
-from aqua.diagnostics.core import template_parse_arguments
-from aqua.diagnostics.lat_lon_profiles.util_cli import load_var_config, process_variable_or_formula
-from aqua.diagnostics.core import DiagnosticCLI
-
+from aqua.diagnostics.core import template_parse_arguments, DiagnosticCLI
+from aqua.diagnostics.lat_lon_profiles import LatLonProfiles, PlotLatLonProfiles
+from aqua.diagnostics.lat_lon_profiles.util_cli import load_var_config
 
 def parse_arguments(args):
     """Parse command-line arguments for LatLonProfiles diagnostic.
@@ -27,95 +25,252 @@ def parse_arguments(args):
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
 
+def process_variable(cli, var_config, regions, datasets, references,
+                     mean_type, diagnostic_name, freq, compute_std,
+                     exclude_incomplete, center_time, box_brd,
+                     compute_longterm, compute_seasonal, 
+                     regions_file_path=None, formula=False):
+    """
+    Process a single variable or formula across all datasets and regions.
+    
+    Args:
+        cli: DiagnosticCLI instance with prepared configuration
+        var_config (dict): Variable configuration
+        regions (list): List of regions to process
+        datasets (list): List of dataset configurations
+        references (list): List of reference dataset configurations
+        mean_type (str): Type of mean ('zonal' or 'meridional')
+        diagnostic_name (str): Name of the diagnostic
+        freq (list): List of frequencies to compute
+        compute_std (bool): Whether to compute standard deviation
+        exclude_incomplete (bool): Whether to exclude incomplete periods
+        center_time (bool): Whether to center time coordinates
+        box_brd (bool): Whether to apply box boundary
+        compute_longterm (bool): Whether to compute longterm statistics
+        compute_seasonal (bool): Whether to compute seasonal statistics
+        regions_file_path (str, optional): Path to regions file
+        formula (bool): Whether processing a formula (True) or variable (False)
+    """
+    var_name = var_config.get('name')
+    var_units = var_config.get('units')
+    var_long_name = var_config.get('long_name')
+    var_standard_name = var_config.get('standard_name')
+    
+    cli.logger.info(f"Processing {'formula' if formula else 'variable'}: {var_name}")
+    
+    # Loop over regions
+    for region in regions:
+        cli.logger.info(f"  Region: {region}")
+        
+        # Process datasets
+        profiles = []
+        for dataset in datasets:
+            cli.logger.info(f"    Processing dataset: {dataset['model']}/{dataset['exp']}")
+            
+            dataset_args = cli.dataset_args(dataset)
+            
+            profile = LatLonProfiles(
+                **dataset_args,
+                region=region,
+                regions_file_path=regions_file_path,
+                mean_type=mean_type,
+                diagnostic_name=diagnostic_name,
+                loglevel=cli.loglevel
+            )
+            
+            profile.run(
+                var=var_name,
+                formula=formula,
+                long_name=var_long_name,
+                units=var_units,
+                standard_name=var_standard_name,
+                std=compute_std,
+                freq=freq,
+                exclude_incomplete=exclude_incomplete,
+                center_time=center_time,
+                box_brd=box_brd,
+                outputdir=cli.outputdir,
+                rebuild=cli.rebuild,
+                reader_kwargs=cli.reader_kwargs
+            )
+            
+            profiles.append(profile)
+        
+        # Process reference dataset (if any)
+        profile_ref = None
+        
+        if references:
+            ref = references[0]  # Take first reference
+            cli.logger.info(f"    Processing reference: {ref['model']}/{ref['exp']}")
+            
+            ref_args = cli.dataset_args(ref)
+            
+            # For reference, use std dates if specified
+            if ref.get('std_startdate'):
+                ref_args['startdate'] = ref['std_startdate']
+                ref_args['enddate'] = ref['std_enddate']
+            
+            profile_ref = LatLonProfiles(
+                **ref_args,
+                region=region,
+                regions_file_path=regions_file_path,
+                mean_type=mean_type,
+                diagnostic_name=diagnostic_name,
+                loglevel=cli.loglevel
+            )
+            
+            profile_ref.run(
+                var=var_name,
+                formula=formula,
+                long_name=var_long_name,
+                units=var_units,
+                standard_name=var_standard_name,
+                std=True,  # Always compute std for reference
+                freq=freq,
+                exclude_incomplete=exclude_incomplete,
+                center_time=center_time,
+                box_brd=box_brd,
+                outputdir=cli.outputdir,
+                rebuild=cli.rebuild,
+                reader_kwargs={}  # No custom reader_kwargs for reference
+            )
+        
+        # Longterm plot
+        if compute_longterm and 'longterm' in freq:
+            cli.logger.info("    Creating longterm plot")
+            
+            data_list = [p.longterm for p in profiles]
+            ref_data = profile_ref.longterm if profile_ref else None
+            ref_std_data = profile_ref.std_annual if profile_ref else None
+            
+            plot = PlotLatLonProfiles(
+                data=data_list,
+                ref_data=ref_data,
+                ref_std_data=ref_std_data,
+                data_type='longterm',
+                diagnostic_name=diagnostic_name,
+                loglevel=cli.loglevel
+            )
+            
+            plot.run(
+                outputdir=cli.outputdir,
+                rebuild=cli.rebuild,
+                dpi=cli.dpi,
+                format='png' if cli.save_png else 'pdf' if cli.save_pdf else 'png'
+            )
+        
+        # Seasonal plot
+        if compute_seasonal and 'seasonal' in freq:
+            cli.logger.info("    Creating seasonal plot")
+            
+            # Seasonal data structure: list of [DJF, MAM, JJA, SON] for each dataset
+            data_list = [p.seasonal for p in profiles]
+            ref_data = profile_ref.seasonal if profile_ref else None
+            ref_std_data = profile_ref.std_seasonal if profile_ref else None
+            
+            plot = PlotLatLonProfiles(
+                data=data_list,
+                ref_data=ref_data,
+                ref_std_data=ref_std_data,
+                data_type='seasonal',
+                diagnostic_name=diagnostic_name,
+                loglevel=cli.loglevel
+            )
+            
+            plot.run(
+                outputdir=cli.outputdir,
+                rebuild=cli.rebuild,
+                dpi=cli.dpi,
+                format='png' if cli.save_png else 'pdf' if cli.save_pdf else 'png'
+            )
+
 
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
     
+    # Initialize and prepare CLI
     cli = DiagnosticCLI(
         args,
         diagnostic_name='lat_lon_profiles',
-        diagnostic_config='config_lat_lon_profiles.yaml',
-        log_name='LatLonProfiles CLI').prepare()
+        default_config='config_lat_lon_profiles.yaml',
+        log_name='LatLonProfiles CLI'
+    ).prepare()
+    
     cli.open_dask_cluster()
     
-
     # LatLonProfiles diagnostic
-    if 'lat_lon_profiles' in cli.config_dict['diagnostics']:
-        if cli.config_dict['diagnostics']['lat_lon_profiles']['run']:
-            cli.logger.info("LatLonProfiles diagnostic is enabled.")
-
-            # Extract all configuration
-            diagnostic_config = cli.config_dict['diagnostics']['lat_lon_profiles']
-            diagnostic_name = diagnostic_config.get('diagnostic_name', 'lat_lon_profiles')
-            mean_type = diagnostic_config.get('mean_type', 'zonal')
-            center_time = diagnostic_config.get('center_time', True)
-            exclude_incomplete = diagnostic_config.get('exclude_incomplete', True)
-            box_brd = diagnostic_config.get('box_brd', True)
-            compute_std = diagnostic_config.get('compute_std', False)
-            compute_seasonal = diagnostic_config.get('seasonal', True)
-            compute_longterm = diagnostic_config.get('longterm', True)
-
-            freq = []
-            if compute_seasonal:
-                freq.append('seasonal')
-            if compute_longterm:
-                freq.append('longterm')
-
-            # Process variables
-            for var in diagnostic_config.get('variables', []):
-                var_config, regions = load_var_config(cli.config_dict, var)
-                process_variable_or_formula(
-                    config_dict=cli.config_dict,
-                    var_config=var_config,
-                    regions=regions,
-                    datasets=cli.config_dict['datasets'],
-                    mean_type=mean_type,
-                    diagnostic_name=diagnostic_name,
-                    regrid=cli.regrid,
-                    freq=freq,
-                    compute_std=compute_std,
-                    exclude_incomplete=exclude_incomplete,
-                    center_time=center_time,
-                    box_brd=box_brd,
-                    outputdir=cli.outputdir,
-                    rebuild=cli.rebuild,
-                    reader_kwargs=cli.reader_kwargs,
-                    save_pdf=cli.save_pdf,
-                    save_png=cli.save_png,
-                    dpi=cli.dpi,
-                    compute_longterm=compute_longterm,
-                    compute_seasonal=compute_seasonal,
-                    loglevel=cli.loglevel,
-                    formula=False  # <-- Variable
-                )
-
-            # Process formulae
-            for var in diagnostic_config.get('formulae', []):
-                var_config, regions = load_var_config(cli.config_dict, var)
-                process_variable_or_formula(
-                    config_dict=cli.config_dict,
-                    var_config=var_config,
-                    regions=regions,
-                    datasets=cli.config_dict['datasets'],
-                    mean_type=mean_type,
-                    diagnostic_name=diagnostic_name,
-                    regrid=cli.regrid,
-                    freq=freq,
-                    compute_std=compute_std,
-                    exclude_incomplete=exclude_incomplete,
-                    center_time=center_time,
-                    box_brd=box_brd,
-                    outputdir=cli.outputdir,
-                    rebuild=cli.rebuild,
-                    reader_kwargs=cli.reader_kwargs,
-                    save_pdf=cli.save_pdf,
-                    save_png=cli.save_png,
-                    dpi=cli.dpi,
-                    compute_longterm=compute_longterm,
-                    compute_seasonal=compute_seasonal,
-                    loglevel=cli.loglevel,
-                    formula=True  # <-- Formulae
-                )
-
+    tool_dict = cli.config_dict['diagnostics'].get('lat_lon_profiles', {})
+    
+    if tool_dict and tool_dict.get('run', False):
+        cli.logger.info("LatLonProfiles diagnostic is enabled.")
+        
+        # Extract configuration
+        diagnostic_name = tool_dict.get('diagnostic_name', 'lat_lon_profiles')
+        mean_type = tool_dict.get('mean_type', 'zonal')
+        center_time = tool_dict.get('center_time', True)
+        exclude_incomplete = tool_dict.get('exclude_incomplete', True)
+        box_brd = tool_dict.get('box_brd', True)
+        compute_std = tool_dict.get('compute_std', False)
+        compute_seasonal = tool_dict.get('seasonal', True)
+        compute_longterm = tool_dict.get('longterm', True)
+        regions_file_path = tool_dict.get('regions_file_path', None)
+        
+        # Build frequency list
+        freq = []
+        if compute_seasonal:
+            freq.append('seasonal')
+        if compute_longterm:
+            freq.append('longterm')
+        
+        # Get datasets and references
+        datasets = cli.config_dict.get('datasets', [])
+        references = cli.config_dict.get('references', [])
+        
+        # Process variables
+        for var in tool_dict.get('variables', []):
+            var_config, regions = load_var_config(cli.config_dict, var, diagnostic='lat_lon_profiles')
+            
+            process_variable(
+                cli=cli,
+                var_config=var_config,
+                regions=regions,
+                datasets=datasets,
+                references=references,
+                mean_type=mean_type,
+                diagnostic_name=diagnostic_name,
+                freq=freq,
+                compute_std=compute_std,
+                exclude_incomplete=exclude_incomplete,
+                center_time=center_time,
+                box_brd=box_brd,
+                compute_longterm=compute_longterm,
+                compute_seasonal=compute_seasonal,
+                regions_file_path=regions_file_path,
+                formula=False
+            )
+        
+        # Process formulae
+        for formula_config in tool_dict.get('formulae', []):
+            var_config, regions = load_var_config(cli.config_dict, formula_config, diagnostic='lat_lon_profiles')
+            
+            process_variable(
+                cli=cli,
+                var_config=var_config,
+                regions=regions,
+                datasets=datasets,
+                references=references,
+                mean_type=mean_type,
+                diagnostic_name=diagnostic_name,
+                freq=freq,
+                compute_std=compute_std,
+                exclude_incomplete=exclude_incomplete,
+                center_time=center_time,
+                box_brd=box_brd,
+                compute_longterm=compute_longterm,
+                compute_seasonal=compute_seasonal,
+                regions_file_path=regions_file_path,
+                formula=True
+            )
+    
     cli.close_dask_cluster()
     cli.logger.info("LatLonProfiles diagnostic completed.")
