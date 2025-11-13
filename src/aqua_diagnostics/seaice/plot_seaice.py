@@ -9,7 +9,7 @@ from aqua.logger import log_configure, log_history
 from aqua.graphics import plot_timeseries, plot_seasonalcycle, ConfigStyle
 from aqua.util import ConfigPath
 from collections import defaultdict
-from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type
+from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type, get_realizations
 
 xr.set_options(keep_attrs=True)
 
@@ -63,6 +63,8 @@ class PlotSeaIce:
         self.exp = exp
         self.source = source
         self.catalog = catalog
+        self.realizations = get_realizations(monthly_models) # TO BE UPDATED when also annual analysis will be implemented
+
 
         self.regions_to_plot = _check_list_regions_type(regions_to_plot, logger=self.logger)
 
@@ -487,7 +489,7 @@ class PlotSeaIce:
         if save_png or save_pdf:
             self.logger.debug(f"Saving figure as format(s): {', '.join(fmt for fmt, flag in [('PNG', save_png), ('PDF', save_pdf)] if flag)}")
             output_saver = OutputSaver(diagnostic='seaice', catalog=self.catalog, model=self.model, exp=self.exp,
-                                        loglevel=self.loglevel, outputdir=self.outputdir)
+                                        loglevel=self.loglevel, outputdir=self.outputdir, realization=self.realizations)
 
             diagnostic_product = self.plot_type
             

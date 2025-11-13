@@ -10,7 +10,7 @@ from aqua.logger import log_configure, log_history
 from aqua.util import ConfigPath, get_projection, plot_box, to_list
 from aqua.util import evaluate_colorbar_limits, set_map_title, time_to_string
 from aqua.util import generate_colorbar_ticks, int_month_name, apply_circular_window
-from .util import extract_dates, _check_list_regions_type
+from .util import extract_dates, _check_list_regions_type, get_realizations
 
 xr.set_options(keep_attrs=True)
 
@@ -38,6 +38,8 @@ class Plot2DSeaIce:
 
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='Plot2DSeaIce')
+
+        self.realizations = get_realizations(models)
 
         self.ref = self._handle_data(ref)
         self.models = self._handle_data(models)
@@ -582,7 +584,8 @@ class Plot2DSeaIce:
             model_ref=data_ref.attrs.get('AQUA_model','') if data_ref is not None else None,
             exp_ref=data_ref.attrs.get('AQUA_exp','') if data_ref is not None else None,
             outputdir=self.outputdir,
-            loglevel=self.loglevel
+            loglevel=self.loglevel,
+            realization=self.realizations
         )
         
         metadata = {"Description": description}
