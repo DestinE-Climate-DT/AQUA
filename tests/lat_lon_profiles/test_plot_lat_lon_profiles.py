@@ -238,3 +238,31 @@ class TestPlotLatLonProfilesErrors:
         
         with pytest.raises(ValueError, match="data_type must be 'longterm' or 'seasonal'"):
             PlotLatLonProfiles(data=data, data_type='invalid', loglevel=loglevel)
+
+@pytest.mark.diagnostics
+class TestPlotLatLonProfilesRealization:
+    """Test realization extraction and usage in plot filenames"""
+    
+    def test_realization_in_plot_filename(self, sample_lat_lon_data, tmp_path):
+        """Test that AQUA_realization is extracted and used in plot filenames"""
+        data = sample_lat_lon_data()
+        
+        # Add AQUA_realization to data
+        data.attrs['AQUA_realization'] = 'r3'
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
+            data_type='longterm',
+            loglevel=loglevel
+        )
+        
+        # Check realization was extracted
+        assert hasattr(plotter, 'realizations')
+        assert plotter.realizations[0] == 'r3'
+        
+        # Run and check filename
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0
+        assert any('r3' in f.name for f in png_files), "Realization 'r3' not found in any filename"

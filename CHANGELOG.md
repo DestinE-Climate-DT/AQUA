@@ -5,19 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.20.0):
-
-ClimateDT workflow modifications:
-
 AQUA core complete list:
+- Add unique random key to dask graph tokens for each CLI (#2462)
+- eORCA025 nested grid for o25.1 and o26.1 support (#2460)
+- Area selection full support for regions across the dateline (#2451)
 
 AQUA diagnostics complete list:
-- Add unique random key to dask graph tokens for each CLI (#2462)
+- LatLonProfiles: Adjustments on lines plotting order and AQUA_realization management (#2456)
+- Teleconnections: ENSO better vmin/vmax for regression plots (#2455)
+- Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2451)
+
+## [v0.19.2]
+
+AQUA core complete list:
+- Safe dumping yaml with a temporary file and SoftFileLock (#2448)
+
+## [v0.19.1]
+
+AQUA core complete list:
+- Add filelock when modifying catalog sources (#2437)
 
 ## [v0.19.0]
 
 ClimateDT workflow modifications:
-- Add filelock when modifying catalog sources (#2437)
 - The configuration file of the catalog generator now requires `expid`
 - Aqua analysis config file organized differently with diagnostic groups
 - Diagnostic and cli tool config files grouped differently in `$AQUA/config/diagnostics` and `$AQUA/config/tools`
@@ -1189,7 +1199,9 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.2
+[v0.19.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.1...v0.19.2
+[v0.19.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.19.1
 [v0.19.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.1...v0.19.0
 [v0.18.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.0...v0.18.1
 [v0.18.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...v0.18.0
