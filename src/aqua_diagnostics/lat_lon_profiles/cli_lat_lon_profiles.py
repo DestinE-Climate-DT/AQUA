@@ -34,7 +34,7 @@ if __name__ == '__main__':
     cli = DiagnosticCLI(
         args,
         diagnostic_name='lat_lon_profiles',
-        diagnostic_config='config_lat_lon_profiles.yaml',
+        default_config='config_lat_lon_profiles.yaml',
         log_name='LatLonProfiles CLI').prepare()
     cli.open_dask_cluster()
     

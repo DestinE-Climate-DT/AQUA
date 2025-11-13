@@ -32,7 +32,7 @@ if __name__ == '__main__':
     
     cli = DiagnosticCLI(args, 
                         diagnostic_name='ocean3d', 
-                        diagnostic_config='config_ocean_drift.yaml', 
+                        default_config='config_ocean_drift.yaml', 
                         log_name='OceanDrift CLI').prepare()
     cli.open_dask_cluster()
     

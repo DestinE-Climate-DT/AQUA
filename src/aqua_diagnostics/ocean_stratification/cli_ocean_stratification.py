@@ -33,7 +33,7 @@ if __name__ == "__main__":
     
     cli = DiagnosticCLI(args, 
                         diagnostic_name='ocean3d', 
-                        diagnostic_config='config_ocean_stratification.yaml', 
+                        default_config='config_ocean_stratification.yaml', 
                         log_name='OceanStratification CLI').prepare()
     cli.open_dask_cluster()
     
