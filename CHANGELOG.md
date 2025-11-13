@@ -12,6 +12,7 @@ ClimateDT workflow modifications:
 AQUA core complete list:
 
 AQUA diagnostics complete list:
+- Add unique random key to dask graph tokens for each CLI (#2462)
 
 ## [v0.19.0]
 
