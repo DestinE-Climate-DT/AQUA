@@ -167,12 +167,21 @@ class LatLonProfiles(Diagnostic):
 		if freq == 'seasonal':
 			# Group by season and compute std
 			seasonal_std = monthly_data.groupby('time.season').std('time')
-			seasonal_std.attrs['std_startdate'] = time_to_string(self.std_startdate)
-			seasonal_std.attrs['std_enddate'] = time_to_string(self.std_enddate)
-			self.std_seasonal = seasonal_std
+			
+			# Convert to list [DJF, MAM, JJA, SON]
+			seasons = ['DJF', 'MAM', 'JJA', 'SON']
+			seasonal_std_list = []
+			for season in seasons:
+				season_data = seasonal_std.sel(season=season)
+				season_data.attrs['std_startdate'] = time_to_string(self.std_startdate)
+				season_data.attrs['std_enddate'] = time_to_string(self.std_enddate)
+				seasonal_std_list.append(season_data)
+			
+			self.std_seasonal = seasonal_std_list
 
 			self.logger.debug("Loading data in memory")
-			self.std_seasonal.load()
+			for season_data in self.std_seasonal:
+				season_data.load()
 			self.logger.debug("Loaded data in memory")
 
 		elif freq == 'longterm':
@@ -260,7 +269,7 @@ class LatLonProfiles(Diagnostic):
 				# Handle longterm std data
 				var = getattr(data_std, 'standard_name', 'unknown')
 
-				extra_keys = {'freq': 'annual', 'std': 'std', 'var': var}
+				extra_keys = {'freq': 'longterm', 'std': 'std', 'var': var}
 				if self.region is not None:
 					region = self.region
 					extra_keys['AQUA_region'] = region
