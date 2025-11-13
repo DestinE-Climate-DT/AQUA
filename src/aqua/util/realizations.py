@@ -1,5 +1,6 @@
 """utilities for formatting realizations."""
 from typing import Optional, Union
+import xarray as xr
 
 DEFAULT_REALIZATION = 'r1'  # Default realization if not specified
 
@@ -27,3 +28,34 @@ def format_realization(realization: Optional[str | int | list | None] = None) ->
         return realization
     if isinstance(realization, (int, str)):
         return f'r{realization}' if str(realization).isdigit() else str(realization)
+
+
+def get_realizations(datasets):
+    """
+    Extract the 'AQUA_realization' attribute from one or more datasets.
+
+    Parameters
+    ----------
+    datasets : xr.Dataset or list of xr.Dataset
+        A single dataset or a list of datasets from which to extract the realization.
+
+    Returns
+    -------
+    str or list of str
+        The realization if the input is a single dataset or a list with one element,
+        or a list of realizations if the input list has more than one element.
+    """
+    # Convert to list if not already
+    if not isinstance(datasets, list):
+        datasets = [datasets]
+
+    realizations = []
+    for d in datasets:
+        if hasattr(d, "attrs"):
+            val = getattr(d, "AQUA_realization", d.attrs.get("AQUA_realization", DEFAULT_REALIZATION))
+        else:
+            val = getattr(d, "AQUA_realization", DEFAULT_REALIZATION)
+        realizations.append(val)
+
+    # Return single value if list has only one element
+    return realizations[0] if len(realizations) == 1 else realizations

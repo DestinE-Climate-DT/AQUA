@@ -1,6 +1,6 @@
 import xarray as xr
 from aqua.graphics import plot_seasonalcycle
-from aqua.util import to_list, DEFAULT_REALIZATION
+from aqua.util import to_list, get_realizations
 from .base import PlotBaseMixin
 
 
@@ -78,8 +78,7 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.short_name = self.monthly_data[0].short_name if hasattr(self.monthly_data[0], 'short_name') else None
             self.long_name = self.monthly_data[0].long_name if hasattr(self.monthly_data[0], 'long_name') else None
             self.units = self.monthly_data[0].units if hasattr(self.monthly_data[0], 'units') else None
-            self.realizations = [d.AQUA_realization if hasattr(d, 'AQUA_realization') else DEFAULT_REALIZATION for d in self.monthly_data]
-            self.realizations = self.realizations if len(self.realizations) > 1 else self.realizations[0]    
+            self.realizations = get_realizations(monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
         self.logger.debug(f'Experiments: {self.exps}')

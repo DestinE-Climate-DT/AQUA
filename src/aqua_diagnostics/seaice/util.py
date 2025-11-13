@@ -13,35 +13,6 @@ def defaultdict_to_dict(d):
     return d
 
 
-def get_realizations(datasets):
-    """
-    Extract the 'AQUA_realization' attribute from one or more datasets.
-
-    Parameters
-    ----------
-    datasets : xr.Dataset or list of xr.Dataset
-        A single dataset or a list of datasets from which to extract the realization.
-
-    Returns
-    -------
-    str or list of str
-        The realization if the input is a single dataset,
-        or a list of realizations if the input is a list.
-    """
-    is_single = isinstance(datasets, xr.Dataset)
-    if is_single:
-        datasets = [datasets]
-        
-    realizations = []
-    for d in datasets:
-        if hasattr(d, "attrs"):
-            val = getattr(d, "AQUA_realization", d.attrs.get("AQUA_realization", DEFAULT_REALIZATION))
-        else:
-            val = getattr(d, "AQUA_realization", DEFAULT_REALIZATION)
-        realizations.append(val)
-
-    return realizations[0] if is_single else realizations
-
 
 def filter_region_list(regions_dict, regions_list, domain, logger, valid_domains=None):
     """ Filters a list of string regions based on config_file defined coords values and specified domain.
