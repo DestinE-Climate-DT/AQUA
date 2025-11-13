@@ -51,7 +51,7 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
 
     logger.debug(f"Plotting {len(data_list)} data arrays")
 
-    # Plot
+    # Plot data (higher zorder = foreground)
     for i, d in enumerate(data_list):
         # Determine coordinate name based on 'lat' or 'lon'
         lon_name, lat_name = coord_names(d)
@@ -62,9 +62,9 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
             continue
             
         label = data_labels[i] if data_labels else None
-        d.plot(ax=ax, label=label, linewidth=3)
+        d.plot(ax=ax, label=label, linewidth=3, zorder=3)
 
-    # Handle reference data
+    # Handle reference data (lower zorder = background)
     if ref_data is not None:
         
         # Find coordinate for ref_data
@@ -74,10 +74,6 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
         if coord_name is not None:
             ref_x_coord = ref_data[coord_name].values
             
-            # Plot reference data
-            ref_data.plot(ax=ax, label=ref_label if ref_label else 'Reference',
-                          color='black', linestyle='-', linewidth=3, alpha=1.0)
-            
             # Plot reference std if available
             if ref_std_data is not None:
                 if hasattr(ref_std_data, 'compute'):
@@ -85,7 +81,12 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
                 ax.fill_between(ref_x_coord,
                                 ref_data.values - 2.*ref_std_data.values,
                                 ref_data.values + 2.*ref_std_data.values,
-                                facecolor='grey', alpha=0.5)
+                                facecolor='grey', alpha=0.5, zorder=1)
+            
+            # Plot reference data
+            ref_data.plot(ax=ax, label=ref_label if ref_label else 'Reference',
+                          color='black', linestyle='-', linewidth=3, alpha=1.0,
+                          zorder=2)
 
     # Finalize plot
     if data_labels:

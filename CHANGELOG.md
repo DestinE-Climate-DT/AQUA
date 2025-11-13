@@ -9,6 +9,18 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 
+## [v0.19.3]
+
+AQUA core complete list:
+- eORCA025 nested grid for o25.1 and o26.1 support (#2460)
+- Area selection full support for regions across the dateline (#2451)
+
+AQUA diagnostics complete list:
+- Add unique random key to dask graph tokens for each CLI (#2462)
+- LatLonProfiles: Adjustments on lines plotting order and AQUA_realization management (#2456)
+- Teleconnections: ENSO better vmin/vmax for regression plots (#2455)
+- Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2451)
+
 ## [v0.19.2]
 
 AQUA core complete list:
@@ -1193,7 +1205,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.2
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.3
+[v0.19.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.1...v0.19.2
 [v0.19.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.19.1
 [v0.19.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.1...v0.19.0
