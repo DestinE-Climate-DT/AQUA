@@ -1,15 +1,16 @@
+"""Command-line interface for GlobalBiases diagnostic."""
+
 import argparse
 import sys
 
-from aqua.logger import log_configure
-from aqua.util import get_arg
-from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
-from aqua.util import get_arg, to_list
-from aqua.exceptions import NotEnoughDataError, NoDataError, NoObservationError
+from aqua.util import to_list
+from aqua.exceptions import NoDataError
 from aqua.diagnostics import GlobalBiases, PlotGlobalBiases
+from aqua.diagnostics.core import template_parse_arguments
+from aqua.diagnostics.core import DiagnosticCLI
 
+TOOLNAME='GlobalBiases'
+TOOLNAME_KEY = TOOLNAME.lower()
 
 def parse_arguments(args):
     """Parse command-line arguments for GlobalBiases diagnostic.
@@ -17,157 +18,122 @@ def parse_arguments(args):
     Args:
         args (list): list of command-line arguments to parse.
     """
-    parser = argparse.ArgumentParser(description='GlobalBiases CLI')
+    parser = argparse.ArgumentParser(description=f'{TOOLNAME} CLI')
     parser = template_parse_arguments(parser)
     return parser.parse_args(args)
 
 if __name__ == '__main__':
 
     args = parse_arguments(sys.argv[1:])
+    
+    cli = DiagnosticCLI(
+        args,
+        diagnostic_name=TOOLNAME_KEY,
+        default_config='config_global_biases.yaml',
+    )
+    cli.prepare()
+    cli.open_dask_cluster()
 
-    loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='GlobalBiases CLI')
-    logger.info("Running GlobalBiases diagnostic with AQUA version %s", aqua_version)
-
-    cluster = get_arg(args, 'cluster', None)
-    nworkers = get_arg(args, 'nworkers', None)
-
-    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
-
-    # Load the configuration file and then merge it with the command-line arguments
-    config_dict = load_diagnostic_config(diagnostic='globalbiases', config=args.config,
-                                         default_config='config_global_biases.yaml',
-                                         loglevel=loglevel)
-    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-
-    regrid = get_arg(args, 'regrid', None)
-    if regrid:
-        logger.info("Regrid option is set to %s", regrid)
-    realization = get_arg(args, 'realization', None)
-    # This reader_kwargs will be used if the dataset corresponding value is None or not present
-    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
-    if realization:
-        reader_kwargs['realization'] = realization
-
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
-    save_netcdf = config_dict['output'].get('save_netcdf', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300) 
-    create_catalog_entry = config_dict['output'].get('create_catalog_entry', True)
-
+    # Retrieve tool-specific configuration
+    tool_dict = cli.config_dict['diagnostics'].get(TOOLNAME_KEY, {})
     # Global Biases diagnostic
-    if 'globalbiases' in config_dict['diagnostics']:
-        if config_dict['diagnostics']['globalbiases']['run']:
-            logger.info("GlobalBiases diagnostic is enabled.")
+    if tool_dict and tool_dict.get('run', False):
+        cli.logger.info(f"{TOOLNAME} diagnostic is enabled.")
 
-            if len(config_dict['datasets']) > 1:
-                logger.warning(
-                    "Only the first entry in 'datasets' will be used.\n"
-                    "Multiple datasets are not supported by this diagnostic."
-                )
-            if len(config_dict['references']) > 1:
-                logger.warning(
-                    "Only the first entry in 'references' will be used.\n"
-                    "Multiple references are not supported by this diagnostic."
-                )
-            diagnostic_name = config_dict['diagnostics']['globalbiases'].get('diagnostic_name', 'globalbiases')
-            dataset = config_dict['datasets'][0]
-            reference = config_dict['references'][0]
-            dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
-                            'exp': dataset['exp'], 'source': dataset['source'],
-                            'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
-            reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
-                            'exp': reference['exp'], 'source': reference['source'],
-                            'regrid': regrid if regrid is not None else reference.get('regrid', None)}
-            
-            variables = config_dict['diagnostics']['globalbiases'].get('variables', [])
-            formulae = config_dict['diagnostics']['globalbiases'].get('formulae', [])
-            plev = config_dict['diagnostics']['globalbiases']['params']['default'].get('plev')
-            seasons = config_dict['diagnostics']['globalbiases']['params']['default'].get('seasons', False)
-            seasons_stat = config_dict['diagnostics']['globalbiases']['params']['default'].get('seasons_stat', 'mean')
-            vertical = config_dict['diagnostics']['globalbiases']['params']['default'].get('vertical', False)
+        if len(cli.config_dict['datasets']) > 1:
+            cli.logger.warning(
+                "Only the first entry in 'datasets' will be used.\n"
+                "Multiple datasets are not supported by this diagnostic."
+            )
+        if len(cli.config_dict['references']) > 1:
+            cli.logger.warning(
+                "Only the first entry in 'references' will be used.\n"
+                "Multiple references are not supported by this diagnostic."
+            )
+        diagnostic_name = tool_dict.get('diagnostic_name', TOOLNAME_KEY)
+        dataset = cli.config_dict['datasets'][0]
+        reference = cli.config_dict['references'][0]
+        dataset_args = cli.dataset_args(dataset)
+        reference_args = cli.dataset_args(reference)
 
-            startdate_data = config_dict['diagnostics']['globalbiases']['params']['default'].get('startdate_data', None)
-            enddate_data = config_dict['diagnostics']['globalbiases']['params']['default'].get('enddate_data', None)
-            startdate_ref = config_dict['diagnostics']['globalbiases']['params']['default'].get('startdate_ref', None)
-            enddate_ref = config_dict['diagnostics']['globalbiases']['params']['default'].get('enddate_ref', None)
+        variables = tool_dict.get('variables', [])
+        formulae = tool_dict.get('formulae', [])
+        plev = tool_dict.get('params', {}).get('default', {}).get('plev')
+        seasons = tool_dict.get('params', {}).get('default', {}).get('seasons', False)
+        seasons_stat = tool_dict.get('params', {}).get('default', {}).get('seasons_stat', 'mean')
+        vertical = tool_dict.get('params', {}).get('default', {}).get('vertical', False)
 
-            logger.debug("Selected levels for vertical plots: %s", plev)
+        cli.logger.debug("Selected levels for vertical plots: %s", plev)
 
-            biases_dataset = GlobalBiases(**dataset_args, diagnostic=diagnostic_name,
-                                          startdate=startdate_data, enddate=enddate_data,
-                                          outputdir=outputdir, loglevel=loglevel)
-            biases_reference = GlobalBiases(**reference_args, diagnostic=diagnostic_name,
-                                            startdate=startdate_ref, enddate=enddate_ref,
-                                            outputdir=outputdir, loglevel=loglevel)
+        biases_dataset = GlobalBiases(**dataset_args, diagnostic=diagnostic_name,
+                                        outputdir=cli.outputdir, loglevel=cli.loglevel)
+        biases_reference = GlobalBiases(**reference_args, diagnostic=diagnostic_name,
+                                        outputdir=cli.outputdir, loglevel=cli.loglevel)
 
-            all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
+        all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
 
-            for var, is_formula in all_vars:
-                logger.info("Running Global Biases diagnostic for %s: %s",
-                            "formula" if is_formula else "variable", var)
-                all_plot_params = config_dict['diagnostics']['globalbiases'].get('plot_params', {})
-                default_params = all_plot_params.get('default', {})
-                var_params = all_plot_params.get(var, {})
-                plot_params = {**default_params, **var_params}
+        for var, is_formula in all_vars:
+            cli.logger.info("Running Global Biases diagnostic for %s: %s",
+                        "formula" if is_formula else "variable", var)
+            all_plot_params = tool_dict.get('plot_params', {})
+            default_params = all_plot_params.get('default', {})
+            var_params = all_plot_params.get(var, {})
+            plot_params = {**default_params, **var_params}
 
-                vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
-                param_dict = config_dict['diagnostics']['globalbiases'].get('params', {}).get(var, {})
-                units = param_dict.get('units', None)
-                long_name = param_dict.get('long_name', None)
-                short_name = param_dict.get('short_name', None)
+            vmin, vmax = plot_params.get('vmin'), plot_params.get('vmax')
+            param_dict = tool_dict.get('params', {}).get(var, {})
+            units = param_dict.get('units', None)
+            long_name = param_dict.get('long_name', None)
+            short_name = param_dict.get('short_name', None)
 
-                try:
-                    biases_dataset.retrieve(var=var, units=units, formula=is_formula,
-                                            long_name=long_name, short_name=short_name,
-                                            reader_kwargs=reader_kwargs)
-                    biases_reference.retrieve(var=var, units=units, formula=is_formula,
-                                            long_name=long_name, short_name=short_name)
-                except (NoDataError, KeyError, ValueError) as e:
-                    logger.warning("Variable '%s' not found in dataset. Skipping. (%s)", var, e)
-                    continue  
+            try:
+                biases_dataset.retrieve(var=var, units=units, formula=is_formula,
+                                        long_name=long_name, short_name=short_name,
+                                        reader_kwargs=cli.reader_kwargs)
+                biases_reference.retrieve(var=var, units=units, formula=is_formula,
+                                        long_name=long_name, short_name=short_name)
+            except (NoDataError, KeyError, ValueError) as e:
+                cli.logger.warning("Variable '%s' not found in dataset. Skipping. (%s)", var, e)
+                continue
 
-                biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat, create_catalog_entry=create_catalog_entry)
-                biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
+            biases_dataset.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat, create_catalog_entry=cli.create_catalog_entry)
+            biases_reference.compute_climatology(seasonal=seasons, seasons_stat=seasons_stat)
 
-                if short_name is not None: 
-                    var = short_name
+            if short_name is not None:
+                var = short_name
 
-                if 'plev' in biases_dataset.data.get(var, {}).dims and plev:
-                    plev_list = to_list(plev)
-                else: 
-                    plev_list = [None] 
+            if 'plev' in biases_dataset.data.get(var, {}).dims and plev:
+                plev_list = to_list(plev)
+            else:
+                plev_list = [None]
 
-                for p in plev_list:
-                    logger.info("Processing variable: %s at %s level", var, f"pressure level {p}" if p else "surface")
+            for p in plev_list:
+                cli.logger.info(f"Processing variable: {var} at pressure level: {p}" if p else f"Processing variable: {var} at surface level")
 
-                    proj = plot_params.get('projection', 'robinson')
-                    proj_params = plot_params.get('projection_params', {})
-                    cmap= plot_params.get('cmap', 'RdBu_r')
+                proj = plot_params.get('projection', 'robinson')
+                proj_params = plot_params.get('projection_params', {})
+                cmap= plot_params.get('cmap', 'RdBu_r')
 
-                    logger.debug("Using projection: %s for variable: %s", proj, var)
-                    plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png,
-                                                dpi=dpi, outputdir=outputdir, cmap=cmap, loglevel=loglevel)
-                    plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
-                                          var=var, plev=p,
-                                          proj=proj, proj_params=proj_params,
-                                          vmin=vmin, vmax=vmax) 
-                    if seasons:
-                        plot_biases.plot_seasonal_bias(data=biases_dataset.seasonal_climatology, 
-                                                       data_ref=biases_reference.seasonal_climatology,
-                                                       var=var, plev=p, 
-                                                       proj=proj, proj_params=proj_params,
-                                                       vmin=vmin, vmax=vmax)
+                cli.logger.debug("Using projection: %s for variable: %s", proj, var)
+                plot_biases = PlotGlobalBiases(diagnostic=diagnostic_name, save_pdf=cli.save_pdf, save_png=cli.save_png,
+                                            dpi=cli.dpi, outputdir=cli.outputdir, cmap=cmap, loglevel=cli.loglevel)
+                plot_biases.plot_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
+                                        var=var, plev=p,
+                                        proj=proj, proj_params=proj_params,
+                                        vmin=vmin, vmax=vmax)
+                if seasons:
+                    plot_biases.plot_seasonal_bias(data=biases_dataset.seasonal_climatology,
+                                                    data_ref=biases_reference.seasonal_climatology,
+                                                    var=var, plev=p,
+                                                    proj=proj, proj_params=proj_params,
+                                                    vmin=vmin, vmax=vmax)
 
-                if vertical and 'plev' in biases_dataset.data.get(var, {}).dims:
-                    logger.debug('Plotting vertical bias for variable: %s', var)
-                    vmin_v , vmax_v = plot_params.get('vmin_v'), plot_params.get('vmax_v')
-                    plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology, 
-                                                   var=var, vmin=vmin_v, vmax=vmax_v)
+            if vertical and 'plev' in biases_dataset.data.get(var, {}).dims:
+                cli.logger.debug("Plotting vertical bias for variable:  %s", var)
+                vmin_v , vmax_v = plot_params.get('vmin_v'), plot_params.get('vmax_v')
+                plot_biases.plot_vertical_bias(data=biases_dataset.climatology, data_ref=biases_reference.climatology,
+                                                var=var, vmin=vmin_v, vmax=vmax_v)
 
-    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+    cli.close_dask_cluster()
 
-    logger.info("Global Biases diagnostic completed.")
+    cli.logger.info("Global Biases diagnostic completed.")

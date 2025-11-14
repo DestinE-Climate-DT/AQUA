@@ -61,8 +61,9 @@ cli:
   tropical_rainfall: "../../diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py"
 
 run: 
+    #['climate_metrics']
     - ["teleconnections", "climate_metrics", "ocean2d"] # very fast ones first, a few min
-    - ["atmosphere2d", "atmosphere3d", "radiation-surface", "ocean3d-part1",  "ocean3d-part2", "seaice", "radiation-toa", "water_cycle"]
+    - ["atmosphere2d", "atmosphere3d", "radiation-surface", "ocean3d-part1", "ocean3d-part2", "seaice", "radiation-toa", "water_cycle"]
 
   # List of diagnostics
 

@@ -9,14 +9,11 @@ single or multiple experiments.
 import argparse
 import sys
 
-from aqua.logger import log_configure
-from aqua.util import get_arg, to_list
-from aqua.version import __version__ as aqua_version
-from aqua.diagnostics.core import template_parse_arguments, open_cluster, close_cluster
-from aqua.diagnostics.core import load_diagnostic_config, merge_config_args
-
+from aqua.util import to_list
+from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.ocean_drift.hovmoller import Hovmoller
 from aqua.diagnostics.ocean_drift.plot_hovmoller import PlotHovmoller
+from aqua.diagnostics.core import DiagnosticCLI
 
 
 def parse_arguments(args):
@@ -32,47 +29,25 @@ def parse_arguments(args):
 
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
+    
+    cli = DiagnosticCLI(args, 
+                        diagnostic_name='ocean3d', 
+                        default_config='config_ocean_drift.yaml', 
+                        log_name='OceanDrift CLI').prepare()
+    cli.open_dask_cluster()
+    
+    logger = cli.logger
+    config_dict = cli.config_dict
 
-    loglevel = get_arg(args, 'loglevel', 'WARNING')
-    logger = log_configure(log_level=loglevel, log_name='OceanDrift CLI')
-    logger.info(f"Running OceanDrift diagnostic with AQUA version {aqua_version}")
+    dataset = cli.config_dict['datasets'][0]
+    dataset_args = cli.dataset_args(dataset)
+    
+    #logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
-    cluster = get_arg(args, 'cluster', None)
-    nworkers = get_arg(args, 'nworkers', None)
-
-    client, cluster, private_cluster = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
-
-    # Load the configuration file and then merge it with the command-line arguments,
-    # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='ocean3d', config=args.config,
-                                         default_config='config_ocean_drift.yaml',
-                                         loglevel=loglevel)
-    config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
-
-    catalog = get_arg(args, 'catalog', config_dict['datasets'][0]['catalog'])
-    model = get_arg(args, 'model', config_dict['datasets'][0]['model'])
-    exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
-    source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
-    regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
-    startdate = config_dict['datasets'][0].get('startdate', None)
-    enddate = config_dict['datasets'][0].get('enddate', None)
-    realization = get_arg(args, 'realization', None)
-    # This reader_kwargs will be used if the dataset corresponding value is None or not present
-    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
-    if realization:
-        reader_kwargs['realization'] = realization
-    logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
-
-    # Output options
-    outputdir = config_dict['output'].get('outputdir', './')
-    rebuild = config_dict['output'].get('rebuild', True)
-    save_pdf = config_dict['output'].get('save_pdf', True)
-    save_png = config_dict['output'].get('save_png', True)
-    dpi = config_dict['output'].get('dpi', 300)
 
     if 'hovmoller' in config_dict['diagnostics']['ocean_drift']:
         hovmoller_config = config_dict['diagnostics']['ocean_drift']['hovmoller']
-        logger.info(f"Hovmoller diagnostic is set to {hovmoller_config['run']}")
+        logger.info("Hovmoller diagnostic is set to %s", hovmoller_config['run'])
         if hovmoller_config['run']:
             regions = to_list(hovmoller_config.get('regions', None))
             diagnostic_name = hovmoller_config.get('diagnostic_name', 'ocean_drift')
@@ -82,52 +57,46 @@ if __name__ == '__main__':
             # if regions != [None]:
             #    regions.append(None)
             for region in regions:
-                logger.info(f"Processing region: {region}")
+                logger.info("Processing region: %s", region)
                 try:
                     data_hovmoller = Hovmoller(
+                        **dataset_args,
                         diagnostic_name=diagnostic_name,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        regrid=regrid,
-                        startdate=startdate,
-                        enddate=enddate,
-                        loglevel=loglevel
+                        loglevel=cli.loglevel
                     )
                     data_hovmoller.run(
                         region=region,
                         var=var,
                         dim_mean=dim_mean,
                         anomaly_ref="t0",
-                        outputdir=outputdir,
-                        reader_kwargs=reader_kwargs,
-                        rebuild=rebuild
+                        outputdir=cli.outputdir,
+                        reader_kwargs=cli.reader_kwargs,
+                        rebuild=cli.rebuild
                     )
                 except Exception as e:
-                    logger.error(f"Error processing region {region}: {e}")
+                    logger.error("Error processing region %s: %s", region, e)
                 try:
-                    logger.info(f"Loading data in memory")
+                    logger.info("Loading data in memory")
                     for processed_data in data_hovmoller.processed_data_list:
                         processed_data.load()
-                    logger.info(f"Loaded data in memory")
+                    logger.info("Loaded data in memory")
                     hov_plot = PlotHovmoller(
                         diagnostic_name=diagnostic_name,
                         data=data_hovmoller.processed_data_list,
-                        outputdir=outputdir,
-                        loglevel=loglevel
+                        outputdir=cli.outputdir,
+                        loglevel=cli.loglevel
                     )
                     hov_plot.plot_hovmoller(
-                        rebuild=rebuild, save_pdf=save_pdf,
-                        save_png=save_png, dpi=dpi
+                        rebuild=cli.rebuild, save_pdf=cli.save_pdf,
+                        save_png=cli.save_png, dpi=cli.dpi
                     )
                     hov_plot.plot_timeseries(
-                        rebuild=rebuild, save_pdf=save_pdf,
-                        save_png=save_png, dpi=dpi
+                        rebuild=cli.rebuild, save_pdf=cli.save_pdf,
+                        save_png=cli.save_png, dpi=cli.dpi
                     )
                 except Exception as e:
-                    logger.error(f"Error plotting region {region}: {e}")
+                    logger.error("Error plotting region %s: %s", region, e)
                 
-    close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
+    cli.close_dask_cluster()
 
     logger.info("Ocean Drift diagnostic completed.")
