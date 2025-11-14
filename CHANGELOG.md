@@ -65,6 +65,7 @@ AQUA diagnostics complete list:
 AQUA core complete list:
 - Handle unknown activity names in catgen (#2351)
 - Update Data Portfolio to v2.1.0 (#2356)
+- Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2341)
 - Updated target grib codes for cpr and snvol (#2346)
 - Offline cartopy data added to environment (#2344)
 - Allow start/enddate passed in `retrieve` to be used also in `retrieve_plain()` (#2335)
