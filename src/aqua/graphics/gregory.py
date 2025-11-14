@@ -67,8 +67,8 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
         t2m_ref = t2m_monthly_ref.groupby('time.month').mean(dim='time')
         net_toa_ref = net_toa_monthly_ref.groupby('time.month').mean(dim='time')
         # Add an extra point same as the first one to close the loop
-        t2m_ref = xr.concat([t2m_ref, t2m_ref.isel(month=0)], dim='month')
-        net_toa_ref = xr.concat([net_toa_ref, net_toa_ref.isel(month=0)], dim='month')
+        t2m_ref = xr.concat([t2m_ref, t2m_ref.isel(month=0)], dim='month', coords='different', compat='equals')
+        net_toa_ref = xr.concat([net_toa_ref, net_toa_ref.isel(month=0)], dim='month', coords='different', compat='equals')
 
     if set_axis_limits:
         # We set a fixed x and y range but then we expand it if data

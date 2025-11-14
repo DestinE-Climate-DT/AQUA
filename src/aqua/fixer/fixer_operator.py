@@ -156,7 +156,7 @@ class FixerOperator:
         else:
             zeros = xr.zeros_like(data.isel(time=0))
 
-        deltas = xr.concat([zeros, deltas], dim='time').transpose('time', ...)
+        deltas = xr.concat([zeros, deltas], dim='time', coords='different', compat='equals').transpose('time', ...)
 
         if jump:
             # universal mask based on the change of month (shifted by one timestep)

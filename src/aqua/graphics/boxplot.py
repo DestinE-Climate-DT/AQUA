@@ -94,6 +94,7 @@ def boxplot(fldmeans: list[xr.Dataset],
     )
 
     wrapped_labels = [textwrap.fill(lbl, 14) for lbl in order]
+    ax.set_xticks(range(len(wrapped_labels)))
     ax.set_xticklabels(wrapped_labels, fontsize=fontsize)
 
     # --- Add dashed mean lines for each box ---

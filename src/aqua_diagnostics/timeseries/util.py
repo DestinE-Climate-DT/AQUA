@@ -51,7 +51,7 @@ def loop_seasonalcycle(data: xr.DataArray, startdate: str, enddate: str,
         months_data = [cycle.sel(month=i) for i in range(1, 13)]
         # Repeat slices over requested time range and concatenate lazily
         loop_slices = [months_data[timestamp.month - 1] for timestamp in time_range]
-        data = xr.concat(loop_slices, dim='time')
+        data = xr.concat(loop_slices, dim='time', coords='different', compat='equals')
         data = data.drop_vars('month', errors='ignore')
 
     elif freq == 'annual':
@@ -64,7 +64,7 @@ def loop_seasonalcycle(data: xr.DataArray, startdate: str, enddate: str,
     
         # Repeat the single-year mean lazily for each year
         loop_slices = [cycle] * len(time_range)
-        data = xr.concat(loop_slices, dim='time')
+        data = xr.concat(loop_slices, dim='time', coords='different', compat='equals')
 
     # Assign the requested time coordinate
     data = data.assign_coords(time=time_range)

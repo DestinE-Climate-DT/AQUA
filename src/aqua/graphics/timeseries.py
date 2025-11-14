@@ -277,4 +277,4 @@ def _extend_cycle(data: xr.DataArray, loglevel: str = 'WARNING'):
     left_data['month'] = 0
     right_data['month'] = 13
 
-    return xr.concat([left_data, data, right_data], dim='month')
+    return xr.concat([left_data, data, right_data], dim='month', coords='different', compat='equals')
