@@ -1,38 +1,40 @@
-"""Utility functions for getting the configuration files"""
+"""Catalog configuration helpers for AQUA."""
 import os
 import platform
 import intake
-from aqua.logger import log_configure
-from .yaml import load_yaml
+
 from .util import to_list
+from .yaml import load_yaml
+from .locator import ConfigLocator
+from aqua.logger import log_configure
 
 
 class ConfigPath():
     """
-    A class to manage the configuration path and directory robustly, including 
+    A class to manage the configuration path and directory robustly, including
     handling and browsing across multiple catalogs.
 
     Attributes:
         filename (str): The name of the configuration file. Defaults to 'config-aqua.yaml'.
-        configdir (str): The directory where the configuration file is located. 
+        configdir (str): The directory where the configuration file is located.
                          If not provided, it is determined by the `get_config_dir` method.
-        catalog (str): The first catalog from the list of available catalogs, or None if 
+        catalog (str): The first catalog from the list of available catalogs, or None if
                        no catalogs are available.
     """
 
     def __init__(self, configdir=None, filename='config-aqua.yaml',
-                 catalog=None, loglevel='warning'):
+                 catalog=None, loglevel='warning', locator=None):
 
         # set up logger
         self.logger = log_configure(log_level=loglevel, log_name='ConfigPath')
 
         # get the configuration directory and its file
         self.filename = filename
-        if configdir is None:
-            self.configdir = self.get_config_dir()
-        else:
-            self.configdir = configdir
-        self.config_file = os.path.join(self.configdir, self.filename)
+        if locator is None:
+            locator = ConfigLocator(filename=filename, configdir=configdir, logger=self.logger)
+        self.locator = locator
+        self.configdir = self.locator.configdir
+        self.config_file = self.locator.config_file
         self.logger.debug('Configuration file found in %s', self.config_file)
         self.config_dict = load_yaml(self.config_file)
 
@@ -61,46 +63,22 @@ class ConfigPath():
 
     def get_config_dir(self):
         """
-        Return the path to the configuration directory,
-        searching in a list of pre-defined directories.
+        Return the path to the configuration directory.
 
-        Generalized to work for config files with different names.
-
-        Returns:
-            configdir (str): the dir of the catalog file and other config files
-
-        Raises:
-            FileNotFoundError: if no config file is found in the predefined folders
+        Notes:
+            This method delegates to `ConfigLocator` and is kept for backward
+            compatibility.
         """
-
-        configdirs = []
-
-        # Check first if AQUA_CONFIG is defined
-        aquaconfigdir = os.environ.get('AQUA_CONFIG')
-        if aquaconfigdir:
-            configdirs.append(aquaconfigdir)
-
-        # Then if the home is defined
-        homedir = os.environ.get('HOME')
-        if homedir:
-            configdirs.append(os.path.join(homedir, '.aqua'))
-
-        # Autosearch for the config folder
-        for configdir in configdirs:
-            if os.path.exists(os.path.join(configdir, self.filename)):
-                self.logger.debug('AQUA installation found in %s', configdir)
-                return configdir
-
-        raise FileNotFoundError(f"No config file {self.filename} found in {configdirs}")
+        return self.locator.configdir
 
     def get_catalog(self):
         """
         Extract the name of the catalog from the configuration file
 
         Returns:
-            The name of the catalog read from the configuration file
+            list[str] | None: the catalog names from the main config file or
+            None when the `catalog` entry is present but empty.
         """
-
         if os.path.exists(self.config_file):
             base = load_yaml(self.config_file)
             if 'catalog' not in base:
@@ -123,38 +101,37 @@ class ConfigPath():
             a list of catalogs where the triplet is found
             a dictionary with information on wrong triplet
         """
-
         success = []
         fail = {}
 
         if self.catalog_available is None:
             return success, fail
 
-        if all(v is not None for v in [model, exp, source]):
+        if not all(v is not None for v in [model, exp, source]):
+            raise KeyError('Need to defined the triplet model, exp and source')
 
-            for catalog in self.catalog_available:
-                self.logger.debug('Browsing catalog %s ...', catalog)
-                catalog_file, _ = self.get_catalog_filenames(catalog)
-                cat = intake.open_catalog(catalog_file)
-                check, level, avail = scan_catalog(cat, model=model,
-                                                   exp=exp, source=source)
-                if check is True:
-                    self.logger.info('%s_%s_%s triplet found in in %s!', model, exp, source, catalog)
-                    success.append(catalog)
-                else:
-                    fail[catalog] = f'In catalog {catalog} when looking for {model}_{exp}_{source} triplet I could not find the {level}. Available alternatives are {avail}'
-            return success, fail
-
-        raise KeyError('Need to defined the triplet model, exp and source')
+        for catalog in self.catalog_available:
+            self.logger.debug('Browsing catalog %s ...', catalog)
+            catalog_file, _ = self.get_catalog_filenames(catalog)
+            cat = intake.open_catalog(catalog_file)
+            check, level, avail = self.scan_catalog(cat, model=model, exp=exp, source=source)
+            if check:
+                self.logger.info('%s_%s_%s triplet found in in %s!', model, exp, source, catalog)
+                success.append(catalog)
+            else:
+                fail[catalog] = (f'In catalog {catalog} when looking for {model}_{exp}_{source} '
+                                 f'triplet I could not find the {level}. Available alternatives are {avail}')
+        return success, fail
 
     def deliver_intake_catalog(self, model, exp, source, catalog=None):
         """
-        Given a triplet of model-exp-source (and possibly a specific catalog), browse the catalog 
+        Given a triplet of model-exp-source (and possibly a specific catalog), browse the catalog
         and check if the triplet can be found
 
         Returns:
-          The intake catalog and the associated catalog and machine file
-
+            intake.catalog.Catalog: The intake catalog
+            str: The path to the catalog file
+            str: The path to the machine file
         """
         matched, failed = self.browse_catalogs(model=model, exp=exp, source=source)
         if not matched:
@@ -175,11 +152,11 @@ class ConfigPath():
 
     def get_machine_info(self):
         """
-        This extract the information related to the machine from the catalog-dependent machine file
+        Extract the information related to the machine from the catalog-dependent machine file
 
         Returns:
-            machine_paths: the dictionary with the paths
-            intake_vars: the dictionary for the intake catalog variables
+            machine_paths (dict): the machine_paths filesystem locations
+            intake_vars (dict): the intake catalog variables
         """
         # loading the grid defintion file
         machine_file = load_yaml(self.machine_file)
@@ -203,25 +180,24 @@ class ConfigPath():
             self.logger.debug('No paths found in the main configuration file %s', self.base_available)
         if machine_paths == {}:
             self.logger.error('Cannot find machine paths for %s, regridding and areas feature will not work', self.machine)
-            #raise KeyError(f'Cannot find machine paths for {self.machine}, regridding and areas feature will not work')
 
         # extract potential intake variables
-        if 'intake' in machine_paths:
-            intake_vars = machine_paths['intake']
-        else:
-            intake_vars = {}
-
+        intake_vars = machine_paths.get('intake', {})
         return machine_paths, intake_vars
 
     def get_base(self):
-        """Get all the possible base configurations available"""
-        base = {}
+        """
+        Get all the possible base configurations available
+
+        Returns:
+            dict[str, dict]: map of catalog name to rendered configuration.
+        """
         if os.path.exists(self.config_file):
+            base = {}
             for catalog in self.catalog_available:
                 definitions = {'catalog': catalog, 'configdir': self.configdir}
                 base[catalog] = load_yaml(infile=self.config_file, definitions=definitions, jinja=True)
             return base
-
         raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
 
     def get_machine(self):
@@ -229,24 +205,24 @@ class ConfigPath():
         Extract the name of the machine from the configuration file
 
         Returns:
-            The name of the machine read from the configuration file
+            str | None: resolved machine name from the configuration file, or None when detection fails.
         """
+        if not os.path.exists(self.config_file):
+            raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
 
-        if os.path.exists(self.config_file):
-            base = load_yaml(self.config_file)
-            # if we do not know the machine we assume is "unknown"
-            self.machine = 'unknown'
-            # if the configuration file has a machine entry, use it
-            if 'machine' in base:
-                self.machine = base['machine']
-                self.logger.debug('Machine found in configuration file, set to %s', self.machine)
-            # if the entry is auto, or the machine unknown, try autodetection
-            if self.machine in ['auto', 'unknown']:
-                self.logger.debug('Machine is %s, trying to self detect', self.machine)
-                self.machine = self._auto_detect_machine()
-            return self.machine
+        base = load_yaml(self.config_file)
+        # if we do not know the machine we assume is "unknown"
+        self.machine = 'unknown'
+        # if the configuration file has a machine entry, use it
+        if 'machine' in base:
+            self.machine = base['machine']
+            self.logger.debug('Machine found in configuration file, set to %s', self.machine)
+        # if the entry is auto, or the machine unknown, try autodetection
+        if self.machine in ['auto', 'unknown']:
+            self.logger.debug('Machine is %s, trying to self detect', self.machine)
+            self.machine = self._auto_detect_machine()
+        return self.machine
 
-        raise FileNotFoundError(f'Cannot find the basic configuration file {self.config_file}!')
 
     def _auto_detect_machine(self):
         """Tentative method to identify the machine from the hostname"""
@@ -273,12 +249,16 @@ class ConfigPath():
 
     def get_catalog_filenames(self, catalog=None):
         """
-        Extract the filenames
+        Extract the catalog and machine file paths for the selected catalog.
+
+        Args:
+            catalog (str | None): override catalog to inspect; defaults to the
+                current `self.catalog`.
 
         Returns:
-            Two strings for the path of the fixer, regrid and config files
+            catalog_file (str): the path to the catalog file
+            machine_file (str): the path to the machine file
         """
-
         if self.catalog is None:
             raise KeyError('No AQUA catalog is installed. Please run "aqua add CATALOG_NAME"')
 
@@ -289,6 +269,7 @@ class ConfigPath():
         self.logger.debug('Catalog file is %s', catalog_file)
         if not os.path.exists(catalog_file):
             raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}. Did you install it with "aqua add {catalog}"?')
+
         machine_file = self.base_available[catalog]['reader']['machine']
         self.logger.debug('Machine file is %s', machine_file)
         if not os.path.exists(machine_file):
@@ -316,31 +297,31 @@ class ConfigPath():
         return fixer_folder, grids_folder
 
 
-def scan_catalog(cat, model=None, exp=None, source=None):
-    """
-    Check if the model, experiment and source are in the catalog.
+    def scan_catalog(self, cat, model=None, exp=None, source=None):
+        """
+        Check if the model, experiment and source are in the catalog.
 
-    Returns:
-        status (bool): True if the triplet is found
-        level (str): The level at which the triplet is failing
-        info (str): The available catalog entries at the level of the triplet
-    """
+        Returns:
+            status (bool): True if the triplet is found
+            level (str): The level at which the triplet is failing
+            info (str): The available catalog entries at the level of the triplet
+        """
+        status = False
+        avail = None
+        level = None
 
-    status = False
-    avail = None
-    level = None
-    if model in cat:
-        if exp in cat[model]:
-            if source in cat[model][exp]:
-                status = True
+        if model in cat:
+            if exp in cat[model]:
+                if source in cat[model][exp]:
+                    status = True
+                else:
+                    level = 'source'
+                    avail = list(cat[model][exp].keys())
             else:
-                level = 'source'
-                avail = list(cat[model][exp].keys())
+                level = 'exp'
+                avail = list(cat[model].keys())
         else:
-            level = 'exp'
-            avail = list(cat[model].keys())
-    else:
-        level = 'model'
-        avail = list(cat.keys())
+            level = 'model'
+            avail = list(cat.keys())
 
-    return status, level, avail
+        return status, level, avail
