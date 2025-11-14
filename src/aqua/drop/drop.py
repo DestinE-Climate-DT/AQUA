@@ -385,7 +385,8 @@ class Drop():
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, source_grid_name=sgn
+                basedir=self.basedir, catblock=catblock, 
+                source_grid_name=sgn
             )
 
             cat_file['sources'][entry_name] = block

@@ -56,11 +56,12 @@ class TestOutputPathBuilder:
 class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
 
-    @pytest.mark.parametrize("resolution, frequency, realization, region, stat, source_grid_name", [
-        ('r100', 'monthly', 'r1', 'global', 'mean', 'lon-lat-r100'),
-        ('r200', 'daily', 'r1', 'global', 'mean', 'lon-lat'),
+    @pytest.mark.parametrize("resolution, frequency, realization, region, stat, source_grid_name, chunks", [
+        ('r100', 'monthly', 'r1', 'global', 'mean', 'lon-lat-r100', {'time': 12, 'lat': 180, 'lon': 360}),
+        ('r200', 'daily', 'r1', 'global', 'mean', 'lon-lat', {'time': 365, 'lat': 90, 'lon': 180}),
+        ('r050s', 'monthly', 'r4', 'europe', 'max', 'lon-lat', {'time': 12, 'lat': 361, 'lon': 720}),
       ])
-    def test_create_entry_name(self, drop_arguments, resolution, frequency, realization, region, stat, source_grid_name):
+    def test_create_entry_name(self, drop_arguments, resolution, frequency, realization, region, stat, source_grid_name, chunks):
         """Test creation of entry name."""
         builder = CatalogEntryBuilder(
             catalog='ci', **drop_arguments,
@@ -86,7 +87,8 @@ class TestCatalogEntryBuilder:
         )
         newblock = builder2.create_entry_details(basedir=drop_arguments["outdir"], catblock=block, source_grid_name=source_grid_name)
         assert newblock['args']['urlpath'] == block['args']['urlpath']
-        assert newblock['parameters']['realization']['allowed'] == ['r1','r2']
+        assert newblock['parameters']['realization']['allowed'] == [realization,'r2']
+        assert newblock['args']['chunks'] == chunks
 
 
 
