@@ -37,8 +37,8 @@ class PlotGlobalBiases:
 
         self.logger = log_configure(log_level=loglevel, log_name='Global Biases')
 
-    def _save_figure(self, fig, diagnostic_product,
-                     data, description, var, data_ref=None,
+    def _save_figure(self, fig, diagnostic_product, 
+                     data, description, var, data_ref=None, 
                      plev=None, **kwargs):
         """
         Handles the saving of a figure using OutputSaver.
