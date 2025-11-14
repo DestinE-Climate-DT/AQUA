@@ -1,6 +1,6 @@
 import xarray as xr
 import numpy as np
-from aqua.util import to_list, extract_attrs, time_to_string
+from aqua.util import to_list, extract_attrs, time_to_string, get_realizations
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import matplotlib as plt
@@ -61,6 +61,8 @@ class PlotBoxplots:
         self.logger.info(f'catalogs: {catalog}, models: {model}, experiments: {exp}')
         self.logger.info(f'ref catalogs: {extract_attrs(data_ref, "catalog")}, models: {model_ref}, experiments: {exp_ref}')
 
+        self.realizations = get_realizations(data)
+
         outputsaver = OutputSaver(
             diagnostic=self.diagnostic,
             catalog=catalog,
@@ -68,6 +70,7 @@ class PlotBoxplots:
             exp=exp,
             model_ref=model_ref,
             exp_ref=exp_ref,
+            realization=self.realizations,
             outputdir=self.outputdir,
             loglevel=self.loglevel
         )

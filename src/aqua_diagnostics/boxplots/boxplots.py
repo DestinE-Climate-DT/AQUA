@@ -113,6 +113,7 @@ class Boxplots(Diagnostic):
             'AQUA_catalog': self.catalog,
             'AQUA_model': self.model,
             'AQUA_exp': self.exp,
+            'AQUA_realization': self.realization,
             'startdate': str(self.startdate),
             'enddate': str(self.enddate)
             })

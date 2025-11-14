@@ -278,6 +278,7 @@ class PlotBaseMixin():
         self.catalogs = None
         self.models = None
         self.exps = None
+        self.realizations = None
         self.ref_catalogs = None
         self.ref_models = None
         self.ref_exps = None
@@ -418,7 +419,8 @@ class PlotBaseMixin():
                                   catalog=self.catalogs,
                                   model=self.models,
                                   exp=self.exps,
-                                  # This is needed for the Gregory diagnostic, which saves the reference models and experiments
+                                  realization=self.realizations,
+                                  # This is needed for the Gregory diagnostic, which save the reference models and experiments
                                   # as dictionaries to build correct labels and descriptions
                                   catalog_ref=list(self.ref_catalogs.values()) if isinstance(self.ref_catalogs, dict) else self.ref_catalogs,
                                   model_ref=list(self.ref_models.values()) if isinstance(self.ref_models, dict) else self.ref_models,

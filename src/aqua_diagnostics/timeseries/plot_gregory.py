@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from aqua.graphics import ConfigStyle, plot_gregory_monthly, plot_gregory_annual
-from aqua.util import to_list, time_to_string
+from aqua.util import to_list, time_to_string, get_realizations
 from .base import PlotBaseMixin
 
 
@@ -227,7 +227,8 @@ class PlotGregory(PlotBaseMixin):
                 self.exps = [d.AQUA_exp for d in data]
                 self.startdate = [time_to_string(d.time.values[0]) for d in data]
                 self.enddate = [time_to_string(d.time.values[-1]) for d in data]
-
+                self.realizations = get_realizations(data)
+                
         if self.ref_dict['monthly']['t2m'] is not None:
             t2m_catalog = self.ref_dict['monthly']['t2m'].AQUA_catalog
             t2m_model = self.ref_dict['monthly']['t2m'].AQUA_model
