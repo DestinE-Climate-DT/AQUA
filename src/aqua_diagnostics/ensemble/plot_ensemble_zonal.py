@@ -93,6 +93,7 @@ class PlotEnsembleZonal(BaseMixin):
         cbar_label=None,
         save_pdf=True,
         save_png=True,
+        dpi=300,
         units=None,
         ylim=(5500, 0),
         levels=20,
@@ -118,6 +119,7 @@ class PlotEnsembleZonal(BaseMixin):
             cbar_label (str, optional): Label for the colorbar.
             save_pdf (bool, optional): Save plots as PDF. Default is True.
             save_png (bool, optional): Save plots as PNG. Default is True.
+            dpi (int, optional): Resolution for saved figures. Default is 300.
             units (str, optional): Units of the variable. Used in titles and labels if provided.
             ylim (tuple, optional): Y-axis limits for the plot (vertical levels). Default is (5500, 0).
             levels (int, optional): Number of contour levels. Default is 20.
@@ -207,7 +209,7 @@ class PlotEnsembleZonal(BaseMixin):
 
         # Saving plots
         if save_png:
-            self.save_figure(var=var, fig=fig1, fig_std=fig2, description=description, format="png")
+            self.save_figure(var=var, fig=fig1, fig_std=fig2, description=description, format="png", dpi=dpi)
         if save_pdf:
             self.save_figure(var=var, fig=fig1, fig_std=fig2, description=description, format="pdf")
 

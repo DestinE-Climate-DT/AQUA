@@ -327,7 +327,7 @@ class BaseMixin(Diagnostic):
             #)
 
     # Save figure
-    def save_figure(self, var, fig=None, fig_std=None, startdate=None, enddate=None, description=None, format="png"):    
+    def save_figure(self, var, fig=None, fig_std=None, startdate=None, enddate=None, description=None, format="png", dpi=300):    
         """
         Save figure(s) to file using OutputSaver or directly to disk if catalog/model/exp are None or multi-values.
 
@@ -343,6 +343,7 @@ class BaseMixin(Diagnostic):
             enddate (str, optional): End date to include in metadata. Defaults to None.
             description (str, optional): Description to include in metadata. Defaults to auto-generated.
             format (str, optional): File format to save the figure ('png' or 'pdf'). Defaults to 'png'.
+            dpi (int, optional): Resolution for saved figures in PNG format. Default is 300.
 
         Notes:
             - If catalog/model/exp are None or multi-values, figures are saved directly without OutputSaver.
@@ -426,6 +427,7 @@ class BaseMixin(Diagnostic):
                         diagnostic_product=self.diagnostic_product,
                         extra_keys=extra_keys,
                         metadata=metadata,
+                        dpi=dpi,
                     )
                 else:
                     raise ValueError(f"Format {format} not supported. Use png or pdf.")
@@ -468,6 +470,7 @@ class BaseMixin(Diagnostic):
                             diagnostic_product=self.diagnostic_product,
                             extra_keys=extra_keys,
                             metadata=metadata,
+                            dpi=dpi,
                         )
                     else:
                         raise ValueError(f"Format {format} not supported. Use png or pdf.")

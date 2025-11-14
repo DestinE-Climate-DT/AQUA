@@ -1,7 +1,8 @@
 import pytest
 from aqua.diagnostics.core import Diagnostic
+from conftest import LOGLEVEL
 
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 
 @pytest.mark.aqua

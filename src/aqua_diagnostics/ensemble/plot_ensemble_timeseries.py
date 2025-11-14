@@ -106,6 +106,7 @@ class PlotEnsembleTimeseries(BaseMixin):
         description=None,
         save_pdf=True,
         save_png=True,
+        dpi=300,
         figure_size=[10, 5],
         plot_ensemble_members=True,
     ):
@@ -123,6 +124,7 @@ class PlotEnsembleTimeseries(BaseMixin):
             figure_size: figure_size can be changed. Default is [10, 5],
             save_pdf (bool): Default is True.
             save_png (bool): Default is True.
+            dpi (int): Resolution for saved figures. Default is 300.
             plot_ensemble_members=True.
             ref_hourly_data: reference hourly timesereis xarray.Dataset. Default is None.
             ref_daily_data: reference daily timeseries xarray.Dataset. Default is None.
@@ -203,7 +205,7 @@ class PlotEnsembleTimeseries(BaseMixin):
 
         # Saving plots
         if save_png:
-            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format="png")
+            self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format="png", dpi=dpi)
         if save_pdf:
             self.save_figure(var=var, fig=fig, startdate=startdate, enddate=enddate, description=description, format="pdf")
         return fig, ax

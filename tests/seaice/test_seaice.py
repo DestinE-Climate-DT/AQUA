@@ -2,18 +2,25 @@ import pytest
 import xarray as xr
 from aqua.diagnostics import SeaIce
 from aqua.exceptions import NoDataError
+from conftest import APPROX_REL, LOGLEVEL
 
 # pytest approximation, to bear with different machines
-approx_rel = 1e-4
+approx_rel = APPROX_REL
 abs_rel = 1e-4
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 catalog = 'ci'
 model = 'FESOM'
 exp = 'hpz3'
 source = 'monthly-2d'
 
-@pytest.mark.diagnostics
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+# These tests repeatedly call SeaIce.compute_seaice() which accesses shared data
+pytestmark = [
+    pytest.mark.diagnostics,
+    pytest.mark.xdist_group(name="diagnostic_setup_class")
+]
+
 class TestSeaIce:
     """Test the SeaIce class."""
     

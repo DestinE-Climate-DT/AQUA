@@ -2,10 +2,11 @@ import os
 import pytest
 import xarray as xr
 from aqua.diagnostics.timeseries import Gregory, PlotGregory
+from conftest import APPROX_REL, DPI, LOGLEVEL
 
 # pytest approximation, to bear with different machines
-approx_rel = 1e-4
-loglevel = 'DEBUG'
+approx_rel = APPROX_REL
+loglevel = LOGLEVEL
 
 @pytest.mark.diagnostics
 class TestGregory:
@@ -67,7 +68,7 @@ class TestGregory:
         ref_label = plt.set_ref_label()
         fig = plt.plot(title=title, data_labels=data_labels, ref_label=ref_label)
         _ = plt.set_description()
-        plt.save_plot(fig, outputdir=tmp_path, diagnostic_product='gregory')
+        plt.save_plot(fig, outputdir=tmp_path, diagnostic_product='gregory', dpi=DPI)
 
         filename = f'{self.diagnostic_name}.gregory.{self.catalog}.{self.model}.{self.exp}.r1.multiref.png'
         file = os.path.join(tmp_path, 'png', filename)

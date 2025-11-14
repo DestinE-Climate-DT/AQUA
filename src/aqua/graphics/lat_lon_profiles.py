@@ -82,7 +82,7 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
                                 ref_data.values - 2.*ref_std_data.values,
                                 ref_data.values + 2.*ref_std_data.values,
                                 facecolor='grey', alpha=0.5, zorder=1)
-            
+
             # Plot reference data
             ref_data.plot(ax=ax, label=ref_label if ref_label else 'Reference',
                           color='black', linestyle='-', linewidth=3, alpha=1.0,

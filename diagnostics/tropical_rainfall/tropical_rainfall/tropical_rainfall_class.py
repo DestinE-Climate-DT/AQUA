@@ -48,6 +48,7 @@ ylogscale = ToolsClass().get_config_value(config, 'plot_attributes', 'ylogscale'
 xlogscale = ToolsClass().get_config_value(config, 'plot_attributes', 'xlogscale', default=False)
 number_of_axe_ticks = ToolsClass().get_config_value(config, 'plot_attributes', 'number_of_axe_ticks', default=4)
 number_of_bar_ticks = ToolsClass().get_config_value(config, 'plot_attributes', 'number_of_bar_ticks', default=6)
+dpi = ToolsClass().get_config_value(config, 'plot_attributes', 'dpi', default=300)
 
 
 class Tropical_Rainfall(metaclass=MetaClass):
@@ -125,7 +126,7 @@ class Tropical_Rainfall(metaclass=MetaClass):
                                    cmap=cmap, linestyle=linestyle, ylogscale=ylogscale,
                                    xlogscale=xlogscale, model_variable=model_variable,
                                    number_of_axe_ticks=number_of_axe_ticks, number_of_bar_ticks=number_of_bar_ticks,
-                                   loglevel=loglevel)
+                                   dpi=dpi, loglevel=loglevel)
 
         self.import_methods()
 

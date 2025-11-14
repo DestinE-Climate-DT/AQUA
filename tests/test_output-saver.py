@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from unittest.mock import patch, MagicMock
 from aqua.util import replace_urlpath_jinja, replace_urlpath_wildcard
 from aqua.diagnostics.core import OutputSaver
+from conftest import DPI, LOGLEVEL
 
 # Fixture for OutputSaver instance
 @pytest.fixture
@@ -17,7 +18,7 @@ def output_saver(tmp_path):
             'exp': 'historical',
             'catalog': 'ci',
             'outputdir': tmp_path,
-            'loglevel': 'DEBUG',
+            'loglevel': LOGLEVEL,
         }
         default_args.update(overrides)
         return OutputSaver(**default_args)
@@ -115,7 +116,7 @@ def test_save_png(base_saver, tmp_path):
 
     # Save the PNG file
     extra_keys = {'var': 'tprate'}
-    path = base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=300)
+    path = base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=DPI)
 
     # Check if the file was created
     png = os.path.join(tmp_path, 'png', 'dummy.mean.ci.IFS-NEMO.historical.r1.tprate.png')
@@ -123,7 +124,7 @@ def test_save_png(base_saver, tmp_path):
     assert path == png
 
     old_mtime = Path(png).stat().st_mtime
-    base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=300, rebuild=False)
+    base_saver.save_png(fig=fig, diagnostic_product='mean', extra_keys=extra_keys, dpi=DPI, rebuild=False)
     new_mtime = Path(png).stat().st_mtime
     assert new_mtime == old_mtime
 

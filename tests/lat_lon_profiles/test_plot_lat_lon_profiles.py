@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 import xarray as xr
 from aqua.diagnostics.lat_lon_profiles import PlotLatLonProfiles
+from conftest import DPI, LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
 @pytest.fixture
 def sample_lat_lon_data():
@@ -124,7 +125,7 @@ class TestPlotLatLonProfilesCore:
         # Verify diagnostic_name is stored
         assert plotter.diagnostic_name == diagnostic_name
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0, f"No PNG files created for {diagnostic_name} {data_type}"
         
@@ -199,7 +200,8 @@ class TestPlotLatLonProfilesIntegration:
         plotter.run(
             outputdir=str(tmp_path),
             rebuild=True,
-            format=format
+            format=format,
+            dpi=DPI
         )
         
         files = list(tmp_path.rglob(f'*.{format}'))
@@ -218,7 +220,7 @@ class TestPlotLatLonProfilesIntegration:
             loglevel=loglevel
         )
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0

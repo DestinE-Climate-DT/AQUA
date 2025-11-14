@@ -7,9 +7,16 @@ from dask.distributed import LocalCluster, Client
 from aqua.gsv.intake_gsv import GSVSource, gsv_available
 from aqua.util import ConfigPath
 from aqua import Reader
+from conftest import LOGLEVEL
 
 if not gsv_available:
     pytest.skip('Skipping GSV tests: FDB5 libraries not available', allow_module_level=True)
+
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+pytestmark = [
+    pytest.mark.gsv,
+    pytest.mark.xdist_group(name="dask_operations")
+]
 
 """Tests for GSV in AQUA. Requires FDB library installed and an FDB repository."""
 
@@ -34,8 +41,9 @@ DEFAULT_GSV_PARAMS = {
     'timestyle': 'date'
 }
 
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 FDB_HOME = '/app'
+
 # to enable for local testing on Lumi
 if ConfigPath().machine == 'lumi':
     FDB_HOME = '/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST'
@@ -51,7 +59,6 @@ def gsv(request) -> GSVSource:
     return GSVSource(**request, metadata={'fdb_home': FDB_HOME})
 
 
-@pytest.mark.gsv
 class TestGsv():
     """Pytest marked class to test GSV."""
 
@@ -268,8 +275,6 @@ class TestGsv():
         cluster.close()
 
 # Additional tests for the GSVSource class
-
-@pytest.mark.gsv
 def test_fdb_home_bridge_logs(capsys):
     # Prepare test metadata ensuring we have fdbhome_bridge
     metadata = {
@@ -278,7 +283,7 @@ def test_fdb_home_bridge_logs(capsys):
     }
 
     source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
-                        metadata=metadata, loglevel='DEBUG')
+                        metadata=metadata, loglevel=loglevel)
 
     # No assert in the following because we cannot check the stderr logs. This is just for coverage.
 
@@ -293,7 +298,7 @@ def test_fdb_home_bridge_logs(capsys):
         'fdb_path': FDB_HOME+'/etc/fdb/config.yaml'
     }
     source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
-                        metadata=metadata, loglevel='DEBUG')
+                        metadata=metadata, loglevel=loglevel)
     
     source.chk_type = [1]
     source._get_partition(ii=0)

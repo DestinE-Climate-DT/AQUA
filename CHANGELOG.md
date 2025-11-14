@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+ClimateDT workflow modifications:
+
 Unreleased in the current development version (target v0.20.0):
+- Parallelise tests execution using `pytest-xdist` module, centralise common fixtures to speed up tests execution time (#2402)
 
 ClimateDT workflow modifications:
 
@@ -35,10 +38,10 @@ AQUA core complete list:
 - Allow longer time default for connection to dask cluster (#2420)
 - Safe parallel creation of area and weight files (#2412)
 - New grid lat-lon-r100 with explicit grid file, new default in DROP catgen (#2410, #2413)
-- Realization formatting correctly processed by the Reader (#2392) 
+- Realization formatting correctly processed by the Reader (#2392)
 - Realization (and other intake kwargs) are an attribute of the Reader (#2392)
 - Refactoring of aqua analysis to allow config file with diagnostic groups and reorganization of diagnostic config files (#2371)
-- Optimizations of diagnostic parallel execution (#2371) 
+- Optimizations of diagnostic parallel execution (#2371)
 - Including minor fixes to output filenames, figure descriptions and color ranges (#2371)
 - Enumerate aqua analysis log file for multiple config files (#2407)
 - Fix push_analysis.sh rsync functionality to not use ssh (#2403)

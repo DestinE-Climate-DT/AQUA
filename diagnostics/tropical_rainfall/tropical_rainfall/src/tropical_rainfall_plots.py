@@ -25,7 +25,7 @@ class PlottingClass:
                  step: bool = None, color_map: bool = None, cmap: str = None,
                  linestyle: str = None, ylogscale: bool = None, xlogscale: bool = None,
                  model_variable: str = None, number_of_axe_ticks: int = None,
-                 number_of_bar_ticks: int = None, loglevel: str = 'WARNING'):
+                 number_of_bar_ticks: int = None, dpi: int = None, loglevel: str = 'WARNING'):
         """
         Constructor for the plotting class, initializing various plotting parameters.
 
@@ -44,6 +44,7 @@ class PlottingClass:
             model_variable (str): The variable name to be used for the plot.
             number_of_axe_ticks (int): The number of ticks to display on the axes.
             number_of_bar_ticks (int): The number of ticks to display on the bar.
+            dpi (int): The DPI (dots per inch) for PNG output. Only used when pdf_format is False.
             loglevel (str): The level of logging to be used.
 
         """
@@ -61,6 +62,7 @@ class PlottingClass:
         self.model_variable = model_variable
         self.number_of_axe_ticks = number_of_axe_ticks
         self.number_of_bar_ticks = number_of_bar_ticks
+        self.dpi = dpi
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, 'Plot. Func.')
         self.tools = ToolsClass(self.loglevel)
@@ -70,7 +72,8 @@ class PlottingClass:
                                 smooth: Optional[bool] = None, step: Optional[bool] = None, color_map: Optional[bool] = None,
                                 cmap: Optional[str] = None, linestyle: Optional[str] = None, ylogscale: Optional[bool] = None,
                                 xlogscale: Optional[bool] = None, model_variable: Optional[str] = None,
-                                number_of_axe_ticks: Optional[int] = None, number_of_bar_ticks: Optional[int] = None):
+                                number_of_axe_ticks: Optional[int] = None, number_of_bar_ticks: Optional[int] = None,
+                                dpi: Optional[int] = None):
         """
         Update the class attributes based on the provided arguments.
 
@@ -88,6 +91,7 @@ class PlottingClass:
             xlogscale (bool, optional): A flag indicating whether to use a logarithmic scale for the x-axis.
             model_variable (str, optional): The model variable to be used.
             number_of_bar_ticks (int, optional): The number of ticks for bar plots.
+            dpi (int, optional): The DPI (dots per inch) for PNG output. Only used when pdf_format is False.
 
         Returns:
             None
@@ -106,8 +110,9 @@ class PlottingClass:
         self.model_variable = self.model_variable if model_variable is None else model_variable
         self.number_of_axe_ticks = self.number_of_axe_ticks if number_of_axe_ticks is None else number_of_axe_ticks
         self.number_of_bar_ticks = self.number_of_bar_ticks if number_of_bar_ticks is None else number_of_bar_ticks
+        self.dpi = self.dpi if dpi is None else dpi
 
-    def savefig(self, path_to_pdf: Optional[str] = None, pdf_format: Optional[bool] = None):
+    def savefig(self, path_to_pdf: Optional[str] = None, pdf_format: Optional[bool] = None, dpi: Optional[int] = None):
         """
         Save the current figure to a file in either PDF or PNG format.
 
@@ -115,21 +120,26 @@ class PlottingClass:
             path_to_pdf (str, optional): The file path where the figure will be saved. If None, the figure will not be saved.
             pdf_format (bool, optional): If True, the figure will be saved in PDF format; otherwise,
                                          it will be saved in PNG format.
+            dpi (int, optional): The DPI (dots per inch) for PNG output. Only used when pdf_format is False.
+                                 If None, uses the class default dpi value.
 
         Returns:
-            None
+            str: The path to the saved file.
 
         Note:
             The function first checks the `path_to_pdf` to determine the format of the saved figure.
             If `pdf_format` is set to True, the figure will be saved in PDF format with the specified path.
             If `pdf_format` is False, the function replaces the '.pdf' extension in the `path_to_pdf` with '.png'
-            and saves the figure in PNG format.
+            and saves the figure in PNG format with the specified DPI.
 
         Example:
             savefig(path_to_pdf='example.pdf', pdf_format=True)
             # This will save the current figure in PDF format as 'example.pdf'.
+            
+            savefig(path_to_pdf='example.pdf', pdf_format=False, dpi=300)
+            # This will save the current figure in PNG format as 'example.png' with 300 DPI.
         """
-        self.class_attributes_update(pdf_format=pdf_format)
+        self.class_attributes_update(pdf_format=pdf_format, dpi=dpi)
 
         create_folder(folder=self.tools.extract_directory_path(
                     path_to_pdf), loglevel='WARNING')
@@ -139,7 +149,8 @@ class PlottingClass:
                         facecolor="w", edgecolor='w', orientation='landscape')
         else:
             path_to_pdf = path_to_pdf.replace('.pdf', '.png')
-            plt.savefig(path_to_pdf, bbox_inches="tight", pad_inches=0.1,
+            save_dpi = dpi if dpi is not None else self.dpi
+            plt.savefig(path_to_pdf, dpi=save_dpi, bbox_inches="tight", pad_inches=0.1,
                         transparent=True, facecolor="w", edgecolor='w', orientation='landscape')
         self.logger.info(f"The path to plot is: {path_to_pdf}")
         return path_to_pdf
