@@ -136,7 +136,10 @@ diagnostics:
 
   seaice:
     seaice:
-      config: "${AQUA_CONFIG}/diagnostics/seaice/config-seaice.yaml"
+      config:
+        - "${AQUA_CONFIG}/diagnostics/seaice/config-seaice-timeseries.yaml"
+        - "${AQUA_CONFIG}/diagnostics/seaice/config-seaice-seasonal-cycle.yaml"
+        - "${AQUA_CONFIG}/diagnostics/seaice/config-seaice-2d-bias.yaml"
 
   teleconnections:
     nao:

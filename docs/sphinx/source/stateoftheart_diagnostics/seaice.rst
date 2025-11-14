@@ -46,7 +46,12 @@ File structure
 --------------
 
 * The diagnostic is located in the ``src/aqua_diagnostics/seaice`` directory, which contains both the source code and the command line interface (CLI) script `cli_seaice.py`.  
-* The default configuration file is located in ``config/diagnostics/seaice/config_seaice.yaml``.  
+* Configuration files are located in ``config/diagnostics/seaice/``:
+  
+  - ``config-seaice-timeseries.yaml``: dedicated configuration for timeseries analysis only
+  - ``config-seaice-seasonal-cycle.yaml``: dedicated configuration for seasonal cycle analysis only
+  - ``config-seaice-2d-bias.yaml``: dedicated configuration for 2D bias maps only
+
 * The regional definitions are defined in ``config/diagnostics/seaice/definitions/regions.yaml``.  
 * Notebooks are available in ``notebooks/diagnostics/seaice`` directory and contain examples of how to use the diagnostic.  
 
@@ -134,7 +139,11 @@ the output directory and the diagnostic settings.
 Most of the settings are common to all the diagnostics (see :ref:`diagnostics-configuration-files`).
 Here we describe only the specific settings for the sea ice diagnostic.
 
-The sea ice configuration file is organized into several main sections
+The sea ice diagnostic provides modular configuration files to enable flexible usage:
+
+* Use the dedicated config files (``config-seaice-timeseries.yaml``, ``config-seaice-seasonal-cycle.yaml``, or ``config-seaice-2d-bias.yaml``) to run specific diagnostic types individually.
+
+The sea ice configuration file is organized into several main sections:
 
 **Dataset Configuration:**
 
@@ -254,13 +263,31 @@ The ``seaice_2d_bias`` block includes additional parameters for spatial analysis
 CLI processing
 --------------
 
+The CLI follows the centralized DiagnosticCLI pattern used across AQUA diagnostics.
+
 The CLI uses separate diagnostic blocks for different types of analysis:  
 
 * ``seaice_timeseries``: for time series analysis of extent and volume  
 * ``seaice_seasonal_cycle``: for seasonal cycle analysis of extent and volume  
 * ``seaice_2d_bias``: for 2D spatial analysis of fraction and thickness biases  
 
+Each diagnostic block can be enabled or disabled by setting the ``run`` flag to ``true`` or ``false`` in the configuration file.
+This allows users to run specific diagnostics individually using the dedicated configuration files
+
 The input parameters can be overridden during the CLI call.
+
+Example CLI commands:
+
+.. code-block:: bash
+
+    # Run all diagnostics
+    python cli_seaice.py --config config/diagnostics/seaice/config-seaice.yaml
+    
+    # Run only timeseries diagnostic
+    python cli_seaice.py --config config/diagnostics/seaice/config-seaice-timeseries.yaml
+    
+    # Run only 2D bias diagnostic
+    python cli_seaice.py --config config/diagnostics/seaice/config-seaice-2d-bias.yaml
 
 Outputs
 -------
