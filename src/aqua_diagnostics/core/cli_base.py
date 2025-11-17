@@ -138,16 +138,24 @@ class DiagnosticCLI:
         self.dpi = output_config.get('dpi', 300)
         self.create_catalog_entry = output_config.get('create_catalog_entry', False)
 
-    def dataset_args(self, dataset):
+    def dataset_args(self, dataset, default_startdate=None, default_enddate=None):
         """
         Helper to extract dataset arguments for diagnostics.
+        
+        Args:
+            dataset (dict): Dataset configuration dictionary
+            default_startdate (str, optional): Default startdate if not specified in dataset
+            default_enddate (str, optional): Default enddate if not specified in dataset
+        
+        Returns:
+            dict: Dictionary with dataset arguments
         """
 
         return {'catalog': dataset['catalog'], 'model': dataset['model'],
                 'exp': dataset['exp'], 'source': dataset['source'],
                 'regrid': dataset.get('regrid', self.regrid),
-                'startdate': dataset.get('startdate', None),
-                'enddate': dataset.get('enddate', None)}
+                'startdate': dataset.get('startdate', default_startdate),
+                'enddate': dataset.get('enddate', default_enddate)}
 
     def open_dask_cluster(self):
         """

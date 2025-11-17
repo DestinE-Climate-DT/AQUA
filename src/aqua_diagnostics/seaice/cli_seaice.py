@@ -75,8 +75,14 @@ def process_timeseries_or_seasonal_cycle(cli, diagnostic_type, datasets, regions
         plot_ts_seaice['monthly_models'] = monthly_mod
         
         # Process reference datasets
-        if 'references' in conf_dict:
-            references = conf_dict['references']
+        method_to_ref_key = {
+            'extent': 'references_extent',
+            'volume': 'references_volume'
+        }
+        ref_key = method_to_ref_key.get(method)
+        
+        if ref_key and ref_key in conf_dict:
+            references = conf_dict[ref_key]
             calc_ref_std = conf_dict.get('calc_ref_std', False)
             calc_std_freq = conf_dict.get('ref_std_freq', None) if calc_ref_std else None
             
@@ -84,29 +90,23 @@ def process_timeseries_or_seasonal_cycle(cli, diagnostic_type, datasets, regions
             monthly_std_ref = [None] * len(references) if calc_ref_std else None
 
             for i, reference in enumerate(references):
-                use_for_method = reference.get("use_for_method", None)
-                if use_for_method is not None and use_for_method != method:
-                    cli.logger.info(f"Skipping ref data {reference['model']}, {reference['exp']}, "
-                                    f"{reference['source']} - not for method: '{method}'")
-                    continue
-
                 domain_ref = reference.get('domain', None)
                 regs_indomain = filter_region_list(regions_dict, regions, domain_ref, cli.logger)
                 
-                reference_args = cli.dataset_args(reference)
+                reference_args = cli.dataset_args(reference, default_startdate=startdate, default_enddate=enddate)
                 reference_args['regions'] = regs_indomain
-                reference_args['startdate'] = reference.get('startdate', startdate)
-                reference_args['enddate'] = reference.get('enddate', enddate)
                 reference_args['regrid'] = cli.regrid or reference.get('regrid', None)
                 
                 seaice_ref = SeaIce(**reference_args,
                                     outputdir=cli.outputdir,
                                     loglevel=cli.loglevel)
 
+                var_name = reference.get('varname', conf_dict['varname'][method])
+
                 if calc_ref_std:
                     monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(
                         method=method, 
-                        var=reference.get('varname'), 
+                        var=var_name, 
                         calc_std_freq=calc_std_freq,
                         get_seasonal_cycle=is_seasonal
                     )
@@ -117,7 +117,7 @@ def process_timeseries_or_seasonal_cycle(cli, diagnostic_type, datasets, regions
                 else:
                     monthly_ref[i] = seaice_ref.compute_seaice(
                         method=method, 
-                        var=reference.get('varname'),
+                        var=var_name,
                         get_seasonal_cycle=is_seasonal
                     )
                 
@@ -193,33 +193,34 @@ def process_2d_bias(cli, datasets, regions_dict, projection):
         plot_bias_seaice['models'] = clims_mod
         
         # Process reference datasets
-        if 'references' in conf_dict_2d:
-            references = conf_dict_2d['references']
+        # Map method to the appropriate references key
+        method_to_ref_key = {
+            'fraction': 'references_fraction',
+            'thickness': 'references_thickness'
+        }
+        ref_key = method_to_ref_key.get(method)
+        
+        if ref_key and ref_key in conf_dict_2d:
+            references = conf_dict_2d[ref_key]
             clims_ref = [None] * len(references)
 
             for i, reference in enumerate(references):
-                use_for_method = reference.get("use_for_method", None)
-                if use_for_method is not None and use_for_method != method:
-                    cli.logger.info(f"Skipping ref data {reference['model']}, {reference['exp']}, "
-                                    f"{reference['source']} - not for method: '{method}'")
-                    continue
-
                 domain_ref = reference.get('domain', None)
                 regs_indomain = filter_region_list(regions_dict, regions, domain_ref, cli.logger)
                 
-                reference_args = cli.dataset_args(reference)
+                reference_args = cli.dataset_args(reference, default_startdate=startdate, default_enddate=enddate)
                 reference_args['regions'] = regs_indomain
-                reference_args['startdate'] = reference.get('startdate', startdate)
-                reference_args['enddate'] = reference.get('enddate', enddate)
                 reference_args['regrid'] = cli.regrid or reference.get('regrid', None)
                 
                 seaice_ref = SeaIce(**reference_args,
                                     outputdir=cli.outputdir,
                                     loglevel=cli.loglevel)
 
+                var_name = reference.get('varname', conf_dict_2d['varname'][method])
+
                 clims_ref[i] = seaice_ref.compute_seaice(
                     method=method, 
-                    var=reference.get('varname'), 
+                    var=var_name, 
                     stat='mean', 
                     freq='monthly'
                 )

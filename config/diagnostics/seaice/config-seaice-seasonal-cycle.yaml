@@ -14,41 +14,45 @@ datasets:
 
 # =======  Reference Datasets  =======
 references:
-  # ---- Extent in NH ----
-  - &ref_osi_nh
-    catalog: 'obs'             # mandatory
-    model: 'OSI-SAF'           # mandatory
-    exp: 'osi-saf-aqua'        # mandatory
-    source: 'nh-monthly'       # mandatory
-    regrid: 'r100'
-    domain: "nh"
+  # Concentration/Extent references (OSI-SAF)
+  concentration:
+    nh: &ref_conc_nh
+      catalog: 'obs'             # mandatory
+      model: 'OSI-SAF'           # mandatory
+      exp: 'osi-saf-aqua'        # mandatory
+      source: 'nh-monthly'       # mandatory
+      regrid: 'r100'
+      domain: "nh"
+      varname: "siconc"
+    
+    sh: &ref_conc_sh
+      catalog: 'obs'             # mandatory
+      model: 'OSI-SAF'           # mandatory
+      exp: 'osi-saf-aqua'        # mandatory
+      source: 'sh-monthly'       # mandatory
+      regrid: 'r100'
+      domain: "sh"
+      varname: "siconc"
 
-  # ---- Extent in SH ----
-  - &ref_osi_sh
-    catalog: 'obs'             # mandatory
-    model: 'OSI-SAF'           # mandatory
-    exp: 'osi-saf-aqua'        # mandatory
-    source: 'sh-monthly'       # mandatory
-    regrid: 'r100'
-    domain: "sh"
-
-  # ---- Volume in NH ----
-  - &ref_psc_nh
-    catalog: 'obs'
-    model: 'PSC'
-    exp: 'PIOMAS'
-    source: 'monthly'
-    regrid: 'r100'
-    domain: "nh"
-
-  # ---- Volume in SH ----
-  - &ref_psc_sh
-    catalog: 'obs'
-    model: 'PSC'
-    exp: 'GIOMAS'
-    source: 'monthly'
-    regrid: 'r100'
-    domain: "sh"
+  # Volume/Thickness references (PSC)
+  volume:
+    nh: &ref_vol_nh
+      catalog: 'obs'
+      model: 'PSC'
+      exp: 'PIOMAS'
+      source: 'monthly'
+      regrid: 'r100'
+      domain: "nh"
+      varname: "sithick"
+    
+    sh: &ref_vol_sh
+      catalog: 'obs'
+      model: 'PSC'
+      exp: 'GIOMAS'
+      source: 'monthly'
+      regrid: 'r100'
+      domain: "sh"
+      varname: "sithick"
 
 # =======  Setup Configuration  =======
 setup:
@@ -78,24 +82,13 @@ diagnostics:
     varname:
       extent: 'siconc'
       volume: 'sithick'
-    references:
-      # -- OSI-SAF for "extent" in NH --
-      - <<: *ref_osi_nh
-        use_for_method: "extent"
-        varname: "siconc"
-
-      # -- OSI-SAF for "extent" in SH --
-      - <<: *ref_osi_sh
-        use_for_method: "extent"
-        varname: "siconc"
-
-      # -- PSC for "volume" in NH --
-      - <<: *ref_psc_nh
-        use_for_method: "volume"
-        varname: "sithick"
-
-      # -- PSC for "volume" in SH --
-      - <<: *ref_psc_sh
-        use_for_method: "volume"
-        varname: "sithick"
+    # ====  Reference entries for extent (concentration)  ====
+    references_extent:
+      - <<: *ref_conc_nh
+      - <<: *ref_conc_sh
+  
+    # ====  Reference entries for volume (thickness)  ====
+    references_volume:
+      - <<: *ref_vol_nh
+      - <<: *ref_vol_sh
 
