@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 AQUA core complete list:
 - Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2474)
+- Fix DROP CLI support for enddate, startdate and catalog (#2473)
 
 AQUA diagnostics complete list:
 

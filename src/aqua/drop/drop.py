@@ -81,7 +81,7 @@ class Drop():
         Initialize the DROP class
 
         Args:
-            catalog (string):        The catalog you want to reader. If None, guessed by the reader.
+            catalog (string):        The catalog you want to read. If None, guessed by the reader.
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
@@ -232,16 +232,18 @@ class Drop():
     @staticmethod
     def _validate_date(startdate, enddate):
         """Validate date format for startdate and enddate"""
+        
         if startdate is not None:
             try:
-                pd.to_datetime(startdate, format='%Y-%m-%d')
-            except ValueError:
-                raise ValueError('startdate must be in YYYY-MM-DD format')
+                pd.to_datetime(startdate)
+            except (ValueError, TypeError):
+                raise ValueError('startdate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
+        
         if enddate is not None:
             try:
-                pd.to_datetime(enddate, format='%Y-%m-%d')
-            except ValueError:
-                raise ValueError('enddate must be in YYYY-MM-DD format')
+                pd.to_datetime(enddate)
+            except (ValueError, TypeError):
+                raise ValueError('enddate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
 
     def _issue_info_warning(self):
         """
@@ -618,6 +620,11 @@ class Drop():
             temp_data = self.reader.timstat(temp_data, self.stat, freq=self.frequency,
                                             exclude_incomplete=self.exclude_incomplete)
 
+        # temp_data could be empty after time statistics if everything was excluded
+        if 'time' in temp_data.coords and len(temp_data.time) == 0:
+            self.logger.warning('No data available for variable %s after time statistics, skipping...', var)
+            return
+        
         # regrid
         if self.resolution:
             temp_data = self.reader.regrid(temp_data)
