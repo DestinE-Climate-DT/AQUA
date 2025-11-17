@@ -10,6 +10,7 @@ Unreleased in the current development version (target v0.20.0):
 ClimateDT workflow modifications:
 
 AQUA core complete list:
+- Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2450)
 - eORCA025 nested grid for o25.1 and o26.1 support (#2459)
 - Safe dumping yaml with a temporary file and SoftFileLock (#2445)
 - Add filelock when modifying catalog sources (#2432)
