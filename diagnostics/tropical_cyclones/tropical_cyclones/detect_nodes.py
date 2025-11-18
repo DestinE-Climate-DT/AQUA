@@ -36,10 +36,14 @@ class DetectNodes():
             tic = time()
             self.logger.warning(f"processing time step {tstep}")
             self.readwrite_from_intake(tstep)
+            tstart = time()
+            self.logger.debug(f"Writing took {tstart - tic:.4f} seconds")
             self.run_detect_nodes(tstep)
+            tend = time()
+            self.logger.debug(f'DetectNodes took {tend - tstart:.4f} seconds')
             # clean_files([self.tempest_filein])
             self.read_lonlat_nodes()
-            self.store_detect_nodes(tstep)
+            self.store_detect_nodes(tstep, write_fullres=self.write_fullres)
             toc = time()
             self.logger.info(
                 'DetectNodes done in {:.4f} seconds'.format(toc - tic))
@@ -60,7 +64,7 @@ class DetectNodes():
 
         fileout = os.path.join(self.paths['tmpdir'], f'regrid_{timestep}.nc')
 
-        if self.model == 'IFS':
+        if self.model in ['IFS', 'ERA5']:
             # TO BE IMPROVED: check pressure levels units
             # an import could be using metpy
             # lowres3d = lowres3d.metpy.convert_coordinate_units('plev', 'Pa')
@@ -71,7 +75,7 @@ class DetectNodes():
             # rename some variables to run DetectNodes command
             if '10u' in self.lowres2d.data_vars:
                 self.lowres2d = self.lowres2d.rename({'10u': 'u10m'})
-            if '10v' in self.lowres2dd.data_vars:
+            if '10v' in self.lowres2d.data_vars:
                 self.lowres2d = self.lowres2d.rename({'10v': 'v10m'})
             # this is required to avoid conflict between z 3D and z 2D (orography)
             if 'z' in self.lowres2d.data_vars:
@@ -80,6 +84,31 @@ class DetectNodes():
             lowres3d = self.reader3d.regrid(
                 self.data3d.sel(time=timestep, plev=[30000, 50000], drop=False))
             outfield = xr.merge([self.lowres2d, lowres3d])
+
+            if self.orography:
+                self.logger.info("Adding orography added to detect nodes input file")
+                if 'time' in self.orog.dims:
+                    self.logger.debug("Drop time dimension from orography")
+                    orog_first_timestep = self.orog.isel(time=0, drop=True)
+                    orog_first_timestep['time'] = outfield['time']
+                else:
+                    orog_first_timestep = self.orog
+
+                orog_first_timestep = self.reader2d.regrid(orog_first_timestep)
+
+                # drop 'time' whether it's a coord or a data var
+                if 'time' in orog_first_timestep.coords:
+                    # remove coordinate (keeps any underlying data var if present)
+                    orog_first_timestep = orog_first_timestep.reset_coords('time', drop=True)
+                elif 'time' in orog_first_timestep.data_vars:
+                    # remove data variable entirely
+                    orog_first_timestep = orog_first_timestep.drop_vars('time')
+
+                self.logger.debug(orog_first_timestep)
+                self.logger.debug(outfield)
+
+                #orog_first_timestep.to_netcdf("/work/users/jost/aqua/tc/tc_analysis/tmpdir/ERA5/era5/orog_first_timestep.nc")   
+                outfield = xr.merge([outfield, orog_first_timestep])
 
         elif self.model == 'IFS-NEMO' or self.model == 'IFS-FESOM':
 
@@ -147,7 +176,6 @@ class DetectNodes():
         self.logger.info('Writing low res to disk..')
         self.logger.debug(f'Writing to {fileout}')
         outfield.to_netcdf(fileout)
-        self.logger.debug(outfield)
         outfield.close()
 
         self.tempest_dictionary = {
@@ -167,6 +195,7 @@ class DetectNodes():
             Dictionary with 'date', 'lon' and 'lat' of the TCs centers
         """
 
+        self.logger.info(f"Reading DetectNodes output from {self.tempest_fileout}")
         with open(self.tempest_fileout) as f:
             lines = f.readlines()
         first = lines[0].split('\t')
@@ -202,20 +231,26 @@ class DetectNodes():
 
         # if the orography is found run stitch nodes accordingly
         if 'z' in self.lowres2d.data_vars or self.orography:
+            self.logger.debug(f'Running DetectNodes with orography')
             detect_string = f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
                 f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
-                f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2;{tempest_dictionary["orog"]},min,0" --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
+                f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2;{tempest_dictionary["orog"]},min,0 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
         else:
+            self.logger.debug(f'Running DetectNodes without orography')
             detect_string = f'DetectNodes --in_data {tempest_filein} --timefilter 6hr --out {tempest_fileout} --searchbymin {tempest_dictionary["psl"]} ' \
                 f'--closedcontourcmd {tempest_dictionary["psl"]},200.0,5.5,0;_DIFF({tempest_dictionary["zg"]}(30000Pa),{tempest_dictionary["zg"]}(50000Pa)),-58.8,6.5,1.0 --mergedist 6.0 ' \
-                f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2" --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
+                f'--outputcmd {tempest_dictionary["psl"]},min,0;_VECMAG({tempest_dictionary["uas"]},{tempest_dictionary["vas"]}),max,2 --latname {tempest_dictionary["lat"]} --lonname {tempest_dictionary["lon"]}'
 
         self.logger.debug(f'Running DetectNodes command: {detect_string}')
-        subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        if self.loglevel.upper() == 'DEBUG':
+            subprocess.run(detect_string.split())
+        else:
+            subprocess.run(detect_string.split(), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
         self.logger.debug(f'DetectNodes output saved to {tempest_fileout}')
 
-    def store_detect_nodes(self, timestep, write_fullres=True):
+    def store_detect_nodes(self, timestep, write_fullres=False):
         """
         Store the output of DetectNodes in a netcdf file.
 

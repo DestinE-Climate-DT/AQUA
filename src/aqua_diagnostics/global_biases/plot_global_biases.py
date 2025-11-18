@@ -70,7 +70,7 @@ class PlotGlobalBiases:
             extra_keys.update({'var': var})
         if plev is not None:
             extra_keys.update({'plev': plev})
-        
+
         outputsaver.save_figure(fig, diagnostic_product,
                                 extra_keys=extra_keys, metadata=metadata,
                                 save_pdf=self.save_pdf, save_png=self.save_png,

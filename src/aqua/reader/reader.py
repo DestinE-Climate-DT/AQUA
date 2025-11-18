@@ -390,7 +390,7 @@ class Reader():
             if data is None or len(data.data_vars) == 0:
                 self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
 
-            if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+            if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
                 data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
