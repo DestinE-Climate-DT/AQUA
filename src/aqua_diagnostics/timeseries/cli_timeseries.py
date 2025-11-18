@@ -72,8 +72,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or cli.reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min([ts[i].startdate for i in range(len(ts))])
-                        enddate = max([ts[i].enddate for i in range(len(ts))])
+                        startdate = min(t.plt_startdate for t in ts)
+                        enddate = max(t.plt_enddate for t in ts)
                         startdate = round_startdate(startdate)
                         enddate = round_enddate(enddate)
                         cli.logger.info(f"Start date: {startdate}, End date: {enddate}")
@@ -149,8 +149,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or cli.reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min([ts[i].plt_startdate for i in range(len(ts))])
-                        enddate = max([ts[i].plt_enddate for i in range(len(ts))])
+                        startdate = min(t.plt_startdate for t in ts)
+                        enddate = max(t.plt_enddate for t in ts)
 
                         # Initialize a list of len from the number of references
                         if 'references' in cli.config_dict:
@@ -227,8 +227,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or cli.reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min([sc[i].startdate for i in range(len(sc))])
-                        enddate = max([sc[i].enddate for i in range(len(sc))])
+                        startdate = min(t.plt_startdate for t in ts)
+                        enddate = max(t.plt_enddate for t in ts)
 
                         # Initialize a list of len from the number of references
                         if 'references' in cli.config_dict:
