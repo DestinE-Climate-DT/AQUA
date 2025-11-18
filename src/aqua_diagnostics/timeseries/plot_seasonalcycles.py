@@ -78,7 +78,7 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.short_name = self.monthly_data[0].short_name if hasattr(self.monthly_data[0], 'short_name') else None
             self.long_name = self.monthly_data[0].long_name if hasattr(self.monthly_data[0], 'long_name') else None
             self.units = self.monthly_data[0].units if hasattr(self.monthly_data[0], 'units') else None
-            self.realizations = get_realizations(monthly_data)
+            self.realizations = get_realizations(self.monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
         self.logger.debug(f'Experiments: {self.exps}')
