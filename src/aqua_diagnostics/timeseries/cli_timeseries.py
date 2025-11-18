@@ -72,10 +72,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or cli.reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min(t.plt_startdate for t in ts)
-                        enddate = max(t.plt_enddate for t in ts)
-                        startdate = round_startdate(startdate)
-                        enddate = round_enddate(enddate)
+                        startdate = round_startdate(min(t.plt_startdate for t in ts))
+                        enddate = round_enddate(max(t.plt_enddate for t in ts))
                         cli.logger.info(f"Start date: {startdate}, End date: {enddate}")
 
                         # Initialize a list of len from the number of references
@@ -98,12 +96,12 @@ if __name__ == '__main__':
                         # Plot the timeseries
                         if cli.save_pdf or cli.save_png:
                             cli.logger.info(f"Plotting Timeseries diagnostic for variable {var} in region {region if region else 'global'}") # noqa
-                            plot_args = {'monthly_data': [ts[i].monthly for i in range(len(ts))],
-                                        'annual_data': [ts[i].annual for i in range(len(ts))],
-                                        'ref_monthly_data': [ts_ref[i].monthly for i in range(len(ts_ref))],
-                                        'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
-                                        'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
-                                        'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                            plot_args = {'monthly_data': [t.monthly for t in ts],
+                                        'annual_data': [t.annual for t in ts],
+                                        'ref_monthly_data': [t.monthly for t in ts_ref],
+                                        'ref_annual_data': [t.annual for t in ts_ref],
+                                        'std_monthly_data': [t.std_monthly for t in ts_ref],
+                                        'std_annual_data': [t.std_annual for t in ts_ref],
                                         'diagnostic_name': diagnostic_name,
                                         'loglevel': cli.loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
@@ -171,12 +169,12 @@ if __name__ == '__main__':
                         # Plot the timeseries
                         if cli.save_pdf or cli.save_png:
                             cli.logger.info(f"Plotting Timeseries diagnostic for variable {var} in region {region if region else 'global'}") # noqa
-                            plot_args = {'monthly_data': [ts[i].monthly for i in range(len(ts))],
-                                        'annual_data': [ts[i].annual for i in range(len(ts))],
-                                        'ref_monthly_data': [ts_ref[i].monthly for i in range(len(ts_ref))],
-                                        'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
-                                        'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
-                                        'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                            plot_args = {'monthly_data': [t.monthly for t in ts],
+                                        'annual_data': [t.annual for t in ts],
+                                        'ref_monthly_data': [t.monthly for t in ts_ref],
+                                        'ref_annual_data': [t.annual for t in ts_ref],
+                                        'std_monthly_data': [t.std_monthly for t in ts_ref],
+                                        'std_annual_data': [t.std_annual for t in ts_ref],
                                         'diagnostic_name': diagnostic_name,
                                         'loglevel': cli.loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
@@ -317,10 +315,10 @@ if __name__ == '__main__':
                 # Plot the gregory
                 if cli.save_pdf or cli.save_png:
                     cli.logger.info("Plotting Gregory diagnostic")
-                    plot_args = {'t2m_monthly_data': [greg[i].t2m_monthly for i in range(len(greg))],
-                                't2m_annual_data': [greg[i].t2m_annual for i in range(len(greg))],
-                                'net_toa_monthly_data': [greg[i].net_toa_monthly for i in range(len(greg))],
-                                'net_toa_annual_data': [greg[i].net_toa_annual for i in range(len(greg))],
+                    plot_args = {'t2m_monthly_data': [t.t2m_monthly for t in greg],
+                                't2m_annual_data': [t.t2m_annual for t in greg],
+                                'net_toa_monthly_data': [t.net_toa_monthly for t in greg],
+                                'net_toa_annual_data': [t.net_toa_annual for t in greg],
                                 't2m_monthly_ref': greg_ref_t2m.t2m_monthly,
                                 't2m_annual_ref': greg_ref_t2m.t2m_annual,
                                 'net_toa_monthly_ref': greg_ref_toa.net_toa_monthly,
