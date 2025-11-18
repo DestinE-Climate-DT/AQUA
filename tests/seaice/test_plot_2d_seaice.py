@@ -3,11 +3,18 @@ import os, glob
 import numpy as np
 import xarray as xr
 from aqua.diagnostics import SeaIce, Plot2DSeaIce
+from conftest import APPROX_REL, DPI, LOGLEVEL
 
-approx_rel = 1e-4
-loglevel = 'DEBUG'
+approx_rel = APPROX_REL
+loglevel = LOGLEVEL
 
-@pytest.mark.diagnostics
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+# These tests use setup_class with shared resources (data fetching, tmp files)
+pytestmark = [
+    pytest.mark.diagnostics,
+    pytest.mark.xdist_group(name="diagnostic_setup_class")
+]
+
 class TestPlot2DSeaIce:
     @classmethod
     def setup_class(cls):
@@ -54,7 +61,7 @@ class TestPlot2DSeaIce:
         for var_name in cls.thick_ref_antarctic.data_vars:
             cls.thick_ref_antarctic[var_name] = cls.thick_ref_antarctic[var_name] + bias_constant_thickness
         
-        cls.p2d = Plot2DSeaIce(loglevel="DEBUG")
+        cls.p2d = Plot2DSeaIce(loglevel=loglevel, dpi=DPI)
         
         cls.projkw = {"projname": "orthographic",
                      "projpars": {"central_longitude": 0.0, "central_latitude": "max_lat_signed"}}
@@ -110,40 +117,40 @@ class TestPlot2DSeaIce:
 
     def test_plot_fraction_var(self):
         p2d = Plot2DSeaIce(ref=[self.frac_ref_antarctic, self.frac_ref_arctic],
-                           models=self.frac_model)
+                           models=self.frac_model, dpi=DPI)
         
         p2d.plot_2d_seaice(plot_type="var", projkw=self.projkw,
                           plot_ref_contour=True, save_pdf=False, save_png=False)
 
     def test_plot_fraction_bias(self):
         p2d = Plot2DSeaIce(ref=[self.frac_ref_antarctic, self.frac_ref_arctic],
-                           models=self.frac_model)
+                           models=self.frac_model, dpi=DPI)
         
         p2d.plot_2d_seaice(plot_type="bias", projkw=self.projkw_extent,
                           plot_ref_contour=True, save_pdf=False, save_png=False)
 
     def test_plot_thickness_var(self):
         p2d = Plot2DSeaIce(ref=[self.thick_ref_antarctic, self.thick_ref_arctic],
-                           models=self.thick_model_ds)
+                           models=self.thick_model_ds, dpi=DPI)
         
         p2d.plot_2d_seaice(plot_type="var", projkw=self.projkw,
                           plot_ref_contour=True, save_pdf=False, save_png=False)
 
     def test_plot_thickness_bias(self):
         p2d = Plot2DSeaIce(ref=[self.thick_ref_antarctic, self.thick_ref_arctic],
-                           models=self.thick_model_ds)
+                           models=self.thick_model_ds, dpi=DPI)
         
         p2d.plot_2d_seaice(plot_type="bias", projkw=self.projkw_extent,
                           plot_ref_contour=True, save_pdf=False, save_png=False)
 
     def test_bad_months_raise_value_error(self):
-        p2d = Plot2DSeaIce(models=self.frac_model)
+        p2d = Plot2DSeaIce(models=self.frac_model, dpi=DPI)
         with pytest.raises(ValueError):
             p2d.plot_2d_seaice(months=[0], projkw=self.projkw,
                               save_pdf=False, save_png=False)
 
     def test_bad_months_raise_type_error(self):
-        p2d = Plot2DSeaIce(models=self.frac_model)
+        p2d = Plot2DSeaIce(models=self.frac_model, dpi=DPI)
         with pytest.raises(TypeError):
             p2d.plot_2d_seaice(months=["Feb"], projkw=self.projkw,
                               save_pdf=False, save_png=False)
@@ -153,7 +160,7 @@ class TestPlot2DSeaIce:
         p2d = Plot2DSeaIce(ref=[self.frac_ref_antarctic, self.frac_ref_arctic],
                            models=self.frac_model,
                            regions_to_plot=None,  # This triggers _detect_common_regions
-                           loglevel="DEBUG")
+                           loglevel=loglevel, dpi=DPI)
         
         assert p2d.regions_to_plot is not None
         assert len(p2d.regions_to_plot) > 0
@@ -164,7 +171,7 @@ class TestPlot2DSeaIce:
 
     def test_get_cmap_fraction(self):
         """Test colormap generation for fraction method."""
-        p2d = Plot2DSeaIce(models=self.frac_model, loglevel="DEBUG")
+        p2d = Plot2DSeaIce(models=self.frac_model, loglevel=loglevel, dpi=DPI)
         p2d.method = "fraction"
         
         # Get a sample data array
@@ -177,7 +184,7 @@ class TestPlot2DSeaIce:
 
     def test_get_cmap_thickness(self):
         """Test colormap generation for thickness method."""
-        p2d = Plot2DSeaIce(models=self.frac_model, loglevel="DEBUG")
+        p2d = Plot2DSeaIce(models=self.frac_model, loglevel=loglevel, dpi=DPI)
         p2d.method = "thickness"
         
         # Get a sample data array
@@ -191,7 +198,7 @@ class TestPlot2DSeaIce:
 
     def test_set_projpars_function_registry(self):
         """Test projection parameter processing with function registry."""
-        p2d = Plot2DSeaIce(models=self.frac_model, loglevel="DEBUG")
+        p2d = Plot2DSeaIce(models=self.frac_model, loglevel=loglevel)
         
         # Set up test data with known lat values
         test_data = self.frac_model[0] if isinstance(self.frac_model, list) else self.frac_model
@@ -214,7 +221,7 @@ class TestPlot2DSeaIce:
         assert 'central_latitude' not in result  # Invalid function should be skipped
 
     def test_bad_plot_type_raises(self):
-        p2d = Plot2DSeaIce(models=self.frac_model)
+        p2d = Plot2DSeaIce(models=self.frac_model, dpi=DPI)
         with pytest.raises(ValueError):
             p2d.plot_2d_seaice(plot_type="invalid_plot_type", projkw=self.projkw,
                                save_pdf=False, save_png=False)
@@ -228,7 +235,7 @@ class TestPlot2DSeaIce:
     def test_plot_saves_outputs(self):
         p2d = Plot2DSeaIce(ref=[self.frac_ref_antarctic, self.frac_ref_arctic],
                            models=self.frac_model, 
-                           outputdir=self.tmp_path, loglevel="INFO")
+                           outputdir=self.tmp_path, loglevel="INFO", dpi=DPI)
 
         p2d.plot_2d_seaice(plot_type="var", projkw=self.projkw, 
                            save_pdf=True, save_png=True, months=[3])

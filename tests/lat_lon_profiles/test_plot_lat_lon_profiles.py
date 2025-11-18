@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 import xarray as xr
 from aqua.diagnostics.lat_lon_profiles import PlotLatLonProfiles
+from conftest import DPI, LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
 @pytest.fixture
 def sample_lat_lon_data():
@@ -134,7 +135,7 @@ class TestPlotLatLonProfilesCore:
         
         assert plotter.diagnostic_name == diagnostic_name
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0
         
@@ -197,11 +198,37 @@ class TestPlotLatLonProfilesIntegration:
             loglevel=loglevel
         )
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format=format)
+        plotter.run(
+            outputdir=str(tmp_path),
+            rebuild=True,
+            format=format,
+            dpi=DPI
+        )
         
         files = list(tmp_path.rglob(f'*.{format}'))
-        assert len(files) > 0
-        assert files[0].stat().st_size > 0
+        assert len(files) > 0, f"No {format} files created"
+        assert files[0].stat().st_size > 0, f"{format.upper()} file is empty"
+    
+    def test_custom_diagnostic_name_in_output(self, sample_lat_lon_data, tmp_path):
+        """Test that custom diagnostic_name affects output filenames"""
+        data = sample_lat_lon_data()
+        custom_name = 'custom_profile_test'
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
+            data_type='longterm',
+            diagnostic_name=custom_name,
+            loglevel=loglevel
+        )
+        
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
+        
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0
+        
+        # Verify custom name appears in filename
+        filename = png_files[0].name
+        assert custom_name in filename, f"Custom diagnostic name '{custom_name}' not in filename: {filename}"
 
 
 @pytest.mark.diagnostics

@@ -1,15 +1,22 @@
 import pytest
 import numpy as np
 from aqua import Reader, catalog
+from conftest import APPROX_REL, LOGLEVEL
 
-# pytest approximation, to bear with different machines
-approx_rel = 1e-4
-loglevel = "DEBUG"
+approx_rel = APPROX_REL
+loglevel = LOGLEVEL
 
-@pytest.fixture
-def reader_instance():
-    return Reader(model="FESOM", exp="test-pi", source="original_2d",
-                  regrid="r200", fix=False, loglevel=loglevel)
+@pytest.fixture(scope='module')
+def reader_instance(fesom_test_pi_original_2d_r200_fixFalse_reader):
+    return fesom_test_pi_original_2d_r200_fixFalse_reader
+
+@pytest.fixture(scope='module')
+def data(fesom_test_pi_original_2d_r200_fixFalse_data):
+    return fesom_test_pi_original_2d_r200_fixFalse_data
+
+@pytest.fixture(scope='module')
+def reader_ifs_tco79_long(ifs_tco79_long_reader):
+    return ifs_tco79_long_reader
 
 # aqua class for tests
 @pytest.mark.aqua
@@ -43,11 +50,10 @@ class TestAqua:
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
 
-    def test_retrieve_data(self, reader_instance):
+    def test_retrieve_data(self, data):
         """
         Test if the retrieve method returns data with the expected shape
         """
-        data = reader_instance.retrieve()
         assert len(data) > 0
         assert data.a_ice.shape == (2, 3140)
         assert data.a_ice.attrs['AQUA_catalog'] == 'ci'
@@ -55,29 +61,25 @@ class TestAqua:
         assert data.a_ice.attrs['AQUA_exp'] == 'test-pi'
         assert data.a_ice.attrs['AQUA_source'] == 'original_2d'
 
-    def test_regrid_data(self, reader_instance):
+    def test_regrid_data(self, reader_instance, data):
         """
         Test if the regrid method returns data with the expected
         shape and values
         """
-        data = reader_instance.retrieve()
         sstr = reader_instance.regrid(data["sst"][0:2, :])
         assert sstr.shape == (2, 90, 180)
         assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350324258783935, rel=approx_rel)
         assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319154700343551, rel=approx_rel)
 
-    def test_fldmean(self, reader_instance):
+    def test_fldmean(self, reader_instance, data):
         """
         Test if the fldmean method returns data with the expected
         shape and values
         """
-        data = reader_instance.retrieve()
         global_mean = reader_instance.fldmean(data.sst[:2, :])
         assert global_mean.shape == (2,)
-        assert global_mean.values[0] == pytest.approx(17.99434183,
-                                                      rel=approx_rel)
-        assert global_mean.values[1] == pytest.approx(17.98060367,
-                                                      rel=approx_rel)
+        assert global_mean.values[0] == pytest.approx(17.99434183, rel=approx_rel)
+        assert global_mean.values[1] == pytest.approx(17.98060367, rel=approx_rel)
         
     def test_chunks(self):
         """
@@ -109,23 +111,19 @@ class TestAqua:
         result = reader_instance.retrieve(var="nonexistent_variable")
         assert len(result.data_vars) == 0
 
-    def test_time_selection_with_dates(self, reader_instance):
-        """
-        Test that time selection is applied when both startdate and enddate are provided
-        """
-        full_data = reader_instance.retrieve()
 
-        if len(full_data.time) < 2:
-            pytest.skip("Not enough timesteps to test")
+    def test_time_selection(self, reader_ifs_tco79_long):
+        """
+        Test that time selection works correctly
+        """
+        reader = reader_ifs_tco79_long
         
-        startdate = str(full_data.time[0].values)[:10]
-        enddate = str(full_data.time[-1].values)[:10]
-    
-        selected_data = reader_instance.retrieve(startdate=startdate, enddate=enddate)
+        data = reader.retrieve(startdate='2020-03-01', enddate='2020-03-31')
         
-        # Verify time selection was applied
-        assert len(selected_data.time) == len(full_data.time)
-        assert selected_data.time[0].values == full_data.time[0].values
+        assert len(data.time) > 0
+        assert '2t' in data
+        
+        assert all(data.time.dt.month == 3)
 
     @pytest.fixture(
         params=[

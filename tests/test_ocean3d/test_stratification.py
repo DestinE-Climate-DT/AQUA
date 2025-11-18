@@ -1,15 +1,22 @@
 import pytest
 from aqua.diagnostics.ocean_stratification.stratification import Stratification
+from conftest import APPROX_REL, LOGLEVEL
 
-approx_rel = 1e-3
+loglevel = LOGLEVEL
+approx_rel = APPROX_REL*10
 
-@pytest.mark.diagnostics
+# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
+pytestmark = [
+    pytest.mark.diagnostics,
+    pytest.mark.xdist_group(name="dask_operations")
+]
+
 def test_stratification():
     """Test the stratification class."""
     # Create an instance of the stratification class
     strat = Stratification(catalog='ci', model='FESOM',
                           exp='hpz3', source='monthly-3d',
-                          regrid='r100', loglevel='DEBUG')
+                          regrid='r100', loglevel=loglevel)
 
     strat.run(
         dim_mean=["lat","lon"],

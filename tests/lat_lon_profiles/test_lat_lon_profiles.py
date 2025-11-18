@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 import xarray as xr
 from aqua.diagnostics.lat_lon_profiles import LatLonProfiles
+from conftest import LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
 
 @pytest.mark.diagnostics

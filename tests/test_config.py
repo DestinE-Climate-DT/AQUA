@@ -7,7 +7,7 @@ from aqua.util import ConfigPath
 def test_config_plain():
     config = ConfigPath()
     assert config.filename == 'config-aqua.yaml'
-    assert config.catalog == 'ci'
+    assert 'ci' in config.catalog_available
 
 @pytest.mark.aqua
 def test_config_paths():

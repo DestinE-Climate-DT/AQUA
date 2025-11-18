@@ -2,30 +2,28 @@
 import pytest
 # import numpy as np
 import xarray
-
+import os
 import re
 
-from os import listdir
+from os import listdir, remove
 from os.path import isfile, join
-from os import remove
 
 from aqua import Reader
 from aqua.util import create_folder
 
-import os
 try:
     from tropical_rainfall import Tropical_Rainfall
 except ModuleNotFoundError:
     print("The module tropical_rainfall.py is not found.")
 
-approx_rel = 1e-4 #
+from conftest import DPI, LOGLEVEL
+
 
 @pytest.mark.diagnostics
 @pytest.fixture
-def retrieved_dataarray():
+def retrieved_dataarray(ifs_tco79_long_data):
     if os.getenv('INPUT_ARG') is None:
-        data = Reader(model="IFS", exp="test-tco79", source="long")
-        retrieved = data.retrieve()
+        retrieved = ifs_tco79_long_data
         try:
             retrieved_array = retrieved['tprate']*86400
         except KeyError:
@@ -113,9 +111,9 @@ def histogram_output(retrieved_dataarray):
     """
     data = retrieved_dataarray
     if 'tprate' in data.name:
-        diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=1 - 1*10**(-6), loglevel='debug')
+        diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=1 - 1*10**(-6), loglevel=LOGLEVEL)
     elif '2t' in data.name:
-        diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=0.5, new_unit='K', loglevel='debug')
+        diag = Tropical_Rainfall(num_of_bins=1000, first_edge=0, width_of_bin=0.5, new_unit='K', loglevel=LOGLEVEL)
     hist = diag.histogram(data, trop_lat=90)
     return hist
 
@@ -182,6 +180,9 @@ def test_hist_figure_load_to_memory(histogram_output):
     """
     diag = Tropical_Rainfall()
 
+    # Set smaller DPI for tests
+    diag.plots.class_attributes_update(dpi=DPI)
+
     path_to_pdf = diag.path_to_pdf+"/test_output/plots/"
     create_folder(folder=path_to_pdf, loglevel='WARNING')
 
@@ -244,8 +245,8 @@ def test_coordinates_of_histogram(histogram_output):
     """ Testing the coordinates of histogram
     """
     hist = histogram_output
-    'center_of_bin' in hist.coords
-    'width' in hist.coords
+    assert 'center_of_bin' in hist.coords
+    assert 'width' in hist.coords
 
 
 @pytest.mark.diagnostics

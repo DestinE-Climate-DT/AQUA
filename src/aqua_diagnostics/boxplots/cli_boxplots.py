@@ -73,8 +73,8 @@ if __name__ == '__main__':
             for reference in references:
                 reference_args = cli.dataset_args(reference)
 
-                boxplots_ref = Boxplots(**reference_args, diagnostic_name=cli.diagnostic_name, 
-                                        save_netcdf=cli.save_netcdf, 
+                boxplots_ref = Boxplots(**reference_args, diagnostic=cli.diagnostic_name,
+                                        save_netcdf=cli.save_netcdf,
                                         outputdir=cli.outputdir, loglevel=cli.loglevel)
                 boxplots_ref.run(var=variables, reader_kwargs=cli.reader_kwargs)
 

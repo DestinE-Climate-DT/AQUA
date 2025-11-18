@@ -4,6 +4,7 @@ import pytest
 from aqua.diagnostics import EnsembleZonal
 from aqua.diagnostics.ensemble.util import reader_retrieve_and_merge
 from aqua.diagnostics import PlotEnsembleZonal
+from conftest import DPI, LOGLEVEL
 
 @pytest.mark.ensemble
 def test_ensemble_zonal():
@@ -84,8 +85,8 @@ def test_ensemble_zonal():
         "cbar_label": "Test Label",
         "dataset_mean": zonalmean_ens.dataset_mean,
         "dataset_std": zonalmean_ens.dataset_std,
+        "dpi": DPI,
     }
-
 
     plot_dict = ens_zonal_plot.plot(**plot_arguments)
     
