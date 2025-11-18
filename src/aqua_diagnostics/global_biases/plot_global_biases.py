@@ -219,7 +219,7 @@ class PlotGlobalBiases:
         data = handle_pressure_level(data, var, plev, loglevel=self.loglevel)
         data_ref = handle_pressure_level(data_ref, var, plev, loglevel=self.loglevel)
 
-        realization = self.get_realizations(data)
+        realization = get_realizations(data)
 
         season_list = ['DJF', 'MAM', 'JJA', 'SON']
         sym = vmin is None or vmax is None
