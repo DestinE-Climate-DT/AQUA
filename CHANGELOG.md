@@ -13,7 +13,6 @@ Unreleased in the current development version (target v0.20.0):
 ClimateDT workflow modifications:
 
 AQUA core complete list:
-- Simplify grid files by removing `vert_coord` which is detected from the path dictionary (#2276)
 - Fix DROP CLI support for enddate, startdate and catalog (#2472)
 - Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2450)
 - eORCA025 nested grid for o25.1 and o26.1 support (#2459)
